@@ -8,6 +8,8 @@ export interface CoreParameterSpec {
   readonly type: ParameterType;
   readonly governance: GovernanceClass;
   readonly usedBy: string;
+  /** Paramètre facultatif : son absence signifie « contenu pas encore défini » (ex. NOT_READY), jamais une valeur par défaut. */
+  readonly optional?: boolean;
 }
 
 /**
@@ -20,6 +22,12 @@ export const CORE_PARAMETERS: readonly CoreParameterSpec[] = [
   { id: 'demand.levelThresholds', type: 'table', governance: 'G2', usedBy: 'catalog/structures' },
   { id: 'demand.intensityMultipliers', type: 'number-record', governance: 'G2', usedBy: 'catalog/structures' },
   { id: 'demand.eccentricLevelBump', type: 'number', governance: 'G2', usedBy: 'catalog/structures' },
+  { id: 'coverage.cc1.minCandidates', type: 'number', governance: 'G5', usedBy: 'catalog/coverage', optional: true },
+  { id: 'coverage.cc2.patternClasses', type: 'table', governance: 'G5', usedBy: 'catalog/coverage', optional: true },
+  { id: 'coverage.cc5.unilateralPatterns', type: 'string[]', governance: 'G5', usedBy: 'catalog/coverage', optional: true },
+  { id: 'coverage.cc6.presetId', type: 'string', governance: 'G5', usedBy: 'catalog/coverage', optional: true },
+  { id: 'coverage.cc6.mainMuscles', type: 'string[]', governance: 'G5', usedBy: 'catalog/coverage', optional: true },
+  { id: 'coverage.cc11.requiredPresets', type: 'string[]', governance: 'G5', usedBy: 'catalog/coverage', optional: true },
 ];
 
 export interface PreflightIssue { readonly id: string; readonly problem: string }
@@ -29,7 +37,7 @@ export function preflightCoreParameters(ruleset: LoadedRuleset, specs: readonly 
   const out: PreflightIssue[] = [];
   for (const s of specs) {
     const p = ruleset.parameter(s.id);
-    if (!p) { out.push({ id: s.id, problem: 'absent' }); continue; }
+    if (!p) { if (!s.optional) out.push({ id: s.id, problem: 'absent' }); continue; }
     if (p.governance !== s.governance) out.push({ id: s.id, problem: `classe ${p.governance} au lieu de ${s.governance}` });
     try {
       switch (s.type) {

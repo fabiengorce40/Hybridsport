@@ -110,6 +110,8 @@ export const zArchetypeCoverageSpec = z.object({
   }).strict()).min(1),
   feasiblePresets: z.array(zId),
   declaredInfeasiblePresets: z.array(zId).default([]),
+  /** CC7 : restrictions pour lesquelles l'archétype est explicitement déclaré infaisable. */
+  declaredInfeasibleRestrictions: z.array(zId).default([]),
 }).strict();
 export type ArchetypeCoverageSpec = z.infer<typeof zArchetypeCoverageSpec>;
 
