@@ -19,6 +19,7 @@ export interface CoreParameterSpec {
 export const CORE_PARAMETERS: readonly CoreParameterSpec[] = [
   { id: 'core.repair.maxAttemptsPerSession', type: 'number', governance: 'G4', usedBy: 'repair' },
   { id: 'core.optimization.epsilon', type: 'number-record', governance: 'G2', usedBy: 'decision/optimization' },
+  { id: 'core.stability.hysteresis', type: 'number-record', governance: 'G2', usedBy: 'decision/hysteresis' },
   { id: 'demand.derivationTable', type: 'table', governance: 'G2', usedBy: 'catalog/structures' },
   { id: 'demand.levelThresholds', type: 'table', governance: 'G2', usedBy: 'catalog/structures' },
   { id: 'demand.intensityMultipliers', type: 'number-record', governance: 'G2', usedBy: 'catalog/structures' },

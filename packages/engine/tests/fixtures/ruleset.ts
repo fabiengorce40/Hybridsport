@@ -31,6 +31,7 @@ export function coreTestParameters(): ParamInput[] {
   return [
     param('core.repair.maxAttemptsPerSession', 3, 'G4'),
     param('core.optimization.epsilon', { B1: 0.05, B2: 0.05, B3: 0.05, B4: 0.05, B5: 0.05, B6: 0 }, 'G2'),
+    param('core.stability.hysteresis', { B1: 0.1, B2: 0.1, B3: 0.15 }, 'G2'),
     param('demand.derivationTable', {
       roleFactors: { primary: 1, secondary: 0.5 },
       structures: {
