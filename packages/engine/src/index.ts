@@ -6,3 +6,4 @@ export * from './core/canonical.js';
 export * from './trace/index.js';
 export * from './rules/index.js';
 export * from './catalog/index.js';
+export * from './decision/index.js';

@@ -30,6 +30,7 @@ export function rule(id: string, extra: Partial<RuleInput> = {}): RuleInput {
 export function coreTestParameters(): ParamInput[] {
   return [
     param('core.repair.maxAttemptsPerSession', 3, 'G4'),
+    param('core.optimization.epsilon', { B1: 0.05, B2: 0.05, B3: 0.05, B4: 0.05, B5: 0.05, B6: 0 }, 'G2'),
     param('demand.derivationTable', {
       roleFactors: { primary: 1, secondary: 0.5 },
       structures: {
