@@ -5,3 +5,4 @@ export * from './core/rng.js';
 export * from './core/canonical.js';
 export * from './trace/index.js';
 export * from './rules/index.js';
+export * from './catalog/index.js';

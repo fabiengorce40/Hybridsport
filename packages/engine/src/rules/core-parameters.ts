@@ -16,6 +16,10 @@ export interface CoreParameterSpec {
  */
 export const CORE_PARAMETERS: readonly CoreParameterSpec[] = [
   { id: 'core.repair.maxAttemptsPerSession', type: 'number', governance: 'G4', usedBy: 'repair' },
+  { id: 'demand.derivationTable', type: 'table', governance: 'G2', usedBy: 'catalog/structures' },
+  { id: 'demand.levelThresholds', type: 'table', governance: 'G2', usedBy: 'catalog/structures' },
+  { id: 'demand.intensityMultipliers', type: 'number-record', governance: 'G2', usedBy: 'catalog/structures' },
+  { id: 'demand.eccentricLevelBump', type: 'number', governance: 'G2', usedBy: 'catalog/structures' },
 ];
 
 export interface PreflightIssue { readonly id: string; readonly problem: string }

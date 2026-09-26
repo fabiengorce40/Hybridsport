@@ -80,7 +80,7 @@ describe('paramètres du CORE', () => {
   });
   it('détecte un paramètre absent ou de mauvaise classe', () => {
     const rs = load(testRulesetDocument({ parameters: [param('core.repair.maxAttemptsPerSession', 3, 'G2')] }));
-    expect(preflightCoreParameters(rs)).toEqual([{ id: 'core.repair.maxAttemptsPerSession', problem: 'classe G2 au lieu de G4' }]);
+    expect(preflightCoreParameters(rs)).toContainEqual({ id: 'core.repair.maxAttemptsPerSession', problem: 'classe G2 au lieu de G4' });
     expect(preflightCoreParameters(load(testRulesetDocument({ parameters: [] })), CORE_PARAMETERS)[0]?.problem).toBe('absent');
   });
 });

@@ -43,4 +43,9 @@ export default tseslint.config(
       ],
     },
   },
+  {
+    // Les tests portent sur des fixtures connues : l'assertion non nulle y est acceptable.
+    files: ['packages/*/tests/**/*.ts'],
+    rules: { '@typescript-eslint/no-non-null-assertion': 'off' },
+  },
 );

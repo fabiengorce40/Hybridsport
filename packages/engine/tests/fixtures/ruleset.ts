@@ -30,6 +30,22 @@ export function rule(id: string, extra: Partial<RuleInput> = {}): RuleInput {
 export function coreTestParameters(): ParamInput[] {
   return [
     param('core.repair.maxAttemptsPerSession', 3, 'G4'),
+    param('demand.derivationTable', {
+      roleFactors: { primary: 1, secondary: 0.5 },
+      structures: {
+        lower_knee: { muscles: { quadriceps: 3 }, patterns: { squat: 3, lunge: 3, sled_push: 3 } },
+        lower_hip: { muscles: { hamstrings: 3, glutes: 2 }, patterns: { hinge: 3 } },
+        upper_push: { muscles: { chest: 3, triceps: 2, front_delts: 2 }, patterns: { push_horizontal: 3, push_vertical: 3 } },
+        upper_pull: { muscles: { lats: 3, upper_back_traps: 2, biceps: 1 }, patterns: { pull_vertical: 3, pull_horizontal: 3, skiing: 2, sled_pull: 3 } },
+        axial: { costs: { axialLoad: 1 } },
+        locomotor_impact: { costs: { impact: 1 } },
+        high_intensity_systemic: { costs: { cardiovascular: 1 } },
+        grip: { costs: { grip: 1 } },
+      },
+    }, 'G2'),
+    param('demand.levelThresholds', { default: { low: 1, moderate: 9, high: 18 } }, 'G2'),
+    param('demand.intensityMultipliers', { low: 0.5, moderate: 0.75, high: 1, default: 0.75 }, 'G2'),
+    param('demand.eccentricLevelBump', 1, 'G2'),
   ];
 }
 
