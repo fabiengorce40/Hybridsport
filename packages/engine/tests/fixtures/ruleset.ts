@@ -26,6 +26,34 @@ export function rule(id: string, extra: Partial<RuleInput> = {}): RuleInput {
   };
 }
 
+/** Fiches des contrôles intégrés du CORE (nature et gouvernance cohérentes). */
+export function coreTestRules(): RuleInput[] {
+  const g1 = { nature: 'SAFETY' as const, governance: 'G1' as const, category: 'safety' as const };
+  const feas = { nature: 'FEASIBILITY' as const, governance: 'G4' as const, category: 'equipment' as const };
+  return [
+    rule('core.safety.program_status', { ...g1, category: 'eligibility' }),
+    rule('core.safety.restriction', g1),
+    rule('core.safety.pain_area', g1),
+    rule('core.safety.pain_movement', g1),
+    rule('core.feasibility.equipment', feas),
+    rule('core.feasibility.exercise_status', feas),
+    rule('core.feasibility.day', { ...feas, category: 'scheduling' }),
+    rule('core.feasibility.duration', { ...feas, category: 'duration' }),
+    rule('core.feasibility.user_exclusion', { nature: 'PREFERENCE', governance: 'G3', category: 'equipment' }),
+    rule('core.recovery.min_gap', { nature: 'PROGRAMMING_HEURISTIC', governance: 'G2', category: 'recovery' }),
+    rule('core.integrity.structure', { category: 'structure' }),
+  ];
+}
+
+/** Politique de test de la récupération minimale : HARD par défaut, SOFT pour un avancé aux données suffisantes. */
+export function coreTestPolicies(): RulesetDocumentInput['policies'] {
+  return [{
+    ruleId: 'core.recovery.min_gap', allowInactive: false, thresholdUnit: 'h', thresholdSafeDirection: 'increase',
+    default: { level: 'hard' },
+    overrides: [{ when: { athleteLevel: ['advanced'], dataQuality: ['adequate'] }, set: { level: 'soft', penaltyWeight: 2 } }],
+  }];
+}
+
 /** Paramètres minimaux requis par le CORE (complétés lot par lot). */
 export function coreTestParameters(): ParamInput[] {
   return [
@@ -45,6 +73,7 @@ export function coreTestParameters(): ParamInput[] {
       mixed: { lowerPct: 0.1, upperPct: 0.05, marginS: 300 },
     }, 'G2'),
     param('duration.leverSteps', { reduceRestS: 15, shortenConditioningS: 60, reduceRunS: 120, reduceRunM: 400 }, 'G2'),
+    param('recovery.minGapMatrix', { high: { high: 48, moderate: 24 }, moderate: { high: 24 } }, 'G2', { unit: 'h' }),
     param('demand.derivationTable', {
       roleFactors: { primary: 1, secondary: 0.5 },
       structures: {
@@ -74,8 +103,8 @@ export function testRulesetDocument(overrides: Partial<RulesetDocumentInput> = {
       param('test.g1.minGapHours', 48, 'G1', { safeDirection: 'increase', approvedBaseline: 48, unit: 'h' }),
       param('test.g2.volumeCeiling', 20, 'G2', { approvedRange: { min: 10, max: 25 } }),
     ],
-    rules: [rule('core.test.rule')],
-    policies: [],
+    rules: [rule('core.test.rule'), ...coreTestRules()],
+    policies: coreTestPolicies(),
     history: [{ version: '0.1.0-test', date: '2026-09-26', change: 'Ruleset de test initial', author: 'phase3' }],
     ...overrides,
   };

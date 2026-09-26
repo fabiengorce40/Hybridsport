@@ -28,6 +28,7 @@ export const CORE_PARAMETERS: readonly CoreParameterSpec[] = [
   { id: 'duration.uncertaintyCorrelation', type: 'number', governance: 'G2', usedBy: 'duration/estimate' },
   { id: 'duration.toleranceProfiles', type: 'table', governance: 'G2', usedBy: 'duration/tolerance' },
   { id: 'duration.leverSteps', type: 'number-record', governance: 'G2', usedBy: 'duration/levers' },
+  { id: 'recovery.minGapMatrix', type: 'table', governance: 'G2', usedBy: 'validation/recovery' },
   { id: 'demand.derivationTable', type: 'table', governance: 'G2', usedBy: 'catalog/structures' },
   { id: 'demand.levelThresholds', type: 'table', governance: 'G2', usedBy: 'catalog/structures' },
   { id: 'demand.intensityMultipliers', type: 'number-record', governance: 'G2', usedBy: 'catalog/structures' },

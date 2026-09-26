@@ -93,7 +93,7 @@ describe('registre de règles', () => {
     expect(missing.ok).toBe(false);
     const mismatch = RuleRegistry.create([{ ...def, version: '2.0.0' }], load());
     expect(!mismatch.ok && mismatch.issues[0]?.reason.params.problem).toMatch(/version/);
-    const dep = RuleRegistry.create([def], load(testRulesetDocument({ rules: [rule('core.test.rule', { review: { status: 'deprecated', approvals: [] } })] })));
+    const dep = RuleRegistry.create([def], load(testRulesetDocument({ rules: [rule('core.test.rule', { review: { status: 'deprecated', approvals: [] } })], policies: [] })));
     expect(dep.ok).toBe(false);
   });
   it('fournit la référence de traçabilité id@version', () => {
