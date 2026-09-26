@@ -1,1 +1,6 @@
 exports/
+node_modules/
+coverage/
+*.tsbuildinfo
+.stryker-tmp/
+reports/
