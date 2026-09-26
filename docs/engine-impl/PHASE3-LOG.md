@@ -60,4 +60,4 @@ Configuration fonctionnelle existante réécrite : aucune (il n'y en avait pas).
 - Couverture de branches plus faible sur `duration/levers.ts` (53 %), `repair/repair.ts` (64 %) et `api/pipeline.ts` (64 %).
 - Templates localisés des reason codes et test « un template par code et par langue » (spec 10 §1) : hors CORE (couche de présentation).
 - Aucun ruleset de production : seules des valeurs de test provisoires existent, dans `packages/engine/tests/fixtures/ruleset.ts`, et le contenu G1 y est fictif.
-- Migrations de `schemaVocabulary` / `schemaVersion` : non implémentées (aucun plan sérialisé à migrer pour l'instant).
+- Migrations de `schemaVersion` : non implémentées (aucun plan sérialisé à migrer pour l'instant).
