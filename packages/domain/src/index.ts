@@ -9,3 +9,4 @@ export * from './ruleset.js';
 export * from './policy.js';
 export * from './ruleset-document.js';
 export * from './catalog.js';
+export * from './session.js';

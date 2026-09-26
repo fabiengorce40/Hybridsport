@@ -32,6 +32,19 @@ export function coreTestParameters(): ParamInput[] {
     param('core.repair.maxAttemptsPerSession', 3, 'G4'),
     param('core.optimization.epsilon', { B1: 0.05, B2: 0.05, B3: 0.05, B4: 0.05, B5: 0.05, B6: 0 }, 'G2'),
     param('core.stability.hysteresis', { B1: 0.1, B2: 0.1, B3: 0.15 }, 'G2'),
+    param('core.duration.maxLeverSteps', 200, 'G4'),
+    param('duration.defaultTiming', { restOverrunFactor: 1.1, restP90Factor: 1.25, transitionFactor: 1 }, 'G2'),
+    param('duration.transitionTable', { default: 60, 'station_fixed>station_fixed': 90, 'machine>machine': 45, 'portable>portable': 20 }, 'G2'),
+    param('duration.blockTransitionS', 60, 'G2', { unit: 's' }),
+    param('duration.briefingS', 15, 'G2', { unit: 's' }),
+    param('duration.uncertaintyCorrelation', 0.3, 'G2'),
+    param('duration.toleranceProfiles', {
+      strength_sets: { lowerPct: 0.1, upperPct: 0.05, marginS: 360 },
+      fixed_time: { lowerPct: 0.05, upperPct: 0.03, marginS: 150 },
+      for_time: { lowerPct: 0.15, upperPct: 0.05, marginS: 300 },
+      mixed: { lowerPct: 0.1, upperPct: 0.05, marginS: 300 },
+    }, 'G2'),
+    param('duration.leverSteps', { reduceRestS: 15, shortenConditioningS: 60, reduceRunS: 120, reduceRunM: 400 }, 'G2'),
     param('demand.derivationTable', {
       roleFactors: { primary: 1, secondary: 0.5 },
       structures: {
