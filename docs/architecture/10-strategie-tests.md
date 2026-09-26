@@ -23,14 +23,43 @@ Le moteur est le produit : c'est là que l'effort de test est le plus élevé. U
 
 ```ts
 simulate({
-  persona: 'hyrox_intermediate_3run_2strength',
-  weeks: 12,
+  persona: 'hybrid_race_intermediate_3run_2strength',
+  weeks: 12 | 26 | 52,
   behavior: { missRate: 0.2, performanceBias: +0.05, fatigueEvents: [{ week: 5, level: 3 }], availabilityChange: { week: 7 } },
   seed: 'fixed',
 }) → { weeklyPlans, revisions, validationReports, metrics }
 ```
 
-Assertions à chaque semaine simulée : plan valide, budgets respectés, progression cohérente, pas de doublon interdit, séances clés protégées, durées dans la tolérance.
+Assertions à chaque semaine simulée : plan valide, bornes de chaque dimension de charge respectées, progression cohérente, pas de doublon interdit, séances clés protégées, séance réalisable dans le temps disponible.
+
+### 3.1 Horizons longitudinaux (décision validée 2026-09-26)
+
+Certaines dérives n'apparaissent qu'après plusieurs mois. Trois horizons sont simulés :
+
+| Horizon | Objectif | Exécution |
+|---------|----------|-----------|
+| **12 semaines** | Un cycle complet, préparation d'un événement | CI à chaque commit (personas principaux) |
+| **26 semaines** | Enchaînement de plusieurs cycles, changement d'objectif, transition après un événement | CI (échantillon) + nightly (corpus complet) |
+| **52 semaines** | Une année d'utilisation : saisons, interruptions longues, reprises, plusieurs événements | Nightly + obligatoire avant toute release moteur / ruleset |
+
+Comportements simulés sur les longs horizons : vacances (1–3 semaines d'arrêt), blessure déclarée puis levée, changements de disponibilités, ajout/retrait de discipline, nouvel objectif après un événement, plateau de performance, progression plus rapide que prévu, mise à jour du moteur en cours d'année.
+
+**Détecteurs de dérive** (métriques suivies semaine par semaine, avec bornes) :
+
+| Dérive | Exemple de symptôme |
+|--------|---------------------|
+| Inflation de charge | Volume musculaire ou contribution de course qui monte sans plafond sur 52 semaines |
+| Inflation des capacités | e1RM ou allures qui progressent plus vite que des bornes réalistes (erreur d'estimation qui s'auto-alimente) |
+| Déflation / spirale basse | Prescriptions qui baissent continuellement après quelques mauvaises séances |
+| Effondrement de la variété | Toujours les mêmes exercices / structures quand le catalogue ou le matériel est restreint |
+| Excès de variété | Aucun exercice ancre suivi assez longtemps pour mesurer une progression |
+| Disparition des décharges | Décharges repoussées indéfiniment par les adaptations successives |
+| Dérive de l'intensité | Répartition des zones qui s'éloigne progressivement de la cible |
+| Dérive de durée | Estimations qui divergent de la réalité avec la calibration personnelle |
+| Accumulation de révisions | Plan qui change trop souvent (instabilité perçue) |
+| Dérive des tests périodiques | Tests qui ne sont plus planifiés après plusieurs replanifications |
+
+Chaque dérive détectée devient un test de régression longitudinal.
 
 **Personas initiaux** (à compléter avec les experts) :
 1. Débutant complet, muscu 3×/sem, poids du corps + haltères à la maison.

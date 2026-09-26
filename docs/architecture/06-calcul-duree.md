@@ -39,18 +39,32 @@ interface DurationEstimate {
 
 Les composants incertains (For Time, récupérations « libres ») ont une variance ; l'incertitude est propagée par blocs (somme des moyennes, variance combinée).
 
-## 4. Tolérance mesurable (proposition à valider)
+## 4. Tolérances : hypothèse de départ, pas encore une règle
 
-Pour une durée cible `T` :
+> **Décision validée (2026-09-26)** : « ±10 % avec un minimum de ±5 min » est une **première hypothèse de travail**, pas une règle définitive. Le futur **DurationEngine** définira des tolérances **par type de séance**. Sa garantie prioritaire est que **la séance reste réalisable dans le temps réellement disponible**.
 
-| Critère | Valeur par défaut |
-|---------|-------------------|
-| Écart de la médiane estimée | `|p50 − T| ≤ max(5 min, 10 % de T)` |
-| Dépassement pessimiste | `p90 ≤ T + max(8 min, 15 % de T)` |
-| Plafond de la disponibilité du jour | `p90 ≤ maxMinutes du jour` (**contrainte dure**) |
-| Précision réelle (mesurée en production) | ≥ 80 % des séances terminées ont une durée réelle dans `T ± 15 %` |
+### 4.1 Garantie non négociable (contrainte dure)
 
-Ex. `T = 60 min` ⇒ p50 ∈ [54, 66], p90 ≤ 69 min, jamais au-delà de la disponibilité déclarée.
+`p90 ≤ temps réellement disponible ce jour-là` (disponibilité déclarée, ou temps restant indiqué via « je n'ai que X minutes »).
+Une séance qui ne tient pas dans ce temps est ajustée (§5) ou remplacée, jamais publiée telle quelle.
+
+### 4.2 Tolérance autour de la cible : profils par type de séance (à calibrer)
+
+Chaque archétype référence un **profil de tolérance** (paramètre du ruleset, `confidence: 'provisional'` jusqu'à calibration) :
+
+| Profil (exemples) | Nature de l'incertitude | Piste de tolérance (hypothèse) |
+|-------------------|-------------------------|--------------------------------|
+| `fixed_time` (EMOM, AMRAP, intervalles au temps, course au temps) | Très faible | Étroite (quelques minutes) |
+| `strength_sets` (séries + récupérations) | Récupérations réelles, transitions, affluence | Moyenne |
+| `for_time` (WOD au temps, simulation HYROX) | Élevée (dépend de la performance) | Asymétrique : borne haute = time cap |
+| `distance_based` (course à la distance) | Dépend de l'allure réelle | Liée à l'incertitude sur l'allure |
+| `mixed` | Somme des composants | Calculée par propagation |
+
+Hypothèse initiale commune : `|p50 − T| ≤ max(5 min, 10 % de T)` et `p90 ≤ T + max(8 min, 15 % de T)`, **toujours** plafonnée par §4.1.
+
+### 4.3 Mesure en production
+
+Objectif de précision à fixer après bêta (point de départ : ≥ 80 % des séances terminées dans `T ± 15 %`), suivi **par archétype**. Les tolérances définitives seront déduites de ces mesures et consignées comme règles versionnées (doc 04 §4.2).
 
 ## 5. Ajustement automatique à la durée cible
 
@@ -66,7 +80,7 @@ Si la séance construite ne respecte pas la tolérance, un **ajusteur détermini
 
 Jamais : supprimer l'échauffement ou le descendre sous son minimum.
 
-**Trop court** : ajouter dans l'ordre inverse (séries d'accessoires, bloc accessoire pertinent pour les objectifs, finisher), sans dépasser les budgets de volume/fatigue hebdomadaires. S'il n'y a rien de pertinent à ajouter, une séance plus courte est acceptée et affichée avec sa durée réelle (on ne remplit pas pour remplir).
+**Trop court** : ajouter dans l'ordre inverse (séries d'accessoires, bloc accessoire pertinent pour les objectifs, finisher), sans dépasser les bornes hebdomadaires des dimensions de charge (doc 04 §3.2). S'il n'y a rien de pertinent à ajouter, une séance plus courte est acceptée et affichée avec sa durée réelle (on ne remplit pas pour remplir).
 
 ## 6. Calibration personnelle
 

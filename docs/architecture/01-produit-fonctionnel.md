@@ -49,12 +49,12 @@ Découpage en **contextes délimités** (bounded contexts). Chaque contexte a un
 |---|----------|-----------------|-----------------|
 | 1 | Identité & compte | Inscription, connexion (Apple, Google, e-mail), session, suppression de compte, export RGPD, consentements | `User`, `Consent` |
 | 2 | Profil athlète | Disciplines, objectifs, niveau, disponibilités, matériel, limitations, performances de référence, date d'événement | `AthleteProfile`, `Goal`, `Availability`, `EquipmentProfile`, `ReferencePerformance` |
-| 3 | Catalogue d'exercices | Exercices, patterns moteurs, muscles, matériel, équivalences, progressions/régressions, médias, formats de WOD de référence | `Exercise`, `MovementPattern`, `EquivalenceGroup`, `BenchmarkWorkout` |
+| 3 | Catalogue d'exercices | Exercices, patterns moteurs, muscles, matériel, équivalences, progressions/régressions, formats de WOD de référence ; **contenu pédagogique (vidéos, instructions) séparé et optionnel** | `Exercise`, `MovementPattern`, `EquivalenceGroup`, `BenchmarkWorkout` |
 | 4 | **Moteur** | Toute décision sportive. Ne stocke rien, ne lit rien : reçoit un *snapshot*, renvoie un *résultat* + *trace* | Aucune donnée persistante — uniquement de la logique |
 | 5 | Gestion du plan | Persister le programme, appliquer les révisions, conserver l'historique, verrouiller le passé | `Program`, `PlanRevision`, `PlannedSession`… |
 | 6 | Exécution & journal | Lecteur de séance, saisie séries/intervalles, chrono, fin de séance, ressenti | `SessionLog`, `SetLog`, `IntervalLog` |
 | 7 | Progrès | Records, e1RM, allures, benchmarks, volumes, tendances — **calculs délégués au moteur** (fonctions pures) | Vues dérivées (pas de source de vérité propre) |
-| 8 | Abonnements | Droits d'accès (entitlements), essai, restauration, webhooks stores | `Entitlement`, `SubscriptionEvent` |
+| 8 | Abonnements | Droits d'accès (entitlements) gratuit/premium, mensuel/annuel, essai, restauration, webhooks stores — **aucun couplage avec le moteur** | `Entitlement`, `SubscriptionEvent` |
 | 9 | Notifications | Rappels de séance, rappel test périodique, relance après séance manquée | Préférences de notification |
 | 10 | Analytics & crash | Événements produit (anonymisés), crash reporting, performance | — (tiers) |
 | 11 | Admin / back-office | Édition du catalogue, versioning du catalogue et des paramètres du moteur, support utilisateur | Versions de catalogue / ruleset |
@@ -96,10 +96,11 @@ Le lecteur de séance est un écran plein écran modal (hors tab bar).
 | **Programme** | Semaine en cours et à venir | Vue semaine (liste verticale des jours), phase du cycle (« Semaine 3/6 — Développement »), séances passées (réalisée/manquée), glisser-déposer contrôlé par le moteur |
 | **Aperçu de séance** | Avant de démarrer | Blocs, durée par bloc, matériel nécessaire, objectifs, alternatives |
 | **Lecteur de séance** | Exécution | Bloc courant, exercice courant, cible (ex. `5 × 5 @ 80 kg · RIR 2`), cases à cocher par série, saisie rapide (kg/reps/RPE préremplis avec la cible), chrono de récupération automatique, minuteur intervalles/EMOM/AMRAP, « suivant », remplacer un exercice, verrouillage écran optionnel, fonctionnement 100 % hors-ligne |
+| **Séance de course (V1)** | Exécution d'une séance de course **sans GPS natif** (décision validée) | Blocs et intervalles guidés au chrono, allure cible et effort perçu, saisie distance/temps par segment ou en fin de séance ; import santé ultérieur. Le GPS natif pourra s'ajouter plus tard sans changer le domaine Running |
 | **Résumé de séance** | Après | Durée réelle, RPE de séance, ressenti, records, commentaire ; déclenche l'analyse de progression |
 | **Progrès** | Motivation + preuves | Performances de référence et leur évolution, e1RM principaux, allures course, benchmarks, régularité ; pas de dashboard surchargé |
 | **Test périodique** | Tests planifiés | Protocole guidé, saisie résultat, impact expliqué (« tes allures seuil passent de 4:45 à 4:38/km ») |
-| **Fiche exercice** | Référence | Vidéo/illustration, consignes clés (3 max), erreurs fréquentes, alternatives, historique perso |
+| **Fiche exercice** | Référence | Vidéo/miniature si disponibles, instructions, erreurs fréquentes, conseils techniques, alternatives, historique perso. **Fonctionne sans vidéo** (le contenu est optionnel et découplé du catalogue) |
 | **Profil & réglages** | Paramètres | Disciplines, objectifs, disponibilités, matériel, limitations, unités, notifications, abonnement (gérer / restaurer), confidentialité, export des données, **suppression du compte** |
 
 ### 4.3 Flux d'adaptation (feuilles modales)

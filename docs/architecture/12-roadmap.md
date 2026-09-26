@@ -5,8 +5,8 @@ Principe : **le moteur d'abord, validé hors UI, puis le produit autour.** Chaqu
 ## Phase 0 — Cadrage (maintenant)
 
 - Valider ce dossier, répondre aux questions ouvertes (README).
-- Figer : taxonomie (patterns, muscles, matériel), liste des archétypes v1 par discipline, personas de test.
-- Identifier les experts sportifs relecteurs.
+- Figer : dimensions de charge et leurs unités, taxonomie (patterns, muscles, matériel), liste des archétypes v1 par discipline, personas de test.
+- Identifier les experts sportifs relecteurs ; mettre en place le format des fiches de règles (doc 04 §4.2).
 - **Sortie** : décisions consignées dans le journal.
 
 ## Phase 1 — Fondations techniques du moteur
@@ -39,7 +39,7 @@ Moteur indépendant (allures, zones, volume, séances types, tests, affûtage).
 
 ## Phase 5 — Orchestrateur multi-disciplines (2 disciplines)
 
-Musculation + course : arbitrage, budgets, interférences, ledger de fatigue.
+Musculation + course : arbitrage, enveloppes par dimension de charge, interférences, registre de charge, contributions de course.
 - **Sortie** : scénarios « concurrent training » validés sur 12 semaines simulées.
 
 ## Phase 6 — Modules Cross-Training puis HYROX
@@ -50,12 +50,14 @@ HYROX en dernier car il compose course + stations + éléments de cross-training
 ## Phase 7 — Adaptation & progression complètes
 
 Événements, niveaux L0–L3, analyse d'impact, révisions, tests périodiques.
-- **Sortie** : simulateur avec comportements réalistes vert sur tous les personas.
+- Simulations longitudinales 26 et 52 semaines et détecteurs de dérive.
+- **Sortie** : simulateur avec comportements réalistes vert sur tous les personas, sur 12, 26 et 52 semaines, sans dérive détectée.
 
 ## Phase 8 — Design system & shell applicatif
 
 (Peut démarrer en parallèle dès la phase 3 si une personne dédiée à l'UI est disponible.)
 - Tokens, composants, Storybook, navigation, écrans statiques sur données fictives réalistes produites par le moteur.
+- Fiche exercice fonctionnelle **sans** vidéo (état « contenu à venir »).
 
 ## Phase 9 — Backend, auth, persistance, sync
 
@@ -68,7 +70,7 @@ Onboarding → génération → Aujourd'hui → aperçu → **lecteur de séance
 
 ## Phase 11 — Production readiness
 
-RevenueCat + paywall, Sentry, PostHog, notifications, RGPD (consentements, export, suppression), pages légales, conformité stores, accessibilité.
+EntitlementService + adaptateur RevenueCat + paywall (paliers définis à ce moment), Sentry, PostHog, notifications, RGPD (consentements, export, suppression), pages légales, conformité stores, accessibilité.
 
 ## Phase 12 — Bêta fermée
 

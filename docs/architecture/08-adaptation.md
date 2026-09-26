@@ -43,7 +43,7 @@ Le moteur choisit le **plus petit niveau** capable de restaurer un plan valide.
 
 Pour un événement, le moteur calcule :
 - Séances **dépendantes** : ex. la séance de seuil de jeudi supposait le repos de mercredi ; la séance de tests suppose une semaine allégée.
-- Contraintes qui deviennent violées (écart de récupération, budget de course, fatigue locale).
+- Contraintes qui deviennent violées (écart de récupération, contribution de course, stress local, autres bornes de dimensions).
 - Séances **clés** menacées (protégées en priorité).
 - Effet sur la progression (ex. manquer 2 séances ancres ⇒ pas de progression de charge la semaine suivante).
 
@@ -61,7 +61,7 @@ Pour un événement, le moteur calcule :
 | Meilleur que prévu | Mise à jour des capacités (doc 07) au prochain point de recalcul — jamais d'augmentation brutale en milieu de semaine |
 | Moins bon que prévu | Voir doc 07 §8 |
 | Disponibilités modifiées | Réordonnancement dès la semaine suivante (la semaine en cours est conservée si possible) |
-| Ajout / retrait de discipline | Nouvel arbitrage des budgets ; transition progressive (pas d'ajout de 3 séances de course du jour au lendemain pour un non-coureur) |
+| Ajout / retrait de discipline | Nouvel arbitrage des enveloppes par dimension ; transition progressive (pas d'ajout de 3 séances de course du jour au lendemain pour un non-coureur) |
 | Changement d'objectif | L3 : nouvelle macro-planification ; les capacités et l'historique sont conservés |
 | Mise à jour du moteur | Les séances futures non commencées peuvent être régénérées **aux frontières de semaine** uniquement, avec notification si changement visible |
 
@@ -72,7 +72,7 @@ Chaque stratégie candidate produit un plan simulé, validé en entier (doc 09).
 ```
 coût = w1·distance_au_plan_actuel     (nb de séances modifiées, déplacements)
      + w2·perte_séances_clés
-     + w3·écart_aux_budgets
+     + w3·écart_aux_bornes_des_dimensions
      + w4·pénalités_souples
 ```
 

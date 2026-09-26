@@ -1,6 +1,6 @@
 # Hybridsport — Dossier d'architecture (Phase 1)
 
-> Statut : **PROPOSITION — à valider**. Aucune ligne de code applicatif n'est écrite à ce stade.
+> Statut : **VALIDÉ comme fondation (2026-09-26)**, avec les ajustements listés ci-dessous. Aucune ligne de code applicatif n'est écrite à ce stade.
 > Une fois une section validée, elle devient un **acquis** : toute modification ultérieure devra être justifiée (voir « Journal des décisions »).
 
 ## Sommaire
@@ -35,29 +35,42 @@
 | D6 | **Génération autoritaire côté serveur, micro-adaptations côté appareil**, avec le **même** package moteur versionné | Contrôle des versions du moteur, correction sans release store, mais « j'ai 20 min de moins » fonctionne hors-ligne | Tout sur l'appareil (dérive de versions) ; tout serveur (pas d'offline) |
 | D7 | **Règles sportives en code typé + paramètres en données versionnées** | Logique testée unitairement ; seuils ajustables sans réécrire le code | DSL/JSON de règles « générique » : fragile, peu testable, faux sentiment de flexibilité |
 | D8 | **Pipeline explicite** : Données → Évaluation → Arbitrage → Macro → Semaine → Séance → Dosage → Durée → Validation → Trace | Chaque étape testable et explicable ; une erreur est localisable | Génération monolithique « de bout en bout » |
-| D9 | **Modules discipline indépendants + orchestrateur** parlant un langage commun : *demande de séance*, *empreinte de fatigue*, *budget de charge* | Chaque discipline garde son expertise ; la coordination est centralisée et testable | Un moteur unique « générique » (perd la spécificité course/HYROX) |
+| D9 | **Modules discipline indépendants + orchestrateur** parlant un langage commun : *demande de séance* et *profil de charge multidimensionnel* (pas de budget numérique unique) | Chaque discipline garde son expertise ; la coordination est centralisée et testable | Un moteur unique « générique » (perd la spécificité course/HYROX) ; un score de charge unique comme vérité physiologique |
 | D10 | **IA générative hors du chemin critique en v1** ; si utilisée plus tard, toujours derrière le validateur déterministe | Cohérence, reproductibilité, coûts, responsabilité | Génération de programmes par LLM (non déterministe, non vérifiable) |
 | D11 | **Historique immuable + révisions de plan** (chaque adaptation = une révision avec diff et raison) | Traçabilité, annulation, analyse des conséquences, debug | Écraser le plan en place |
-| D12 | **RevenueCat** (abonnements), **Sentry** (crash), **PostHog UE** (analytics produit / feature flags) | Standards du marché, conformité stores, restauration d'achats gérée | StoreKit/Play Billing en direct (beaucoup de cas limites), Firebase Analytics (hors UE) |
+| D12 | **RevenueCat derrière un `EntitlementService`** (abonnements), **Sentry** (crash), **PostHog UE** (analytics produit / feature flags) | Standards du marché ; le moteur ne connaît ni RevenueCat ni les paliers | StoreKit/Play Billing en direct (beaucoup de cas limites), Firebase Analytics (hors UE) |
 
 ---
 
-## Informations manquantes — à trancher avant la phase moteur
+## Contraintes validées pour le cadrage détaillé du moteur (2026-09-26)
 
-Je ne prends pas ces décisions à ta place. Elles influencent l'architecture ou le périmètre :
+| # | Décision | Où c'est appliqué |
+|---|----------|-------------------|
+| C1 | **Pas de tracking GPS natif en V1** : prescription, exécution, saisie, historique, import santé ultérieur. Entité `RunActivity` multi-sources pour ajouter le GPS plus tard sans refonte du domaine Running | [02 §4](02-modele-donnees.md), [03 §14](03-architecture-technique.md), [04 §3.5](04-moteur-entrainement.md), [01](01-produit-fonctionnel.md) |
+| C2 | **Modèle économique découplé** : gratuit / premium, mensuel / annuel, essais, restauration, entitlements. Paliers définis plus tard. Moteur non couplé à RevenueCat | [03 §9](03-architecture-technique.md), [02 §6](02-modele-donnees.md) |
+| C3 | **Règles auditables** : identifiant, description, catégorie, justification, références, niveau de confiance, version, date de modification, statut de relecture. Relecture par des professionnels qualifiés avant commercialisation | [04 §4.2](04-moteur-entrainement.md) |
+| C4 | **Contenu pédagogique optionnel** (vidéo, miniature, instructions, erreurs fréquentes, conseils) dans une entité séparée ; le catalogue ne dépend pas de sa disponibilité | [02 §1](02-modele-donnees.md), [03 §14](03-architecture-technique.md) |
+| C5 | **Quatre disciplines en V1**. Identifiant interne neutre `hybrid_race` pour HYROX / entraînement fonctionnel spécifique ; libellé affiché configurable après vérification de marque | [02](02-modele-donnees.md), [04 §3.5](04-moteur-entrainement.md) |
+| C6 | **Charge multidimensionnelle** : stress musculaire local, patterns, volume, intensité, impact / locomoteur, cardiovasculaire, exposition récente, récupération disponible. Un score synthétique éventuel reste une heuristique interne | [04 §3.2–3.3](04-moteur-entrainement.md), [02 §5](02-modele-donnees.md) |
+| C7 | **Kilomètres hybrides** enregistrés avec leur contexte (frais, compromis, intervalles, intensité, durée, récupération, séance d'origine) ; contribution au volume et à la charge **calculée par le moteur Running**, pas d'équivalence 1 km = 1 km | [04 §3.4 bis](04-moteur-entrainement.md), [02 §4](02-modele-donnees.md) |
+| C8 | **Durée** : ±10 % (min ±5 min) = hypothèse de départ seulement ; tolérances par type de séance à définir par le DurationEngine ; garantie dure : séance réalisable dans le temps réellement disponible | [06 §4](06-calcul-duree.md) |
+| C9 | **Tests longitudinaux** 12, 26 et 52 semaines + détecteurs de dérive | [10 §3.1](10-strategie-tests.md), [09 §5](09-validation.md) |
+| C10 | **Moteur** indépendant de l'UI et de la base, déterministe, testable isolément, versionné, explicable, sans dépendance obligatoire à un LLM | [04 §1](04-moteur-entrainement.md) |
 
-1. **Marché & langues** : lancement France uniquement ? i18n prévue dès v1 (FR/EN) ? *(Je recommande i18n dans le code dès le début, contenu FR d'abord.)*
-2. **Modèle économique** : abonnement pur avec essai gratuit, ou freemium ? Prix mensuel/annuel ? Position du paywall (avant/après aperçu du programme) ?
-3. **Suivi GPS de la course** : l'app enregistre-t-elle les sorties (GPS, montre) ou prescrit-elle uniquement + saisie manuelle / import Apple Santé / Health Connect / Strava / Garmin ? *(Impact très fort sur le périmètre. Je recommande : prescription + saisie + import santé en v1, pas de GPS maison.)*
-4. **Validation sportive humaine** : as-tu accès à des coachs diplômés (course, force, cross-training, HYROX) pour relire les programmes générés ? *(C'est le risque n°1 du projet, voir doc 11.)*
-5. **Contenu exercices** : qui produit les vidéos / illustrations des exercices (≈ 250–400 exercices) ? Budget ?
-6. **Périmètre de lancement** : les 4 disciplines au lancement public, ou beta avec les 4 puis ouverture progressive ? *(Voir recommandation doc 12.)*
-7. **Public** : âge minimum (je recommande 16+ ou 18+), niveau (débutant complet inclus ?), populations spécifiques exclues en v1 (grossesse, pathologies) ?
-8. **Blessures / limitations** : jusqu'où aller ? *(Je recommande des « limitations déclarées » simples — ex. « éviter l'impact », « pas de charge au-dessus de la tête » — et **aucun diagnostic**, pour rester hors du champ « dispositif médical » et limiter les données de santé.)*
-9. **Équipe & calendrier** : qui développe (toi seul + moi ?), date cible de beta / lancement ?
-10. **Marques** : usage des noms « HYROX » et « CrossFit » (marques déposées) — voir doc 11.
+## Questions ouvertes restantes
 
----
+1. **Marché & langues** : lancement France uniquement ? *(Recommandation : i18n dans le code dès le début, contenu FR d'abord.)*
+2. **Paliers gratuit / premium, prix, position du paywall** — reporté (architecture prête, C2).
+3. **Experts sportifs relecteurs** (course, force, cross-training, HYROX) — nécessaires pour faire passer les règles au statut `expert_approved` (C3).
+4. **Production des vidéos** — reportée (architecture prête, C4).
+5. **Public** : âge minimum, débutants complets inclus, populations exclues en V1.
+6. **Limitations** : périmètre des « limitations déclarées » (recommandation : pas de diagnostic).
+7. **Équipe & calendrier**.
+8. **Marques** : vérification juridique « HYROX » / « CrossFit » avant commercialisation (C5).
+
+## Tranchées
+
+- ~~Suivi GPS~~ → C1. ~~Périmètre de lancement~~ → C5 (4 disciplines).
 
 ## Journal des décisions
 
@@ -65,4 +78,5 @@ Toute décision validée sera consignée ici (puis en ADR détaillé dans `docs/
 
 | Date | Décision | Statut |
 |------|----------|--------|
-| 2026-09-26 | Dossier d'architecture Phase 1 proposé | En revue |
+| 2026-09-26 | Dossier d'architecture Phase 1 proposé | Validé comme fondation |
+| 2026-09-26 | Contraintes C1 à C10 appliquées (GPS, économie, audit des règles, contenus, disciplines, charge multidimensionnelle, km hybrides, durée, tests longitudinaux, principes moteur) | Validé |

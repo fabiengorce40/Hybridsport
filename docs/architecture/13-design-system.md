@@ -20,7 +20,7 @@ color/
   border.subtle · border.strong
   accent.default · accent.pressed · accent.subtle       ← une seule teinte d'accent
   state.success · state.warning · state.danger · state.info
-  discipline.strength · discipline.running · discipline.crosstraining · discipline.hyrox  ← marqueurs uniquement, désaturés
+  discipline.strength · discipline.running · discipline.crosstraining · discipline.hybrid_race  ← marqueurs uniquement, désaturés
   intensity.z1 … intensity.z5                            ← échelle séquentielle unique (zones / RPE)
 
 typography/   (une famille sans-serif moderne à chiffres tabulaires ; éventuellement une variante condensée pour les grands chiffres)

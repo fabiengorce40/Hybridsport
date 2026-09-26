@@ -135,6 +135,23 @@ Pourquoi : on obtient une base relationnelle solide et conforme RGPD tout de sui
 
 **Décision : RevenueCat.** L'API reçoit les webhooks et maintient `Entitlement` ; l'app lit le droit via le SDK (source rapide) et le serveur (source autoritaire pour les appels API premium).
 
+**Découplage (décision validée 2026-09-26)** : le modèle économique n'influence pas la logique sportive.
+
+```
+Moteur (packages/engine)        ← ignore totalement gratuit / premium / RevenueCat
+        ▲
+Couche applicative (app / API)  ← FeatureGate : « cette fonctionnalité est-elle accessible ? »
+        ▲
+EntitlementService (interface)  ← getEntitlements(userId) : Entitlement[]
+        ▲
+Adaptateur RevenueCat           ← seul module qui connaît le SDK / les webhooks RevenueCat
+```
+
+- Supporte dès l'architecture : utilisateur gratuit, premium, mensuel/annuel, essai, période de grâce, restauration des achats, droits multiples (`key` extensible).
+- La répartition gratuit/premium est une **configuration** (`FeatureGate`, pilotable par feature flag), définie plus tard ; aucune condition `isPremium` dans le moteur ni dans les règles sportives.
+- Le moteur produit toujours le même programme pour les mêmes entrées ; une restriction premium agit en amont (ex. fonctionnalité non proposée) ou en aval (ex. affichage limité), jamais en modifiant les règles.
+- Remplacer RevenueCat = remplacer un adaptateur.
+
 ## 10. Observabilité
 
 - **Sentry** (app + API) : crashs, erreurs, performance, source maps, releases liées aux versions EAS.
@@ -167,3 +184,13 @@ Pourquoi : on obtient une base relationnelle solide et conforme RGPD tout de sui
 
 - Génération d'une semaine sur appareil : cible < 300 ms sur un Android milieu de gamme ; génération d'un cycle complet côté serveur : < 2 s.
 - Lecteur de séance : 60 fps, minuteurs basés sur timestamps (pas sur des `setInterval` cumulés) pour rester justes en arrière-plan, notifications locales pour la fin de récupération.
+
+## 14. Évolutivité prévue (sans implémentation V1)
+
+| Capacité future | Ce qui est prévu dès maintenant | Ce qui sera ajouté plus tard |
+|-----------------|--------------------------------|------------------------------|
+| **Tracking GPS natif** (pas en V1 — décision validée) | Entité `RunActivity` normalisée multi-sources, champ `samplesRef` réservé, moteur Running qui ne consomme que des `RunActivity` | Module de capture (localisation en arrière-plan, permissions, économie batterie), stockage des séries temporelles, adaptateur `native_gps` |
+| **Import santé** (Apple Santé, Health Connect, puis Strava/Garmin) | Même entité `RunActivity` (`source: 'health_import'`), dé-duplication par `sourceRef.externalId` | Adaptateurs d'import, consentements dédiés, déclarations stores |
+| **Vidéos d'exercices** | Entité `ExerciseContent` / `ExerciseMedia` séparée du catalogue sportif, stockage objet + CDN par `storageKey`, état « contenu manquant » dans l'UI | Production des vidéos, pipeline d'encodage (HLS), cache hors-ligne sélectif |
+| **Paliers gratuit / premium** | `EntitlementService`, `FeatureGate` configurables | Définition des paliers, paywalls, expérimentations |
+

@@ -12,7 +12,7 @@ Principes :
 ## 1. Catalogue (référentiel)
 
 ```ts
-type Discipline = 'strength' | 'crosstraining' | 'hyrox' | 'running';
+type Discipline = 'strength' | 'crosstraining' | 'hybrid_race' | 'running';
 
 interface MovementPattern {            // ~20 entrées
   id: string;                          // 'squat', 'hinge', 'lunge', 'push_h', 'push_v', 'pull_h', 'pull_v',
@@ -43,10 +43,32 @@ interface Exercise {
   progressionOf?: string;              // exercice plus facile
   regressionOf?: string;               // exercice plus difficile
   contraindicationTags: string[];      // 'no_overhead', 'no_impact', 'no_spinal_flexion_loaded'...
-  media: { videoUrl?: string; thumbnailUrl?: string };
-  cues: I18nText[];                    // 3 consignes max
+  // Aucun média ni texte pédagogique ici : voir ExerciseContent ci-dessous.
+  // Un exercice est complet et utilisable par le moteur SANS contenu associé.
   status: 'active' | 'deprecated';     // jamais supprimé (historique)
 }
+
+// Contenu pédagogique : entité SÉPARÉE, optionnelle, versionnée indépendamment du catalogue sportif.
+// Le moteur ne lit jamais cette entité ; le catalogue ne dépend pas de sa disponibilité.
+interface ExerciseContent {
+  exerciseId: string;
+  locale: string;                      // contenu par langue
+  instructions?: I18nText[];           // étapes d'exécution
+  commonMistakes?: I18nText[];         // erreurs fréquentes
+  techniqueTips?: I18nText[];          // conseils techniques
+  media: ExerciseMedia[];              // 0..n — vide autorisé
+  contentVersion: number;
+  status: 'missing' | 'draft' | 'published';
+}
+
+interface ExerciseMedia {
+  id: string; kind: 'video' | 'thumbnail' | 'image' | 'animation';
+  storageKey: string;                  // chemin dans le stockage objet / CDN, jamais une URL figée
+  durationS?: number; width?: number; height?: number;
+  angle?: 'front' | 'side' | 'back'; variant?: 'default' | 'loopable';
+  checksum: string; publishedAt: ISODate;
+}
+// UI : si aucun média, la fiche exercice affiche un état dédié (nom, patterns, consignes disponibles) — jamais d'écran cassé.
 
 interface Equipment { id: string; category: string; } // barbell, dumbbell, kettlebell, rower, skierg, sled, wall_ball, pullup_bar...
 
@@ -83,7 +105,7 @@ interface Goal {
   kind: 'event' | 'performance' | 'general';
   target?: { metric: 'time' | 'distance' | 'load' | 'reps'; value: number; exerciseId?: string; distanceM?: number };
   eventDate?: ISODate;                 // course / HYROX
-  hyroxDivision?: 'open' | 'pro' | 'doubles' | 'relay';
+  raceDivision?: 'open' | 'pro' | 'doubles' | 'relay';
   status: 'active' | 'achieved' | 'abandoned';
 }
 
@@ -99,7 +121,7 @@ interface EquipmentProfile { id: UUID; userId: UUID; name: string; equipment: { 
 
 interface ReferencePerformance {
   id: UUID; userId: UUID;
-  kind: 'run_time' | 'lift_rm' | 'benchmark' | 'hyrox_race' | 'hyrox_station' | 'erg_time';
+  kind: 'run_time' | 'lift_rm' | 'benchmark' | 'hybrid_race_result' | 'hybrid_race_station' | 'erg_time';
   exerciseId?: string; distanceM?: number; reps?: number; loadKg?: number; timeS?: number;
   source: 'declared' | 'test' | 'derived_from_log' | 'race' | 'imported';
   measuredAt: ISODate;
@@ -125,18 +147,18 @@ interface Phase { id: UUID; programId: UUID; index: number; kind: 'base' | 'buil
   startDate: ISODate; weeks: number; intents: Partial<Record<Discipline, string>>; }
 
 interface PlannedWeek { id: UUID; phaseId: UUID; index: number; startDate: ISODate;
-  loadBudget: LoadBudget;              // budget de charge par discipline et par système (voir doc 04)
+  loadEnvelope: WeeklyLoadEnvelope;    // bornes hebdo PAR dimension de charge (voir doc 04 §3.2) — pas de score unique
 }
 
 interface PlannedSession {
   id: UUID; weekId: UUID; userId: UUID;
   date: ISODate; slot: 'am' | 'pm' | 'any';
-  discipline: Discipline; archetype: string;     // ex. 'run_threshold_intervals', 'strength_lower_heavy', 'hyrox_compromised_run'
+  discipline: Discipline; archetype: string;     // ex. 'run_threshold_intervals', 'strength_lower_heavy', 'hybrid_race_compromised_run'
   priority: 'key' | 'standard' | 'optional';    // les séances clés sont protégées lors des adaptations
   intent: I18nText;                               // l'objectif en une phrase affiché à l'utilisateur
   targetDurationS: number;
   estimatedDuration: { p50: number; p10: number; p90: number };
-  fatigueFootprint: FatigueFootprint;
+  expectedLoad: LoadProfile;          // profil de charge multidimensionnel prévu (doc 04 §3.2)
   fingerprint: SessionFingerprint;                // anti-doublon (doc 05)
   blocks: Block[];
   state: 'planned' | 'in_progress' | 'completed' | 'partially_completed' | 'missed' | 'skipped' | 'superseded';
@@ -205,6 +227,34 @@ interface SetLog {
   completedAt: ISODate;
 }
 
+// Activité de course normalisée — point d'entrée UNIQUE du moteur Running pour les données réalisées,
+// quelle que soit la source. Ajouter le GPS natif plus tard = ajouter une source + des échantillons,
+// sans modifier le domaine Running.
+interface RunActivity {
+  id: UUID; userId: UUID; sessionLogId?: UUID;   // liée à une séance planifiée ou libre
+  source: 'guided_session' | 'manual' | 'health_import' | 'third_party_import' | 'native_gps';
+                                                // V1 : 'guided_session' | 'manual' ; les autres sont réservées
+  sourceRef?: { provider: 'apple_health' | 'health_connect' | 'strava' | 'garmin' | 'app_gps'; externalId: string };
+  startedAt: ISODate; durationS: number; movingTimeS?: number;
+  distanceM?: number; elevationGainM?: number;
+  laps: RunLap[];                                // segments / intervalles réalisés
+  avgHr?: number; maxHr?: number;
+  samplesRef?: string;                           // RÉSERVÉ : pointeur vers une série temporelle (GPS, FC) stockée à part
+  dataQuality: 'measured' | 'estimated' | 'declared';
+}
+interface RunLap { index: number; distanceM?: number; timeS: number; avgPaceSPerKm?: number; avgHr?: number; kind?: 'work' | 'recovery' | 'warmup' | 'cooldown'; }
+
+// Exposition de course typée (dont les km courus en HYROX / Cross-Training) — doc 04 §3.4 bis.
+// Dérivée des logs réalisés ; conserve le contexte, ne se résume jamais à un nombre de km.
+interface RunningExposure {
+  id: UUID; userId: UUID; sourceSessionLogId: UUID; sourceDiscipline: Discipline;
+  context: 'fresh' | 'compromised' | 'interval' | 'continuous' | 'wod_embedded';
+  distanceM: number; durationS: number; segmentCount: number; recoveryBetweenS?: number;
+  intensity: { zone?: string; rpe?: number; paceSPerKm?: number };
+  precededByExerciseIds?: string[];
+  computedContribution?: { volume: number; locomotor: number; specificity: number; rulesetVersion: string }; // calculée par le moteur, recalculable
+}
+
 interface IntervalLog { id: UUID; sessionLogId: UUID; index: number; distanceM?: number; timeS: number; avgPaceSPerKm?: number; avgHr?: number; completed: boolean; }
 
 interface WodResult { id: UUID; sessionLogId: UUID; blockId: UUID; scoreType: 'time' | 'rounds_reps' | 'load' | 'calories'; value: number; rx: boolean; scalingNotes?: string; }
@@ -216,15 +266,34 @@ Ces tables sont des **caches** ; elles peuvent toujours être recalculées à pa
 
 ```ts
 interface ProgressionTrack { id: UUID; userId: UUID; exerciseId: string; model: ProgressionModel; state: Record<string, number>; updatedAt: ISODate; }
-interface CapacityEstimate { userId: UUID; key: string /* 'e1rm:ex_back_squat', 'vdot', 'critical_speed', 'hyrox_station:sled_push' */; value: number; confidence: number; asOf: ISODate; }
-interface DailyLoad { userId: UUID; date: ISODate; byDiscipline: Record<Discipline, number>; bySystem: { aerobic: number; anaerobic: number; neural: number; impactKm: number }; byMuscle: Record<string, number>; }
+interface CapacityEstimate { userId: UUID; key: string /* 'e1rm:ex_back_squat', 'vdot', 'critical_speed', 'hybrid_race_station:sled_push' */; value: number; confidence: number; asOf: ISODate; }
+interface DailyLoad {                 // une entrée par jour, dimensions séparées (doc 04 §3.2) — aucun total unique faisant foi
+  userId: UUID; date: ISODate;
+  muscular: Record<string, number>;    // séries difficiles pondérées par groupe
+  patterns: Record<string, number>;
+  volume: Record<Discipline, Record<string, number>>;   // unités natives par discipline
+  intensity: Record<string, number>;   // temps / séries par zone
+  locomotor: { rawKm: number; contribution: number; jumps: number };
+  cardio: Record<string, number>;      // minutes par zone
+  internalScore?: number;              // heuristique interne éventuelle, jamais utilisée seule pour décider
+  rulesetVersion: string;
+}
 interface ExerciseExposure { userId: UUID; exerciseId: string; lastDoneAt: ISODate; count28d: number; }  // anti-doublon
 ```
 
 ## 6. Abonnements, conformité, technique
 
 ```ts
-interface Entitlement { userId: UUID; key: 'premium'; activeUntil?: ISODate; source: 'app_store' | 'play_store' | 'promo'; updatedAt: ISODate; }
+// Abonnements : découplés du moteur. Le moteur ne lit aucune de ces entités.
+interface Entitlement {
+  userId: UUID; key: string;           // 'premium' en V1 ; extensible
+  status: 'active' | 'trial' | 'grace_period' | 'expired' | 'revoked';
+  productId?: string;                  // ex. 'premium_monthly', 'premium_yearly'
+  period?: 'monthly' | 'yearly';
+  activeUntil?: ISODate; source: 'app_store' | 'play_store' | 'promo'; updatedAt: ISODate;
+}
+// Correspondance fonctionnalité → droit : configuration (feature flag), PAS du code métier.
+interface FeatureGate { feature: string; requiredEntitlement?: string; freeQuota?: number; }  // valeurs à définir plus tard
 interface SubscriptionEvent { id: UUID; userId: UUID; provider: 'revenuecat'; type: string; payload: JSON; receivedAt: ISODate; } // idempotence par id
 interface DeletionRequest { userId: UUID; requestedAt: ISODate; completedAt?: ISODate; }
 interface SyncMeta { table: string; rowId: UUID; version: number; updatedAt: ISODate; deleted: boolean; } // selon solution de sync

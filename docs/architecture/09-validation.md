@@ -12,9 +12,9 @@ Le validateur est le **garde-barrière unique** : toute sortie — génération,
 | 2 | **Structure** | Échauffement en tête, retour au calme selon archétype, blocs ordonnés, pas de bloc vide, formats cohérents (EMOM ⇒ travail ≤ 60 s/minute) |
 | 3 | **Référentiel** | Exercices existants et actifs, matériel disponible, niveau technique ≤ niveau utilisateur (+1 max en progression encadrée), aucune contre-indication vs limitations |
 | 4 | **Dosage** | Volumes par muscle dans la fourchette, intensité cohérente avec les reps (5 reps à 95 % 1RM = incohérent), RPE plausibles, allures issues des zones de l'utilisateur, charges arrondies au pas matériel |
-| 5 | **Durée** | Tolérance doc 06 ; p90 ≤ disponibilité du jour |
+| 5 | **Durée** | p90 ≤ temps réellement disponible (dur) ; tolérance par profil de séance (doc 06, provisoire) |
 | 6 | **Variété** | Règles dures anti-doublon doc 05 |
-| 7 | **Semaine / inter-disciplines** | Budgets, écarts de récupération, interférences (doc 04 §3.4), séances à haute intensité max, jours de repos, kilométrage total |
+| 7 | **Semaine / inter-disciplines** | Bornes par dimension de charge (musculaire, patterns, volume, intensité, impact, cardio), écarts de récupération, interférences (doc 04 §3.4), séances à haute intensité max, jours de repos, kilométrage total |
 | 8 | **Programme** | Progression bornée semaine à semaine, décharges présentes, affûtage avant événement, tests planifiés |
 | 9 | **Sécurité** | Règles `safety` : débutant sans haltérophilie lourde, pas de max test sans expérience, limitations respectées |
 
@@ -41,8 +41,8 @@ interface ValidationReport {
 
 ## 5. Au-delà de l'exécution : audit qualité en batch
 
-- En CI et avant chaque release du moteur/ruleset : génération sur un **corpus de profils** (personas + profils générés aléatoirement), simulation de 12 semaines avec comportements réalistes (séances manquées, performances variables).
-- Métriques : taux de validité (doit être 100 %), score qualité moyen/min, précision de durée théorique, indices de variété, respect des répartitions d'intensité.
+- En CI et avant chaque release du moteur/ruleset : génération sur un **corpus de profils** (personas + profils générés aléatoirement), simulations de 12, 26 et 52 semaines avec comportements réalistes (séances manquées, performances variables).
+- Métriques : taux de validité (doit être 100 %), détecteurs de dérive longitudinale (doc 10 §3.1), score qualité moyen/min, précision de durée théorique, indices de variété, respect des répartitions d'intensité.
 - **Comparaison avec la version précédente** : toute régression de métrique au-delà d'un seuil bloque la release.
 
 ## 6. Relecture experte
