@@ -5,3 +5,6 @@ export * from './enums.js';
 export * from './reason.js';
 export * from './validation.js';
 export * from './result.js';
+export * from './ruleset.js';
+export * from './policy.js';
+export * from './ruleset-document.js';
