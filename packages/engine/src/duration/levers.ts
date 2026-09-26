@@ -11,12 +11,21 @@ export interface LeverRef { readonly blockId: string; readonly lever: Compressio
 
 const PROTECTED_KINDS = new Set(['warmup', 'cooldown']);
 
+/**
+ * Leviers interdits sur le bloc PRINCIPAL (spec 07 §3.3, points 1, 7 et 9) : le stimulus principal ne
+ * se réduit que par `reduce_main_volume` (dernier recours, visible) ou en raccourcissant un format
+ * de conditioning ou de course — jamais en le supprimant, en retirant un exercice ni en réduisant les
+ * repos du travail lourd.
+ */
+const FORBIDDEN_ON_PRIMARY = new Set<CompressionLever['kind']>(['drop_optional_block', 'reduce_sets', 'drop_accessory', 'reduce_rest']);
+
 /** L'échauffement et le retour au calme ne portent jamais de levier (spec 07 §3.3). */
 export function leverDeclarationIssues(session: SessionDraft): string[] {
   const out: string[] = [];
   for (const b of session.blocks) {
     if (PROTECTED_KINDS.has(b.kind) && b.levers.length > 0) out.push(`${b.id} : levier interdit sur un bloc ${b.kind}`);
     for (const l of b.levers) {
+      if (b.role === 'primary' && FORBIDDEN_ON_PRIMARY.has(l.kind)) out.push(`${b.id} : ${l.kind} interdit sur le bloc principal`);
       if (l.kind === 'reduce_main_volume' && b.role !== 'primary') out.push(`${b.id} : reduce_main_volume réservé au bloc principal`);
       if (l.kind === 'drop_optional_block' && !b.optional) out.push(`${b.id} : drop_optional_block sur un bloc non optionnel`);
     }

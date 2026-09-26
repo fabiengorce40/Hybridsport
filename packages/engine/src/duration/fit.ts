@@ -39,23 +39,28 @@ export function fitDuration(session: SessionDraft, catalog: LoadedCatalog, rules
   const applied: LeverRef[] = [];
   let current = session;
   let leverIndex = 0;
-  let lastP90 = 0;
+  const primaryBlocks = new Set(session.blocks.filter((b) => b.role === 'primary').map((b) => b.id));
 
-  for (let step = 0; step <= maxSteps; step++) {
+  for (;;) {
     const est = estimateDuration(current, catalog, params);
     if (!est.ok) return { status: 'INFEASIBLE', appliedLevers: applied, reasons: est.reasons };
-    lastP90 = est.estimate.p90;
     const check = checkDuration(est.estimate, current.availableTimeS, current.targetDurationS, profile);
     const done = check.feasible && est.estimate.p50 <= check.upperS;
     if (done) {
       const out: ReasonCode[] = [reasons.emit('DURATION.ESTIMATED', { p50S: est.estimate.p50, p90S: est.estimate.p90 })];
       if (applied.length > 0) out.push(reasons.emit('DURATION.ADJUSTED', { levers: applied.map((a) => `${a.blockId}:${a.lever.kind}`) }));
-      for (const a of applied.filter((x) => x.lever.kind === 'reduce_main_volume')) out.push(reasons.emit('DURATION.MAIN_VOLUME_REDUCED', { blockId: a.blockId }));
+      // Toute réduction du bloc principal est visible (spec 07 §3.3 point 9), quel que soit le levier.
+      for (const blockId of [...new Set(applied.filter((x) => primaryBlocks.has(x.blockId)).map((x) => x.blockId))]) out.push(reasons.emit('DURATION.MAIN_VOLUME_REDUCED', { blockId }));
       if (check.shorterThanTarget) {
         out.push(reasons.emit('DURATION.SHORTER_ACCEPTED', { p50S: est.estimate.p50, targetS: current.targetDurationS }));
         return { status: 'SHORTER_ACCEPTED', session: current, estimate: est.estimate, check, appliedLevers: applied, reasons: out };
       }
       return { status: 'FITS', session: current, estimate: est.estimate, check, appliedLevers: applied, reasons: out };
+    }
+    // Plafond technique d'itérations (G4) : au plus maxSteps pas, chacun réestimé ; au-delà, échec
+    // explicite — jamais une séance non vérifiée.
+    if (applied.length >= maxSteps) {
+      return { status: 'INFEASIBLE', estimate: est.estimate, appliedLevers: applied, reasons: [reasons.emit('DURATION.INFEASIBLE', { p90S: est.estimate.p90, availableS: current.availableTimeS })] };
     }
     // Trop long (ou p90 au-delà du disponible) : pas suivant du levier courant, sinon levier suivant.
     let next: SessionDraft | null = null;
@@ -66,16 +71,12 @@ export function fitDuration(session: SessionDraft, catalog: LoadedCatalog, rules
       else if (ref) applied.push(ref);
     }
     if (next === null) {
-      const r: ReasonCode[] = [reasons.emit('DURATION.INFEASIBLE', { p90S: est.estimate.p90, availableS: current.availableTimeS })];
       if (check.feasible) {
         // Réalisable mais au-dessus de la tolérance haute : SOFT, pas un échec.
-        r.splice(0, 1, reasons.emit('DURATION.OUT_OF_TOLERANCE', { p50S: est.estimate.p50, lowerS: check.lowerS, upperS: check.upperS }));
-        return { status: 'FITS', session: current, estimate: est.estimate, check, appliedLevers: applied, reasons: r };
+        return { status: 'FITS', session: current, estimate: est.estimate, check, appliedLevers: applied, reasons: [reasons.emit('DURATION.OUT_OF_TOLERANCE', { p50S: est.estimate.p50, lowerS: check.lowerS, upperS: check.upperS })] };
       }
-      return { status: 'INFEASIBLE', estimate: est.estimate, appliedLevers: applied, reasons: r };
+      return { status: 'INFEASIBLE', estimate: est.estimate, appliedLevers: applied, reasons: [reasons.emit('DURATION.INFEASIBLE', { p90S: est.estimate.p90, availableS: current.availableTimeS })] };
     }
     current = next;
   }
-  // Plafond technique d'itérations atteint (G4) : échec explicite, jamais une séance non vérifiée.
-  return { status: 'INFEASIBLE', appliedLevers: applied, reasons: [reasons.emit('DURATION.INFEASIBLE', { p90S: lastP90, availableS: current.availableTimeS })] };
 }
