@@ -74,6 +74,17 @@ export function coreTestParameters(): ParamInput[] {
     }, 'G2'),
     param('duration.leverSteps', { reduceRestS: 15, shortenConditioningS: 60, reduceRunS: 120, reduceRunM: 400 }, 'G2'),
     param('recovery.minGapMatrix', { high: { high: 48, moderate: 24 }, moderate: { high: 24 } }, 'G2', { unit: 'h' }),
+    // Contenus G1 FICTIFS pour exercer les mécanismes : ni symptômes, ni seuils, ni textes médicaux réels.
+    param('safety.pain.levelActions', {
+      P1: { areaAction: 'reduce', movementAction: 'none', suspendHighIntensity: false, interruptSession: false, pauseProgram: 'never' },
+      P2: { areaAction: 'exclude', movementAction: 'exclude', suspendHighIntensity: false, interruptSession: false, pauseProgram: 'never' },
+      P3: { areaAction: 'exclude', movementAction: 'exclude', suspendHighIntensity: true, interruptSession: false, pauseProgram: 'rule' },
+      P4: { areaAction: 'none', movementAction: 'none', suspendHighIntensity: true, interruptSession: true, pauseProgram: 'always' },
+    }, 'G1'),
+    param('safety.pain.pauseRule', { centralAreas: ['lower_back', 'hip_groin'], minAreas: 2 }, 'G1'),
+    param('safety.pain.recurrence', { fromLevel: 'P1', toLevel: 'P2', windowHours: 336, minReports: 2 }, 'G1'),
+    param('safety.p4.messageKey', 'safety.p4.test_message', 'G1'),
+    param('safety.eligibility.acceptedDeclarations', ['test.professional_clearance'], 'G1'),
     param('demand.derivationTable', {
       roleFactors: { primary: 1, secondary: 0.5 },
       structures: {
