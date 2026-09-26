@@ -101,7 +101,7 @@ L'**asymétrie** est volontaire : finir 5 minutes plus tôt est acceptable, dép
 - Marge `strength_sets` de ≈ 6 min ⇒ `T = 54 min`.
 - Plage de p50 acceptée : `[48,6 ; 56,7]`, donc environ 49–57 min.
 - Affichage : « 55 min ». Dans 9 cas sur 10, la séance tient dans les 60 minutes.
-- Si l'utilisateur a seulement dit « séance de 60 minutes » sans contrainte stricte, `A` = 60 + tolérance déclarée ; le **comportement par défaut** reste « 60 = temps disponible total » (décision à valider n° 21).
+- Si l'utilisateur a seulement dit « séance de 60 minutes » sans contrainte stricte, `A` = 60 + tolérance déclarée ; le **comportement par défaut** reste « 60 = temps disponible total » (décision 21, validée).
 
 ### 3.3 Stratégie d'ajustement (réduction ou augmentation)
 

@@ -36,7 +36,7 @@ Le moteur n'invente pas de temps HYROX « estimé » pour juger la cible.
 | e1RM développé couché | ≈ 90 kg | **low** | Idem |
 | Stations HYROX | aucune | **none** | Benchmarks à planifier |
 | Exposition de course (E3) | 28 j : ≈ 95 min/sem en moyenne ; dernière sortie longue : 60 min dimanche | measured | Journal |
-| Fraîcheur | `locomotor` : dernière demande `high` dimanche (sortie de 60 min) ; autres structures fraîches | — | |
+| Fraîcheur | `locomotor_impact` : dernière demande `high` dimanche (sortie de 60 min) ; autres structures fraîches | — | |
 | Lecture de l'état | **`unknown`** (programmation par défaut comme `normal`) | — | `DATA.READINESS_UNKNOWN` |
 | Statut d'entraînement | musculation : intermédiaire (medium) ; course : intermédiaire (high) ; HYROX : débutant spécifique (low) | | |
 
@@ -69,34 +69,34 @@ N = 5. Minimums efficaces des rôles `development` (ruleset) : musculation 2, co
 | Id | Moteur | Priorité | Variantes (de la plus spécifique à la plus compatible) | Préférences de placement |
 |----|--------|----------|-------------------------------------------------------|--------------------------|
 | R1 | Course | standard | `run_long` 65′ → `run_long` 60′ → `run_easy` 45′ | jour le plus long |
-| R2 | Course | **key** | `run_threshold_cruise` (3 × 8′ au seuil) → `run_tempo` 20′ → `run_progression` | structure `lower_muscular` fraîche |
+| R2 | Course | **key** | `run_threshold_cruise` (3 × 8′ au seuil) → `run_tempo` 20′ → `run_progression` | structures du bas du corps (`lower_knee`, `lower_hip`) fraîches |
 | S1 | Muscu | standard | `strength_lower_heavy` → `strength_full_moderate` → `strength_upper_focus` | loin des séances clés de course |
 | S2 | Muscu | standard | `strength_upper_plus_carry` → `strength_full_light` | — |
 | H1 | HYROX | **key** | `hr_technique_plus_benchmarks` → `hr_technique` | — |
 
 Profils de demande (extraits) :
-- `run_long` : `locomotor = high`, `lower_muscular = moderate` ;
-- `run_threshold_cruise` : `high_intensity_systemic = high`, `locomotor = moderate` ;
-- `strength_lower_heavy` : `lower_muscular = high`, `axial_posterior = high` ;
-- `hr_technique_plus_benchmarks` : `high_intensity_systemic = high` (test au rameur), `lower_muscular = moderate`, `locomotor = low`.
+- `run_long` : `locomotor_impact = high`, `lower_knee = moderate` ;
+- `run_threshold_cruise` : `high_intensity_systemic = high`, `locomotor_impact = moderate`, `lower_knee = moderate` ;
+- `strength_lower_heavy` : `lower_knee = high`, `lower_hip = high`, `axial = high` ;
+- `hr_technique_plus_benchmarks` : `high_intensity_systemic = high` (test au rameur), `lower_knee = moderate`, `upper_pull = moderate`, `locomotor_impact = low`.
 
 ### 5c. Placement et 5d. interférences : ce que le solveur rejette et pourquoi
 
 | Tentative (partielle) | Verdict | Règle |
 |-----------------------|---------|-------|
-| R1 `run_long` 65′ **samedi** (seul jour ≥ 65 min) + S1 `lower_heavy` **vendredi** soir | ❌ HARD : sortie longue 14 h après une demande `lower_muscular = high` | I1 |
+| R1 `run_long` 65′ **samedi** (seul jour ≥ 65 min) + S1 `lower_heavy` **vendredi** soir | ❌ HARD : sortie longue 14 h après une demande « bas du corps » = `high` | I1 |
 | S1 lundi + R2 mardi soir | ⚠️ faisable (24 h exactement) mais pénalité SOFT forte (I2) : la séance clé serait dégradée | I2 |
 | H1 samedi + R1 `run_long` 60′ dimanche | ✔ faisable, mais score de spécificité plus faible (sortie longue raccourcie) | TARGET |
 | **Solution retenue** (ci-dessous) | ✔ toutes les HARD ; meilleur score | — |
 
 | Jour | Séance | A (dispo) | Justification (reason codes) |
 |------|--------|-----------|------------------------------|
-| Lun | **S2** `strength_upper_plus_carry` | 60 | `PLAN.SESSION.PLACED.LOW_LOWER_DEMAND_AFTER_LONG_RUN` (dimanche : `locomotor = high`) |
-| Mar | **R2** `run_threshold_cruise` (clé) | 45 | `PLAN.SESSION.SELECTED.THRESHOLD_EXPOSURE_REQUIRED{weekThreshold:0}` ; structure `lower_muscular` fraîche (lundi : haut du corps) |
-| Mer | **S1** `strength_lower_heavy` | 60 | 24 h après le seuil (`lower_muscular` moderate → high : L1 respecté) ; 72 h avant la sortie longue |
+| Lun | **S2** `strength_upper_plus_carry` | 60 | `PLAN.SESSION.PLACED.LOW_LOWER_DEMAND_AFTER_LONG_RUN` (dimanche : `locomotor_impact = high`) |
+| Mar | **R2** `run_threshold_cruise` (clé) | 45 | `PLAN.SESSION.SELECTED.THRESHOLD_EXPOSURE_REQUIRED{weekThreshold:0}` ; structures du bas du corps fraîches (lundi : haut du corps) |
+| Mer | **S1** `strength_lower_heavy` | 60 | 24 h après le seuil (`lower_knee` moderate → high : L1 respecté) ; 72 h avant la sortie longue |
 | Jeu | — (indisponible) | — | |
-| Ven | **H1** `hr_technique_plus_benchmarks` (clé) | 60 | 48 h après S1 (high → moderate : L1 OK) ; `locomotor = low` ⇒ compatible avec la sortie longue du lendemain |
-| Sam | **R1** `run_long` 65′ | 90 | `PLAN.SESSION.PLACED.LONGEST_DAY` ; demande de la veille sur `lower_muscular` = moderate (I1 ne concerne que `high`) |
+| Ven | **H1** `hr_technique_plus_benchmarks` (clé) | 60 | 48 h après S1 (high → moderate : L1 OK) ; `locomotor_impact = low` ⇒ compatible avec la sortie longue du lendemain |
+| Sam | **R1** `run_long` 65′ | 90 | `PLAN.SESSION.PLACED.LONGEST_DAY` ; demande « bas du corps » de la veille = moderate (I1 ne concerne que `high`) |
 | Dim | Repos | — | `PLAN.REST_DAY.PLACED` |
 
 Contrôles de la semaine :
@@ -163,7 +163,7 @@ Filtrés (agrégés) : `SELECT.FILTERED.EQUIPMENT{landmine:1}`.
 Résultat : p50 = 53′ ∈ [48,6 ; 56,7] ✔, p90 = 57,5′ ≤ 60 ✔. Développé couché et tractions intacts.
 `DURATION.ADJUSTED{levers:[reduce_sets(superset_db), reduce_sets(carry)]}`.
 
-**RecoveryCheck** : demande réelle `upper_muscular = high`, `grip = moderate`, `lower_muscular = low` ⇒ compatible avec le seuil du mardi (I1 non concerné) ✔.
+**RecoveryCheck** : demande réelle `upper_push = high`, `upper_pull = high`, `grip = moderate`, `axial = moderate` (farmers), bas du corps = `low` ⇒ compatible avec le seuil du mardi (I1 non concerné) ✔.
 **DuplicateCheck** : historique 28 j sans séance de musculation similaire ⇒ `none` ✔.
 
 **Rapport de validation** :
@@ -176,7 +176,7 @@ Résultat : p50 = 53′ ∈ [48,6 ; 56,7] ✔, p90 = 57,5′ ≤ 60 ✔. Dévelo
     { "code": "DOSE.LOAD.RPE_BASED_LOW_CONFIDENCE", "params": { "exercise": "ex.barbell_bench_press", "suggestedKg": 70 } },
     { "code": "DATA.READINESS_UNKNOWN" }
   ],
-  "scores": [{ "tier": 5, "value": 0.82 }, { "tier": 6, "value": 0.9 }, { "tier": 10, "value": 0.93 }],
+  "optimization": { "B1": 0.82, "B2": 0.9, "B5": 0.93 },
   "rulesetVersion": "0.1.0-provisional", "engineVersion": "0.1.0", "catalogVersion": "0.1.0"
 }
 ```
@@ -213,7 +213,7 @@ Quotas : HYROX 2, course 2, musculation 1 (maintien).
 |------|--------|----------|
 | Lun | Muscu `strength_full_moderate` (maintien, faible volume du bas du corps) | Maintien de G2 sans nuire à la simulation |
 | Mar | Course `run_race_pace` (segments de 1 km à l'allure cible HYROX) | Spécificité ; > 72 h avant la simulation |
-| Mer | HYROX `hr_compromised_run` court | Dernière séance spécifique ; ensuite `lower_muscular` libre jusqu'à samedi (I5) |
+| Mer | HYROX `hr_compromised_run` court | Dernière séance spécifique ; ensuite structures du bas du corps libres jusqu'à samedi (I5) |
 | Jeu | — | |
 | Ven | Course `run_easy` 30′ | Veille de séance clé : demande faible uniquement (I5) |
 | Sam | **HYROX `hr_full_sim`** (seule simulation complète du cycle selon `fullSimPolicy`) | `PLAN.MACRO.FULL_SIM_SCHEDULED` ; substitutions pour les stations sans matériel, signalées |

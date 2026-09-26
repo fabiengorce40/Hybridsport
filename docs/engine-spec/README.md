@@ -1,6 +1,7 @@
-# TRAINING ENGINE SPECIFICATION V1.1
+# TRAINING ENGINE SPECIFICATION V1.2
 
-> Statut : **V1.1 — architecture validée après revue contradictoire ; implémentation NON autorisée.** Décisions ouvertes : 4, 6, 11, 12, 13, 34, 35. Voir le [CHANGELOG](CHANGELOG.md).
+> Statut : **V1.2 — les 45 décisions sont arbitrées.** Voir le [CHANGELOG](CHANGELOG.md) et le « Gate d'architecture » en fin de document.
+> Les paramètres sportifs restent provisoires ; les contenus G1 (douleur, éligibilité) et les règles G2/G5 doivent être approuvés avant production.
 > Base de travail : [dossier d'architecture phase 1](../architecture/README.md) et contraintes **C1 à C10**.
 > Cette spécification **approfondit** la phase 1 ; elle ne la réécrit pas. Les rares points de la phase 1 qu'elle remplace sont listés plus bas, avec leur justification.
 
@@ -28,8 +29,8 @@
 | Point de phase 1 | Changement | Pourquoi |
 |------------------|------------|----------|
 | Doc 04 §3.2 : `WeeklyLoadEnvelope`, qui fixait une borne hebdomadaire par dimension (8 dimensions) | **Remplacé** par la classification LOAD / STATE / CONSTRAINT / CONTEXT / DERIVED (doc [04](04-charge-athlete-state.md)). Seules 5 limites sont retenues, chacune justifiée | 8 budgets imposaient des limites sans fondement suffisant pour plusieurs dimensions (C6 révisé) |
-| Doc 04 §4.2 : statuts de relecture `draft / internal_review / expert_approved / deprecated` et blocage du build | Statuts : **`draft / reviewed / approved / deprecated`**. Politique de blocage du build **reportée**, 3 options proposées (doc [09](09-validation-repair-regles.md) §6) | C3 révisé |
-| Doc 04 §4.3 : hiérarchie de priorités | **Affinée** en 12 niveaux, adhérence au niveau 7 en V1.1 (doc [01](01-architecture-pipeline.md) §5 ; décision 6 ouverte) | La hiérarchie proposée mélangeait faisabilité (dure) et préférences (souples) |
+| Doc 04 §4.2 : statuts de relecture `draft / internal_review / expert_approved / deprecated` et blocage du build | Statuts : **`draft / reviewed / approved / deprecated`**. Politique de blocage du build : **matrice graduée par environnement + cliquet de sécurité G1** (doc [09](09-validation-repair-regles.md) §6, V1.2) | C3 révisé |
+| Doc 04 §4.3 : hiérarchie de priorités | **Remplacée** par la hiérarchie A (admissibilité) / B (optimisation) / C (stabilité de replanification) (doc [01](01-architecture-pipeline.md) §5, V1.2) | La hiérarchie proposée mélangeait faisabilité (dure) et préférences (souples) |
 | Doc 06 : tolérance de durée | **Précisée** : on distingue le temps disponible, la durée cible et la tolérance selon le profil de séance (doc [07](07-seance-duree-doublons.md) §3) | C8 |
 
 Tout le reste de la phase 1 est conservé tel quel.
@@ -41,3 +42,22 @@ Tout le reste de la phase 1 est conservé tel quel.
 3. **Données insuffisantes ⇒ comportement conservateur et explicite.** Le moteur prescrit à l'effort perçu (RPE/RIR) plutôt qu'avec une charge ou une allure inventée, planifie un test, et le signale par un *reason code*.
 4. **Le générateur propose, le validateur contrôle, le réparateur corrige**, avec un nombre borné de tentatives. En cas d'échec, le moteur renvoie une erreur explicite (`NO_VALID_SOLUTION`).
 5. **Toute décision laisse une trace** sous forme de *reason codes* structurés, traduits ensuite en texte pour l'utilisateur.
+
+## Gate d'architecture (V1.2)
+
+Vérification de cohérence documentaire effectuée après la mise à jour V1.2 :
+- références croisées : 232 vérifiées, 0 erreur (CHANGELOG §V1.2) ;
+- les 45 décisions sont arbitrées (doc 13 §4) ;
+- les nouvelles notions (`programStatus`, `eligibility`, `healthDataConsent`, `REST_RECOMMENDED`, `skipReason = safety_pause`, 8 structures, hiérarchie A/B/C, cliquet G1, CC1–CC11) sont définies une fois et référencées de façon cohérente par l'AthleteState, l'Exposure, le GlobalPlanner, l'InterferenceManager, les moteurs de discipline, le DurationEngine, le DuplicateDetectionEngine, le ProgressionEngine, l'AdaptationEngine, le SessionValidator, le RepairEngine, les rulesets, les tests et l'observabilité ;
+- aucune contradiction architecturale bloquante.
+
+**`TRAINING_ENGINE_SPEC_V1_2_ARCHITECTURE_GATE = PASS`**
+
+Signification : **l'architecture technique du moteur peut commencer à être implémentée.**
+
+Cela **ne signifie pas** :
+- que les paramètres sportifs sont définitivement validés (ils restent provisoires, dans le ruleset) ;
+- que les règles G1 (douleur, éligibilité, sécurité) sont approuvées médicalement ;
+- que les règles G2 et G5 sont prêtes pour la production ;
+- que l'application peut être commercialisée.
+

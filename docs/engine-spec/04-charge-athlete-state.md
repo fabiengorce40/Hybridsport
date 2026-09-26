@@ -48,7 +48,7 @@ Colonnes : nature · unité · fenêtre · calcul · rôle dans les décisions �
 |---------|-------|---------|---------|------|-----------|------------------------|
 | **S1. Fraîcheur par structure** | heures depuis la dernière demande `high` et `moderate` de chaque structure (§6) | dernière occurrence | Profils de demande des séances **réalisées** | Utilisé par L1 (récupération minimale) | `established` (horodatage) | Aucune séance ⇒ structure fraîche |
 | **S2. Capacités** | e1RM (kg), allure de référence / vitesse critique, benchmarks, capacités par station, débits de travail | selon source | Doc 06, doc 08 §1 | Dosage | Selon source (§7) | Voir §7 ; prescription à l'effort perçu |
-| **S3. Signaux déclarés** | douleurs actives, fatigue déclarée, séances manquées récentes | 14 j | Feedback (doc 08 §2) | Comportement conservateur (doc 09 §7), adaptation | `established` (déclaratif) | Absence de signal = « rien de signalé », et non « tout va bien » : le moteur ne présume rien |
+| **S3. Signaux déclarés** | douleurs actives, fatigue déclarée, séances manquées récentes | 14 j | Feedback (doc 08 §2) | Comportement conservateur (doc 09 §7), adaptation | `established` (déclaratif) | Absence de signal = « rien de signalé », et non « tout va bien » : le moteur ne présume rien. **Sans consentement santé** (doc 09 §7.3), l'historique des douleurs est marqué `unavailable` : aucune détection de récurrence n'est tentée |
 | **S4. Lecture de l'état (readiness)** | **catégorie** `unknown` / `normal` / `caution` / `reduce` + reason codes | 7–14 j | Règles explicites sur S3, E6 (écart à la base) et l'écart prévu/réalisé (doc 08 §3) | Allègement, déplacement ; `unknown` conserve un comportement par défaut raisonnable **mais reste visible** dans l'état et la trace | `heuristic` | Données récentes insuffisantes ⇒ **`unknown`** (et non `normal`), avec `DATA.READINESS_UNKNOWN` |
 | **S5. Régularité** | séances réalisées / prévues | 28 j | Historique | Progression (pas de hausse si la régularité est faible), niveau de confiance des capacités | `established` | Nouveau compte ⇒ inconnue |
 | **S6. Statut d'entraînement par discipline** | niveau dérivé + tendance | 28–84 j | Capacités, régularité, marqueurs factuels | Choix des archétypes, des plafonds, des modèles de progression | `heuristic` | Niveau déclaré avec une confiance faible |
@@ -97,7 +97,7 @@ Le caractère HARD ou SOFT et les seuils de L1, L2 et L3 ne sont **pas constants
 ```ts
 interface EnforcementContext {
   stimulus: StimulusId;                 // ex. intervalles VO2 vs footing facile
-  structure: Structure;                 // lower_muscular, locomotor…
+  structure: Structure;                 // lower_knee, locomotor_impact… (§6)
   athleteLevel: Level;
   phase: PhaseKind;                     // général, spécifique, affûtage, décharge…
   keySessionProximity: 'none' | 'before_key' | 'after_key';   // proximité (en heures, paramètre) d'une séance clé
@@ -114,7 +114,7 @@ Principes par défaut (paramètres, à relire) :
 | Facteur | Tendance de la politique |
 |---------|--------------------------|
 | Stimulus | Plus le stimulus est intense ou traumatisant (intervalles, charges lourdes, excentrique), plus la règle tend vers HARD |
-| Structure | `locomotor` et `lower_muscular` plus strictes que `upper_muscular` ou `grip` |
+| Structure | `locomotor_impact`, `lower_knee` et `lower_hip` plus strictes que `upper_push`, `upper_pull` ou `grip` |
 | Niveau | Novice et débutant : plus strict ; avancé : plus de SOFT |
 | Phase | Affûtage et reprise : plus strict ; phase générale d'un athlète régulier : plus souple |
 | Proximité d'une séance clé | Veille ou lendemain d'une séance clé : plus strict (protection de la séance clé) |
@@ -160,27 +160,40 @@ runningContribution(e: RunningExposureV11, athlete: RunningAssessment, ruleset):
 - La trace conserve toujours les km bruts **et** le crédit accordé, avec sa justification.
 - Tant que les paramètres ne sont pas relus, la politique par défaut est **conservatrice des deux côtés** : l'exposition brute compte entièrement pour la prudence (L3), et le crédit pour la programmation Running reste limité aux segments clairement assimilables (continus, intensité connue).
 
-## 6. Structures et profil de demande (utilisés par L1 et par l'InterferenceManager)
+## 6. Structures et profil de demande (utilisés par L1 et par l'InterferenceManager) — V1.2
+
+**8 structures de planification, dérivées** (jamais saisies à la main) :
 
 ```ts
-type Structure = 'lower_muscular' | 'upper_muscular' | 'axial_posterior' | 'locomotor' | 'high_intensity_systemic' | 'grip';
+type Structure =                      // identifiants de données (table versionnée), pas un enum figé dans le code
+  | 'lower_knee'                      // dominante genou (quadriceps) : squat, fentes, wall ball, sled push
+  | 'lower_hip'                       // dominante hanche (fessiers, ischios) : hinge, swing, hip thrust
+  | 'upper_push'                      // poussée : développés, pompes, dips, jerk
+  | 'upper_pull'                      // tirage : tractions, rowing, SkiErg, sled pull
+  | 'axial'                           // charge sur la colonne : squat et soulevé lourds, farmers, portés
+  | 'locomotor_impact'                // course + pliométrie + sauts (mollets, tendon d'Achille, pied)
+  | 'high_intensity_systemic'         // intensité métabolique élevée (sert à L2)
+  | 'grip';                           // préhension : farmers, sled pull, tractions, soulevé de terre
 type DemandLevel = 'none' | 'low' | 'moderate' | 'high';
 
 type DemandProfile = Record<Structure, DemandLevel> & { reasons: ReasonCode[] };
 ```
 
-- **Calcul prévu** (séance générée) : règles explicites à partir du contenu. Par exemple `lower_muscular = high` si au moins X séries difficiles sur des groupes du bas du corps à effort RIR ≤ 2, ou un exercice de coût local 3 à haute intensité. Les seuils vivent dans le ruleset ; les règles sont testées.
+- **Dérivation** : chaque niveau est calculé à partir des métadonnées des exercices (muscles, patterns, zones, coûts, doc 03 §2 bis) et de l'effort réel, par une **table de correspondance versionnée du ruleset**. Exemples : wall ball ⇒ `lower_knee` + `upper_push` + systémique ; SkiErg ⇒ `upper_pull` + systémique ; farmers ⇒ `grip` + `axial` ; fentes sandbag ⇒ `lower_knee` + `axial`.
+- **Alias de règle** : « bas du corps » = max(`lower_knee`, `lower_hip`). Il est utilisé par les règles d'interférence (ex. I1, doc 05 §2.3).
+- **Ce qui reste dans Exposure / Context et n'est pas une structure** : travail excentrique important (modificateur qui fait monter le niveau d'un cran), lourd vs volume local (contexte d'intensité), course compromise (contexte), volume aérobie facile (E5), minutes cardio.
+- **Calcul prévu** (séance générée) : règles explicites à partir du contenu (ex. `lower_knee = high` si au moins X séries difficiles à dominante genou à RIR ≤ 2, ou un exercice de coût local 3 à haute intensité). Les seuils vivent dans le ruleset ; les règles sont testées.
 - **Calcul réalisé** : même règle appliquée à l'exécution réelle, avec le RPE de séance comme correcteur possible (+1 niveau si RPE ≥ attendu + 2).
 - **Ordinal volontairement** : quatre niveaux suffisent pour décider d'un écart. Un nombre continu donnerait une illusion de précision.
 
-Matrice L1 (exemple de **structure**, valeurs `provisional`, modulées par la politique §4.1) :
+Matrice L1 (exemple de **structure**, valeurs `provisional`, modulées par la politique §4.1, appliquée à chacune des 8 structures) :
 
 | Demande précédente → suivante | high | moderate | low |
 |-------------------------------|------|----------|-----|
 | **high** | ≥ 48 h | ≥ 24 h | aucune |
 | **moderate** | ≥ 24 h | aucune (soft : 24 h) | aucune |
 
-Des ajustements par structure et par niveau d'athlète sont prévus dans le ruleset (ex. `locomotor` pour un novice).
+Des ajustements par structure et par niveau d'athlète sont prévus dans le ruleset (ex. `locomotor_impact` pour un novice). La séparation poussée / tirage garantit qu'une séance de poussée lourde suivie d'une séance de tirage lourd le lendemain n'est pas bloquée par L1.
 
 ## 7. Confiance des capacités et références
 
@@ -226,7 +239,13 @@ interface AthleteState {
 
   freshness: Record<Structure, { lastHighAt?: ISODateTime; lastModerateAt?: ISODateTime }>;      // S1
   capacities: Capacity[];                                                                          // S2
-  signals: { activePain: PainReport[]; reportedFatigue?: { level: 1 | 2 | 3; at: ISODateTime }; missedLast14d: number };  // S3
+  signals: {                                                                                     // S3
+    activePain: PainReport[];
+    painHistory: 'available' | 'unavailable';          // 'unavailable' si healthDataConsent = false (doc 09 §7.3)
+    reportedFatigue?: { level: 1 | 2 | 3; at: ISODateTime };
+    missedLast14d: number;
+  };
+  programStatus: 'active' | 'paused_safety' | 'suspended_scope';                                 // doc 02 §8
   readiness: { category: 'unknown' | 'normal' | 'caution' | 'reduce'; reasons: ReasonCode[] };   // S4 — 'unknown' ≠ 'normal'
   adherence: { d28?: number };                                                                      // S5
   trainingStatus: Partial<Record<Discipline, { level: Level; confidence: Confidence; trend: 'up' | 'flat' | 'down' | 'unknown' }>>; // S6

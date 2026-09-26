@@ -44,7 +44,8 @@ Objectif(s) (`strength_max`, `hypertrophy`, `general_fitness`, soutien HYROX / c
    - contexte de fatigue (notes du planificateur) ;
    - exposition récente (anti-doublon) ;
    - préférences ;
-   - logistique (réutiliser la même station : moins de transitions).
+   - logistique (réutiliser la même station : moins de transitions) ;
+   - adéquation de la modalité **à l'emplacement** (V1.2) : un mouvement principal de force privilégie `loadCeiling` élevé, un accessoire d'hypertrophie peut privilégier `stability` élevée (machine, poulie) et un faible coût technique. **Aucun bonus global** pour les charges libres ou le polyarticulaire : machines et poulies sont des candidats de première classe (doc 03 §7).
 
 **4. Paramétrage — tables par objectif (hypothèses ; entièrement paramétrables dans le ruleset, classe G2, décision 20)** :
 
@@ -118,7 +119,7 @@ Objectif (5 km, 10 km, semi, marathon, général, soutien HYROX), échéance, r�
 **7. Affûtage** : réduction progressive du volume sur 1–3 semaines selon la distance, intensité maintenue (`consensus`, méta-analyses sur l'affûtage) ; paramètres dans le ruleset.
 
 ### OUTPUTS
-Séances avec blocs `running` (`RunSegment[]`), allures (plage + zone + effort perçu), récupérations, échauffement et retour au calme, `DemandProfile` (`locomotor`, `high_intensity_systemic`, `lower_muscular`).
+Séances avec blocs `running` (`RunSegment[]`), allures (plage + zone + effort perçu), récupérations, échauffement et retour au calme, `DemandProfile` (`locomotor_impact`, `high_intensity_systemic`, `lower_knee`, `lower_hip`).
 Services : `paceFor(zone)`, `zones()`, `runningContribution(exposure)`.
 
 ### VALIDATION
@@ -161,7 +162,7 @@ Objectif (`crosstraining_general` ou compétition), rôle, quota, `AthleteState`
 
 **2. Choix du stimulus (requestWeek)** : répartition sur 14 jours selon l'objectif et la phase (TARGET sur les domaines de temps et les stimuli), les expositions (E5) et l'interférence ; 2 ou 3 variantes par demande.
 
-**3. Composition des modalités** par stimulus : gymnastique / haltérophilie / monostructural (ex. couplet G + M pour `mixed_modal_medium`) ; patterns exclus ou pénalisés selon les notes du planificateur (`grip`, `lower_muscular`).
+**3. Composition des modalités** par stimulus : gymnastique / haltérophilie / monostructural (ex. couplet G + M pour `mixed_modal_medium`) ; patterns exclus ou pénalisés selon les notes du planificateur (`grip`, `lower_knee`, `lower_hip`…).
 
 **4. Sélection des mouvements** : filtres (matériel, restrictions, niveau technique, exclusions) + règles de sécurité : **pas de mouvement de coût technique 3 à haut volume sous fatigue pour novice ou débutant** (ex. arraché à haute répétition dans un metcon long). Scaling par la famille de progression (`progressionFamily.rank`).
 
@@ -247,7 +248,7 @@ Tendances par défaut : un premier HYROX ou un niveau débutant ⇒ moins de sim
    Fidélité faible ⇒ `SELECT.SUBSTITUTION_LOW_FIDELITY` (avertissement), avec en phase spécifique une recommandation d'accès au vrai matériel au moins 1 séance sur 2 semaines.
 
 ### OUTPUTS
-Séances avec blocs `hybrid_station_work` (`HybridSpec`), `running`, `strength`, avec les exigences de transitions, les allures, les charges de station et le `DemandProfile` (souvent `lower_muscular`, `locomotor`, `grip`, `high_intensity_systemic` élevés : d'où l'importance de l'InterferenceManager).
+Séances avec blocs `hybrid_station_work` (`HybridSpec`), `running`, `strength`, avec les exigences de transitions, les allures, les charges de station et le `DemandProfile` (souvent `lower_knee`, `locomotor_impact`, `grip`, `axial`, `high_intensity_systemic` élevés : d'où l'importance de l'InterferenceManager).
 
 ### VALIDATION
 Fréquence de simulation complète conforme à la politique `fullSimPolicy` ; aucune simulation dans la fenêtre finale ; charges des stations conformes à la division (ou progressivement inférieures en phase générale, avec une progression définie) ; substitutions signalées ; exposition de course comptée ; L1 et I5 autour des séances clés.

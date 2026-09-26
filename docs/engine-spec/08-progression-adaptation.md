@@ -8,9 +8,10 @@
 ### Principes
 1. **Une variable dominante progresse généralement à la fois**, sauf modèle explicitement défini et testé (ex. un modèle d'hypertrophie qui fait progresser reps et charge selon une règle documentée). Jamais « tout, à chaque séance ». Chaque modèle déclare sa ou ses variables progressables et est couvert par des tests (V1.1).
 2. La progression se décide sur des **preuves répétées**, pas sur une seule bonne séance (sauf test).
-3. Aucune hausse si la régularité est faible (S5 sous un seuil) ou si la lecture de l'état n'est pas `normal`.
+3. Aucune hausse si la régularité est faible (S5 sous un seuil) ou si la lecture de l'état est `caution` ou `reduce` ; `unknown` est traité selon `readiness.unknownPolicy` (doc 04 §3.2).
 4. **Bornes de progression** par cycle (plafond d'augmentation des capacités estimées) : c'est ce qui empêche la « progression infinie » détectée en test longitudinal.
 5. Les pas sont **réalisables** : incrément réel du matériel, pas d'allure arrondi à 5 s/km.
+6. **Exclusion des interruptions pour douleur ou pause de sécurité (V1.2)** : les exécutions dont `skipReason ∈ { pain, safety_pause }`, ainsi que les séances non réalisées pendant `programStatus = paused_safety`, ne sont **jamais** interprétées comme une baisse de performance. Elles ne comptent ni comme `below`, ni dans la régularité (S5), ni comme rejet dans le score d'adhérence. La progression concernée est **suspendue** (ni hausse ni baisse) ; la reprise suit les règles G1 de reprise (doc 09 §7).
 
 ### Variables progressables par discipline
 
@@ -31,7 +32,7 @@
 | `on_target` ou `above` | Progression de **la** variable du modèle au prochain pas (ex. charge + incrément réalisable) |
 | `above` × 2 consécutifs | Recalage de l'e1RM à la hausse (borné) |
 | `below` × 1 | Maintien |
-| `below` × 2 consécutifs | Réduction (ex. −5 à −10 %, paramètre) ou variante ; `PROGRESSION.REGRESSED` |
+| `below` × 2 consécutifs (hors `pain` / `safety_pause`, principe 6) | Réduction (ex. −5 à −10 %, paramètre) ou variante ; `PROGRESSION.REGRESSED` |
 | Prescription identique sur N semaines sans justification | `DUPLICATE.PLANNED_BUT_STAGNANT` ⇒ changer de variable ou de modèle |
 | Performance nettement supérieure (test, record) | Mise à jour de la capacité au prochain point de recalcul (début de semaine), jamais au milieu d'une semaine en cours |
 
@@ -78,6 +79,7 @@ type AdaptationEvent =
   | { type: 'performance_deviation'; direction: 'above' | 'below'; evidence: ReasonCode[] }   // issu de processWorkoutResult
   | { type: 'readiness_changed'; category: 'caution' | 'reduce' }
   | { type: 'pain_reported'; report: PainReport }
+  | { type: 'eligibility_changed'; eligibility: UserTrainingProfile['eligibility'] }
   | { type: 'test_completed'; sessionId: ID }
   | { type: 'engine_upgraded'; from: string; to: string };
 ```
@@ -93,7 +95,7 @@ type AdaptationEvent =
    - **modification demandée par l'utilisateur** ;
    - **impossibilité devenue certaine** (matériel indisponible confirmé, fermeture de la salle, dates bloquées).
    Chaque exception est tracée (`ADAPT.FROZEN_ZONE_OVERRIDE{reason}`). Hors de ces cas, un changement calculé dans la zone gelée est reporté à la séance suivante hors zone.
-4. **Génération d'options** et évaluation de chacune par le même score (doc 01 §4), auquel s'ajoute un **coût de changement** :
+4. **Génération d'options** et évaluation de chacune par le même score (doc 01 §4, couches A et B), auquel s'ajoute un **coût de changement**. La **couche C (hystérésis, doc 01 §5)** s'applique : le plan actuel est conservé si le gain d'une option ne dépasse pas le seuil sur B1–B3, sauf violation de la couche A :
 
 ```
 changeCost = w1·(séances modifiées) + w2·(séances déplacées) + w3·(séances clés perdues)
@@ -135,7 +137,8 @@ Options évaluées : **SKIP**, **MOVE**, **MERGE** (jamais deux séances clés f
 | `goal_changed` | programme | Nouvelle macro ; capacités et historique conservés |
 | `performance_deviation` | phase (au prochain recalcul) | ProgressionEngine ; capacités recalculées |
 | `readiness_changed` | reste de la semaine | Allègement (volume et intensité), séance clé déplacée plutôt que dégradée si possible |
-| `pain_reported` | immédiat | Doc 09 §7 |
+| `pain_reported` | immédiat | Doc 09 §7 : P1–P3 ⇒ restrictions et adaptations selon les règles G1 ; P4 ⇒ interruption de la séance, `programStatus = paused_safety`, blocage de la génération selon le ruleset G1, message de sécurité localisé |
+| `eligibility_changed` | programme | `programStatus` recalculé (doc 09 §8) ; `suspended_scope` ⇒ aucune génération, historique conservé |
 | `engine_upgraded` | à la frontière de semaine | Régénération des séances futures non commencées, si la politique de version l'exige (doc 10 §2) |
 
 ### OUTPUTS

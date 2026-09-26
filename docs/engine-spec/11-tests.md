@@ -35,7 +35,20 @@ Ajouts V1.1 (unitaires) :
 - **`fullSimPolicy`** : premier HYROX ⇒ moins de simulations complètes qu'un athlète expérimenté ; lecture de l'état `reduce` ⇒ report ; fenêtre finale respectée.
 - **Décharges** : chacun des modes `global`, `partial` et `discipline_reduction` réduit réellement la demande sur les structures visées.
 - **Replanification** : un seul `recommended` par résultat, de rang 1 ; les alternatives sont classées et valides.
-- **Adhérence** : l'adhérence ne départage que des solutions dans la tolérance ε des niveaux 1 à 6 ; elle ne fait jamais gagner une solution moins sûre ou moins cohérente.
+- **Adhérence** : l'adhérence (B3) ne départage que des solutions dans la tolérance ε de B1 et B2 ; elle ne fait jamais gagner une solution non admissible ou moins cohérente avec l'objectif principal.
+
+Ajouts V1.2 (unitaires et propriétés) :
+- **Hiérarchie A/B/C** : un test par cas de conflit de référence (doc 01 §5) avec les reason codes attendus ; propriété : aucune solution qui viole la couche A n'est jamais choisie, quel que soit son score B ; propriété d'hystérésis : un événement sans effet sur la couche A et avec un gain sous le seuil ne produit aucune révision.
+- **SAFETY / FEASIBILITY / TECHNICAL** : chaque violation HARD produit `INVALID` avec un reason code du bon domaine ; aucune violation n'est comptée dans le mauvais domaine.
+- **Structures dérivées (8)** : poussée lourde puis tirage lourd le lendemain autorisés par L1 ; squat lourd la veille d'une séance de seuil détecté (alias « bas du corps ») ; double-unders à haut volume la veille d'intervalles pris en compte par `locomotor_impact` ; tirage de sled et soulevé de terre lourd à moins de 24 h ⇒ conflit `grip` ; chaque exercice hors mobilité correspond à au moins une structure ; dérivation stable pour une séance identique.
+- **Taxonomie** : chaque exercice a un pattern primaire et au moins un muscle primaire ; les exercices hybrides produisent les structures attendues ; cohérence muscles → zones fonctionnelles.
+- **Catalogue** : rapport de couverture CC1–CC11 (bloquant avant bêta) ; **test d'équité des modalités** (profil hypertrophie en salle sur 12 semaines : part machines + poulies dans une plage paramétrée) ; deux candidats de même score (un libre, une machine) ne font pas gagner systématiquement la même modalité ; test d'architecture : aucun bonus global « libre » ou « polyarticulaire » dans le score.
+- **Douleur (mécanismes, sans contenu médical figé)** : après P2 ou P3, aucune séance future ne sollicite la zone ; P4 ⇒ interruption, `paused_safety`, aucune génération tant que les règles G1 ne l'autorisent pas, message identifié par une clé de contenu localisée ; bouton douleur en séance ; escalade exécutée selon la règle G1 fournie par le ruleset de test.
+- **Consentement santé absent** : aucune persistance du `PainReport` ; `painHistory = 'unavailable'` ; aucune détection de récurrence ; `DATA.HEALTH_HISTORY_UNAVAILABLE` présent ; P4 toujours traité.
+- **Progression** : les sauts `pain` / `safety_pause` et les séances non réalisées en `paused_safety` ne produisent jamais `below`, ne baissent ni la régularité ni le score d'adhérence.
+- **`REST_RECOMMENDED`** : issue valide (pas une `EngineError`), marquée `skipped` avec le bon `skipReason`, sans pénalité de progression.
+- **`programStatus` et éligibilité** : aucune génération en `paused_safety` (`SAFETY_BLOCK`) ni en `suspended_scope` (`OUT_OF_SCOPE`) ; `declaration_required` sans déclaration ⇒ pas de génération ; historique intact pendant une pause ou une suspension.
+- **Paramètres** : test d'architecture : aucune valeur sportive littérale dans le CORE ; tout paramètre du ruleset a des métadonnées complètes (id, version, statut, confiance, source, provisoire) ; **cliquet G1** : un assouplissement sans approbation fait échouer la CI ; aucune API de désactivation de règle.
 
 Exemples : écart L1 de 47 h 59 vs 48 h 00 ; arrondi d'une charge de 71,3 kg avec des disques de 1,25 kg ; similarité de deux WOD identiques = 1 et de deux WOD disjoints ≈ 0 ; confiance d'une référence de 20 semaines ⇒ −2 crans ; levier `reduce_rest` qui ne descend jamais sous le plancher du stimulus.
 
@@ -205,14 +218,17 @@ Tout échec devient un parcours de régression permanent.
 
 ## 10. Barrières de CI
 
-| Barrière | Bloquante ? |
-|----------|-------------|
-| Unitaires, intégration, scénarios, métamorphiques, propriétés (1 000) | Oui |
-| Golden : aucun diff non approuvé | Oui |
-| Déterminisme et sérialisation | Oui |
-| Frontières d'architecture (le moteur n'importe ni UI, ni base, ni RevenueCat, ni LLM) | Oui |
-| Longitudinaux 52 semaines (échantillon) | Oui avant release du moteur ou du ruleset |
-| Mutation (score minimal paramétrable) | Oui avant release, une fois le seuil calibré |
-| Parcours adversariaux | Oui avant release du moteur ou du ruleset |
+La politique complète, par environnement et par catégorie (SAFETY, FEASIBILITY, TECHNICAL, règle métier, golden, mutation, longitudinal, parcours adversariaux), est la **matrice validée de la doc 09 §6** (décision 4). Résumé pour la CI (fusion sur main) :
+
+| Barrière | CI |
+|----------|----|
+| Tests SAFETY, FEASIBILITY, TECHNICAL (unitaires, propriétés, invariants, déterminisme, sérialisation, frontières d'architecture) | **Bloquant immédiatement** |
+| Assouplissement d'un paramètre G1 sans approbation (cliquet) | **Bloquant** |
+| Tests de règles métier (G2), scénarios, métamorphiques, propriétés (1 000) | Bloquant |
+| Golden : aucun diff non approuvé | Bloquant pour la fusion |
+| Parcours adversariaux : assertions de sécurité | Bloquant (nightly et pré-release) |
+| Parcours adversariaux : assertions de stabilité | Avertissement jusqu'à calibration, bloquant avant bêta |
+| Longitudinaux 52 semaines | Nightly (ticket) ; bloquant avant bêta (échantillon) et avant production (corpus complet) |
+| Mutation | Avertissement ; bloquant avant bêta sur G1 et FEASIBILITY, avant production avec un seuil global calibré |
 | Performance (cibles provisoires) | Avertissement ; bloquant seulement après calibration sur de vrais appareils (décision 44) |
-| Rapport d'état de gouvernance des règles | Non bloquant (politique à décider, doc 09 §6) |
+| Rapport d'état de gouvernance | Selon l'environnement (doc 09 §6) |

@@ -29,7 +29,10 @@ interface UserTrainingProfile {
   // SÉCURITÉ
   restrictions: Restriction[];                      // déclarées, sans diagnostic
   activePainReports: PainReport[];                  // signalements récents non résolus (doc 09 §7)
-  readinessScreening: { completedAt: ISODate; flagged: boolean };   // questionnaire d'aptitude (type PAR-Q)
+  readinessScreening: { completedAt: ISODate; questionnaireVersion: string; outcome: ScreeningOutcome };  // questionnaire d'aptitude : contenu G1 (doc 09 §8)
+  eligibility: 'eligible' | 'declaration_required' | 'suspended' | 'excluded';   // calculée par la couche app selon les règles G1 du ruleset (doc 09 §8)
+  userDeclarations: { kind: string; declaredAt: ISODate; rulesetRef: string }[];   // déclarations de l'utilisateur (jamais une autorisation médicale inventée)
+  healthDataConsent: boolean;                       // consentement à la conservation des données de santé (doc 09 §7.3)
 
   // PRÉFÉRENCES
   preferences: TrainingPreferences;
@@ -279,7 +282,7 @@ interface ItemExecution {
   sets?: { reps?: number; loadKg?: number; rir?: number; rpe?: number; completed: boolean; restTakenS?: number; ts?: ISODateTime }[];
   intervals?: { index: number; timeS?: number; distanceM?: number; completed: boolean }[];
   wodScore?: { type: ScoreType; value: number; rx: boolean; scalingUsed?: ExerciseId[] };
-  skipped?: boolean; skipReason?: 'time' | 'equipment' | 'pain' | 'fatigue' | 'other';
+  skipped?: boolean; skipReason?: 'time' | 'equipment' | 'pain' | 'safety_pause' | 'fatigue' | 'other';   // 'pain' et 'safety_pause' : jamais des échecs de performance (doc 08 §1)
 }
 ```
 
@@ -303,11 +306,31 @@ interface PostSessionFeedback {                     // doc 08 §2 — minimal
   pain?: PainReport;                                // uniquement si l'utilisateur signale quelque chose
 }
 
-interface PainReport {
-  bodyArea: BodyArea;                               // liste fermée : épaule, coude, poignet, dos bas, hanche, genou, cheville/pied, ...
-  severity: 'mild' | 'moderate' | 'severe';
-  timing: 'during' | 'after' | 'persistent';
+interface PainReport {                              // doc 09 §7 — choix fermés uniquement, aucune interprétation
+  level: 'P1' | 'P2' | 'P3' | 'P4';                 // descriptions présentées à l'utilisateur : contenu G1 du ruleset
+  bodyAreas: BodyArea[];                            // zones fonctionnelles (doc 03 §5 bis) ; vide pour P4 (symptôme général)
+  affectedMovements?: MovementTag[];                // cases cochées (accroupi profond, au-dessus de la tête, courir, sauter…) — P2
+  context: 'during_session' | 'after_session' | 'check_in';
   reportedAt: ISODateTime;
-  resolvedAt?: ISODateTime;
+  resolution?: { declaredAt: ISODateTime; kind: 'resolved' | 'professional_evaluated' };   // déclaration de l'utilisateur, jamais une autorisation
+  persisted: boolean;                               // false si healthDataConsent = false : utilisée pour l'interaction en cours, puis effacée
+  rulesetRef: string;                               // version des règles G1 appliquées
 }
 ```
+
+## 8. Statut du programme (V1.2)
+
+```ts
+type ProgramStatus = 'active' | 'paused_safety' | 'suspended_scope';
+```
+
+| Statut | Signification | Déclenché par | Sortie |
+|--------|---------------|---------------|--------|
+| `active` | Génération et adaptation normales | — | — |
+| `paused_safety` | Génération bloquée pour raison de sécurité | Douleur P4, ou P3 sur une zone centrale ou plusieurs zones (règles G1, doc 09 §7) | Selon les règles G1 : confirmation ou déclaration de l'utilisateur, puis reprise progressive |
+| `suspended_scope` | Population hors périmètre V1 | `eligibility ∈ { suspended, excluded }` ou `declaration_required` sans déclaration (doc 09 §8) | Changement d'éligibilité selon les règles G1 |
+
+- Le statut est une **entrée** du moteur. Toute génération renvoie `SAFETY_BLOCK` (`paused_safety`) ou `OUT_OF_SCOPE` (`suspended_scope`) tant qu'il n'est pas `active`.
+- L'historique est conservé pendant une pause ou une suspension.
+- Le passage à un statut non actif ne modifie jamais les séances réalisées.
+

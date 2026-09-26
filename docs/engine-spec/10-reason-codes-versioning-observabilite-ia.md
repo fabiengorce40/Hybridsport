@@ -30,9 +30,14 @@ interface DecisionTrace {
 | `RECOVERY` | `RECOVERY.MIN_GAP_VIOLATION`, `RECOVERY.READINESS_CAUTION` |
 | `DUPLICATE` | `DUPLICATE.ACCIDENTAL`, `DUPLICATE.PLANNED_BUT_STAGNANT`, `DUPLICATE.RELAXED_EQUIPMENT_LIMITED` |
 | `PROGRESSION` | `PROGRESSION.ADVANCED`, `PROGRESSION.HELD`, `PROGRESSION.REGRESSED`, `PROGRESSION.CAP_REACHED` |
-| `ADAPT` | `ADAPT.MISSED.SKIPPED`, `ADAPT.MISSED.MOVED`, `ADAPT.TIME_REDUCED` |
-| `SAFETY` | `SAFETY.PAIN.ZONE_RESTRICTED`, `SAFETY.MAX_EFFORT_NOT_ELIGIBLE` |
-| `DATA` | `DATA.ASSUMED_AS_PRESCRIBED`, `DATA.READINESS_UNKNOWN`, `STATE.REFERENCE_CONFLICT` |
+| `ADAPT` | `ADAPT.MISSED.SKIPPED`, `ADAPT.MISSED.MOVED`, `ADAPT.TIME_REDUCED`, `ADAPT.KEPT_STABILITY` (hystérésis), `ADAPT.FROZEN_ZONE_OVERRIDE` |
+| `SAFETY` | Protection. `SAFETY.PAIN.ZONE_RESTRICTED`, `SAFETY.PAIN.P4_INTERRUPTED`, `SAFETY.PROGRAM_PAUSED`, `SAFETY.MAX_EFFORT_NOT_ELIGIBLE`, `SAFETY.OVERRIDES_PREFERENCE` |
+| `FEASIBILITY` | Exécution réellement possible (V1.2). `FEASIBILITY.EQUIPMENT_MISSING`, `FEASIBILITY.TIME_EXCEEDED` (p90 > disponible), `FEASIBILITY.DAY_UNAVAILABLE`, `FEASIBILITY.USER_EXCLUSION` |
+| `TECHNICAL` | Intégrité du système (V1.2). `TECHNICAL.SCHEMA_INVALID`, `TECHNICAL.UNKNOWN_REFERENCE`, `TECHNICAL.NON_FINITE_VALUE`, `TECHNICAL.SERIALIZATION_MISMATCH` |
+| `RULE` | Règles métier. `RULE.ENFORCEMENT{rule, level, threshold, factors}`, `RULE.VIOLATION{ruleId}` |
+| `REPAIR` | `REPAIR.ACTION`, `REPAIR.REST_RECOMMENDED{cause}` (issue valide), `REPAIR.EXHAUSTED` |
+| `SCOPE` | `SCOPE.OUT_OF_SCOPE{class}`, `SCOPE.DECLARATION_REQUIRED` |
+| `DATA` | `DATA.ASSUMED_AS_PRESCRIBED`, `DATA.READINESS_UNKNOWN`, `DATA.HEALTH_HISTORY_UNAVAILABLE`, `DATA.ADHERENCE_PRIOR_ONLY`, `STATE.REFERENCE_CONFLICT` |
 | `GOAL` | `GOAL.TARGET_AMBITIOUS`, `GOAL.DEADLINE_TOO_CLOSE` |
 
 **Exemples (formes internes, puis texte utilisateur)** :
@@ -74,7 +79,9 @@ Métriques **agrégées et pseudonymisées**, sans donnée de santé (pas de zon
 
 | Catégorie | Métrique | Signal recherché |
 |-----------|----------|------------------|
-| Génération | % séances `INVALID` avant réparation (par archétype, par règle) | Générateur à corriger |
+| Génération | % séances `INVALID` avant réparation (par archétype, par règle) **ventilé par nature : SAFETY / FEASIBILITY / TECHNICAL / règle métier** | Générateur à corriger ; une violation TECHNICAL est un bug, une FEASIBILITY un problème de catalogue ou de temps, une SAFETY un problème de règle ou de sélection |
+| Génération | % d'issues `REST_RECOMMENDED` (par cause) | Règles trop strictes ou contexte réel de fatigue ou de douleur |
+| Sélection | Part des modalités (libre, machine, poulie, poids du corps) par preset et par emplacement | Biais de sélection (machines ignorées) |
 | Génération | Nombre moyen de tentatives de réparation ; % `REPAIR_EXHAUSTED` | Règles ou catalogue trop contraignants |
 | Génération | % `NO_VALID_SOLUTION` par code de raison | Profils non couverts, catalogue |
 | Génération | % replis du solveur, temps de génération p50 / p95 | Performance |
@@ -85,7 +92,8 @@ Métriques **agrégées et pseudonymisées**, sans donnée de santé (pas de zon
 | Variété | Répétitions accidentelles détectées ; `PLANNED_BUT_STAGNANT` | Anti-doublon, progression |
 | Adaptation | Nombre de révisions par utilisateur et par semaine ; taux d'acceptation des propositions | Stabilité, pertinence |
 | Progression | % d'exercices ancres qui progressent sur un mésocycle ; plafonds atteints | Stagnation ou progression irréaliste |
-| Sécurité | Signalements de douleur par archétype et par exercice (agrégés, sans identification) | Exercices ou dosages à revoir (revue G1) |
+| Sécurité | Signalements de douleur par archétype et par exercice (agrégés, sans identification ; **uniquement pour les utilisateurs ayant consenti**) | Exercices ou dosages à revoir (revue G1) |
+| Sécurité | Taux de `paused_safety` et de `suspended_scope` (agrégés) | Calibrage des règles G1, périmètre |
 | Moteur | Erreurs par code, par version | Régressions |
 
 Tableau de bord par **version du moteur et du ruleset**, pour comparer avant et après une release (déploiement progressif par feature flag, phase 1).

@@ -48,6 +48,8 @@ interface Exercise {
     grip: 0 | 1 | 2 | 3;                           // important en HYROX / cross (farmers, pull, sled pull)
   };
   skillLevel: 1 | 2 | 3 | 4 | 5;                   // niveau requis minimal (1 = accessible à un novice)
+  stability: 0 | 1 | 2 | 3;                        // V1.2 — stabilité du mouvement (machine, poulie guidée : élevée)
+  loadCeiling: 0 | 1 | 2 | 3;                      // V1.2 — potentiel de progression de charge (barre : élevé ; poids du corps : faible)
 
   // LOGISTIQUE (DurationEngine)
   timing: {
@@ -64,7 +66,7 @@ interface Exercise {
 
   // SÉCURITÉ
   contraindicationTags: string[];                  // 'no_overhead', 'no_impact', 'no_deep_knee_flexion', 'no_jumping'...
-  painSensitiveAreas: BodyArea[];                  // zones sollicitées (utilisé en cas de PainReport)
+  painSensitiveAreas: BodyArea[];                  // zones fonctionnelles sollicitées (§5 bis), utilisées par les restrictions et les douleurs
   maxEffortEligibility?: { minLevel: Level };      // tests RM, sprints maximaux
 
   // SUBSTITUTIONS (explicites, avec fidélité)
@@ -88,6 +90,25 @@ interface Exercise {
 - `painSensitiveAreas` : utilisé par le comportement conservateur en cas de douleur (doc 09 §7).
 - Les coûts sont **ordinaux (0–3)**. Personne ne sait dire qu'un back squat coûte « 7,3 » : on sait qu'il coûte plus qu'un leg extension. Des valeurs ordinales relues par des experts sont honnêtes et suffisent pour trier et comparer.
 
+## 2 bis. Quatre couches de description (V1.2)
+
+```
+EXERCISE
+  → movement patterns      (1 primaire + au plus 2 secondaires)     — saisis dans le catalogue
+  → muscles                (17 groupes, primaire / secondaire)        — saisis dans le catalogue
+  → functional body areas  (zones fonctionnelles, §5 bis)              — saisies dans le catalogue
+  → derived planning structures (8 structures, doc 04 §6)              — DÉRIVÉES, jamais saisies
+```
+
+| Couche | Sert à | Remarque |
+|--------|--------|----------|
+| Patterns | Programmation, couverture, anti-doublon, substitutions | L'unilatéralité est un attribut (`laterality`), pas un pattern |
+| Muscles | Volume (E1), répartition des séances | Pas de pourcentages : primaire / secondaire |
+| Zones fonctionnelles | Restrictions et douleurs | Aucune prétention anatomique ni diagnostique |
+| Structures de planification | DemandProfile, L1, InterferenceManager | Dérivées par une table de correspondance versionnée du ruleset |
+
+Aucune précision biomécanique supplémentaire n'est ajoutée sans besoin démontré.
+
 ## 3. Hiérarchie de similarité des mouvements
 
 ```
@@ -109,7 +130,7 @@ Pattern (squat)                            ← ce que fait le corps
 
 ## 4. Patterns (liste initiale, extensible)
 
-Les patterns sont une **table de données**, pas un `enum` figé dans le code : on peut en ajouter sans modifier le moteur (C10). Le moteur ne raisonne que sur leurs attributs (`region`, `plane`, `locomotor`).
+Les patterns sont une **table de données**, pas un `enum` figé dans le code : on peut en ajouter sans modifier le moteur (C10). Le moteur ne raisonne que sur leurs attributs (`region`, `plane`, `isLocomotor`).
 
 | PatternId | Région | Remarques |
 |-----------|--------|-----------|
@@ -139,10 +160,21 @@ Les patterns sont une **table de données**, pas un `enum` figé dans le code : 
 | `isolation_upper` / `isolation_lower` | local | curls, extensions, leg curl |
 | `mobility` | — | échauffement, retour au calme (exclu de l'anti-doublon) |
 
-## 5. Groupes musculaires (liste initiale)
+**Précisions V1.2** :
+- `lunge` couvre les mouvements unilatéraux à dominante genou (fentes, split squat, step-up) ; l'unilatéralité reste l'attribut `laterality`.
+- Les exercices hybrides passent par les patterns secondaires : thruster = `squat` + `push_vertical` ; wall ball = `squat` + `throwing` ; burpee broad jump = `locomotion` + `jumping` ; épaulé = `olympic_lift` (secondaires `hinge` + `squat`).
+- `olympic_lift` reste un pattern primaire, à cause de son coût technique et de ses interférences propres.
+- Les patterns locomoteurs (`running`, `sled_push`, `sled_pull`, ergomètres) portent le contexte d'exposition (doc 04 §3.3).
+
+## 5. Groupes musculaires (17, validés en V1.2)
 
 `quadriceps`, `hamstrings`, `glutes`, `adductors`, `calves`, `hip_flexors`, `lower_back`, `abs_obliques`, `chest`, `front_delts`, `side_delts`, `rear_delts`, `lats`, `upper_back_traps`, `biceps`, `triceps`, `forearms_grip`.
 Granularité volontairement moyenne : plus fin serait de la fausse précision pour le volume, plus grossier ne suffirait pas à répartir un split.
+
+## 5 bis. Zones fonctionnelles (V1.2)
+
+Liste fermée, utilisée **uniquement** par les restrictions (doc 02 §1) et les signalements de douleur (doc 09 §7) : épaule, coude, poignet/main, cou, haut du dos, bas du dos, hanche/aine, genou, jambe (mollet/Achille), cheville/pied.
+Ce sont des zones décrites en langage courant, sans prétention anatomique ni diagnostique. La liste est une donnée versionnée (contenu G1 pour son usage en sécurité).
 
 ## 6. Validation automatique du catalogue (CI)
 
@@ -153,6 +185,29 @@ Granularité volontairement moyenne : plus fin serait de la fausse précision po
 - Chaque exercice `loadable` a un `loadModel`, et chaque exercice utilisable en conditioning a un `workRate` pour chaque niveau.
 - Rapport de couverture : exercices par pattern × matériel × niveau.
 
-## 7. Taille visée V1
+## 7. Complétude du catalogue V1 (V1.2)
 
-Environ 250 à 350 exercices, suffisants pour tous les archétypes V1 et tous les presets de matériel. Le chiffre exact sera arrêté lors de la constitution du catalogue (décision à valider n° 12).
+**Le nombre d'exercices n'est plus un objectif** : c'est un résultat. Priorités : (1) couverture, (2) qualité des métadonnées, (3) substitutions, (4) progressions et régressions, (5) diversité réelle du matériel, (6) qualité avant quantité.
+
+Le catalogue est **suffisamment complet pour la V1** quand les critères CC1 à CC11 sont tous au vert dans le rapport de couverture (CI) et que la relecture G5 des métadonnées est terminée.
+
+| # | Critère |
+|---|---------|
+| CC1 | **Archétypes** : chaque emplacement de chaque archétype V1 a au moins N candidats admissibles (paramètre, valeur initiale 3), dont au moins 2 familles distinctes quand l'anti-doublon l'exige, pour chaque preset où l'archétype est déclaré faisable. Un archétype infaisable pour un preset est **déclaré** comme tel, jamais implicite |
+| CC2 | **Pattern × classe de matériel** : chaque pattern principal est couvert dans chaque classe pertinente (barre, haltères, KB, machine, poulie, poids du corps, élastique) |
+| CC3 | **Chaînes de progression et régression** complètes pour chaque famille technique (tractions, pompes, HSPU, toes-to-bar, double-unders, pistol, muscle-up…) ; au moins une régression accessible à un novice pour chaque mouvement principal chargé |
+| CC4 | **Substitutions** : chaque exercice a au moins un substitut de fidélité élevée ou moyenne dans une autre classe de matériel ; chaque station HYROX a des substituts pour chaque preset, avec leur fidélité |
+| CC5 | **Unilatéral** : des options unilatérales pour squat, hinge et fente dans chaque preset |
+| CC6 | **Machines et poulies** : dans le preset salle, chaque groupe musculaire principal a au moins une option machine **et** une option poulie |
+| CC7 | **Restrictions** : pour chaque restriction de la liste fermée, chaque archétype reste faisable avec alternatives, ou est déclaré infaisable |
+| CC8 | **Échauffement et mobilité** : échauffement général + spécifique par famille de patterns ; mobilité limitée à ce qu'utilisent les archétypes |
+| CC9 | **Course** : types de segments, éducatifs, accélérations, avec des métadonnées complètes (impact, structures dérivées) |
+| CC10 | **Qualité des métadonnées** : 100 % des champs obligatoires ; `workRate` pour tout exercice utilisable en conditioning ; timing ; contre-indications ; zones fonctionnelles ; correspondance aux structures ; statut au moins `reviewed` en bêta et `approved` (G5) en production |
+| CC11 | **Presets** : 6 points de départ modifiables. Salle commerciale : machines et poulies explicitement listées (liste cochable). Box cross-training. Salle HYROX (box + sled + SkiErg + sandbag). Maison équipée. Haltères seuls (+ banc optionnel). Poids du corps (+ barre de traction et élastiques optionnels) |
+
+**Machines et poulies = candidats de première classe.**
+- Il est **interdit** d'introduire un bonus implicite global favorisant les charges libres ou le polyarticulaire.
+- Les préférences de modalité sont portées par **l'emplacement** de l'archétype : un mouvement principal de force privilégie `loadCeiling` élevé ; un accessoire d'hypertrophie peut privilégier `stability` élevée et un faible coût technique ; un emplacement spécifique HYROX privilégie la spécificité.
+- Test d'équité et métrique de part des modalités par preset : doc 11 §2, doc 10 §3.
+
+Dépendance : CC1 suppose la liste des archétypes V1 (doc 13 §3, point 2).

@@ -103,57 +103,83 @@ HISTORIQUE ─────────┘
 
 **Niveau d'application contextuel (V1.1).** Le niveau d'une règle n'est pas forcément constant. Pour les heuristiques de programmation (notamment L1, L2, L3, doc 04 §4.1), le niveau est calculé par une **politique d'application** (`EnforcementPolicy`) qui dépend du contexte : type de stimulus, structure sollicitée, niveau de l'athlète, phase, proximité d'une séance clé et qualité des données. La politique est une donnée versionnée du ruleset, et le niveau retenu apparaît dans la trace.
 
+**SAFETY, FEASIBILITY et TECHNICAL restent distincts (V1.2).** Une violation HARD de chacune produit `INVALID`, mais pour des raisons différentes :
+- **SAFETY** = protection de l'utilisateur ;
+- **FEASIBILITY** = possibilité réelle d'exécuter la prescription (matériel, temps, existence) ;
+- **TECHNICAL** = intégrité du système (schéma, références, sérialisation, déterminisme).
+
+Chaque violation porte un reason code de son propre domaine (`SAFETY.*`, `FEASIBILITY.*`, `TECHNICAL.*`, doc 10 §1), et l'observabilité les compte séparément (doc 10 §3).
+
 Pourquoi deux axes : une règle comme « 48 h entre deux séances très sollicitantes pour le même groupe musculaire » est une *heuristique de programmation* (sa nature) qu'on applique comme un *plancher HARD* (son niveau). Mélanger les deux axes empêcherait de dire honnêtement quelles règles sont démontrées et lesquelles sont des choix prudents.
 
 ## 4. Score d'une solution
 
 ```ts
 interface SolutionScore {
-  feasible: boolean;                        // aucune violation HARD
-  tiers: number[];                          // un score par niveau de priorité (§5), du plus prioritaire au moins prioritaire
+  admissible: boolean;                      // couche A (§5) : aucune violation HARD (A1–A4)
+  optimization: [b1: number, b2: number, b3: number, b4: number, b5: number, b6: number];   // couche B (§5), dans l'ordre
   softPenalties: { ruleId: string; penalty: number }[];
   targets: { targetId: string; value: number }[];
 }
 ```
 
-La comparaison entre deux solutions faisables est **lexicographique avec tolérance**. On compare le niveau 1 ; si l'écart reste sous `ε(niveau)`, on passe au niveau 2, et ainsi de suite.
+La couche A est un **filtre** : une solution non admissible n'est jamais comparée. Entre solutions admissibles, la comparaison de la couche B est **lexicographique avec tolérance** : on compare B1 ; si l'écart reste sous `ε(B1)`, on passe à B2, et ainsi de suite jusqu'à B6.
 Pourquoi ne pas utiliser une somme pondérée unique : une somme permet à beaucoup de « variété » de compenser un peu de « spécificité », ce qui est contraire à la hiérarchie voulue. À l'inverse, un ordre lexicographique strict rendrait les niveaux inférieurs inutiles. La tolérance ε évite ces deux travers. Les valeurs ε sont des paramètres du ruleset.
 
-## 5. Hiérarchie des priorités (analyse de la proposition)
+## 5. Hiérarchie de décision (décision architecturale de référence, V1.2)
 
-Proposition initiale : 1 sécurité · 2 hard constraints · 3 cohérence · 4 objectif principal · 5 récupération · 6 progression · 7 durée · 8 préférences · 9 variété.
+La hiérarchie en 12 niveaux de la V1/V1.1 est **définitivement remplacée** par trois couches.
 
-**Problèmes identifiés :**
-1. La « durée » en position 7 mélange deux choses. Tenir dans le **temps réellement disponible** est une contrainte dure (C8), donc de niveau 2. En revanche, **coller à la durée cible** est une optimisation de faible niveau.
-2. La « récupération » en position 5 mélange elle aussi deux choses. Le **plancher de récupération** (ne jamais enchaîner deux sollicitations lourdes de la même structure) ne doit jamais être sacrifié à l'objectif principal. La **récupération optimale** (48 h plutôt que 36 h) peut, elle, céder face à la spécificité.
-3. Il manque la **stabilité du plan** : un plan qui change à chaque petit événement perd la confiance de l'utilisateur (C11, replanification minimale).
-4. Il manque les **objectifs secondaires**, à distinguer de l'objectif principal.
-5. Le **plaisir et l'adhérence** étaient rangés dans les « préférences » (niveau 8). Or une séance que l'utilisateur n'aime pas n'est pas faite. **Arbitrage V1.1** : l'adhérence est remontée (niveau 7), sous la sécurité, la faisabilité, les contraintes essentielles et la cohérence de l'objectif.
+### Couche A — ADMISSIBILITY (filtres HARD, non négociables)
 
-**Hiérarchie proposée (V1.1 ; la décision n° 6 reste ouverte) :**
+| | Filtre | Contenu |
+|--|--------|---------|
+| **A1** | **Safety** | Règles SAFETY, restrictions déclarées, douleurs actives (doc 09 §7), éligibilité aux efforts maximaux, `programStatus` et éligibilité (doc 09 §8) |
+| **A2** | **Feasibility** | Matériel et ses caractéristiques, **temps réellement disponible** (`p90 ≤ A`), jours, exclusions explicites de l'utilisateur, existence des exercices |
+| **A3** | **Minimum recovery constraints** | L1/L2/L3 lorsque l'`EnforcementPolicy` les rend HARD (doc 04 §4.1) |
+| **A4** | **Integrity** | Structure valide, invariants du programme (décharge présente, affûtage, pas de test maximal non éligible), intégrité technique (TECHNICAL) |
 
-| Niveau | Contenu | Nature |
-|------|---------|--------|
-| 1 | **Sécurité** : restrictions, signalements de douleur, règles SAFETY | HARD |
-| 2 | **Faisabilité** : matériel, temps disponible, jours, existence, structure, paramètres possibles, exclusions explicites de l'utilisateur | HARD |
-| 3 | **Contraintes essentielles de récupération** : planchers issus de L1/L2/L3 lorsqu'ils sont HARD dans le contexte (doc 04 §4.1) | HARD |
-| 4 | **Cohérence du programme** : logique de phase, décharges, tests, progression non contradictoire | HARD (invariants), sinon TARGET |
-| 5 | **Objectif principal** : spécificité | TARGET |
-| 6 | **Progression** : continuité des exercices ancres, surcharge progressive adaptée | TARGET |
-| 7 | **Adhérence probable** : solution que l'utilisateur est le plus susceptible de réaliser régulièrement (§5.1) | TARGET |
-| 8 | **Objectifs secondaires** | TARGET |
-| 9 | **Stabilité du plan** : changements minimaux | TARGET |
-| 10 | **Récupération optimale et répartition** dans la semaine | SOFT et TARGET |
-| 11 | **Adéquation à la durée cible**, dans la tolérance | TARGET |
-| 12 | **Variété** | SOFT |
+Un filtre ne se compense pas. L'ordre A1 → A4 sert uniquement à prioriser la réparation (doc 09 §2) et le message d'erreur.
 
-Les préférences explicites (exercices aimés ou détestés, formats) ne forment plus un niveau séparé : ce sont des **entrées du score d'adhérence**. Les exclusions explicites restent HARD (niveau 2).
+### Couche B — OPTIMIZATION (score lexicographique à tolérance ε, entre solutions admissibles)
 
-### 5.1 Score d'adhérence (V1.1)
+| | Critère |
+|--|---------|
+| **B1** | **Primary goal coherence** : spécificité, séances clés, logique de phase |
+| **B2** | **Progression** : continuité des exercices ancres, surcharge adaptée |
+| **B3** | **Adherence** : solution que l'utilisateur est le plus susceptible de réaliser régulièrement (§5.1) |
+| **B4** | **Secondary goals** |
+| **B5** | **Distribution quality** : récupération au-delà du minimum, répartition dans la semaine, adéquation à la durée cible dans la tolérance |
+| **B6** | **Variety / weak preferences** |
 
-L'adhérence ne départage que des solutions **sportivement comparables** : les écarts aux niveaux 1 à 6 restent sous la tolérance ε (§4). Elle ne peut donc jamais justifier une solution moins sûre ou moins cohérente.
+Les préférences ont trois traitements distincts : une exclusion explicite est un filtre (A2) ; « je n'aime pas » et le comportement observé alimentent B3 ; les préférences faibles ou esthétiques relèvent de B6.
 
-Estimation déterministe et explicable (pas de modèle opaque) à partir de signaux ordinaux :
+### Couche C — REPLANNING STABILITY (hystérésis)
+
+En replanification uniquement (AdaptationEngine, et comparaison avec la semaine précédente dans le GlobalPlanner), une solution remplace le plan actuel **seulement si** :
+- le plan actuel viole la couche A ; **ou**
+- le gain dépasse un **seuil d'hystérésis** (paramètre du ruleset) sur B1, B2 ou B3.
+
+Sinon, le plan actuel est conservé (`ADAPT.KEPT_STABILITY{gain, threshold}`). C'est le mécanisme principal contre les oscillations (doc 11 §8 bis).
+
+**Règle complémentaire d'adhérence** : si un exercice ou un format est sauté ou remplacé de façon répétée (N fois, paramètre), le moteur **propose** de l'exclure (`SELECT.EXCLUSION_SUGGESTED`). Il n'impose rien ; si l'utilisateur accepte, l'exclusion devient un filtre A2.
+
+### Cas de conflit de référence
+
+| Cas | Décision | Reason codes |
+|-----|----------|--------------|
+| Séance optimale mais trop longue | A2 : non admissible telle quelle ⇒ le DurationEngine réduit par leviers en préservant B1 ; sinon, changement d'archétype | `DURATION.ADJUSTED` |
+| Légèrement meilleure mais fortement détestée | Écart B1/B2 sous ε ⇒ B3 décide (la séance appréciée gagne). Écart au-delà de ε ⇒ la meilleure séance est gardée, avec une proposition d'exclusion | `SELECT.ADHERENCE_TIEBREAK`, `SELECT.EXCLUSION_SUGGESTED` |
+| Objectif secondaire incompatible avec une séance clé | B1 > B4 : la séance clé est conservée | `PLAN.SECONDARY_YIELDED` |
+| Variété contre progression | B2 > B6 : l'ancre est répétée (répétition prévue) ; la variété porte sur les accessoires | `DUPLICATE.PLANNED` |
+| Stabilité contre petite amélioration théorique | Gain sous le seuil d'hystérésis ⇒ plan conservé | `ADAPT.KEPT_STABILITY` |
+| Préférence contre sécurité | A1 est un filtre : la préférence ne peut rien, l'utilisateur en est informé | `SAFETY.OVERRIDES_PREFERENCE` |
+
+### 5.1 Score d'adhérence (B3)
+
+L'adhérence ne départage que des solutions **sportivement comparables** : les écarts en B1 et B2 restent sous la tolérance ε (§4). Elle ne peut donc jamais justifier une solution non admissible ou moins cohérente avec l'objectif principal.
+
+Estimation déterministe et explicable (pas de modèle opaque), à partir de signaux ordinaux :
 
 | Signal | Source | Effet |
 |--------|--------|-------|
@@ -163,7 +189,7 @@ Estimation déterministe et explicable (pas de modèle opaque) à partir de sign
 | Taux de réalisation selon la durée et le jour ou créneau | Historique réel | favorise les durées et jours réalistes |
 | Complexité logistique (changements de station, matériel rare) | Catalogue | défavorise |
 
-Sans historique (`dataSufficiency = none`), seules les préférences déclarées et la logistique jouent (`DATA.ADHERENCE_PRIOR_ONLY`). Le score d'adhérence est un **TARGET**, jamais une contrainte.
+Sans historique (`dataSufficiency = none`), seules les préférences déclarées et la logistique jouent (`DATA.ADHERENCE_PRIOR_ONLY`). Les sauts marqués `pain` ou `safety_pause` ne sont **jamais** interprétés comme un rejet (doc 08 §1). Pondérations : paramètres du ruleset.
 
 ## 6. Déterminisme
 
@@ -178,13 +204,16 @@ Sans historique (`dataSufficiency = none`), seules les préférences déclarées
 ```ts
 type EngineError = {
   code: 'NO_VALID_SOLUTION' | 'INSUFFICIENT_AVAILABILITY' | 'CONFLICTING_GOALS' | 'EQUIPMENT_INSUFFICIENT'
-      | 'SAFETY_BLOCK' | 'INVALID_INPUT' | 'REPAIR_EXHAUSTED' | 'UNSUPPORTED_VERSION';
+      | 'SAFETY_BLOCK' | 'OUT_OF_SCOPE' | 'INVALID_INPUT' | 'REPAIR_EXHAUSTED' | 'UNSUPPORTED_VERSION';
   reasons: ReasonCode[];          // ce qui bloque
   alternatives: Alternative[];    // ce qui serait possible
   trace: DecisionTrace;
 };
 interface Alternative { code: string; description: ReasonCode; patch: InputPatch; } // ex. { availableMinutes: 45 } ou { discipline: 'crosstraining' }
 ```
+
+`SAFETY_BLOCK` : génération bloquée par la sécurité (ex. `programStatus = paused_safety`, doc 09 §7). `OUT_OF_SCOPE` : population hors périmètre V1 (`programStatus = suspended_scope`, doc 09 §8).
+**Le repos n'est pas une erreur** : lorsqu'aucune séance pertinente n'est possible mais que se reposer est une issue sportivement valide (ex. après une restriction P3), le résultat est une issue normale `REST_RECOMMENDED` (doc 09 §2), et non une `EngineError`.
 
 Exemple du cahier des charges : « HYROX complet, 20 minutes, aucun matériel ».
 - Raisons : `DURATION.TARGET_BELOW_ARCHETYPE_MIN(hybrid_race_full_sim, min=75)`, `EQUIPMENT.MISSING_CRITICAL(skierg, rower, sled, wall_ball)`.
@@ -258,6 +287,8 @@ type EngineResult<T> =
 
 // ÉTAT
 buildAthleteState(input: EngineInput, ctx): EngineResult<AthleteState>;
+// EngineInput inclut : programStatus, eligibility (doc 09 §8) et healthDataConsent (doc 09 §7.3).
+// Si programStatus ≠ 'active', toute fonction de génération renvoie SAFETY_BLOCK ou OUT_OF_SCOPE.
 
 // PLANIFICATION
 generateProgram(input: EngineInput, ctx): EngineResult<Program>;                       // macro + semaines initiales

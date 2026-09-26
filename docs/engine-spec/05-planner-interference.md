@@ -8,7 +8,7 @@ Il n'utilise **aucun template de semaine figé** : la semaine résulte d'une all
 ### 1.1 INPUTS
 
 - `UserTrainingProfile`, `Goal[]`, `Availability`, `EquipmentProfile` (pour la faisabilité des archétypes)
-- `AthleteState` (doc 04)
+- `AthleteState` (doc 04), dont `programStatus` : si différent de `active`, aucune planification (`SAFETY_BLOCK` ou `OUT_OF_SCOPE`, doc 01 §7)
 - `Program` existant (pour prolonger le plan ou le replanifier), séances déjà réalisées ou verrouillées
 - `Ruleset` : paramètres de périodisation, fréquences, matrices L1/L2, tables d'interférence
 - Les moteurs de discipline, interrogés via `requestWeek()`
@@ -58,7 +58,7 @@ interface SessionVariant { archetypeId: string; demand: DemandProfile; minutes: 
    - Variables : une par demande. Domaine : `(jour, créneau, variante)` où le temps disponible ≥ `minutes.min` de la variante.
    - **HARD** : disponibilité, dates impossibles, contraintes récurrentes, maximum de séances par jour et doubles séances, L1 (récupération minimale, **y compris avec les 3 derniers jours de la semaine précédente, réalisés ou prévus**), L2, ordres `mustPrecede`, exclusions.
    - **SOFT** : espacement idéal des séances clés, préférences de jour, répartition des jours de repos, ordre favorable (séance de qualité sur une structure fraîche).
-   - **TARGET** : somme des `specificityScore` des variantes choisies, stabilité par rapport à la semaine précédente (même ossature si rien n'a changé), adéquation durée / jour.
+   - **Optimisation (couche B, doc 01 §5)** : somme des `specificityScore` des variantes choisies (B1), adéquation durée / jour (B5). **Stabilité par rapport à la semaine précédente** : hystérésis de la couche C (même seuil que l'AdaptationEngine), l'ossature précédente est conservée tant que le gain ne dépasse pas le seuil.
    - Algorithme : doc 01 §8 (MRV, forward checking, branch & bound, budget de nœuds, puis repli glouton et recherche locale).
 
 5d. **InterferenceManager** (§2) sur la solution. S'il reste des conflits, il résout ou renvoie des *nogoods* au solveur (au plus 2 allers-retours).
@@ -88,7 +88,7 @@ interface WeekPlan {
 | Aucun placement ne satisfait les HARD | Dégradation contrôlée et tracée : (1) retirer les `optional`, (2) choisir des variantes moins exigeantes, (3) réduire le quota de la discipline de priorité la plus basse, (4) seulement ensuite toucher un `standard` de l'objectif principal |
 | Séances clés de l'objectif principal impossibles à placer | `INSUFFICIENT_AVAILABILITY` ou `CONFLICTING_GOALS` + alternatives (ajouter un jour, allonger un créneau, abaisser la priorité d'un objectif) |
 | Budget de nœuds épuisé | Repli glouton et recherche locale ; si la solution est faisable, `PLAN.SOLVER.FALLBACK_USED` (métrique d'observabilité) |
-| Oscillation d'une semaine à l'autre | Cible de stabilité ; test longitudinal dédié (doc 11) |
+| Oscillation d'une semaine à l'autre | Hystérésis (couche C, doc 01 §5) ; tests longitudinaux et parcours adversariaux (doc 11 §8, §8 bis) |
 | Horizon trop court pour l'objectif | `PLAN.MACRO.COMPRESSED`, et si c'est irréaliste, `GOAL.DEADLINE_TOO_CLOSE` + alternatives |
 
 ## 2. InterferenceManager
@@ -123,13 +123,13 @@ Rôle : garantir que les séances des quatre disciplines **cohabitent**. Il anal
 
 | Id | Règle | Niveau | Nature |
 |----|-------|--------|--------|
-| I1 | Séance de course de qualité (seuil, intervalles, sortie longue) : pas dans les 24 h suivant une demande `lower_muscular = high` | HARD | heuristique (plancher) |
+| I1 | Séance de course de qualité (seuil, intervalles, sortie longue) : pas dans les 24 h suivant une demande « bas du corps » = `high` (alias max(`lower_knee`, `lower_hip`), doc 04 §6) | HARD (par défaut, via l'`EnforcementPolicy`) | heuristique (plancher) |
 | I2 | Même situation, entre 24 et 48 h | SOFT | heuristique |
 | I3 | Double séance le même jour : la séance de la discipline de plus haute priorité en premier ; écart ≥ `minHoursBetweenDoubleSessions` | SOFT (ordre), HARD (écart déclaré) | heuristique / préférence |
 | I4 | `grip = high` (tirage de sled, farmers lourds) et soulevé de terre lourd ou tractions lourdes à moins de 24 h | SOFT | heuristique |
 | I5 | Veille d'une séance `key` de type test, simulation ou sortie longue : aucune demande `high` sur une structure utilisée par cette séance | HARD | heuristique |
 | I6 | Deux jours consécutifs avec `high_intensity_systemic = high` : interdit pour novice et débutant (L2), SOFT sinon | HARD / SOFT | consensus |
-| I7 | Affûtage : pas de demande `high` sur `lower_muscular` / `axial_posterior` dans les J-x avant l'événement (x à définir) | HARD | consensus |
+| I7 | Affûtage : pas de demande `high` sur `lower_knee` / `lower_hip` / `axial` dans les J-x avant l'événement (x à définir) | HARD | consensus |
 | I8 | Activité externe déclarée (club, sport collectif) : son profil de demande est traité comme une séance verrouillée | HARD | faisabilité |
 
 ### 2.4 OUTPUTS
