@@ -79,4 +79,5 @@ Toute décision validée sera consignée ici (puis en ADR détaillé dans `docs/
 | Date | Décision | Statut |
 |------|----------|--------|
 | 2026-09-26 | Dossier d'architecture Phase 1 proposé | Validé comme fondation |
+| 2026-09-26 | Phase 2 : [TRAINING ENGINE SPECIFICATION V1](../engine-spec/README.md) proposée (remise en question de C3 et C6) | En revue |
 | 2026-09-26 | Contraintes C1 à C10 appliquées (GPS, économie, audit des règles, contenus, disciplines, charge multidimensionnelle, km hybrides, durée, tests longitudinaux, principes moteur) | Validé |

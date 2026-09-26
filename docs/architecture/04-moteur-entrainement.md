@@ -115,6 +115,8 @@ Chaque discipline a sa propre logique (la course raisonne en allures et en km, l
 
 ### 3.2 Langage commun entre modules : un profil de charge multidimensionnel
 
+> ⚠️ **Remplacé par TRAINING ENGINE SPECIFICATION V1** ([engine-spec/04](../engine-spec/04-charge-athlete-state.md)) : les 8 dimensions sont reclassées (LOAD / STATE / CONSTRAINT / CONTEXT / DERIVED) et `WeeklyLoadEnvelope` n'est plus un ensemble de 8 budgets. Seules 5 limites justifiées sont retenues. Le texte ci-dessous est conservé pour l'historique.
+
 > **Décision validée (2026-09-26)** : il n'existe **pas** de « budget de charge » numérique unique servant de vérité physiologique. La charge est décrite par plusieurs **dimensions indépendantes**, chacune avec ses propres contraintes. Un score synthétique peut exister comme **heuristique interne** (tri, départage, tableau de bord de debug), mais il n'est jamais utilisé pour autoriser ou refuser une séance à la place des dimensions.
 
 Dimensions minimales (à préciser lors du cadrage détaillé du moteur) :
@@ -285,6 +287,8 @@ Pourquoi : un espace de séances **borné et relu par des experts** garantit la 
 | **Règles = objets typés dans un registre + paramètres dans un ruleset versionné** | Testables unitairement, typées, traçables, seuils réglables | Changer la *logique* d'une règle demande une release (accepté : c'est souhaitable) |
 
 **Décision : registre de règles typées + ruleset paramétrique.**
+
+> ⚠️ **Précisé par TRAINING ENGINE SPECIFICATION V1** ([engine-spec/09](../engine-spec/09-validation-repair-regles.md)) : statuts `draft / reviewed / approved / deprecated`, classes de gouvernance G1–G5 ; la politique de blocage du build (« garde-fou de mise en production » ci-dessous) est **suspendue** en attendant la décision n° 4.
 
 > **Décision validée (2026-09-26)** : toute règle sportive importante est **documentée, versionnée et auditable**. Les règles destinées à la production doivent être relues par des professionnels qualifiés avant commercialisation.
 
