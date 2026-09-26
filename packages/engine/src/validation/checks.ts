@@ -250,6 +250,8 @@ const integrityCheck: SessionCheck = {
       if (b.format === 'sets' && b.grouping !== 'straight' && b.items.some((i) => i.prescription.type !== 'sets')) tech('superset/circuit : prescriptions en séries attendues', b.id);
     }
     for (const issue of leverDeclarationIssues(session)) tech(issue, session.id);
+    // Une séance porte au moins un bloc principal (son stimulus) — invariant structurel (spec 02 §5, 07 §3.3).
+    if (!session.blocks.some((b) => b.role === 'primary')) tech('séance sans bloc principal', session.id);
     if (session.targetDurationS > session.availableTimeS) tech('durée cible supérieure au temps disponible', session.id);
     return out;
   },

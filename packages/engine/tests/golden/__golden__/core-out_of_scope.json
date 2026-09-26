@@ -1,0 +1,58 @@
+{
+  "result": {
+    "error": {
+      "alternatives": [],
+      "code": "OUT_OF_SCOPE",
+      "reasons": [
+        {
+          "audience": "user",
+          "category": "safety",
+          "code": "SCOPE.OUT_OF_SCOPE",
+          "domain": "SCOPE",
+          "params": {
+            "eligibility": "excluded"
+          },
+          "ruleRefs": [],
+          "severity": "error"
+        }
+      ]
+    },
+    "status": "error",
+    "trace": {
+      "traceId": "tf692ac411b13b09c"
+    }
+  },
+  "trace": {
+    "entries": [
+      {
+        "decision": "suspended_scope",
+        "reasons": [
+          {
+            "audience": "user",
+            "category": "safety",
+            "code": "SCOPE.OUT_OF_SCOPE",
+            "domain": "SCOPE",
+            "params": {
+              "eligibility": "excluded"
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          }
+        ],
+        "seq": 0,
+        "step": "safety",
+        "subject": {
+          "id": "golden/out_of_scope",
+          "kind": "program"
+        }
+      }
+    ],
+    "seed": "golden/out_of_scope",
+    "traceId": "tf692ac411b13b09c",
+    "versions": {
+      "catalogVersion": "0.1.0-test",
+      "engineVersion": "0.1.0",
+      "rulesetVersion": "0.1.0-test"
+    }
+  }
+}

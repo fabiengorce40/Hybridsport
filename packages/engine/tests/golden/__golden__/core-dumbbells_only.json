@@ -1,0 +1,524 @@
+{
+  "result": {
+    "status": "ok",
+    "trace": {
+      "traceId": "tc31242ef75ea87a2"
+    },
+    "validation": {
+      "catalogVersion": "0.1.0-test",
+      "engineVersion": "0.1.0",
+      "errors": [],
+      "repairSuggestions": [
+        {
+          "kind": "compress_duration"
+        }
+      ],
+      "rulesEvaluated": [
+        {
+          "ruleId": "core.safety.program_status",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.safety.restriction",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.safety.pain_area",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.safety.pain_movement",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.feasibility.exercise_status",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.feasibility.equipment",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.feasibility.user_exclusion",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.feasibility.day",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.feasibility.duration",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.recovery.min_gap",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.integrity.structure",
+          "version": "1.0.0"
+        }
+      ],
+      "rulesetVersion": "0.1.0-test",
+      "status": "VALID_WITH_WARNINGS",
+      "warnings": [
+        {
+          "level": "soft",
+          "nature": "FEASIBILITY",
+          "reason": {
+            "audience": "internal",
+            "category": "business_soft",
+            "code": "DURATION.OUT_OF_TOLERANCE",
+            "domain": "DURATION",
+            "params": {
+              "lowerS": 1566,
+              "p50S": 1840,
+              "upperS": 1827
+            },
+            "ruleRefs": [],
+            "severity": "warning"
+          },
+          "ruleId": "core.feasibility.duration",
+          "ruleVersion": "1.0.0",
+          "target": {
+            "id": "session.test.upper",
+            "kind": "session"
+          }
+        }
+      ]
+    },
+    "value": {
+      "athleteLevel": "intermediate",
+      "availableTimeS": 2100,
+      "blocks": [
+        {
+          "format": "continuous",
+          "id": "b.warmup",
+          "items": [
+            {
+              "exerciseId": "ex.hip_mobility_flow",
+              "id": "i.mob",
+              "prescription": {
+                "seconds": 300,
+                "sides": 1,
+                "type": "mobility"
+              }
+            }
+          ],
+          "kind": "warmup",
+          "levers": [],
+          "minDurationS": 300,
+          "optional": false,
+          "role": "support"
+        },
+        {
+          "format": "sets",
+          "grouping": "straight",
+          "id": "b.main",
+          "items": [
+            {
+              "exerciseId": "ex.db_bench_press",
+              "id": "i.bench",
+              "prescription": {
+                "sets": [
+                  {
+                    "kind": "rampup",
+                    "reps": 5,
+                    "restAfterS": 60
+                  },
+                  {
+                    "kind": "rampup",
+                    "reps": 5,
+                    "restAfterS": 60
+                  },
+                  {
+                    "kind": "working",
+                    "reps": 5,
+                    "restAfterS": 150
+                  },
+                  {
+                    "kind": "working",
+                    "reps": 5,
+                    "restAfterS": 150
+                  },
+                  {
+                    "kind": "working",
+                    "reps": 5,
+                    "restAfterS": 150
+                  }
+                ],
+                "type": "sets"
+              }
+            }
+          ],
+          "kind": "strength",
+          "levers": [],
+          "optional": false,
+          "role": "primary"
+        },
+        {
+          "format": "sets",
+          "grouping": "straight",
+          "id": "b.acc",
+          "items": [
+            {
+              "exerciseId": "ex.db_row",
+              "id": "i.row",
+              "prescription": {
+                "sets": [
+                  {
+                    "kind": "working",
+                    "reps": 10,
+                    "restAfterS": 90
+                  },
+                  {
+                    "kind": "working",
+                    "reps": 10,
+                    "restAfterS": 90
+                  },
+                  {
+                    "kind": "working",
+                    "reps": 10,
+                    "restAfterS": 90
+                  }
+                ],
+                "type": "sets"
+              }
+            },
+            {
+              "exerciseId": "ex.db_bench_press",
+              "id": "i.fly",
+              "prescription": {
+                "sets": [
+                  {
+                    "kind": "working",
+                    "reps": 12,
+                    "restAfterS": 60
+                  },
+                  {
+                    "kind": "working",
+                    "reps": 12,
+                    "restAfterS": 60
+                  },
+                  {
+                    "kind": "working",
+                    "reps": 12,
+                    "restAfterS": 60
+                  }
+                ],
+                "type": "sets"
+              }
+            }
+          ],
+          "kind": "accessory",
+          "levers": [
+            {
+              "kind": "superset_accessories"
+            },
+            {
+              "kind": "reduce_sets",
+              "min": 2
+            },
+            {
+              "floorS": 45,
+              "kind": "reduce_rest"
+            },
+            {
+              "keepAtLeast": 1,
+              "kind": "drop_accessory"
+            }
+          ],
+          "optional": false,
+          "role": "support"
+        }
+      ],
+      "discipline": "strength",
+      "id": "session.test.upper",
+      "targetDurationS": 1740,
+      "toleranceProfile": "strength_sets"
+    },
+    "warnings": [
+      {
+        "audience": "internal",
+        "category": "business_soft",
+        "code": "DURATION.OUT_OF_TOLERANCE",
+        "domain": "DURATION",
+        "params": {
+          "lowerS": 1566,
+          "p50S": 1840,
+          "upperS": 1827
+        },
+        "ruleRefs": [],
+        "severity": "warning"
+      }
+    ]
+  },
+  "trace": {
+    "entries": [
+      {
+        "decision": "active",
+        "reasons": [],
+        "seq": 0,
+        "step": "safety",
+        "subject": {
+          "id": "golden/dumbbells_only",
+          "kind": "program"
+        }
+      },
+      {
+        "decision": "FITS",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "information",
+            "code": "DURATION.ESTIMATED",
+            "domain": "DURATION",
+            "params": {
+              "p50S": 1780,
+              "p90S": 2009.802498231163
+            },
+            "ruleRefs": [],
+            "severity": "info"
+          }
+        ],
+        "seq": 1,
+        "step": "duration",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "INVALID",
+        "reasons": [
+          {
+            "audience": "user",
+            "category": "feasibility",
+            "code": "FEASIBILITY.EQUIPMENT_MISSING",
+            "domain": "FEASIBILITY",
+            "params": {
+              "exerciseId": "ex.bench_press",
+              "missing": [
+                "barbell",
+                "plates"
+              ]
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          },
+          {
+            "audience": "user",
+            "category": "feasibility",
+            "code": "FEASIBILITY.EQUIPMENT_MISSING",
+            "domain": "FEASIBILITY",
+            "params": {
+              "exerciseId": "ex.cable_fly",
+              "missing": [
+                "cable"
+              ]
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          }
+        ],
+        "seq": 2,
+        "step": "validate",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "none",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "optimization",
+            "code": "SELECT.NO_ADMISSIBLE_CANDIDATE",
+            "domain": "SELECT",
+            "params": {
+              "candidates": 1
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          }
+        ],
+        "rejected": [
+          {
+            "candidate": "session.test.upper",
+            "reasons": [
+              {
+                "audience": "internal",
+                "category": "optimization",
+                "code": "SELECT.CANDIDATE_INADMISSIBLE",
+                "domain": "SELECT",
+                "params": {
+                  "candidateId": "session.test.upper",
+                  "layers": [
+                    "A2"
+                  ]
+                },
+                "ruleRefs": [],
+                "severity": "info"
+              },
+              {
+                "audience": "user",
+                "category": "feasibility",
+                "code": "FEASIBILITY.EQUIPMENT_MISSING",
+                "domain": "FEASIBILITY",
+                "params": {
+                  "exerciseId": "ex.bench_press",
+                  "missing": [
+                    "barbell",
+                    "plates"
+                  ]
+                },
+                "ruleRefs": [],
+                "severity": "error"
+              },
+              {
+                "audience": "user",
+                "category": "feasibility",
+                "code": "FEASIBILITY.EQUIPMENT_MISSING",
+                "domain": "FEASIBILITY",
+                "params": {
+                  "exerciseId": "ex.cable_fly",
+                  "missing": [
+                    "cable"
+                  ]
+                },
+                "ruleRefs": [],
+                "severity": "error"
+              }
+            ]
+          }
+        ],
+        "seq": 3,
+        "step": "score",
+        "subject": {
+          "id": "golden/dumbbells_only",
+          "kind": "program"
+        }
+      },
+      {
+        "decision": "INVALID",
+        "reasons": [
+          {
+            "audience": "user",
+            "category": "feasibility",
+            "code": "FEASIBILITY.EQUIPMENT_MISSING",
+            "domain": "FEASIBILITY",
+            "params": {
+              "exerciseId": "ex.bench_press",
+              "missing": [
+                "barbell",
+                "plates"
+              ]
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          },
+          {
+            "audience": "user",
+            "category": "feasibility",
+            "code": "FEASIBILITY.EQUIPMENT_MISSING",
+            "domain": "FEASIBILITY",
+            "params": {
+              "exerciseId": "ex.cable_fly",
+              "missing": [
+                "cable"
+              ]
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          }
+        ],
+        "seq": 4,
+        "step": "validate",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "replace_exercise",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "adaptation",
+            "code": "REPAIR.ACTION",
+            "domain": "REPAIR",
+            "params": {
+              "action": "replace_exercise",
+              "attempt": 1,
+              "target": "i.bench"
+            },
+            "ruleRefs": [],
+            "severity": "info"
+          }
+        ],
+        "seq": 5,
+        "step": "repair",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "replace_exercise",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "adaptation",
+            "code": "REPAIR.ACTION",
+            "domain": "REPAIR",
+            "params": {
+              "action": "replace_exercise",
+              "attempt": 1,
+              "target": "i.fly"
+            },
+            "ruleRefs": [],
+            "severity": "info"
+          }
+        ],
+        "seq": 6,
+        "step": "repair",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "VALID_WITH_WARNINGS",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "business_soft",
+            "code": "DURATION.OUT_OF_TOLERANCE",
+            "domain": "DURATION",
+            "params": {
+              "lowerS": 1566,
+              "p50S": 1840,
+              "upperS": 1827
+            },
+            "ruleRefs": [],
+            "severity": "warning"
+          }
+        ],
+        "seq": 7,
+        "step": "validate",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      }
+    ],
+    "seed": "golden/dumbbells_only",
+    "traceId": "tc31242ef75ea87a2",
+    "versions": {
+      "catalogVersion": "0.1.0-test",
+      "engineVersion": "0.1.0",
+      "rulesetVersion": "0.1.0-test"
+    }
+  }
+}

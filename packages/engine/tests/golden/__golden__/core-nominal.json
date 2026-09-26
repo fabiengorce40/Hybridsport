@@ -1,0 +1,348 @@
+{
+  "result": {
+    "status": "ok",
+    "trace": {
+      "traceId": "t507fea81098cb8dc"
+    },
+    "validation": {
+      "catalogVersion": "0.1.0-test",
+      "engineVersion": "0.1.0",
+      "errors": [],
+      "repairSuggestions": [],
+      "rulesEvaluated": [
+        {
+          "ruleId": "core.safety.program_status",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.safety.restriction",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.safety.pain_area",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.safety.pain_movement",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.feasibility.exercise_status",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.feasibility.equipment",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.feasibility.user_exclusion",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.feasibility.day",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.feasibility.duration",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.recovery.min_gap",
+          "version": "1.0.0"
+        },
+        {
+          "ruleId": "core.integrity.structure",
+          "version": "1.0.0"
+        }
+      ],
+      "rulesetVersion": "0.1.0-test",
+      "status": "VALID",
+      "warnings": []
+    },
+    "value": {
+      "athleteLevel": "intermediate",
+      "availableTimeS": 2100,
+      "blocks": [
+        {
+          "format": "continuous",
+          "id": "b.warmup",
+          "items": [
+            {
+              "exerciseId": "ex.hip_mobility_flow",
+              "id": "i.mob",
+              "prescription": {
+                "seconds": 300,
+                "sides": 1,
+                "type": "mobility"
+              }
+            }
+          ],
+          "kind": "warmup",
+          "levers": [],
+          "minDurationS": 300,
+          "optional": false,
+          "role": "support"
+        },
+        {
+          "format": "sets",
+          "grouping": "straight",
+          "id": "b.main",
+          "items": [
+            {
+              "exerciseId": "ex.bench_press",
+              "id": "i.bench",
+              "prescription": {
+                "sets": [
+                  {
+                    "kind": "rampup",
+                    "reps": 5,
+                    "restAfterS": 60
+                  },
+                  {
+                    "kind": "rampup",
+                    "reps": 5,
+                    "restAfterS": 60
+                  },
+                  {
+                    "kind": "working",
+                    "reps": 5,
+                    "restAfterS": 150
+                  },
+                  {
+                    "kind": "working",
+                    "reps": 5,
+                    "restAfterS": 150
+                  },
+                  {
+                    "kind": "working",
+                    "reps": 5,
+                    "restAfterS": 150
+                  }
+                ],
+                "type": "sets"
+              }
+            }
+          ],
+          "kind": "strength",
+          "levers": [],
+          "optional": false,
+          "role": "primary"
+        },
+        {
+          "format": "sets",
+          "grouping": "straight",
+          "id": "b.acc",
+          "items": [
+            {
+              "exerciseId": "ex.db_row",
+              "id": "i.row",
+              "prescription": {
+                "sets": [
+                  {
+                    "kind": "working",
+                    "reps": 10,
+                    "restAfterS": 90
+                  },
+                  {
+                    "kind": "working",
+                    "reps": 10,
+                    "restAfterS": 90
+                  },
+                  {
+                    "kind": "working",
+                    "reps": 10,
+                    "restAfterS": 90
+                  }
+                ],
+                "type": "sets"
+              }
+            },
+            {
+              "exerciseId": "ex.cable_fly",
+              "id": "i.fly",
+              "prescription": {
+                "sets": [
+                  {
+                    "kind": "working",
+                    "reps": 12,
+                    "restAfterS": 60
+                  },
+                  {
+                    "kind": "working",
+                    "reps": 12,
+                    "restAfterS": 60
+                  },
+                  {
+                    "kind": "working",
+                    "reps": 12,
+                    "restAfterS": 60
+                  }
+                ],
+                "type": "sets"
+              }
+            }
+          ],
+          "kind": "accessory",
+          "levers": [
+            {
+              "kind": "superset_accessories"
+            },
+            {
+              "kind": "reduce_sets",
+              "min": 2
+            },
+            {
+              "floorS": 45,
+              "kind": "reduce_rest"
+            },
+            {
+              "keepAtLeast": 1,
+              "kind": "drop_accessory"
+            }
+          ],
+          "optional": false,
+          "role": "support"
+        }
+      ],
+      "discipline": "strength",
+      "id": "session.test.upper",
+      "targetDurationS": 1740,
+      "toleranceProfile": "strength_sets"
+    },
+    "warnings": []
+  },
+  "trace": {
+    "entries": [
+      {
+        "decision": "active",
+        "reasons": [],
+        "seq": 0,
+        "step": "safety",
+        "subject": {
+          "id": "golden/nominal",
+          "kind": "program"
+        }
+      },
+      {
+        "decision": "FITS",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "information",
+            "code": "DURATION.ESTIMATED",
+            "domain": "DURATION",
+            "params": {
+              "p50S": 1780,
+              "p90S": 2009.802498231163
+            },
+            "ruleRefs": [],
+            "severity": "info"
+          }
+        ],
+        "seq": 1,
+        "step": "duration",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "VALID",
+        "reasons": [],
+        "seq": 2,
+        "step": "validate",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "SHORTER_ACCEPTED",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "information",
+            "code": "DURATION.ESTIMATED",
+            "domain": "DURATION",
+            "params": {
+              "p50S": 1499,
+              "p90S": 1692.1008227039208
+            },
+            "ruleRefs": [],
+            "severity": "info"
+          },
+          {
+            "audience": "user",
+            "category": "optimization",
+            "code": "DURATION.SHORTER_ACCEPTED",
+            "domain": "DURATION",
+            "params": {
+              "p50S": 1499,
+              "targetS": 1740
+            },
+            "ruleRefs": [],
+            "severity": "info"
+          }
+        ],
+        "seq": 3,
+        "step": "duration",
+        "subject": {
+          "id": "session.test.upper_machines",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "VALID",
+        "reasons": [],
+        "seq": 4,
+        "step": "validate",
+        "subject": {
+          "id": "session.test.upper_machines",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "selected",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "optimization",
+            "code": "SELECT.DECIDED_AT_LEVEL",
+            "domain": "SELECT",
+            "params": {
+              "gap": 0.09999999999999998,
+              "level": "B2",
+              "winnerId": "session.test.upper"
+            },
+            "ruleRefs": [],
+            "severity": "info"
+          }
+        ],
+        "rejected": [],
+        "seq": 5,
+        "step": "score",
+        "subject": {
+          "id": "golden/nominal",
+          "kind": "program"
+        }
+      },
+      {
+        "decision": "VALID",
+        "reasons": [],
+        "seq": 6,
+        "step": "result",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      }
+    ],
+    "seed": "golden/nominal",
+    "traceId": "t507fea81098cb8dc",
+    "versions": {
+      "catalogVersion": "0.1.0-test",
+      "engineVersion": "0.1.0",
+      "rulesetVersion": "0.1.0-test"
+    }
+  }
+}

@@ -40,6 +40,12 @@ describe('RepairEngine', () => {
     if (out.result.status === 'rest_recommended') expect(out.result.reasons[0]?.code).toBe('REPAIR.REST_RECOMMENDED');
   });
 
+  it('une douleur qui retire tout le travail principal ⇒ REST_RECOMMENDED, jamais une séance réduite à l’échauffement', () => {
+    const ctx = baseContext({ areaRestrictions: [{ area: 'shoulder', action: 'exclude', painLevel: 'P2' }] });
+    const out = repairSession(session(), ctx, deps(), opts);
+    expect(out.result.status).toBe('rest_recommended');
+  });
+
   it('programme en pause ou hors périmètre ⇒ SAFETY_BLOCK / OUT_OF_SCOPE, aucune réparation', () => {
     const paused = repairSession(session(), baseContext({ programStatus: 'paused_safety' }), d, opts);
     expect(paused.result.status === 'error' && paused.result.error.code).toBe('SAFETY_BLOCK');

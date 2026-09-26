@@ -1,0 +1,434 @@
+{
+  "result": {
+    "reasons": [
+      {
+        "audience": "user",
+        "category": "adaptation",
+        "code": "REPAIR.REST_RECOMMENDED",
+        "domain": "REPAIR",
+        "params": {
+          "cause": "SAFETY.PAIN.ZONE_RESTRICTED"
+        },
+        "ruleRefs": [],
+        "severity": "notice"
+      },
+      {
+        "audience": "user",
+        "category": "safety",
+        "code": "SAFETY.PAIN.ZONE_RESTRICTED",
+        "domain": "SAFETY",
+        "params": {
+          "bodyArea": "shoulder",
+          "exerciseId": "ex.bench_press",
+          "painLevel": "P2"
+        },
+        "ruleRefs": [],
+        "severity": "error"
+      }
+    ],
+    "status": "rest_recommended",
+    "trace": {
+      "traceId": "t2705c3cb8a89a1be"
+    }
+  },
+  "trace": {
+    "entries": [
+      {
+        "decision": "active",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "information",
+            "code": "DATA.READINESS_UNKNOWN",
+            "domain": "DATA",
+            "params": {},
+            "ruleRefs": [],
+            "severity": "info"
+          },
+          {
+            "audience": "internal",
+            "category": "information",
+            "code": "DATA.HEALTH_HISTORY_UNAVAILABLE",
+            "domain": "DATA",
+            "params": {},
+            "ruleRefs": [],
+            "severity": "info"
+          }
+        ],
+        "seq": 0,
+        "step": "safety",
+        "subject": {
+          "id": "golden/pain_p2_no_consent",
+          "kind": "program"
+        }
+      },
+      {
+        "decision": "FITS",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "information",
+            "code": "DURATION.ESTIMATED",
+            "domain": "DURATION",
+            "params": {
+              "p50S": 1780,
+              "p90S": 2009.802498231163
+            },
+            "ruleRefs": [],
+            "severity": "info"
+          }
+        ],
+        "seq": 1,
+        "step": "duration",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "INVALID",
+        "reasons": [
+          {
+            "audience": "user",
+            "category": "safety",
+            "code": "SAFETY.PAIN.ZONE_RESTRICTED",
+            "domain": "SAFETY",
+            "params": {
+              "bodyArea": "shoulder",
+              "exerciseId": "ex.bench_press",
+              "painLevel": "P2"
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          },
+          {
+            "audience": "user",
+            "category": "safety",
+            "code": "SAFETY.PAIN.ZONE_RESTRICTED",
+            "domain": "SAFETY",
+            "params": {
+              "bodyArea": "shoulder",
+              "exerciseId": "ex.db_row",
+              "painLevel": "P2"
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          },
+          {
+            "audience": "user",
+            "category": "safety",
+            "code": "SAFETY.PAIN.ZONE_RESTRICTED",
+            "domain": "SAFETY",
+            "params": {
+              "bodyArea": "shoulder",
+              "exerciseId": "ex.cable_fly",
+              "painLevel": "P2"
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          }
+        ],
+        "seq": 2,
+        "step": "validate",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "none",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "optimization",
+            "code": "SELECT.NO_ADMISSIBLE_CANDIDATE",
+            "domain": "SELECT",
+            "params": {
+              "candidates": 1
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          }
+        ],
+        "rejected": [
+          {
+            "candidate": "session.test.upper",
+            "reasons": [
+              {
+                "audience": "internal",
+                "category": "optimization",
+                "code": "SELECT.CANDIDATE_INADMISSIBLE",
+                "domain": "SELECT",
+                "params": {
+                  "candidateId": "session.test.upper",
+                  "layers": [
+                    "A1"
+                  ]
+                },
+                "ruleRefs": [],
+                "severity": "info"
+              },
+              {
+                "audience": "user",
+                "category": "safety",
+                "code": "SAFETY.PAIN.ZONE_RESTRICTED",
+                "domain": "SAFETY",
+                "params": {
+                  "bodyArea": "shoulder",
+                  "exerciseId": "ex.bench_press",
+                  "painLevel": "P2"
+                },
+                "ruleRefs": [],
+                "severity": "error"
+              },
+              {
+                "audience": "user",
+                "category": "safety",
+                "code": "SAFETY.PAIN.ZONE_RESTRICTED",
+                "domain": "SAFETY",
+                "params": {
+                  "bodyArea": "shoulder",
+                  "exerciseId": "ex.db_row",
+                  "painLevel": "P2"
+                },
+                "ruleRefs": [],
+                "severity": "error"
+              },
+              {
+                "audience": "user",
+                "category": "safety",
+                "code": "SAFETY.PAIN.ZONE_RESTRICTED",
+                "domain": "SAFETY",
+                "params": {
+                  "bodyArea": "shoulder",
+                  "exerciseId": "ex.cable_fly",
+                  "painLevel": "P2"
+                },
+                "ruleRefs": [],
+                "severity": "error"
+              }
+            ]
+          }
+        ],
+        "seq": 3,
+        "step": "score",
+        "subject": {
+          "id": "golden/pain_p2_no_consent",
+          "kind": "program"
+        }
+      },
+      {
+        "decision": "INVALID",
+        "reasons": [
+          {
+            "audience": "user",
+            "category": "safety",
+            "code": "SAFETY.PAIN.ZONE_RESTRICTED",
+            "domain": "SAFETY",
+            "params": {
+              "bodyArea": "shoulder",
+              "exerciseId": "ex.bench_press",
+              "painLevel": "P2"
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          },
+          {
+            "audience": "user",
+            "category": "safety",
+            "code": "SAFETY.PAIN.ZONE_RESTRICTED",
+            "domain": "SAFETY",
+            "params": {
+              "bodyArea": "shoulder",
+              "exerciseId": "ex.db_row",
+              "painLevel": "P2"
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          },
+          {
+            "audience": "user",
+            "category": "safety",
+            "code": "SAFETY.PAIN.ZONE_RESTRICTED",
+            "domain": "SAFETY",
+            "params": {
+              "bodyArea": "shoulder",
+              "exerciseId": "ex.cable_fly",
+              "painLevel": "P2"
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          }
+        ],
+        "seq": 4,
+        "step": "validate",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "remove_item",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "adaptation",
+            "code": "REPAIR.ACTION",
+            "domain": "REPAIR",
+            "params": {
+              "action": "remove_item",
+              "attempt": 1,
+              "target": "i.bench"
+            },
+            "ruleRefs": [],
+            "severity": "info"
+          }
+        ],
+        "seq": 5,
+        "step": "repair",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "remove_item",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "adaptation",
+            "code": "REPAIR.ACTION",
+            "domain": "REPAIR",
+            "params": {
+              "action": "remove_item",
+              "attempt": 1,
+              "target": "i.row"
+            },
+            "ruleRefs": [],
+            "severity": "info"
+          }
+        ],
+        "seq": 6,
+        "step": "repair",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "remove_item",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "adaptation",
+            "code": "REPAIR.ACTION",
+            "domain": "REPAIR",
+            "params": {
+              "action": "remove_item",
+              "attempt": 1,
+              "target": "i.fly"
+            },
+            "ruleRefs": [],
+            "severity": "info"
+          }
+        ],
+        "seq": 7,
+        "step": "repair",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "INVALID",
+        "reasons": [
+          {
+            "audience": "user",
+            "category": "safety",
+            "code": "SAFETY.PAIN.ZONE_RESTRICTED",
+            "domain": "SAFETY",
+            "params": {
+              "bodyArea": "shoulder",
+              "exerciseId": "ex.bench_press",
+              "painLevel": "P2"
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          }
+        ],
+        "seq": 8,
+        "step": "validate",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "remove_item",
+        "reasons": [
+          {
+            "audience": "internal",
+            "category": "adaptation",
+            "code": "REPAIR.ACTION",
+            "domain": "REPAIR",
+            "params": {
+              "action": "remove_item",
+              "attempt": 2,
+              "target": "i.bench"
+            },
+            "ruleRefs": [],
+            "severity": "info"
+          }
+        ],
+        "seq": 9,
+        "step": "repair",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      },
+      {
+        "decision": "rest_recommended",
+        "reasons": [
+          {
+            "audience": "user",
+            "category": "adaptation",
+            "code": "REPAIR.REST_RECOMMENDED",
+            "domain": "REPAIR",
+            "params": {
+              "cause": "SAFETY.PAIN.ZONE_RESTRICTED"
+            },
+            "ruleRefs": [],
+            "severity": "notice"
+          },
+          {
+            "audience": "user",
+            "category": "safety",
+            "code": "SAFETY.PAIN.ZONE_RESTRICTED",
+            "domain": "SAFETY",
+            "params": {
+              "bodyArea": "shoulder",
+              "exerciseId": "ex.bench_press",
+              "painLevel": "P2"
+            },
+            "ruleRefs": [],
+            "severity": "error"
+          }
+        ],
+        "seq": 10,
+        "step": "repair",
+        "subject": {
+          "id": "session.test.upper",
+          "kind": "session"
+        }
+      }
+    ],
+    "seed": "golden/pain_p2_no_consent",
+    "traceId": "t2705c3cb8a89a1be",
+    "versions": {
+      "catalogVersion": "0.1.0-test",
+      "engineVersion": "0.1.0",
+      "rulesetVersion": "0.1.0-test"
+    }
+  }
+}

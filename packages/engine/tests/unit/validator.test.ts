@@ -81,6 +81,12 @@ describe('SessionValidator', () => {
     expect(new Set(r.report.errors.map((e) => e.reason.category))).toEqual(new Set(['safety', 'feasibility', 'technical']));
   });
 
+  it('A4 : une séance sans bloc principal est structurellement invalide', () => {
+    const input = strengthSessionInput();
+    const r = validateSession(session({ ...input, blocks: [input.blocks[0]!] }), baseContext(), d);
+    expect(r.report.errors.map((e) => e.reason.params.problem)).toContain('séance sans bloc principal');
+  });
+
   it('fail-closed : un contrôle sans fiche dans le ruleset rend la validation INVALID', () => {
     const base = testRulesetDocument();
     const rs = testRuleset({ ...base, rules: base.rules.filter((r) => r.id !== 'core.safety.pain_area') });

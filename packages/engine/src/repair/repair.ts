@@ -44,9 +44,10 @@ function applyActions(s: SessionDraft, actions: readonly RepairAction[], deps: V
         const blocks = current.blocks
           .map((b) => ({ ...b, items: b.items.filter((i) => i.id !== a.itemId) }))
           .filter((b) => b.items.length > 0);
-        // Retirer le dernier exercice viderait la séance : sans effet, la violation subsiste et
-        // l'issue sera REST_RECOMMENDED ou une erreur explicite — jamais une séance vide.
-        if (blocks.length > 0) current = { ...current, blocks };
+        // Retirer le dernier exercice du travail PRINCIPAL ferait perdre à la séance son objet (spec 09 §2) :
+        // sans effet, la violation subsiste et l'issue sera REST_RECOMMENDED ou une erreur explicite —
+        // jamais une séance vidée de son stimulus principal.
+        if (blocks.some((b) => b.role === 'primary')) current = { ...current, blocks };
         break;
       }
       case 'drop_block':
