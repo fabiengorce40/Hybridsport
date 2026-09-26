@@ -42,6 +42,8 @@ describe('architecture — aucune constante sportive cachée (spec 09 §3.1)', (
       });
     }
     expect(undeclared).toEqual([]);
-    expect(dynamic).toEqual([]);
+    // Seule exception : l'identifiant `thresholdParam` provient d'une politique du ruleset (donnée),
+    // validé au chargement par policyIssues (paramètre existant et numérique).
+    expect(dynamic).toEqual(['packages/engine/src/rules/enforcement.ts: ruleset.number(thresholdParam)']);
   });
 });

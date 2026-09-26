@@ -5,6 +5,7 @@ import { createCoreRegistry } from '../trace/index.js';
 import { zRulesetDocument } from '@hybridsport/domain';
 import type { RulesetDocument } from '@hybridsport/domain';
 import { RulesetParameterError } from './errors.js';
+import { policyIssues } from './enforcement.js';
 
 const registry = createCoreRegistry();
 
@@ -140,5 +141,13 @@ export function loadRuleset(input: unknown): LoadResult {
     return { ok: false, issues: parsed.error.issues.map((i) => issue(i.path.join('.') || '$', i.message)) };
   }
   const issues = semanticIssues(parsed.data);
-  return issues.length > 0 ? { ok: false, issues } : { ok: true, ruleset: new LoadedRuleset(parsed.data) };
+  if (issues.length > 0) return { ok: false, issues };
+  const ruleset = new LoadedRuleset(parsed.data);
+  let policyProblems: string[];
+  try {
+    policyProblems = policyIssues(ruleset);
+  } catch (e) {
+    policyProblems = [e instanceof Error ? e.message : String(e)];
+  }
+  return policyProblems.length > 0 ? { ok: false, issues: policyProblems.map((p) => issue('policies', p)) } : { ok: true, ruleset };
 }
