@@ -12,7 +12,8 @@ Objectif : **aucune fonctionnalité critique n'est considérée terminée parce 
 | Propriétés (fuzz) | Invariants sur des milliers de profils générés | 1 000 par commit, 50 000 la nuit | Commit + nightly |
 | Métamorphiques | Relations attendues entre entrées et sorties | ~30 relations | À chaque commit |
 | Golden | Stabilité des programmes de référence approuvés | ≥ 8 profils golden | À chaque commit |
-| Longitudinaux | Absence de dérive sur 26 et 52 semaines | ≥ 12 profils × 4 trajectoires | Nightly + avant release |
+| Longitudinaux | Absence de dérive sur 26 et 52 semaines | ≥ 12 profils × 5 trajectoires | Nightly + avant release |
+| **Parcours adversariaux** (V1.1) | Pas d'oscillation, de replans excessifs, de progression incohérente ni de dérive face à des événements défavorables combinés | ≥ 15 parcours × plusieurs graines | Nightly + avant release |
 | Mutation | Les tests détectent réellement la modification d'une règle | Score minimal sur `rules/`, `validation/`, `constraints/`, `duration/` | Hebdomadaire + avant release |
 | Performance | Budgets de temps (doc 01 §8) | Benchmarks | À chaque commit (tolérance), nightly (strict) |
 
@@ -24,6 +25,18 @@ Pour **chaque règle** (convention : `rules/<id>.test.ts`) :
 - la fonction `repair()` produit une action qui résout la violation sans en créer une autre de niveau supérieur ;
 - la fiche est complète (test générique sur tout le registre).
 
+Ajouts V1.1 (unitaires) :
+- **Readiness** : aucune donnée récente ⇒ `unknown` (jamais `normal`) + `DATA.READINESS_UNKNOWN` ; sortie de `unknown` dès que le minimum de données est atteint ; `unknownPolicy = as_normal` produit la même programmation que `normal`, mais l'état et la trace diffèrent.
+- **Politique d'application L1/L2/L3** : pour chaque facteur (stimulus, structure, niveau, phase, proximité d'une séance clé, qualité des données), un test vérifie le sens attendu (ex. `dataQuality = none` n'est jamais plus permissif que `adequate`) ; la décision est tracée.
+- **Kilomètres hybrides** : `locomotorRaw` égal à l'exposition brute ; crédit de programmation borné par `raw` ; crédit nul si la continuité et l'intensité ne satisfont pas les critères paramétrés.
+- **Anti-doublon** : une séance accidentelle très similaire produit une pénalité forte et **jamais** `INVALID` hors des cas HARD listés ; un retest déclaré n'est pas pénalisé.
+- **Progression** : un modèle « une variable dominante » ne fait progresser qu'une variable ; un modèle multi-variables déclaré progresse selon sa règle documentée ; un modèle non déclaré ne peut pas faire progresser deux variables.
+- **Zone gelée** : chaque exception (sécurité, douleur, indisponibilité, demande utilisateur, impossibilité certaine) autorise une modification tracée ; aucune autre cause ne le permet.
+- **`fullSimPolicy`** : premier HYROX ⇒ moins de simulations complètes qu'un athlète expérimenté ; lecture de l'état `reduce` ⇒ report ; fenêtre finale respectée.
+- **Décharges** : chacun des modes `global`, `partial` et `discipline_reduction` réduit réellement la demande sur les structures visées.
+- **Replanification** : un seul `recommended` par résultat, de rang 1 ; les alternatives sont classées et valides.
+- **Adhérence** : l'adhérence ne départage que des solutions dans la tolérance ε des niveaux 1 à 6 ; elle ne fait jamais gagner une solution moins sûre ou moins cohérente.
+
 Exemples : écart L1 de 47 h 59 vs 48 h 00 ; arrondi d'une charge de 71,3 kg avec des disques de 1,25 kg ; similarité de deux WOD identiques = 1 et de deux WOD disjoints ≈ 0 ; confiance d'une référence de 20 semaines ⇒ −2 crans ; levier `reduce_rest` qui ne descend jamais sous le plancher du stimulus.
 
 ## 3. Tests d'intégration (exemples)
@@ -33,7 +46,7 @@ Exemples : écart L1 de 47 h 59 vs 48 h 00 ; arrondi d'une charge de 71,3 kg ave
 - Résultat de séance supérieur aux prévisions → ProgressionEngine → la capacité n'augmente qu'au recalcul suivant et dans la borne.
 - Séance manquée → `replanAfterMissedSession` → options valides uniquement, sans doublement.
 - Changement de matériel → substitutions → aucune référence à un matériel absent dans toutes les séances futures.
-- Kilomètres HYROX → `RunningExposure` → L3 compté entièrement, volume spécifique compté partiellement.
+- Kilomètres HYROX → `RunningExposure` → exposition brute conservée à 100 % et prise en compte dans L3 ; crédit de programmation Running calculé par `runningContribution()` et justifié par des reason codes (aucun coefficient codé en dur).
 
 ## 4. Scénarios (profils réalistes)
 
@@ -144,9 +157,49 @@ Profils de référence permanents, avec des graines figées :
 
 Une dérive détectée devient un **test de régression longitudinal permanent**.
 
+## 8 bis. ADVERSARIAL ATHLETE JOURNEYS (V1.1)
+
+But : vérifier que le moteur **reste stable et cohérent** quand l'utilisateur fait tout ce qui complique la planification, sur plusieurs semaines. Ces scénarios cherchent délibérément à provoquer des oscillations, des replans excessifs, des progressions incohérentes et des dérives.
+
+**Parcours (≥ 15, chacun exécuté avec plusieurs graines et plusieurs profils)** :
+
+| Id | Parcours |
+|----|----------|
+| AJ01 | Disponibilités modifiées chaque semaine pendant 8 semaines (5 → 3 → 6 → 2 → 4 jours…) |
+| AJ02 | Disponibilités qui alternent entre deux configurations (A, B, A, B…) |
+| AJ03 | 1 à 2 séances manquées par semaine pendant 6 semaines, toujours la séance clé |
+| AJ04 | Séances manquées aléatoires (30 %) combinées à des séances déplacées par l'utilisateur |
+| AJ05 | Changements de matériel répétés (salle ↔ maison ↔ poids du corps) sur 4 semaines |
+| AJ06 | Performances soudainement très supérieures (tests et séances) puis retour à la normale |
+| AJ07 | Période de baisse de 4 semaines (RPE élevés, reps manquées) puis reprise |
+| AJ08 | Changement d'objectif en milieu de cycle, puis retour à l'objectif initial 3 semaines plus tard |
+| AJ09 | Interruption de 3 semaines puis reprise, deux fois dans l'année |
+| AJ10 | Ajout puis retrait d'une discipline à 4 semaines d'intervalle |
+| AJ11 | Douleur signalée, levée, puis signalée à nouveau sur la même zone |
+| AJ12 | Temps réduit (« je n'ai que 30 min ») sur toutes les séances d'une semaine |
+| AJ13 | Événements combinés dans la même semaine : disponibilités réduites + séance manquée + changement de matériel + douleur légère |
+| AJ14 | Suite d'événements hors-ligne rejoués dans le désordre puis réordonnés par horodatage |
+| AJ15 | Mise à jour du moteur au milieu d'une période perturbée |
+
+**Assertions** (seuils = paramètres du ruleset de test) :
+
+| Propriété | Mesure |
+|-----------|--------|
+| Pas d'oscillation | Aucune séance déplacée A → B → A sur 14 jours sans nouvel événement qui le justifie ; pour AJ02, les semaines A se ressemblent entre elles (même ossature), de même pour les semaines B |
+| Pas de replans excessifs | Nombre de révisions ≤ nombre d'événements (un événement ne déclenche pas de cascade) ; portée moyenne des replans minimale ; les 24 h de la zone gelée ne changent que pour les exceptions autorisées |
+| Churn borné | Distance entre la semaine prévue et la semaine replanifiée proportionnée à l'ampleur de l'événement |
+| Progression cohérente | Aucune capacité ne monte pendant une période de baisse ; pas de saut au-delà du plafond après un pic ; pas de reprise au niveau d'avant l'interruption sans réadaptation |
+| Pas de doublement | Aucune séance manquée « rattrapée » en doublant la charge ; pas d'accumulation de dette de séances |
+| Séances clés | Les séances clés de l'objectif principal sont préservées autant que les contraintes le permettent ; chaque perte est expliquée |
+| Sécurité | Les contraintes SAFETY et les restrictions liées aux douleurs ne sont jamais levées par un autre événement |
+| Pas de dérive | Tous les détecteurs du §8 restent verts à la fin du parcours et 8 semaines après le dernier événement (retour à la stabilité) |
+| Explicabilité | Chaque révision possède des reason codes cohérents avec l'événement qui l'a causée |
+
+Tout échec devient un parcours de régression permanent.
+
 ## 9. Tests de mutation
 
-- **Mutation de code** (Stryker) sur `rules/`, `constraints/`, `validation/`, `duration/`, `similarity/`, avec un score minimal (ex. 80 %, à ajuster).
+- **Mutation de code** (Stryker) sur `rules/`, `constraints/`, `validation/`, `duration/`, `similarity/`, avec un score minimal **paramétrable** (valeur initiale à fixer après la première mesure ; décision 42).
 - **Mutation de paramètres du ruleset** (outil maison, plus parlant pour ce domaine) : chaque paramètre critique est muté (ex. `L1.high_high = 48 h → 24 h`, plancher de repos du 3RM 180 s → 60 s, seuil anti-doublon 0,9 → 0,99) et **au moins un test doit échouer**. Un paramètre dont la mutation ne fait échouer aucun test est signalé comme **non couvert**.
 - Rapport de mutation joint à chaque release du ruleset.
 
@@ -159,6 +212,7 @@ Une dérive détectée devient un **test de régression longitudinal permanent**
 | Déterminisme et sérialisation | Oui |
 | Frontières d'architecture (le moteur n'importe ni UI, ni base, ni RevenueCat, ni LLM) | Oui |
 | Longitudinaux 52 semaines (échantillon) | Oui avant release du moteur ou du ruleset |
-| Mutation (score minimal) | Oui avant release |
-| Performance (budgets) | Avertissement au commit, bloquant la nuit |
+| Mutation (score minimal paramétrable) | Oui avant release, une fois le seuil calibré |
+| Parcours adversariaux | Oui avant release du moteur ou du ruleset |
+| Performance (cibles provisoires) | Avertissement ; bloquant seulement après calibration sur de vrais appareils (décision 44) |
 | Rapport d'état de gouvernance des règles | Non bloquant (politique à décider, doc 09 §6) |

@@ -22,7 +22,7 @@
 |---------|-----------|-------------|
 | Charges de la division HYROX : catégorie nécessaire | Catégorie déclarée à l'onboarding ; table officielle de la saison (données) | — |
 | Stations sans matériel (sled push/pull, SkiErg, sandbag) | Substitutions à prévoir, avertissement anticipé | `EQUIPMENT.HYBRID_RACE_STATIONS_MISSING(sled,skierg,sandbag)` |
-| Aucun RPE historique | Lecture de l'état « inconnue », par défaut `normal` | `DATA.READINESS_UNKNOWN` |
+| Aucun RPE historique | Lecture de l'état **`unknown`** ; comportement par défaut identique à `normal` (`unknownPolicy = as_normal`), l'incertitude restant visible | `DATA.READINESS_UNKNOWN` |
 | Cible « sous 1 h 25 » | **Aucune estimation possible** sans données de station : la cible est conservée, réévaluée après les benchmarks de la semaine 2 | `GOAL.TARGET_UNASSESSABLE_YET` |
 
 Le moteur n'invente pas de temps HYROX « estimé » pour juger la cible.
@@ -37,7 +37,7 @@ Le moteur n'invente pas de temps HYROX « estimé » pour juger la cible.
 | Stations HYROX | aucune | **none** | Benchmarks à planifier |
 | Exposition de course (E3) | 28 j : ≈ 95 min/sem en moyenne ; dernière sortie longue : 60 min dimanche | measured | Journal |
 | Fraîcheur | `locomotor` : dernière demande `high` dimanche (sortie de 60 min) ; autres structures fraîches | — | |
-| Lecture de l'état | `normal` (par défaut) | — | `DATA.READINESS_UNKNOWN` |
+| Lecture de l'état | **`unknown`** (programmation par défaut comme `normal`) | — | `DATA.READINESS_UNKNOWN` |
 | Statut d'entraînement | musculation : intermédiaire (medium) ; course : intermédiaire (high) ; HYROX : débutant spécifique (low) | | |
 
 ## 3. [S3] Arbitrage des objectifs
@@ -53,10 +53,10 @@ Le moteur n'invente pas de temps HYROX « estimé » pour juger la cible.
 |----------|-------|---------------------------------|----------------|
 | 1–4 | Générale | development / development / development | S1–S2 : **benchmarks de stations** (sur substituts) ; S4 allégée |
 | 5–8 | Développement | development / development / maintenance | S8 allégée + **simulation partielle** (test) + retest 5 km |
-| 9–14 | Spécifique | development (spécificité élevée) / development (race pace) / maintenance | S10 et S13 : simulations partielles ; **S11 : simulation complète** (seule du cycle, > 14 j avant la course) ; S12 allégée |
+| 9–14 | Spécifique | development (spécificité élevée) / development (race pace) / maintenance | S10 et S13 : simulations partielles ; **S11 : simulation complète** (`fullSimPolicy` : premier HYROX, niveau intermédiaire ⇒ une seule simulation complète dans le cycle, hors fenêtre finale) ; S12 : décharge **partielle** (HYROX et course allégés, musculation en maintien inchangée) |
 | 15–16 | Affûtage | volume ↓, spécificité maintenue / volume ↓ / léger | Aucune simulation complète ; course en fin de S16 |
 
-Reason codes : `PLAN.MACRO.PHASES(general=4,development=4,specific=6,taper=2)`, `PLAN.MACRO.DELOAD_SYNC(w4,w8,w12)`, `PLAN.MACRO.FULL_SIM_SCHEDULED(w11)`.
+Reason codes : `PLAN.MACRO.PHASES(general=4,development=4,specific=6,taper=2)`, `PLAN.MACRO.DELOAD(w4=global, w8=global+test, w12=partial[hybrid_race,running])`, `PLAN.MACRO.FULL_SIM_SCHEDULED(w11)`.
 
 ## 5. [S5] Semaine 1
 
@@ -216,7 +216,7 @@ Quotas : HYROX 2, course 2, musculation 1 (maintien).
 | Mer | HYROX `hr_compromised_run` court | Dernière séance spécifique ; ensuite `lower_muscular` libre jusqu'à samedi (I5) |
 | Jeu | — | |
 | Ven | Course `run_easy` 30′ | Veille de séance clé : demande faible uniquement (I5) |
-| Sam | **HYROX `hr_full_sim`** (seule simulation complète du cycle) | `PLAN.MACRO.FULL_SIM_SCHEDULED` ; substitutions pour les stations sans matériel, signalées |
+| Sam | **HYROX `hr_full_sim`** (seule simulation complète du cycle selon `fullSimPolicy`) | `PLAN.MACRO.FULL_SIM_SCHEDULED` ; substitutions pour les stations sans matériel, signalées |
 | Dim | Repos | Récupération après la simulation |
 
 Les résultats de la simulation alimentent l'estimation du temps de course et, **pour la première fois avec des données suffisantes**, l'évaluation de la cible « sous 1 h 25 ». Le moteur propose de la conserver ou de l'ajuster ; il ne la modifie pas seul.

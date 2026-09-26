@@ -16,10 +16,10 @@ Indépendant des générateurs : **le générateur propose, le validateur contr�
 | Matériel | Chaque exercice est faisable ; charges réalisables | HARD |
 | Sécurité | Restrictions, douleurs actives, éligibilité à l'effort maximal, mouvements techniques sous fatigue (novice), L4 | HARD |
 | Durée | p90 ≤ temps disponible (HARD) ; p50 dans la tolérance du profil (SOFT) | HARD / SOFT |
-| Récupération | L1, L2, règles I* avec les séances voisines | HARD / SOFT |
+| Récupération | L1, L2, L3 (niveau issu de la politique contextuelle, doc 04 §4.1), règles I* avec les séances voisines | HARD / SOFT selon le contexte |
 | Volume | L5 (sur la semaine), plafonds par séance | SOFT / HARD |
 | Cohérence du stimulus | Stimulus ↔ format ↔ durée attendue ; reps ↔ %e1RM ↔ RIR ; allures ↔ zones | HARD pour les incohérences, SOFT pour le reste |
-| Doublon | Classification du DuplicateDetectionEngine | HARD (accidentel dur) / SOFT |
+| Doublon | Classification du DuplicateDetectionEngine | SOFT (pénalité, forte si très similaire) ; HARD uniquement pour les cas explicitement justifiés (doc 07 §4) |
 | Progression | Pas réalisables, bornes par cycle, cohérence avec la phase | HARD / SOFT |
 | Interférence | InterferenceManager sur la semaine projetée | HARD / SOFT |
 

@@ -101,6 +101,8 @@ HISTORIQUE ─────────┘
 | `PREFERENCE` | Choix de l'utilisateur ou du produit | SOFT ou TARGET, **sauf** une exclusion explicite de l'utilisateur (« jamais de burpees »), qui devient HARD |
 | `TECHNICAL` | Intégrité des données (schéma, références, sérialisation) | Toujours HARD |
 
+**Niveau d'application contextuel (V1.1).** Le niveau d'une règle n'est pas forcément constant. Pour les heuristiques de programmation (notamment L1, L2, L3, doc 04 §4.1), le niveau est calculé par une **politique d'application** (`EnforcementPolicy`) qui dépend du contexte : type de stimulus, structure sollicitée, niveau de l'athlète, phase, proximité d'une séance clé et qualité des données. La politique est une donnée versionnée du ruleset, et le niveau retenu apparaît dans la trace.
+
 Pourquoi deux axes : une règle comme « 48 h entre deux séances très sollicitantes pour le même groupe musculaire » est une *heuristique de programmation* (sa nature) qu'on applique comme un *plancher HARD* (son niveau). Mélanger les deux axes empêcherait de dire honnêtement quelles règles sont démontrées et lesquelles sont des choix prudents.
 
 ## 4. Score d'une solution
@@ -126,24 +128,42 @@ Proposition initiale : 1 sécurité · 2 hard constraints · 3 cohérence · 4 o
 2. La « récupération » en position 5 mélange elle aussi deux choses. Le **plancher de récupération** (ne jamais enchaîner deux sollicitations lourdes de la même structure) ne doit jamais être sacrifié à l'objectif principal. La **récupération optimale** (48 h plutôt que 36 h) peut, elle, céder face à la spécificité.
 3. Il manque la **stabilité du plan** : un plan qui change à chaque petit événement perd la confiance de l'utilisateur (C11, replanification minimale).
 4. Il manque les **objectifs secondaires**, à distinguer de l'objectif principal.
-5. Le **plaisir et l'adhérence** sont rangés dans les « préférences » (niveau 8). Or une séance que l'utilisateur n'aime pas n'est pas faite. Ce point est à débattre (voir la décision à valider n° 7).
+5. Le **plaisir et l'adhérence** étaient rangés dans les « préférences » (niveau 8). Or une séance que l'utilisateur n'aime pas n'est pas faite. **Arbitrage V1.1** : l'adhérence est remontée (niveau 7), sous la sécurité, la faisabilité, les contraintes essentielles et la cohérence de l'objectif.
 
-**Hiérarchie proposée :**
+**Hiérarchie proposée (V1.1 ; la décision n° 6 reste ouverte) :**
 
 | Niveau | Contenu | Nature |
 |------|---------|--------|
 | 1 | **Sécurité** : restrictions, signalements de douleur, règles SAFETY | HARD |
 | 2 | **Faisabilité** : matériel, temps disponible, jours, existence, structure, paramètres possibles, exclusions explicites de l'utilisateur | HARD |
-| 3 | **Plancher de récupération** : écarts minimaux entre sollicitations lourdes d'une même structure | HARD |
+| 3 | **Contraintes essentielles de récupération** : planchers issus de L1/L2/L3 lorsqu'ils sont HARD dans le contexte (doc 04 §4.1) | HARD |
 | 4 | **Cohérence du programme** : logique de phase, décharges, tests, progression non contradictoire | HARD (invariants), sinon TARGET |
 | 5 | **Objectif principal** : spécificité | TARGET |
 | 6 | **Progression** : continuité des exercices ancres, surcharge progressive adaptée | TARGET |
-| 7 | **Objectifs secondaires** | TARGET |
-| 8 | **Stabilité du plan** : changements minimaux | TARGET |
-| 9 | **Récupération optimale et répartition** dans la semaine | SOFT et TARGET |
-| 10 | **Adéquation à la durée cible**, dans la tolérance | TARGET |
-| 11 | **Préférences et plaisir** | SOFT et TARGET |
+| 7 | **Adhérence probable** : solution que l'utilisateur est le plus susceptible de réaliser régulièrement (§5.1) | TARGET |
+| 8 | **Objectifs secondaires** | TARGET |
+| 9 | **Stabilité du plan** : changements minimaux | TARGET |
+| 10 | **Récupération optimale et répartition** dans la semaine | SOFT et TARGET |
+| 11 | **Adéquation à la durée cible**, dans la tolérance | TARGET |
 | 12 | **Variété** | SOFT |
+
+Les préférences explicites (exercices aimés ou détestés, formats) ne forment plus un niveau séparé : ce sont des **entrées du score d'adhérence**. Les exclusions explicites restent HARD (niveau 2).
+
+### 5.1 Score d'adhérence (V1.1)
+
+L'adhérence ne départage que des solutions **sportivement comparables** : les écarts aux niveaux 1 à 6 restent sous la tolérance ε (§4). Elle ne peut donc jamais justifier une solution moins sûre ou moins cohérente.
+
+Estimation déterministe et explicable (pas de modèle opaque) à partir de signaux ordinaux :
+
+| Signal | Source | Effet |
+|--------|--------|-------|
+| Préférences déclarées (aimé / pas aimé, formats) | Profil | a priori |
+| Taux de réalisation observé par archétype, format, exercice | Historique réel | favorise ce qui est fait |
+| Blocs et exercices souvent sautés, substitutions fréquentes | Historique réel | défavorise |
+| Taux de réalisation selon la durée et le jour ou créneau | Historique réel | favorise les durées et jours réalistes |
+| Complexité logistique (changements de station, matériel rare) | Catalogue | défavorise |
+
+Sans historique (`dataSufficiency = none`), seules les préférences déclarées et la logistique jouent (`DATA.ADHERENCE_PRIOR_ONLY`). Le score d'adhérence est un **TARGET**, jamais une contrainte.
 
 ## 6. Déterminisme
 
@@ -184,7 +204,7 @@ Exemple du cahier des charges : « HYROX complet, 20 minutes, aucun matériel »
 | Réparation | Violations × actions | Actions ciblées, **≤ N tentatives** (ex. 3 par séance, 2 par semaine) | Bornée |
 | AthleteState | Historique fenêtré (≤ 52 semaines) | Agrégats incrémentaux (mis en cache hors moteur, recalculables) | O(logs de la fenêtre) |
 
-Cibles : générer une semaine en moins de 300 ms sur un mobile de milieu de gamme (micro-adaptations), un cycle de 16 semaines en moins de 2 s côté serveur, une simulation de 52 semaines en moins de 30 s en CI. Des benchmarks en CI vérifient ces cibles.
+Cibles **provisoires et paramétrables** (V1.1, décision 44) : générer une semaine en moins de 300 ms sur un mobile de milieu de gamme (micro-adaptations), un cycle de 16 semaines en moins de 2 s côté serveur, une simulation de 52 semaines en moins de 30 s en CI. Elles seront recalibrées après les premières mesures sur de vrais appareils. Des benchmarks en CI suivent ces cibles ; elles ne deviennent des barrières bloquantes qu'une fois calibrées.
 
 ## 9. Structure du package (proposition améliorée)
 
@@ -252,8 +272,8 @@ calculateSimilarity(a: SessionFingerprint, b: SessionFingerprint, ctx): Similari
 
 // ADAPTATION
 adaptSession(session: Session, change: SessionConstraintChange, state, ctx): EngineResult<Session>;   // temps, matériel, douleur (L0)
-replan(event: AdaptationEvent, program: Program, state: AthleteState, ctx): EngineResult<ReplanProposal[]>;
-replanAfterMissedSession(sessionId: ID, program, state, ctx): EngineResult<ReplanProposal[]>;          // cas particulier de replan
+replan(event: AdaptationEvent, program: Program, state: AthleteState, ctx): EngineResult<ReplanResult>;   // { recommended, alternatives[] }
+replanAfterMissedSession(sessionId: ID, program, state, ctx): EngineResult<ReplanResult>;         // cas particulier de replan
 
 // RÉSULTATS
 processWorkoutResult(result: WorkoutResult, program, state, ctx): EngineResult<WorkoutProcessing>;
@@ -268,4 +288,4 @@ Améliorations par rapport aux signatures suggérées :
 - `generateWeek(state)` devient `planWeek(state, program, weekIndex)` : une semaine n'existe jamais hors d'un programme.
 - `generateSession(intent, state)` reçoit un `WeekContext` (séances voisines, expositions projetées) : une séance n'est jamais générée isolément.
 - `processWorkoutResult` **ne modifie pas le plan** ; il renvoie des événements, que `replan` traite. Cela sépare l'apprentissage de la replanification.
-- `replan` renvoie **plusieurs propositions classées**, pas une décision unique : l'application peut en montrer une ou demander un choix à l'utilisateur.
+- `replan` calcule et classe **plusieurs propositions**, mais en désigne **une seule comme recommandation principale** (`recommended`). L'interface affiche cette recommandation par défaut ; les alternatives restent accessibles au second plan (V1.1).

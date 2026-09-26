@@ -20,9 +20,17 @@ Il n'utilise **aucun template de semaine figé** : la semaine résulte d'une all
 1. **Horizon.**
    - Objectif daté ⇒ macrocycle jusqu'à l'échéance. Si l'échéance dépasse un horizon maximal (paramètre, ex. 24 semaines), on ajoute d'abord des blocs généraux.
    - Sans échéance ⇒ mésocycles glissants (4 à 6 semaines selon le niveau, paramètre) enchaînés, avec des tests périodiques.
-2. **Phases.** Séquence choisie par règles selon le temps restant, le niveau et le type d'objectif, par exemple :
+2. **Phases.** (Proportions et minimums : paramètres du ruleset, décision 36.) Séquence choisie par règles selon le temps restant, le niveau et le type d'objectif, par exemple :
    `general → development → specific → taper` pour un événement ; `accumulation → intensification → deload/test` pour un objectif de force. Les durées de phase sont calculées par proportions avec des minimums et des maximums (ruleset). Si le temps est insuffisant pour la séquence complète, on compresse les phases dans un ordre défini (on raccourcit la phase générale en premier) et on émet `PLAN.MACRO.COMPRESSED`.
-3. **Décharges.** Placées tous les k semaines (k selon le niveau, `provisional`), **synchronisées entre disciplines**, et décalées si elles tombent en affûtage ou sur une semaine de test.
+3. **Décharges (V1.1).** Rythme paramétrable (tous les k semaines, k selon le niveau et la discipline, `provisional`), décalées si elles tombent en affûtage ou sur une semaine de test. La synchronisation totale entre disciplines **n'est pas imposée**. Le GlobalPlanner choisit un **mode** selon le contexte :
+
+   | Mode | Principe | Contexte typique |
+   |------|----------|------------------|
+   | `global` | Toutes les disciplines allégées la même semaine | Fatigue globale (lecture de l'état `caution` / `reduce`), semaine de test, fin de bloc commune |
+   | `partial` | Une ou plusieurs disciplines allégées, les autres inchangées | Fatigue localisée (ex. structures du bas du corps), cycles de disciplines décalés |
+   | `discipline_reduction` | Une discipline réduite pendant qu'une autre reste en maintenance ou en développement | Phase spécifique d'une discipline prioritaire, discipline secondaire en surcharge |
+
+   Critères de choix (paramètres G2) : rythme propre de chaque discipline, demande cumulée par structure sur le bloc, lecture de l'état, proximité d'un événement, régularité. Le mode retenu et ses raisons sont tracés (`PLAN.MACRO.DELOAD{week, mode, disciplines, reasons}`). Invariant conservé : une semaine allégée doit **réellement** réduire la demande sur les structures visées (vérifié par le WeekValidator).
 4. **Tests.** En fin de phase, dans une semaine allégée : protocoles du catalogue. Jamais de test maximal pour les profils non éligibles.
 5. **Rôle de chaque discipline par phase** : `development` / `maintenance` / `support` / `off`, déterminé par la priorité des objectifs et la phase. Par exemple, pour un HYROX de priorité 1 en phase spécifique : `hybrid_race = development`, `running = development (partagé)`, `strength = maintenance`.
 

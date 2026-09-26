@@ -6,7 +6,7 @@
 `ProgressionTrack` en cours (par exercice ancre, séance-type ou capacité), exécutions **réelles** récentes, `AthleteState` (régularité, lecture de l'état, capacités), phase, ruleset (modèles, pas, bornes).
 
 ### Principes
-1. **Une seule variable progresse à la fois** en général (paramètre par modèle), jamais « tout, à chaque séance ».
+1. **Une variable dominante progresse généralement à la fois**, sauf modèle explicitement défini et testé (ex. un modèle d'hypertrophie qui fait progresser reps et charge selon une règle documentée). Jamais « tout, à chaque séance ». Chaque modèle déclare sa ou ses variables progressables et est couvert par des tests (V1.1).
 2. La progression se décide sur des **preuves répétées**, pas sur une seule bonne séance (sauf test).
 3. Aucune hausse si la régularité est faible (S5 sous un seuil) ou si la lecture de l'état n'est pas `normal`.
 4. **Bornes de progression** par cycle (plafond d'augmentation des capacités estimées) : c'est ce qui empêche la « progression infinie » détectée en test longitudinal.
@@ -86,7 +86,13 @@ type AdaptationEvent =
 
 1. **Analyse d'impact.** Séances dépendantes (écarts L1, séance clé, ordre `mustPrecede`, semaine de test), contraintes nouvellement violées, séances clés menacées, effet sur la progression.
 2. **Portée minimale** : on essaie successivement `session` → `rest_of_week` → `next_week` → `phase` → `program`. On s'arrête à la **première portée** qui produit une solution valide.
-3. **Zone gelée** : séances réalisées (immuables), séance en cours, séances verrouillées par l'utilisateur. Par défaut, les prochaines 24 h ne changent pas sans action de l'utilisateur.
+3. **Zone gelée** : séances réalisées (immuables), séance en cours, séances verrouillées par l'utilisateur. **Règle de stabilité UX** : les prochaines 24 h (paramètre) ne changent pas, **sauf exceptions** (V1.1) :
+   - **sécurité** (règle SAFETY violée par la séance prévue) ;
+   - **douleur** signalée (doc 09 §7) ;
+   - **indisponibilité explicite** déclarée par l'utilisateur ;
+   - **modification demandée par l'utilisateur** ;
+   - **impossibilité devenue certaine** (matériel indisponible confirmé, fermeture de la salle, dates bloquées).
+   Chaque exception est tracée (`ADAPT.FROZEN_ZONE_OVERRIDE{reason}`). Hors de ces cas, un changement calculé dans la zone gelée est reporté à la séance suivante hors zone.
 4. **Génération d'options** et évaluation de chacune par le même score (doc 01 §4), auquel s'ajoute un **coût de changement** :
 
 ```
@@ -94,8 +100,8 @@ changeCost = w1·(séances modifiées) + w2·(séances déplacées) + w3·(séan
            + w4·(écart de progression) + w5·(préférences touchées)
 ```
 
-5. **Validation complète** de l'horizon touché ; seules les options valides sont proposées, **classées**.
-6. **Proposition** : diff + reason codes. Application directe pour une action explicite de l'utilisateur (L0) ; aperçu et confirmation si des séances visibles changent.
+5. **Validation complète** de l'horizon touché ; seules les options valides sont retenues et **classées**.
+6. **Proposition (V1.1)** : le moteur désigne **une recommandation principale** (la mieux classée) ; les alternatives valides restent disponibles. L'interface présente **par défaut la recommandation seule** (diff + explication courte), les alternatives étant accessibles au second plan. Application directe pour une action explicite de l'utilisateur (L0) ; aperçu et confirmation si des séances visibles changent.
 
 ### `replanAfterMissedSession(sessionId)`
 
@@ -134,7 +140,13 @@ Options évaluées : **SKIP**, **MOVE**, **MERGE** (jamais deux séances clés f
 
 ### OUTPUTS
 ```ts
+interface ReplanResult {
+  recommended: ReplanProposal;         // affichée par défaut
+  alternatives: ReplanProposal[];      // classées, accessibles au second plan (peut être vide)
+}
+
 interface ReplanProposal {
+  rank: number;                        // 1 = recommandation principale
   scope: 'session' | 'rest_of_week' | 'next_week' | 'phase' | 'program';
   diff: PlanDiff;                      // ajouts / modifications / déplacements / suppressions
   changeCost: number; score: SolutionScore;

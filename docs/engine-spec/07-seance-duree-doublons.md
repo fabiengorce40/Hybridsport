@@ -84,6 +84,8 @@ La durée affichée est le **p50 arrondi à la minute** (arrondi à 5 min en ape
 
 ### 3.2 Profils de tolérance (hypothèses de départ, `provisional`)
 
+> **V1.1** : l'architecture du DurationEngine est conservée. Toutes les marges et plages ci-dessous sont **provisoires** et seront calibrées sur des données réelles (décision 22, paramétrable). Deux invariants sont **non négociables** : `p90 ≤ temps réellement disponible`, et aucune séance n'est remplie artificiellement pour atteindre une durée cible (§3.3).
+
 | Profil | Archétypes | Plage de p50 | Marge `A − T` |
 |--------|-----------|-------------|---------------|
 | `fixed_time` | EMOM, AMRAP, intervalles et course au temps | `[T − 5 %, T + 3 %]` | faible (≈ 2–3 min) |
@@ -204,13 +206,16 @@ type RepetitionIntent =
 | Situation | Effet |
 |-----------|-------|
 | Accidentelle, au-dessus du seuil `warn` | Pénalité SOFT (déjà appliquée en sélection) + avertissement |
-| Accidentelle, au-dessus du seuil `hard` (ex. même WOD, similarité ≥ 0,9, dans une fenêtre de 21 j) | HARD ⇒ RepairEngine (remplacement ciblé d'exercices ou de format) |
+| Accidentelle, très similaire (seuil `strong`) | **Forte pénalité SOFT** (pondération élevée, paramètre) + avertissement ; la sélection choisit une autre option dès qu'une solution comparable existe. **Pas de HARD par défaut** (V1.1) |
+| Situation HARD **explicitement justifiée** (liste fermée, chaque cas est une règle avec fiche) | HARD ⇒ RepairEngine. Exemples candidats : même séance maximale (test RM, contre-la-montre) répétée sans intention `benchmark_retest` dans une fenêtre de sécurité ; simulation HYROX complète hors `fullSimPolicy` ; exercice explicitement exclu par l'utilisateur |
 | Prévue, avec évolution | Aucune pénalité |
 | Prévue, sans évolution | Avertissement « stagnation » ⇒ ProgressionEngine |
 | Matériel très limité (toutes les alternatives sont similaires) | Relâchement tracé `DUPLICATE.RELAXED_EQUIPMENT_LIMITED` : on varie le dosage, le tempo ou le format plutôt que d'inventer |
 
 ### OUTPUTS
-`DuplicateReport { breakdown per comparison, maxSimilarity, classification: 'none' | 'planned' | 'accidental_warn' | 'accidental_hard', stagnationFlags }`.
+`DuplicateReport { breakdown per comparison, maxSimilarity, classification: 'none' | 'planned' | 'accidental_warn' | 'accidental_strong' | 'hard_justified', stagnationFlags }`.
+
+La règle générale de la V1 (« similarité ≥ 0,9 dans les 21 jours ⇒ HARD ») est **supprimée** en V1.1. Benchmarks, retests, séries de progression et répétitions intentionnelles restent autorisés et tracés.
 
 ### FAILURE MODES
 Catalogue trop pauvre pour un profil de matériel ⇒ relâchement tracé + alerte de couverture catalogue (observabilité) ; historique absent ⇒ pas de contrôle (rien à comparer), aucune erreur.

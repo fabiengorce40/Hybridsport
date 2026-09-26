@@ -46,7 +46,7 @@ Objectif(s) (`strength_max`, `hypertrophy`, `general_fitness`, soutien HYROX / c
    - préférences ;
    - logistique (réutiliser la même station : moins de transitions).
 
-**4. Paramétrage — tables par objectif (hypothèses)** :
+**4. Paramétrage — tables par objectif (hypothèses ; entièrement paramétrables dans le ruleset, classe G2, décision 20)** :
 
 | Objectif | Principal : reps / RIR / repos | Accessoires : reps / RIR / repos | Séries par exercice |
 |----------|-------------------------------|----------------------------------|---------------------|
@@ -91,9 +91,9 @@ Objectif (5 km, 10 km, semi, marathon, général, soutien HYROX), échéance, r�
 ### DECISION PROCESS
 
 **1. Références et confiance** (doc 04 §7).
-   - **Modèle principal proposé** : équivalence de performance à partir d'une course ou d'un test (tables de type VDOT de Daniels, ou formule d'équivalence de Riegel).
-   - **Modèle secondaire** : vitesse critique quand il existe ≥ 2 efforts maximaux de durées différentes et récents.
-   - Le choix final se fait avec l'expert course (décision à valider n° 18).
+   - **Modèle d'allure interchangeable (V1.1)** : le RunningEngine dépend d'une interface `PaceModel { estimate(references, ctx): PaceProfile }` ; le modèle actif est choisi par le ruleset (`running.paceModel`), et plusieurs modèles peuvent coexister.
+   - Candidats : équivalence de performance à partir d'une course ou d'un test (tables de type VDOT de Daniels, formule de Riegel) ; vitesse critique quand il existe ≥ 2 efforts maximaux de durées différentes et récents.
+   - Le choix du modèle par défaut et des conditions de bascule se fait avec l'expert course (décision 18, paramétrable). Changer de modèle ne modifie ni les contrats ni les autres moteurs.
    - Plusieurs références ⇒ la plus confiante sert de base. En cas de désaccord important, on prend la valeur **la plus prudente** et on émet `STATE.REFERENCE_CONFLICT`.
 
 **2. Zones** : 5 zones définies par rapport à l'allure de seuil estimée (et/ou aux allures équivalentes E / M / T / I / R). Chaque zone a une **plage d'allure** et un **descripteur d'effort perçu** (« conversation possible », « phrases courtes »…) pour que la prescription reste utilisable si l'allure n'est pas fiable (terrain, chaleur, pas de montre).
@@ -111,7 +111,7 @@ Objectif (5 km, 10 km, semi, marathon, général, soutien HYROX), échéance, r�
 **5. Volume** :
    - cible hebdomadaire **en temps** (et en distance pour les objectifs de course), calculée à partir de la base E3 (28 j) et de la phase, bornée par **L3** ;
    - part de la sortie longue plafonnée (hypothèse : ≈ 25–35 % du temps hebdomadaire selon le niveau et l'objectif) ;
-   - prise en compte des **contributions hybrides** (doc 04 §5) : entièrement pour L3, partiellement pour la cible spécifique.
+   - prise en compte des **kilomètres hybrides** (doc 04 §5) : l'exposition brute (100 %) entre dans L3 ; le **crédit de programmation** est calculé par `runningContribution()` selon le contexte, l'intensité et la continuité (paramètres G2, aucun coefficient universel).
 
 **6. Archétypes V1** : `run_easy`, `run_recovery`, `run_long`, `run_progression`, `run_tempo`, `run_threshold_cruise` (intervalles au seuil), `run_vo2_intervals`, `run_repetitions` (vitesse, économie), `run_hills`, `run_strides_addon`, `run_race_pace`, `run_time_trial` (test).
 
@@ -214,10 +214,20 @@ Objectif (terminer ou performer), date et division, rôle, quota, `AthleteState`
 
 | Phase | Part des séances spécifiques (race pace, simulations, course compromise) | Simulation complète |
 |-------|-------------------------------------------------------------------------|---------------------|
-| Générale | faible | aucune |
-| Développement | moyenne | aucune ou 1 (niveau avancé) |
-| Spécifique | élevée | au plus 1 toutes les 4–6 semaines |
-| Affûtage | réduite en volume, spécificité maintenue | aucune dans les ~10–14 derniers jours |
+| Générale | faible | en principe aucune |
+| Développement | moyenne | selon la politique de fréquence |
+| Spécifique | élevée | selon la politique de fréquence |
+| Affûtage | réduite en volume, spécificité maintenue | aucune dans une fenêtre finale paramétrable |
+
+**3 bis. Politique de fréquence de la simulation complète (V1.1).** Le principe de **fréquence contrôlée** est conservé, mais aucun intervalle n'est universel (l'hypothèse « 4–6 semaines » de la V1 n'est plus une règle). L'intervalle minimal et le nombre maximal par cycle sont calculés par une politique paramétrable du ruleset (G2) :
+
+```ts
+fullSimPolicy(ctx: { level: Level; hybridRaceExperience: 'none' | 'some' | 'experienced'; phase: PhaseKind;
+                     readiness: Readiness; weeksToRace: number; lastFullSimAt?: ISODate; recoveryAfterLastSim?: 'good' | 'poor' | 'unknown' })
+  → { allowed: boolean; minWeeksSinceLast: number; maxPerCycle: number; finalWindowDays: number; reasons: ReasonCode[] };
+```
+
+Tendances par défaut : un premier HYROX ou un niveau débutant ⇒ moins de simulations complètes (préférer les simulations partielles) ; lecture de l'état `caution` / `reduce` ou mauvaise récupération après la précédente ⇒ report ; proximité de la course ⇒ fenêtre finale sans simulation complète.
 
 **4. Course dans les séances HYROX** : allures fournies par le RunningEngine (allure de course cible, allure compromise attendue = allure fraîche + écart mesuré ou estimé). Chaque portion courue produit une `RunningExposure` (contexte `compromised`, etc.) comptée selon doc 04 §5.
 
@@ -240,7 +250,7 @@ Objectif (terminer ou performer), date et division, rôle, quota, `AthleteState`
 Séances avec blocs `hybrid_station_work` (`HybridSpec`), `running`, `strength`, avec les exigences de transitions, les allures, les charges de station et le `DemandProfile` (souvent `lower_muscular`, `locomotor`, `grip`, `high_intensity_systemic` élevés : d'où l'importance de l'InterferenceManager).
 
 ### VALIDATION
-Fréquence de simulation complète respectée ; aucune simulation en affûtage final ; charges des stations conformes à la division (ou progressivement inférieures en phase générale, avec une progression définie) ; substitutions signalées ; exposition de course comptée ; L1 et I5 autour des séances clés.
+Fréquence de simulation complète conforme à la politique `fullSimPolicy` ; aucune simulation dans la fenêtre finale ; charges des stations conformes à la division (ou progressivement inférieures en phase générale, avec une progression définie) ; substitutions signalées ; exposition de course comptée ; L1 et I5 autour des séances clés.
 
 ### FAILURE MODES
 | Cas | Comportement |

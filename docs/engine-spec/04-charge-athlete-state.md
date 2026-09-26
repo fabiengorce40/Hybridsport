@@ -49,11 +49,16 @@ Colonnes : nature · unité · fenêtre · calcul · rôle dans les décisions �
 | **S1. Fraîcheur par structure** | heures depuis la dernière demande `high` et `moderate` de chaque structure (§6) | dernière occurrence | Profils de demande des séances **réalisées** | Utilisé par L1 (récupération minimale) | `established` (horodatage) | Aucune séance ⇒ structure fraîche |
 | **S2. Capacités** | e1RM (kg), allure de référence / vitesse critique, benchmarks, capacités par station, débits de travail | selon source | Doc 06, doc 08 §1 | Dosage | Selon source (§7) | Voir §7 ; prescription à l'effort perçu |
 | **S3. Signaux déclarés** | douleurs actives, fatigue déclarée, séances manquées récentes | 14 j | Feedback (doc 08 §2) | Comportement conservateur (doc 09 §7), adaptation | `established` (déclaratif) | Absence de signal = « rien de signalé », et non « tout va bien » : le moteur ne présume rien |
-| **S4. Disponibilité de lecture de l'état (readiness)** | **catégorie** `normal` / `caution` / `reduce` + reason codes | 7–14 j | Règles explicites sur S3, E6 (écart à la base) et l'écart prévu/réalisé (doc 08 §3) | Allègement, déplacement | `heuristic` | Par défaut `normal`, avec `DATA.READINESS_UNKNOWN` si aucune donnée récente |
+| **S4. Lecture de l'état (readiness)** | **catégorie** `unknown` / `normal` / `caution` / `reduce` + reason codes | 7–14 j | Règles explicites sur S3, E6 (écart à la base) et l'écart prévu/réalisé (doc 08 §3) | Allègement, déplacement ; `unknown` conserve un comportement par défaut raisonnable **mais reste visible** dans l'état et la trace | `heuristic` | Données récentes insuffisantes ⇒ **`unknown`** (et non `normal`), avec `DATA.READINESS_UNKNOWN` |
 | **S5. Régularité** | séances réalisées / prévues | 28 j | Historique | Progression (pas de hausse si la régularité est faible), niveau de confiance des capacités | `established` | Nouveau compte ⇒ inconnue |
 | **S6. Statut d'entraînement par discipline** | niveau dérivé + tendance | 28–84 j | Capacités, régularité, marqueurs factuels | Choix des archétypes, des plafonds, des modèles de progression | `heuristic` | Niveau déclaré avec une confiance faible |
 
 **Pas de « score de fatigue » numérique.** S4 est une catégorie issue de règles lisibles, par exemple : « deux RPE de séance ≥ 2 points au-dessus de l'attendu sur les 3 dernières séances, **ou** fatigue déclarée élevée ⇒ `caution` ». Chaque passage de catégorie produit des reason codes. Il est possible de le calculer, de l'expliquer et de le tester ; il ne prétend pas mesurer la physiologie.
+
+**`unknown` (V1.1)** : l'absence de données n'est **jamais** assimilée à un état normal. `unknown` n'implique aucune fatigue ; il signifie seulement que les données sont insuffisantes pour conclure.
+- Comportement par défaut : identique à `normal` pour la programmation courante (paramètre `readiness.unknownPolicy`, valeur par défaut `as_normal`).
+- L'incertitude reste visible : l'état porte `unknown`, la trace porte `DATA.READINESS_UNKNOWN`, et les politiques d'application qui dépendent de la qualité des données (§4.1) peuvent en tenir compte (ex. prudence accrue avant un test maximal).
+- On sort de `unknown` dès que les données minimales sont disponibles (ex. au moins 2 RPE de séance ou un feedback explicite dans la fenêtre, paramètre).
 
 ### 3.3 Contexte (CONTEXT)
 
@@ -77,26 +82,83 @@ Attributs attachés à chaque exposition, jamais agrégés seuls :
 
 | Id | Limite | Nature de la règle | Niveau | Ce qu'elle limite | Comment la valeur est déterminée | Confiance actuelle |
 |----|--------|-------------------|--------|-------------------|----------------------------------|--------------------|
-| **L1** | **Récupération minimale par structure** : écart minimal entre deux demandes élevées sur une même structure (matrice §6) | PROGRAMMING_HEURISTIC (plancher conservateur) | HARD | Le placement des séances, l'intensité de l'une d'elles | Matrice par niveau de demande et niveau de l'athlète dans le ruleset. Valeurs de départ prudentes (ex. élevé → élevé : 48 h), relues par des experts | `heuristic` / `consensus` |
-| **L2** | **Séances à haute intensité** : maximum par semaine selon le niveau, et pas de jours intenses consécutifs pour novices et débutants | PROGRAMMING_HEURISTIC | HARD pour le plafond, SOFT pour l'espacement idéal | Le nombre et l'ordre des séances `high_intensity_systemic` | Table par niveau (ex. novice 1–2, intermédiaire 2–3, avancé 3–4 : hypothèses) | `consensus` |
-| **L3** | **Progression de l'exposition locomotrice** : variation hebdomadaire de E3 par rapport à la base 28 j | PROGRAMMING_HEURISTIC | SOFT dans une zone de prudence, **HARD** au-delà d'un seuil de saut brusque | Le volume de course prévu (toutes disciplines) | Paramètres du ruleset (ex. zone de prudence et seuil dur à définir avec l'expert course). La « règle des 10 % » **n'est pas** reprise comme une vérité | `heuristic` |
+| **L1** | **Récupération minimale par structure** : écart minimal entre deux demandes élevées sur une même structure (matrice §6) | PROGRAMMING_HEURISTIC (plancher conservateur) | **Contextuel** (§4.1) : HARD par défaut pour une demande élevée sur la même structure | Le placement des séances, l'intensité de l'une d'elles | Matrice par niveau de demande et niveau de l'athlète dans le ruleset. Valeurs de départ prudentes (ex. élevé → élevé : 48 h), relues par des experts | `heuristic` / `consensus` |
+| **L2** | **Séances à haute intensité** : maximum par semaine selon le niveau, et pas de jours intenses consécutifs pour novices et débutants | PROGRAMMING_HEURISTIC | **Contextuel** (§4.1) : plafond HARD ou SOFT selon le niveau et la phase ; espacement idéal SOFT | Le nombre et l'ordre des séances `high_intensity_systemic` | Table par niveau (ex. novice 1–2, intermédiaire 2–3, avancé 3–4 : hypothèses) | `consensus` |
+| **L3** | **Progression de l'exposition locomotrice** : variation hebdomadaire de E3 par rapport à la base 28 j | PROGRAMMING_HEURISTIC | **Contextuel** (§4.1) : SOFT dans une zone de prudence, HARD au-delà d'un seuil de saut brusque, seuils fonction du contexte | Le volume de course prévu (toutes disciplines) | Paramètres du ruleset (ex. zone de prudence et seuil dur à définir avec l'expert course). La « règle des 10 % » **n'est pas** reprise comme une vérité | `heuristic` |
 | **L4** | **Plafonds de bon sens par séance** : séries difficiles par groupe et par séance, contacts de sauts par séance, répétitions d'un même mouvement dans un WOD, selon le niveau | SAFETY / FEASIBILITY | HARD | Les aberrations de génération | Bornes larges fixées avec les experts ; elles ne doivent jamais gêner un programme normal, seulement arrêter l'absurde | `consensus` |
 | **L5** | **Plage hebdomadaire de volume musculaire** par groupe (séries difficiles) | PROGRAMMING_HEURISTIC | TARGET pour le plancher de l'objectif, SOFT pour le haut de plage | Le volume de musculation | Tables par niveau × objectif (ex. hypertrophie intermédiaire : plage à définir), relues par un expert | `consensus` (effet dose-réponse du volume) ; valeurs exactes `heuristic` |
+
+> **V1.1 : aucune valeur de L1, L2 ou L3 n'est une vérité physiologique.** Ce sont des paramètres provisoires du ruleset (confiance `provisional` ou `heuristic`), à calibrer et à faire relire par les experts (classe G2).
+
+### 4.1 Politique d'application contextuelle (L1, L2, L3)
+
+Le caractère HARD ou SOFT et les seuils de L1, L2 et L3 ne sont **pas constants**. Ils sont déterminés par une politique versionnée du ruleset :
+
+```ts
+interface EnforcementContext {
+  stimulus: StimulusId;                 // ex. intervalles VO2 vs footing facile
+  structure: Structure;                 // lower_muscular, locomotor…
+  athleteLevel: Level;
+  phase: PhaseKind;                     // général, spécifique, affûtage, décharge…
+  keySessionProximity: 'none' | 'before_key' | 'after_key';   // proximité (en heures, paramètre) d'une séance clé
+  dataQuality: 'none' | 'sparse' | 'adequate';                // qualité des données sur cette structure / cette discipline
+}
+
+interface EnforcementDecision { level: 'hard' | 'soft'; threshold: number; unit: string; penaltyWeight?: number; reasons: ReasonCode[]; }
+
+type EnforcementPolicy = (ruleId: 'L1' | 'L2' | 'L3', ctx: EnforcementContext, ruleset: Ruleset) => EnforcementDecision;
+```
+
+Principes par défaut (paramètres, à relire) :
+
+| Facteur | Tendance de la politique |
+|---------|--------------------------|
+| Stimulus | Plus le stimulus est intense ou traumatisant (intervalles, charges lourdes, excentrique), plus la règle tend vers HARD |
+| Structure | `locomotor` et `lower_muscular` plus strictes que `upper_muscular` ou `grip` |
+| Niveau | Novice et débutant : plus strict ; avancé : plus de SOFT |
+| Phase | Affûtage et reprise : plus strict ; phase générale d'un athlète régulier : plus souple |
+| Proximité d'une séance clé | Veille ou lendemain d'une séance clé : plus strict (protection de la séance clé) |
+| Qualité des données | Données absentes ou pauvres : **plus prudent** (seuils conservateurs), jamais plus permissif |
+
+La décision (niveau et seuil) est inscrite dans la trace (`RULE.ENFORCEMENT{rule, level, threshold, factors}`) : on peut toujours expliquer pourquoi une même règle a bloqué dans un cas et seulement pénalisé dans un autre. Chaque combinaison est couverte par des tests unitaires (doc 11).
 
 **Aucune limite** sur : les patterns (hors anti-doublon), les minutes cardio (hors L2), le sRPE, un score synthétique.
 
 Pourquoi seulement cinq : chacune correspond à un risque identifiable (lésion par répétition trop rapprochée, surcharge d'intensité, hausse brutale de la course, génération absurde, volume inadapté) et peut être relue par un expert. Ajouter des budgets pour les autres dimensions produirait des refus inexplicables pour l'utilisateur comme pour un coach.
 
-## 5. Contribution des kilomètres hybrides (C7), précisée
+## 5. Kilomètres hybrides (C7), précisés en V1.1
 
-La fonction `runningContribution()` (RunningEngine) renvoie **deux contributions séparées** :
+**Principe** : on conserve **toujours 100 % de l'exposition brute** réellement effectuée (distance, temps). On sépare ensuite ce qui sert à décider, **sans figer de coefficient physiologique universel**.
 
-| Contribution | Utilisée par | Principe proposé (à valider) |
-|--------------|-------------|------------------------------|
-| **Locomotrice** (impact, tendons) | L3 | **Comptage complet** de la distance et du temps courus, quel que soit le contexte. Justification : l'impact d'un kilomètre compromis n'est pas moindre pour les tissus. Choix conservateur du côté de la sécurité |
-| **Spécifique** (développement de la performance course) | RunningEngine (atteinte du volume et des séances clés de course) | **Comptage partiel** selon le contexte : un kilomètre fractionné entre des stations ne remplace pas un kilomètre d'endurance continue. Coefficients `provisional`, à définir avec les experts course et HYROX |
+| Élément | Nature (§1) | Contenu | Utilisé par |
+|---------|-------------|---------|-------------|
+| **Exposition locomotrice brute** | EXPOSURE | 100 % de la distance et du temps courus, toutes disciplines confondues ; jamais pondérée à la baisse | L3 (via la politique §4.1), AthleteState |
+| **Contribution à la programmation Running** | DERIVED | Part de l'exposition que le RunningEngine considère comme ayant rempli un objectif de course (volume facile, séance clé, spécificité). Calculée par une fonction **paramétrable** du contexte, de l'intensité et de la continuité | RunningEngine (cibles hebdomadaires, séances clés) |
+| **Contexte** | CONTEXT | `fresh` / `compromised` / `embedded` (dans un WOD) / `interval` / `continuous` ; séance et discipline d'origine ; exercice précédent | Interprétation, contribution |
+| **Intensité** | CONTEXT | Bande ou zone, RPE, allure si connue | Contribution, E5 |
+| **Continuité** | CONTEXT | Durée du plus long segment continu, nombre de segments, récupération entre segments | Contribution (un fractionné entre stations ≠ une course continue) |
 
-Cette asymétrie (compter entièrement pour limiter, partiellement pour créditer) est une **décision à valider** (n° 15). Elle évite deux erreurs : sous-estimer la charge d'impact d'un athlète hybride, et considérer qu'un WOD avec 3 × 400 m remplace une sortie en endurance.
+```ts
+interface RunningExposureV11 {
+  raw: { distanceM: number; durationS: number };                   // 100 % conservé
+  context: 'fresh' | 'compromised' | 'embedded' | 'interval' | 'continuous';
+  intensity: { band?: 'low' | 'moderate' | 'high'; zone?: RunZone; rpe?: number; paceSPerKm?: number };
+  continuity: { longestContinuousS: number; segmentCount: number; recoveryBetweenS?: number };
+  source: { sessionId: ID; discipline: Discipline; precededBy?: ExerciseId[] };
+  dataQuality: 'measured' | 'declared' | 'estimated';
+}
+
+// RunningEngine — fonction pure, paramétrée par le ruleset (aucun coefficient codé en dur)
+runningContribution(e: RunningExposureV11, athlete: RunningAssessment, ruleset): {
+  locomotorRaw: { distanceM: number; durationS: number };          // = e.raw, toujours
+  programming: { easyVolumeCreditS: number; qualityCredit?: QualityCreditKind; specificityCredit: number };
+  reasons: ReasonCode[];                                            // explique le crédit accordé
+};
+```
+
+- Les règles de crédit (ex. « un segment continu ≥ X min en zone basse peut compter comme volume facile ») sont des paramètres `provisional` de classe G2, à définir avec les experts course et HYROX.
+- La trace conserve toujours les km bruts **et** le crédit accordé, avec sa justification.
+- Tant que les paramètres ne sont pas relus, la politique par défaut est **conservatrice des deux côtés** : l'exposition brute compte entièrement pour la prudence (L3), et le crédit pour la programmation Running reste limité aux segments clairement assimilables (continus, intensité connue).
 
 ## 6. Structures et profil de demande (utilisés par L1 et par l'InterferenceManager)
 
@@ -111,7 +173,7 @@ type DemandProfile = Record<Structure, DemandLevel> & { reasons: ReasonCode[] };
 - **Calcul réalisé** : même règle appliquée à l'exécution réelle, avec le RPE de séance comme correcteur possible (+1 niveau si RPE ≥ attendu + 2).
 - **Ordinal volontairement** : quatre niveaux suffisent pour décider d'un écart. Un nombre continu donnerait une illusion de précision.
 
-Matrice L1 (exemple de **structure**, valeurs `provisional`) :
+Matrice L1 (exemple de **structure**, valeurs `provisional`, modulées par la politique §4.1) :
 
 | Demande précédente → suivante | high | moderate | low |
 |-------------------------------|------|----------|-----|
@@ -165,7 +227,7 @@ interface AthleteState {
   freshness: Record<Structure, { lastHighAt?: ISODateTime; lastModerateAt?: ISODateTime }>;      // S1
   capacities: Capacity[];                                                                          // S2
   signals: { activePain: PainReport[]; reportedFatigue?: { level: 1 | 2 | 3; at: ISODateTime }; missedLast14d: number };  // S3
-  readiness: { category: 'normal' | 'caution' | 'reduce'; reasons: ReasonCode[] };               // S4
+  readiness: { category: 'unknown' | 'normal' | 'caution' | 'reduce'; reasons: ReasonCode[] };   // S4 — 'unknown' ≠ 'normal'
   adherence: { d28?: number };                                                                      // S5
   trainingStatus: Partial<Record<Discipline, { level: Level; confidence: Confidence; trend: 'up' | 'flat' | 'down' | 'unknown' }>>; // S6
   progressionTracks: ProgressionTrackState[];                                                      // doc 08
