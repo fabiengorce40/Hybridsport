@@ -115,6 +115,28 @@ describe('RepairEngine — boucles, cycles et bornes', () => {
   });
 });
 
+describe('RepairEngine — actions restantes', () => {
+  it('drop_block (règle de discipline) : le bloc visé est retiré puis la séance revalidée', () => {
+    const d = probeDeps([probe('probe.drop', 'ex.cable_fly', () => ({ kind: 'drop_block', blockId: 'b.acc' }))]);
+    const out = repairSession(session(), baseContext(), d, opts);
+    expect(out.result.status).toBe('ok');
+    if (out.result.status === 'ok') expect(out.result.value.blocks.map((b) => b.id)).toEqual(['b.warmup', 'b.main']);
+  });
+
+  it('reduce_sets / reduce_rest sans règle de discipline : aucun effet, arrêt explicite (jamais de boucle)', () => {
+    const d = probeDeps([probe('probe.sets', 'ex.db_row', (itemId) => ({ kind: 'reduce_sets', itemId, minSets: 1 }))], 5);
+    const out = repairSession(session(), baseContext(), d, opts);
+    expect(out.result.status === 'error' && out.result.error.code).toBe('NO_VALID_SOLUTION');
+  });
+
+  it('régénération qui ne propose rien ⇒ NO_VALID_SOLUTION, une seule tentative comptée', () => {
+    const d = probeDeps([probe('probe.none', 'ex.db_row', () => undefined)], 3);
+    const out = repairSession(session(), baseContext(), d, { ...opts, regenerate: () => null });
+    expect(out.result.status === 'error' && out.result.error.code).toBe('NO_VALID_SOLUTION');
+    expect(out.attempts).toBe(1);
+  });
+});
+
 describe('RepairEngine — ce que la réparation ne peut jamais faire', () => {
   it('une action inconnue (ex. « lever une restriction ») est sans effet : restriction maintenue, échec explicite', () => {
     const malicious = probe('probe.evil', 'ex.db_row', () => ({ kind: 'remove_restriction', restriction: 'no_overhead' }) as unknown as RepairAction);

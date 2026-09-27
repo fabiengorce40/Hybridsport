@@ -1,6 +1,7 @@
 import type { ReasonCode, SessionDraft } from '@hybridsport/domain';
 import { createCoreRegistry } from '../trace/index.js';
 import type { LoadedRuleset } from '../rules/ruleset.js';
+import { RulesetParameterError } from '../rules/errors.js';
 import type { LoadedCatalog } from '../catalog/catalog.js';
 import { estimateDuration, readDurationParams } from './estimate.js';
 import type { AthleteTimingProfile, DurationEstimate } from './estimate.js';
@@ -16,9 +17,15 @@ export type FitOutcome =
   | { readonly status: 'SHORTER_ACCEPTED'; readonly session: SessionDraft; readonly estimate: DurationEstimate; readonly check: DurationCheck; readonly appliedLevers: readonly LeverRef[]; readonly reasons: readonly ReasonCode[] }
   | { readonly status: 'INFEASIBLE'; readonly estimate?: DurationEstimate; readonly appliedLevers: readonly LeverRef[]; readonly reasons: readonly ReasonCode[] };
 
+/** Pas des leviers, lus dans le ruleset : une clé absente ou non positive est une erreur explicite (jamais ignorée). */
 export function readLeverSteps(ruleset: LoadedRuleset): LeverSteps {
   const r = ruleset.numberRecord('duration.leverSteps');
-  return { reduceRestS: r.reduceRestS ?? Number.NaN, shortenConditioningS: r.shortenConditioningS ?? Number.NaN, reduceRunS: r.reduceRunS ?? Number.NaN, reduceRunM: r.reduceRunM ?? Number.NaN };
+  const step = (k: keyof LeverSteps): number => {
+    const v = r[k];
+    if (v === undefined || !(v > 0)) throw new RulesetParameterError('duration.leverSteps', 'type', `${k} > 0`);
+    return v;
+  };
+  return { reduceRestS: step('reduceRestS'), shortenConditioningS: step('shortenConditioningS'), reduceRunS: step('reduceRunS'), reduceRunM: step('reduceRunM') };
 }
 
 /**

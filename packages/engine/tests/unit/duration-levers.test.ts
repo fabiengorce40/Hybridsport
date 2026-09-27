@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import type { SessionDraft, SessionDraftInput } from '@hybridsport/domain';
 import {
-  applyLeverStep, canonicalStringify, defaultLeverPlan, estimateDuration, fitDuration, leverDeclarationIssues, readDurationParams, readLeverSteps,
+  applyLeverStep, canonicalStringify, RulesetParameterError, defaultLeverPlan, estimateDuration, fitDuration, leverDeclarationIssues, readDurationParams, readLeverSteps,
 } from '../../src/index.js';
 import { testCatalog, testRuleset } from '../fixtures/load.js';
 import { param, testRulesetDocument } from '../fixtures/ruleset.js';
@@ -210,6 +210,16 @@ describe('leviers — ordre, bornes et issues', () => {
     const r = fitDuration(s, catalog, ruleset);
     expect(r.status).toBe('SHORTER_ACCEPTED');
     if (r.status === 'SHORTER_ACCEPTED') expect(r.session).toEqual(s);
+  });
+});
+
+describe('leviers — paramètres', () => {
+  it('pas de levier absent ou non positif dans le ruleset ⇒ erreur explicite (jamais un levier ignoré en silence)', () => {
+    const doc = testRulesetDocument();
+    for (const bad of [{ reduceRestS: 15, shortenConditioningS: 60, reduceRunS: 120 } as Record<string, number>, { reduceRestS: 0, shortenConditioningS: 60, reduceRunS: 120, reduceRunM: 400 }]) {
+      const rs = testRuleset({ ...doc, parameters: doc.parameters.map((x) => (x.id === 'duration.leverSteps' ? param('duration.leverSteps', bad, 'G2') : x)) });
+      expect(() => readLeverSteps(rs)).toThrow(RulesetParameterError);
+    }
   });
 });
 

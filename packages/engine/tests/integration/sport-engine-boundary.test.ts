@@ -143,6 +143,14 @@ describe('anti-doublon dans la décision : SOFT, au niveau B6, subordonné à la
     if (o.result.status === 'ok') expect(o.result.warnings.map((w) => w.code)).toContain('DUPLICATE.ACCIDENTAL');
   });
 
+  it('historique à comparer mais paramètres anti-doublon absents du ruleset ⇒ INVALID_INPUT TECHNICAL (jamais de valeur par défaut)', () => {
+    const o = runSportSession(fakeEngine(TWO_PROPOSALS), request({ history }), coreContext('p'));
+    expect(codeOf(o.result)).toBe('INVALID_INPUT');
+    if (o.result.status === 'error') expect(o.result.error.reasons[0]).toMatchObject({ code: 'TECHNICAL.PARAMETER_MISSING', category: 'technical' });
+    // Sans historique comparable : aucun contrôle, aucune erreur (spec 07 §4).
+    expect(runSportSession(fakeEngine(TWO_PROPOSALS), request(), coreContext('p')).result.status).toBe('ok');
+  });
+
   it('après réparation, l’empreinte est recalculée sur la séance finale', () => {
     const o = runSportSession(fakeEngine(TWO_PROPOSALS), request({ profile: { ...PROFILE_GYM, availableEquipment: presetEquipment('preset.dumbbells_only') } }), ctx());
     expect(o.result.status).toBe('ok');
