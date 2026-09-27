@@ -138,3 +138,19 @@ Résultats :
 - 525 tests verts (CORE 370, strength 155) ;
 - mutation ciblée strength : 59,3 % → 75,4 % ;
 - moteur techniquement verrouillable, valeurs toujours provisoires.
+
+## Phase 4E — STRENGTH SCIENTIFIC RULESET V1
+
+Rapport : [`STRENGTH-4E-IMPLEMENTATION-REPORT.md`](STRENGTH-4E-IMPLEMENTATION-REPORT.md). Documents générés :
+
+- [ruleset scientifique V1](STRENGTH-SCIENTIFIC-RULESET-V1.md) ;
+- [registre scientifique](STRENGTH-SCIENCE-REGISTRY-V1.md) ;
+- [diff S1–S7](STRENGTH-4E-BASELINE-DIFF.md) ;
+- [PrescriptionConfidence](STRENGTH-PRESCRIPTION-CONFIDENCE-V1.md) ;
+- [InterferenceAssessment](STRENGTH-INTERFERENCE-ASSESSMENT-V1.md).
+
+Résultats :
+
+- STRENGTH_SCIENCE_INTEGRATION_GATE = PASS ; STRENGTH_SCIENTIFIC_V1_GATE = PASS_PROVISIONAL ;
+- 560 tests verts (CORE 370, strength 190) ; aucune modification du CORE ;
+- aucune valeur existante modifiée ; goldens 0.2.0 inchangés ; ruleset candidat `0.3.0-strength-science-candidate`.

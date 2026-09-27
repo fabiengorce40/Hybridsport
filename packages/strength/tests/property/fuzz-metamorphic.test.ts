@@ -9,6 +9,7 @@ import { canonicalStringify } from '@hybridsport/engine';
 import type { StrengthContextInput } from '../../src/index.js';
 import { run, scenario, strengthCatalog } from '../fixtures/harness.js';
 import type { Scenario } from '../fixtures/harness.js';
+import { candidateScenario } from '../fixtures/science.js';
 
 const CATALOG = strengthCatalog();
 const STRENGTH_EX = CATALOG.exercises().filter((e) => e.disciplines.includes('strength') && e.loadable).map((e) => e.id).sort();
@@ -46,8 +47,7 @@ const arbScenario: fc.Arbitrary<Scenario> = fc.record({
 }));
 
 describe('fuzz : le moteur ne lève jamais et ne produit que des séances valides ou des refus explicables', () => {
-  it('scénarios aléatoires (salle, niveau, objectif, durée, historique, exclusions, voisins, phase, état)', () => {
-    fc.assert(fc.property(arbScenario, (s) => {
+  const invariant = (s: Scenario) => {
       const o = run(s);
       if (o.result.status === 'error') {
         expect(['NO_VALID_SOLUTION', 'SAFETY_BLOCK', 'OUT_OF_SCOPE']).toContain(o.result.error.code);
@@ -69,7 +69,13 @@ describe('fuzz : le moteur ne lève jamais et ne produit que des séances valide
         expect(s.profile.excludedExercises).not.toContain(id);
       }
       for (const it of items(session)) expect(it.refs?.anchor).not.toBe('declared');
-    }), { numRuns: 120, seed: 20261005 });
+  };
+  it('scénarios aléatoires (salle, niveau, objectif, durée, historique, exclusions, voisins, phase, état)', () => {
+    fc.assert(fc.property(arbScenario, invariant), { numRuns: 120, seed: 20261005 });
+  });
+
+  it('mêmes invariants avec le ruleset scientifique V1 candidat (phase 4E)', () => {
+    fc.assert(fc.property(arbScenario, (s) => invariant(candidateScenario(s))), { numRuns: 120, seed: 20261005 });
   });
 
   it('déterminisme : même scénario ⇒ même sortie (séance, trace, empreinte), octet pour octet', () => {

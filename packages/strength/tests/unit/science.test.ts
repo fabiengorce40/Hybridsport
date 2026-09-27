@@ -157,6 +157,33 @@ describe('PrescriptionConfidence ordinale et hiérarchie de charge (K4–K9)', (
   });
 });
 
+describe('capacités déclarées et paramètres facultatifs mal formés', () => {
+  it('une capacité déclarée ne dépasse jamais MEDIUM, même issue de séries avec RIR ; l’âge et le conflit la dégradent', () => {
+    const cap = (source: 'app_sets_with_rir' | 'declared_1rm' | 'declared_recent_loads', asOf: string, extra: StrengthContextInput['capacities'] = []) =>
+      loadKnowledge(ex('ex.bench_press'), envFor(scenario({ archetype: 'str_upper', stimulus: 'strength_volume', ruleset: CANDIDATE_RULESET, context: { capacities: [{ exerciseId: 'ex.bench_press', source, asOf, e1rmKg: 100 }, ...extra] } })));
+    expect(cap('app_sets_with_rir', daysAgo(5)).confidence).toBe('medium');
+    expect(cap('app_sets_with_rir', daysAgo(5)).assessment?.factors.source).toBe('declared');
+    expect(cap('declared_recent_loads', daysAgo(5)).confidence).toBe('low');
+    expect(cap('declared_1rm', daysAgo(60)).confidence).toBe('low');
+    expect(cap('declared_1rm', daysAgo(400)).confidence).toBe('none');
+    const conflicting = cap('declared_1rm', daysAgo(5), [{ exerciseId: 'ex.bench_press', source: 'declared_1rm', asOf: daysAgo(30), e1rmKg: 140 }]);
+    expect(conflicting.confidence).toBe('low');
+    // 0.2.0 : la même capacité issue de séries avec RIR était HIGH.
+    const legacy = loadKnowledge(ex('ex.bench_press'), envFor(scenario({ archetype: 'str_upper', stimulus: 'strength_volume', context: { capacities: [{ exerciseId: 'ex.bench_press', source: 'app_sets_with_rir', asOf: daysAgo(5), e1rmKg: 100 }] } })));
+    expect(legacy.confidence).toBe('high');
+  });
+
+  it('un paramètre facultatif présent mais mal formé (schéma ou gouvernance) ⇒ refus explicite, jamais un repli silencieux', () => {
+    const bad = strengthRuleset(strengthScientificRulesetDocument({}, { 'strength.tracks.horizon': { policy: 'rotate_often' } }));
+    expect(() => readStrengthParams(bad)).toThrow(/strength\.tracks\.horizon/);
+    const o = run(scenario({ ruleset: bad }));
+    expect(o.result.status === 'error' && o.result.error.code).toBe('INVALID_INPUT');
+    const doc = strengthScientificRulesetDocument();
+    const wrongGov = strengthRuleset({ ...doc, parameters: doc.parameters.map((x) => (x.id === 'strength.science.registryVersion' ? { ...x, governance: 'G2' as const } : x)) });
+    expect(() => readStrengthParams(wrongGov)).toThrow(/strength\.science\.registryVersion/);
+  });
+});
+
 describe('ancres, anti-doublon, interférence (K10–K14)', () => {
   const track = (o: Partial<StrengthTrack> = {}): StrengthTrack => ({ trackId: 't.sq', tier: 'anchor', exerciseId: 'ex.back_squat', archetypeId: 'str_lower', slotId: 'lo.main_knee', model: 'autoregulated', status: 'active', openedAt: asISODateTime(daysAgo(140)), consecutiveSuccess: 1, consecutiveBelow: 0, consecutiveHolds: 0, ...o });
   const base = { now: NOW, mesocycleEnded: false, stagnant: false, inadmissible: false, level: 'intermediate' as const };

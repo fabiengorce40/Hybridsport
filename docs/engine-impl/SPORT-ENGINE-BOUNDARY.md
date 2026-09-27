@@ -112,3 +112,9 @@ Lien avec le catalogue : `slotAccepts` est le prédicat unique d'emplacement, pa
 - Le CORE l'exécute **après** `parseContext` et **avant** `propose`. Une raison ou plus ⇒ `INVALID_INPUT` déterministe (étape de trace `intent_contract`) et le moteur n'est jamais appelé. Une exception ⇒ `INVALID_INPUT` technique (`TECHNICAL.STRUCTURE_INVALID`).
 - Pourquoi dans le CORE : une intention incohérente avec le contexte est un défaut du **planificateur**, donc une entrée invalide, pas une issue métier. `parseContext` ne voit pas l'intention ; seul le CORE voit les deux.
 - Première utilisation : contrat des ancres de la Musculation (spec strength doc 10 §7).
+
+## Phase 4E — aucune modification du CORE ; CORE-EXT-5 proposée
+
+- Le ruleset scientifique V1 est entièrement porté par le StrengthEngine : paramètres facultatifs versionnés (préflight `optional: true`, mécanisme existant du CORE), PrescriptionConfidence, InterferenceAssessment et priorités de durée calculées et tracées dans le moteur. `packages/engine` et `packages/domain` sont inchangés.
+- Le signal d'interférence VERY_HIGH (`PLAN.INTERFERENCE_SIGNAL`) est une raison de la proposition : le planificateur global reste seul décideur ; aucun moteur ne déplace ni ne supprime de séance.
+- **CORE-EXT-5 (proposée, NON implémentée)** : plages de RIR (`zEffort.rir: number | { min, max }`), nécessaires au principe P4. À adapter : validateur de cohérence d'intensité (borne basse), migration `session_record` v3 → v4, rendu. Décision soumise à validation humaine.
