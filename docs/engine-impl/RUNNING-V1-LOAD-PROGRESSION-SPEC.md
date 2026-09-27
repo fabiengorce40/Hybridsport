@@ -81,10 +81,10 @@ Sortie (ordinale, par dimension puis globale) :
 | `WITHIN_HABITUAL` | Dans la plage habituelle ou déjà tolérée | Accepté |
 | `MODERATE_INCREASE` | Hausse sur une seule dimension, dans des bornes | Accepté, tracé |
 | `MULTI_DIMENSION_INCREASE` | Hausses simultanées sur plusieurs dimensions | Refusé : une seule dimension progresse (§X) |
-| `LARGE_INCREASE` | Au-delà d’une borne de garde-fou | Refusé ; proposition réduite (`PRODUCT_GUARDRAIL`, G1 candidat) |
+| `LARGE_INCREASE` | Au-delà d’une borne de garde-fou | Refusé ; proposition réduite (`PRODUCT_GUARDRAIL` + `EXPERT_DESIGN_REVIEW` ; G1 seulement via NOVICE / RETURN, revue G1 5B) |
 | `OUT_OF_SCOPE` | Situation hors périmètre (douleur, symptômes, cas médical) | Arrêt de la progression, message de réorientation |
 
-**Bornes.** Elles sont des **garde-fous V1** (`PRODUCT_GUARDRAIL` / `SAFETY_SIGNOFF_REQUIRED`), pas des seuils physiologiques. Aucune valeur n’est fixée en 5A.
+**Bornes** *(corrigé en 5B, B3)* : ces classes sont des **catégories opérationnelles**, pas des seuils biologiques. Toute frontière chiffrée future sera `PROGRAMMING_HEURISTIC`, `PRODUCT_GUARDRAIL` ou, seulement dans les contextes NOVICE / RETURN couverts par un G1, `SAFETY_SIGNOFF_REQUIRED` (arbitrage 5B §Q.3). Aucune valeur n’est fixée.
 
 ### Q.3 Pourquoi pas la règle des 10 %
 - **Damsted et al. 2018** (IJSPT, PMID 30534459) : 4 articles ; 3 trouvent une association entre hausse de charge et blessure ; preuves très limitées ; pas de seuil clair de 10 % ; pas de différence entre des hausses de 10 % et de 24 %.
@@ -118,6 +118,8 @@ Le moteur **ne prétend pas prévenir les blessures**, et aucun message produit 
 | **Safety guardrail** | Règle destinée à limiter un risque pour la personne, validée par un responsable | Arrêt de progression sur douleur déclarée ; plafond de reprise après longue interruption ; message hors périmètre | SAFETY_SIGNOFF_REQUIRED (G1) |
 
 ### R.4 G1 candidats (visa de sécurité requis avant production)
+
+> **Reclassés en 5B** (voir [`RUNNING-G1-CANDIDATE-REVIEW.md`](RUNNING-G1-CANDIDATE-REVIEW.md)). Restent G1_SAFETY : PAIN-STOP, RETURN-PROTOCOL (LONG / UNKNOWN), NOVICE-ENTRY (volet sécurité), OUT-OF-SCOPE. Deviennent EXPERT_DESIGN_REVIEW : LONGRUN-BOUND. Deviennent PRODUCT_GUARDRAIL + EXPERT_DESIGN_REVIEW : HI-DENSITY et LOAD-INCREASE-BOUND. La table ci-dessous est la trace 5A.
 
 | Identifiant | Objet | Pourquoi G1 |
 |---|---|---|
@@ -162,7 +164,8 @@ Le moteur **ne prétend pas prévenir les blessures**, et aucun message produit 
 |---|---|
 | Principe : réduire la charge avant la compétition améliore la performance d’endurance | **SUPPORTED** (deux méta-analyses convergentes, SEARCH_SUMMARY) |
 | Mécanisme : baisse du volume, intensité et fréquence maintenues | **SUPPORTED** (convergent) |
-| Amplitude de réduction du volume (41–60 %) | **SUPPORTED_WITH_RANGE** : plage issue de méta-analyses multi-sports. C’est une plage de départ, **pas une constante**. |
+| Amplitude de réduction du volume (41–60 %) | **SUPPORTED_WITH_RANGE** : signal de preuve issu de méta-analyses poolées multi-sports, **non prescriptif** *(5B, B4)* ; la valeur par épreuve et par niveau relève de l’expert |
+| Spécificité selon l’épreuve (5K … marathon) | **CONTEXT_DEPENDENT** *(ajouté en 5B, B4)* |
 | Durée (≤ 21 jours ; environ 2 semaines chez Bosquet) | **CONTEXT_DEPENDENT** : selon la distance, le niveau et la charge antérieure |
 | Forme (exponentielle, linéaire, en palier) | **CONTEXT_DEPENDENT** / INSUFFICIENT_EVIDENCE pour la course seule dans ce dossier |
 
@@ -189,11 +192,13 @@ Durée hebdomadaire, distance hebdomadaire, fréquence, durée du long run, volu
 **Ne pas augmenter toutes les dimensions en même temps.** Par cycle de progression, une **variable dominante** progresse ; les autres restent stables ou baissent (`PROGRAMMING_HEURISTIC`, cohérent avec la classe MULTI_DIMENSION_INCREASE de §Q.2).
 
 ### X.3 Choix de la variable dominante (ProgressionEngine) : ordre de décision candidat
+
+> **Corrigé en 5B (B2)** : il n’existe **pas** de priorité universelle ; l’intensité peut être la variable dominante. Le modèle de décision est dans l’arbitrage 5B §R. Le point 5 ci-dessous est **supprimé** ; l’ordre restant est indicatif et relève d’une table de ruleset (EXPERT_DESIGN_REVIEW).
 1. **Conditions bloquantes** : reprise, adhérence faible, retours négatifs répétés ou LOAD CHANGE ASSESSMENT défavorable ⇒ aucune progression (maintien ou baisse).
 2. **Priorité de la phase** (domain spec §W) : FOUNDATION ⇒ fréquence puis durée ; DEVELOPMENT ⇒ volume de qualité ; SPECIFIC ⇒ spécificité ; TAPER ⇒ baisse du volume.
 3. **Écart principal à l’objectif** : par exemple, le long run reste insuffisant pour un marathon, donc il devient la variable dominante.
 4. **Variable la moins récemment progressée** parmi les éligibles, pour éviter de toujours pousser la même.
-5. **Intensité ou allure en dernier** : elle ne progresse que sur **nouvelle référence** (modèle de références §F.3), jamais par incrément automatique.
+5. ~~Intensité ou allure en dernier~~ *(supprimé en 5B, B2)*. La **référence** de performance ne change que sur preuve suffisamment fiable (§F.4 de l’arbitrage 5B). La **cible** d’intensité peut progresser comme variable dominante.
 
 Cet ordre est `EXPERT_DESIGN_REVIEW`. Les incréments eux-mêmes sont des paramètres (`PROGRAMMING_HEURISTIC`), bornés par la LOAD CHANGE ASSESSMENT.
 

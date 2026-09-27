@@ -1,6 +1,14 @@
 # RUNNING-V1-SESSION-TAXONOMY — archétypes de séance et structure
 
 > **Phase 5A, spécification seulement** (aucun code). Sections couvertes : I (archétypes), J (fractionné), M (easy), N (long run), P (haute intensité). Les domaines d’intensité sont ceux de [`RUNNING-V1-DOMAIN-SPEC.md`](RUNNING-V1-DOMAIN-SPEC.md) §H. **Aucune durée, distance ni allure universelle n’est donnée** : toutes les doses seront des paramètres de ruleset avec statut et provenance.
+>
+> **Arbitrage 5B** ([`RUNNING-5B-SCIENTIFIC-ARBITRATION.md`](RUNNING-5B-SCIENTIFIC-ARBITRATION.md) §J–§N) :
+> - RECOVERY_RUN est fusionné dans EASY_RUN (variante `LOW_DOSE_RECOVERY`) ;
+> - THRESHOLD_INTERVALS et CONTINUOUS_THRESHOLD sont fusionnés en THRESHOLD (`structureMode` CONTINUOUS ou INTERVALS ; coût dérivé de la structure) ;
+> - STRIDES devient un module ;
+> - PROGRESSION_RUN est conservé comme PROGRAMMING_HEURISTIC.
+>
+> Les fiches ci-dessous restent la trace 5A.
 
 **Conventions**
 

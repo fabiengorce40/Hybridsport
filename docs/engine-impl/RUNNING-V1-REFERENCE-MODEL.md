@@ -81,7 +81,13 @@ Aucune formule pondérée n’est utilisée. Les seuils (ce qu’est une référ
 
 - **Deux références valides divergent** au-delà d’une tolérance (paramètre) : la confiance de la décision baisse d’un niveau. Le moteur retient, pour la prescription, la **plus prudente** des estimations (la moins exigeante), et il propose un test ou une course de contrôle si la tolérance le permet.
 - **Une référence déclarée contredit des observations d’entraînement concordantes** : les observations l’emportent pour la prescription ; la déclaration est conservée et tracée.
-- **Hausse de référence** : elle exige une référence nouvelle de type performance (course, contre-la-montre, test). Des séances « faciles à tenir » peuvent **proposer** un test, jamais augmenter seules les allures. Ce principe reprend « la hausse d’allure repose sur des preuves » (`07-progression.md`) ; toute limite de hausse par cycle est un `PRODUCT_GUARDRAIL`.
+- **Hausse de référence** *(corrigée en 5B, B1)* : une hausse **substantielle** d’une référence de performance exige une **nouvelle preuve suffisamment fiable** :
+  - compétition ;
+  - test standardisé ;
+  - contre-la-montre ;
+  - **ou plusieurs observations d’entraînement cohérentes**.
+
+  La confiance dépend de la nature de la preuve. Une séance isolée réussie ne réécrit jamais la capacité ; elle peut au plus proposer un test. Toute borne de « hausse substantielle » est un paramètre `PROGRAMMING_HEURISTIC` (arbitrage 5B §F.4).
 - **Baisse de référence** : elle peut découler d’observations d’entraînement concordantes (échecs répétés) ou d’une interruption (reprise). La baisse est plus facile que la hausse (asymétrie de prudence, `PRODUCT_GUARDRAIL`).
 
 ### F.4 `RunningReferenceConfidence` (LOW / MEDIUM / HIGH)

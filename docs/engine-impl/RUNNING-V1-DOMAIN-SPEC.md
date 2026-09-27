@@ -1,6 +1,6 @@
 # RUNNING-V1-DOMAIN-SPEC — spécification métier du futur RunningEngine
 
-> **Phase 5A, documentation seulement.** Aucun code RunningEngine n’est créé. CORE, StrengthEngine, rulesets Strength, registre scientifique Strength, G1 Strength et CORE-EXT-5 sont inchangés.
+> **Phase 5A, documentation seulement.** *Corrections 5B intégrées : voir [`RUNNING-5B-SCIENTIFIC-ARBITRATION.md`](RUNNING-5B-SCIENTIFIC-ARBITRATION.md) (archétypes §J, charge §Q, progression §R).* Aucun code RunningEngine n’est créé. CORE, StrengthEngine, rulesets Strength, registre scientifique Strength, G1 Strength et CORE-EXT-5 sont inchangés.
 >
 > Documents associés :
 > - [`RUNNING-V1-REFERENCE-MODEL.md`](RUNNING-V1-REFERENCE-MODEL.md) : références, confiance, cibles ;
@@ -35,7 +35,7 @@ Aucun paquet `packages/running` n’existe. Les points d’accroche présents da
 |---|---|---|---|
 | `DISCIPLINES` contient `running` | `packages/domain` | Discipline déclarable | Oui |
 | `BLOCK_KINDS` contient `running` | `packages/domain` | Type de bloc de séance | Oui |
-| Prescription `distance` `{distanceM, paceSecPerKm?}` | `packages/domain/src/session.ts` | Course continue à la distance | Partiel : une allure unique, sans plage ni effort ni FC |
+| Prescription `distance` `{distanceM, paceSecPerKm?: {min, max}}` | `packages/domain/src/session.ts` | Course continue à la distance | Partiel : l’allure est déjà une plage, mais il n’existe ni cible d’effort, ni cible de FC, ni domaine *(corrigé en 5B : la 5A indiquait à tort « une allure unique »)* |
 | Prescription `timed` | idem | Effort à la durée | Partiel |
 | Prescription `intervals` `{reps, work:{timeS}\|{distanceM}, recoveryS, paceSecPerKm?}` | idem | Fractionné simple | **Non** : pas de séries, ni de récupération entre séries, ni de mode de récupération, ni de plage de cible, ni de priorité de cible |
 | Levier `reduce_run_volume` | CORE (leviers de durée) | Réduction de volume course | Oui (sémantique à préciser) |
@@ -295,6 +295,6 @@ Les documents `docs/architecture/*` sont antérieurs à cette revue. Leurs hypot
 | « Modèle type VDOT/Daniels ou vitesse critique » | `04` l. 244 ; `07` l. 15 | Le modèle de performance est **multi-référence** ; ni VDOT ni CS n’est la vérité ; le choix du modèle d’équivalence entre distances est `EXPERT_DESIGN_REVIEW` (Q-REF) |
 | « ≥ 24 h entre jambes lourdes et séance course clé » (contrainte dure) | `04` l. 192 | Aucune durée universelle (spec concurrente §U) ; l’espacement est une contrainte de placement de l’InterferenceManager, avec une valeur `PROGRAMMING_HEURISTIC` à signer |
 | « Hausse hebdo bornée ET ratio aigu/chronique locomoteur sous un seuil » (contrainte dure) | `04` l. 195 ; `04` l. 84 (ACWR) | Remplacé par LOAD CHANGE ASSESSMENT (spec charge §Q) ; ACWR non utilisé comme prédicteur de blessure (Impellizzeri 2020) ; pas de règle des 10 % |
-| « Allures : mise à jour prudente (hausse plafonnée par cycle) » | `07` l. 15, l. 67 | Conservé comme principe produit (`PRODUCT_GUARDRAIL`), sans valeur fixée ; une hausse d’allure exige une référence nouvelle et fiable (modèle de références §F) |
+| « Allures : mise à jour prudente (hausse plafonnée par cycle) » | `07` l. 15, l. 67 | Conservé comme principe produit (`PRODUCT_GUARDRAIL`), sans valeur fixée ; *(5B, correction B1)* une hausse **substantielle** d’une référence exige une nouvelle preuve suffisamment fiable : compétition, test standardisé, contre-la-montre ou plusieurs observations d’entraînement cohérentes (arbitrage 5B §F.4) |
 | « Semaine de décharge toutes les 3–4 semaines » | `07` l. 38 | `PROGRAMMING_HEURISTIC`, sans preuve vérifiée en 5A ; déclenchement préférablement conditionnel (charge, retours) — question Q-PROG |
 | « Sans référence : effort perçu + test planifié en semaine 1–2 » | `04` l. 244 | Conservé et renforcé : aucune allure fabriquée ; le test n’est proposé que si la tolérance le permet (P-R0 : pas de test maximal d’emblée) |

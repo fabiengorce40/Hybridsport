@@ -192,3 +192,14 @@ Résultats :
 - 9 documents Running (domaine, références, taxonomie, charge et progression, concurrent, preuves, registre brouillon, scénarios R1–R12, rapport) ;
 - 75 questions falsifiables ; 22 sources au mieux SEARCH_SUMMARY ; 7 G1 candidats ;
 - aucune modification du code (CORE, strength) ; 630 tests verts ; RunningEngine non commencé.
+
+## Phase 5B — RUNNING SCIENTIFIC ARBITRATION & PARAMETER GOVERNANCE
+
+Rapport : [`RUNNING-5B-REPORT.md`](RUNNING-5B-REPORT.md).
+
+Résultats :
+
+- RUNNING_5B_SCIENCE_ARBITRATION_GATE = PASS ; RUNNING_SCIENTIFIC_READINESS = READY_FOR_RULESET_DESIGN ;
+- 75 questions arbitrées ; 110 paramètres sans valeur inventée ; 4 G1_SAFETY (3 reclassés) ; 11 archétypes (2 fusions) ;
+- RFC CORE-EXT-R1 (option B recommandée, non implémentée) ; audit de 48 constantes ; R1–R12 révisés ; 88 tests futurs ;
+- aucune modification du code ; 630 tests verts ; RunningEngine non commencé.

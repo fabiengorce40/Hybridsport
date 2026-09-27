@@ -1,5 +1,12 @@
 # RUNNING-SCIENCE-REGISTRY-DRAFT — brouillon du registre scientifique Running
 
+> **REMPLACÉ en 5B** par [`RUNNING-SCIENCE-REGISTRY-V1.md`](RUNNING-SCIENCE-REGISTRY-V1.md) et [`RUNNING-PARAMETER-REGISTRY-V0.md`](RUNNING-PARAMETER-REGISTRY-V0.md). Conservé comme trace de la 5A. Entrées dépassées :
+> - `upgradeRequiresPerformance` → `upgradeEvidencePolicy` (B1) ;
+> - `changeAssessment.bounds` G1 → PRODUCT_GUARDRAIL (B5) ;
+> - `tenPercentRule` : INSUFFICIENT_EVIDENCE → SUPPORTED (conclusion négative : non utilisée) ;
+> - taper « plage de départ » → signal non prescriptif (B4) ;
+> - `longRun.bound` et `hi.maxSessionsPerPeriod` : G1 → non G1 (B5).
+
 > **Phase 5A : brouillon documentaire.** Aucun code, aucun ruleset, aucune valeur numérique. Il sera transformé en registre typé en 5B, sur le modèle du registre Strength 1.1.0. Le registre Strength n’est pas modifié.
 
 ## 1. Vocabulaire (identique à Strength)

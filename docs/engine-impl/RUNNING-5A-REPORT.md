@@ -1,5 +1,13 @@
 # Phase 5A — RUNNING ENGINE SCIENTIFIC & DOMAIN SPEC : rapport
 
+> **Correctifs 5B** (trace conservée ci-dessous, sans réécriture) :
+> - « une hausse exige une nouvelle performance » → hausse substantielle sur preuve suffisamment fiable (B1) ;
+> - « intensité en dernier » → supprimé (B2) ;
+> - 7 G1 → 4 G1_SAFETY (B5) ;
+> - `tenPercentRule` → SUPPORTED (conclusion négative).
+>
+> Voir [`RUNNING-5B-REPORT.md`](RUNNING-5B-REPORT.md).
+
 > **Documentation seulement. RUNNING ENGINE CODE NOT STARTED.**
 >
 > Non modifiés : CORE, StrengthEngine, rulesets Strength, registre scientifique Strength, G1 Strength, CORE-EXT-5.

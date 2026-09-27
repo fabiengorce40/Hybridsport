@@ -1,6 +1,6 @@
 # RUNNING-EVIDENCE-REVIEW-PACK — sources prioritaires et questions scientifiques
 
-> **Phase 5A.** Dossier destiné au contre-audit humain et scientifique. Sections couvertes : AB (sources prioritaires) et AC (questions falsifiables).
+> **Phase 5A.** Dossier destiné au contre-audit humain et scientifique. *Arbitrage des 75 questions et provenance de vérification : voir [`RUNNING-SCIENCE-REGISTRY-V1.md`](RUNNING-SCIENCE-REGISTRY-V1.md) (5B). Q-PROG-3 est reformulée en 5B (hausse sur preuve suffisamment fiable, B1).* Sections couvertes : AB (sources prioritaires) et AC (questions falsifiables).
 
 ## 0. Méthode et limites
 
