@@ -80,6 +80,7 @@ export function repairSession(proposal: SessionDraft, ctx: ValidationContext, de
   let current = proposal;
   let regenerated = false;
   let attempts = 0;
+  let exhausted = false;
   let last: ValidationReport | undefined;
 
   // La référence de trace du résultat est celle de la trace réellement construite.
@@ -88,7 +89,7 @@ export function repairSession(proposal: SessionDraft, ctx: ValidationContext, de
     return { result: make({ traceId: built.traceId }), trace: built, attempts };
   };
 
-  while (attempts <= maxAttempts) {
+  for (;;) {
     const key = canonicalStringify(current);
     if (visited.has(key)) break; // anti-boucle : état déjà rejeté
     visited.add(key);
@@ -104,20 +105,22 @@ export function repairSession(proposal: SessionDraft, ctx: ValidationContext, de
       const code: EngineErrorCode = blocked.reason.code === 'SCOPE.OUT_OF_SCOPE' ? 'OUT_OF_SCOPE' : 'SAFETY_BLOCK';
       return done((ref) => ({ status: 'error', error: { code, reasons: [blocked.reason], alternatives: [] }, trace: ref }));
     }
-    if (attempts === maxAttempts) break;
-    attempts++;
+    // Une tentative n'est comptée que si une réparation est réellement disponible : « aucune
+    // réparation possible » (NO_VALID_SOLUTION) n'est jamais confondu avec « plafond atteint ».
     const actions = report.repairSuggestions;
+    const canRegenerate = !regenerated && options.regenerate !== undefined;
+    if (actions.length === 0 && !canRegenerate) break;
+    if (attempts === maxAttempts) { exhausted = true; break; }
+    attempts++;
     if (actions.length > 0) {
       actions.forEach((a) => trace.add({ step: 'repair', subject, decision: a.kind, reasons: [reasons.emit('REPAIR.ACTION', { action: a.kind, target: 'itemId' in a ? a.itemId : 'blockId' in a ? a.blockId : proposal.id, attempt: attempts })] }));
       current = applyActions(current, actions, deps);
       continue;
     }
-    if (!regenerated && options.regenerate) {
-      regenerated = true;
-      const excluded = report.errors.flatMap((e) => (typeof e.reason.params.exerciseId === 'string' ? [e.reason.params.exerciseId] : []));
-      const next = options.regenerate(excluded);
-      if (next) { current = { ...next, availableTimeS: proposal.availableTimeS, targetDurationS: proposal.targetDurationS }; continue; }
-    }
+    regenerated = true;
+    const excluded = report.errors.flatMap((e) => (typeof e.reason.params.exerciseId === 'string' ? [e.reason.params.exerciseId] : []));
+    const next = options.regenerate?.(excluded) ?? null;
+    if (next) { current = { ...next, availableTimeS: proposal.availableTimeS, targetDurationS: proposal.targetDurationS }; continue; }
     break;
   }
 
@@ -129,7 +132,6 @@ export function repairSession(proposal: SessionDraft, ctx: ValidationContext, de
     trace.add({ step: 'repair', subject, decision: 'rest_recommended', reasons: [rest, ...lastReasons] });
     return done((ref) => ({ status: 'rest_recommended', reasons: [rest, ...lastReasons], trace: ref }));
   }
-  const exhausted = attempts >= maxAttempts;
   const code: EngineErrorCode = exhausted ? 'REPAIR_EXHAUSTED' : 'NO_VALID_SOLUTION';
   const head = exhausted ? [reasons.emit('REPAIR.EXHAUSTED', { attempts })] : [];
   trace.add({ step: 'repair', subject, decision: code, reasons: [...head, ...lastReasons] });
