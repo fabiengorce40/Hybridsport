@@ -252,7 +252,7 @@ describe('contrôles de discipline exécutés par le CORE (SportEngine.checks)',
 describe('explicabilité : les raisons du moteur de discipline sont tracées par le CORE', () => {
   it('les reason codes d’une proposition figurent dans la trace, rattachés à SA séance ; sans raison, aucune entrée ajoutée', () => {
     const why = createCoreRegistry().emit('DATA.MISSING_FOR_PROPOSAL', { key: 'test', engineId: FAKE_ENGINE.id });
-    const o = runSportSession(fakeEngine((input) => [proposalFor(input, strengthSessionInput(), { reasons: [{ ...why, params: { ...why.params }, ruleRefs: [...why.ruleRefs] }] })]), request(), ctx());
+    const o = runSportSession(fakeEngine((input) => [proposalFor(input, strengthSessionInput(), { reasons: [{ ...why, params: { key: 'test', engineId: FAKE_ENGINE.id }, ruleRefs: [...why.ruleRefs] }] })]), request(), ctx());
     expect(o.result.status).toBe('ok');
     const entry = o.trace.entries.find((e) => e.step === 'proposal');
     expect(entry?.subject.id).toBe(o.result.status === 'ok' ? o.result.value.id : '');
