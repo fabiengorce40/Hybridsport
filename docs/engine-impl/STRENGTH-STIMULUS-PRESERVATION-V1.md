@@ -58,3 +58,19 @@ La réduction des séries d’un optionnel est déjà assurée par la contrainte
 - Le critère « majorité de la dose » est un **choix de conception** (`EXPERT_DESIGN_REVIEW`), sans fondement quantitatif.
 - L’échange n’examine qu’un optionnel retiré à la fois, sans recherche combinatoire.
 - Le volume hebdomadaire n’entre pas dans le critère : la cible hebdomadaire reste l’autorité des séries (allocation), inchangée.
+
+## 7. Phase 4G — isolation et durcissement (comportement inchangé)
+
+- **Décision extraite** en fonction pure (`packages/strength/src/stimulus-preservation.ts`) :
+  - `removalOrder` : candidats au retrait et ordre d’essai ;
+  - `evaluateSwap` : majorité, couverture, durée ;
+  - `findStimulusSwap` : premier échange accepté ;
+  - `workingSetsOf` : séries de travail et de maintien ; mobilité et portés comptent 0.
+- **Rôle du moteur** : il fournit l’essai d’échange et conserve l’état de la séance.
+  - Chaque essai repart de l’état initial.
+  - Aucune règle n’a changé : goldens S1–S7 identiques en 0.2.0, 4E et 4F.
+- **Départage à rang égal** : deux candidats de même rang appartiennent au même emplacement ; ils sont essayés dans l’ordre de placement (tri stable). Aucun hasard n’intervient.
+- **Invariant structurel testé** : deux emplacements optionnels distincts, hors groupe de choix commun, ne partagent aucune famille candidate. Retirer une victime ne libère donc jamais de candidat pour l’omis. Cet invariant fonde l’analyse de certains mutants (voir `STRENGTH-4G-MUTANT-INVENTORY.md`).
+- **Couverture de test** :
+  - scénarios G1–G12 et propriétés P1–P8 dans `tests/unit/stimulus-preservation.test.ts` ;
+  - séances réelles où la règle agit : full body 60 min (pec deck ou élévations latérales à la place du tronc), bas du corps 55–70 min (isolation genou ou mollets à la place du tronc ou de la fente bulgare, dont un cas à deux essais).

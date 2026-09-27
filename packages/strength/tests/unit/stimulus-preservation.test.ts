@@ -212,6 +212,26 @@ describe('moteur : scénarios G4, G10, G11, G12 et trace', () => {
     expect(ext && ext.prescription.type === 'sets' ? workingSetsOf(ext.prescription) : 0).toBe(4);
   });
 
+  it('deux essais : la première victime (tronc) est refusée, la seconde (fente bulgare) acceptée ; chaque essai repart de l’état initial', () => {
+    for (const level of ['intermediate', 'advanced'] as const) {
+      const o = run(lower({ level, minutes: 65 }));
+      expect(preserved(o).map((r) => [r.params.slot, r.params.exerciseId, r.params.removedSlot, r.params.removedExerciseId]), level).toEqual([['lo.iso_lower', 'ex.leg_extension', 'lo.single_leg', 'ex.bulgarian_split_squat']]);
+      const s = session(o);
+      // Le tronc, essayé en premier puis refusé, reste dans la séance ; aucun exercice en double.
+      const slots = strengthItems(s).map((it) => it.refs?.slotId);
+      expect(slots, level).toContain('lo.trunk');
+      expect(slots.filter((x) => x === 'lo.iso_lower'), level).toHaveLength(2);
+      const ids = strengthItems(s).map((it) => it.exerciseId);
+      expect(new Set(ids).size, level).toBe(ids.length);
+      const omitted = reasonsOf(o).filter((r) => r.code === 'SELECT.SLOT_OMITTED').map((r) => `${String(r.params.slot)}:${String(r.params.cause)}`).sort();
+      expect(omitted, level).toContain('lo.single_leg:stimulus_preservation');
+      expect(omitted.filter((x) => x.startsWith('lo.iso_lower:')), level).toEqual([]);
+      // Même séance que la décision pure le prévoit : sans la règle, le leg extension supplémentaire manque.
+      const off = run({ ...lower({ level, minutes: 65 }), ruleset: withoutPolicy });
+      expect(strengthItems(session(off)).map((it) => it.exerciseId), level).toContain('ex.bulgarian_split_squat');
+    }
+  });
+
   it('G4 / P3 — contrainte sévère : jamais de dépassement de durée, repos du principal et montée spécifique intacts', () => {
     for (const minutes of [30, 35, 40, 45, 50, 55, 60, 65]) for (const make of [fullBody, lower]) {
       const s0 = make({ minutes });
