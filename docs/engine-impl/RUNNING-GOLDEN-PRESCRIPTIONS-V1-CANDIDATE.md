@@ -1,5 +1,9 @@
 # RUNNING-GOLDEN-PRESCRIPTIONS-V1-CANDIDATE — relance de R1–R12 après arbitrage 5D
 
+> **Corrections 5E** :
+> - **R4** : l’allure semi Riegel est **suspendue** (exposant non verrouillé, E-MODEL) ⇒ composant BLOCKED_PARAMETER ; la restauration du long run est inchangée.
+> - **R11** : la semaine n’est **plus fixée à 96 min**. Le volume candidat est **96,0–141,6 min** ; la sélection dans cet intervalle relève d’E-TAPER.
+
 > **Phase 5D, théorique.** Base : [`RUNNING-GOLDEN-PRESCRIPTIONS-V0.md`](RUNNING-GOLDEN-PRESCRIPTIONS-V0.md) (5C). Seuls les **changements** sont détaillés, chacun avec le paramètre responsable. Valeurs : [`RUNNING-PARAMETERS-V1-CANDIDATE.md`](RUNNING-PARAMETERS-V1-CANDIDATE.md).
 >
 > **Statuts de résultat**
@@ -77,8 +81,8 @@
 | `preTaperBaselineVolume` | **240 min** (médiane des semaines 230 / 240 / 240 / 250) | RecentLoadContext, niveau typique (`IN:`) |
 | `candidateReductionRange` | **41–60 % de réduction** | V27 (SOURCE_DERIVED, plage de méta-analyses multi-sports ; Wang 2023 vérifiée par le contre-audit) |
 | `resultingCandidateVolume` | 240 × (1 − 0,60) = **96,0** ; 240 × (1 − 0,41) = **141,6** ⇒ **96,0–141,6 min** (hors course) | = |
-| Semaine proposée | S1 35 + S2 27 + S3 34 = **96 min** (bornes prudentes), pire cas 45 + 41 + 51 = 137 ≤ 141,6 ✓ | V20 |
-| Réduction effective | 1 − 96 / 240 = **60 %** (dans la plage) ; pire cas 1 − 137 / 240 = 42,9 % (dans la plage) | = |
+| Semaine proposée | *(5E)* **Intervalle candidat 96,0–141,6 min** ; la répartition S1 / S2 / S3 à l’intérieur de l’intervalle est **DECISION_REQUIRED** (E-TAPER). Exemples de bornes : 35 + 27 + 34 = 96 ; 45 + 41 + 51 = 137 | V27 ; sélection : décision humaine |
+| Réduction effective | Selon la sélection humaine : entre 60 % (96 min) et 41 % (141,6 min) | = |
 | Travail de seuil | Base 24 min ; plage 24 × (1 − [0,41 ; 0,60]) = 9,6–14,2 ; retenu **10 min** (2 × 5) = réduction de 58,3 % ✓ | V27, V19 |
 | Fréquence | Maintenue : 3 séances + la course = 4 (base 4) | `taper.frequencyMaintenance` (SUPPORTED) |
 | Intensité | Maintenue : THRESHOLD_LIKE, RPE 5–7 (V02 révisé), plafond 282 s/km (V05) | SUPPORTED (principe) ; V02 EXPERT_PROPOSED |

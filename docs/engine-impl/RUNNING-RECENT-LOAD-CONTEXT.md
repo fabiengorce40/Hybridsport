@@ -33,21 +33,29 @@ Par dimension (durée hebdomadaire, distance si mesurée, fréquence, long run, 
 |---|---|---|
 | `weeks[]` | Les **N** dernières semaines complètes, valeur ou **UNKNOWN** | N = **4** par défaut, configurable (EXPERT_PROPOSED, PROGRAMMING_HEURISTIC) |
 | `typicalLevel` | **Médiane** des semaines connues | EXPERT_PROPOSED |
-| `recentDemonstrated` | **Maximum réalisé** d’une semaine connue **sans retour négatif** (pas de douleur, pas de MUCH_HARDER) | EXPERT_PROPOSED |
+| `bestToleratedExposure` | Plus haute valeur réalisée sur une semaine connue **sans réponse négative observée** (définition ci-dessous). **Ce n’est pas un maximum sûr** : c’est seulement ce que l’athlète a réalisé récemment sans signal négatif dans les données du produit. | EXPERT_PROPOSED (provisoire) |
 | `flags` | `MISSING_WEEK`, `ZERO_WEEK`, `OUTLIER_WEEK` (valeur > 2 × médiane : seuil de signalement EXPERT_PROPOSED, sans effet de décision), `POST_RETURN_ONLY`, `INSUFFICIENT_HISTORY` | TECHNICAL / EXPERT_PROPOSED |
 | `status` | `AVAILABLE` / `UNKNOWN` | TECHNICAL |
+
+**Réponse négative** (5E) : définie **uniquement** à partir des informations dont le produit dispose, sans diagnostic ni inférence de risque de blessure. Une semaine a une réponse négative si l’un de ces signaux y apparaît :
+- échec de réalisation (`completed = PARTIAL` ou `SKIPPED` pour une raison autre que `TIME`) ;
+- `unexpectedDifficulty = MUCH_HARDER` ;
+- intolérance déclarée ou signal de douleur (`reasonForModification = PAIN` ; readiness ou tolérance déclarée dégradée) ;
+- effondrement de l’adhérence (état LOW_ADHERENCE).
+
+Fenêtre de 4 semaines, médiane et `bestToleratedExposure` restent **provisoires** (décision E-RECENTLOAD).
 
 **Règles**
 1. **Semaine manquante** (aucune donnée) : UNKNOWN, **exclue**, jamais 0.
 2. **Semaine à zéro déclarée** (aucune course confirmée) : 0, comptée, signalée `ZERO_WEEK`.
 3. **Moins de 2 semaines connues sur N** : `status = UNKNOWN` (`INSUFFICIENT_HISTORY`) ⇒ la dimension est traitée comme UNKNOWN (I2).
-4. **Semaine aberrante** : conservée ; signalée ; elle peut entraîner `recentDemonstrated` seulement si elle est sans retour négatif. Si elle est déclarée de façon suspecte (conflit avec les autres données), la revue est demandée.
+4. **Semaine aberrante** : conservée ; signalée ; elle peut entraîner `bestToleratedExposure` seulement si elle est sans retour négatif. Si elle est déclarée de façon suspecte (conflit avec les autres données), la revue est demandée.
 5. **Reprise** (MODERATE, LONG, UNKNOWN) : le contexte **ne contient que les semaines post-retour** (`POST_RETURN_ONLY`) ; les semaines d’avant la coupure restent dans l’historique, mais ne servent pas de niveau démontré actuel.
-6. **Progression rapide** : `recentDemonstrated` suit la meilleure semaine récente réalisée sans retour négatif ; la médiane reste un repère de niveau typique.
+6. **Progression rapide** : `bestToleratedExposure` suit la meilleure semaine récente réalisée sans retour négatif ; la médiane reste un repère de niveau typique.
 
 **Classes de la LCA** (catégories opérationnelles) :
-- **WITHIN_RECENT_CONTEXT** : valeur prévue ≤ `recentDemonstrated` ;
-- **INCREASE_BEYOND_CONTEXT** : valeur prévue > `recentDemonstrated`, évaluée par les règles de progression (V23 non résolu ⇒ HOLD, sauf test demandé) ;
+- **WITHIN_RECENT_CONTEXT** : valeur prévue ≤ `bestToleratedExposure` ;
+- **INCREASE_BEYOND_CONTEXT** : valeur prévue > `bestToleratedExposure`, évaluée par les règles de progression (V23 non résolu ⇒ HOLD, sauf test demandé) ;
 - **MULTI_DIMENSION_INCREASE** : plus d’une dimension au-delà du contexte ⇒ refusé ;
 - **LARGE_INCREASE** : V22 (P-R0–1) ;
 - **UNKNOWN_CONTEXT** : dimension UNKNOWN ⇒ pas de progression sur cette dimension.
@@ -58,7 +66,7 @@ Par dimension (durée hebdomadaire, distance si mesurée, fréquence, long run, 
 
 | Scénario | 5C (bande min / max) | 5D (RecentLoadContext) | Changement |
 |---|---|---|---|
-| R2 | Bande 90–110 ; semaine 110 = borne haute | `recentDemonstrated` 110 ; semaine 110 ⇒ WITHIN | Aucun |
+| R2 | Bande 90–110 ; semaine 110 = borne haute | `bestToleratedExposure` 110 ; semaine 110 ⇒ WITHIN | Aucun |
 | R3 | 150–170 ; 153 | Démontré 170 ; 153 ⇒ WITHIN | Aucun |
 | R4 | 200–225 ; 207 | Démontré 225 ; long run démontré 90 ⇒ **restauration possible** (voir les goldens V1) | Nouveau : progression par restauration |
 | R5 | 290–310 ; 282 (sous la bande) | Démontré 310 ; 282 ⇒ WITHIN (la notion de « sous la bande » disparaît : aucun plancher) | Libellé seulement |

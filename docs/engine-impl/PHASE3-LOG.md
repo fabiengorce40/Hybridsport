@@ -227,3 +227,14 @@ Résultats :
 - 23 valeurs chiffrées actives avec provenance (1 SOURCE_DERIVED, 6 SOURCE_INFORMED, 11 EXPERT_PROPOSED, 3 PRODUCT_GUARDRAIL, 2 TECHNICAL) ; constantes 3 % et 6 % retirées (variabilité typique, gravité ordinale) ; RecentLoadContext ; 12 paramètres non résolus justifiés ;
 - R1–R12 : 10 VALID_PROVISIONAL, 2 BLOCKED_G1 ; démonstrations HOLD / restauration / baisse ; calcul du taper explicite ;
 - 0 nouveau concept d'architecture ; 0 G1 signé ; aucune modification du code ; 630 tests verts.
+
+## Phase 5E — RUNNING EXPERT & SAFETY DECISION PACK
+
+Rapport : [`RUNNING-5E-REPORT.md`](RUNNING-5E-REPORT.md).
+
+Résultats :
+
+- RUNNING_5E_DECISION_PACK_GATE = PASS ; RUNNING_HUMAN_DECISION_READINESS = READY_FOR_EXPERT_DECISIONS ; CORE_EXT_R1_DESIGN_READINESS = READY_FOR_APPROVAL ;
+- 14 décisions expertes (16 consolidées), 4 politiques G1 / 7 paramètres, 0 signature, 0 approbation automatique ;
+- corrections : V42 → RunningPerformanceVariabilityEstimate ; V38 séparé (exposant non verrouillé) ; R11 sans valeur par défaut ; bestToleratedExposure ; provenance externe ;
+- ensemble minimal : 8 décisions (4 G1 + E-RPE, E-DENSITY, E-RECENCY, E-RECENTLOAD) ; 0 nouvelle valeur ; 0 nouveau concept ; aucune modification du code.

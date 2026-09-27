@@ -1,5 +1,11 @@
 # RUNNING-SCIENCE-REGISTRY-V1 — registre scientifique Running (sources et arbitrage des 75 questions)
 
+> **Mise à jour de provenance 5E** : vérifications externes déclarées par le contre-audit.
+> - EXTERNAL_ABSTRACT_VERIFIED : Hopkins & Hewson 2001 (PMID 11528349), Buist 2008 (PMID 17940147), Oliveira 2024 (PMID 38717713), Wang 2023 (PMID 37163550), scoping review CS 2026 (PMID 41931241).
+> - EXTERNAL_FULL_TEXT_VERIFIED : Smyth & Lawlor 2021 (**étude observationnelle**, non randomisée).
+>
+> Le niveau propre à Claude reste SEARCH_SUMMARY : Claude n’a lu aucun de ces textes.
+
 > **Phase 5B, documentation seulement.** Remplace [`RUNNING-SCIENCE-REGISTRY-DRAFT.md`](RUNNING-SCIENCE-REGISTRY-DRAFT.md), conservé comme trace de la 5A. Le registre Strength n’est pas modifié.
 >
 > Vocabulaire identique à Strength : statuts SUPPORTED … TECHNICAL ; niveaux IDENTITY_ONLY < SEARCH_SUMMARY < ABSTRACT_VERIFIED < FULL_TEXT_VERIFIED ; gouvernance G1 (sécurité), G2 (expert), G3 (produit), T (technique).
@@ -20,7 +26,7 @@
 | RS-GARCIAPINILLOS-2017-HIIT | García-Pinillos et al. *J Sport Health Sci* 2017. PMID 30356547 | Revue | CONFIRMED | SEARCH_SUMMARY | NONE | HIIT (2 à 3 par semaine) combiné au continu : VO2max et économie améliorés chez les loisirs | Fréquence = contexte d’étude, pas une constante |
 | RS-DAMSTED-2018-LOAD | Damsted et al. *IJSPT* 2018. PMID 30534459 | Revue systématique | CONFIRMED | SEARCH_SUMMARY | NONE | Preuves très limitées ; pas de seuil de 10 % ; pas de différence entre 10 % et 24 % | 4 articles |
 | RS-HUIBERTS-2024-CONC | Huiberts, Wüst, van der Zwaard. *Sports Med* 2024 | Méta-analyse | CONFIRMED (PMID non relevé) | SEARCH_SUMMARY | NONE | 59 études, 1346 participants ; effets selon le sexe, le statut et l’outcome | Concurrent en général, pas spécifique à la course |
-| RS-BUIST-2008-GRONORUN | Buist et al. *AJSM* 2008. PMID 17940147 | ECR | CONFIRMED | SEARCH_SUMMARY | NONE | Règle des 10 % : blessures 20,8 % contre 20,3 % | Débutants |
+| RS-BUIST-2008-GRONORUN | Buist et al. *AJSM* 2008. PMID 17940147 | ECR | CONFIRMED | SEARCH_SUMMARY | **EXTERNAL_ABSTRACT_VERIFIED** (5E) | Règle des 10 % : blessures 20,8 % contre 20,3 % | Débutants |
 | RS-NIELSEN-2014-DANORUN | Nielsen et al. *JOSPT* 2014 | Cohorte | CONFIRMED | SEARCH_SUMMARY | NONE | Plus de 30 % sur 2 semaines associé à des blessures liées à la distance (vs moins de 10 %), selon le type de blessure | Association ; débutants |
 | RS-FREDETTE-2022-INJ | Fredette et al. *J Athl Train* 2022 | Revue systématique | CONFIRMED | SEARCH_SUMMARY | NONE | Preuves contradictoires ; distances plus longues associées | Hétérogénéité |
 | RS-IMPELLIZZERI-2020-ACWR | Impellizzeri et al. *IJSPP* 2020 | Analyse critique | CONFIRMED | SEARCH_SUMMARY | NONE | ACWR non soutenu pour gérer le risque de blessure | — |

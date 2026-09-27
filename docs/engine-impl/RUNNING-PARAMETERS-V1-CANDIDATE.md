@@ -1,5 +1,13 @@
 # RUNNING-PARAMETERS-V1-CANDIDATE — paramètres chiffrés après arbitrage 5D
 
+> **Corrections 5E** :
+> - V42 devient une estimation contextuelle (RunningPerformanceVariabilityEstimate) ;
+> - V38 sépare paramètre, incertitude et conflit ; l’exposant n’est pas verrouillé ;
+> - V28m est explicitement observationnel ;
+> - V43 conserve ses multiples, appliqués à l’estimation de variabilité.
+>
+> Aucune nouvelle valeur numérique.
+
 > **Phase 5D.** Remplace les valeurs de [`RUNNING-PARAMETERS-V0.md`](RUNNING-PARAMETERS-V0.md) pour les paramètres listés ici. Tous les autres paramètres V0 sont inchangés.
 >
 > **Provenance** :
@@ -40,10 +48,10 @@
 
 | Tag | parameterId | Valeur candidate | Provenance | Statut | Sources | Sens. |
 |---|---|---|---|---|---|---|
-| V42 | `running.reference.typicalVariability` | P-R4 **2 %** ; P-R2 et P-R3 **3 %** ; P-R1 **4 %** (CV typique d’une performance de course) | SOURCE_INFORMED (Hopkins 2001 : 1,2–1,9 % chez les plus rapides, rapport des CV jusqu’à 2,3 chez les plus lents) + EXPERT_PROPOSED (répartition par niveau) | EXPERT_DESIGN_REVIEW | RS-HOPKINS-2001-VAR | **HIGH** |
+| V42 | `running.reference.performanceVariabilityEstimate` *(corrigé en 5E : **RunningPerformanceVariabilityEstimate**, plus une constante universelle)* | Estimation **contextuelle** : (1) si l’athlète a assez de performances répétées comparables ⇒ **variabilité personnelle** (le nombre minimal est DECISION_REQUIRED) ; (2) sinon, un **a priori** informé par Hopkins 2001, **selon la distance** (courses courtes ou route : 1,2–1,9 % chez les plus rapides ; semi : 2,7–4,2 % ; marathon : 2,6 %) et **selon le niveau** (coureurs plus lents : rapport des CV 1,0–2,3). La confiance est réduite quand l’estimation n’est pas personnelle. Le sexe n’est **pas** utilisé (effet non établi par la source). L’âge (jeunes adultes plus variables, rapport 1,1–1,8) est **non utilisé** tant qu’E-VARIABILITY ne le décide pas. **Repli produit** (anciennes valeurs 2 / 3 / 4 %) : PRODUCT_GUARDRAIL / EXPERT_PROPOSED, signalé, soumis à décision. | SOURCE_INFORMED (a priori) + EXPERT_PROPOSED (repli) | EXPERT_DESIGN_REVIEW | RS-HOPKINS-2001-VAR (EXT_ABSTRACT) | **HIGH** |
 | V43 | `running.reference.conflictSeverity` | NONE ≤ 1 × V42 ; MINOR 1–2 × V42 (enveloppe) ; MAJOR > 2 × V42 (estimation prudente + calibration) | EXPERT_PROPOSED | PROGRAMMING_HEURISTIC | RS-HOPKINS-2001-VAR | **HIGH** |
-| V38 | `running.performance.extrapolationModelFamily` (+ exposant) | Riegel pour une cible ≤ semi ; exposant de la formule publiée (1,06 dans la formulation usuelle, **valeur à confirmer à la lecture**) ; confiance ≤ MEDIUM ; plage ±6 % obligatoire ; marathon exclu | SOURCE_INFORMED (Vickers 2016) ; valeur de l’exposant : IDENTITY_ONLY | EXPERT_DESIGN_REVIEW | RS-VICKERS-2016-PRED | **HIGH** |
-| V28m | `running.taper.durationByEvent` (marathon) | **2–3 semaines** | SOURCE_INFORMED (Smyth 2021, observationnel ; Bosquet ; Wang) | CONTEXT_DEPENDENT | RS-SMYTH-2021-TAPER, RS-BOSQUET-2007-TAPER, RS-WANG-2023-TAPER | MED |
+| V38 | `running.performance.extrapolationModelFamily` (+ exposant) | *(5E)* Riegel **candidat** pour une cible ≤ semi, **non verrouillé**. On distingue trois choses : (a) le **paramètre du modèle** : exposant **non verrouillé** (1,06 usuel, provenance non vérifiée, DECISION_REQUIRED) ; (b) l’**incertitude de prédiction** : sortie obligatoire en plage, dont la largeur relève d’E-MODEL (la plage ±6 % de V03 n’est **pas** réutilisée par défaut) ; (c) la **gravité d’un conflit** : V43, sans rapport. Jamais d’autorité pour le marathon. | SOURCE_INFORMED (Vickers 2016) ; valeur de l’exposant : IDENTITY_ONLY | EXPERT_DESIGN_REVIEW | RS-VICKERS-2016-PRED | **HIGH** |
+| V28m | `running.taper.durationByEvent` (marathon) | **2–3 semaines**, jamais « 21 jours obligatoires » | SOURCE_INFORMED (Smyth 2021, **observationnel**, texte intégral vérifié par le contre-audit ; Bosquet ; Wang) | CONTEXT_DEPENDENT | RS-SMYTH-2021-TAPER, RS-BOSQUET-2007-TAPER, RS-WANG-2023-TAPER | MED |
 
 ## 3. Valeurs retirées
 
