@@ -1,5 +1,10 @@
 # RUNNING-GOLDEN-PRESCRIPTIONS-V0 — prescriptions théoriques R1–R12
 
+> **Relancé en 5D** : voir [`RUNNING-GOLDEN-PRESCRIPTIONS-V1-CANDIDATE.md`](RUNNING-GOLDEN-PRESCRIPTIONS-V1-CANDIDATE.md).
+> - Statuts VALID_PROVISIONAL / BLOCKED_G1 ;
+> - R4 modifié (restauration du long run, allure semi Riegel) ;
+> - calcul du taper de R11 explicité.
+
 > **Phase 5C : prescriptions théoriques, non exécutables.** Aucun code.
 >
 > - Règles : [`RUNNING-RULESET-V0.md`](RUNNING-RULESET-V0.md) (§ cités) ; valeurs : [`RUNNING-PARAMETERS-V0.md`](RUNNING-PARAMETERS-V0.md) (tags V..) ; mode **CANDIDATE**.

@@ -1,6 +1,6 @@
 # RUNNING-G1-REVIEW-PACK — dossier de revue des G1 Running
 
-> **Phase 5C (corrections B1 et AH).** **Aucun G1 n’est signé automatiquement** : chaque champ de signature est vide. Les G1 Strength ne sont pas modifiés. Les valeurs candidates sont utilisables en mode CANDIDATE (goldens) et **bloquées en PRODUCTION** tant qu’elles ne sont pas signées.
+> **Phase 5C (corrections B1 et AH), mis à jour en 5D (section W).** **Aucun G1 n’est signé automatiquement** : chaque champ de signature est vide. Les G1 Strength ne sont pas modifiés. Les valeurs candidates sont utilisables en mode CANDIDATE (goldens) et **bloquées en PRODUCTION** tant qu’elles ne sont pas signées.
 
 ## 1. Correspondance exacte : 4 politiques ↔ 7 paramètres G1
 
@@ -96,3 +96,54 @@
 | LOAD_INCREASE_BOUND | PRODUCT_GUARDRAIL + EXPERT_DESIGN_REVIEW | V22 (P-R0–1), vide pour P-R2+ |
 
 **État des signatures** : 0 sur 4 politiques signées. Production bloquée.
+
+---
+
+## 4. Mise à jour 5D (aucune signature)
+
+### 4.1 Les 7 paramètres G1 (inchangés)
+
+| Politique | Paramètres |
+|---|---|
+| PAIN_STOP | `running.safety.painActionPolicy`, `running.safety.painWording` |
+| RETURN_PROTOCOL | `running.return.stateBoundaries`, `running.return.protocol`, `running.return.unknownStateHandling` |
+| NOVICE_ENTRY | `running.safety.noviceEntryProtocol` |
+| OUT_OF_SCOPE | `running.safety.outOfScopeTriggers` |
+
+### 4.2 V33 : dose d’entrée novice (NOVICE_ENTRY), **reste vide**
+
+- **Structure admissible** (proposée, non signée) : alternance course / marche en EASY_LOW, dose à la **durée**, cible RPE plafond 3 ou talk test (descripteur), **aucun test maximal**, fréquence donnée par le planificateur (≥ 2, périmètre V1), progression seulement par restauration ou HOLD (V23 vide).
+- **Options présentées au référent** (aucune retenue par Claude) :
+  1. le précédent de protocole GRONORUN, qui partait de « 10 min de course alternée avec de la marche » dans les deux bras. Ce n’est **pas** une démonstration de sécurité (environ 20 % de blessés dans chaque bras) ;
+  2. une dose ancrée sur une durée de marche ou de course **déclarée tolérée** par l’athlète ;
+  3. un maintien du blocage en V1.
+- **Question** : « Chez des P-R0, une dose d’entrée de type 1 ou 2 permet-elle à la majorité de terminer les premières séances sans douleur déclarée ? »
+- **Signature** : ☐ ________
+
+### 4.3 V34 : dose de départ en reprise longue (RETURN_PROTOCOL), **reste vide**
+
+- **Distinction obligatoire**, sans diagnostic :
+
+| Situation | Traitement |
+|---|---|
+| Interruption non médicale (voyage, emploi du temps) | RETURN_PROTOCOL |
+| Raison inconnue | UNKNOWN, **jamais converti**, structure conservatrice |
+| Douleur ou blessure déclarée | PAIN_STOP d’abord ; OUT_OF_SCOPE si suivi médical |
+| Hors périmètre | OUT_OF_SCOPE |
+
+- **Preuves** : Mujika 2000 (dégradation) ; revue 2023 sur le désentraînement (identité seulement) ; étude de cas (n = 1). **Aucune dose défendable.**
+- **Règle déjà prévue** : dès que des séances post-retour existent, dose ≤ réalisé (sous G1). V34 ne concerne que le tout premier départ.
+- **Signature** : ☐ ________
+
+### 4.4 V24 : falaise à 28 jours (question ajoutée)
+
+« Le passage MODERATE → LONG à 28 jours change brutalement la dose, dans le sens le plus prudent. Le référent accepte-t-il cette frontière nette, ou demande-t-il un traitement progressif près de la frontière (FUTURE_RFC) ? »
+
+- **Signature** : ☐ ________
+
+### 4.5 Doctrine précisée en 5D
+
+- Les **doses** sous G1 (V33, V34) ne sont **pas utilisées**, même en mode CANDIDATE, sans signature ⇒ R1 et R8 sont `BLOCKED_G1`.
+- Les frontières de classement (V24) servent à classer, jamais à doser.
+
+**État des signatures : 0 sur 4. Production bloquée.**

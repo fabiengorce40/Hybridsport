@@ -1,5 +1,14 @@
 # RUNNING-PARAMETERS-V0 — valeurs candidates gouvernées
 
+> **Mis à jour en 5D** : voir [`RUNNING-PARAMETERS-V1-CANDIDATE.md`](RUNNING-PARAMETERS-V1-CANDIDATE.md).
+> - V13 (6 %) et V14 (3 %) : retirés, remplacés par V42 et V43 (multiples de la variabilité typique) ;
+> - V21 : devient RecentLoadContext, ce n’est pas une bande de sécurité ;
+> - V11 : séparation forte par défaut, plus un absolu ;
+> - V26 : renommé `minimumPlannerRunningFrequency` (périmètre produit) ;
+> - V02 : bandes chevauchantes ;
+> - V38 : Riegel pour une cible ≤ semi ;
+> - V28 : marathon 2–3 semaines.
+
 > **Phase 5C, documentation seulement.** Aucun ruleset exécutable, aucun code. Complète [`RUNNING-PARAMETER-REGISTRY-V0.md`](RUNNING-PARAMETER-REGISTRY-V0.md) (5B, 110 paramètres) :
 > - les paramètres existants reçoivent ici une **valeur candidate** quand elle peut être proposée ;
 > - de nouveaux paramètres sont créés quand le ruleset 5C en a besoin.
@@ -52,7 +61,7 @@
 | Tag | parameterId | Valeur candidate | Unité | Population / objectif / phase | Autorité | Statut | Sources · Vérif. | Incertitude | Justification | Échec si trop bas | Échec si trop haut | Exp. | Séc. | Sens. |
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | V10 | `running.hi.densityPolicy` (5B) | Séances course HIGH_DEMAND (V30) par 7 jours glissants, **au plus** : P-R0 **0** (G1 NOVICE_ENTRY) ; P-R1 **1** ; P-R2 **2** ; P-R3 **2** ; P-R4 **3**. En P-HYBRID, le GlobalPlanner compte aussi les autres disciplines. | séances | par population | RE / GP | PRODUCT_GUARDRAIL + EXPERT_DESIGN_REVIEW | RS-GARCIAPINILLOS-2017-HIIT · SS | Contexte d’étude (2 à 3 séances HIIT, **combinées** au continu, chez des loisirs), pas un maximum démontré | Garde-fou cohérent avec le seul contexte vérifié ; P-R1 plus prudent ; P-R4 à 3 (confiance moindre) | Stimulus insuffisant pour les objectifs 5K / 10K avancés | Fatigue accumulée ; qualité dégradée | oui | non (G1 hérité pour P-R0) | **HIGH_SENS** |
-| V11 | `running.placement.noConsecutiveHighDemand` | Jamais deux séances course HIGH_DEMAND sur **deux jours civils consécutifs** (sans durée en heures) | règle | tous | GP / AE | PRODUCT_GUARDRAIL | — | — | Traduction minimale du principe « pas d’empilement » (5B §S) sans espacement horaire | — | Moins de souplesse de placement | oui | non | MED |
+| V11 | `running.placement.noConsecutiveHighDemand` | *(5D : devenu une séparation forte **par défaut**, exception sur demande du planificateur ; voir V1-CANDIDATE)* Pas deux séances course HIGH_DEMAND sur **deux jours civils consécutifs** (sans durée en heures) | règle | tous | GP / AE | PRODUCT_GUARDRAIL | — | — | Traduction minimale du principe « pas d’empilement » (5B §S) sans espacement horaire | — | Moins de souplesse de placement | oui | non | MED |
 | V26 | `running.frequency.minimumPractical` (5B) | **2** séances de course par semaine pour un programme structuré ; en dessous : mode maintien (EASY seulement, HOLD) | séances / semaine | tous | GP | PRODUCT_GUARDRAIL (G3) | — | Aucune source | Avec une seule séance, il n’y a pas de place à la fois pour du volume facile et pour un autre élément ; raison structurelle, non physiologique | Programmes « structurés » vides de sens | Exclusion inutile de personnes à 2 séances | oui | non | MED |
 
 ### 2.4 Références et modèle de performance

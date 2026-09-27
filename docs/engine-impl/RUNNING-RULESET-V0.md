@@ -1,5 +1,12 @@
 # RUNNING-RULESET-V0 — ruleset candidat Running (logique théorique, non exécutable)
 
+> **Corrections 5D** ([`RUNNING-5D-PARAMETER-ARBITRATION.md`](RUNNING-5D-PARAMETER-ARBITRATION.md)) :
+> - §E conflit : gravité ordinale (V43), et non plus un seuil de 6 % ;
+> - §F mise à jour : rapportée à la variabilité typique (V42), et non plus 3 % ;
+> - §Y : « bande habituelle » remplacée par RecentLoadContext ;
+> - §R et §S : V11 devient une séparation forte par défaut (exception sur demande du planificateur) ;
+> - §T : restauration vers le démontré et baisse vers la dernière dose réussie, sans V23.
+
 > **Phase 5C, documentation seulement.** Aucun code RunningEngine ; CORE et Strength inchangés ; CORE-EXT-R1 reste une RFC.
 >
 > - Les valeurs citées renvoient aux tags de [`RUNNING-PARAMETERS-V0.md`](RUNNING-PARAMETERS-V0.md) (V01–V41).

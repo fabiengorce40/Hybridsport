@@ -1,5 +1,7 @@
 # RUNNING-PARAMETER-SENSITIVITY-V0 — sensibilité des paramètres chiffrés
 
+> **Remplacé en 5D** par [`RUNNING-PARAMETER-SENSITIVITY-V1.md`](RUNNING-PARAMETER-SENSITIVITY-V1.md), avec les tests aux bornes.
+
 > **Phase 5C, analyse conceptuelle.** Pour chaque paramètre chiffré de [`RUNNING-PARAMETERS-V0.md`](RUNNING-PARAMETERS-V0.md) : effet d’une borne basse, de la valeur candidate et d’une borne haute sur les goldens R1–R12.
 >
 > Les bornes testées sont des **hypothèses de test**, pas des propositions.

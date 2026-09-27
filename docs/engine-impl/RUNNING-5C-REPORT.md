@@ -1,5 +1,7 @@
 # Phase 5C — RUNNING CANDIDATE RULESET & GOLDEN PRESCRIPTIONS : rapport
 
+> **Suite 5D** : voir [`RUNNING-5D-REPORT.md`](RUNNING-5D-REPORT.md).
+
 > **Documentation seulement.**
 >
 > - **CORE UNCHANGED**
