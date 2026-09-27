@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ParameterMetadata } from '@hybridsport/domain';
 import {
-  assessMeasured, assessNeighborStructure, DECLARED_STRENGTH_PARAMETERS, INTERFERENCE_LEVELS, readStrengthParams, SCIENCE_REGISTRY, scientificGate,
+  assessMeasured, assessNeighborStructure, DECLARED_STRENGTH_PARAMETERS, INTERFERENCE_LEVELS, readStrengthParams, SCIENCE_REGISTRY, scientificGate, scientificLock,
 } from '../../src/index.js';
 import type { MeasuredObservation } from '../../src/index.js';
 import { GOLDENS } from '../fixtures/goldens.js';
@@ -57,7 +57,7 @@ function registryDoc(): string {
     `> Document **généré** depuis \`packages/strength/src/science/\` par \`tests/golden/science-docs.test.ts\` : ne pas éditer à la main.`,
     '',
     `- Version du registre : **${r.version}** · ruleset : **${r.rulesetVersion}**`,
-    `- Gate STRENGTH_SCIENTIFIC_V1_GATE calculé : **${g.gate}** (anomalies : ${String(g.issues.length)} ; blocages PRODUCTION : ${String(g.readiness.blockers.length)})`,
+    `- Gate STRENGTH_SCIENTIFIC_V1_GATE calculé : **${g.gate}** ; verrou STRENGTH_SCIENTIFIC_LOCK_V1 : **${scientificLock(r, DECLARED_STRENGTH_PARAMETERS).lock}** (anomalies : ${String(g.issues.length)} ; blocages PRODUCTION : ${String(g.readiness.blockers.length)})`,
     '- Vérification des sources (2026-09-27, complétée le 2026-09-28) : **identité** par recherche web (PMID, titre, auteurs, revue, DOI).',
     '- **Niveaux de vérification du contenu** : `IDENTITY_ONLY` (aucun résultat extrait) < `SEARCH_SUMMARY` (résultats connus par des résumés de moteur de recherche, y compris secondaires) < `ABSTRACT_VERIFIED` (résumé officiel lu) < `FULL_TEXT_VERIFIED`.',
     '  - PubMed, E-utilities, Europe PMC et les sites des éditeurs restent bloqués par la politique réseau de l’environnement d’exécution (vérifié à nouveau en 4F) : **aucun résumé officiel ni texte intégral n’a été lu**, aucune source ne dépasse `SEARCH_SUMMARY`.',

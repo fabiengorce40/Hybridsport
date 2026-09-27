@@ -242,7 +242,7 @@ export interface Correction4F {
   readonly why: string;
 }
 
-const C2 = 'Préservation du stimulus (`strength.session.stimulusPreservation`) : le pec deck (isolation haut du corps, priorité de stimulus supérieure) omis faute de temps remplace le Pallof (tronc, priorité inférieure) ; sans lui, les pectoraux perdaient la majorité de leur dose (3 séries du pec deck ≥ 2 séries des autres exercices) ; le tronc reste couvert (gainage secondaire). Le temps libéré permet ensuite l’échauffement et le retour au calme (politique de durée 4E inchangée).';
+const C2 = 'Préservation du stimulus (`strength.session.stimulusPreservation`) : le pec deck (isolation haut du corps, priorité de stimulus supérieure) omis faute de temps remplace le Pallof (tronc, priorité inférieure) ; sans lui, les pectoraux perdaient la majorité de leur dose (3 séries du pec deck ≥ 2 séries des autres exercices) ; le tronc reste couvert (gainage secondaire). Le temps libéré permet ensuite le retour au calme (politique de durée 4E inchangée).';
 
 export const CORRECTIONS_4F: readonly Correction4F[] = [
   { scenario: 'S2', kind: '*', subject: /^(séance|up\.iso_upper\.2|up\.trunk\.1|up\.iso_upper:duration|up\.trunk:stimulus_preservation|i\.cooldown:duration|retour au calme|chest|core|shoulders|p50|p90|décision|DURATION\.SHORTER_ACCEPTED|SELECT\.EXERCISE\.CHOSEN|SELECT\.SLOT_OMITTED|SELECT\.STIMULUS_PRESERVED)$/, correction: 'C2_STIMULUS', why: C2 },

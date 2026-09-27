@@ -12,7 +12,7 @@ import type { SessionDraft, SessionItem, SetPrescription } from '@hybridsport/do
 import { canonicalStringify } from '@hybridsport/engine';
 import {
   assessMeasured, continuityMode, decideLoad, DECLARED_STRENGTH_PARAMETERS, PARAMETER_PROVENANCE, productionReadiness, proposeStrength, readStrengthParams,
-  SCIENCE_REGISTRY, scientificGate, validateScienceRegistry,
+  SCIENCE_REGISTRY, scientificGate, scientificLock, validateScienceRegistry,
 } from '../../src/index.js';
 import type { MeasuredObservation, ScienceRegistry, StrengthTrack } from '../../src/index.js';
 import { engineInput, envFor, NOW, run, scenario, strengthCatalog, strengthRuleset } from '../fixtures/harness.js';
@@ -62,7 +62,8 @@ describe('baselines (F1, F2, F20)', () => {
     for (const [k, g] of Object.entries(GOLDENS)) expect(goldenRecord(g.title, candidateScenario(g.scenario)).text, k).toBe(golden('__goldens_v1__', k));
   });
 
-  it('F20 — aucune modification du CORE (empreinte des sources de packages/engine et packages/domain)', async () => {
+  // Le bac à sable de Stryker réécrit des sources : l'empreinte n'y a pas de sens (comme les tests d'architecture).
+  it.skipIf(process.env.STRENGTH_MUTATION_RUN === '1')('F20 — aucune modification du CORE (empreinte des sources de packages/engine et packages/domain)', async () => {
     const root = join(import.meta.dirname, '../../..');
     const files = (dir: string): string[] => readdirSync(dir).flatMap((f) => { const p = join(dir, f); return statSync(p).isDirectory() ? files(p) : p.endsWith('.ts') ? [p] : []; });
     const digest = ['engine/src', 'domain/src'].flatMap((d) => files(join(root, d))).sort()
@@ -195,6 +196,17 @@ describe('registre 1.1.0 (F15–F18)', () => {
     // Même avec toutes les sources lues en texte intégral et aucune valeur provisoire, un G1 non signé bloque.
     const ideal: ScienceRegistry = { ...SCIENCE_REGISTRY, sources: SCIENCE_REGISTRY.sources.map((s) => ({ ...s, verificationLevel: 'FULL_TEXT_VERIFIED' as const, identityVerification: 'CONFIRMED' as const })), parameters: SCIENCE_REGISTRY.parameters.map((p) => ({ ...p, provisional: false })) };
     expect(productionReadiness(ideal).blockers.map((b) => b.code)).toEqual(['G1_SIGNOFF_MISSING', 'G1_SIGNOFF_MISSING', 'G1_SIGNOFF_MISSING', 'G1_SIGNOFF_MISSING']);
+  });
+
+  it('STRENGTH_SCIENTIFIC_LOCK_V1 : LOCKED_PROVISIONAL aujourd’hui ; FAIL si le registre est incohérent ; LOCKED_PRODUCTION impossible sans visas G1', () => {
+    expect(scientificLock(SCIENCE_REGISTRY, DECLARED_STRENGTH_PARAMETERS).lock).toBe('LOCKED_PROVISIONAL');
+    const broken: ScienceRegistry = { ...SCIENCE_REGISTRY, parameters: SCIENCE_REGISTRY.parameters.slice(1) };
+    expect(scientificLock(broken, DECLARED_STRENGTH_PARAMETERS).lock).toBe('FAIL');
+    const signed = (p: ScienceRegistry['parameters'][number]) => (p.governance === 'G1' ? { ...p, signoffs: [{ role: 'medical_advisor' as const, name: 'test', date: '2026-09-28', verdict: 'approved' as const, scope: 'safety' as const }] } : p);
+    // Sources lues en texte intégral (celles dont des résultats sont extraits ; les autres restent IDENTITY_ONLY et non citées).
+    const ideal: ScienceRegistry = { ...SCIENCE_REGISTRY, sources: SCIENCE_REGISTRY.sources.map((s) => (s.findings.length > 0 ? { ...s, verificationLevel: 'FULL_TEXT_VERIFIED' as const, identityVerification: 'CONFIRMED' as const } : s)), parameters: SCIENCE_REGISTRY.parameters.map((p) => ({ ...p, provisional: false })) };
+    expect(scientificLock(ideal, DECLARED_STRENGTH_PARAMETERS).lock).toBe('LOCKED_PROVISIONAL');
+    expect(scientificLock({ ...ideal, parameters: ideal.parameters.map(signed) }, DECLARED_STRENGTH_PARAMETERS).lock).toBe('LOCKED_PRODUCTION');
   });
 
   it('F16 — une source ABSTRACT_VERIFIED n’équivaut pas à FULL_TEXT_VERIFIED', () => {

@@ -21,7 +21,7 @@
 
 ## Corrections 4F attribuées
 
-- **C2_STIMULUS** (S2) — Préservation du stimulus (`strength.session.stimulusPreservation`) : le pec deck (isolation haut du corps, priorité de stimulus supérieure) omis faute de temps remplace le Pallof (tronc, priorité inférieure) ; sans lui, les pectoraux perdaient la majorité de leur dose (3 séries du pec deck ≥ 2 séries des autres exercices) ; le tronc reste couvert (gainage secondaire). Le temps libéré permet ensuite l’échauffement et le retour au calme (politique de durée 4E inchangée).
+- **C2_STIMULUS** (S2) — Préservation du stimulus (`strength.session.stimulusPreservation`) : le pec deck (isolation haut du corps, priorité de stimulus supérieure) omis faute de temps remplace le Pallof (tronc, priorité inférieure) ; sans lui, les pectoraux perdaient la majorité de leur dose (3 séries du pec deck ≥ 2 séries des autres exercices) ; le tronc reste couvert (gainage secondaire). Le temps libéré permet ensuite le retour au calme (politique de durée 4E inchangée).
 - **C3_INTERFERENCE** (*) — Trace de la base de preuve de chaque ajustement d’interférence : mécanisme CONTEXT_DEPENDENT, ampleur PROGRAMMING_HEURISTIC (lues dans le registre, indépendantes des bins). Aucun changement de prescription.
 
 ## S1 — Débutant, 3 séances / semaine, 45 min, haltères + banc, objectif général

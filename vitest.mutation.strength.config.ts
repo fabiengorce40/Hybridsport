@@ -8,5 +8,6 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   test: {
     include: ['packages/strength/tests/unit/**/*.test.ts', 'packages/strength/tests/integration/**/*.test.ts'],
+    env: { STRENGTH_MUTATION_RUN: '1' },
   },
 });

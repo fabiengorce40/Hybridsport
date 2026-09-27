@@ -118,3 +118,8 @@ Lien avec le catalogue : `slotAccepts` est le prédicat unique d'emplacement, pa
 - Le ruleset scientifique V1 est entièrement porté par le StrengthEngine : paramètres facultatifs versionnés (préflight `optional: true`, mécanisme existant du CORE), PrescriptionConfidence, InterferenceAssessment et priorités de durée calculées et tracées dans le moteur. `packages/engine` et `packages/domain` sont inchangés.
 - Le signal d'interférence VERY_HIGH (`PLAN.INTERFERENCE_SIGNAL`) est une raison de la proposition : le planificateur global reste seul décideur ; aucun moteur ne déplace ni ne supprime de séance.
 - **CORE-EXT-5 (proposée, NON implémentée)** : plages de RIR (`zEffort.rir: number | { min, max }`), nécessaires au principe P4. À adapter : validateur de cohérence d'intensité (borne basse), migration `session_record` v3 → v4, rendu. Décision soumise à validation humaine.
+
+## Phase 4F — aucune modification du CORE
+
+- Les corrections 4F (préservation du stimulus, continuité débutant, trace de la base de preuve de l'interférence) sont portées par le StrengthEngine et le ruleset `0.4.0-strength-science-lock`. `packages/engine` et `packages/domain` sont inchangés ; le test F20 vérifie une empreinte de leurs sources (`packages/strength/tests/architecture/__reports__/core-source-digest.txt`).
+- CORE-EXT-5 reste une proposition : [`CORE-EXT-5-RIR-RANGE-RFC.md`](CORE-EXT-5-RIR-RANGE-RFC.md) (option B recommandée, non implémentée).

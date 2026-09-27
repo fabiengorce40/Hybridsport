@@ -1,0 +1,34 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "testRunner": "command",
+  "checkers": [],
+  "mutate": [
+    "packages/strength/src/confidence.ts",
+    "packages/strength/src/interference.ts",
+    "packages/strength/src/selection.ts:60-145",
+    "packages/strength/src/engine.ts:400-439",
+    "packages/strength/src/science/validate.ts"
+  ],
+  "reporters": [
+    "clear-text",
+    "progress",
+    "json"
+  ],
+  "thresholds": {
+    "high": 90,
+    "low": 75,
+    "break": null
+  },
+  "tempDirName": ".stryker-tmp-4f",
+  "timeoutMS": 60000,
+  "concurrency": 4,
+  "plugins": [],
+  "commandRunner": {
+    "command": "pnpm exec vitest run --config vitest.mutation.strength.config.ts --reporter=dot"
+  },
+  "coverageAnalysis": "off",
+  "jsonReporter": {
+    "fileName": "reports/mutation/strength-4f-mutation.json"
+  }
+}

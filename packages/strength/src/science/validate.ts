@@ -126,3 +126,15 @@ export function scientificGate(reg: ScienceRegistry, declared: readonly { readon
   const readiness = productionReadiness(reg);
   return { gate: issues.length > 0 ? 'FAIL' : readiness.ready ? 'PASS_PRODUCTION' : 'PASS_PROVISIONAL', issues, readiness };
 }
+
+export type ScientificLock = 'LOCKED_PROVISIONAL' | 'LOCKED_PRODUCTION' | 'FAIL';
+
+/**
+ * STRENGTH_SCIENTIFIC_LOCK_V1 (phase 4F) : FAIL si le registre est incohérent ; LOCKED_PRODUCTION seulement si
+ * chaque G1 est visé, aucune valeur provisoire et chaque source citée lue en texte intégral ; sinon
+ * LOCKED_PROVISIONAL (moteur gouverné, provenance structurée, heuristiques identifiées, G1 non signés).
+ */
+export function scientificLock(reg: ScienceRegistry, declared: readonly { readonly id: string; readonly governance: GovernanceClass }[]): { lock: ScientificLock; issues: readonly ScienceIssue[]; readiness: ProductionReadiness } {
+  const g = scientificGate(reg, declared);
+  return { lock: g.gate === 'FAIL' ? 'FAIL' : g.gate === 'PASS_PRODUCTION' ? 'LOCKED_PRODUCTION' : 'LOCKED_PROVISIONAL', issues: g.issues, readiness: g.readiness };
+}
