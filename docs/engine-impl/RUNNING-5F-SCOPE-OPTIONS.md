@@ -1,5 +1,7 @@
 # RUNNING-5F-SCOPE-OPTIONS — trois périmètres candidats pour Running V1
 
+> **Décision du fondateur (5G)** : **RUNNING_V1_SCOPE = C_EXTENDED**. SCOPE_A et SCOPE_B : REJECTED_AS_V1_TARGET. C’est une décision de **périmètre produit**, sans aucune approbation scientifique, experte ou de sécurité. Voir [`RUNNING-V1-SCOPE-C-FREEZE.md`](RUNNING-V1-SCOPE-C-FREEZE.md).
+
 > **Phase 5F.** Trois périmètres cohérents, **non classés et non recommandés**. Aucune décision humaine n’est prise. Matrice des séances : [`RUNNING-5F-FEATURE-MATRIX.md`](RUNNING-5F-FEATURE-MATRIX.md).
 >
 > **Légende** :

@@ -250,3 +250,15 @@ Résultats :
 - audit des bloquants : aucune décision scientifique ou de sécurité n'est un bloquant de code (verrouillage et production seulement) ; seul CORE-EXT-R1 l'est ;
 - dossiers expert (14 fiches) et sécurité (politique séparée de la dose, rôles clarifiés, aucune certification inventée) ; ordre des décisions ; carte d'implémentation avant signature ; dette priorisée ;
 - CORE-EXT-R1 : READY_FOR_HUMAN_APPROVAL (0 contradiction, 3 points d'intégration) ; entrées golden figées ; aucune modification du code.
+
+## Phase 5G — RUNNING V1 EXTENDED SCOPE FREEZE
+
+Rapport : [`RUNNING-5G-REPORT.md`](RUNNING-5G-REPORT.md).
+
+Résultats :
+
+- décision du fondateur : RUNNING_V1_SCOPE = C_EXTENDED (décision de périmètre produit, aucune approbation scientifique, experte ou G1) ;
+- RUNNING_5G_EXTENDED_SCOPE_FREEZE_GATE = PASS ; RUNNING_PRE_IMPLEMENTATION_STATUS = CORE_EXTENSION_APPROVAL_REQUIRED ;
+- matrices de capacités cibles, 11 drapeaux de capacité, éligibilité à la production (états de maturité), graphe des 14 + 4 + 2 décisions ;
+- CORE-EXT-R1 : trois points d'intégration arbitrés en conception, dossier d'approbation, READY_FOR_FOUNDER_APPROVAL ;
+- vagues 0–5, stratégie de tests, critères d'acceptation ; entrées golden figées ; aucune modification du code.
