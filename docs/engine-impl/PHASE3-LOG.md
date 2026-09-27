@@ -238,3 +238,15 @@ Résultats :
 - 14 décisions expertes (16 consolidées), 4 politiques G1 / 7 paramètres, 0 signature, 0 approbation automatique ;
 - corrections : V42 → RunningPerformanceVariabilityEstimate ; V38 séparé (exposant non verrouillé) ; R11 sans valeur par défaut ; bestToleratedExposure ; provenance externe ;
 - ensemble minimal : 8 décisions (4 G1 + E-RPE, E-DENSITY, E-RECENCY, E-RECENTLOAD) ; 0 nouvelle valeur ; 0 nouveau concept ; aucune modification du code.
+
+## Phase 5F — RUNNING V1 SCOPE FREEZE & HUMAN REVIEW HANDOFF
+
+Rapport : [`RUNNING-5F-REPORT.md`](RUNNING-5F-REPORT.md).
+
+Résultats :
+
+- RUNNING_5F_SCOPE_FREEZE_GATE = PASS ; RUNNING_PRE_IMPLEMENTATION_STATUS = SCOPE_DECISION_REQUIRED ;
+- trois périmètres (A : 8 décisions, B : 15, C : 20), non classés ; matrice des séances ;
+- audit des bloquants : aucune décision scientifique ou de sécurité n'est un bloquant de code (verrouillage et production seulement) ; seul CORE-EXT-R1 l'est ;
+- dossiers expert (14 fiches) et sécurité (politique séparée de la dose, rôles clarifiés, aucune certification inventée) ; ordre des décisions ; carte d'implémentation avant signature ; dette priorisée ;
+- CORE-EXT-R1 : READY_FOR_HUMAN_APPROVAL (0 contradiction, 3 points d'intégration) ; entrées golden figées ; aucune modification du code.

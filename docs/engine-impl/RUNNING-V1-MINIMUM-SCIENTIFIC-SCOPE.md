@@ -1,5 +1,7 @@
 # RUNNING-V1-MINIMUM-SCIENTIFIC-SCOPE — périmètre scientifique minimal de V1
 
+> **Suite 5F** : ce périmètre correspond au SCOPE A de [`RUNNING-5F-SCOPE-OPTIONS.md`](RUNNING-5F-SCOPE-OPTIONS.md) ; les SCOPES B et C y sont définis.
+
 > **Phase 5E.** **RUNNING_V1_MINIMUM_SCIENTIFIC_SCOPE** = ce que V1 peut prendre en charge si **seul l’ensemble minimal** est décidé :
 > - 4 G1 : PAIN, SCOPE, RETURN (frontières et UNKNOWN), NOVICE (règle de périmètre) ;
 > - E-RPE, E-DENSITY, E-RECENCY, E-RECENTLOAD.

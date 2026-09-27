@@ -1,5 +1,7 @@
 # RUNNING-5E-BLOCKER-DEPENDENCIES — graphe des dépendances et ensemble minimal
 
+> **Reclassement 5F** ([`RUNNING-5F-BLOCKER-AUDIT.md`](RUNNING-5F-BLOCKER-AUDIT.md)) : les « bloquants d’implémentation » ci-dessous sont en réalité des **bloquants de verrouillage du ruleset et de production** ; aucun n’empêche d’écrire le code. Le seul bloquant de code est l’approbation de CORE-EXT-R1.
+
 > **Phase 5E.** Chaque chaîne mène d’un résultat bloqué aux décisions humaines qui le conditionnent.
 
 ## 1. Chaînes
