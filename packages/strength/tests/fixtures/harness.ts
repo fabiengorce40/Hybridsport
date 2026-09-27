@@ -66,17 +66,18 @@ export interface Scenario {
   readonly history?: readonly FingerprintHistoryEntry[];
   readonly seed?: string;
   readonly ruleset?: LoadedRuleset;
+  readonly catalog?: LoadedCatalog;
 }
 
 export function run(s: Scenario) {
-  return runSportSession(StrengthEngine, { intent: s.intent, profile: s.profile, state: s.state ?? STATE, history: s.history ?? [], disciplineContext: s.context }, ctx(s.seed, s.ruleset));
+  return runSportSession(StrengthEngine, { intent: s.intent, profile: s.profile, state: s.state ?? STATE, history: s.history ?? [], disciplineContext: s.context }, ctx(s.seed, s.ruleset, s.catalog));
 }
 
 /** Entrée du moteur telle que la construit le CORE (pour appeler `propose` directement dans les tests unitaires). */
 export function engineInput(s: Scenario): SportEngineInput<StrengthContext> {
   const parsed = parseStrengthContext(s.context);
   if (!parsed.ok) throw new Error(JSON.stringify(parsed.reasons));
-  const c = ctx(s.seed, s.ruleset);
+  const c = ctx(s.seed, s.ruleset, s.catalog);
   return {
     intent: { repetitionIntents: [], plannerNotes: [], ...s.intent } as SportEngineInput<StrengthContext>['intent'],
     profile: s.profile, state: s.state ?? STATE,
@@ -98,7 +99,7 @@ export function envFor(s: Scenario): Env {
 }
 
 /** Scénario de base pour les tests unitaires (surchargé champ par champ). */
-export function scenario(o: { level?: Level; preset?: string; archetype?: string; stimulus?: string; minutes?: number; context?: Partial<StrengthContextInput>; intent?: Partial<SessionIntentInput>; profile?: Partial<CoreProfile>; seed?: string; state?: CoreState; history?: readonly FingerprintHistoryEntry[] } = {}): Scenario {
+export function scenario(o: { level?: Level; preset?: string; archetype?: string; stimulus?: string; minutes?: number; context?: Partial<StrengthContextInput>; intent?: Partial<SessionIntentInput>; profile?: Partial<CoreProfile>; seed?: string; state?: CoreState; history?: readonly FingerprintHistoryEntry[]; ruleset?: LoadedRuleset; catalog?: LoadedCatalog } = {}): Scenario {
   return {
     profile: profile(o.level ?? 'intermediate', o.preset ?? 'preset.full_gym', o.profile ?? {}),
     intent: intent(o.archetype ?? 'str_full_body', o.stimulus ?? 'strength_general', o.minutes ?? 60, o.intent ?? {}),
@@ -106,5 +107,7 @@ export function scenario(o: { level?: Level; preset?: string; archetype?: string
     seed: o.seed ?? 'unit',
     ...(o.state ? { state: o.state } : {}),
     ...(o.history ? { history: o.history } : {}),
+    ...(o.ruleset ? { ruleset: o.ruleset } : {}),
+    ...(o.catalog ? { catalog: o.catalog } : {}),
   };
 }
