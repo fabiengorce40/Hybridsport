@@ -1,6 +1,6 @@
 # CORE-EXT-R1 — RFC : séance de course structurée (fractionné, cibles en plages)
 
-> **Statut : RFC, NON IMPLÉMENTÉE.** Phase 5B (section Y). Aucun fichier du CORE n’est modifié. CORE-EXT-5 (RIR en plage) est indépendante et reste non implémentée.
+> **Statut : RFC FINALE (5C), NON IMPLÉMENTÉE.** Phase 5B (section Y), finalisée en 5C (B4, AI) : comparaison entre profondeur fixe et récursion bornée, recommandation finale au §8. Aucun fichier du CORE n’est modifié. CORE-EXT-5 (RIR en plage) est indépendante et reste non implémentée.
 
 ## 1. Problème
 
@@ -182,3 +182,64 @@ Modèle général, à la manière des formats de séance structurée des montres
 - Faut-il un `effort.descriptor` (mots) en plus de la plage RPE pour les débutants ? (Proposition : oui, facultatif.)
 - Les `estimates` doivent-ils être stockés ou toujours recalculés ? (Proposition : stockés, avec provenance ; recalculés et comparés à la validation.)
 - Faut-il permettre `repeat` en domaine `easy_low` (alternance course / marche, P-R0) ? (Proposition : oui, avec une récupération en mode `walk`.)
+
+---
+
+## 8. Finalisation 5C : profondeur de la structure (B4, AI)
+
+### 8.1 Comparaison
+
+| Critère | **Profondeur fixe** (séance → segments → séries × répétitions) | Récursion bornée (groupes imbriqués, profondeur maximale N) |
+|---|---|---|
+| Sérialisation | Liste plate de segments ; chaque `repeat` porte `sets` et `reps` | Arbre ; profondeur à borner et à valider |
+| Validation | Règles locales à un segment (1 à 8 du §3) | Règles récursives, cohérence des estimations sur l’arbre |
+| Rendu UI | Liste linéaire, rendu direct | Rendu imbriqué, repliable |
+| Reprise (`resume`) | Adresse = (index de segment, série, répétition, phase travail / récupération) : 4 entiers | Chemin dans l’arbre, de longueur variable |
+| Minuteur | Séquence déterministe dérivée par simple déroulement | Déroulement récursif |
+| Cases à cocher | Une case par (segment, série, répétition) | Une case par feuille, avec un chemin |
+| Historique et retours | Clé stable `segmentId` + série + répétition | Clé = chemin |
+| Analytique | Somme directe par `domain` | Parcours d’arbre |
+| Expressivité V1 | Couvre les 11 archétypes et les goldens R1–R12 | Couvre aussi les pyramides imbriquées et les fartleks complexes (hors V1) |
+| HYROX futur | Ajout d’un champ `modality` par segment ; stations comme segments | Naturel, mais pas nécessaire |
+| Risque | Faible | Surface de test plus grande ; profondeur arbitraire si la borne dérive |
+
+### 8.2 Recommandation finale
+
+**Profondeur fixe** (option B, sans récursion) :
+- une séance est une **liste ordonnée** de segments ;
+- un segment `repeat` a **deux niveaux fixes** : séries × répétitions ;
+- **plusieurs blocs de travail** = plusieurs segments `repeat` successifs, jamais imbriqués.
+
+La récursion bornée n’est pas retenue pour V1 : elle n’apporte rien aux 11 archétypes et coûte en validation, rendu et reprise.
+
+### 8.3 Démonstration : échauffement → bloc 1 → répétitions → récupérations → bloc 2 → retour au calme
+
+```
+run_structure
+  [0] warmup      : 12 min · easy_low · RPE ≤ 3
+  [1] preparation : reps 4 · 15 s · sprint_neuromuscular · recovery 45 s walk
+  [2] repeat id=A : sets 1 · reps 3 · work 8 min threshold_like (RPE 5–6)
+                    recovery 2 min jog
+  [3] steady      : 3 min · easy_low                      ← transition entre blocs
+  [4] repeat id=B : sets 2 · reps 4 · work 200 m severe (pace range | RPE 7–8)
+                    recovery 200 m jog · betweenSetRecovery 3 min walk
+  [5] cooldown    : 8 min · easy_low
+```
+
+(Valeurs illustratives, **pas des prescriptions** : elles servent seulement à montrer que la structure est représentable.)
+
+| Besoin | Réponse avec la profondeur fixe |
+|---|---|
+| Case à cocher | (segment 2, série 1, rép. 1..3) ; (segment 4, série 1..2, rép. 1..4) |
+| Minuteur | Déroulement linéaire : 12:00 → 4 × (0:15 + 0:45) → 3 × (8:00 + 2:00, sans récupération après la dernière) → 3:00 → série 1 : 4 × (200 m + 200 m) → 3:00 → série 2 → 8:00. Les doses en distance sont validées par un tour manuel (sans GPS). |
+| Reprise | Adresse (4, 2, 3, work) ⇒ reprendre au 3e 200 m de la série 2 |
+| Historique et retours | `intervalCompletion` par (segmentId, série, rép.) ; `targetCompliance` par segment |
+| Analytique | Travail THRESHOLD_LIKE = 24 min (A) ; SEVERE = 8 × 200 m (B) ; totaux calculés |
+| HYROX futur | Segment `modality: station` avec sa propre dose ; toujours à plat |
+
+### 8.4 Estimations (dérivées, jamais une autorité)
+- `estimates.workS` = somme des doses de travail.
+- `estimates.totalS` = échauffement + préparation + travail + récupérations (sans la récupération après la dernière répétition d’une série, et avec une `betweenSetRecovery` entre séries) + transitions + retour au calme.
+- Une dose en distance est convertie en durée **seulement** avec une plage d’allure (bornes de la plage) ; sinon l’estimation est marquée `UNKNOWN_DURATION_COMPONENT` et la séance ne peut pas être placée sans confirmation.
+
+**CORE-EXT-R1 NOT IMPLEMENTED.**

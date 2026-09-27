@@ -64,7 +64,7 @@
 | T-REP-03 | P | Aucun rattrapage | Charge de la semaine après replanification ≤ charge prévue, sur toute dimension | Dépassement |
 | T-REP-04 | U | Plusieurs séances manquées | Base récente recalculée sur le réalisé | Base inchangée |
 | T-REP-05 | U | Zone gelée | Séances des prochaines 24 h inchangées sans action de l’utilisateur | Modifiées |
-| T-RET-01 | U | État UNKNOWN_RETURN_STATE | Traité au moins comme MODERATE ; questions posées ; HOLD | Traité comme SHORT |
+| T-RET-01 | U | État UNKNOWN_RETURN_STATE | *(corrigé en 5C, B2)* Reste UNKNOWN : confiance réduite, prescription conservatrice, demande d’information, HOLD | Assimilé à SHORT, à MODERATE ou à LONG |
 | T-RET-02 | U | LONG_INTERRUPTION | Références dégradées ; archétypes intenses interdits ; G1 RETURN_PROTOCOL | Reprise au niveau antérieur |
 | T-RET-03 | U | Informations de reprise manquantes | Progression en HOLD, `PROG.HOLD_RETURN_REQUIREMENTS` | Progression |
 | T-RET-04 | U | Raison déclarée « blessure » | Renvoi à la gouvernance douleur ; aucun diagnostic | Texte diagnostique |
@@ -76,7 +76,7 @@
 
 | ID | Nature | Cas | Attendu | Oracle d’échec |
 |---|---|---|---|---|
-| T-CONF-01 | U | Confiance de prescription LOW | Priorité EFFORT ; plages larges ; archétypes exigeants différés | Allure étroite |
+| T-CONF-01 | U | Confiance de prescription LOW | Priorité EFFORT ; plages larges ; *(corrigé en 5C, B3)* l’éligibilité est décidée séparément (`SessionEligibilityDecision`) | Allure étroite, ou séance exigeante interdite du seul fait de la confiance |
 | T-CONF-02 | U | Confiance de prescription HIGH, terrain plat | Plage d’allure étroite autorisée ; priorité PACE | Priorité EFFORT imposée sans raison |
 | T-CONF-03 | P | Agrégation par minimum | La confiance de prescription ≤ le niveau de chaque facteur limitant | Supérieure à un facteur |
 | T-CONF-04 | U | Confiances distinctes | Réf. HIGH et Presc. LOW coexistent (cas marathon) | Confusion des deux |

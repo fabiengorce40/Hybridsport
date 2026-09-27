@@ -42,7 +42,7 @@ Sinon, le candidat relève de la programmation (EXPERT_DESIGN_REVIEW ou PRODUCT_
 | failureModeTooPermissive | Retour immédiat au niveau antérieur malgré une tolérance réduite ; exposition brutale |
 | failureModeTooConservative | Reprise interminable ; démotivation ; perte d’adhérence |
 | Niveau de preuve | Faible (SEARCH_SUMMARY, indirect) |
-| expertQuestion | « Après une interruption dont la durée dépasse la frontière LONG proposée, un plafond de reprise exprimé relativement à la charge antérieure réalisée produit-il moins d’arrêts pour douleur, dans les semaines de reprise, qu’une reprise au niveau antérieur ? » ; « Faut-il traiter UNKNOWN_RETURN_STATE comme LONG ou comme MODERATE, compte tenu de la proportion d’utilisateurs qui ne déclarent pas la raison ? » |
+| expertQuestion | « Après une interruption dont la durée dépasse la frontière LONG proposée, un plafond de reprise exprimé relativement à la charge antérieure réalisée produit-il moins d’arrêts pour douleur, dans les semaines de reprise, qu’une reprise au niveau antérieur ? » ; « Faut-il traiter UNKNOWN_RETURN_STATE comme LONG ou comme MODERATE, compte tenu de la proportion d’utilisateurs qui ne déclarent pas la raison ? » *(tranché en 5C, B2 : ni l’un ni l’autre ; UNKNOWN reste UNKNOWN, voir `RUNNING-G1-REVIEW-PACK.md`)* |
 | Besoin réel d’une signature sécurité | **Oui** pour la partie LONG / UNKNOWN (frontière LONG, plafond de départ, archétypes interdits) ; SHORT / MODERATE en EXPERT_DESIGN_REVIEW |
 | **recommendedGovernance** | **G1_SAFETY** (restreint à LONG / UNKNOWN) + EXPERT_DESIGN_REVIEW (SHORT / MODERATE) |
 

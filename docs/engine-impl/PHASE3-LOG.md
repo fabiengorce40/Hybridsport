@@ -203,3 +203,16 @@ Résultats :
 - 75 questions arbitrées ; 110 paramètres sans valeur inventée ; 4 G1_SAFETY (3 reclassés) ; 11 archétypes (2 fusions) ;
 - RFC CORE-EXT-R1 (option B recommandée, non implémentée) ; audit de 48 constantes ; R1–R12 révisés ; 88 tests futurs ;
 - aucune modification du code ; 630 tests verts ; RunningEngine non commencé.
+
+## Phase 5C — RUNNING CANDIDATE RULESET & GOLDEN PRESCRIPTIONS
+
+Rapport : [`RUNNING-5C-REPORT.md`](RUNNING-5C-REPORT.md).
+
+Résultats :
+
+- RUNNING_5C_RULESET_GATE = PASS ; RUNNING_RULESET_V0_STATUS = CANDIDATE_WITH_BLOCKERS ;
+- 140 paramètres gouvernés, 28 valeurs candidates (21 chiffrées, aucune SUPPORTED), 13 paramètres vides bloquants ;
+- R1–R12 : 10 VALID, 2 NO_VALID (G1 V33, V34) ; C1–C8 ; I1–I20 ; 20 adversariaux ; sensibilité ;
+- G1 : 4 politiques ↔ 7 paramètres, 0 signée ; UNKNOWN reste UNKNOWN ; éligibilité séparée de la confiance ;
+- RFC CORE-EXT-R1 finale (profondeur fixe, non implémentée) ; contrat VALID / NO_VALID ;
+- aucune modification du code ; 630 tests verts ; RunningEngine non commencé.

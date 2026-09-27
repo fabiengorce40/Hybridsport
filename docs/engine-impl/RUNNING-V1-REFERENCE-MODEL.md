@@ -197,6 +197,6 @@ Chaque cible porte une **priorité** (`PACE`, `EFFORT`, `HR`) et la **raison** d
 |---|---|
 | HIGH | Plage d’allure étroite possible ; priorité PACE autorisée dans les contextes compatibles |
 | MEDIUM | Plage d’allure plus large ; effort perçu affiché en parallèle ; mise à jour attendue après retour |
-| LOW | Priorité EFFORT ; allure seulement indicative (ou absente) ; archétypes à haute exigence différés ou raccourcis ; test ou course de contrôle proposé quand la tolérance le permet |
+| LOW | Priorité EFFORT ; allure seulement indicative (ou absente) ; *(corrigé en 5C, B3 : l’éligibilité des séances exigeantes relève de `SessionEligibilityDecision`, pas de la confiance)* ; test ou course de contrôle proposé quand la tolérance le permet |
 
 La confiance de prescription est **tracée** avec chaque séance, à l’image de la `PrescriptionConfidence` ordinale du StrengthEngine (même esprit, objet distinct).

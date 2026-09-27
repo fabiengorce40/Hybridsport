@@ -134,7 +134,7 @@
 - **Séance manquée** : jamais de rattrapage, jamais d’empilement, pas de modèle de dette. Hiérarchie : séances importantes > récupération > spécificité > volume compatible.
 - **Reprise** :
   - états SHORT / MODERATE / LONG / UNKNOWN, sans frontières en jours ;
-  - UNKNOWN traité au moins comme MODERATE ;
+  - UNKNOWN traité au moins comme MODERATE *(corrigé en 5C, B2 : UNKNOWN reste UNKNOWN)* ;
   - informations requises avant de reprendre la progression ;
   - G1 pour LONG / UNKNOWN ;
   - aucun diagnostic.

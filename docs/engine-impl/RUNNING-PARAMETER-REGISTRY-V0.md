@@ -166,7 +166,7 @@
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | `running.return.stateBoundaries` | NUMERIC | — (SHORT / MODERATE : heuristique ; frontière LONG : G1) | RE | SAFETY_SIGNOFF_REQUIRED | G1 | tous | tous | RETURN | RS-MUJIKA-2000-DETRAIN | SS | Aucune borne soutenue | oui | oui | oui |
 | `running.return.protocol` | POLICY | — (plafond de départ, rythme, archétypes interdits : LONG / UNKNOWN) | RE / PE | SAFETY_SIGNOFF_REQUIRED | G1 | tous | tous | RETURN | RS-MUJIKA-2000-DETRAIN | SS | idem | oui | oui | oui |
-| `running.return.unknownStateHandling` | POLICY | Au moins MODERATE ; questions posées à l’utilisateur | RE | SAFETY_SIGNOFF_REQUIRED | G1 | tous | tous | RETURN | — | — | — | oui | oui | oui |
+| `running.return.unknownStateHandling` | POLICY | *(corrigé en 5C, B2)* UNKNOWN reste UNKNOWN : confiance réduite, prescription conservatrice, demande d’information, limitation de périmètre possible | RE | SAFETY_SIGNOFF_REQUIRED | G1 | tous | tous | RETURN | — | — | — | oui | oui | oui |
 | `running.return.resumeRequirements` | POLICY | Informations requises (5B §T) avant de reprendre la progression | PE | EXPERT_DESIGN_REVIEW | G2 | tous | tous | RETURN | — | — | — | oui | oui | non |
 | `running.return.referenceDecayPolicy` | POLICY | Confiance des références dégradée après interruption | RE | CONTEXT_DEPENDENT | G2 | tous | tous | RETURN | RS-MUJIKA-2000-DETRAIN | SS | Ampleur | oui | oui | non |
 | `running.safety.painActionPolicy` | POLICY | CONTINUE / REDUCE / STOP_SESSION / PAUSE_PROGRESSION / OUT_OF_SCOPE ; aucun diagnostic | RE / AE | SAFETY_SIGNOFF_REQUIRED | G1 | tous | tous | toutes | — | — | — | oui | oui | oui |

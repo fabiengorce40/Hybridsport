@@ -455,7 +455,7 @@ Variables éligibles comme variable dominante : `weeklyDuration`, `weeklyDistanc
 | SHORT_INTERRUPTION | Interruption brève, sans signal de problème | Frontières en jours **non fixées** (aucune preuve) : paramètre `running.return.stateBoundaries` (PROGRAMMING_HEURISTIC ; G1 pour la frontière LONG) |
 | MODERATE_INTERRUPTION | Interruption intermédiaire | idem |
 | LONG_INTERRUPTION | Interruption longue ; références dégradées | idem ; G1 `RETURN_PROTOCOL` |
-| UNKNOWN_RETURN_STATE | Durée ou raison inconnues | Traité **au moins** comme MODERATE, avec questions à l’utilisateur ; jamais comme SHORT par défaut |
+| UNKNOWN_RETURN_STATE | Durée ou raison inconnues | *(corrigé en 5C, B2)* **Reste UNKNOWN** : aucune équivalence avec un autre état. Effets : confiance réduite, prescription conservatrice (structurellement définie dans `RUNNING-RULESET-V0.md` §X), demande d’information, limitation de périmètre possible selon le contexte |
 
 **Informations requises avant de reprendre la progression**
 - charge antérieure (historique) ;
