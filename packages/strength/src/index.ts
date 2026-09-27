@@ -18,4 +18,5 @@ export * from './progression.js';
 export * from './catalog-review.js';
 export * from './confidence.js';
 export * from './personal-load-model.js';
+export * from './stimulus-preservation.js';
 export * from './science/index.js';
