@@ -117,3 +117,10 @@ Défaut de conception de ma propre phase 3.5, corrigé avant la fin : l'anti-dou
 - CORE-EXT-3 : `ProposeResult` (`proposals` | `no_valid_proposal`, schéma strict `zNoValidProposal`). Les raisons, besoins bloquants et données manquantes sont conservés jusqu'au `NO_VALID_SOLUTION`. Une exception du moteur reste `INVALID_INPUT`.
 - Migration `session_record` v2 → v3 : identité ; un lecteur v2 refuse une donnée v3 (paramètre `known` de `migrateToCurrent`).
 - Résultats : 365 tests (dont les 335 anciens) verts ; goldens inchangés ; typecheck et lint verts.
+
+## Phase 4B — STRENGTH_ENGINE_GATE = PASS
+
+Rapport complet : [`STRENGTH-ENGINE-REPORT.md`](STRENGTH-ENGINE-REPORT.md). Il couvre les extensions du CORE, les fichiers, les règles, les paramètres consommés, les tests, la couverture, les défauts corrigés, les écarts, les résultats longitudinaux et anti-biais, les séances S1–S7 lisibles et la dette.
+
+- 45 fichiers de test, 486 tests verts (CORE 367, strength 119) ; typecheck, lint et architecture verts.
+- Le CORE n'a été modifié que par CORE-EXT-1/2/3, `SportEngine.checks` et le traçage des raisons des moteurs.

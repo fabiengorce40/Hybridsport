@@ -135,6 +135,14 @@ describe('dosage (étape 8) et première exposition (étape 10)', () => {
     expect(d.sets).toBe(Math.max(1, (cell?.sets.min ?? 0) - 1));
   });
 
+  it('régression (simulation) : séries allouées par le volume ⇒ le niveau ne retire pas une série de plus (cibles déjà à l’échelle du niveau)', () => {
+    const env = envFor(scenario({ level: 'novice' }));
+    const d = computeDose(ex('ex.goblet_squat'), env, { role: 'primary', timePressure: false, doubleProgression: false, calibration: false, allocatedSets: 3 });
+    const cell = env.params['strength.dose.base'].general?.primary?.compound_high_load;
+    expect(d.sets).toBe(Math.min(3, cell?.sets.max ?? 3));
+    expect(d.rir).toBe((cell?.rir ?? 0) + env.params['strength.dose.modifiers'].level.novice.rirDelta);
+  });
+
   it('décharge : facteur de séries et RIR relevé ; pression temporelle : non-principaux au plancher, repos bas', () => {
     const deload = envFor(scenario({ context: { phase: { kind: 'deload', weekInMesocycle: 4, mesocycleLength: 4 } } }));
     const normal = withCtx({});
