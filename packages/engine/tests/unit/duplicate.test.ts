@@ -157,7 +157,12 @@ describe('classification — répétition accidentelle, prévue, stagnation', ()
     expect(canonicalStringify(a)).toBe(canonicalStringify(b));
   });
 
-  it('paramètres absents du ruleset ⇒ erreur explicite (aucune valeur par défaut dans le CORE)', () => {
+  it('historique absent (ou sans séance comparable) ⇒ aucun contrôle et aucune erreur, même sans paramètres (spec 07 §4)', () => {
+    expect(analyzeDuplicates(fp(BENCH), [], [], testRuleset(), NOW)).toMatchObject({ classification: 'none', penalty: 0, comparisons: [] });
+    expect(analyzeDuplicates(fp(BENCH, 'x'), [entry(fp(BENCH, 'x'))], [], testRuleset(), NOW).classification).toBe('none');
+  });
+
+  it('paramètres absents du ruleset avec un historique à comparer ⇒ erreur explicite (aucune valeur par défaut dans le CORE)', () => {
     expect(() => analyzeDuplicates(fp(BENCH), [entry(fp(BENCH, 'old'))], [], testRuleset(), NOW)).toThrow(RulesetParameterError);
   });
 });

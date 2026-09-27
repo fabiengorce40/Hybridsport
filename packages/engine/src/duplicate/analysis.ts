@@ -183,6 +183,9 @@ const worst = (xs: readonly DuplicateClassification[]): DuplicateClassification 
  * Historique absent ⇒ rien à comparer, aucune erreur. Pure et déterministe (instant injecté).
  */
 export function analyzeDuplicates(candidate: SessionFingerprint, history: readonly FingerprintHistoryEntry[], declaredIntents: readonly RepetitionIntent[], ruleset: LoadedRuleset, now: ISODateTime): DuplicateReport {
+  // Rien de comparable (même discipline, autre séance) ⇒ aucun contrôle, aucune erreur (spec 07 §4, FAILURE MODES).
+  const comparable = history.filter((h) => h.fingerprint.sessionId !== candidate.sessionId && h.fingerprint.discipline === candidate.discipline);
+  if (comparable.length === 0) return { comparisons: [], classification: 'none', stagnation: [], penalty: 0, reasons: [], maxSimilarity: 0 };
   const p = readDuplicateParams(ruleset, candidate.discipline);
   // technical-constant: conversion jours → heures
   const HOURS_PER_DAY = 24;
@@ -190,8 +193,7 @@ export function analyzeDuplicates(candidate: SessionFingerprint, history: readon
   const totalWeight = (b: SimilarityBreakdown, keep: (c: SimilarityComponent) => boolean): number =>
     SIMILARITY_COMPONENTS.filter((c) => b[c] !== null && keep(c)).reduce((s, c) => s + p.weights[c] * (b[c] ?? 0), 0);
 
-  const relevant = history
-    .filter((h) => h.fingerprint.sessionId !== candidate.sessionId && h.fingerprint.discipline === candidate.discipline)
+  const relevant = comparable
     .filter((h) => Math.abs(hoursBetween(h.at, now)) <= windowH)
     .sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : a.fingerprint.sessionId < b.fingerprint.sessionId ? -1 : 1));
 
