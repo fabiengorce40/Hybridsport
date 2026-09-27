@@ -23,7 +23,8 @@ import type { Ranked, SessionSoFar } from './selection.js';
 import { computeDose, doseCell } from './dose.js';
 import { decideLoad, loadKnowledge, loadStep, pctFor } from './load.js';
 import { buildRampups } from './rampup.js';
-import { groupsOf, plannedHardSets, remainingShare, weeklyTarget } from './volume.js';
+import { progressionModelFor } from './models.js';
+import { groupsOf, plannedHardSets, remainingShare, volumeFit, weeklyTarget } from './volume.js';
 import { loweredStructures } from './interference.js';
 import { strengthReasons } from './codes.js';
 import { STRENGTH_CHECKS } from './checks.js';
@@ -142,8 +143,8 @@ function withRir(i: SetIntensity, rir: number): SetIntensity {
 function prescribe(pick: Pick, env: Env, timePressure: boolean, allocated: number | undefined, samePatternBefore: number, reasons: ReasonCode[]): Rx {
   const e = pick.exercise;
   const role: SlotRole = pick.slot.def.role;
-  const model = pick.track?.model ?? env.params['strength.progression'].modelFor[env.level][role][doseCell(e, role, env).cls];
   const knowledge = loadKnowledge(e, env);
+  const model = pick.track?.model ?? progressionModelFor(e, role, env.level, knowledge.lastLoadKg, env.params, loadStep(e, env)?.stepKg);
   const trackKg = pick.track?.nextPrescription?.loadKg;
   const calibration = knowledge.confidence === 'none' && knowledge.lastLoadKg === undefined && trackKg === undefined && e.loadable;
   const dose = computeDose(e, env, { role, timePressure, doubleProgression: model === 'double_progression', calibration, ...(allocated !== undefined ? { allocatedSets: allocated } : {}), ...(pick.track ? { track: pick.track } : {}) });
@@ -199,14 +200,23 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
   const reasons: ReasonCode[] = [];
   const ctx = input.discipline;
   const params = env.params;
+  // Alternance des groupes de choix : date de la DERNIÈRE exposition du besoin (plus ancienne = prioritaire),
+  // jamais un nombre d'expositions (qui dépend de la quantité d'historique transmise par le planificateur).
   const recentNeed = (need: string): number => {
     const req = params['strength.needs'][need]?.requirement;
     if (!req) return 0;
-    return ctx.recentExposures.filter((x) => { const e = env.catalog.exercise(x.exerciseId); return e !== undefined && firstFailingFilter(e, { def: { id: need, blockId: '', need, role: 'accessory', status: 'optional', count: { min: 1, max: 1 }, anchorable: false, trackable: false }, requirement: req }, env, { technicalCount: 0 }) !== 'F2_slot'; }).length;
+    const probe: SlotInstance = { def: { id: need, blockId: '', need, role: 'accessory', status: 'optional', count: { min: 1, max: 1 }, anchorable: false, trackable: false }, requirement: req };
+    const last = ctx.recentExposures.filter((x) => { const e = env.catalog.exercise(x.exerciseId); return e !== undefined && firstFailingFilter(e, probe, env, { technicalCount: 0 }) !== 'F2_slot'; }).map((x) => Date.parse(x.at));
+    return last.length === 0 ? 0 : Math.max(...last);
   };
+
   const feasible = (def: SlotInstance['def']): boolean => slotCandidatesFor({ def, requirement: params['strength.needs'][def.need]?.requirement ?? {} }, env, { technicalCount: 0 }).candidates.length > 0;
   const slots = resolveSlots(env.archetype, params, env.goalKey, env.stimulus, recentNeed, (id) => env.anchorBySlot.has(id), feasible);
   const dropped = new Set([...env.lowered.keys()].flatMap((s) => params['strength.interference'].perStructure[s]?.dropOptionalNeeds ?? []));
+  // Ancre déclarée dont l'emplacement n'est pas retenu (ex. deux ancres dans un même groupe de choix) :
+  // jamais ignorée en silence (le planificateur ne devrait déclarer qu'une ancre par groupe et par séance).
+  const resolvedIds = new Set([...slots.required, ...slots.optional].map((s) => s.def.id));
+  for (const [slotId, t] of [...env.anchorBySlot].sort(([a], [b]) => (a < b ? -1 : 1))) if (!resolvedIds.has(slotId)) reasons.push(strengthReasons.emit('PROGRESSION.ANCHOR_NOT_APPLICABLE', { trackId: t.trackId, slot: slotId }));
 
   const picks: Pick[] = [];
   const families = new Set<string>();
@@ -339,6 +349,16 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
     if (dropped.has(slot.def.need)) { reasons.push(strengthReasons.emit('SELECT.SLOT_OMITTED', { slot: slot.def.id, cause: 'interference' })); return; }
     const before = picks.length;
     if (!add(slot, false)) return;
+    // Haut SOFT du volume hebdomadaire : un ajout OPTIONNEL dont TOUS les groupes primaires dépasseraient le
+    // haut n'apporte que du volume superflu ; il est omis (un polyarticulaire utile à un autre groupe reste).
+    const added = picks[picks.length - 1] as Pick;
+    const vf = volumeFit(added.exercise, added.slot.def.role, picks.slice(0, -1).map((p) => ({ exercise: p.exercise, role: p.slot.def.role })), env);
+    if (vf.groups > 0 && vf.over === vf.groups) {
+      const removed = picks.splice(before);
+      for (const r of removed) families.delete(r.exercise.family);
+      reasons.push(strengthReasons.emit('SELECT.SLOT_OMITTED', { slot: slot.def.id, cause: 'volume' }));
+      return;
+    }
     const trial = assemble(picks, timePressure, undefined);
     if (fits(trial)) { core = trial; return; }
     const removed = picks.splice(before);

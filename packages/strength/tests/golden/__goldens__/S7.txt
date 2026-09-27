@@ -3,22 +3,22 @@ résultat : ok · validation : VALID · durée : FITS
   [warmup · support]
     ex.shoulder_mobility_flow  (mobility) — mobilité 5 min
   [strength · primary]
-    ex.barbell_ohp  (up.main_push_v · ancre:candidate · base_profile) — choix : role_fit
-      montée : 8 @ 20 kg → 5 @ 30 kg → 3 @ 40 kg
-      4 × 6 · 50 kg (80 % e1RM) · RIR 2 · repos 150 s
+    ex.bench_press  (up.main_push_h · ancre:candidate · base_profile) — choix : role_fit
+      montée : 8 @ 32.5 kg → 5 @ 50 kg → 3 @ 67.5 kg
+      4 × 6 · 85 kg (80 % e1RM) · RIR 2 · repos 150 s
   [strength · secondary]
     ex.pull_up  (up.pull_v · ancre:candidate · calibration) — choix : logistics
       2 × 8–12 · poids du corps · RIR 3 · repos 105 s
       1 × 8–12 · poids du corps · RIR 2 · repos 105 s
   [accessory · support]
-    ex.bench_press  (up.push_2h · history) — choix : variant
-      2 × 8–12 · 80 kg · RIR 2 · repos 90 s
-    ex.seated_cable_row  (up.pull_2h · calibration) — choix : seed_tiebreak
+    ex.machine_row  (up.pull_2h · calibration) — choix : variant
       2 × 8–12 · RIR 3 · repos 90 s
       1 × 8–12 · RIR 2 · repos 90 s
-    ex.cable_triceps_pushdown  (up.iso_upper · calibration) — choix : logistics
+    ex.machine_shoulder_press  (up.push_2v · calibration) — choix : role_fit
+      2 × 8–12 · RIR 3 · repos 90 s
+    ex.pec_deck  (up.iso_upper · calibration) — choix : seed_tiebreak
       2 × 12–20 · RIR 3 · repos 60 s
-      1 × 12–20 · RIR 1 · repos 60 s
+      2 × 12–20 · RIR 1 · repos 60 s
   [cooldown · support]
     ex.shoulder_mobility_flow  (mobility) — mobilité 3 min
-  Durée estimée (p50) : 50 min
+  Durée estimée (p50) : 51 min

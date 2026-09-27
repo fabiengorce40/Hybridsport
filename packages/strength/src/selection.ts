@@ -13,6 +13,7 @@ import type { Criterion } from './params.js';
 import type { Env } from './model.js';
 import type { SlotInstance } from './archetypes.js';
 import { compareLex } from './util.js';
+import { volumeFit } from './volume.js';
 
 // technical-constant: borne haute de l'échelle ordinale 0–3 du catalogue (contrat de schéma)
 const ORDINAL_MAX = 3;
@@ -42,6 +43,12 @@ export function criterionValue(c: Criterion, e: Exercise, slot: SlotInstance, en
         case 'specificity': return [supportRelevance(e, env)];
         default: return [0];
       }
+    case 'volume_fit': {
+      // Volume hebdomadaire (E1) : ne pas dépasser le haut SOFT, puis servir d'abord les groupes sous le plancher.
+      const roleOf = (slotId: string) => env.archetype.slots.find((s) => s.id === slotId)?.role ?? 'accessory';
+      const v = volumeFit(e, slot.def.role, soFar.chosen.map((x) => ({ exercise: x.exercise, role: roleOf(x.slotId) })), env);
+      return [-v.over, v.under];
+    }
     case 'goal_relevance': return [supportRelevance(e, env)];
     case 'fatigue_fit': {
       // Structures abaissées par le contexte (multisport, notes) et zones « à ménager » (douleur P1) : moins = mieux.

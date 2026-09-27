@@ -12,4 +12,5 @@ export * from './volume.js';
 export * from './interference.js';
 export * from './checks.js';
 export * from './engine.js';
+export * from './models.js';
 export * from './progression.js';

@@ -50,8 +50,12 @@ export function computeDose(e: Exercise, env: Env, opts: DoseOptions): Dose {
   const next = opts.track?.nextPrescription;
   const cal = env.params['strength.calibration'];
 
-  let sets = next?.sets ?? opts.allocatedSets ?? cell.sets.min;
-  const baseRir = next?.rir ?? cell.rir;
+  // Contrat track ↔ dosage (addendum V1.1 §4) : la track porte la CHARGE et les RÉPÉTITIONS (variables de
+  // ses modèles). Les séries relèvent du volume (allocation PM4) et le RIR du stimulus : ils sont toujours
+  // recalculés ici, modificateurs compris, jamais relus depuis la track (sinon les modificateurs
+  // s'appliqueraient deux fois, séance après séance).
+  let sets = opts.allocatedSets ?? cell.sets.min;
+  const baseRir = cell.rir;
   const reps: RepTarget = next?.reps ?? (opts.doubleProgression ? { min: cell.reps.min, max: cell.reps.max } : m.repChoice === 'low' ? cell.reps.min : cell.reps.max);
 
   // Modificateurs : chacun est tracé ; la politique de conflit (ruleset) combine les deltas.

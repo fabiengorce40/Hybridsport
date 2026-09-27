@@ -63,10 +63,15 @@ function ownKnowledge(e: Exercise, env: Env): Omit<LoadKnowledge, 'reasons'> & {
   const p = env.params['strength.load'];
   const exposures = ctx.recentExposures.filter((x) => x.exerciseId === e.id).sort((a, b) => (a.at < b.at ? 1 : -1));
   const measured: { value: number; withRir: boolean; at: string }[] = [];
+  // Série trop LÉGÈRE pour la formule (reps jusqu'à l'échec au-delà de la plage valide) : seule une BORNE
+  // INFÉRIEURE de l'e1RM est connue — gardée, en confiance basse (l'exécution doit mettre la confiance à jour).
+  let lowerBound: number | undefined;
   for (const x of exposures) for (const s of x.sets) {
     if (s.loadKg === undefined || s.loadKg <= 0 || s.reps <= 0) continue;
-    const v = e1rm(s.loadKg, s.reps + (s.rir ?? p.assumedRirWhenUnknown), env);
+    const rtf = s.reps + (s.rir ?? p.assumedRirWhenUnknown);
+    const v = e1rm(s.loadKg, rtf, env);
     if (v !== undefined) measured.push({ value: v, withRir: s.rir !== undefined, at: x.at });
+    else if (rtf > p.validRepRange.max) lowerBound = Math.max(lowerBound ?? 0, s.loadKg * (1 + p.validRepRange.max / p.e1rmDivisor));
   }
   const last = exposures.find((x) => x.sets.some((s) => s.loadKg !== undefined && s.loadKg > 0));
   const lastSet = last?.sets.filter((s) => s.loadKg !== undefined && s.loadKg > 0).at(-1);
@@ -83,6 +88,10 @@ function ownKnowledge(e: Exercise, env: Env): Omit<LoadKnowledge, 'reasons'> & {
     const conflict = declaredValues.some((d) => Math.abs(d.v - value) / value > p.conflictTolerance);
     if (conflict) conf = notch(conf, -1);
     return { confidence: conf, e1rmKg: value, source: 'measured', conflict, ...lastPart };
+  }
+  if (lowerBound !== undefined && declaredValues.length === 0) {
+    const conf = ageConfidence('low', exposures[0]?.at ?? env.input.context.now, env);
+    return { confidence: conf, e1rmKg: lowerBound, source: 'measured', conflict: false, ...lastPart };
   }
   if (declaredValues.length > 0) {
     const best = [...declaredValues].sort((a, b) => (a.c.asOf < b.c.asOf ? 1 : -1))[0];

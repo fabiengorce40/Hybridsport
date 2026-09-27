@@ -32,7 +32,7 @@ describe('S7 — historique biaisé vers les charges libres, tout le matériel d
     const mods = new Set(chosen.map(modality));
     expect(mods.size).toBeGreaterThanOrEqual(2);
     const decided = o.trace.entries.filter((e) => o.result.status === 'ok' && e.subject.id === o.result.value.id).flatMap((e) => e.reasons).filter((r) => r.code === 'SELECT.EXERCISE.CHOSEN').map((r) => String(r.params.decidingCriterion));
-    for (const c of decided) expect(['anchor', 'track', 'load_adequacy', 'role_fit', 'goal_relevance', 'fatigue_fit', 'recency', 'preference', 'logistics', 'seed_tiebreak', 'only_candidate', 'variant']).toContain(c);
+    for (const c of decided) expect(['anchor', 'track', 'load_adequacy', 'role_fit', 'volume_fit', 'goal_relevance', 'fatigue_fit', 'recency', 'preference', 'logistics', 'seed_tiebreak', 'only_candidate', 'variant']).toContain(c);
   });
 
   it('CONTREFACTUEL 1 — permuter la classe d’équipement de tout le catalogue ne change AUCUN exercice choisi (S2, S6, S7)', () => {

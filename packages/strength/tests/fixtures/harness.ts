@@ -3,7 +3,7 @@
  * de musculation, et exécution de bout en bout (moteur → CORE).
  */
 import { asISODateTime } from '@hybridsport/domain';
-import type { FingerprintHistoryEntry, Level, SessionIntentInput } from '@hybridsport/domain';
+import type { FingerprintHistoryEntry, ISODateTime, Level, SessionIntentInput } from '@hybridsport/domain';
 import { ENGINE_VERSION, loadCatalog, loadRuleset, runSportSession, SeededRng } from '@hybridsport/engine';
 import type { CoreProfile, CoreState, EngineContext, LoadedCatalog, LoadedRuleset, SportEngineInput } from '@hybridsport/engine';
 import { buildEnv, findArchetype, goalKey, loweredStructures, parseStrengthContext, readStrengthParams, StrengthEngine } from '../../src/index.js';
@@ -28,8 +28,8 @@ export function strengthCatalog(doc = strengthCatalogDocument()): LoadedCatalog 
 const RULESET = strengthRuleset();
 const CATALOG = strengthCatalog();
 
-export function ctx(seed = 'strength-seed', ruleset: LoadedRuleset = RULESET, catalog: LoadedCatalog = CATALOG): EngineContext<LoadedRuleset, LoadedCatalog> {
-  return { now: NOW, timezone: 'Europe/Paris', seed, engineVersion: ENGINE_VERSION, ruleset, catalog };
+export function ctx(seed = 'strength-seed', ruleset: LoadedRuleset = RULESET, catalog: LoadedCatalog = CATALOG, now: ISODateTime = NOW): EngineContext<LoadedRuleset, LoadedCatalog> {
+  return { now, timezone: 'Europe/Paris', seed, engineVersion: ENGINE_VERSION, ruleset, catalog };
 }
 
 export function profile(level: Level, preset: string, o: Partial<CoreProfile> = {}): CoreProfile {
@@ -67,17 +67,19 @@ export interface Scenario {
   readonly seed?: string;
   readonly ruleset?: LoadedRuleset;
   readonly catalog?: LoadedCatalog;
+  /** Instant de génération (simulations longitudinales) ; NOW par défaut. */
+  readonly now?: ISODateTime;
 }
 
 export function run(s: Scenario) {
-  return runSportSession(StrengthEngine, { intent: s.intent, profile: s.profile, state: s.state ?? STATE, history: s.history ?? [], disciplineContext: s.context }, ctx(s.seed, s.ruleset, s.catalog));
+  return runSportSession(StrengthEngine, { intent: s.intent, profile: s.profile, state: s.state ?? STATE, history: s.history ?? [], disciplineContext: s.context }, ctx(s.seed, s.ruleset, s.catalog, s.now));
 }
 
 /** Entrée du moteur telle que la construit le CORE (pour appeler `propose` directement dans les tests unitaires). */
 export function engineInput(s: Scenario): SportEngineInput<StrengthContext> {
   const parsed = parseStrengthContext(s.context);
   if (!parsed.ok) throw new Error(JSON.stringify(parsed.reasons));
-  const c = ctx(s.seed, s.ruleset, s.catalog);
+  const c = ctx(s.seed, s.ruleset, s.catalog, s.now);
   return {
     intent: { repetitionIntents: [], plannerNotes: [], ...s.intent } as SportEngineInput<StrengthContext>['intent'],
     profile: s.profile, state: s.state ?? STATE,

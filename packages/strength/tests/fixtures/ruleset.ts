@@ -148,9 +148,9 @@ export const STRENGTH_TEST_VALUES: Record<StrengthParamId, unknown> = {
   'strength.session.mobility': { warmupS: { min: 180, max: 300 }, cooldownS: { min: 0, max: 180 } },
   'strength.exerciseClass': { highLoadCeilingMin: 2, cappedLoadCeilingMax: 0 },
   'strength.selection.criteriaOrder': {
-    primary: ['anchor', 'load_adequacy', 'role_fit', 'goal_relevance', 'fatigue_fit', 'preference', 'recency', 'logistics'],
-    secondary: ['anchor', 'load_adequacy', 'goal_relevance', 'role_fit', 'fatigue_fit', 'recency', 'preference', 'logistics'],
-    accessory: ['track', 'load_adequacy', 'role_fit', 'goal_relevance', 'fatigue_fit', 'recency', 'preference', 'logistics'],
+    primary: ['anchor', 'load_adequacy', 'role_fit', 'goal_relevance', 'fatigue_fit', 'volume_fit', 'preference', 'recency', 'logistics'],
+    secondary: ['anchor', 'load_adequacy', 'goal_relevance', 'role_fit', 'fatigue_fit', 'volume_fit', 'recency', 'preference', 'logistics'],
+    accessory: ['track', 'load_adequacy', 'role_fit', 'volume_fit', 'goal_relevance', 'fatigue_fit', 'recency', 'preference', 'logistics'],
   },
   'strength.selection.recencyBandsDays': [2, 5],
   'strength.selection.axialHighMaxPerSession': 1,
@@ -193,9 +193,9 @@ export const STRENGTH_TEST_VALUES: Record<StrengthParamId, unknown> = {
   'strength.progression': {
     modelFor: byLevel(strengthModel), loadStepIncrements: 1, aboveRirMargin: 1, belowRirMargin: 2, partialMaxMissedSets: 1,
     evidenceRequired: { linear_load: 1, double_progression: 1, autoregulated: 2, set_progression: 1 },
-    cycleCapFraction: 0.15, regressionFraction: 0.1, regressAfterBelow: 2, stagnationHolds: 3,
+    cycleCapFraction: 0.15, regressionFraction: 0.1, regressAfterBelow: 2, stagnationHolds: 3, coarseStepFraction: 0.1,
   },
-  'strength.tracks': { anchorMaxWeeks: { novice: 12, beginner: 10, intermediate: 8, advanced: 6 }, tier2AutoCreateAfter: 2, rotateAtMesocycleEnd: true },
+  'strength.tracks': { anchorMaxWeeks: { novice: 12, beginner: 10, intermediate: 8, advanced: 6 }, tier2AutoCreateAfter: 2, rotateAtMesocycleEnd: { novice: false, beginner: false, intermediate: false, advanced: true } },
   'strength.volume': {
     muscleGroups: { chest: ['chest'], back: ['lats', 'upper_back_traps'], shoulders: ['front_delts', 'side_delts', 'rear_delts'], arms: ['biceps', 'triceps'], quads: ['quadriceps'], hamstrings: ['hamstrings'], glutes: ['glutes'], calves: ['calves'], core: ['abs_obliques', 'lower_back'] },
     secondaryWeight: 0.5, weeklyRange: weekly(), pm4SetsPerWeek: 1,

@@ -6,6 +6,8 @@
  */
 import type { Exercise } from '@hybridsport/domain';
 import type { Env } from './model.js';
+import type { SlotRole } from './params.js';
+import { doseCell } from './dose.js';
 
 export interface PlannedItem { readonly exercise: Exercise; readonly workingSets: number }
 
@@ -45,5 +47,37 @@ export function remainingShare(group: string, env: Env): number | undefined {
   const done = ctx.hardSets.d7[group] ?? 0;
   const others = ctx.week.otherStrengthSessions.filter((s) => !s.done);
   const plannedOthers = others.reduce((a, s) => a + (s.plannedHardSets[group] ?? 0), 0);
-  return Math.max(0, (t.floor - done - plannedOthers) / (1 + others.length));
+  // Le reste se partage entre CETTE séance et les autres séances qui travaillent ce groupe (une séance bas du
+  // corps ne couvre pas les pectoraux) : diviser par toutes les séances sous-estimait le besoin (simulation).
+  const sharing = others.filter((s) => (s.plannedHardSets[group] ?? 0) > 0).length;
+  return Math.max(0, (t.floor - done - plannedOthers) / (1 + sharing));
+}
+
+/** Projection hebdomadaire d'un groupe : réalisé (7 j) + prévu dans les séances non faites + cette séance. */
+export function weeklyProjection(group: string, env: Env, thisSession: Readonly<Record<string, number>>): { total: number; floor: number; high: number } | undefined {
+  const t = weeklyTarget(group, env);
+  if (!t) return undefined;
+  const ctx = env.input.discipline;
+  const others = ctx.week.otherStrengthSessions.filter((s) => !s.done).reduce((a, s) => a + (s.plannedHardSets[group] ?? 0), 0);
+  return { total: (ctx.hardSets.d7[group] ?? 0) + others + (thisSession[group] ?? 0), floor: t.floor, high: t.high };
+}
+
+/**
+ * Adéquation au volume hebdomadaire d'un candidat (règle E1, séries minimales du profil) : nombre de ses
+ * groupes primaires qui DÉPASSERAIENT le haut (SOFT) de la cible, et nombre encore SOUS le plancher.
+ */
+export function volumeFit(e: Exercise, role: SlotRole, chosen: readonly { readonly exercise: Exercise; readonly role: SlotRole }[], env: Env): { over: number; under: number; groups: number } {
+  const session = plannedHardSets(chosen.map((x) => ({ exercise: x.exercise, workingSets: doseCell(x.exercise, x.role, env).cell.sets.min })), env);
+  const own = doseCell(e, role, env).cell.sets.min;
+  let over = 0;
+  let under = 0;
+  let groups = 0;
+  for (const g of groupsOf(e, env).primary) {
+    const p = weeklyProjection(g, env, session);
+    if (!p) continue;
+    groups++;
+    if (p.total + own > p.high) over++;
+    if (p.total < p.floor) under++;
+  }
+  return { over, under, groups };
 }

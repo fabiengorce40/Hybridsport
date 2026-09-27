@@ -16,12 +16,12 @@ résultat : ok · validation : VALID · durée : FITS
       2 × 8–12 · 70 kg · RIR 2 · repos 90 s
     ex.lat_pulldown  (up.pull_2v · history) — choix : role_fit
       2 × 8–12 · 55 kg · RIR 2 · repos 90 s
-    ex.cable_triceps_pushdown  (up.iso_upper · calibration) — choix : logistics
+    ex.machine_lateral_raise  (up.iso_upper · calibration) — choix : seed_tiebreak
       2 × 12–20 · RIR 3 · repos 60 s
       1 × 12–20 · RIR 1 · repos 60 s
-    ex.cable_pallof_press  (up.trunk · calibration) — choix : load_adequacy
+    ex.pec_deck  (up.iso_upper · calibration) — choix : volume_fit
       2 × 12–20 · RIR 3 · repos 60 s
       1 × 12–20 · RIR 1 · repos 60 s
   [cooldown · support]
     ex.shoulder_mobility_flow  (mobility) — mobilité 3 min
-  Durée estimée (p50) : 50 min
+  Durée estimée (p50) : 51 min

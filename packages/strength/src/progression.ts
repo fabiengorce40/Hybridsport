@@ -10,7 +10,8 @@
  */
 import type { Exercise, ISODateTime, ReasonCode, RepTarget, SetPrescription } from '@hybridsport/domain';
 import type { StrengthTrack } from './context.js';
-import type { ProgressionModel, StrengthParams } from './params.js';
+import type { ProgressionModel, SlotRole, StrengthParams } from './params.js';
+import { exerciseClass } from './model.js';
 import { strengthReasons } from './codes.js';
 import { daysBetween, median, roundDownToStep } from './util.js';
 
@@ -81,6 +82,17 @@ function e1rmOf(sets: readonly PerformedSet[], params: StrengthParams): number |
 }
 
 /**
+ * RIR prévisible pour `reps` répétitions à une charge, d'après la meilleure série MESURÉE de la séance
+ * (formule du ruleset, sans borne de validité : sert à refuser un saut de charge, jamais à fixer une référence).
+ */
+function predictedRirAt(sets: readonly PerformedSet[], kg: number, reps: number, params: StrengthParams): number | undefined {
+  const l = params['strength.load'];
+  const e1rms = sets.flatMap((s) => (s.loadKg !== undefined && s.loadKg > 0 ? [s.loadKg * (1 + (s.reps + (s.rir ?? l.assumedRirWhenUnknown)) / l.e1rmDivisor)] : []));
+  if (e1rms.length === 0) return undefined;
+  return l.e1rmDivisor * (Math.max(...e1rms) / kg - 1) - reps;
+}
+
+/**
  * Mise à jour d'une track après exécution. Variable progressée selon le modèle de la TRACK.
  * `phaseKind = deload` : aucune hausse. Douleur / pause : track suspendue, rien ne baisse.
  */
@@ -119,7 +131,8 @@ export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: Exposure
     return { track: { ...resumed, consecutiveSuccess: success, consecutiveBelow: 0 }, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: 'evidence' })], rotate: false };
   }
   const base: StrengthTrack = { ...resumed, consecutiveSuccess: 0, consecutiveBelow: 0, consecutiveHolds: 0 };
-  const cap = track.cycleStartLoadKg !== undefined ? track.cycleStartLoadKg * (1 + p.cycleCapFraction) : undefined;
+  // Plafond de gain par cycle, jamais inférieur à UN pas réalisable (sinon une charge légère ne progresserait jamais).
+  const cap = track.cycleStartLoadKg !== undefined ? Math.max(track.cycleStartLoadKg * (1 + p.cycleCapFraction), track.cycleStartLoadKg + (step ?? 0)) : undefined;
   const capped = (kg: number) => cap !== undefined && kg > cap;
   switch (track.model) {
     case 'linear_load':
@@ -148,6 +161,14 @@ export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: Exposure
       if (next.loadKg === undefined || step === undefined) return { track: base, reasons: [strengthReasons.emit('PROGRESSION.CAP_REACHED', { trackId: track.trackId })], rotate: false };
       const kg = next.loadKg + step;
       if (capped(kg)) return { track: base, reasons: [strengthReasons.emit('PROGRESSION.CAP_REACHED', { trackId: track.trackId })], rotate: false };
+      // Granularité du matériel : un saut de charge que la séance MESURÉE classerait d'avance « en dessous »
+      // (RIR prévu au bas de la plage ≤ RIR visé − marge ; ex. 4 → 6 kg = +50 %) est refusé : charge maintenue,
+      // stagnation comptée (rotation d'exercice à terme). Un pas ordinaire (30 → 32 kg) passe.
+      const predictedRir = predictedRirAt(x.performed, kg, range.min, params);
+      if (predictedRir !== undefined && predictedRir <= (next.rir ?? 0) - p.belowRirMargin) {
+        const holds = resumed.consecutiveHolds + 1;
+        return { track: { ...resumed, consecutiveSuccess: 0, consecutiveBelow: 0, consecutiveHolds: holds }, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: 'granularity' })], rotate: holds >= p.stagnationHolds };
+      }
       return { track: { ...base, nextPrescription: { ...next, loadKg: kg, reps: { min: range.min, max: range.max } } }, reasons: [strengthReasons.emit('PROGRESSION.ADVANCED', { trackId: track.trackId, variable: 'load' })], rotate: false };
     }
     case 'set_progression':
@@ -160,24 +181,54 @@ export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: Exposure
 export function createTrack(input: {
   readonly tier: 'anchor' | 'tracked'; readonly archetypeId: string; readonly slotId: string; readonly exercise: Exercise;
   readonly model: ProgressionModel; readonly prescribed: readonly SetPrescription[]; readonly performed: readonly PerformedSet[]; readonly at: ISODateTime;
+  /** Stimulus et rôle de l'emplacement : le RIR de référence de la track est celui du PROFIL DE BASE, sans modificateur. */
+  readonly stimulus: string; readonly role: SlotRole;
 }, params: StrengthParams): { track: StrengthTrack; reasons: readonly ReasonCode[] } {
   const work = input.prescribed.filter((s) => s.kind !== 'rampup' && s.optional !== true);
   const first = work[0];
   const reps: RepTarget = first?.reps ?? 1;
   const lastLoad = [...input.performed].reverse().find((s) => s.loadKg !== undefined && s.loadKg > 0)?.loadKg;
   const e1rm = e1rmOf(input.performed, params);
-  const rir = first ? targetRir(first) : undefined;
+  // RIR de référence = profil de base (jamais le RIR de calibration ni un RIR modifié par le niveau / la phase).
+  const profile = params['strength.stimuli'][input.stimulus]?.doseProfile;
+  const cell = profile === undefined ? undefined : params['strength.dose.base'][profile]?.[input.role]?.[exerciseClass(input.exercise, params)];
+  const rir = cell?.rir ?? (first ? targetRir(first) : undefined);
+  // Double progression sur une prescription à reps FIXES (ex. modèle choisi pour pas grossier) : la plage est
+  // celle du profil, sinon la progression en reps serait dégénérée (plage 6–6, simulation 4B).
+  const dpRange = input.model === 'double_progression' && typeof reps === 'number' && cell ? { min: Math.min(reps, cell.reps.max), max: cell.reps.max } : undefined;
   // technical-constant: longueur de la date ISO AAAA-MM-JJ
   const trackId = `track.${input.archetypeId}.${input.slotId}.${input.exercise.id}.${input.at.slice(0, 10)}`;
   const track: StrengthTrack = {
     trackId, tier: input.tier, exerciseId: input.exercise.id, archetypeId: input.archetypeId, slotId: input.slotId, model: input.model,
     status: 'active', openedAt: input.at, consecutiveSuccess: 0, consecutiveBelow: 0, consecutiveHolds: 0,
-    ...(typeof reps !== 'number' ? { repRange: reps } : {}),
+    ...(dpRange ? { repRange: dpRange } : typeof reps !== 'number' ? { repRange: reps } : {}),
     ...(lastLoad !== undefined ? { cycleStartLoadKg: lastLoad } : {}),
     ...(e1rm !== undefined ? { e1rmKg: e1rm } : {}),
-    nextPrescription: { sets: Math.max(1, work.length), reps, ...(lastLoad !== undefined ? { loadKg: lastLoad } : {}), ...(rir !== undefined ? { rir } : {}) },
+    nextPrescription: { sets: Math.max(1, work.length), reps: dpRange ?? reps, ...(lastLoad !== undefined ? { loadKg: lastLoad } : {}), ...(rir !== undefined ? { rir } : {}) },
   };
   return { track, reasons: [strengthReasons.emit('PROGRESSION.TRACK_CREATED', { trackId, tier: input.tier, exerciseId: input.exercise.id })] };
+}
+
+/**
+ * Reprise d'une track SUSPENDUE (douleur, pause de sécurité) : décidée par le ProgressionEngine à une
+ * frontière de semaine, quand l'état de douleur du CORE ne la concerne plus. La prescription reprend là où
+ * elle s'était arrêtée (jamais une baisse : la suspension n'est pas un échec). Sans cette reprise, le
+ * moteur ne l'appliquerait plus jamais (il n'applique que les tracks actives).
+ */
+export function resumeTrack(track: StrengthTrack, painCleared: boolean): { track: StrengthTrack; reasons: readonly ReasonCode[] } {
+  if (track.status !== 'suspended' || !painCleared) return { track, reasons: [] };
+  return { track: { ...track, status: 'active' }, reasons: [strengthReasons.emit('PROGRESSION.RESUMED', { trackId: track.trackId })] };
+}
+
+/**
+ * Début d'un nouveau cycle (frontière de mésocycle) pour une track qui continue : la référence du plafond
+ * de gain par cycle devient la charge courante. Sans cela, une ancre conservée d'un mésocycle à l'autre
+ * resterait bloquée au plafond du PREMIER cycle.
+ */
+export function startCycle(track: StrengthTrack): { track: StrengthTrack; reasons: readonly ReasonCode[] } {
+  const kg = track.nextPrescription?.loadKg;
+  if (track.status !== 'active' || kg === undefined) return { track, reasons: [] };
+  return { track: { ...track, cycleStartLoadKg: kg }, reasons: [strengthReasons.emit('PROGRESSION.CYCLE_STARTED', { trackId: track.trackId })] };
 }
 
 /** Rotation / clôture (frontière de semaine) : fin de mésocycle, durée maximale, stagnation, inadmissibilité durable. */
@@ -189,7 +240,8 @@ export function closureCause(track: StrengthTrack, o: { readonly now: string; re
   if (o.inadmissible) return 'inadmissible';
   if (o.stagnant) return 'stagnation';
   if (daysBetween(track.openedAt, o.now) > t.anchorMaxWeeks[o.level] * DAYS_PER_WEEK) return 'max_weeks';
-  if (o.mesocycleEnded && t.rotateAtMesocycleEnd) return 'mesocycle_end';
+  // Rotation en fin de mésocycle selon le niveau (un débutant garde ses ancres pour la progression linéaire).
+  if (o.mesocycleEnded && t.rotateAtMesocycleEnd[o.level]) return 'mesocycle_end';
   return undefined;
 }
 

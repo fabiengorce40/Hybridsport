@@ -14,12 +14,14 @@ résultat : ok · validation : VALID · durée : SHORTER_ACCEPTED
   [accessory · support]
     ex.bulgarian_split_squat  (lo.single_leg · calibration) — choix : goal_relevance
       2 × 6–10 · RIR 3 · repos 105 s
-    ex.leg_curl  (lo.iso_lower · history) — choix : goal_relevance
-      2 × 10–15 · 50 kg · RIR 1 · repos 60 s
+    ex.machine_calf_raise  (lo.iso_lower · calibration) — choix : volume_fit
+      2 × 10–15 · RIR 3 · repos 60 s
+      1 × 10–15 · RIR 1 · repos 60 s
     ex.cable_pallof_press  (lo.trunk · calibration) — choix : load_adequacy
       2 × 10–15 · RIR 3 · repos 60 s
-    ex.leg_extension  (lo.iso_lower · calibration) — choix : seed_tiebreak
-      2 × 10–15 · RIR 3 · repos 60 s
+      1 × 10–15 · RIR 1 · repos 60 s
+    ex.leg_curl  (lo.iso_lower · history) — choix : goal_relevance
+      2 × 10–15 · 50 kg · RIR 1 · repos 60 s
   [cooldown · support]
     ex.lower_mobility_flow  (mobility) — mobilité 3 min
-  Durée estimée (p50) : 55 min
+  Durée estimée (p50) : 59 min

@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Exercise, ISODateTime, SetPrescription } from '@hybridsport/domain';
 import { asISODateTime } from '@hybridsport/domain';
-import { classifyExposure, closeTrack, closureCause, createTrack, EXPOSURE_CLASSES, readStrengthParams, updateTrack } from '../../src/index.js';
+import { classifyExposure, closeTrack, closureCause, createTrack, EXPOSURE_CLASSES, progressionModelFor, readStrengthParams, resumeTrack, startCycle, updateTrack } from '../../src/index.js';
 import type { ExecutedItem, StrengthTrack } from '../../src/index.js';
 import { NOW, strengthCatalog, strengthRuleset } from '../fixtures/harness.js';
 
@@ -74,6 +74,14 @@ describe('mise à jour d’une track (une variable à la fois, sur preuves)', ()
     const capped = updateTrack(track({ cycleStartLoadKg: 70, nextPrescription: { sets: 3, reps: 8, loadKg: 80, rir: 2 } }), item({ performed: sets(3, 8, 80, 2) }), 'on_target', ex('ex.bench_press'), P, 'accumulation');
     expect(capped.track.nextPrescription?.loadKg).toBe(80);
     expect(codes(capped)).toEqual(['PROGRESSION.CAP_REACHED']);
+    // Régression : sur une charge légère, le plafond du cycle autorise toujours au moins un pas (12 kg × 1,15 < 12 + 2).
+    const light = updateTrack(track({ exerciseId: 'ex.goblet_squat', cycleStartLoadKg: 12, nextPrescription: { sets: 1, reps: 6, loadKg: 12, rir: 2 } }), item({ performed: sets(1, 6, 12, 9) }, work(1, 6, 12)), 'above', ex('ex.goblet_squat'), P, 'accumulation');
+    expect(light.track.nextPrescription?.loadKg).toBe(14);
+    // Régression (simulation) : pas grossier (2 kg sur 14 kg) ⇒ double progression au lieu d'une progression linéaire en charge.
+    expect(progressionModelFor(ex('ex.goblet_squat'), 'primary', 'novice', 14, P)).toBe('double_progression');
+    expect(progressionModelFor(ex('ex.back_squat'), 'primary', 'novice', 80, P)).toBe('linear_load');
+    expect(progressionModelFor(ex('ex.back_squat'), 'primary', 'novice', undefined, P)).toBe('linear_load');
+    expect(progressionModelFor(ex('ex.back_squat'), 'primary', 'advanced', 20, P)).toBe('double_progression');
   });
 
   it('autoregulated : preuves répétées exigées (2) ; e1RM lissé (médiane) ; hausse bornée à un pas', () => {
@@ -97,6 +105,15 @@ describe('mise à jour d’une track (une variable à la fois, sur preuves)', ()
     expect(r2.track.nextPrescription).toMatchObject({ reps: { min: 10, max: 10 }, loadKg: 30 });
     const r3 = updateTrack(r2.track, item({ performed: sets(3, 10, 30, 2) }), 'on_target', e, P, 'accumulation');
     expect(r3.track.nextPrescription).toMatchObject({ reps: { min: 8, max: 10 }, loadKg: 32 });
+  });
+
+  it('double_progression : saut de charge refusé quand la séance mesurée prédit moins que le bas de la plage (granularité)', () => {
+    const t = track({ exerciseId: 'ex.db_calf_raise', model: 'double_progression', repRange: { min: 12, max: 15 }, nextPrescription: { sets: 1, reps: { min: 15, max: 15 }, loadKg: 4, rir: 2 } });
+    // 4 kg × 15 @ RIR 9 ⇒ ≈ 7,2 kg d'e1RM : à 6 kg, ≈ 4 reps au RIR visé — bien sous 12.
+    const u = updateTrack(t, item({ performed: sets(1, 15, 4, 9) }, work(1, { min: 15, max: 15 }, 4)), 'above', ex('ex.db_calf_raise'), P, 'accumulation');
+    expect(u.track.nextPrescription?.loadKg).toBe(4);
+    expect(codes(u)).toEqual(['PROGRESSION.HELD']);
+    expect(u.track.consecutiveHolds).toBe(1);
   });
 
   it('set_progression (PM4) n’est jamais un modèle de track : aucune hausse de charge ni de reps', () => {
@@ -128,9 +145,10 @@ describe('mise à jour d’une track (une variable à la fois, sur preuves)', ()
 });
 
 describe('cycle de vie des tracks (addendum V1.1 §3)', () => {
-  it('création APRÈS exécution réelle : prescription suivante = charge réellement faite, e1RM mesuré', () => {
+  it('création APRÈS exécution réelle : charge réellement faite, e1RM mesuré, RIR de référence = profil de base (jamais le RIR de calibration)', () => {
     const at: ISODateTime = asISODateTime('2026-10-05T18:00:00Z');
-    const r = createTrack({ tier: 'anchor', archetypeId: 'str_upper', slotId: 'up.main_push_h', exercise: ex('ex.bench_press'), model: 'linear_load', prescribed: work(3, 8, 80), performed: sets(3, 8, 77.5, 2), at }, P);
+    // Séries de calibration prescrites à RIR 4 : la track ne doit PAS retenir ce RIR (régression : dérive du RIR).
+    const r = createTrack({ tier: 'anchor', archetypeId: 'str_upper', slotId: 'up.main_push_h', exercise: ex('ex.bench_press'), model: 'linear_load', prescribed: work(3, 8, 80, 4), performed: sets(3, 8, 77.5, 2), at, stimulus: 'strength_heavy', role: 'primary' }, P);
     expect(r.track).toMatchObject({ tier: 'anchor', status: 'active', nextPrescription: { sets: 3, reps: 8, loadKg: 77.5, rir: 2 } });
     expect(r.track.e1rmKg).toBeCloseTo(77.5 * (1 + 10 / 30), 5);
     expect(codes(r)).toEqual(['PROGRESSION.TRACK_CREATED']);
@@ -142,10 +160,32 @@ describe('cycle de vie des tracks (addendum V1.1 §3)', () => {
     expect(closureCause(t, { ...base, inadmissible: true }, P)).toBe('inadmissible');
     expect(closureCause(t, { ...base, stagnant: true }, P)).toBe('stagnation');
     expect(closureCause(t, base, P)).toBe('max_weeks');
-    expect(closureCause(track(), { ...base, mesocycleEnded: true }, P)).toBe('mesocycle_end');
+    expect(closureCause(track(), { ...base, level: 'advanced', mesocycleEnded: true }, P)).toBe('mesocycle_end');
+    // Débutant / intermédiaire : l'ancre traverse la fin de mésocycle (progression linéaire), jusqu'à sa durée maximale.
+    expect(closureCause(track(), { ...base, level: 'beginner', mesocycleEnded: true }, P)).toBeUndefined();
     expect(closureCause(track(), base, P)).toBeUndefined();
     const closed = closeTrack(t, 'max_weeks');
     expect(closed.track.status).toBe('closed');
     expect(closureCause(closed.track, { ...base, inadmissible: true }, P)).toBeUndefined();
+  });
+});
+
+describe('cycle de vie : reprise après suspension et nouveau cycle (régressions de la simulation longitudinale)', () => {
+  it('une track suspendue (douleur) reprend telle quelle quand la douleur est levée ; jamais avant', () => {
+    const t = track({ status: 'suspended' });
+    expect(resumeTrack(t, false).track.status).toBe('suspended');
+    const r = resumeTrack(t, true);
+    expect(r.track).toMatchObject({ status: 'active', nextPrescription: t.nextPrescription });
+    expect(codes(r)).toEqual(['PROGRESSION.RESUMED']);
+    expect(resumeTrack(track(), true).reasons).toEqual([]);
+  });
+
+  it('nouveau cycle : la référence du plafond de gain devient la charge courante (sinon blocage au plafond du 1er cycle)', () => {
+    const t = track({ cycleStartLoadKg: 62.5, nextPrescription: { sets: 2, reps: 6, loadKg: 70, rir: 2 } });
+    const blocked = updateTrack(t, item({ performed: sets(2, 6, 70, 3) }, work(2, 6, 70)), 'on_target', ex('ex.back_squat'), P, 'accumulation');
+    expect(codes(blocked)).toEqual(['PROGRESSION.CAP_REACHED']);
+    const next = startCycle(t);
+    expect(next.track.cycleStartLoadKg).toBe(70);
+    expect(updateTrack(next.track, item({ performed: sets(2, 6, 70, 3) }, work(2, 6, 70)), 'on_target', ex('ex.back_squat'), P, 'accumulation').track.nextPrescription?.loadKg).toBe(72.5);
   });
 });

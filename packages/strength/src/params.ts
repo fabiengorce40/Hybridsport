@@ -15,7 +15,7 @@ export const EXERCISE_CLASSES = ['compound_high_load', 'compound_other', 'isolat
 export type ExerciseClass = (typeof EXERCISE_CLASSES)[number];
 export const PROGRESSION_MODELS = ['linear_load', 'double_progression', 'autoregulated', 'set_progression'] as const;
 export type ProgressionModel = (typeof PROGRESSION_MODELS)[number];
-export const CRITERIA = ['anchor', 'track', 'load_adequacy', 'role_fit', 'goal_relevance', 'fatigue_fit', 'recency', 'preference', 'logistics'] as const;
+export const CRITERIA = ['anchor', 'track', 'load_adequacy', 'role_fit', 'volume_fit', 'goal_relevance', 'fatigue_fit', 'recency', 'preference', 'logistics'] as const;
 export type Criterion = (typeof CRITERIA)[number];
 export const PHASE_KINDS = ['accumulation', 'intensification', 'deload', 'maintenance', 'transition'] as const;
 export const LOAD_MODELS = ['barbell', 'dumbbell_pair', 'dumbbell_single', 'kettlebell', 'machine_stack', 'plate_loaded', 'bodyweight_plus', 'implement_fixed'] as const;
@@ -111,8 +111,10 @@ export const STRENGTH_PARAMETER_SCHEMAS = {
     aboveRirMargin: nonNeg, belowRirMargin: nonNeg, partialMaxMissedSets: int.nonnegative(),
     evidenceRequired: z.record(z.enum(PROGRESSION_MODELS), int.positive()),
     cycleCapFraction: fraction, regressionFraction: fraction, regressAfterBelow: int.positive(), stagnationHolds: int.positive(),
+    /** Pas / charge au-delà duquel une progression en charge devient une double progression. */
+    coarseStepFraction: fraction,
   }).strict() },
-  'strength.tracks': { governance: 'G2', schema: z.object({ anchorMaxWeeks: byLevel(int.positive()), tier2AutoCreateAfter: int.positive(), rotateAtMesocycleEnd: z.boolean() }).strict() },
+  'strength.tracks': { governance: 'G2', schema: z.object({ anchorMaxWeeks: byLevel(int.positive()), tier2AutoCreateAfter: int.positive(), rotateAtMesocycleEnd: byLevel(z.boolean()) }).strict() },
   'strength.volume': { governance: 'G2', schema: z.object({
     muscleGroups: z.record(id, z.array(id).min(1)), secondaryWeight: nonNeg,
     weeklyRange: z.record(id, byLevel(z.record(id, z.object({ floor: nonNeg, high: nonNeg }).strict().refine((r) => r.floor <= r.high, 'floor ≤ high')))),

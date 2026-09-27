@@ -82,7 +82,9 @@ describe('ancres et tracks (étape 7, addendum V1.1)', () => {
     const bench = items(s).find((it) => it.exerciseId === 'ex.bench_press');
     expect(bench?.refs).toMatchObject({ anchor: 'declared', progressionTrackId: 'track.bench', prescriptionSource: 'track', slotId: 'up.main_push_h' });
     const work = bench?.prescription.type === 'sets' ? bench.prescription.sets.filter((x) => x.kind !== 'rampup') : [];
-    expect(work).toHaveLength(4);
+    // Charge et répétitions de la track ; séries = volume (profil lourd, principal : 3 à 5).
+    expect(work.length).toBeGreaterThanOrEqual(3);
+    expect(work.length).toBeLessThanOrEqual(5);
     expect(work.every((x) => x.reps === 5 && x.intensity?.mode === 'load' && x.intensity.kg === 90)).toBe(true);
   });
 

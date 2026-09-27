@@ -148,15 +148,17 @@ describe('dosage (étape 8) et première exposition (étape 10)', () => {
     expect(tp.restS).toBeLessThanOrEqual(dn.restS);
   });
 
-  it('première exposition : N premières séries de calibration à un effort plus prudent (G2), jamais sur une track', () => {
+  it('première exposition : N premières séries de calibration à un effort plus prudent (G2), jamais sur une track ; la track fixe les reps, jamais les séries ni le RIR', () => {
     const env = withCtx({});
     const d = computeDose(ex('ex.bench_press'), env, { role: 'secondary', timePressure: false, doubleProgression: false, calibration: true, allocatedSets: 3 });
     const cal = env.params['strength.calibration'];
     expect(d.calibrationSets).toBe(Math.min(d.sets, cal.sets));
     expect(d.calibrationRir).toBeGreaterThanOrEqual(d.rir);
-    const tracked = computeDose(ex('ex.bench_press'), env, { role: 'secondary', timePressure: false, doubleProgression: false, calibration: true, track: { trackId: 't', tier: 'anchor', exerciseId: 'ex.bench_press', archetypeId: 'str_full_body', slotId: 'fb.push_h', model: 'double_progression', status: 'active', openedAt: NOW, consecutiveSuccess: 0, consecutiveBelow: 0, consecutiveHolds: 0, nextPrescription: { sets: 3, reps: 8, loadKg: 80, rir: 2 } } });
+    const tracked = computeDose(ex('ex.bench_press'), env, { role: 'secondary', timePressure: false, doubleProgression: false, calibration: true, track: { trackId: 't', tier: 'anchor', exerciseId: 'ex.bench_press', archetypeId: 'str_full_body', slotId: 'fb.push_h', model: 'double_progression', status: 'active', openedAt: NOW, consecutiveSuccess: 0, consecutiveBelow: 0, consecutiveHolds: 0, nextPrescription: { sets: 6, reps: 8, loadKg: 80, rir: 5 } } });
     expect(tracked.calibrationSets).toBe(0);
-    expect(tracked).toMatchObject({ sets: 3, reps: 8, rir: 2 });
+    // Séries = allocation du volume ; RIR = profil du stimulus (+ modificateurs) : pas de double application (régression).
+    const cell = env.params['strength.dose.base'].general?.secondary?.compound_high_load;
+    expect(tracked).toMatchObject({ sets: cell?.sets.min, reps: 8, rir: cell?.rir });
   });
 
   it('aucun RIR universel : le RIR dépend du stimulus, du rôle et de la classe d’exercice (lu dans le ruleset)', () => {
