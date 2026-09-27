@@ -13,7 +13,7 @@
   "thresholds": { "high": 90, "low": 75, "break": null },
   "tempDirName": ".stryker-tmp",
   "timeoutMS": 60000,
-  "concurrency": 3,
+  "concurrency": 4,
   "plugins": [],
   "commandRunner": { "command": "pnpm exec vitest run --config vitest.mutation.strength.config.ts --reporter=dot" },
   "coverageAnalysis": "off",
