@@ -4,7 +4,9 @@
  * emplacements REQUIS ne dépendent que de l'archétype, de l'objectif et de l'historique (propriété testée).
  */
 import { zSessionArchetype } from '@hybridsport/domain';
-import type { SessionArchetype, SlotRequirement } from '@hybridsport/domain';
+import type { ReasonCode, SessionArchetype, SlotRequirement } from '@hybridsport/domain';
+import { archetypeIssues, slotAccepts } from '@hybridsport/engine';
+import type { LoadedCatalog } from '@hybridsport/engine';
 import { ROLES } from './params.js';
 import type { StrengthParams, StrengthArchetype, ArchetypeSlotDef } from './params.js';
 import type { StrengthGoalRef } from './context.js';
@@ -46,10 +48,10 @@ export function toSessionArchetype(a: StrengthArchetype, params: StrengthParams)
 
 /**
  * Emplacements requis et optionnels. Groupe de choix (ex. principal genou OU hanche) : le membre qui porte
- * une ANCRE déclarée par l'intention (addendum V1.1 §3), puis le membre dont le besoin a été le MOINS exposé récemment (alternance), puis le plus prioritaire pour l'OBJECTIF, puis
+ * une ANCRE déclarée par l'intention (addendum V1.1 §3), parmi les membres faisables, puis le membre dont le besoin a été le MOINS exposé récemment (alternance), puis le plus prioritaire pour l'OBJECTIF, puis
  * l'identifiant. Le stimulus n'intervient jamais dans ce choix.
  */
-export function resolveSlots(a: StrengthArchetype, params: StrengthParams, goal: string, stimulus: string, recentNeedExposure: (need: string) => number, anchored: (slotId: string) => boolean = () => false): ResolvedSlots {
+export function resolveSlots(a: StrengthArchetype, params: StrengthParams, goal: string, stimulus: string, recentNeedExposure: (need: string) => number, anchored: (slotId: string) => boolean = () => false, feasible: (slot: ArchetypeSlotDef) => boolean = () => true): ResolvedSlots {
   const needs = params['strength.needs'];
   const priority = params['strength.goals'][goal]?.needPriority ?? [];
   const optionalOrder = params['strength.stimuli'][stimulus]?.optionalOrder ?? [];
@@ -67,7 +69,11 @@ export function resolveSlots(a: StrengthArchetype, params: StrengthParams, goal:
     for (const members of ordered) {
       // Membres pertinents pour l'objectif s'il y en a (ex. soutien course : pas de principal genou si l'objectif ne le prévoit pas).
       const relevant = members.filter((m) => priority.includes(m.need));
-      const pool = relevant.length > 0 ? relevant : members;
+      const scoped = relevant.length > 0 ? relevant : members;
+      // Membres FAISABLES (au moins un candidat avec le matériel et les restrictions) s'il y en a : un groupe
+      // de choix ne choisit jamais un membre impossible quand un autre membre est réalisable.
+      const doable = scoped.filter(feasible);
+      const pool = doable.length > 0 ? doable : scoped;
       const chosen = [...pool].sort((x, y) => Number(anchored(y.id)) - Number(anchored(x.id)) || Number(used.has(x.need)) - Number(used.has(y.need)) || recentNeedExposure(x.need) - recentNeedExposure(y.need) || rank(priority, x.need) - rank(priority, y.need) || (x.id < y.id ? -1 : 1))[0];
       if (chosen) { out.push(chosen); used.add(chosen.need); }
     }
@@ -81,4 +87,29 @@ export function resolveSlots(a: StrengthArchetype, params: StrengthParams, goal:
   const optional = pickFromGroups(a.slots.filter((s) => s.status === 'optional'))
     .sort((x, y) => Number(requiredNeeds.has(x.need)) - Number(requiredNeeds.has(y.need)) || rank(optionalOrder, x.need) - rank(optionalOrder, y.need) || rank(priority, x.need) - rank(priority, y.need) || (x.id < y.id ? -1 : 1));
   return { required: required.map(inst), optional: optional.map(inst) };
+}
+
+/**
+ * Couverture d'un archétype strength pour ses préréglages déclarés faisables. Le contrôle CC1 du CORE
+ * raisonne emplacement par emplacement ; un GROUPE DE CHOIX strength (ex. tirage vertical OU horizontal)
+ * est couvert dès qu'UN membre a un candidat ; seuls les emplacements REQUIS doivent l'être. Les autres contrôles du CORE (leviers, structure) restent
+ * appliqués tels quels.
+ */
+export function strengthArchetypeIssues(a: StrengthArchetype, params: StrengthParams, catalog: LoadedCatalog): { core: ReasonCode[]; uncoveredGroups: string[] } {
+  const needs = params['strength.needs'];
+  const presets = catalog.document.presets ?? [];
+  const coverageProblem = /sans aucun candidat pour le preset/;
+  const core = archetypeIssues(toSessionArchetype(a, params), catalog).filter((r) => !coverageProblem.test(String(r.params.problem)));
+  const groups = new Map<string, ArchetypeSlotDef[]>();
+  // Un emplacement OPTIONNEL sans candidat est simplement omis (SELECT.SLOT_OMITTED) : seuls les requis doivent être couverts.
+  for (const s of a.slots.filter((x) => x.status === 'required')) groups.set(s.choiceGroup ?? `slot:${s.id}`, [...(groups.get(s.choiceGroup ?? `slot:${s.id}`) ?? []), s]);
+  const uncoveredGroups: string[] = [];
+  for (const presetId of a.feasiblePresets) {
+    const equipment = new Set(presets.find((p) => p.id === presetId)?.equipment ?? []);
+    for (const [g, members] of [...groups].sort(([x], [y]) => (x < y ? -1 : 1))) {
+      const covered = members.some((m) => catalog.exercises().some((e) => e.status === 'active' && e.disciplines.includes('strength') && slotAccepts(e, needs[m.need]?.requirement ?? {}, catalog) && catalog.isFeasibleWith(e, equipment)));
+      if (!covered) uncoveredGroups.push(`${presetId}:${g}`);
+    }
+  }
+  return { core, uncoveredGroups };
 }

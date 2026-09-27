@@ -33,6 +33,7 @@ export function roundDownToStep(kg: number, step: number): number {
 export const median = (xs: readonly number[]): number | undefined => {
   if (xs.length === 0) return undefined;
   const s = [...xs].sort((a, b) => a - b);
+  // technical-constant: milieu de l'effectif (médiane)
   const mid = Math.floor(s.length / 2);
   // technical-constant: médiane d'un effectif pair = moyenne des deux valeurs centrales
   return s.length % 2 === 1 ? s[mid] : ((s[mid - 1] ?? 0) + (s[mid] ?? 0)) / 2;

@@ -4,10 +4,10 @@
  */
 import { asISODateTime } from '@hybridsport/domain';
 import type { FingerprintHistoryEntry, Level, SessionIntentInput } from '@hybridsport/domain';
-import { ENGINE_VERSION, loadCatalog, loadRuleset, runSportSession } from '@hybridsport/engine';
+import { ENGINE_VERSION, loadCatalog, loadRuleset, runSportSession, SeededRng } from '@hybridsport/engine';
 import type { CoreProfile, CoreState, EngineContext, LoadedCatalog, LoadedRuleset, SportEngineInput } from '@hybridsport/engine';
-import { StrengthEngine, parseStrengthContext } from '../../src/index.js';
-import type { StrengthContext, StrengthContextInput } from '../../src/index.js';
+import { buildEnv, findArchetype, goalKey, loweredStructures, parseStrengthContext, readStrengthParams, StrengthEngine } from '../../src/index.js';
+import type { Env, StrengthContext, StrengthContextInput } from '../../src/index.js';
 import { presetEquipment, strengthCatalogDocument } from './catalog.js';
 import { strengthRulesetDocument } from './ruleset.js';
 
@@ -84,5 +84,27 @@ export function engineInput(s: Scenario): SportEngineInput<StrengthContext> {
     catalog: c.catalog, ruleset: c.ruleset, history: s.history ?? [],
     context: { seed: `${c.seed}/engine/${StrengthEngine.id}`, now: c.now, engineVersion: c.engineVersion },
     discipline: parsed.context,
+  };
+}
+
+/** Environnement de décision tel que le construit `proposeStrength` (tests unitaires des étapes). */
+export function envFor(s: Scenario): Env {
+  const input = engineInput(s);
+  const params = readStrengthParams(input.ruleset).values;
+  const archetype = findArchetype(params, input.intent.archetypeId);
+  if (!archetype) throw new Error(input.intent.archetypeId);
+  const goal = input.discipline.goal.primary;
+  return buildEnv(input, params, archetype, goal, goalKey(goal), loweredStructures(input, params).lowered, SeededRng.fromSeed(input.context.seed));
+}
+
+/** Scénario de base pour les tests unitaires (surchargé champ par champ). */
+export function scenario(o: { level?: Level; preset?: string; archetype?: string; stimulus?: string; minutes?: number; context?: Partial<StrengthContextInput>; intent?: Partial<SessionIntentInput>; profile?: Partial<CoreProfile>; seed?: string; state?: CoreState; history?: readonly FingerprintHistoryEntry[] } = {}): Scenario {
+  return {
+    profile: profile(o.level ?? 'intermediate', o.preset ?? 'preset.full_gym', o.profile ?? {}),
+    intent: intent(o.archetype ?? 'str_full_body', o.stimulus ?? 'strength_general', o.minutes ?? 60, o.intent ?? {}),
+    context: strengthContext(o.context ?? {}),
+    seed: o.seed ?? 'unit',
+    ...(o.state ? { state: o.state } : {}),
+    ...(o.history ? { history: o.history } : {}),
   };
 }

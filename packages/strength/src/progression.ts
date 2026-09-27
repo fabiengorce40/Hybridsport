@@ -167,6 +167,7 @@ export function createTrack(input: {
   const lastLoad = [...input.performed].reverse().find((s) => s.loadKg !== undefined && s.loadKg > 0)?.loadKg;
   const e1rm = e1rmOf(input.performed, params);
   const rir = first ? targetRir(first) : undefined;
+  // technical-constant: longueur de la date ISO AAAA-MM-JJ
   const trackId = `track.${input.archetypeId}.${input.slotId}.${input.exercise.id}.${input.at.slice(0, 10)}`;
   const track: StrengthTrack = {
     trackId, tier: input.tier, exerciseId: input.exercise.id, archetypeId: input.archetypeId, slotId: input.slotId, model: input.model,

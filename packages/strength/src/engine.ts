@@ -50,6 +50,8 @@ interface Built {
   readonly markers: Record<string, number>;
   readonly volumeByItem: Record<string, number>;
   readonly anchorsUsed: readonly string[];
+  /** Emplacements résolus pour CETTE séance (requis + optionnels) : base du critère B1. */
+  readonly slotIds: readonly string[];
 }
 
 class NoProposal extends Error {
@@ -96,11 +98,13 @@ function pickForSlot(slot: SlotInstance, env: Env, soFar: SessionSoFar, usedFami
   else if (anchor && chosen.exercise.id !== anchor.exerciseId) {
     // Ancre temporairement impossible : substitution PONCTUELLE par fidélité (classe d'équivalence, famille, emplacement).
     const a = env.catalog.exercise(anchor.exerciseId);
+    // technical-constant: rangs ordinaux de fidélité (0 = même classe d'équivalence, 1 = même famille, 2 = même emplacement)
     const tier = (e: Exercise): number => (a && e.equivalenceClass === a.equivalenceClass ? 0 : a && e.family === a.family ? 1 : 2);
     const best = [...ranked].sort((x, y) => tier(x.exercise) - tier(y.exercise))[0];
     if (best) {
       chosen = best; substitutedFrom = anchor.exerciseId;
       const t = tier(best.exercise);
+      // technical-constant: rang ordinal « même emplacement » (fidélité basse)
       reasons.push(t < 2
         ? strengthReasons.emit('SELECT.SUBSTITUTION', { from: anchor.exerciseId, to: best.exercise.id, fidelity: t === 0 ? 'high' : 'medium' })
         : strengthReasons.emit('SELECT.SUBSTITUTION_LOW_FIDELITY', { from: anchor.exerciseId, to: best.exercise.id }));
@@ -200,7 +204,8 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
     if (!req) return 0;
     return ctx.recentExposures.filter((x) => { const e = env.catalog.exercise(x.exerciseId); return e !== undefined && firstFailingFilter(e, { def: { id: need, blockId: '', need, role: 'accessory', status: 'optional', count: { min: 1, max: 1 }, anchorable: false, trackable: false }, requirement: req }, env, { technicalCount: 0 }) !== 'F2_slot'; }).length;
   };
-  const slots = resolveSlots(env.archetype, params, env.goalKey, env.stimulus, recentNeed, (id) => env.anchorBySlot.has(id));
+  const feasible = (def: SlotInstance['def']): boolean => slotCandidatesFor({ def, requirement: params['strength.needs'][def.need]?.requirement ?? {} }, env, { technicalCount: 0 }).candidates.length > 0;
+  const slots = resolveSlots(env.archetype, params, env.goalKey, env.stimulus, recentNeed, (id) => env.anchorBySlot.has(id), feasible);
   const dropped = new Set([...env.lowered.keys()].flatMap((s) => params['strength.interference'].perStructure[s]?.dropOptionalNeeds ?? []));
 
   const picks: Pick[] = [];
@@ -238,7 +243,7 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
   const duration = readDurationParams(input.ruleset);
   const profile = readToleranceProfile(input.ruleset, env.archetype.toleranceProfile);
 
-  const assemble = (list: readonly Pick[], timePressure: boolean, trace: ReasonCode[] | undefined): Omit<Built, 'reasons'> & { p90: number; upper: number } => {
+  const assemble = (list: readonly Pick[], timePressure: boolean, trace: ReasonCode[] | undefined): Omit<Built, 'reasons' | 'slotIds'> & { p90: number; upper: number } => {
     const itemsByBlock = new Map<string, SessionItem[]>();
     const markers: Record<string, number> = {};
     const volumeByItem: Record<string, number> = {};
@@ -357,7 +362,7 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
       if (t && total < t.floor && (planned[g] ?? 0) > 0) reasons.push(strengthReasons.emit('PLAN.VOLUME_IMBALANCE_WEEK', { group: g, planned: total, floor: t.floor }));
     }
   }
-  return { session: final.session, picks: final.picks, reasons: [...reasons, ...trace], p50: final.p50, markers: final.markers, volumeByItem: final.volumeByItem, anchorsUsed: final.anchorsUsed };
+  return { session: final.session, picks: final.picks, reasons: [...reasons, ...trace], p50: final.p50, markers: final.markers, volumeByItem: final.volumeByItem, anchorsUsed: final.anchorsUsed, slotIds: [...slots.required, ...slots.optional].map((s) => s.def.id) };
 }
 
 /** Borne technique du plafond L4 : au plus (séries max du profil) réductions par exercice. */
@@ -372,8 +377,7 @@ function asProposalReasons(rs: readonly ReasonCode[]): SportEngineProposalInput[
 
 /** Vecteur de la couche B, du point de vue du moteur (le CORE y applique ses propres pénalités). */
 function optimization(b: Built, env: Env, input: Input): SportEngineProposalInput['optimization'] {
-  const slots = resolveSlots(env.archetype, env.params, env.goalKey, env.stimulus, () => 0, (id) => env.anchorBySlot.has(id));
-  const needs = [...slots.required, ...slots.optional].map((s) => s.def.id);
+  const needs = b.slotIds;
   const covered = new Set(b.picks.map((p) => p.slot.def.id));
   const declaredAnchors = env.anchorBySlot.size;
   const prefs = input.discipline.preferences;

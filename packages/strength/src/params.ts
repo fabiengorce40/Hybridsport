@@ -25,6 +25,7 @@ const nonNeg = z.number().nonnegative();
 const pos = z.number().positive();
 const int = z.number().int();
 const fraction = z.number().positive().max(1);
+// technical-constant: échelle ordinale 0–3 du catalogue (contrat de schéma)
 const ordinal = z.number().int().min(0).max(3);
 const range = (t: z.ZodNumber) => z.object({ min: t, max: t }).strict().refine((r) => r.min <= r.max, 'min ≤ max');
 const byLevel = <T extends z.ZodType>(t: T) => z.record(z.enum(LEVELS), t);
