@@ -1,0 +1,3 @@
+primary    free_weight=36
+secondary  bodyweight=12  cable=16  free_weight=12  machine=8
+support    bodyweight=4  cable=33  free_weight=24  machine=47
