@@ -27,7 +27,7 @@ function nonSets(p: Exclude<SessionItem['prescription'], { type: 'sets' }>): str
   }
 }
 
-export function renderSession(session: SessionDraft, reasons: readonly ReasonCode[], p50S?: number): string {
+export function renderSession(session: SessionDraft, reasons: readonly ReasonCode[], p50S?: number, roleOf: (slotId: string | undefined) => string | undefined = () => undefined): string {
   const why = new Map<string, string>();
   for (const r of reasons) if (r.code === 'SELECT.EXERCISE.CHOSEN') why.set(String(r.params.exerciseId), String(r.params.decidingCriterion));
   const lines: string[] = [];
@@ -46,7 +46,7 @@ export function renderSession(session: SessionDraft, reasons: readonly ReasonCod
         else groups.push(`1 × ${label}`);
       }
       const refs = it.refs;
-      const tags = [refs?.slotId, refs?.anchor ? `ancre:${refs.anchor}` : undefined, refs?.prescriptionSource, refs?.substitutedFrom ? `remplace ${refs.substitutedFrom}` : undefined].filter(Boolean).join(' · ');
+      const tags = [refs?.slotId, roleOf(refs?.slotId) ? `rôle ${roleOf(refs?.slotId) ?? ''}` : undefined, refs?.anchor ? `ancre:${refs.anchor}` : undefined, refs?.progressionTrackId ? `track ${refs.progressionTrackId}` : undefined, refs?.prescriptionSource, refs?.substitutedFrom ? `remplace ${refs.substitutedFrom}` : undefined].filter(Boolean).join(' · ');
       lines.push(`    ${it.exerciseId}  (${tags}) — choix : ${why.get(it.exerciseId) ?? '—'}`);
       if (ramp.length > 0) lines.push(`      montée : ${ramp.map((s) => `${reps(s.reps)} @ ${intensity(s)}`).join(' → ')}`);
       for (const g of groups) lines.push(`      ${g}`);

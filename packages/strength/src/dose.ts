@@ -56,7 +56,9 @@ export function computeDose(e: Exercise, env: Env, opts: DoseOptions): Dose {
   // s'appliqueraient deux fois, séance après séance).
   let sets = opts.allocatedSets ?? cell.sets.min;
   const baseRir = cell.rir;
-  const reps: RepTarget = next?.reps ?? (opts.doubleProgression ? { min: cell.reps.min, max: cell.reps.max } : m.repChoice === 'low' ? cell.reps.min : cell.reps.max);
+  // Répétitions : prescription de la track, sinon SA plage (double progression), sinon le profil.
+  const trackRange = opts.track?.repRange;
+  const reps: RepTarget = next?.reps ?? (opts.doubleProgression ? (trackRange ? { min: trackRange.min, max: trackRange.max } : { min: cell.reps.min, max: cell.reps.max }) : m.repChoice === 'low' ? cell.reps.min : cell.reps.max);
 
   // Modificateurs : chacun est tracé ; la politique de conflit (ruleset) combine les deltas.
   const deltas: { modifier: string; setsDelta: number; rirDelta: number }[] = [];

@@ -1,27 +1,32 @@
 # Avancé, 4 séances / semaine, 75 min, force + hypertrophie (séance bas du corps lourde)
-résultat : ok · validation : VALID · durée : SHORTER_ACCEPTED
+contexte : niveau advanced · objectif {"primary":{"goal":"strength"},"secondary":{"goal":"hypertrophy"}} · archétype str_lower · stimulus strength_heavy · phase intensification
+temps : disponible 75 min · cible 69 min · matériel : barbell, plates, rack, bench, dumbbells, kettlebells, cable, leg_press, chest_press_machine, leg_curl_machine, row_machine, pullup_bar, bands, box, rower, assault_bike, treadmill, wall_ball, hack_squat, leg_extension_machine, calf_machine, hip_thrust_machine, shoulder_press_machine, pec_deck, lateral_raise_machine
+semaine : connue · voisines : aucune
+historique : 4 exposition(s) · tracks : track.squat=ex.back_squat@lo.main_knee, track.rdl=ex.romanian_deadlift@lo.sec_hip · ancres déclarées : track.squat, track.rdl
+résultat : ok · validation : VALID · durée : SHORTER_ACCEPTED · p50 59 min · p90 67 min
   [warmup · support]
     ex.lower_mobility_flow  (mobility) — mobilité 5 min
   [strength · primary]
-    ex.back_squat  (lo.main_knee · ancre:declared · base_profile) — choix : anchor
+    ex.back_squat  (lo.main_knee · rôle primary · ancre:declared · track track.squat · track) — choix : anchor
       montée : 8 @ 55 kg → 5 @ 77.5 kg → 3 @ 97.5 kg → 1 @ 120 kg
       1 × top_set 3 · 142.5 kg (87 % e1RM) · RIR 2 · repos 195 s
       2 × backoff 3 · 127.5 kg · RIR 2 · repos 195 s
   [strength · secondary]
-    ex.romanian_deadlift  (lo.sec_hip · ancre:declared · base_profile) — choix : anchor
+    ex.romanian_deadlift  (lo.sec_hip · rôle secondary · ancre:declared · track track.rdl · base_profile) — choix : anchor
       montée : 8 @ 47.5 kg → 5 @ 70 kg → 3 @ 95 kg
-      3 × 5–8 · 120 kg (75 % e1RM) · RIR 2 · repos 150 s
+      3 × 6–8 · 120 kg (75 % e1RM) · RIR 2 · repos 150 s
   [accessory · support]
-    ex.bulgarian_split_squat  (lo.single_leg · calibration) — choix : goal_relevance
+    ex.bulgarian_split_squat  (lo.single_leg · rôle accessory · calibration) — choix : goal_relevance
       2 × 6–10 · RIR 3 · repos 105 s
-    ex.machine_calf_raise  (lo.iso_lower · calibration) — choix : volume_fit
+    ex.machine_calf_raise  (lo.iso_lower · rôle accessory · calibration) — choix : volume_fit
       2 × 10–15 · RIR 3 · repos 60 s
       1 × 10–15 · RIR 1 · repos 60 s
-    ex.cable_pallof_press  (lo.trunk · calibration) — choix : load_adequacy
+    ex.cable_pallof_press  (lo.trunk · rôle accessory · calibration) — choix : load_adequacy
       2 × 10–15 · RIR 3 · repos 60 s
       1 × 10–15 · RIR 1 · repos 60 s
-    ex.leg_curl  (lo.iso_lower · history) — choix : goal_relevance
+    ex.leg_curl  (lo.iso_lower · rôle accessory · history) — choix : goal_relevance
       2 × 10–15 · 50 kg · RIR 1 · repos 60 s
   [cooldown · support]
     ex.lower_mobility_flow  (mobility) — mobilité 3 min
-  Durée estimée (p50) : 59 min
+exposition musculaire (séries difficiles E1, secondaire × 0.5) : calves 3 · core 6 · glutes 8 · hamstrings 5 · quads 5
+omissions / adaptations : aucune

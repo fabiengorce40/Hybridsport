@@ -1,27 +1,33 @@
 # Intermédiaire, 4 séances / semaine, 60 min, salle complète, hypertrophie (séance haut du corps)
-résultat : ok · validation : VALID · durée : FITS
+contexte : niveau intermediate · objectif {"primary":{"goal":"hypertrophy"}} · archétype str_upper · stimulus strength_volume · phase accumulation
+temps : disponible 60 min · cible 54 min · matériel : barbell, plates, rack, bench, dumbbells, kettlebells, cable, leg_press, chest_press_machine, leg_curl_machine, row_machine, pullup_bar, bands, box, rower, assault_bike, treadmill, wall_ball, hack_squat, leg_extension_machine, calf_machine, hip_thrust_machine, shoulder_press_machine, pec_deck, lateral_raise_machine
+semaine : connue · voisines : aucune
+historique : 3 exposition(s) · tracks : aucune · ancres déclarées : aucune
+résultat : ok · validation : VALID · durée : FITS · p50 51 min · p90 59 min
   [warmup · support]
     ex.shoulder_mobility_flow  (mobility) — mobilité 5 min
   [strength · primary]
-    ex.barbell_ohp  (up.main_push_v · ancre:candidate · calibration) — choix : role_fit
+    ex.barbell_ohp  (up.main_push_v · rôle primary · ancre:candidate · calibration) — choix : role_fit
       montée : 8 @ RPE 3 → 5 @ RPE 5 → 3 @ RPE 7
       2 × 6 · RIR 3 · repos 150 s
       1 × 6 · RIR 2 · repos 150 s
   [strength · secondary]
-    ex.seated_cable_row  (up.pull_h · ancre:candidate · calibration) — choix : seed_tiebreak
+    ex.seated_cable_row  (up.pull_h · rôle secondary · ancre:candidate · calibration) — choix : seed_tiebreak
       2 × 8–12 · RIR 3 · repos 105 s
       1 × 8–12 · RIR 2 · repos 105 s
   [accessory · support]
-    ex.bench_press  (up.push_2h · history) — choix : variant
+    ex.bench_press  (up.push_2h · rôle accessory · history) — choix : variant
       2 × 8–12 · 70 kg · RIR 2 · repos 90 s
-    ex.lat_pulldown  (up.pull_2v · history) — choix : role_fit
+    ex.lat_pulldown  (up.pull_2v · rôle accessory · history) — choix : role_fit
       2 × 8–12 · 55 kg · RIR 2 · repos 90 s
-    ex.machine_lateral_raise  (up.iso_upper · calibration) — choix : seed_tiebreak
+    ex.machine_lateral_raise  (up.iso_upper · rôle accessory · calibration) — choix : seed_tiebreak
       2 × 12–20 · RIR 3 · repos 60 s
       1 × 12–20 · RIR 1 · repos 60 s
-    ex.pec_deck  (up.iso_upper · calibration) — choix : volume_fit
+    ex.pec_deck  (up.iso_upper · rôle accessory · calibration) — choix : volume_fit
       2 × 12–20 · RIR 3 · repos 60 s
       1 × 12–20 · RIR 1 · repos 60 s
   [cooldown · support]
     ex.shoulder_mobility_flow  (mobility) — mobilité 3 min
-  Durée estimée (p50) : 51 min
+exposition musculaire (séries difficiles E1, secondaire × 0.5) : arms 8.5 · back 5 · chest 5 · core 1.5 · shoulders 10
+omissions / adaptations : 
+  - SELECT.SLOT_OMITTED slot=up.trunk cause=duration

@@ -10,6 +10,8 @@ const N = 'number' as const;
 const L = 'string[]' as const;
 
 export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
+  { code: 'PLAN.ANCHOR_CHOICE_GROUP_CONFLICT', categories: ['technical'], params: { group: S, trackIds: L }, audience: 'internal', severity: 'error' },
+  { code: 'PLAN.ANCHOR_NOT_DECLARABLE', categories: ['technical'], params: { trackId: S, cause: S }, audience: 'internal', severity: 'error' },
   { code: 'SELECT.EXERCISE.CHOSEN', categories: ['optimization'], params: { exerciseId: S, slot: S, decidingCriterion: S }, audience: 'internal', severity: 'info' },
   { code: 'SELECT.FILTERED', categories: ['information'], params: { slot: S, filter: S, count: N }, audience: 'internal', severity: 'info' },
   { code: 'SELECT.NO_CANDIDATE_FOR_SLOT', categories: ['feasibility'], params: { slot: S, need: S }, audience: 'user', severity: 'error' },
@@ -18,7 +20,7 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'SELECT.PATTERN_FALLBACK', categories: ['adaptation'], params: { slot: S, fallbackNeed: S }, audience: 'user', severity: 'warning' },
   { code: 'SELECT.CONTEXT_COMPROMISE', categories: ['business_soft'], params: { slot: S, structure: S }, audience: 'internal', severity: 'warning' },
   { code: 'SELECT.SLOT_OMITTED', categories: ['optimization'], params: { slot: S, cause: S }, audience: 'internal', severity: 'info' },
-  { code: 'DOSE.LOAD.FROM_E1RM', categories: ['information'], params: { exerciseId: S, fraction: N, confidence: S }, audience: 'internal', severity: 'info' },
+  { code: 'DOSE.LOAD.FROM_E1RM', categories: ['information'], params: { exerciseId: S, fraction: N, confidence: S, e1rmKg: N, reference: S, unroundedKg: N, stepKg: N }, audience: 'internal', severity: 'info' },
   { code: 'DOSE.LOAD.FROM_HISTORY', categories: ['information'], params: { exerciseId: S, confidence: S }, audience: 'internal', severity: 'info' },
   { code: 'DOSE.LOAD.RPE_BASED_LOW_CONFIDENCE', categories: ['information'], params: { exerciseId: S }, audience: 'user', severity: 'info' },
   { code: 'DOSE.LOAD.CALIBRATION', categories: ['information'], params: { exerciseId: S }, audience: 'user', severity: 'info' },
@@ -27,7 +29,7 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'DOSE.VOLUME_ALLOCATED', categories: ['optimization'], params: { exerciseId: S, sets: N, group: S }, audience: 'internal', severity: 'info' },
   { code: 'DOSE.SESSION_CAP_APPLIED', categories: ['safety'], params: { group: S, cap: N }, audience: 'internal', severity: 'notice' },
   { code: 'DOSE.RAMPUP', categories: ['information'], params: { exerciseId: S, steps: N, knowledge: S }, audience: 'internal', severity: 'info' },
-  { code: 'DOSE.TOP_SET', categories: ['information'], params: { exerciseId: S }, audience: 'internal', severity: 'info' },
+  { code: 'DOSE.TOP_SET', categories: ['information'], params: { exerciseId: S, topKg: N, backoffFraction: N, backoffUnroundedKg: N, backoffKg: N, backoffSets: N }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.ADVANCED', categories: ['adaptation'], params: { trackId: S, variable: S }, audience: 'user', severity: 'info' },
   { code: 'PROGRESSION.HELD', categories: ['adaptation'], params: { trackId: S, cause: S }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.REGRESSED', categories: ['adaptation'], params: { trackId: S }, audience: 'user', severity: 'notice' },

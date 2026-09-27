@@ -28,6 +28,7 @@ import { groupsOf, plannedHardSets, remainingShare, volumeFit, weeklyTarget } fr
 import { loweredStructures } from './interference.js';
 import { strengthReasons } from './codes.js';
 import { STRENGTH_CHECKS } from './checks.js';
+import { validateStrengthIntent } from './intent-contract.js';
 import { roundDownToStep } from './util.js';
 
 export const STRENGTH_ENGINE_ID = 'engine.strength';
@@ -182,7 +183,7 @@ function prescribe(pick: Pick, env: Env, timePressure: boolean, allocated: numbe
     working.splice(0, working.length,
       { kind: 'top_set', reps, restAfterS: dose.restS, intensity: decision.intensity },
       ...Array.from({ length: backoffs }, (): SetPrescription => ({ kind: 'backoff', reps, restAfterS: dose.restS, intensity: { mode: 'load', kg: backKg, certainty: 'prescribed', effort: { rir: dose.rir } } })));
-    reasons.push(strengthReasons.emit('DOSE.TOP_SET', { exerciseId: e.id }));
+    reasons.push(strengthReasons.emit('DOSE.TOP_SET', { exerciseId: e.id, topKg: decision.workingKg, backoffFraction: ts.backoffLoadFraction, backoffUnroundedKg: decision.workingKg * ts.backoffLoadFraction, backoffKg: backKg, backoffSets: backoffs }));
   }
   const sets = [...ramp, ...working];
   return { prescription: { type: 'sets', sets }, working: workingOf(sets), hasRampup: ramp.length > 0, ...(decision.workingKg !== undefined ? { workingKg: decision.workingKg } : {}), source: pick.track?.nextPrescription ? 'track' : decision.source, reps };
@@ -446,6 +447,10 @@ export function proposeStrength(input: Input): ProposeResult {
     status: 'no_valid_proposal', reasons: asProposalReasons(reasons), blockingNeeds: [...blockingNeeds], missingData: [...missingData],
     provenance: { engineId: STRENGTH_ENGINE_ID, engineVersion: STRENGTH_ENGINE_VERSION, rulesetVersion: input.ruleset.version, catalogVersion: input.catalog.version, seed: input.context.seed },
   });
+  // Défense en profondeur : le CORE vérifie le contrat planificateur avant propose (CORE-EXT-4). Un appel
+  // direct qui le viole est un défaut technique, jamais l'occasion d'un choix arbitraire entre ancres.
+  const contract = validateStrengthIntent({ intent: input.intent, discipline: input.discipline, ruleset: input.ruleset, catalog: input.catalog });
+  if (contract.length > 0) throw new Error(`contrat planificateur violé : ${contract.map((r) => r.code).join(', ')}`);
   const archetype = findArchetype(params, input.intent.archetypeId);
   const goal = input.discipline.goal.primary;
   const gk = goalKeyOf(goal);
@@ -487,4 +492,5 @@ export const StrengthEngine: SportEngine<StrengthContext> = {
   parseContext: parseStrengthContext,
   propose: proposeStrength,
   checks: STRENGTH_CHECKS,
+  validateIntent: validateStrengthIntent,
 };

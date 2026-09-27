@@ -70,6 +70,17 @@ export function runSportSession<TContext>(engine: SportEngine<TContext>, request
   }
   if (!parsedContext.ok) return earlyError(ctx, 'discipline_context', 'INVALID_INPUT', [...parsedContext.reasons]);
 
+  // CORE-EXT-4 : contrat planificateur de la discipline, vérifié avant toute génération.
+  if (engine.validateIntent) {
+    let contract: readonly ReasonCode[];
+    try {
+      contract = engine.validateIntent({ intent, discipline: parsedContext.context, ruleset: ctx.ruleset, catalog: ctx.catalog });
+    } catch (e) {
+      return earlyError(ctx, 'intent_contract', 'INVALID_INPUT', [structureProblem(`contrat d'intention en échec : ${e instanceof Error ? e.message : String(e)}`, engine.id)]);
+    }
+    if (contract.length > 0) return earlyError(ctx, 'intent_contract', 'INVALID_INPUT', [...contract]);
+  }
+
   const input: SportEngineInput<TContext> = {
     intent, profile: request.profile, state: request.state, constraints, catalog: ctx.catalog, ruleset: ctx.ruleset, history: request.history,
     context: { seed: `${ctx.seed}/engine/${engine.id}`, now: ctx.now, engineVersion: ctx.engineVersion },

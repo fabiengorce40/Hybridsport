@@ -260,3 +260,28 @@ describe('explicabilité : les raisons du moteur de discipline sont tracées par
     expect(steps(runSportSession(fakeEngine(TWO_PROPOSALS), request(), ctx()))).not.toContain('proposal');
   });
 });
+
+describe('CORE-EXT-4 — contrat planificateur de la discipline (validateIntent)', () => {
+  const why = createCoreRegistry().emit('TECHNICAL.UNKNOWN_REFERENCE', { kind: 'track', id: 'track.x' });
+  it('violation ⇒ INVALID_INPUT déterministe avec les raisons du moteur ; propose jamais appelé', () => {
+    const calls: SportEngineInput<FakeContext>[] = [];
+    const engine = { ...fakeEngine(TWO_PROPOSALS, calls), validateIntent: () => [why] };
+    const o = runSportSession(engine, request(), ctx());
+    expect(o.result.status === 'error' && o.result.error.code).toBe('INVALID_INPUT');
+    expect(o.result.status === 'error' && o.result.error.reasons.map((r) => r.code)).toEqual(['TECHNICAL.UNKNOWN_REFERENCE']);
+    expect(steps(o)).toEqual(['intent_contract']);
+    expect(calls).toHaveLength(0);
+  });
+
+  it('contrat respecté ⇒ flux inchangé ; contrat qui lève ⇒ INVALID_INPUT technique', () => {
+    expect(runSportSession({ ...fakeEngine(TWO_PROPOSALS), validateIntent: () => [] }, request(), ctx()).result.status).toBe('ok');
+    const boom = runSportSession({ ...fakeEngine(TWO_PROPOSALS), validateIntent: () => { throw new Error('x'); } }, request(), ctx());
+    expect(boom.result.status === 'error' && boom.result.error.reasons.map((r) => r.code)).toEqual(['TECHNICAL.STRUCTURE_INVALID']);
+  });
+
+  it('le contrat reçoit l’intention et le contexte de discipline DÉJÀ validé', () => {
+    const seen: unknown[] = [];
+    runSportSession({ ...fakeEngine(TWO_PROPOSALS), validateIntent: (i) => { seen.push(i.discipline, i.intent.id); return []; } }, request({ disciplineContext: { note: 'n' } }), ctx());
+    expect(seen).toEqual([{ note: 'n' }, INTENT.id]);
+  });
+});

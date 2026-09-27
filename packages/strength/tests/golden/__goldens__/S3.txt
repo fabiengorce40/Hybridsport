@@ -1,18 +1,26 @@
 # Intermédiaire, 3 musculation + 3 course (10 km) : soutien course, séance clé d’intervalles 20 h après
-résultat : ok · validation : VALID · durée : SHORTER_ACCEPTED
+contexte : niveau intermediate · objectif {"primary":{"goal":"support","supportFor":"running"}} · archétype str_support · stimulus strength_support · phase accumulation
+temps : disponible 45 min · cible 39 min · matériel : barbell, plates, rack, bench, dumbbells, kettlebells, cable, leg_press, chest_press_machine, leg_curl_machine, row_machine, pullup_bar, bands, box, rower, assault_bike, treadmill, wall_ball
+semaine : connue · voisines : running/run_intervals_vo2 key à 20 h {"lower_knee":"high","lower_hip":"moderate","locomotor_impact":"high"}
+historique : 0 exposition(s) · tracks : aucune · ancres déclarées : aucune
+résultat : ok · validation : VALID · durée : SHORTER_ACCEPTED · p50 28 min · p90 31 min
   [warmup · support]
     ex.lower_mobility_flow  (mobility) — mobilité 5 min
   [strength · primary]
-    ex.db_rdl  (sp.main_hip · ancre:candidate · calibration) — choix : role_fit
+    ex.db_rdl  (sp.main_hip · rôle primary · ancre:candidate · calibration) — choix : role_fit
       2 × 5 · RIR 3 · repos 150 s
   [strength · secondary]
-    ex.seated_cable_row  (sp.row · ancre:candidate · calibration) — choix : seed_tiebreak
+    ex.seated_cable_row  (sp.row · rôle secondary · ancre:candidate · calibration) — choix : seed_tiebreak
       2 × 6–10 · RIR 3 · repos 105 s
       1 × 6–10 · RIR 2 · repos 105 s
   [accessory · support]
-    ex.cable_pallof_press  (sp.trunk · calibration) — choix : load_adequacy
+    ex.cable_pallof_press  (sp.trunk · rôle accessory · calibration) — choix : load_adequacy
       2 × 10–15 · RIR 3 · repos 60 s
     ex.farmers_carry  (sp.carry) — 2 × 30 m · repos 60 s
   [cooldown · support]
     ex.lower_mobility_flow  (mobility) — mobilité 3 min
-  Durée estimée (p50) : 28 min
+exposition musculaire (séries difficiles E1, secondaire × 0.5) : arms 1.5 · back 5 · core 4 · glutes 3 · hamstrings 2 · shoulders 1.5
+omissions / adaptations : 
+  - PLAN.STRUCTURE_LOWERED structure=lower_knee cause=neighbor:running:run_intervals_vo2
+  - SELECT.SLOT_OMITTED slot=sp.single_leg cause=interference
+  - SELECT.SLOT_OMITTED slot=sp.iso_lower cause=interference

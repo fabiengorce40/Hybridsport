@@ -1,15 +1,24 @@
 # 30 minutes seulement, salle complète, intermédiaire, objectif général
-résultat : ok · validation : VALID · durée : FITS
+contexte : niveau intermediate · objectif {"primary":{"goal":"general"}} · archétype str_full_body · stimulus strength_general · phase accumulation
+temps : disponible 30 min · cible 24 min · matériel : barbell, plates, rack, bench, dumbbells, kettlebells, cable, leg_press, chest_press_machine, leg_curl_machine, row_machine, pullup_bar, bands, box, rower, assault_bike, treadmill, wall_ball, hack_squat, leg_extension_machine, calf_machine, hip_thrust_machine, shoulder_press_machine, pec_deck, lateral_raise_machine
+semaine : connue · voisines : aucune
+historique : 0 exposition(s) · tracks : aucune · ancres déclarées : aucune
+résultat : ok · validation : VALID · durée : FITS · p50 23 min · p90 26 min
   [warmup · support]
     ex.lower_mobility_flow  (mobility) — mobilité 3 min
   [strength · primary]
-    ex.back_squat  (fb.main_knee · ancre:candidate · calibration) — choix : goal_relevance
+    ex.back_squat  (fb.main_knee · rôle primary · ancre:candidate · calibration) — choix : goal_relevance
       montée : 8 @ RPE 3 → 5 @ RPE 5 → 3 @ RPE 7
       2 × 6 · RIR 3 · repos 90 s
       1 × 6 · RIR 2 · repos 90 s
   [strength · secondary]
-    ex.machine_chest_press  (fb.push_h · ancre:candidate · calibration) — choix : logistics
+    ex.machine_chest_press  (fb.push_h · rôle secondary · ancre:candidate · calibration) — choix : logistics
       2 × 8–12 · RIR 3 · repos 90 s
-    ex.seated_cable_row  (fb.pull_h · ancre:candidate · calibration) — choix : seed_tiebreak
+    ex.seated_cable_row  (fb.pull_h · rôle secondary · ancre:candidate · calibration) — choix : seed_tiebreak
       2 × 8–12 · RIR 3 · repos 90 s
-  Durée estimée (p50) : 23 min
+exposition musculaire (séries difficiles E1, secondaire × 0.5) : arms 3 · back 2 · chest 2 · core 1.5 · glutes 3 · quads 3 · shoulders 2
+omissions / adaptations : 
+  - SELECT.SLOT_OMITTED slot=fb.single_leg cause=duration
+  - SELECT.SLOT_OMITTED slot=fb.iso_upper cause=duration
+  - SELECT.SLOT_OMITTED slot=fb.iso_lower cause=duration
+  - SELECT.SLOT_OMITTED slot=fb.trunk cause=duration

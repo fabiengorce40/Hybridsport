@@ -1,23 +1,30 @@
 # Débutant, 3 séances / semaine, 45 min, haltères + banc, objectif général
-résultat : ok · validation : VALID · durée : FITS
+contexte : niveau beginner · objectif {"primary":{"goal":"general"}} · archétype str_full_body · stimulus strength_general · phase accumulation
+temps : disponible 45 min · cible 39 min · matériel : dumbbells, bench
+semaine : connue · voisines : aucune
+historique : 0 exposition(s) · tracks : aucune · ancres déclarées : aucune
+résultat : ok · validation : VALID · durée : FITS · p50 40 min · p90 45 min
   [warmup · support]
     ex.lower_mobility_flow  (mobility) — mobilité 5 min
   [strength · primary]
-    ex.goblet_squat  (fb.main_knee · ancre:candidate · calibration) — choix : role_fit
+    ex.goblet_squat  (fb.main_knee · rôle primary · ancre:candidate · calibration) — choix : role_fit
       2 × 6 · RIR 4 · repos 120 s
       1 × 6 · RIR 3 · repos 120 s
   [strength · secondary]
-    ex.db_bench_press  (fb.push_h · ancre:candidate · calibration) — choix : goal_relevance
+    ex.db_bench_press  (fb.push_h · rôle secondary · ancre:candidate · calibration) — choix : goal_relevance
       2 × 8 · RIR 4 · repos 105 s
       1 × 8 · RIR 3 · repos 105 s
-    ex.db_row  (fb.pull_h · ancre:candidate · calibration) — choix : only_candidate
+    ex.db_row  (fb.pull_h · rôle secondary · ancre:candidate · calibration) — choix : only_candidate
       2 × 8 · RIR 4 · repos 105 s
       1 × 8 · RIR 3 · repos 105 s
   [accessory · support]
-    ex.bulgarian_split_squat  (fb.single_leg · calibration) — choix : variant
+    ex.bulgarian_split_squat  (fb.single_leg · rôle accessory · calibration) — choix : variant
       2 × 8–12 · RIR 4 · repos 75 s
-    ex.db_calf_raise  (fb.iso_lower · calibration) — choix : only_candidate
+    ex.db_calf_raise  (fb.iso_lower · rôle accessory · calibration) — choix : only_candidate
       2 × 12–15 · RIR 4 · repos 60 s
   [cooldown · support]
     ex.lower_mobility_flow  (mobility) — mobilité 3 min
-  Durée estimée (p50) : 40 min
+exposition musculaire (séries difficiles E1, secondaire × 0.5) : arms 4.5 · back 3 · calves 2 · chest 3 · core 1.5 · glutes 5 · quads 5 · shoulders 1.5
+omissions / adaptations : 
+  - SELECT.SLOT_OMITTED slot=fb.iso_upper cause=duration
+  - SELECT.SLOT_OMITTED slot=fb.trunk cause=duration

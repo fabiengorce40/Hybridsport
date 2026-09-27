@@ -119,9 +119,9 @@ describe('ancres et tracks (étape 7, addendum V1.1)', () => {
     expect(items(ok(run(upperWithAnchor()))).find((it) => it.exerciseId === 'ex.bench_press')?.refs?.anchor).toBe('declared');
   });
 
-  it('les tracks d’un autre archétype, suspendues ou closes, ne s’appliquent pas', () => {
+  it('les tracks d’un autre archétype, suspendues ou closes, non déclarées, ne s’appliquent pas', () => {
     for (const t of [anchorTrack({ archetypeId: 'str_full_body' }), anchorTrack({ status: 'suspended' }), anchorTrack({ status: 'closed' })]) {
-      const s = ok(run(upperWithAnchor({ context: { tracks: [t] } })));
+      const s = ok(run(upperWithAnchor({ declared: false, context: { tracks: [t] } })));
       expect(items(s).every((it) => it.refs?.anchor !== 'declared'), t.status + t.archetypeId).toBe(true);
     }
   });
@@ -201,5 +201,46 @@ describe('durée (étape 15)', () => {
       const slots = items(s).map((it) => it.refs?.slotId ?? '');
       expect(slots.some((x) => x.startsWith('fb.main_'))).toBe(true);
     }
+  });
+});
+
+describe('contrat planificateur (CORE-EXT-4) : ancres déclarées cohérentes, sinon refus déterministe', () => {
+  const hip = (o: Partial<StrengthTrack> = {}): StrengthTrack => anchorTrack({ trackId: 'track.rdl', exerciseId: 'ex.romanian_deadlift', archetypeId: 'str_lower', slotId: 'lo.main_hip', ...o });
+  const knee = (o: Partial<StrengthTrack> = {}): StrengthTrack => anchorTrack({ trackId: 'track.squat', exerciseId: 'ex.back_squat', archetypeId: 'str_lower', slotId: 'lo.main_knee', ...o });
+  const lower = (tracks: StrengthTrack[], declared: string[]) => scenario({
+    archetype: 'str_lower', stimulus: 'strength_heavy', context: { goal: { primary: { goal: 'strength' } }, tracks },
+    intent: { repetitionIntents: declared.map((trackId) => ({ kind: 'progression_anchor' as const, trackId })) },
+  });
+  const refusal = (o: Outcome) => (o.result.status === 'error' ? { code: o.result.error.code, reasons: o.result.error.reasons.map((r) => ({ code: r.code, params: r.params })) } : undefined);
+
+  it('deux ancres du MÊME groupe de choix dans une séance ⇒ INVALID_INPUT, PLAN.ANCHOR_CHOICE_GROUP_CONFLICT, moteur jamais appelé', () => {
+    const o = run(lower([knee(), hip()], ['track.squat', 'track.rdl']));
+    expect(refusal(o)).toEqual({ code: 'INVALID_INPUT', reasons: [{ code: 'PLAN.ANCHOR_CHOICE_GROUP_CONFLICT', params: { group: 'group:main', trackIds: ['track.rdl', 'track.squat'] } }] });
+    expect(o.trace.entries.map((e) => e.step)).toEqual(['intent_contract']);
+    // Refus déterministe : même entrée ⇒ même refus, quel que soit l'ordre de déclaration.
+    expect(refusal(run(lower([hip(), knee()], ['track.rdl', 'track.squat'])))).toEqual(refusal(o));
+  });
+
+  it('une seule ancre par groupe ⇒ acceptée et appliquée ; deux ancres de groupes DIFFÉRENTS ⇒ acceptées', () => {
+    const one = run(lower([knee(), hip()], ['track.squat']));
+    expect(items(ok(one)).find((it) => it.exerciseId === 'ex.back_squat')?.refs?.anchor).toBe('declared');
+    const sec = anchorTrack({ trackId: 'track.rdl2', exerciseId: 'ex.romanian_deadlift', archetypeId: 'str_lower', slotId: 'lo.sec_hip' });
+    const two = run(lower([knee(), sec], ['track.squat', 'track.rdl2']));
+    const decl = items(ok(two)).filter((it) => it.refs?.anchor === 'declared').map((it) => it.refs?.progressionTrackId).sort();
+    expect(decl).toEqual(['track.rdl2', 'track.squat']);
+  });
+
+  it('ancre déclarée inconnue, suspendue, close, d’un autre archétype ou non-ancre ⇒ PLAN.ANCHOR_NOT_DECLARABLE avec la cause', () => {
+    const cases: [StrengthTrack[], string][] = [
+      [[], 'unknown_track'], [[knee({ status: 'suspended' })], 'status_suspended'], [[knee({ status: 'closed' })], 'status_closed'],
+      [[knee({ archetypeId: 'str_full_body', slotId: 'fb.main_knee' })], 'other_archetype'], [[knee({ tier: 'tracked' })], 'not_an_anchor'],
+    ];
+    for (const [tracks, cause] of cases) {
+      expect(refusal(run(lower(tracks, ['track.squat']))), cause).toEqual({ code: 'INVALID_INPUT', reasons: [{ code: 'PLAN.ANCHOR_NOT_DECLARABLE', params: { trackId: 'track.squat', cause } }] });
+    }
+  });
+
+  it('appel direct du moteur hors CORE avec un contrat violé ⇒ défaut technique, jamais un choix arbitraire', () => {
+    expect(() => proposeStrength(engineInput(lower([knee(), hip()], ['track.squat', 'track.rdl'])))).toThrow(/contrat planificateur/);
   });
 });

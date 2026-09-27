@@ -159,7 +159,8 @@ export function decideLoad(e: Exercise, reps: number, rir: number, env: Env, fro
   const own = loadKnowledge(e, env);
   // e1RM LISSÉ de la track (modèle autorégulé, propriété du ProgressionEngine) : il fait foi sur la dernière
   // exposition brute ; la confiance reste celle des données (jamais relevée au-delà de ce qu'elles montrent).
-  const k: LoadKnowledge = trackE1rmKg !== undefined && own.confidence !== 'none' ? { ...own, e1rmKg: trackE1rmKg } : own;
+  const fromTrack = trackE1rmKg !== undefined && own.confidence !== 'none';
+  const k: LoadKnowledge = fromTrack ? { ...own, e1rmKg: trackE1rmKg } : own;
   const reasons: ReasonCode[] = [...k.reasons];
   const round = (kg: number): number | undefined => (step ? Math.max(step.stepKg, roundDownToStep(kg, step.stepKg)) : undefined);
   const cap = (kg: number): { kg: number; capped: boolean } => (step?.maxKg !== undefined && kg > step.maxKg ? { kg: step.maxKg, capped: true } : { kg, capped: false });
@@ -178,8 +179,9 @@ export function decideLoad(e: Exercise, reps: number, rir: number, env: Env, fro
     const c = cap(k.e1rmKg * pct);
     if (c.capped) reasons.push(strengthReasons.emit('DOSE.LOAD.CAP_REACHED', { exerciseId: e.id, maxKg: c.kg }));
     const kg = round(c.kg) ?? c.kg;
-    reasons.push(strengthReasons.emit('DOSE.LOAD.FROM_E1RM', { exerciseId: e.id, fraction: pct, confidence: k.confidence }));
-    return { intensity: { mode: 'percent_of_reference', fraction: pct, reference: 'e1rm', kgRounded: kg, effort }, source: 'base_profile', workingKg: kg, knowledge: 'known', reasons, capped: c.capped };
+    // Traçabilité complète de la charge : référence (track lissée ou mesures), e1RM, fraction, valeur avant arrondi, pas.
+    reasons.push(strengthReasons.emit('DOSE.LOAD.FROM_E1RM', { exerciseId: e.id, fraction: pct, confidence: k.confidence, e1rmKg: k.e1rmKg, reference: fromTrack ? 'track_smoothed' : k.source, unroundedKg: k.e1rmKg * pct, stepKg: step.stepKg }));
+    return { intensity: { mode: 'percent_of_reference', fraction: pct, reference: 'e1rm', kgRounded: kg, effort }, source: fromTrack ? 'track' : 'base_profile', workingKg: kg, knowledge: 'known', reasons, capped: c.capped };
   }
   if ((k.confidence === 'high' || k.confidence === 'medium') && step && (k.e1rmKg !== undefined || k.lastLoadKg !== undefined)) {
     // Accessoire / isolation (double progression) : dernière charge réellement réalisée sur CET exercice.

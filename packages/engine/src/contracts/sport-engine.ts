@@ -72,7 +72,21 @@ export interface SportEngine<TContext = unknown> {
    * son validateur et sa réparation — jamais une auto-validation du moteur.
    */
   readonly checks?: readonly SessionCheck[];
+  /**
+   * CORE-EXT-4 — contrat PLANIFICATEUR propre à la discipline (pur) : l'intention est-elle cohérente avec le
+   * contexte validé (ex. ancres déclarées incompatibles) ? Toute raison renvoyée ⇒ refus INVALID_INPUT
+   * déterministe par le CORE, AVANT `propose` : le moteur ne choisit jamais arbitrairement parmi des
+   * déclarations contradictoires.
+   */
+  validateIntent?(input: IntentContractInput<TContext>): readonly ReasonCode[];
   propose(input: SportEngineInput<TContext>): ProposeResult;
+}
+
+export interface IntentContractInput<TContext> {
+  readonly intent: SportEngineInput<TContext>['intent'];
+  readonly discipline: TContext;
+  readonly ruleset: LoadedRuleset;
+  readonly catalog: LoadedCatalog;
 }
 
 export type ProposalAcceptance =

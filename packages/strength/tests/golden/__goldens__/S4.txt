@@ -1,20 +1,27 @@
 # Intermédiaire, 2 musculation + HYROX : soutien HYROX, séance sled/farmers (grip élevé) 18 h après
-résultat : ok · validation : VALID · durée : SHORTER_ACCEPTED
+contexte : niveau intermediate · objectif {"primary":{"goal":"support","supportFor":"hybrid_race"}} · archétype str_support · stimulus strength_support · phase accumulation
+temps : disponible 50 min · cible 44 min · matériel : barbell, plates, rack, bench, dumbbells, kettlebells, cable, leg_press, chest_press_machine, leg_curl_machine, row_machine, pullup_bar, bands, box, rower, assault_bike, treadmill, wall_ball, hack_squat, leg_extension_machine, calf_machine, hip_thrust_machine, shoulder_press_machine, pec_deck, lateral_raise_machine
+semaine : connue · voisines : hybrid_race/hr_station_strength key à 18 h {"grip":"high","lower_knee":"moderate"}
+historique : 0 exposition(s) · tracks : aucune · ancres déclarées : aucune
+résultat : ok · validation : VALID · durée : SHORTER_ACCEPTED · p50 34 min · p90 38 min
   [warmup · support]
     ex.hip_mobility_flow  (mobility) — mobilité 5 min
   [strength · primary]
-    ex.walking_lunge_db  (sp.main_single · ancre:candidate · calibration) — choix : seed_tiebreak
+    ex.walking_lunge_db  (sp.main_single · rôle primary · ancre:candidate · calibration) — choix : seed_tiebreak
       2 × 5 · RIR 3 · repos 150 s
   [strength · secondary]
-    ex.db_row  (sp.row · ancre:candidate · calibration) — choix : fatigue_fit
+    ex.db_row  (sp.row · rôle secondary · ancre:candidate · calibration) — choix : fatigue_fit
       2 × 6–10 · RIR 3 · repos 105 s
       1 × 6–10 · RIR 2 · repos 105 s
   [accessory · support]
-    ex.db_calf_raise  (sp.iso_lower · calibration) — choix : seed_tiebreak
+    ex.db_calf_raise  (sp.iso_lower · rôle accessory · calibration) — choix : seed_tiebreak
       2 × 10–15 · RIR 3 · repos 60 s
-    ex.cable_pallof_press  (sp.trunk · calibration) — choix : load_adequacy
+    ex.cable_pallof_press  (sp.trunk · rôle accessory · calibration) — choix : load_adequacy
       2 × 10–15 · RIR 3 · repos 60 s
     ex.sandbag_lunge  (sp.single_leg) — 2 × 30 m · repos 60 s
   [cooldown · support]
     ex.hip_mobility_flow  (mobility) — mobilité 3 min
-  Durée estimée (p50) : 34 min
+exposition musculaire (séries difficiles E1, secondaire × 0.5) : arms 1.5 · back 3 · calves 2 · core 3 · glutes 4 · quads 4
+omissions / adaptations : 
+  - PLAN.STRUCTURE_LOWERED structure=grip cause=neighbor:hybrid_race:hr_station_strength
+  - SELECT.SLOT_OMITTED slot=sp.carry cause=interference
