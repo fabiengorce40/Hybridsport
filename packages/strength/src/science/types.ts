@@ -52,10 +52,21 @@ export interface ScienceSource {
   readonly findings: readonly string[];
   /** CONFIRMED : PMID, titre, auteurs et revue concordants ; PARTIAL : au moins un élément non vérifié. */
   readonly identityVerification: 'CONFIRMED' | 'PARTIAL';
-  /** SEARCH_SUMMARY : contenu connu par des résumés de moteur de recherche seulement (ni résumé officiel ni texte intégral lus). */
-  readonly contentVerification: 'SEARCH_SUMMARY' | 'ABSTRACT' | 'FULL_TEXT';
+  /**
+   * Niveau de vérification du CONTENU (jamais promu sans lecture effective) :
+   * IDENTITY_ONLY (aucun résultat extrait) < SEARCH_SUMMARY (résultats connus par des résumés de moteur de
+   * recherche, dont des résumés secondaires) < ABSTRACT_VERIFIED (résumé officiel lu) < FULL_TEXT_VERIFIED.
+   */
+  readonly verificationLevel: VerificationLevel;
+  readonly verifiedOn: string;
   readonly limitations: string;
+  /** Points à vérifier lors de la revue humaine (résumé officiel, puis texte intégral). */
+  readonly pendingHumanReview: readonly string[];
 }
+
+export const VERIFICATION_LEVELS = ['IDENTITY_ONLY', 'SEARCH_SUMMARY', 'ABSTRACT_VERIFIED', 'FULL_TEXT_VERIFIED'] as const;
+export type VerificationLevel = (typeof VERIFICATION_LEVELS)[number];
+export const atLeast = (v: VerificationLevel, min: VerificationLevel): boolean => VERIFICATION_LEVELS.indexOf(v) >= VERIFICATION_LEVELS.indexOf(min);
 
 export interface EvidenceClaim {
   readonly id: string;
@@ -92,6 +103,11 @@ export interface ParameterProvenance {
   /** Comportement du moteur si la preuve reste insuffisante. */
   readonly insufficientEvidenceBehaviour: string;
   readonly claims: readonly EvidenceClaim[];
+  /**
+   * Séparation MÉCANISME / AMPLEUR (phase 4F) : un mécanisme peut être soutenu (selon le contexte) alors que
+   * l'ampleur numérique (bandes horaires, deltas de RIR, seuils) reste une heuristique.
+   */
+  readonly evidenceSplit?: { readonly mechanism: ScientificStatus; readonly magnitude: ScientificStatus; readonly note: string };
   /** Visas formels enregistrés (vide en V1) : seule voie de promotion d'un paramètre G1. */
   readonly signoffs: readonly Signoff[];
 }

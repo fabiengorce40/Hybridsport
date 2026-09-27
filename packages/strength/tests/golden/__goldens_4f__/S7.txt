@@ -1,0 +1,31 @@
+# Machines + poulies + charges libres disponibles, historique biaisé vers les charges libres (hypertrophie, haut du corps)
+contexte : niveau intermediate · objectif {"primary":{"goal":"hypertrophy"}} · archétype str_upper · stimulus strength_volume · phase accumulation
+temps : disponible 60 min · cible 54 min · matériel : barbell, plates, rack, bench, dumbbells, kettlebells, cable, leg_press, chest_press_machine, leg_curl_machine, row_machine, pullup_bar, bands, box, rower, assault_bike, treadmill, wall_ball, hack_squat, leg_extension_machine, calf_machine, hip_thrust_machine, shoulder_press_machine, pec_deck, lateral_raise_machine
+semaine : connue · voisines : aucune
+historique : 6 exposition(s) · tracks : aucune · ancres déclarées : aucune
+résultat : ok · validation : VALID · durée : FITS · p50 50 min · p90 58 min
+  [warmup · support]
+    ex.shoulder_mobility_flow  (mobility) — mobilité 5 min
+  [strength · primary]
+    ex.bench_press  (up.main_push_h · rôle primary · ancre:candidate · history) — choix : role_fit
+      montée : 8 @ 40 % de la charge de travail → 5 @ 60 % de la charge de travail
+      4 × 6 · 85 kg (suggérée) · RIR 2 · repos 150 s
+  [strength · secondary]
+    ex.pull_up  (up.pull_v · rôle secondary · ancre:candidate · calibration) — choix : logistics
+      2 × 8–12 · poids du corps · RIR 3 · repos 105 s
+      1 × 8–12 · poids du corps · RIR 2 · repos 105 s
+  [accessory · support]
+    ex.machine_row  (up.pull_2h · rôle accessory · calibration) — choix : variant
+      2 × 8–12 · RIR 3 · repos 90 s
+      1 × 8–12 · RIR 2 · repos 90 s
+    ex.machine_shoulder_press  (up.push_2v · rôle accessory · calibration) — choix : role_fit
+      2 × 8–12 · RIR 3 · repos 90 s
+    ex.pec_deck  (up.iso_upper · rôle accessory · calibration) — choix : seed_tiebreak
+      2 × 12–20 · RIR 3 · repos 60 s
+      2 × 12–20 · RIR 1 · repos 60 s
+  [cooldown · support]
+    ex.shoulder_mobility_flow  (mobility) — mobilité 3 min
+exposition musculaire (séries difficiles E1, secondaire × 0.5) : arms 10.5 · back 6 · chest 8 · shoulders 6
+omissions / adaptations : 
+  - SELECT.SLOT_OMITTED slot=up.trunk cause=duration
+  - SELECT.SLOT_OMITTED slot=up.iso_upper cause=duration

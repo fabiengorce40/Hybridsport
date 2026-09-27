@@ -18,6 +18,7 @@ import type { StrengthContext } from './context.js';
 import { INTERFERENCE_LEVELS } from './params.js';
 import type { InterferenceAction, InterferenceLevel, StrengthParams } from './params.js';
 import { strengthReasons } from './codes.js';
+import { PARAMETER_PROVENANCE } from './science/provenance.js';
 
 /** Identifiant réservé de la table des notes : hypothèse prudente quand la semaine est inconnue. */
 export const WEEK_UNKNOWN_NOTE = 'week_unknown';
@@ -102,6 +103,15 @@ export function loweredStructures(input: SportEngineInput<StrengthContext>, para
     if (item.action === 'full' || item.action === 'full_and_signal') add(s, item.source);
     else if (item.action === 'rir_only' && !lowered.has(s)) rirOnly.set(s, item.source);
     if (item.action === 'full_and_signal') signals.push(item);
+  }
+  // Phase 4F : chaque ajustement distingue le MÉCANISME (soutenu selon le contexte) de l'AMPLEUR (heuristique),
+  // lus dans le registre scientifique — jamais dans la matrice : changer un bin ne change pas le niveau de preuve.
+  if (a.traceEvidenceBasis) {
+    const split = PARAMETER_PROVENANCE.find((x) => x.parameterId === 'strength.interference.assessment')?.evidenceSplit;
+    for (const [s, item] of [...best].sort(([x], [y]) => (x < y ? -1 : 1))) {
+      if (item.action === 'none') continue;
+      reasons.push(strengthReasons.emit('PLAN.INTERFERENCE_BASIS', { structure: s, level: item.level, action: item.action, mechanism: split?.mechanism ?? 'INSUFFICIENT_EVIDENCE', magnitude: split?.magnitude ?? 'INSUFFICIENT_EVIDENCE' }));
+    }
   }
   return { lowered, rirOnly, signals, assessments, reasons };
 }

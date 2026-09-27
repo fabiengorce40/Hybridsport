@@ -143,12 +143,24 @@ export function compareScenario(k: string, baseline: Scenario, candidate: Scenar
   const lb = lowered(b.reasons);
   const lc = lowered(c.reasons);
   for (const s of [...new Set([...lb, ...lc])].sort()) add('interference', `abaissement complet ${s}`, lb.has(s) ? 'oui' : 'non', lc.has(s) ? 'oui' : 'non');
-  const rirOnly = c.reasons.filter((r) => r.code === 'DOSE.MODIFIED' && String(r.params.modifier).startsWith('interference_rir:'));
-  for (const r of rirOnly) add('interference', `RIR seulement ${String(r.params.exerciseId)}`, 'aucun', `+${String(r.params.rirDelta)} (${String(r.params.modifier).split('|')[0] ?? ''})`);
-  for (const r of c.reasons.filter((x) => x.code === 'PLAN.INTERFERENCE_SIGNAL')) add('interference', `signal ${String(r.params.structure)}`, 'aucun', `${String(r.params.level)} (${String(r.params.overlap)})`);
+  const rirOnly = (rs: readonly ReasonCode[]) => new Map(rs.filter((r) => r.code === 'DOSE.MODIFIED' && String(r.params.modifier).startsWith('interference_rir:')).map((r) => [String(r.params.exerciseId), `+${String(r.params.rirDelta)} (${String(r.params.modifier).split('|')[0] ?? ''})`]));
+  const rb = rirOnly(b.reasons);
+  const rc = rirOnly(c.reasons);
+  for (const x of [...new Set([...rb.keys(), ...rc.keys()])].sort()) add('interference', `RIR seulement ${x}`, rb.get(x) ?? 'aucun', rc.get(x) ?? 'aucun');
+  const signals = (rs: readonly ReasonCode[]) => new Map(rs.filter((r) => r.code === 'PLAN.INTERFERENCE_SIGNAL').map((r) => [String(r.params.structure), `${String(r.params.level)} (${String(r.params.overlap)})`]));
+  const gb = signals(b.reasons);
+  const gc = signals(c.reasons);
+  for (const x of [...new Set([...gb.keys(), ...gc.keys()])].sort()) add('interference', `signal ${x}`, gb.get(x) ?? 'aucun', gc.get(x) ?? 'aucun');
+  // Confiance : niveau ordinal (DOSE.LOAD.CONFIDENCE) s'il existe, sinon confiance historique portée par la raison de charge.
+  const confidence = (rs: readonly ReasonCode[]) => {
+    const m = new Map(rs.filter((r) => ['DOSE.LOAD.FROM_E1RM', 'DOSE.LOAD.FROM_HISTORY', 'DOSE.LOAD.FROM_SPECIFIC'].includes(r.code)).map((r) => [String(r.params.exerciseId), String(r.params.confidence)]));
+    for (const r of rs.filter((x) => x.code === 'DOSE.LOAD.CONFIDENCE')) m.set(String(r.params.exerciseId), String(r.params.level));
+    return m;
+  };
+  const kb = confidence(b.reasons);
+  const kc = confidence(c.reasons);
+  for (const x of [...new Set([...kb.keys(), ...kc.keys()])].sort()) add('confidence', x, kb.get(x) ?? '—', kc.get(x) ?? '—');
   const conf = c.reasons.filter((r) => r.code === 'DOSE.LOAD.CONFIDENCE');
-  const legacyConf = new Map(b.reasons.filter((r) => r.code === 'DOSE.LOAD.FROM_E1RM' || r.code === 'DOSE.LOAD.FROM_HISTORY').map((r) => [String(r.params.exerciseId), String(r.params.confidence)]));
-  for (const r of conf) add('confidence', String(r.params.exerciseId), legacyConf.get(String(r.params.exerciseId)) ?? '—', String(r.params.level));
   const cb = count(b.reasons);
   const cc = count(c.reasons);
   for (const code of [...new Set([...cb.keys(), ...cc.keys()])].sort()) add('reasons', code, String(cb.get(code) ?? 0), String(cc.get(code) ?? 0));
@@ -217,4 +229,48 @@ export const ATTRIBUTIONS: readonly Attribution[] = [
 
 export function attribute(e: DiffEntry): Attribution | undefined {
   return ATTRIBUTIONS.find((a) => (a.scenario === '*' || a.scenario === e.scenario) && (a.kind === '*' || a.kind === e.kind) && a.subject.test(e.subject));
+}
+
+/** Phase 4F : classification des différences 0.2.0 → 4E → 4F (§K). */
+export type Classification = 'UNCHANGED' | '4E_CHANGE_RETAINED' | '4F_CORRECTION' | 'UNEXPECTED';
+
+export interface Correction4F {
+  readonly scenario: string;
+  readonly kind: DiffKind | '*';
+  readonly subject: RegExp;
+  readonly correction: 'C1_REGISTRE' | 'C2_STIMULUS' | 'C3_INTERFERENCE' | 'C4_CONTINUITE';
+  readonly why: string;
+}
+
+const C2 = 'Préservation du stimulus (`strength.session.stimulusPreservation`) : le pec deck (isolation haut du corps, priorité de stimulus supérieure) omis faute de temps remplace le Pallof (tronc, priorité inférieure) ; sans lui, les pectoraux perdaient la majorité de leur dose (3 séries du pec deck ≥ 2 séries des autres exercices) ; le tronc reste couvert (gainage secondaire). Le temps libéré permet ensuite l’échauffement et le retour au calme (politique de durée 4E inchangée).';
+
+export const CORRECTIONS_4F: readonly Correction4F[] = [
+  { scenario: 'S2', kind: '*', subject: /^(séance|up\.iso_upper\.2|up\.trunk\.1|up\.iso_upper:duration|up\.trunk:stimulus_preservation|i\.cooldown:duration|retour au calme|chest|core|shoulders|p50|p90|décision|DURATION\.SHORTER_ACCEPTED|SELECT\.EXERCISE\.CHOSEN|SELECT\.SLOT_OMITTED|SELECT\.STIMULUS_PRESERVED)$/, correction: 'C2_STIMULUS', why: C2 },
+  { scenario: '*', kind: 'reasons', subject: /^PLAN\.INTERFERENCE_BASIS$/, correction: 'C3_INTERFERENCE', why: 'Trace de la base de preuve de chaque ajustement d’interférence : mécanisme CONTEXT_DEPENDENT, ampleur PROGRAMMING_HEURISTIC (lues dans le registre, indépendantes des bins). Aucun changement de prescription.' },
+];
+
+export interface ThreeWayRow {
+  readonly scenario: string;
+  readonly kind: DiffKind;
+  readonly subject: string;
+  readonly v020: string;
+  readonly v4e: string;
+  readonly v4f: string;
+  readonly classification: Exclude<Classification, 'UNCHANGED'>;
+  readonly why: string;
+}
+
+export function threeWay(k: string, s020: Scenario, s4e: Scenario, s4f: Scenario): { rows: ThreeWayRow[]; d1: ScenarioComparison; d2: ScenarioComparison } {
+  const d1 = compareScenario(k, s020, s4e);
+  const d2 = compareScenario(k, s4e, s4f);
+  const key = (e: DiffEntry) => `${e.kind}|${e.subject}`;
+  const in2 = new Map(d2.entries.map((e) => [key(e), e]));
+  const in1 = new Map(d1.entries.map((e) => [key(e), e]));
+  const rows: ThreeWayRow[] = [];
+  for (const e of d2.entries) {
+    const c = CORRECTIONS_4F.find((x) => (x.scenario === '*' || x.scenario === k) && (x.kind === '*' || x.kind === e.kind) && x.subject.test(e.subject));
+    rows.push({ scenario: k, kind: e.kind, subject: e.subject, v020: in1.get(key(e))?.before ?? e.before, v4e: e.before, v4f: e.after, classification: c ? '4F_CORRECTION' : 'UNEXPECTED', why: c ? `${c.correction} — ${c.why}` : 'AUCUNE ATTRIBUTION' });
+  }
+  for (const e of d1.entries) if (!in2.has(key(e))) rows.push({ scenario: k, kind: e.kind, subject: e.subject, v020: e.before, v4e: e.after, v4f: e.after, classification: '4E_CHANGE_RETAINED', why: attribute(e)?.why ?? 'AUCUNE ATTRIBUTION 4E' });
+  return { rows, d1, d2 };
 }

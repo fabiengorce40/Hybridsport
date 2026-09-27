@@ -388,12 +388,54 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
     const removed = picks.splice(before);
     for (const r of removed) families.delete(r.exercise.family);
     reasons.push(strengthReasons.emit('SELECT.SLOT_OMITTED', { slot: slot.def.id, cause: 'duration' }));
+    durationFailures.push(slot);
   };
+  const durationFailures: SlotInstance[] = [];
   for (const s of slots.optional) addTried(s);
   // 3. Exercices supplémentaires jusqu'à count.max (même ordre), toujours dans le budget.
   for (const s of [...slots.required, ...slots.optional]) {
     const have = picks.filter((p) => p.slot.def.id === s.def.id).length;
     if (have > 0 && have < s.def.count.max) addTried(s);
+  }
+  // 3 bis. Préservation du stimulus (phase 4F) : un optionnel omis faute de temps peut remplacer un optionnel de
+  // plus basse priorité de stimulus si son absence faisait perdre la majorité de la dose d'un groupe ciblé.
+  if (params['strength.session.stimulusPreservation']) {
+    const rank = (slotId: string) => slots.optional.findIndex((x) => x.def.id === slotId);
+    const itemGroups = (session: SessionDraft) => session.blocks.flatMap((b) => b.items).map((it) => ({ exercise: env.catalog.exercise(it.exerciseId) as Exercise, workingSets: it.prescription.type === 'sets' ? workingOf(it.prescription.sets) : it.prescription.type === 'hold' ? it.prescription.sets : 0 }));
+    for (const failed of durationFailures) {
+      const fr = rank(failed.def.id);
+      if (fr < 0) continue;
+      const removable = picks.filter((p) => p.slot.def.status === 'optional' && !p.track && p.slot.def.id !== failed.def.id && rank(p.slot.def.id) > fr)
+        .sort((x, y) => rank(y.slot.def.id) - rank(x.slot.def.id));
+      for (const victim of removable) {
+        const before = [...picks];
+        picks.splice(picks.indexOf(victim), 1);
+        families.delete(victim.exercise.family);
+        const local: ReasonCode[] = [];
+        const r = pickForSlot(failed, env, soFar(), families, techCount(), local);
+        const restore = () => { picks.splice(0, picks.length, ...before); families.clear(); for (const p of picks) families.add(p.exercise.family); };
+        if ('blocked' in r) { restore(); continue; }
+        picks.push(r);
+        families.add(r.exercise.family);
+        const trial = assemble(picks, timePressure, undefined);
+        const planned = plannedHardSets(itemGroups(trial.session), env);
+        const own = itemGroups(trial.session).filter((x) => x.exercise.id === r.exercise.id).reduce((a, x) => a + x.workingSets, 0);
+        // Perte disproportionnée évitée : sur au moins un groupe, l'optionnel apporte autant que tous les autres exercices réunis.
+        const groups = groupsOf(r.exercise, env).primary.filter((g) => own > 0 && own >= (planned[g] ?? 0) - own);
+        // Couverture conservée : le retrait ne laisse aucun groupe primaire de l'optionnel retiré sans dose.
+        const covered = groupsOf(victim.exercise, env).primary.every((g) => (planned[g] ?? 0) > 0);
+        if (fits(trial) && groups.length > 0 && covered) {
+          core = trial;
+          const omitted = reasons.findIndex((x) => x.code === 'SELECT.SLOT_OMITTED' && x.params.slot === failed.def.id && x.params.cause === 'duration');
+          if (omitted >= 0) reasons.splice(omitted, 1);
+          reasons.push(...local,
+            strengthReasons.emit('SELECT.SLOT_OMITTED', { slot: victim.slot.def.id, cause: 'stimulus_preservation' }),
+            strengthReasons.emit('SELECT.STIMULUS_PRESERVED', { slot: failed.def.id, exerciseId: r.exercise.id, removedSlot: victim.slot.def.id, removedExerciseId: victim.exercise.id, groups, sets: own, otherSets: Math.max(0, ...groups.map((g) => (planned[g] ?? 0) - own)) }));
+          break;
+        }
+        restore();
+      }
+    }
   }
   // 4. Politique de mobilité : échauffement général supplémentaire (7), puis retour au calme facultatif (8).
   if (mobPolicy) {

@@ -1,10 +1,11 @@
-# STRENGTH-SCIENTIFIC-RULESET-V1 — ruleset scientifique V1 (candidat)
+# STRENGTH-SCIENTIFIC-RULESET-V1 — ruleset scientifique V1 (verrou provisoire, phase 4F)
 
-> Document **généré** depuis le registre scientifique et le ruleset candidat : ne pas éditer à la main.
+> Document **généré** depuis le registre scientifique et le ruleset 4F : ne pas éditer à la main.
 
-- Ruleset candidat : **0.3.0-strength-science-candidate** (étend `0.2.0-strength-test` sans en modifier aucune valeur) · registre **1.0.0**
-- 37 paramètres : EXPERT_DESIGN_REVIEW 11 · PRODUCT_GUARDRAIL 2 · PROGRAMMING_HEURISTIC 17 · SAFETY_SIGNOFF_REQUIRED 4 · TECHNICAL 3
-- Changements : new_policy 8 · reclassified 12 · unchanged 17 (`unchanged` = valeur et statut conservés ; `reclassified` = valeur conservée, statut précisé ; `new_policy` = paramètre facultatif introduit, absent en 0.2.0)
+- Ruleset : **0.4.0-strength-science-lock** (étend `0.2.0-strength-test` sans en modifier aucune valeur ; succède au candidat 4E `0.3.0-strength-science-candidate`, qui reste reproductible) · registre **1.1.0**
+- Verrou STRENGTH_SCIENTIFIC_LOCK_V1 : chaque paramètre a UNE catégorie principale (colonne « Statut ») ; aucune valeur numérique n’est `SUPPORTED` parce qu’un mécanisme général l’est.
+- 38 paramètres : EXPERT_DESIGN_REVIEW 12 · PRODUCT_GUARDRAIL 2 · PROGRAMMING_HEURISTIC 17 · SAFETY_SIGNOFF_REQUIRED 4 · TECHNICAL 3
+- Changements : new_policy 9 · reclassified 12 · unchanged 17 (`unchanged` = valeur et statut conservés ; `reclassified` = valeur conservée, statut précisé ; `new_policy` = paramètre facultatif introduit, absent en 0.2.0)
 - **Aucune valeur existante n’est modifiée.** Les 7 écarts validés en phase 4C sont conservés. Toutes les valeurs restent **provisoires** : aucune validation formelle.
 - Absence d’un paramètre facultatif = **sémantique du ruleset 0.2.0** (comportement historique reproduit à l’identique, testé), jamais une valeur par défaut sportive.
 
@@ -45,6 +46,7 @@
 | `strength.interference.assessment` | G2 | PROGRAMMING_HEURISTIC | new_policy | 2 |
 | `strength.rampup.estimatedPolicy` | G2 | PROGRAMMING_HEURISTIC | new_policy | 1 |
 | `strength.selection.repetitionPolicy` | G2 | EXPERT_DESIGN_REVIEW | new_policy | 1 |
+| `strength.session.stimulusPreservation` | G2 | EXPERT_DESIGN_REVIEW | new_policy | 1 |
 | `strength.tracks.horizon` | G2 | EXPERT_DESIGN_REVIEW | new_policy | 1 |
 | `strength.session.durationPriority` | G2 | PRODUCT_GUARDRAIL | new_policy | 1 |
 
@@ -53,7 +55,8 @@
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | table (688 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Nouvelle valeur / plage (V1) | table (688 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (688 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (688 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
 | Lecture | Table besoin → exigence de mouvement, inchangée. |
 | Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -65,14 +68,15 @@
 | Justification | Taxonomie de conception (patterns, régions) ; aucune question empirique directe. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | — |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.archetypes`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | table (11235 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Nouvelle valeur / plage (V1) | table (11235 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (11235 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (11235 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
 | Lecture | Archétypes et emplacements inchangés. |
 | Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -84,14 +88,15 @@
 | Justification | Structure de séance (emplacements, groupes de choix) ; la fréquence est un outil de répartition du planificateur (P6). |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | `C.FREQ` CONTEXT_DEPENDENT (principe) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.goals`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | table (1026 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Nouvelle valeur / plage (V1) | table (1026 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (1026 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (1026 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
 | Lecture | Priorités de besoins par objectif, inchangées. |
 | Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -103,14 +108,15 @@
 | Justification | Ordre de priorité de conception. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | — |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.stimuli`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | table (999 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Nouvelle valeur / plage (V1) | table (999 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (999 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (999 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
 | Lecture | Ordres des optionnels et répartitions énergétiques inchangés. |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -122,14 +128,15 @@
 | Justification | Heuristiques de programmation. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | — |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.session.mobility`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `{"warmupS":{"min":180,"max":300},"cooldownS":{"min":0,"max":180}}` |
-| Nouvelle valeur / plage (V1) | `{"warmupS":{"min":180,"max":300},"cooldownS":{"min":0,"max":180}}` |
+| Valeur 4E (0.3.0) | `{"warmupS":{"min":180,"max":300},"cooldownS":{"min":0,"max":180}}` |
+| Valeur 4F (0.4.0) | `{"warmupS":{"min":180,"max":300},"cooldownS":{"min":0,"max":180}}` |
 | Lecture | warmupS 180–300 s et cooldownS 0–180 s inchangés ; en V1 le minimum d’échauffement seul est garanti (politique `strength.session.durationPriority`). |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -141,14 +148,15 @@
 | Justification | L’échauffement général est contextuel et distinct de la montée spécifique (P12) ; le retour au calme est facultatif (P13). |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | `C.WU_RFD` CONTEXT_DEPENDENT (principe) ; `C.WU_DUR` PROGRAMMING_HEURISTIC (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.exerciseClass`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `{"highLoadCeilingMin":2,"cappedLoadCeilingMax":0}` |
-| Nouvelle valeur / plage (V1) | `{"highLoadCeilingMin":2,"cappedLoadCeilingMax":0}` |
+| Valeur 4E (0.3.0) | `{"highLoadCeilingMin":2,"cappedLoadCeilingMax":0}` |
+| Valeur 4F (0.4.0) | `{"highLoadCeilingMin":2,"cappedLoadCeilingMax":0}` |
 | Lecture | Seuils de classe sur l’échelle ordinale du catalogue, inchangés. |
 | Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -160,14 +168,15 @@
 | Justification | Classification de conception. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | — |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.selection.criteriaOrder`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | table (385 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Nouvelle valeur / plage (V1) | table (385 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (385 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (385 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
 | Lecture | Ordres lexicographiques inchangés. |
 | Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -179,14 +188,15 @@
 | Justification | La phase 4C a montré que le premier critère différenciant est décisif (stabilité des accessoires) : décision d’expert. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | — |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.selection.recencyBandsDays`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `[2,5]` |
-| Nouvelle valeur / plage (V1) | `[2,5]` |
+| Valeur 4E (0.3.0) | `[2,5]` |
+| Valeur 4F (0.4.0) | `[2,5]` |
 | Lecture | [2, 5] jours inchangés. |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G3 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -198,14 +208,15 @@
 | Justification | Départage par récence, sans rotation imposée. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | `C.VAR` CONTEXT_DEPENDENT (principe) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.selection.axialHighMaxPerSession`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `1` |
-| Nouvelle valeur / plage (V1) | `1` |
+| Valeur 4E (0.3.0) | `1` |
+| Valeur 4F (0.4.0) | `1` |
 | Lecture | 1 inchangé, reclassé garde-fou produit (P11). |
 | Statut | `PRODUCT_GUARDRAIL` — garde-fou produit |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -217,14 +228,15 @@
 | Justification | Limite prudente de conception ; dose axiale cumulée à préparer. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | `C.AXIAL` INSUFFICIENT_EVIDENCE (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.selection.minLoadCeiling`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `{"novice":0,"beginner":0,"intermediate":1,"advanced":1}` |
-| Nouvelle valeur / plage (V1) | `{"novice":0,"beginner":0,"intermediate":1,"advanced":1}` |
+| Valeur 4E (0.3.0) | `{"novice":0,"beginner":0,"intermediate":1,"advanced":1}` |
+| Valeur 4F (0.4.0) | `{"novice":0,"beginner":0,"intermediate":1,"advanced":1}` |
 | Lecture | Plafonds minimaux par niveau inchangés. |
 | Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -236,14 +248,15 @@
 | Justification | Faisabilité de la dose selon le niveau. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | `C.HEAVY` SUPPORTED (principe) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.selection.primaryLoadRequired`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `["strength_heavy"]` |
-| Nouvelle valeur / plage (V1) | `["strength_heavy"]` |
+| Valeur 4E (0.3.0) | `["strength_heavy"]` |
+| Valeur 4F (0.4.0) | `["strength_heavy"]` |
 | Lecture | [strength_heavy] inchangé. |
 | Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -255,14 +268,15 @@
 | Justification | Le mécanisme (charge et force) est soutenu ; la liste des stimuli concernés est un choix de conception. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | `C.HEAVY` SUPPORTED (principe) ; `C.HEAVY_LIST` EXPERT_DESIGN_REVIEW (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.selection.skillCeiling`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `{"novice":2,"beginner":3,"intermediate":4,"advanced":5}` |
-| Nouvelle valeur / plage (V1) | `{"novice":2,"beginner":3,"intermediate":4,"advanced":5}` |
+| Valeur 4E (0.3.0) | `{"novice":2,"beginner":3,"intermediate":4,"advanced":5}` |
+| Valeur 4F (0.4.0) | `{"novice":2,"beginner":3,"intermediate":4,"advanced":5}` |
 | Lecture | Plafonds par niveau inchangés (G1). |
 | Statut | `SAFETY_SIGNOFF_REQUIRED` — visa de sécurité requis (G1) |
 | Gouvernance | G1 · visa expert requis · visa sécurité requis · provisoire oui |
@@ -274,14 +288,15 @@
 | Justification | Sécurité technique par niveau. |
 | Si la preuve reste insuffisante | Paramètre G1 : bloqué sans visa de sécurité ; aucune promotion possible, la valeur provisoire reste la référence prudente du cliquet G1. |
 | Revendications | `C.SKILL` SAFETY_SIGNOFF_REQUIRED (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.novice.technicalUnderFatigue`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `{"levels":["novice","beginner"],"minTechnical":2,"maxPerSession":1,"allowedRoles":["primary"]}` |
-| Nouvelle valeur / plage (V1) | `{"levels":["novice","beginner"],"minTechnical":2,"maxPerSession":1,"allowedRoles":["primary"]}` |
+| Valeur 4E (0.3.0) | `{"levels":["novice","beginner"],"minTechnical":2,"maxPerSession":1,"allowedRoles":["primary"]}` |
+| Valeur 4F (0.4.0) | `{"levels":["novice","beginner"],"minTechnical":2,"maxPerSession":1,"allowedRoles":["primary"]}` |
 | Lecture | Règle novice inchangée (G1). |
 | Statut | `SAFETY_SIGNOFF_REQUIRED` — visa de sécurité requis (G1) |
 | Gouvernance | G1 · visa expert requis · visa sécurité requis · provisoire oui |
@@ -293,33 +308,36 @@
 | Justification | Sécurité : exercices techniques sous fatigue chez le novice. |
 | Si la preuve reste insuffisante | Paramètre G1 : bloqué sans visa de sécurité ; aucune promotion possible, la valeur provisoire reste la référence prudente du cliquet G1. |
 | Revendications | `C.NOV_TECH` SAFETY_SIGNOFF_REQUIRED (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.dose.base`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | table (5351 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Nouvelle valeur / plage (V1) | table (5351 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (5351 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (5351 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Mécanisme / ampleur | SUPPORTED / PROGRAMMING_HEURISTIC — Mécanismes soutenus (charges et force, large plage pour l’hypertrophie) ; nombres des cellules heuristiques. |
 | Lecture | Table stimulus × rôle × classe inchangée ; les principes sont soutenus, les nombres exacts sont des heuristiques. |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
-| Sources | `SRC.GRGIC_2018`, `SRC.LOPEZ_2021`, `SRC.REFALO_2023`, `SRC.ROBINSON_2024`, `SRC.SINGER_2024` (type le plus fort : network_meta_analysis) |
+| Sources | `SRC.CURRIER_2026_ACSM`, `SRC.LOPEZ_2021`, `SRC.REFALO_2023`, `SRC.ROBINSON_2024`, `SRC.SINGER_2024` (type le plus fort : position_stand) |
 | Population | Adultes en bonne santé, majoritairement jeunes et masculins selon les sources ; transposition aux femmes, aux seniors et aux sportifs d’endurance non vérifiée |
 | Critère | Force (1RM), hypertrophie |
 | Confiance | very_low |
 | Incertitude | Aucune cellule n’est une valeur démontrée ; RIR estimé à environ une répétition près. |
 | Justification | Principes P1, P2, P4 et P5 : répétitions basses pour la force, large plage pour l’hypertrophie, jamais l’échec par défaut, repos long pour le lourd. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
-| Revendications | `C.HEAVY` SUPPORTED (principe) ; `C.HYP_LOADS` SUPPORTED (principe) ; `C.FAILURE` CONTEXT_DEPENDENT (principe) ; `C.REST` CONTEXT_DEPENDENT (principe) ; `C.CELLS` PROGRAMMING_HEURISTIC (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Revendications | `C.HEAVY` SUPPORTED (principe) ; `C.HYP_LOADS` SUPPORTED (principe) ; `C.FAILURE` CONTEXT_DEPENDENT (principe) ; `C.REST` CONTEXT_DEPENDENT (principe) ; `C.ACSM` CONTEXT_DEPENDENT (principe) ; `C.CELLS` PROGRAMMING_HEURISTIC (valeur) |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.dose.modifiers`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | table (633 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Nouvelle valeur / plage (V1) | table (633 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (633 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (633 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
 | Lecture | Modificateurs inchangés ; décharge (rirDelta +2, setsFactor 0,6) reclassée en heuristique (P8). |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -331,14 +349,15 @@
 | Justification | Mécanismes conservés ; politique de conflit « la plus prudente » = garde-fou produit. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | `C.DELOAD` PROGRAMMING_HEURISTIC (valeur) ; `C.CONFLICT` PRODUCT_GUARDRAIL (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.dose.nonRep`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `{"holdSeconds":{"min":30,"max":45},"carryMeters":{"min":30,"max":40}}` |
-| Nouvelle valeur / plage (V1) | `{"holdSeconds":{"min":30,"max":45},"carryMeters":{"min":30,"max":40}}` |
+| Valeur 4E (0.3.0) | `{"holdSeconds":{"min":30,"max":45},"carryMeters":{"min":30,"max":40}}` |
+| Valeur 4F (0.4.0) | `{"holdSeconds":{"min":30,"max":45},"carryMeters":{"min":30,"max":40}}` |
 | Lecture | Durées de maintien et distances de porté inchangées. |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -350,14 +369,16 @@
 | Justification | Heuristique. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | — |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.load`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | table (497 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Nouvelle valeur / plage (V1) | table (497 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (497 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (497 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Mécanisme / ampleur | CONTEXT_DEPENDENT / PROGRAMMING_HEURISTIC — Fiabilité d’un 1RM mesuré et imprécision du RIR soutenues selon le contexte ; formule d’Epley et table de conversion = repli heuristique. |
 | Lecture | Inchangé ; la formule d’Epley (diviseur 30) et `pctByRepsToFailure` sont reclassés en REPLI d’amorçage, sous les données spécifiques récentes (V1). |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -369,14 +390,15 @@
 | Justification | Hiérarchie de référence : données spécifiques récentes > historique de l’exercice > modèle personnel (contrat) > e1RM générique > calibration prudente. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | `C.1RM_REL` CONTEXT_DEPENDENT (principe) ; `C.RIR_ERR` CONTEXT_DEPENDENT (principe) ; `C.EPLEY` PROGRAMMING_HEURISTIC (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.load.defaultIncrements`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `{"barbell":2.5,"dumbbell_pair":2,"dumbbell_single":2,"kettlebell":4,"machine_stack":5,"plate_loaded":5,"bodyweight_plus":2.5,"implement_fixed":1}` |
-| Nouvelle valeur / plage (V1) | `{"barbell":2.5,"dumbbell_pair":2,"dumbbell_single":2,"kettlebell":4,"machine_stack":5,"plate_loaded":5,"bodyweight_plus":2.5,"implement_fixed":1}` |
+| Valeur 4E (0.3.0) | `{"barbell":2.5,"dumbbell_pair":2,"dumbbell_single":2,"kettlebell":4,"machine_stack":5,"plate_loaded":5,"bodyweight_plus":2.5,"implement_fixed":1}` |
+| Valeur 4F (0.4.0) | `{"barbell":2.5,"dumbbell_pair":2,"dumbbell_single":2,"kettlebell":4,"machine_stack":5,"plate_loaded":5,"bodyweight_plus":2.5,"implement_fixed":1}` |
 | Lecture | Incréments matériels par défaut inchangés. |
 | Statut | `TECHNICAL` — paramètre technique |
 | Gouvernance | G4 · visa expert non requis · visa sécurité non requis · provisoire non |
@@ -388,14 +410,15 @@
 | Justification | Donnée matérielle. |
 | Si la preuve reste insuffisante | Sans objet (technique). |
 | Revendications | — |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.calibration`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `{"targetRir":3,"sets":2,"intraSessionProgression":true,"stopCriterion":"target_effort_reached","mediumAfterExposures":1,"highAfterExposures":2}` |
-| Nouvelle valeur / plage (V1) | `{"targetRir":3,"sets":2,"intraSessionProgression":true,"stopCriterion":"target_effort_reached","mediumAfterExposures":1,"highAfterExposures":2}` |
+| Valeur 4E (0.3.0) | `{"targetRir":3,"sets":2,"intraSessionProgression":true,"stopCriterion":"target_effort_reached","mediumAfterExposures":1,"highAfterExposures":2}` |
+| Valeur 4F (0.4.0) | `{"targetRir":3,"sets":2,"intraSessionProgression":true,"stopCriterion":"target_effort_reached","mediumAfterExposures":1,"highAfterExposures":2}` |
 | Lecture | targetRir 3, 2 séries inchangés ; `mediumAfterExposures` et `highAfterExposures` ne sont lus par aucun code (dette) et sont remplacés en V1 par `strength.prescriptionConfidence`. |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -407,14 +430,16 @@
 | Justification | Calibration prudente sans référence. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | `C.CAL` PROGRAMMING_HEURISTIC (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.rampup`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | table (692 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Nouvelle valeur / plage (V1) | table (692 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (692 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (692 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Mécanisme / ampleur | CONTEXT_DEPENDENT / PROGRAMMING_HEURISTIC — Effet de l’échauffement musculaire sur la puissance soutenu selon le contexte ; paliers heuristiques. |
 | Lecture | Paliers inchangés, reclassés : principe conservé, paliers non optimaux (P9). |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -426,14 +451,16 @@
 | Justification | Montée spécifique prioritaire, distincte de l’échauffement général. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | `C.WU_RFD` CONTEXT_DEPENDENT (principe) ; `C.RAMP_STEPS` PROGRAMMING_HEURISTIC (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.progression`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | table (2324 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Nouvelle valeur / plage (V1) | table (2324 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (2324 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (2324 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Mécanisme / ampleur | CONTEXT_DEPENDENT / PROGRAMMING_HEURISTIC — Progression structurée et autorégulation soutenues selon le contexte ; fractions et compteurs heuristiques. |
 | Lecture | Familles de modèles conservées ; cycleCapFraction 0,15, regressionFraction 0,10, regressAfterBelow 2, stagnationHolds 3 reclassés en heuristiques (P7). |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -445,14 +472,15 @@
 | Justification | Progression structurée et autorégulée favorable à la force. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | `C.PERIOD` CONTEXT_DEPENDENT (principe) ; `C.AUTOREG` CONTEXT_DEPENDENT (principe) ; `C.PROG_FRACTIONS` PROGRAMMING_HEURISTIC (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.tracks`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `{"anchorMaxWeeks":{"novice":12,"beginner":10,"intermediate":8,"advanced":6},"tier2AutoCreateAfter":2,"rotateAtMesocycleEnd":{"novice":false,"beginner":false,"intermediate":false,"advanced":true}}` |
-| Nouvelle valeur / plage (V1) | `{"anchorMaxWeeks":{"novice":12,"beginner":10,"intermediate":8,"advanced":6},"tier2AutoCreateAfter":2,"rotateAtMesocycleEnd":{"novice":false,"beginner":false,"intermediate":false,"advanced":true}}` |
+| Valeur 4E (0.3.0) | `{"anchorMaxWeeks":{"novice":12,"beginner":10,"intermediate":8,"advanced":6},"tier2AutoCreateAfter":2,"rotateAtMesocycleEnd":{"novice":false,"beginner":false,"intermediate":false,"advanced":true}}` |
+| Valeur 4F (0.4.0) | `{"anchorMaxWeeks":{"novice":12,"beginner":10,"intermediate":8,"advanced":6},"tier2AutoCreateAfter":2,"rotateAtMesocycleEnd":{"novice":false,"beginner":false,"intermediate":false,"advanced":true}}` |
 | Lecture | anchorMaxWeeks 12/10/8/6 inchangés ; en V1 horizon de REVUE au plus (politique `strength.tracks.horizon`). |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -464,14 +492,16 @@
 | Justification | Trois niveaux conservés ; une ancre ne change que pour une raison traçable (P10). |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | `C.VAR` CONTEXT_DEPENDENT (principe) ; `C.WEEKS` PROGRAMMING_HEURISTIC (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.volume`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | table (7296 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Nouvelle valeur / plage (V1) | table (7296 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (7296 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (7296 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Mécanisme / ampleur | SUPPORTED / PROGRAMMING_HEURISTIC — Dose–réponse à rendements décroissants soutenue ; bornes hebdomadaires heuristiques ; décompte fractionnaire soutenu selon le contexte. |
 | Lecture | Bornes hebdomadaires et secondaryWeight 0,5 inchangés ; bornes = repères SOFT, pas des frontières (P3). |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -482,15 +512,16 @@
 | Incertitude | Réponse individuelle non modélisée ; population des sources majoritairement masculine. |
 | Justification | Dose–réponse à rendements décroissants ; décompte fractionnaire des muscles secondaires = approximation. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
-| Revendications | `C.DOSE` SUPPORTED (principe) ; `C.WEEKLY` PROGRAMMING_HEURISTIC (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Revendications | `C.DOSE` SUPPORTED (principe) ; `C.FRACTIONAL` CONTEXT_DEPENDENT (valeur) ; `C.WEEKLY` PROGRAMMING_HEURISTIC (valeur) |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.volume.sessionCap`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `{"novice":10,"beginner":12,"intermediate":14,"advanced":16}` |
-| Nouvelle valeur / plage (V1) | `{"novice":10,"beginner":12,"intermediate":14,"advanced":16}` |
+| Valeur 4E (0.3.0) | `{"novice":10,"beginner":12,"intermediate":14,"advanced":16}` |
+| Valeur 4F (0.4.0) | `{"novice":10,"beginner":12,"intermediate":14,"advanced":16}` |
 | Lecture | Plafonds par niveau inchangés ; garde-fou produit et de sécurité (G1). |
 | Statut | `SAFETY_SIGNOFF_REQUIRED` + `PRODUCT_GUARDRAIL` — visa de sécurité requis (G1) |
 | Gouvernance | G1 · visa expert requis · visa sécurité requis · provisoire oui |
@@ -502,14 +533,16 @@
 | Justification | Plafond de séries par groupe et par séance. |
 | Si la preuve reste insuffisante | Paramètre G1 : bloqué sans visa de sécurité ; aucune promotion possible, la valeur provisoire reste la référence prudente du cliquet G1. |
 | Revendications | `C.CAP` SAFETY_SIGNOFF_REQUIRED (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.interference`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | table (601 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Nouvelle valeur / plage (V1) | table (601 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (601 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (601 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Mécanisme / ampleur | CONTEXT_DEPENDENT / PROGRAMMING_HEURISTIC — Interférence dépendante de la modalité, de la fréquence et de la durée : mécanisme soutenu selon le contexte ; ajustements (séries, RIR, besoins retirés) heuristiques. |
 | Lecture | Notes et ajustements par structure inchangés ; `neighborWindowHours` 36 h ne sert plus qu’au ruleset 0.2.0 (règle binaire historique). |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -521,14 +554,15 @@
 | Justification | L’interférence dépend de la modalité, de la fréquence et de la durée d’endurance. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | `C.CONC` CONTEXT_DEPENDENT (principe) ; `C.STRUCT_DELTAS` PROGRAMMING_HEURISTIC (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.substitution.fallbackNeeds`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | table (301 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Nouvelle valeur / plage (V1) | table (301 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (301 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (301 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
 | Lecture | Replis de besoin inchangés. |
 | Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -540,14 +574,15 @@
 | Justification | Conception. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | — |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.topSet`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `{"stimuli":["strength_heavy"],"levels":["advanced"],"backoffSets":3,"backoffLoadFraction":0.9}` |
-| Nouvelle valeur / plage (V1) | `{"stimuli":["strength_heavy"],"levels":["advanced"],"backoffSets":3,"backoffLoadFraction":0.9}` |
+| Valeur 4E (0.3.0) | `{"stimuli":["strength_heavy"],"levels":["advanced"],"backoffSets":3,"backoffLoadFraction":0.9}` |
+| Valeur 4F (0.4.0) | `{"stimuli":["strength_heavy"],"levels":["advanced"],"backoffSets":3,"backoffLoadFraction":0.9}` |
 | Lecture | Série lourde + séries allégées (0,9) inchangées. |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -559,14 +594,15 @@
 | Justification | Heuristique de programmation avancée. |
 | Si la preuve reste insuffisante | Valeur conservée ; en l’absence de validation, le moteur applique la valeur provisoire du ruleset et le trace (parametersUsed). |
 | Revendications | — |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.maxEffort.threshold`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `0.9` |
-| Nouvelle valeur / plage (V1) | `0.9` |
+| Valeur 4E (0.3.0) | `0.9` |
+| Valeur 4F (0.4.0) | `0.9` |
 | Lecture | 0,9 inchangé (G1, cliquet « decrease »). |
 | Statut | `SAFETY_SIGNOFF_REQUIRED` — visa de sécurité requis (G1) |
 | Gouvernance | G1 · visa expert requis · visa sécurité requis · provisoire oui |
@@ -578,14 +614,15 @@
 | Justification | Seuil d’éligibilité à l’effort maximal ; aucune fausse précision revendiquée. |
 | Si la preuve reste insuffisante | Paramètre G1 : bloqué sans visa de sécurité ; aucune promotion possible, la valeur provisoire reste la référence prudente du cliquet G1. |
 | Revendications | `C.MAXEFF` INSUFFICIENT_EVIDENCE (valeur) |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.proposals.max`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | `2` |
-| Nouvelle valeur / plage (V1) | `2` |
+| Valeur 4E (0.3.0) | `2` |
+| Valeur 4F (0.4.0) | `2` |
 | Lecture | 2 inchangé. |
 | Statut | `TECHNICAL` — paramètre technique |
 | Gouvernance | G4 · visa expert non requis · visa sécurité non requis · provisoire non |
@@ -597,14 +634,15 @@
 | Justification | Nombre de propositions (technique). |
 | Si la preuve reste insuffisante | Sans objet (technique). |
 | Revendications | — |
-| Version du paramètre | 0.1.0 · revue 2026-09-27 |
+| Version du paramètre | 0.1.0 · revue 2026-09-28 |
 
 ## `strength.science.registryVersion`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | *absent (sémantique 0.2.0)* |
-| Nouvelle valeur / plage (V1) | `"1.0.0"` |
+| Valeur 4E (0.3.0) | `"1.0.0"` |
+| Valeur 4F (0.4.0) | `"1.1.0"` |
 | Lecture | Absent en 0.2.0 ; « 1.0.0 » en V1. |
 | Statut | `TECHNICAL` — paramètre technique |
 | Gouvernance | G4 · visa expert non requis · visa sécurité non requis · provisoire non |
@@ -616,14 +654,16 @@
 | Justification | Version du registre tracée dans chaque séance (reproductibilité). |
 | Si la preuve reste insuffisante | Sans objet (technique). |
 | Revendications | — |
-| Version du paramètre | 0.3.0 · revue 2026-09-27 |
+| Version du paramètre | 0.4.0 · revue 2026-09-28 |
 
 ## `strength.prescriptionConfidence`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | *absent (sémantique 0.2.0)* |
-| Nouvelle valeur / plage (V1) | `{"rulesVersion":"pc-1.0.0","high":{"minSessions":2,"minObservations":4},"rirUncertainLevels":["novice","beginner"],"declaredCap":"medium"}` |
+| Valeur 4E (0.3.0) | `{"rulesVersion":"pc-1.0.0","high":{"minSessions":2,"minObservations":4},"rirUncertainLevels":["novice","beginner"],"declaredCap":"medium"}` |
+| Valeur 4F (0.4.0) | `{"rulesVersion":"pc-1.0.0","high":{"minSessions":2,"minObservations":4},"rirUncertainLevels":["novice","beginner"],"declaredCap":"medium"}` |
+| Mécanisme / ampleur | CONTEXT_DEPENDENT / PROGRAMMING_HEURISTIC — Imprécision du RIR soutenue selon le contexte ; seuils de séances et d’observations heuristiques. |
 | Lecture | Absent en 0.2.0 (1 exposition avec RIR = high) ; V1 : HIGH exige ≥ 2 séances ET ≥ 4 observations, fraîches, cohérentes, RIR fiable, sans conflit ni transfert ; capacité déclarée plafonnée à MEDIUM ; RIR des novices et débutants traité comme incertain. |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -635,14 +675,15 @@
 | Justification | Confiance ordinale à facteurs tracés, sans coefficient ; deux observations ne garantissent pas HIGH. |
 | Si la preuve reste insuffisante | Règles appliquées telles quelles et tracées (DOSE.LOAD.CONFIDENCE) ; toute incertitude abaisse la confiance, jamais l’inverse. |
 | Revendications | `C.RIR_ERR` CONTEXT_DEPENDENT (principe) ; `C.1RM_REL` CONTEXT_DEPENDENT (principe) ; `C.PC_THRESH` PROGRAMMING_HEURISTIC (valeur) ; `C.PC_LEVELS` INSUFFICIENT_EVIDENCE (valeur) |
-| Version du paramètre | 0.3.0 · revue 2026-09-27 |
+| Version du paramètre | 0.3.0 · revue 2026-09-28 |
 
 ## `strength.load.specificObservation`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | *absent (sémantique 0.2.0)* |
-| Nouvelle valeur / plage (V1) | `{"repsTolerance":1,"rirTolerance":1,"requireRir":true}` |
+| Valeur 4E (0.3.0) | `{"repsTolerance":1,"rirTolerance":1,"requireRir":true}` |
+| Valeur 4F (0.4.0) | `{"repsTolerance":1,"rirTolerance":1,"requireRir":true}` |
 | Lecture | Absent en 0.2.0 ; V1 : série récente (fenêtre « high ») à ± 1 répétition et ± 1 RIR de la cible, RIR requis. |
 | Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -654,14 +695,16 @@
 | Justification | Hiérarchie de référence : une donnée spécifique récente décrit l’athlète mieux qu’une formule générique. |
 | Si la preuve reste insuffisante | Sans observation spécifique : repli sur l’e1RM générique (tracé DOSE.LOAD.FROM_E1RM), puis calibration. |
 | Revendications | `C.RIR_ERR` CONTEXT_DEPENDENT (principe) ; `C.SPEC_TOL` PROGRAMMING_HEURISTIC (valeur) |
-| Version du paramètre | 0.3.0 · revue 2026-09-27 |
+| Version du paramètre | 0.3.0 · revue 2026-09-28 |
 
 ## `strength.interference.assessment`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | *absent (sémantique 0.2.0)* |
-| Nouvelle valeur / plage (V1) | table (449 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (449 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (475 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Mécanisme / ampleur | CONTEXT_DEPENDENT / PROGRAMMING_HEURISTIC — MÉCANISME soutenu selon le contexte (modalité, proximité, importance) ; AMPLEUR heuristique : bins temporels 12/24/48/72 h (opérationnels, pas des frontières biologiques), deltas ordinaux, actions et RIR + 2 de MODERATE. |
 | Lecture | Absent en 0.2.0 (règle binaire 36 h) ; V1 : matrice ordinale (demande + importance + bandes de proximité 12/24/48 h + impact locomoteur sur une demande déjà haute), fenêtre de recherche 72 h, actions graduées (MODERATE = RIR seulement ; HIGH = ajustement complet ; VERY_HIGH = complet + signal). |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -673,14 +716,15 @@
 | Justification | Interférence graduée selon la modalité (impact locomoteur de la course), l’importance et la proximité ; VERY_HIGH = signal au planificateur, qui décide. |
 | Si la preuve reste insuffisante | Matrice appliquée telle quelle et tracée (PLAN.INTERFERENCE_ASSESSED) ; le moteur ne déplace ni ne supprime jamais une séance. |
 | Revendications | `C.CONC` CONTEXT_DEPENDENT (principe) ; `C.RUN` CONTEXT_DEPENDENT (principe) ; `C.MATRIX` PROGRAMMING_HEURISTIC (valeur) |
-| Version du paramètre | 0.3.0 · revue 2026-09-27 |
+| Version du paramètre | 0.4.0 · revue 2026-09-28 |
 
 ## `strength.rampup.estimatedPolicy`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | *absent (sémantique 0.2.0)* |
-| Nouvelle valeur / plage (V1) | `{"band":"by_relative_intensity"}` |
+| Valeur 4E (0.3.0) | `{"band":"by_relative_intensity"}` |
+| Valeur 4F (0.4.0) | `{"band":"by_relative_intensity"}` |
 | Lecture | Absent en 0.2.0 (charge suggérée ⇒ un seul palier de la première bande) ; V1 : bande selon l’intensité relative, paliers ≤ estimatedLastStepMax (0,7). |
 | Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -692,33 +736,55 @@
 | Justification | La confiance ordinale rend la charge suggérée (MEDIUM) plus fréquente sur le travail lourd : la montée spécifique doit rester prioritaire (P9), sans palier proche d’une charge incertaine. |
 | Si la preuve reste insuffisante | Paliers existants appliqués ; aucun palier au-delà du plafond estimé. |
 | Revendications | `C.WU_RFD` CONTEXT_DEPENDENT (principe) ; `C.RAMP_STEPS` PROGRAMMING_HEURISTIC (valeur) |
-| Version du paramètre | 0.3.0 · revue 2026-09-27 |
+| Version du paramètre | 0.3.0 · revue 2026-09-28 |
 
 ## `strength.selection.repetitionPolicy`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | *absent (sémantique 0.2.0)* |
-| Nouvelle valeur / plage (V1) | `{"levels":["novice"],"recency":"prefer_repeat"}` |
-| Lecture | Absent en 0.2.0 (la récence fait tourner les exercices à égalité) ; V1 : au niveau novice, la famille pratiquée le plus récemment est préférée. |
+| Valeur 4E (0.3.0) | `{"levels":["novice"],"recency":"prefer_repeat"}` |
+| Valeur 4F (0.4.0) | `{"levels":["novice"],"recency":"prefer_repeat","preferredLevels":["beginner"],"rotationReasons":{"disliked":true,"stagnation":true,"cycleStartForPreferred":true,"plannerNotes":["planned_variation"]}}` |
+| Lecture | Absent en 0.2.0 (la récence fait tourner les exercices à égalité). 4E : novice, continuité sans exception. 4F : novice = forte continuité ; débutant = continuité préférée (rotation permise en semaine 1 de cycle) ; raisons explicites de rotation : exercice non aimé, stagnation, note « planned_variation » du planificateur. |
 | Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
 | Sources | `SRC.KASSIANO_2022` (type le plus fort : systematic_review) |
 | Population | Adultes en bonne santé, majoritairement jeunes et masculins selon les sources ; transposition aux femmes, aux seniors et aux sportifs d’endurance non vérifiée |
 | Critère | Sans objet (aucune mesure d’effet) |
 | Confiance | very_low |
-| Incertitude | Choix de conception ; niveaux concernés à confirmer par un expert (débutant ?). |
+| Incertitude | Choix de conception ; rotation en début de cycle pour le débutant = heuristique. |
 | Justification | Principe H : simplicité et répétition chez le novice ; une variation aléatoire excessive peut nuire, une variation systématique (alternance A/B des groupes de choix) reste admise. |
 | Si la preuve reste insuffisante | Politique appliquée et tracée (critère décisif « recency »). |
 | Revendications | `C.VAR` CONTEXT_DEPENDENT (principe) |
-| Version du paramètre | 0.3.0 · revue 2026-09-27 |
+| Version du paramètre | 0.4.0 · revue 2026-09-28 |
+
+## `strength.session.stimulusPreservation`
+
+| Champ | Valeur |
+|---|---|
+| Ancienne valeur (0.2.0) | *absent (sémantique 0.2.0)* |
+| Valeur 4E (0.3.0) | *absent (sémantique 0.2.0)* |
+| Valeur 4F (0.4.0) | `{"policy":"swap_lower_priority_optional"}` |
+| Lecture | Absent en 0.2.0 et 4E ; 4F : « swap_lower_priority_optional » — un optionnel de plus haute priorité de stimulus omis faute de temps remplace un optionnel de plus basse priorité si, sans lui, un groupe ciblé perdrait la majorité de sa dose de séance, sans retirer la seule couverture d’un autre groupe. |
+| Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
+| Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
+| Sources | `SRC.PELLAND_2026` (type le plus fort : meta_analysis) |
+| Population | Adultes en bonne santé, majoritairement jeunes et masculins selon les sources ; transposition aux femmes, aux seniors et aux sportifs d’endurance non vérifiée |
+| Critère | Sans objet (aucune mesure d’effet) |
+| Confiance | very_low |
+| Incertitude | Critère « majorité de la dose » ordinal (la contribution de l’optionnel dépasse ou égale celle de tous les autres exercices sur ce groupe) : choix de conception. |
+| Justification | Correction du contre-audit 4E (S2 : pectoraux 5 → 2 séries par simple effet d’ordre) : la politique de durée ne doit pas dégrader le stimulus prévu par l’intention (ordre de priorité du stimulus et de l’objectif, déjà déclaré dans le ruleset). Aucun quota musculaire. |
+| Si la preuve reste insuffisante | Sans échange admissible, aucun ajout supplémentaire (le temps n’est pas forcé) ; tout échange est tracé (SELECT.STIMULUS_PRESERVED). |
+| Revendications | `C.DOSE` SUPPORTED (principe) ; `C.SP_RULE` EXPERT_DESIGN_REVIEW (valeur) |
+| Version du paramètre | 0.4.0 · revue 2026-09-28 |
 
 ## `strength.tracks.horizon`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | *absent (sémantique 0.2.0)* |
-| Nouvelle valeur / plage (V1) | `{"policy":"review"}` |
+| Valeur 4E (0.3.0) | `{"policy":"review"}` |
+| Valeur 4F (0.4.0) | `{"policy":"review"}` |
 | Lecture | Absent en 0.2.0 (clôture max_weeks) ; V1 : « review » (horizon de revue, jamais une clôture automatique). |
 | Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -730,14 +796,15 @@
 | Justification | Une ancre ne change que pour une raison traçable (P10). |
 | Si la preuve reste insuffisante | La revue est signalée (PROGRESSION.REVIEW_DUE) ; la track reste active. |
 | Revendications | `C.VAR` CONTEXT_DEPENDENT (principe) |
-| Version du paramètre | 0.3.0 · revue 2026-09-27 |
+| Version du paramètre | 0.3.0 · revue 2026-09-28 |
 
 ## `strength.session.durationPriority`
 
 | Champ | Valeur |
 |---|---|
 | Ancienne valeur (0.2.0) | *absent (sémantique 0.2.0)* |
-| Nouvelle valeur / plage (V1) | `{"warmupExtra":"if_fits_after_optionals","cooldown":"if_fits_after_optionals","primaryRest":"reduce_last"}` |
+| Valeur 4E (0.3.0) | `{"warmupExtra":"if_fits_after_optionals","cooldown":"if_fits_after_optionals","primaryRest":"reduce_last"}` |
+| Valeur 4F (0.4.0) | `{"warmupExtra":"if_fits_after_optionals","cooldown":"if_fits_after_optionals","primaryRest":"reduce_last"}` |
 | Lecture | Absent en 0.2.0 (5 min + 3 min imposées hors contrainte ; repos du principal réduit avec les autres) ; V1 : échauffement supplémentaire et retour au calme seulement s’ils tiennent après les optionnels ; repos du principal réduit en dernier. |
 | Statut | `PRODUCT_GUARDRAIL` — garde-fou produit |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
@@ -749,4 +816,4 @@
 | Justification | Ordre de priorité de la durée (4E §I) : travail principal, repos, montée spécifique, secondaires, accessoires, puis échauffement général supplémentaire et retour au calme. |
 | Si la preuve reste insuffisante | Politique appliquée et tracée (SELECT.SLOT_OMITTED i.warmup_extra / i.cooldown ; DOSE.MODIFIED time:primary_rest en dernier recours). |
 | Revendications | `C.WU_RFD` CONTEXT_DEPENDENT (principe) |
-| Version du paramètre | 0.3.0 · revue 2026-09-27 |
+| Version du paramètre | 0.3.0 · revue 2026-09-28 |

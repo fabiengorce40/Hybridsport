@@ -12,13 +12,13 @@ import type { MeasuredObservation } from '../../src/index.js';
 import { GOLDENS } from '../fixtures/goldens.js';
 import { goldenRecord } from '../fixtures/golden-record.js';
 import { NOW } from '../fixtures/harness.js';
-import { CANDIDATE_RULESET, candidateScenario } from '../fixtures/science.js';
-import { ATTRIBUTIONS, attribute, CAUSES, compareScenario } from '../fixtures/science-diff.js';
-import type { ScenarioComparison } from '../fixtures/science-diff.js';
+import { CANDIDATE_RULESET, candidateScenario, LOCK_RULESET, lockScenario } from '../fixtures/science.js';
+import { ATTRIBUTIONS, attribute, CAUSES, compareScenario, CORRECTIONS_4F, threeWay } from '../fixtures/science-diff.js';
+import type { ScenarioComparison, ThreeWayRow } from '../fixtures/science-diff.js';
 import { STRENGTH_TEST_VALUES } from '../fixtures/ruleset.js';
 
 const DOCS = '../../../../docs/engine-impl';
-const P = readStrengthParams(CANDIDATE_RULESET).values;
+const P = readStrengthParams(LOCK_RULESET).values;
 const cell = (s: string) => s.replace(/\|/g, '\\|').replace(/\n/g, ' ');
 const value = (v: unknown): string => {
   if (v === undefined) return '*absent (sémantique 0.2.0)*';
@@ -58,9 +58,11 @@ function registryDoc(): string {
     '',
     `- Version du registre : **${r.version}** · ruleset : **${r.rulesetVersion}**`,
     `- Gate STRENGTH_SCIENTIFIC_V1_GATE calculé : **${g.gate}** (anomalies : ${String(g.issues.length)} ; blocages PRODUCTION : ${String(g.readiness.blockers.length)})`,
-    '- Vérification des sources (2026-09-27) : **identité** par recherche web (PMID, titre, auteurs, revue) ; **contenu** connu par **résumés de moteur de recherche seulement** (`SEARCH_SUMMARY`).',
-    '  - PubMed, Europe PMC et les sites des éditeurs étaient bloqués par la politique réseau de l’environnement d’exécution : aucun résumé officiel ni texte intégral n’a été lu.',
-    '  - Aucune précision absente des résumés consultés n’a été ajoutée ; toute source reste à relire en texte intégral avant un usage PRODUCTION.',
+    '- Vérification des sources (2026-09-27, complétée le 2026-09-28) : **identité** par recherche web (PMID, titre, auteurs, revue, DOI).',
+    '- **Niveaux de vérification du contenu** : `IDENTITY_ONLY` (aucun résultat extrait) < `SEARCH_SUMMARY` (résultats connus par des résumés de moteur de recherche, y compris secondaires) < `ABSTRACT_VERIFIED` (résumé officiel lu) < `FULL_TEXT_VERIFIED`.',
+    '  - PubMed, E-utilities, Europe PMC et les sites des éditeurs restent bloqués par la politique réseau de l’environnement d’exécution (vérifié à nouveau en 4F) : **aucun résumé officiel ni texte intégral n’a été lu**, aucune source ne dépasse `SEARCH_SUMMARY`.',
+    '  - Aucune précision absente des résumés consultés n’a été ajoutée ; chaque source porte la liste des points à confirmer lors de la revue humaine (§6).',
+    `- Répartition : ${['IDENTITY_ONLY', 'SEARCH_SUMMARY', 'ABSTRACT_VERIFIED', 'FULL_TEXT_VERIFIED'].map((l) => `${l} ${String(r.sources.filter((x) => x.verificationLevel === l).length)}`).join(' · ')}`,
     '',
     '## 1. Statuts scientifiques',
     '',
@@ -74,7 +76,7 @@ function registryDoc(): string {
     '',
     '| Source | PMID | Type | Identité | Contenu | Principes | Paramètres |',
     '|---|---|---|---|---|---|---|',
-    ...r.sources.map((s) => { const c = citing(s.id); return `| \`${s.id}\` | ${s.pmid} | ${s.evidenceType} | ${s.identityVerification} | ${s.contentVerification} | ${c.principles.join(', ') || '—'} | ${c.params.map((x) => `\`${x}\``).join(', ') || '—'} |`; }),
+    ...r.sources.map((s) => { const c = citing(s.id); return `| \`${s.id}\` | ${s.pmid} | ${s.evidenceType} | ${s.identityVerification} | ${s.verificationLevel} | ${c.principles.join(', ') || '—'} | ${c.params.map((x) => `\`${x}\``).join(', ') || '—'} |`; }),
     '',
     ...r.sources.flatMap((s) => [
       `### ${s.id} (PMID ${s.pmid}, ${s.year})`,
@@ -83,7 +85,7 @@ function registryDoc(): string {
       `- Population : ${s.population}`,
       `- Critères : ${s.outcomes.join(', ')}`,
       `- Résultats rapportés : ${s.findings.length > 0 ? s.findings.join(' ') : '*aucun (contenu inconnu)*'}`,
-      `- Vérification : identité ${s.identityVerification}, contenu ${s.contentVerification}`,
+      `- Vérification : identité ${s.identityVerification}, contenu ${s.verificationLevel} (${s.verifiedOn})`,
       `- Limites : ${s.limitations}`,
       '',
     ]),
@@ -105,7 +107,17 @@ function registryDoc(): string {
     '|---|---|---|---|---|---|',
     ...[...claims].sort(([a], [b]) => (a < b ? -1 : 1)).map(([id, c]) => `| \`${id}\` | ${cell(c.statement)} | ${c.status} | ${c.vd ? 'oui' : 'non'} | ${c.sources.join(', ') || '—'} | ${c.params.map((x) => `\`${x}\``).join(', ')} |`),
     '',
-    '## 5. Blocages PRODUCTION',
+    '## 5. Mécanisme soutenu, ampleur heuristique',
+    '',
+    '| Paramètre | Statut affiché | Mécanisme | Ampleur | Lecture |',
+    '|---|---|---|---|---|',
+    ...r.parameters.filter((p) => p.evidenceSplit).map((p) => `| \`${p.parameterId}\` | ${p.status} | ${p.evidenceSplit?.mechanism ?? ''} | ${p.evidenceSplit?.magnitude ?? ''} | ${cell(p.evidenceSplit?.note ?? '')} |`),
+    '',
+    '## 6. Revue humaine à préparer (par source)',
+    '',
+    ...r.sources.flatMap((s) => [`- \`${s.id}\` (${s.verificationLevel}) : ${s.pendingHumanReview.join(' ; ')}`]),
+    '',
+    '## 7. Blocages PRODUCTION',
     '',
     '| Code | Objet | Détail |',
     '|---|---|---|',
@@ -117,17 +129,19 @@ function registryDoc(): string {
 
 function rulesetDoc(): string {
   const r = SCIENCE_REGISTRY;
-  const meta = (id: string): ParameterMetadata | undefined => CANDIDATE_RULESET.parameter(id);
+  const meta = (id: string): ParameterMetadata | undefined => LOCK_RULESET.parameter(id);
+  const meta4e = (id: string): ParameterMetadata | undefined => CANDIDATE_RULESET.parameter(id);
   const byStatus = new Map<string, number>();
   for (const p of r.parameters) byStatus.set(p.status, (byStatus.get(p.status) ?? 0) + 1);
   const byChange = new Map<string, number>();
   for (const p of r.parameters) byChange.set(p.change, (byChange.get(p.change) ?? 0) + 1);
   const lines = [
-    '# STRENGTH-SCIENTIFIC-RULESET-V1 — ruleset scientifique V1 (candidat)',
+    '# STRENGTH-SCIENTIFIC-RULESET-V1 — ruleset scientifique V1 (verrou provisoire, phase 4F)',
     '',
-    '> Document **généré** depuis le registre scientifique et le ruleset candidat : ne pas éditer à la main.',
+    '> Document **généré** depuis le registre scientifique et le ruleset 4F : ne pas éditer à la main.',
     '',
-    `- Ruleset candidat : **${r.rulesetVersion}** (étend \`0.2.0-strength-test\` sans en modifier aucune valeur) · registre **${r.version}**`,
+    `- Ruleset : **${r.rulesetVersion}** (étend \`0.2.0-strength-test\` sans en modifier aucune valeur ; succède au candidat 4E \`0.3.0-strength-science-candidate\`, qui reste reproductible) · registre **${r.version}**`,
+    '- Verrou STRENGTH_SCIENTIFIC_LOCK_V1 : chaque paramètre a UNE catégorie principale (colonne « Statut ») ; aucune valeur numérique n’est `SUPPORTED` parce qu’un mécanisme général l’est.',
     `- ${String(r.parameters.length)} paramètres : ${[...byStatus].sort().map(([k, v]) => `${k} ${String(v)}`).join(' · ')}`,
     `- Changements : ${[...byChange].sort().map(([k, v]) => `${k} ${String(v)}`).join(' · ')} (\`unchanged\` = valeur et statut conservés ; \`reclassified\` = valeur conservée, statut précisé ; \`new_policy\` = paramètre facultatif introduit, absent en 0.2.0)`,
     '- **Aucune valeur existante n’est modifiée.** Les 7 écarts validés en phase 4C sont conservés. Toutes les valeurs restent **provisoires** : aucune validation formelle.',
@@ -146,7 +160,9 @@ function rulesetDoc(): string {
         `| Champ | Valeur |`,
         '|---|---|',
         `| Ancienne valeur (0.2.0) | ${value(old)} |`,
-        `| Nouvelle valeur / plage (V1) | ${value(m?.value)} |`,
+        `| Valeur 4E (0.3.0) | ${value(meta4e(p.parameterId)?.value)} |`,
+        `| Valeur 4F (0.4.0) | ${value(m?.value)} |`,
+        ...(p.evidenceSplit ? [`| Mécanisme / ampleur | ${p.evidenceSplit.mechanism} / ${p.evidenceSplit.magnitude} — ${cell(p.evidenceSplit.note)} |`] : []),
         `| Lecture | ${cell(p.valueNote)} |`,
         `| Statut | \`${p.status}\`${p.alsoClassifiedAs.length > 0 ? ` + ${p.alsoClassifiedAs.map((x) => `\`${x}\``).join(', ')}` : ''} — ${STATUS_TEXT[p.status] ?? ''} |`,
         `| Gouvernance | ${p.governance} · visa expert ${p.expertSignoffRequired ? 'requis' : 'non requis'} · visa sécurité ${p.safetySignoffRequired ? 'requis' : 'non requis'} · provisoire ${p.provisional ? 'oui' : 'non'} |`,
@@ -208,6 +224,46 @@ function diffDoc(comparisons: readonly ScenarioComparison[]): string {
   return lines.join('\n');
 }
 
+function diff4fDoc(all: readonly { k: string; rows: ThreeWayRow[] }[]): string {
+  const count = (rows: readonly ThreeWayRow[], c: string) => rows.filter((r) => r.classification === c).length;
+  const lines = [
+    '# STRENGTH-4F-BASELINE-DIFF — goldens S1–S7 : 0.2.0 → 4E → 4F',
+    '',
+    '> Document **généré** (tests/golden/science-docs.test.ts) : chaque différence est calculée depuis les séances enregistrées et classée. Ne pas éditer à la main.',
+    '',
+    '- 0.2.0 : `0.2.0-strength-test` (`__goldens__/`) · 4E : `0.3.0-strength-science-candidate` (`__goldens_v1__/`, PHASE_4E_BASELINE) · 4F : `0.4.0-strength-science-lock` (`__goldens_4f__/`).',
+    '- Classes : `UNCHANGED` (identique dans les trois versions, non listé) ; `4E_CHANGE_RETAINED` (changement 4E conservé) ; `4F_CORRECTION` (changement 4F attribué à une correction) ; `UNEXPECTED` (changement 4F sans attribution : bloque le gate).',
+    '- Éléments comparés : exercices, ordre, séries, reps, charge, RIR, repos, montée, échauffement, retour au calme, durée, volume par groupe, ancres, confiance, interférence, reason codes.',
+    '',
+    '## Synthèse',
+    '',
+    '| Séance | 4E_CHANGE_RETAINED | 4F_CORRECTION | UNEXPECTED |',
+    '|---|---|---|---|',
+    ...all.map(({ k, rows }) => `| ${k} | ${String(count(rows, '4E_CHANGE_RETAINED'))} | ${String(count(rows, '4F_CORRECTION'))} | ${String(count(rows, 'UNEXPECTED'))} |`),
+    `| **Total** | ${String(all.reduce((a, x) => a + count(x.rows, '4E_CHANGE_RETAINED'), 0))} | ${String(all.reduce((a, x) => a + count(x.rows, '4F_CORRECTION'), 0))} | **${String(all.reduce((a, x) => a + count(x.rows, 'UNEXPECTED'), 0))}** |`,
+    '',
+    '## Corrections 4F attribuées',
+    '',
+    ...CORRECTIONS_4F.map((c) => `- **${c.correction}** (${c.scenario}) — ${c.why}`),
+    '',
+  ];
+  for (const { k, rows } of all) {
+    const g = GOLDENS[k];
+    if (!g) continue;
+    lines.push(`## ${k} — ${g.title}`, '');
+    for (const cls of ['4F_CORRECTION', 'UNEXPECTED', '4E_CHANGE_RETAINED'] as const) {
+      const rs = rows.filter((r) => r.classification === cls);
+      if (rs.length === 0) continue;
+      lines.push(`**${cls}** (${String(rs.length)})`, '', '| Élément | Objet | 0.2.0 | 4E | 4F |', '|---|---|---|---|---|');
+      for (const r of rs) lines.push(`| ${r.kind} | ${cell(r.subject)} | ${cell(r.v020)} | ${cell(r.v4e)} | ${cell(r.v4f)} |`);
+      lines.push('');
+    }
+    if (rows.length === 0) lines.push('Aucune différence : UNCHANGED.', '');
+    lines.push('<details><summary>Séance 4F (rendu lisible)</summary>', '', '```text', goldenRecord(g.title, lockScenario(g.scenario)).text.trimEnd(), '```', '', '</details>', '');
+  }
+  return lines.join('\n');
+}
+
 function interferenceDoc(): string {
   const a = P['strength.interference.assessment'];
   if (!a) throw new Error('assessment');
@@ -235,7 +291,8 @@ function interferenceDoc(): string {
     '`niveau = demande (low 1, moderate 2, high 3) + importance + bande de proximité + modificateurs d’impact`, borné à NONE (0)…VERY_HIGH (4).',
     '',
     `- Fenêtre de recherche : ${String(a.searchWindowHours)} h (au-delà, voisine ignorée). **36 h n’est plus une frontière binaire.**`,
-    `- Bandes : ${a.proximityBands.map((b) => `≤ ${String(b.maxHours)} h : ${b.delta >= 0 ? '+' : ''}${String(b.delta)}`).join(' · ')} · au-delà : ${String(a.beyondBandsDelta)}`,
+    '- **Les bins temporels sont opérationnels, pas des frontières biologiques** : aucune source ne fixe une fenêtre en heures ; 12, 24, 48 et 72 h découpent la matrice V1 et restent des heuristiques révisables sans changer le niveau de preuve.',
+    `- Bins : ${a.proximityBands.map((b) => `≤ ${String(b.maxHours)} h : ${b.delta >= 0 ? '+' : ''}${String(b.delta)}`).join(' · ')} · au-delà : ${String(a.beyondBandsDelta)}`,
     `- Importance : key ${String(a.importanceDelta.key)} · standard ${String(a.importanceDelta.standard)} · optional ${String(a.importanceDelta.optional)}`,
     `- Modificateurs : ${a.impactModifiers.map((m) => `demande \`${m.demand}\` ≥ ${m.atLeast} et structure ∈ {${m.structures.join(', ')}} à demande ≥ ${m.structureAtLeast} : ${m.delta >= 0 ? '+' : ''}${String(m.delta)}`).join(' ; ')}`,
     '- Le niveau retenu par structure est le plus élevé des voisines ; chaque couple (voisine, structure) est tracé (`PLAN.INTERFERENCE_ASSESSED`).',
@@ -259,7 +316,17 @@ function interferenceDoc(): string {
     '- Le StrengthEngine **consomme** le contexte hebdomadaire ; il ne déplace, ne supprime ni ne reprogramme **jamais** une séance, et ne change jamais le stimulus demandé.',
     '- VERY_HIGH ⇒ **signal structuré** (`PLAN.INTERFERENCE_SIGNAL {structure, level, source, overlap}`) dans la proposition : le planificateur global reste seul décideur.',
     '- Si l’objet de l’archétype devient impossible, le moteur répond `no_valid_proposal` (`PLAN.CONTEXT_INCOMPATIBLE`), comme en 0.2.0.',
-    '- Statut : `PROGRAMMING_HEURISTIC` — mécanismes soutenus selon le contexte (Wilson 2012 ; Lundberg 2022), bandes et deltas heuristiques.',
+    '- Statut : `PROGRAMMING_HEURISTIC` — mécanismes soutenus selon le contexte (Wilson 2012 ; Lundberg 2022), bins et deltas heuristiques.',
+    '',
+    '## 6. Mécanisme soutenu, ampleur heuristique (phase 4F)',
+    '',
+    '| Élément | Statut |',
+    '|---|---|',
+    '| Existence et dépendance au contexte de l’interférence (modalité, fréquence, durée ; course > vélo pour l’hypertrophie des fibres) | `CONTEXT_DEPENDENT` (mécanisme) |',
+    '| Bins 12/24/48/72 h, deltas ordinaux, correspondance niveau → action | `PROGRAMMING_HEURISTIC` (ampleur) |',
+    '| MODERATE ⇒ RIR + 2 (`rirDelta` de la structure) | `PROGRAMMING_HEURISTIC` (ampleur), jamais présenté comme démontré |',
+    '',
+    `Trace : avec \`traceEvidenceBasis\` (${a.traceEvidenceBasis === true ? 'activé dans le ruleset 4F' : 'désactivé'}), chaque structure évaluée avec une action reçoit \`PLAN.INTERFERENCE_BASIS {structure, level, action, mechanism, magnitude}\`. Le mécanisme et l’ampleur sont lus dans le registre scientifique (\`evidenceSplit\`), **jamais dans la matrice** : modifier un bin ne peut pas modifier le niveau de preuve affiché (test F7).`,
     '',
   ];
   return lines.join('\n');
@@ -350,7 +417,16 @@ describe('documents du ruleset scientifique V1 (générés)', () => {
     expect(entries.filter((e) => attribute(e)?.cause === 'evidence')).toEqual([]);
   });
 
+  const threeWays = Object.entries(GOLDENS).map(([k, g]) => ({ k, rows: threeWay(k, g.scenario, candidateScenario(g.scenario), lockScenario(g.scenario)).rows }));
+
+  it('4F : aucune différence 4E → 4F inattendue (UNEXPECTED = 0), chaque correction attribuée sert', () => {
+    const rows = threeWays.flatMap((x) => x.rows);
+    expect(rows.filter((r) => r.classification === 'UNEXPECTED').map((r) => `${r.scenario}|${r.kind}|${r.subject}`)).toEqual([]);
+    for (const c of CORRECTIONS_4F) expect(rows.some((r) => r.classification === '4F_CORRECTION' && r.why.startsWith(c.correction)), c.correction).toBe(true);
+  });
+
   it('documents à jour', async () => {
+    await expect(diff4fDoc(threeWays)).toMatchFileSnapshot(`${DOCS}/STRENGTH-4F-BASELINE-DIFF.md`);
     await expect(registryDoc()).toMatchFileSnapshot(`${DOCS}/STRENGTH-SCIENCE-REGISTRY-V1.md`);
     await expect(rulesetDoc()).toMatchFileSnapshot(`${DOCS}/STRENGTH-SCIENTIFIC-RULESET-V1.md`);
     await expect(diffDoc(comparisons)).toMatchFileSnapshot(`${DOCS}/STRENGTH-4E-BASELINE-DIFF.md`);

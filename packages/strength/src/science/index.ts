@@ -1,5 +1,5 @@
 /**
- * Registre scientifique du StrengthEngine, version 1.0.0 (ruleset scientifique V1 candidat).
+ * Registre scientifique du StrengthEngine, version 1.1.0 (ruleset scientifique V1 verrouillé provisoirement, phase 4F).
  */
 import { STRENGTH_OPTIONAL_PARAMETER_SCHEMAS, STRENGTH_PARAMETER_SCHEMAS } from '../params.js';
 import type { ScienceRegistry } from './types.js';
@@ -13,7 +13,7 @@ export { SCIENCE_SOURCES } from './sources.js';
 export { SCIENCE_PRINCIPLES } from './principles.js';
 export { PARAMETER_PROVENANCE, SCIENCE_RULESET_VERSION } from './provenance.js';
 
-export const SCIENCE_REGISTRY_VERSION = '1.0.0';
+export const SCIENCE_REGISTRY_VERSION = '1.1.0';
 
 export const SCIENCE_REGISTRY: ScienceRegistry = {
   version: SCIENCE_REGISTRY_VERSION, rulesetVersion: SCIENCE_RULESET_VERSION,

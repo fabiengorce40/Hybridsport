@@ -11,14 +11,14 @@ import type { SessionDraft, SessionItem, SetPrescription } from '@hybridsport/do
 import { canonicalStringify } from '@hybridsport/engine';
 import {
   anchorReviewDue, assessMeasured, assessNeighborStructure, closureCause, decideLoad, DECLARED_STRENGTH_PARAMETERS, loadKnowledge, loweredStructures,
-  assessTransferred, promoteParameter, proposeStrength, readStrengthParams, SCIENCE_REGISTRY, SCIENCE_REGISTRY_VERSION, SCIENCE_RULESET_VERSION, scientificGate, validateScienceRegistry,
+  assessTransferred, promoteParameter, proposeStrength, readStrengthParams, SCIENCE_REGISTRY, scientificGate, STRENGTH_ENGINE_VERSION, validateScienceRegistry,
 } from '../../src/index.js';
 import type { MeasuredObservation, ParameterProvenance, ScienceRegistry, StrengthContextInput, StrengthTrack } from '../../src/index.js';
 import { engineInput, envFor, NOW, run, scenario, strengthCatalog, strengthRuleset } from '../fixtures/harness.js';
 import { GOLDENS } from '../fixtures/goldens.js';
 import { goldenOutcome, goldenRecord } from '../fixtures/golden-record.js';
 import { CANDIDATE_RULESET, candidateScenario } from '../fixtures/science.js';
-import { strengthScientificRulesetDocument } from '../fixtures/ruleset.js';
+import { SCIENCE_4E_REGISTRY_VERSION, SCIENCE_4E_RULESET_VERSION, strengthScientificRulesetDocument } from '../fixtures/ruleset.js';
 
 const CATALOG = strengthCatalog();
 const BASELINE = strengthRuleset();
@@ -83,7 +83,7 @@ describe('registre scientifique : provenance, statuts, G1 (K1–K3)', () => {
     // Gate : PASS_PROVISIONAL (jamais PASS_PRODUCTION sans visas et lectures intégrales).
     const g = scientificGate(SCIENCE_REGISTRY, DECLARED_STRENGTH_PARAMETERS);
     expect(g.gate).toBe('PASS_PROVISIONAL');
-    expect(g.readiness.blockers.map((b) => b.code)).toEqual(expect.arrayContaining(['G1_SIGNOFF_MISSING', 'PROVISIONAL_VALUE', 'SOURCE_NOT_READ']));
+    expect(g.readiness.blockers.map((b) => b.code)).toEqual(expect.arrayContaining(['G1_SIGNOFF_MISSING', 'PROVISIONAL_VALUE', 'SOURCE_NOT_FULL_TEXT']));
   });
 });
 
@@ -343,9 +343,9 @@ describe('priorités de durée, novice, déterminisme, versions (K15–K20)', ()
     if (cand.status !== 'proposals' || old.status !== 'proposals') throw new Error('S5');
     const pc = cand.proposals[0];
     const po = old.proposals[0];
-    expect(pc?.provenance).toMatchObject({ rulesetVersion: SCIENCE_RULESET_VERSION, engineVersion: '0.2.0' });
+    expect(pc?.provenance).toMatchObject({ rulesetVersion: SCIENCE_4E_RULESET_VERSION, engineVersion: STRENGTH_ENGINE_VERSION });
     expect(po?.provenance.rulesetVersion).toBe('0.2.0-strength-test');
-    expect(pc?.reasons.find((r) => r.code === 'DATA.SCIENCE_REGISTRY')?.params).toEqual({ version: SCIENCE_REGISTRY_VERSION });
+    expect(pc?.reasons.find((r) => r.code === 'DATA.SCIENCE_REGISTRY')?.params).toEqual({ version: SCIENCE_4E_REGISTRY_VERSION });
     expect(pc?.parametersUsed.map((p) => p.id)).toContain('strength.science.registryVersion');
     expect(po?.parametersUsed.map((p) => p.id)).not.toContain('strength.science.registryVersion');
     expect(pc?.provenance.seed).toBe(po?.provenance.seed);

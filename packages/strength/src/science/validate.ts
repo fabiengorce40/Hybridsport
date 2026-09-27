@@ -8,7 +8,7 @@
  */
 import type { GovernanceClass } from '@hybridsport/domain';
 import type { ParameterProvenance, ScienceRegistry, ScienceSource, ScientificStatus, Signoff } from './types.js';
-import { evidenceRank, SYNTHESIS_TYPES } from './types.js';
+import { atLeast, evidenceRank, SYNTHESIS_TYPES } from './types.js';
 
 export interface ScienceIssue { readonly code: string; readonly subject: string; readonly detail: string }
 
@@ -18,13 +18,19 @@ const hasSafetySignoff = (s: readonly Signoff[]) => s.some((x) => x.scope === 's
 const hasExpertSignoff = (s: readonly Signoff[]) => s.some((x) => x.verdict === 'approved' && (x.role === 'sports_expert' || x.role === 'medical_advisor'));
 
 function supportsSynthesis(ids: readonly string[], sources: ReadonlyMap<string, ScienceSource>): boolean {
-  return ids.some((id) => { const s = sources.get(id); return s !== undefined && s.identityVerification === 'CONFIRMED' && SYNTHESIS_TYPES.includes(s.evidenceType); });
+  // IDENTITY_ONLY ne soutient jamais seul une revendication : il faut au moins des résultats extraits.
+  return ids.some((id) => { const s = sources.get(id); return s !== undefined && s.identityVerification === 'CONFIRMED' && SYNTHESIS_TYPES.includes(s.evidenceType) && atLeast(s.verificationLevel, 'SEARCH_SUMMARY'); });
 }
 
 export function validateScienceRegistry(reg: ScienceRegistry, declared: readonly { readonly id: string; readonly governance: GovernanceClass }[]): ScienceIssue[] {
   const out: ScienceIssue[] = [];
   const issue = (code: string, subject: string, detail: string) => out.push({ code, subject, detail });
   const sources = new Map(reg.sources.map((s) => [s.id, s]));
+  for (const src of reg.sources) {
+    // Cohérence du niveau de vérification : aucun résultat ⇔ IDENTITY_ONLY ; revue humaine toujours préparée tant que le texte intégral n'est pas lu.
+    if ((src.findings.length === 0) !== (src.verificationLevel === 'IDENTITY_ONLY')) issue('SOURCE_LEVEL', src.id, src.verificationLevel);
+    if (src.verificationLevel !== 'FULL_TEXT_VERIFIED' && src.pendingHumanReview.length === 0) issue('SOURCE_REVIEW_MISSING', src.id, 'points de revue humaine absents');
+  }
   const byId = new Map<string, ParameterProvenance>();
   for (const p of reg.parameters) {
     if (byId.has(p.parameterId)) issue('DUPLICATE_PROVENANCE', p.parameterId, 'provenance déclarée deux fois');
@@ -58,7 +64,13 @@ export function validateScienceRegistry(reg: ScienceRegistry, declared: readonly
     const vd = p.claims.filter((c) => c.valueDetermining);
     const rank = evidenceRank(p.status);
     if (rank > 0 && (vd.length === 0 || vd.some((c) => evidenceRank(c.status) < rank))) issue('FALSE_PRECISION', s, `${p.status} plus fort que la valeur ne le permet`);
-    if (p.status === 'SUPPORTED' && (p.provisional || !p.sourceIds.some((id) => sources.get(id)?.contentVerification !== 'SEARCH_SUMMARY'))) issue('PROVISIONAL_AS_SUPPORTED', s, 'SUPPORTED exige une valeur non provisoire et une source lue au-delà d’un résumé de recherche');
+    if (p.status === 'SUPPORTED' && (p.provisional || !p.sourceIds.some((id) => { const x = sources.get(id); return x !== undefined && atLeast(x.verificationLevel, 'ABSTRACT_VERIFIED'); }))) issue('PROVISIONAL_AS_SUPPORTED', s, 'SUPPORTED exige une valeur non provisoire et une source au moins ABSTRACT_VERIFIED');
+    // Mécanisme / ampleur : l'ampleur ne peut pas être plus faible que le statut affiché ; le mécanisme doit être porté par une revendication de principe.
+    if (p.evidenceSplit) {
+      if (evidenceRank(p.evidenceSplit.magnitude) < rank) issue('FALSE_PRECISION', s, `ampleur ${p.evidenceSplit.magnitude} plus faible que le statut ${p.status}`);
+      if (!p.claims.some((c) => !c.valueDetermining && c.status === p.evidenceSplit?.mechanism)) issue('MECHANISM_UNSOURCED', s, p.evidenceSplit.mechanism);
+      if (!p.claims.some((c) => c.valueDetermining && c.status === p.evidenceSplit?.magnitude)) issue('MAGNITUDE_UNDECLARED', s, p.evidenceSplit.magnitude);
+    }
     if (p.status === 'SUPPORTED_WITH_RANGE' && !supportsSynthesis(p.sourceIds, sources)) issue('RANGE_UNSUPPORTED', s, 'SUPPORTED_WITH_RANGE sans synthèse confirmée');
     if (p.status !== 'TECHNICAL' && p.provisional && !p.expertSignoffRequired) issue('SIGNOFF_FLAG', s, 'valeur provisoire sans visa d’expert requis');
     // G1 reste G1.
@@ -99,7 +111,8 @@ export function productionReadiness(reg: ScienceRegistry): ProductionReadiness {
   }
   for (const s of reg.sources) {
     if (!cited.has(s.id)) continue;
-    if (s.contentVerification === 'SEARCH_SUMMARY') blockers.push({ code: 'SOURCE_NOT_READ', subject: s.id, detail: 'contenu connu par résumé de recherche seulement' });
+    // ABSTRACT_VERIFIED ≠ FULL_TEXT_VERIFIED : seul le texte intégral lève le blocage.
+    if (s.verificationLevel !== 'FULL_TEXT_VERIFIED') blockers.push({ code: 'SOURCE_NOT_FULL_TEXT', subject: s.id, detail: s.verificationLevel });
     if (s.identityVerification === 'PARTIAL') blockers.push({ code: 'SOURCE_IDENTITY_PARTIAL', subject: s.id, detail: 'identité partiellement vérifiée' });
   }
   return { ready: blockers.length === 0, blockers };

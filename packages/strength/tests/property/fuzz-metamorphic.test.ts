@@ -9,7 +9,7 @@ import { canonicalStringify } from '@hybridsport/engine';
 import type { StrengthContextInput } from '../../src/index.js';
 import { run, scenario, strengthCatalog } from '../fixtures/harness.js';
 import type { Scenario } from '../fixtures/harness.js';
-import { candidateScenario } from '../fixtures/science.js';
+import { candidateScenario, lockScenario } from '../fixtures/science.js';
 
 const CATALOG = strengthCatalog();
 const STRENGTH_EX = CATALOG.exercises().filter((e) => e.disciplines.includes('strength') && e.loadable).map((e) => e.id).sort();
@@ -76,6 +76,10 @@ describe('fuzz : le moteur ne lève jamais et ne produit que des séances valide
 
   it('mêmes invariants avec le ruleset scientifique V1 candidat (phase 4E)', () => {
     fc.assert(fc.property(arbScenario, (s) => invariant(candidateScenario(s))), { numRuns: 120, seed: 20261005 });
+  });
+
+  it('mêmes invariants avec le ruleset scientifique V1 verrouillé (phase 4F)', () => {
+    fc.assert(fc.property(arbScenario, (s) => invariant(lockScenario(s))), { numRuns: 120, seed: 20261005 });
   });
 
   it('déterminisme : même scénario ⇒ même sortie (séance, trace, empreinte), octet pour octet', () => {

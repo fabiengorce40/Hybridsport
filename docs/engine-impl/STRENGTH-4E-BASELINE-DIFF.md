@@ -393,8 +393,8 @@ omissions / adaptations :
 | Élément | Objet | Avant | Après |
 |---|---|---|---|
 | effort | sp.main_single.1 ex.walking_lunge_db | 2 × RIR 3 | 2 × RIR 5 |
-| interference | RIR seulement ex.walking_lunge_db | aucun | +2 (interference_rir:lower_knee:neighbor:hybrid_race:hr_station_strength) |
 | interference | RIR seulement ex.sandbag_lunge | aucun | +2 (interference_rir:lower_knee:neighbor:hybrid_race:hr_station_strength) |
+| interference | RIR seulement ex.walking_lunge_db | aucun | +2 (interference_rir:lower_knee:neighbor:hybrid_race:hr_station_strength) |
 | reasons | DOSE.MODIFIED | 0 | 2 |
 
 **politique produit / sécurité** — Évaluation de chaque couple (voisine, structure) tracée : matrice transparente.
@@ -484,8 +484,8 @@ omissions / adaptations :
 
 | Élément | Objet | Avant | Après |
 |---|---|---|---|
-| confidence | ex.romanian_deadlift | high | medium |
 | confidence | ex.leg_curl | high | medium |
+| confidence | ex.romanian_deadlift | high | medium |
 
 **plage prudente** — Facteurs de la PrescriptionConfidence tracés (récence, observations, séances, cohérence, RIR, conflit, transfert).
 

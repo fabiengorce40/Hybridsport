@@ -52,6 +52,8 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'DURATION.TARGET_BELOW_ARCHETYPE_MIN', categories: ['feasibility'], params: { requiredS: N, targetS: N }, audience: 'user', severity: 'error' },
   { code: 'DATA.WEEK_CONTEXT_UNKNOWN', categories: ['information'], params: {}, audience: 'internal', severity: 'info' },
   { code: 'PLAN.INTERFERENCE_ASSESSED', categories: ['optimization'], params: { structure: S, level: S, action: S, source: S, hours: N, priority: S, demand: S }, audience: 'internal', severity: 'info' },
+  { code: 'PLAN.INTERFERENCE_BASIS', categories: ['information'], params: { structure: S, level: S, action: S, mechanism: S, magnitude: S }, audience: 'internal', severity: 'info' },
+  { code: 'SELECT.STIMULUS_PRESERVED', categories: ['optimization'], params: { slot: S, exerciseId: S, removedSlot: S, removedExerciseId: S, groups: L, sets: N, otherSets: N }, audience: 'internal', severity: 'notice' },
   { code: 'PLAN.INTERFERENCE_SIGNAL', categories: ['business_soft'], params: { structure: S, level: S, source: S, overlap: S }, audience: 'internal', severity: 'warning' },
   { code: 'PROGRESSION.REVIEW_DUE', categories: ['information'], params: { trackId: S, weeks: N }, audience: 'internal', severity: 'notice' },
   { code: 'DATA.SCIENCE_REGISTRY', categories: ['information'], params: { version: S }, audience: 'internal', severity: 'info' },

@@ -252,8 +252,12 @@ export function strengthRulesetDocument(overrides: Partial<Record<StrengthParamI
  * seules s'ajoutent les politiques versionnées facultatives, dont chaque valeur est tracée dans le registre
  * scientifique (provenance, statut). Le ruleset 0.2.0 reste disponible et reproductible à l'identique.
  */
-export const STRENGTH_SCIENCE_CANDIDATE_VALUES: Record<StrengthOptionalParamId, unknown> = {
-  'strength.science.registryVersion': SCIENCE_REGISTRY_VERSION,
+/** Versions FIGÉES du ruleset 4E (PHASE_4E_BASELINE) : il doit rester reproductible après la phase 4F. */
+export const SCIENCE_4E_RULESET_VERSION = '0.3.0-strength-science-candidate';
+export const SCIENCE_4E_REGISTRY_VERSION = '1.0.0';
+
+export const STRENGTH_SCIENCE_CANDIDATE_VALUES: Partial<Record<StrengthOptionalParamId, unknown>> = {
+  'strength.science.registryVersion': SCIENCE_4E_REGISTRY_VERSION,
   'strength.prescriptionConfidence': { rulesVersion: 'pc-1.0.0', high: { minSessions: 2, minObservations: 4 }, rirUncertainLevels: ['novice', 'beginner'], declaredCap: 'medium' },
   'strength.load.specificObservation': { repsTolerance: 1, rirTolerance: 1, requireRir: true },
   'strength.interference.assessment': {
@@ -276,7 +280,36 @@ export function strengthScientificRulesetDocument(overrides: Partial<Record<Stre
     const v = pid in optional ? optional[pid] : STRENGTH_SCIENCE_CANDIDATE_VALUES[pid];
     if (v === null || v === undefined) return [];
     return [param(pid, v as ParameterValue, STRENGTH_OPTIONAL_PARAMETER_SCHEMAS[pid].governance as GovernanceClass, {
-      version: '0.3.0', justification: `Ruleset scientifique V1 : politique versionnée, provenance dans le registre ${SCIENCE_REGISTRY_VERSION} (STRENGTH-SCIENCE-REGISTRY-V1).`,
+      version: '0.3.0', justification: `Ruleset scientifique V1 : politique versionnée, provenance dans le registre ${SCIENCE_4E_REGISTRY_VERSION} (STRENGTH-SCIENCE-REGISTRY-V1).`,
+    })];
+  });
+  return { ...base, rulesetVersion: SCIENCE_4E_RULESET_VERSION, parameters: [...base.parameters, ...extra] };
+}
+
+/**
+ * RULESET SCIENTIFIQUE V1 VERROUILLÉ PROVISOIREMENT (phase 4F) : ruleset 4E + corrections du contre-audit,
+ * toutes portées par des paramètres facultatifs versionnés (le ruleset 4E reste reproductible) :
+ * préservation du stimulus, continuité débutant, trace de la base de preuve de l'interférence.
+ */
+export const STRENGTH_SCIENCE_LOCK_VALUES: Partial<Record<StrengthOptionalParamId, unknown>> = {
+  ...STRENGTH_SCIENCE_CANDIDATE_VALUES,
+  'strength.science.registryVersion': SCIENCE_REGISTRY_VERSION,
+  'strength.interference.assessment': { ...(STRENGTH_SCIENCE_CANDIDATE_VALUES['strength.interference.assessment'] as Record<string, unknown>), traceEvidenceBasis: true },
+  'strength.selection.repetitionPolicy': {
+    levels: ['novice'], recency: 'prefer_repeat', preferredLevels: ['beginner'],
+    rotationReasons: { disliked: true, stagnation: true, cycleStartForPreferred: true, plannerNotes: ['planned_variation'] },
+  },
+  'strength.session.stimulusPreservation': { policy: 'swap_lower_priority_optional' },
+};
+const LOCK_CHANGED: readonly StrengthOptionalParamId[] = ['strength.science.registryVersion', 'strength.interference.assessment', 'strength.selection.repetitionPolicy', 'strength.session.stimulusPreservation'];
+
+export function strengthLockRulesetDocument(overrides: Partial<Record<StrengthParamId, unknown>> = {}, optional: Partial<Record<StrengthOptionalParamId, unknown | null>> = {}): RulesetDocumentInput {
+  const base = strengthRulesetDocument(overrides);
+  const extra = (Object.keys(STRENGTH_OPTIONAL_PARAMETER_SCHEMAS) as StrengthOptionalParamId[]).flatMap((pid) => {
+    const v = pid in optional ? optional[pid] : STRENGTH_SCIENCE_LOCK_VALUES[pid];
+    if (v === null || v === undefined) return [];
+    return [param(pid, v as ParameterValue, STRENGTH_OPTIONAL_PARAMETER_SCHEMAS[pid].governance as GovernanceClass, {
+      version: LOCK_CHANGED.includes(pid) ? '0.4.0' : '0.3.0', justification: `Ruleset scientifique V1 verrouillé (provisoire) : provenance dans le registre ${SCIENCE_REGISTRY_VERSION} (STRENGTH-SCIENCE-REGISTRY-V1).`,
     })];
   });
   return { ...base, rulesetVersion: SCIENCE_RULESET_VERSION, parameters: [...base.parameters, ...extra] };

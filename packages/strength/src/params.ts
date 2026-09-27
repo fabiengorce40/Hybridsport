@@ -161,7 +161,13 @@ export const STRENGTH_OPTIONAL_PARAMETER_SCHEMAS = {
    * Répétition plutôt que variété (principe H, novice) : pour les niveaux listés, le critère `recency` préfère
    * l'exercice pratiqué le plus récemment (jamais de rotation artificielle au sein d'un emplacement).
    */
-  'strength.selection.repetitionPolicy': { governance: 'G2', schema: z.object({ levels: z.array(z.enum(LEVELS)), recency: z.enum(['prefer_repeat']) }).strict() },
+  'strength.selection.repetitionPolicy': { governance: 'G2', schema: z.object({
+    levels: z.array(z.enum(LEVELS)), recency: z.enum(['prefer_repeat']),
+    /** Phase 4F : continuité PRÉFÉRÉE (pas imposée) pour ces niveaux ; rotation permise au début d'un cycle. */
+    preferredLevels: z.array(z.enum(LEVELS)).optional(),
+    /** Phase 4F : raisons explicites de rotation (sans elles : continuité de la 4E, sans exception). */
+    rotationReasons: z.object({ disliked: z.boolean(), stagnation: z.boolean(), cycleStartForPreferred: z.boolean(), plannerNotes: z.array(id) }).strict().optional(),
+  }).strict() },
   /** Hiérarchie de référence : observation récente spécifique (reps et RIR proches de la cible) avant l'e1RM générique. */
   'strength.load.specificObservation': { governance: 'G2', schema: z.object({ repsTolerance: int.nonnegative(), rirTolerance: nonNeg, requireRir: z.boolean() }).strict() },
   /** InterferenceAssessment : matrice ordinale transparente et actions graduées (addendum 4E §F). */
@@ -173,12 +179,20 @@ export const STRENGTH_OPTIONAL_PARAMETER_SCHEMAS = {
     importanceDelta: z.object({ key: int, standard: int, optional: int }).strict(),
     impactModifiers: z.array(z.object({ demand: id, atLeast: z.enum(DEMAND_LEVELS), structures: z.array(id).min(1), structureAtLeast: z.enum(DEMAND_LEVELS), delta: int }).strict()),
     actions: z.record(z.enum(INTERFERENCE_LEVELS), z.enum(INTERFERENCE_ACTIONS)),
+    /** Phase 4F : trace, pour chaque ajustement, la base de preuve (mécanisme vs ampleur) lue dans le registre. */
+    traceEvidenceBasis: z.boolean().optional(),
   }).strict() },
   /**
    * Montée en charge d'une charge de travail SUGGÉRÉE (estimée) : `first` = première bande (0.2.0) ;
    * `by_relative_intensity` = bande choisie par l'intensité relative, paliers plafonnés à `estimatedLastStepMax`.
    */
   'strength.rampup.estimatedPolicy': { governance: 'G2', schema: z.object({ band: z.enum(['first', 'by_relative_intensity']) }).strict() },
+  /**
+   * Préservation du stimulus (phase 4F) : un optionnel de PLUS HAUTE priorité de stimulus omis faute de temps
+   * peut remplacer un optionnel de plus basse priorité quand son absence ferait perdre la majorité de la dose
+   * d'un groupe ciblé, sans retirer la seule couverture d'un autre groupe. Aucun quota musculaire.
+   */
+  'strength.session.stimulusPreservation': { governance: 'G2', schema: z.object({ policy: z.enum(['swap_lower_priority_optional']) }).strict() },
   /** Horizon des ancres : `review` ⇒ la durée devient un horizon de revue (jamais une clôture automatique). */
   'strength.tracks.horizon': { governance: 'G2', schema: z.object({ policy: z.enum(['close', 'review']) }).strict() },
   /**

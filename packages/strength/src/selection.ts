@@ -66,9 +66,10 @@ export function criterionValue(c: Criterion, e: Exercise, slot: SlotInstance, en
       const days = env.familyDaysSince(e.family);
       const bands = env.params['strength.selection.recencyBandsDays'];
       const older = days === undefined ? bands.length : bands.filter((b) => days >= b).length;
-      // Ruleset scientifique V1 (principe H) : au niveau novice, la répétition prime (famille la plus récente d'abord).
-      const repeat = env.params['strength.selection.repetitionPolicy'];
-      return [repeat && repeat.levels.includes(env.level) ? -older : older];
+      // Ruleset scientifique V1 (principe H) : continuité volontaire (famille la plus récente d'abord).
+      // Raison explicite de rotation propre à l'exercice (non aimé, stagnation) : il passe derrière tous les autres.
+      const mode = continuityMode(e, env);
+      return [mode === 'repeat' ? -older : mode === 'avoid' ? -(bands.length + 1) : older];
     }
     case 'preference': {
       const p = env.input.discipline.preferences;
@@ -116,4 +117,29 @@ export function decidingCriterion(ranked: readonly Ranked[], slot: SlotInstance,
   if (!b) return 'only_candidate';
   for (let i = 0; i < order.length; i++) if (compareLex(a.values[i] ?? [], b.values[i] ?? []) !== 0) return order[i] ?? 'none';
   return 'seed_tiebreak';
+}
+
+/**
+ * Continuité volontaire (principe H ; phase 4F) :
+ * - niveaux `levels` (novice) : forte préférence de continuité ;
+ * - niveaux `preferredLevels` (débutant) : préférence, sauf au début d'un cycle (rotation permise) ;
+ * - autres niveaux : variation contrôlée (récence historique) ;
+ * - raisons explicites de rotation, si déclarées : exercice non aimé ou en stagnation (propres à l'exercice),
+ *   note du planificateur (variation planifiée) pour toute la séance. Matériel, douleur, tolérance et objectif
+ *   agissent déjà par les filtres et les critères antérieurs. Jamais un verrou : les critères précédents priment.
+ */
+export function continuityMode(e: Exercise, env: Env): 'repeat' | 'avoid' | 'rotate' {
+  const repeat = env.params['strength.selection.repetitionPolicy'];
+  if (!repeat) return 'rotate';
+  const strong = repeat.levels.includes(env.level);
+  const preferred = !strong && (repeat.preferredLevels ?? []).includes(env.level);
+  if (!strong && !preferred) return 'rotate';
+  const r = repeat.rotationReasons;
+  if (!r) return 'repeat';
+  if (r.plannerNotes.some((n) => env.input.intent.plannerNotes.includes(n))) return 'rotate';
+  if (preferred && r.cycleStartForPreferred && env.input.discipline.phase.weekInMesocycle === 1) return 'rotate';
+  if (r.disliked && env.input.discipline.preferences.disliked.includes(e.id)) return 'avoid';
+  const holds = env.params['strength.progression'].stagnationHolds;
+  if (r.stagnation && env.input.discipline.tracks.some((t) => t.exerciseId === e.id && t.status === 'active' && t.consecutiveHolds >= holds)) return 'avoid';
+  return 'repeat';
 }
