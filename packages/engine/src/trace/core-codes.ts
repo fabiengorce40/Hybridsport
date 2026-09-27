@@ -1,3 +1,4 @@
+import { STRUCTURE_ISSUES } from '@hybridsport/domain';
 import type { ReasonCodeDefinition } from './registry.js';
 
 const S = 'string' as const;
@@ -35,6 +36,8 @@ export const CORE_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'TECHNICAL.RULESET_INVALID', categories: ['technical'], params: { path: S, problem: S }, audience: 'internal', severity: 'error' },
   { code: 'TECHNICAL.SCHEMA_VERSION_UNSUPPORTED', categories: ['technical'], params: { kind: S, version: N, current: N }, audience: 'internal', severity: 'error' },
   { code: 'TECHNICAL.MIGRATION_FAILED', categories: ['technical'], params: { kind: S, from: N, to: N, problem: S }, audience: 'internal', severity: 'error' },
+  // CORE-EXT-R1 : un code explicite par anomalie structurelle (séance à profondeur fixe)
+  ...STRUCTURE_ISSUES.map((issue): ReasonCodeDefinition => ({ code: `TECHNICAL.STRUCTURE.${issue}`, categories: ['technical'], params: { path: S }, audience: 'internal', severity: 'error' })),
   { code: 'TECHNICAL.CATALOG_INVALID', categories: ['technical'], params: { path: S, problem: S }, audience: 'internal', severity: 'error' },
   // RULE — règles métier (HARD ou SOFT selon la politique)
   { code: 'RULE.ENFORCEMENT', categories: ['business_hard', 'business_soft', 'information'], params: { rule: S, level: S, threshold: N, factors: L }, audience: 'internal', severity: 'info', optionalParams: ['threshold'] },
@@ -54,6 +57,10 @@ export const CORE_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'DURATION.MAIN_VOLUME_REDUCED', categories: ['optimization'], params: { blockId: S }, audience: 'user', severity: 'warning' },
   { code: 'DURATION.SHORTER_ACCEPTED', categories: ['optimization'], params: { p50S: N, targetS: N }, audience: 'user', severity: 'info' },
   { code: 'DURATION.INFEASIBLE', categories: ['feasibility'], params: { p90S: N, availableS: N }, audience: 'internal', severity: 'error' },
+  // CORE-EXT-R1 / Q2 : estimations stockées, recalculées et comparées ; jamais reconstruites
+  { code: 'DURATION.ESTIMATE_MISMATCH', categories: ['technical'], params: { path: S, field: S, storedMinS: N, storedMaxS: N, recomputedMinS: N, recomputedMaxS: N }, audience: 'internal', severity: 'error', optionalParams: ['storedMinS', 'storedMaxS', 'recomputedMinS', 'recomputedMaxS'] },
+  { code: 'DURATION.ESTIMATE_UNAVAILABLE_LEGACY', categories: ['information'], params: { kind: S }, audience: 'internal', severity: 'info' },
+  { code: 'DURATION.ESTIMATE_UNVERIFIABLE', categories: ['technical'], params: { problem: S }, audience: 'internal', severity: 'error' },
   { code: 'DURATION.OUT_OF_TOLERANCE', categories: ['business_soft'], params: { p50S: N, lowerS: N, upperS: N }, audience: 'internal', severity: 'warning' },
   // Anti-doublon (spec 07 §4) — SOFT par défaut ; les cas HARD sont des règles de discipline avec fiche
   { code: 'DUPLICATE.ACCIDENTAL', categories: ['business_soft'], params: { sessionId: S, similarity: N, level: S }, audience: 'internal', severity: 'warning' },

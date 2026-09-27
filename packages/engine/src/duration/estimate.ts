@@ -2,6 +2,8 @@ import type { Exercise, Level, ReasonCode, SessionBlock, SessionDraft, SessionIt
 import { createCoreRegistry } from '../trace/index.js';
 import type { LoadedRuleset } from '../rules/ruleset.js';
 import type { LoadedCatalog } from '../catalog/catalog.js';
+import { segmentDuration, UnknownDurationComponent } from './run-structure.js';
+import type { DurationRange } from './run-structure.js';
 
 const reasons = createCoreRegistry();
 // technical-constant: conversions d'unités (s/min, m/km)
@@ -96,6 +98,30 @@ function paceSpan(distanceM: number, pace: { min: number; max: number } | undefi
   return span((distanceM / (r.p50 * (r.p50 / r.p90Slow))) * SECONDS_PER_MINUTE, (distanceM / r.p50) * SECONDS_PER_MINUTE, (distanceM / r.p90Slow) * SECONDS_PER_MINUTE);
 }
 
+/** Plage [min, max] → triplet (milieu arithmétique en p50), sans facteur de dépassement. */
+// technical-constant: milieu de la plage (moyenne arithmétique)
+const rangeSpan = (r: DurationRange): Span => span(r.min, (r.min + r.max) / 2, r.max);
+
+/**
+ * CORE-EXT-R1 : parties d'une `run_structure` (hors récupérations / récupérations), calculées par la
+ * dérivation unique de run-structure.ts. Une dose en distance sans allure est une erreur TECHNICAL.
+ */
+function runParts(item: SessionItem, p: Extract<SessionItem['prescription'], { type: 'run_structure' }>): { effort: Span; recovery: Span } {
+  let effort = ZERO;
+  let recovery = ZERO;
+  p.segments.forEach((seg, i) => {
+    try {
+      const d = segmentDuration(seg);
+      effort = add(effort, rangeSpan({ min: d.total.min - d.recovery.min, max: d.total.max - d.recovery.max }));
+      recovery = add(recovery, rangeSpan(d.recovery));
+    } catch (e) {
+      if (!(e instanceof UnknownDurationComponent)) throw e;
+      throw new EstimationError(reasons.emit('TECHNICAL.STRUCTURE.DISTANCE_WITHOUT_PACE', { path: `${item.id}.segments.${String(i)}` }));
+    }
+  });
+  return { effort, recovery };
+}
+
 /** Travail d'un « tour » d'item (sans le repos de fin de série ni la mise en place). */
 function itemWork(item: SessionItem, e: Exercise, level: Level): Span {
   const p = item.prescription;
@@ -117,6 +143,7 @@ function itemWork(item: SessionItem, e: Exercise, level: Level): Span {
       const one = 'timeS' in p.work ? span(p.work.timeS, p.work.timeS, p.work.timeS) : paceSpan(p.work.distanceM, p.paceSecPerKm, e, level);
       return scale(one, p.reps);
     }
+    case 'run_structure': return runParts(item, p).effort;
   }
 }
 
@@ -131,6 +158,7 @@ function itemRest(item: SessionItem, params: DurationParams): Span {
     case 'timed': return r(p.restS * (p.rounds - 1));
     case 'hold': return r(p.restS * (p.sets - 1));
     case 'intervals': return span(p.recoveryS * (p.reps - 1), p.recoveryS * (p.reps - 1), p.recoveryS * (p.reps - 1));
+    case 'run_structure': return runParts(item, p).recovery;
     default: return ZERO;
   }
 }

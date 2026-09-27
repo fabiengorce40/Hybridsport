@@ -1,4 +1,5 @@
-import type { CompressionLever, SessionBlock, SessionDraft, SessionItem } from '@hybridsport/domain';
+import type { CompressionLever, RunDose, RunSegment, RunStructure, SessionBlock, SessionDraft, SessionItem } from '@hybridsport/domain';
+import { withDerivedEstimate } from './run-structure.js';
 
 export interface LeverSteps {
   readonly reduceRestS: number;
@@ -147,16 +148,46 @@ export function applyLeverStep(session: SessionDraft, ref: LeverRef, steps: Leve
     case 'reduce_run_volume': {
       const idx = block.items.findIndex((it) =>
         (it.prescription.type === 'timed' && it.prescription.workS - steps.reduceRunS >= (l.minS ?? steps.reduceRunS))
-        || (it.prescription.type === 'distance' && it.prescription.distanceM - steps.reduceRunM >= (l.minM ?? steps.reduceRunM)));
+        || (it.prescription.type === 'distance' && it.prescription.distanceM - steps.reduceRunM >= (l.minM ?? steps.reduceRunM))
+        || (it.prescription.type === 'run_structure' && reduceRunStructure(it.prescription, l, steps) !== null));
       if (idx < 0) return null;
       const items = block.items.map((it, i) => {
         if (i !== idx) return it;
         const p = it.prescription;
         if (p.type === 'timed') return { ...it, prescription: { ...p, workS: p.workS - steps.reduceRunS } };
         if (p.type === 'distance') return { ...it, prescription: { ...p, distanceM: p.distanceM - steps.reduceRunM } };
+        if (p.type === 'run_structure') return { ...it, prescription: reduceRunStructure(p, l, steps) ?? p };
         return it;
       });
       return mapBlock(session, block.id, (b) => withItems(b, items));
     }
   }
+}
+
+/** Dose réduite d'un pas au-dessus du plancher déclaré (durée ou distance), sinon null. */
+function reducedDose(d: RunDose, l: Extract<CompressionLever, { kind: 'reduce_run_volume' }>, steps: LeverSteps): RunDose | null {
+  if ('durationS' in d) return d.durationS - steps.reduceRunS >= (l.minS ?? steps.reduceRunS) ? { durationS: d.durationS - steps.reduceRunS } : null;
+  return d.distanceM - steps.reduceRunM >= (l.minM ?? steps.reduceRunM) ? { distanceM: d.distanceM - steps.reduceRunM } : null;
+}
+
+/**
+ * `reduce_run_volume` sur une `run_structure` (RFC CORE-EXT-R1, leviers) : réduit d'abord l'échauffement
+ * puis le retour au calme au-dessus du plancher, puis un segment continu (`steady`). Ne touche JAMAIS
+ * une cible, ni la structure séries × répétitions d'un `repeat` : réduire un bloc de travail structuré
+ * est une décision de programmation, qui appartient au moteur de discipline (nouvelle proposition).
+ * L'estimation est re-dérivée par le DurationEngine (aucune valeur stockée périmée).
+ */
+export function reduceRunStructure(p: RunStructure, l: Extract<CompressionLever, { kind: 'reduce_run_volume' }>, steps: LeverSteps): RunStructure | null {
+  const order: RunSegment['kind'][] = ['warmup', 'cooldown', 'steady'];
+  for (const kind of order) {
+    const idx = p.segments.findIndex((s) => s.kind === kind && (s.kind === 'warmup' || s.kind === 'cooldown' || s.kind === 'steady') && reducedDose(s.dose, l, steps) !== null);
+    const seg = p.segments[idx];
+    if (!seg || (seg.kind !== 'warmup' && seg.kind !== 'cooldown' && seg.kind !== 'steady')) continue;
+    const dose = reducedDose(seg.dose, l, steps);
+    if (!dose) continue;
+    const segments = p.segments.map((s, i) => (i === idx ? { ...seg, dose } : s));
+    const { estimate: _stale, ...rest } = p;
+    return withDerivedEstimate({ ...rest, segments }) ?? null;
+  }
+  return null;
 }

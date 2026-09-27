@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { DISCIPLINES, LEVELS } from './enums.js';
 import { zId } from './ruleset.js';
+import { addStructureIssues, sessionStructureIssues, zRunStructure } from './run-structure.js';
 
 /**
  * Modèle de séance du CORE (spec 02 §5, forme générique). AUCUN champ de structure de planification :
@@ -70,6 +71,8 @@ export const zPrescription = z.discriminatedUnion('type', [
     work: z.union([z.object({ timeS: positive }).strict(), z.object({ distanceM: positive }).strict()]),
     recoveryS: nonNeg, paceSecPerKm: zPaceRange.optional(),
   }).strict(),
+  // CORE-EXT-R1 : séance structurée à profondeur fixe (voir run-structure.ts).
+  zRunStructure,
 ]);
 export type Prescription = z.infer<typeof zPrescription>;
 
@@ -141,6 +144,6 @@ export const zSessionDraft = z.object({
   /** Profil de tolérance (identifiant de données du ruleset). */
   toleranceProfile: zId,
   blocks: z.array(zBlock).min(1),
-}).strict();
+}).strict().superRefine((s, ctx) => { addStructureIssues(ctx, sessionStructureIssues(s)); });
 export type SessionDraft = z.infer<typeof zSessionDraft>;
 export type SessionDraftInput = z.input<typeof zSessionDraft>;

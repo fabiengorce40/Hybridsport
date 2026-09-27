@@ -9,6 +9,8 @@ export * from './ruleset.js';
 export * from './policy.js';
 export * from './ruleset-document.js';
 export * from './catalog.js';
+export * from './run-structure.js';
+export * from './run-execution.js';
 export * from './session.js';
 export * from './safety.js';
 export * from './duplicate.js';

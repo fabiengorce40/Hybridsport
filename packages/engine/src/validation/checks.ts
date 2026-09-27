@@ -7,6 +7,7 @@ import type { DemandProfile } from '../catalog/structures.js';
 import type { DurationEstimate } from '../duration/estimate.js';
 import type { DurationCheck } from '../duration/tolerance.js';
 import { leverDeclarationIssues } from '../duration/levers.js';
+import { runEstimateMismatches } from '../duration/recorded.js';
 import type { ValidationContext } from './context.js';
 import { CORE_RULES, MIN_RECOVERY_POLICY_ID } from './rules.js';
 
@@ -250,6 +251,8 @@ const integrityCheck: SessionCheck = {
       if (b.format === 'sets' && b.grouping !== 'straight' && b.items.some((i) => i.prescription.type !== 'sets')) tech('superset/circuit : prescriptions en séries attendues', b.id);
     }
     for (const issue of leverDeclarationIssues(session)) tech(issue, session.id);
+    // CORE-EXT-R1 / Q2 : estimations stockées des run_structure = recalcul du DurationEngine, sinon refus.
+    for (const reason of runEstimateMismatches(session, 'session')) out.violations.push(v(CORE_RULES.integrity, 'TECHNICAL', 'hard', { kind: 'session', id: session.id }, reason));
     // Une séance porte au moins un bloc principal (son stimulus) — invariant structurel (spec 02 §5, 07 §3.3).
     if (!session.blocks.some((b) => b.role === 'primary')) tech('séance sans bloc principal', session.id);
     if (session.targetDurationS > session.availableTimeS) tech('durée cible supérieure au temps disponible', session.id);

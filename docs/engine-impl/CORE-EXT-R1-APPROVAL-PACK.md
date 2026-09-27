@@ -1,6 +1,6 @@
 # CORE-EXT-R1-APPROVAL-PACK — dossier d’approbation (séance de course structurée)
 
-> **Phase 5G. NON IMPLÉMENTÉE. NON APPROUVÉE.** Décision attendue du fondateur. RFC complète : [`CORE-EXT-R1-RUNNING-INTERVALS-RFC.md`](CORE-EXT-R1-RUNNING-INTERVALS-RFC.md).
+> **Phase 5G (dossier).** **Phase 6A : `CORE_EXT_R1_FOUNDER_APPROVAL = APPROVED`** (Q1 = D, Q2 = stocker + vérifier + `UNAVAILABLE_LEGACY`, Q3 = règle exclusive ; drapeaux de capacité et éligibilité à la production approuvés comme principe). Aucun paramètre scientifique, aucune décision experte, aucune politique G1, ni V33 ni V34 ne sont approuvés par cette décision. Implémentation : [`CORE-EXT-R1-IMPLEMENTATION.md`](CORE-EXT-R1-IMPLEMENTATION.md). RFC complète : [`CORE-EXT-R1-RUNNING-INTERVALS-RFC.md`](CORE-EXT-R1-RUNNING-INTERVALS-RFC.md).
 
 | Rubrique | Contenu |
 |---|---|
@@ -81,3 +81,5 @@
 ---
 
 **CORE_EXT_R1_DESIGN_RECOMMENDATION = READY_FOR_FOUNDER_APPROVAL** (Claude n’approuve pas).
+
+**Phase 6A : approuvée par le fondateur, puis implémentée** (voir [`CORE-EXT-R1-TEST-REPORT.md`](CORE-EXT-R1-TEST-REPORT.md) pour le statut des gates).

@@ -1,7 +1,8 @@
 import { CURRENT_SCHEMA, zSerializedEnvelope, zSessionRecordV1 } from '@hybridsport/domain';
-import type { ReasonCode, SchemaVersions, SerializedEnvelope, SerializedKind } from '@hybridsport/domain';
+import type { ReasonCode, SchemaVersions, SerializedEnvelope, SerializedKind, SessionRecord } from '@hybridsport/domain';
+import { runEstimateMismatches } from '../duration/recorded.js';
 import { canonicalStringify } from '../core/canonical.js';
-import { createCoreRegistry } from '../trace/index.js';
+import { createCoreRegistry, schemaIssueReason } from '../trace/index.js';
 
 const reasons = createCoreRegistry();
 
@@ -42,7 +43,42 @@ export const MIGRATIONS: readonly MigrationStep[] = [
     description: 'CORE-EXT-1 : champs facultatifs de séries et d’items ; données v2 inchangées (identité).',
     migrate: (data) => ({ ok: true, data }),
   },
+  {
+    // technical-constant: numéros de version du format sérialisé (contrat de schéma), pas des valeurs sportives
+    kind: 'session_record', from: 3, to: 4,
+    description: 'CORE-EXT-R1 : variante run_structure + estimation de durée stockée ; données v3 : séance inchangée, estimation UNAVAILABLE_LEGACY (jamais reconstituée).',
+    migrate: (data) => {
+      if (data === null || typeof data !== 'object' || Array.isArray(data)) return { ok: false, problem: 'record v3 attendu (objet)' };
+      // Combinaison de versions malformée : une donnée déclarée v3 ne peut pas porter de champ v4.
+      if ('durationEstimate' in data) return { ok: false, problem: 'combinaison de versions malformée : durationEstimate dans une donnée v3' };
+      if (containsRunStructure((data as { session?: unknown }).session)) return { ok: false, problem: 'combinaison de versions malformée : run_structure dans une donnée v3' };
+      return { ok: true, data: { ...data, durationEstimate: { availability: 'UNAVAILABLE_LEGACY' } } };
+    },
+  },
 ];
+
+/** Recherche structurelle (sans typage préalable) d'une prescription `run_structure` dans une séance brute. */
+function containsRunStructure(session: unknown): boolean {
+  if (session === null || typeof session !== 'object') return false;
+  const blocks = (session as { blocks?: unknown }).blocks;
+  if (!Array.isArray(blocks)) return false;
+  return blocks.some((b: unknown) => {
+    const items = b !== null && typeof b === 'object' ? (b as { items?: unknown }).items : undefined;
+    return Array.isArray(items) && items.some((it: unknown) => {
+      const p = it !== null && typeof it === 'object' ? (it as { prescription?: unknown }).prescription : undefined;
+      return p !== null && typeof p === 'object' && (p as { type?: unknown }).type === 'run_structure';
+    });
+  });
+}
+
+/**
+ * Contrôles APRÈS lecture, par type (décision fondateur Q2) : les estimations stockées des
+ * `run_structure` sont recalculées par le DurationEngine ; tout écart est un refus, jamais une réparation.
+ */
+export const POST_READ_CHECKS: { readonly [K in SerializedKind]: (value: unknown) => ReasonCode[] } = {
+  session_record: (value) => runEstimateMismatches((value as SessionRecord).session, 'session_record.session'),
+};
+
 
 /** Vérifie qu'un registre est complet : pour chaque type, une étape n → n+1 pour chaque n de 1 à courante − 1. */
 export function migrationRegistryIssues(registry: readonly MigrationStep[] = MIGRATIONS, current: SchemaVersions = CURRENT_SCHEMA): string[] {
@@ -93,7 +129,9 @@ export function migrateToCurrent<T = unknown>(raw: unknown, registry: readonly M
     applied.push(`${kind}:${String(v)}→${String(v + 1)}`);
   }
   const parsed = current.schema.safeParse(data);
-  if (!parsed.success) return { ok: false, reasons: parsed.error.issues.map((i) => reasons.emit('TECHNICAL.SCHEMA_INVALID', { path: `${kind}.${i.path.join('.')}`, problem: i.message })) };
+  if (!parsed.success) return { ok: false, reasons: parsed.error.issues.map((i) => schemaIssueReason(i, kind)) };
+  const post = POST_READ_CHECKS[kind](parsed.data);
+  if (post.length > 0) return { ok: false, reasons: post };
   return { ok: true, value: parsed.data as T, fromVersion: schemaVersion, applied };
 }
 

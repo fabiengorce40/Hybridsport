@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "testRunner": "command",
+  "checkers": [],
+  "mutate": [
+    "packages/domain/src/run-structure.ts",
+    "packages/domain/src/run-execution.ts",
+    "packages/engine/src/duration/run-structure.ts",
+    "packages/engine/src/duration/recorded.ts",
+    "packages/engine/src/duration/levers.ts:147-193",
+    "packages/engine/src/duration/estimate.ts:100-125",
+    "packages/engine/src/migration/migrations.ts:45-90",
+    "packages/engine/src/migration/migrations.ts:130-136",
+    "packages/engine/src/validation/checks.ts:253-256",
+    "packages/engine/src/trace/schema-issue.ts"
+  ],
+  "reporters": ["clear-text", "progress", "json"],
+  "thresholds": { "high": 90, "low": 75, "break": null },
+  "tempDirName": ".stryker-tmp-r1",
+  "timeoutMS": 60000,
+  "concurrency": 4,
+  "plugins": [],
+  "commandRunner": {
+    "command": "pnpm exec vitest run --config vitest.mutation.core-ext-r1.config.ts --reporter=dot"
+  },
+  "coverageAnalysis": "off",
+  "jsonReporter": { "fileName": "reports/mutation/core-ext-r1-mutation.json" }
+}

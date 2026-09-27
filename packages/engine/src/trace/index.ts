@@ -1,6 +1,7 @@
 export * from './registry.js';
 export * from './core-codes.js';
 export * from './trace.js';
+export * from './schema-issue.js';
 
 import { ReasonCodeRegistry } from './registry.js';
 import { CORE_REASON_CODES } from './core-codes.js';

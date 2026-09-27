@@ -1,7 +1,7 @@
 import { ADMISSIBILITY_LAYERS, statusFrom, zSessionDraft } from '@hybridsport/domain';
 import type { RepairAction, SemVerString, SessionDraft, ValidationReport, Violation } from '@hybridsport/domain';
 import { canonicalStringify } from '../core/canonical.js';
-import { createCoreRegistry } from '../trace/index.js';
+import { createCoreRegistry, schemaIssueReason } from '../trace/index.js';
 import type { LoadedCatalog } from '../catalog/catalog.js';
 import { deriveDemandProfile } from '../catalog/structures.js';
 import type { LoadedRuleset } from '../rules/ruleset.js';
@@ -59,7 +59,7 @@ export function validateSession(input: unknown, ctx: ValidationContext, deps: Va
   const evaluated = checks.map((c) => ({ ruleId: c.rule.id, version: c.rule.version }));
   try {
     const parsed = zSessionDraft.safeParse(input);
-    if (!parsed.success) return { report: report(deps, parsed.error.issues.map((i) => technical(i.message, i.path.join('.') || '$')), [], [], evaluated) };
+    if (!parsed.success) return { report: report(deps, parsed.error.issues.map((i) => ({ ...technical(i.message, i.path.join('.') || '$'), reason: schemaIssueReason(i) })), [], [], evaluated) };
     const session = parsed.data;
 
     // Traçabilité : chaque contrôle doit posséder sa fiche dans le ruleset, à la même version.
