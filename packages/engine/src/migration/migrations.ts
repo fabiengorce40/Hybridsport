@@ -119,10 +119,11 @@ export function migrateToCurrent<T = unknown>(raw: unknown, registry: readonly M
   for (let v = schemaVersion; v < current.version; v++) {
     const step = registry.find((s) => s.kind === kind && s.from === v && s.to === v + 1);
     if (!step) return { ok: false, reasons: [reasons.emit('TECHNICAL.MIGRATION_FAILED', { kind, from: v, to: v + 1, problem: 'migration absente du registre' })] };
-    const before = canonicalStringify(meaning(data));
+    // Une donnée sans contenu sportif lisible (non objet) est comparée comme `null` : jamais d'exception.
+    const before = canonicalStringify(meaning(data) ?? null);
     const out = step.migrate(data);
     if (!out.ok) return { ok: false, reasons: [reasons.emit('TECHNICAL.MIGRATION_FAILED', { kind, from: v, to: v + 1, problem: out.problem })] };
-    if (canonicalStringify(meaning(out.data)) !== before) {
+    if (canonicalStringify(meaning(out.data) ?? null) !== before) {
       return { ok: false, reasons: [reasons.emit('TECHNICAL.MIGRATION_FAILED', { kind, from: v, to: v + 1, problem: 'la migration modifie le contenu sportif' })] };
     }
     data = out.data;

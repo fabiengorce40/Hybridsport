@@ -12,6 +12,7 @@ export default defineConfig({
   test: {
     include: [
       'packages/engine/tests/unit/core-ext-r1.test.ts',
+      'packages/engine/tests/unit/core-ext-r1-hardening.test.ts',
       'packages/engine/tests/property/core-ext-r1.property.test.ts',
       'packages/engine/tests/integration/core-ext-r1-boundary.test.ts',
       'packages/engine/tests/unit/migration.test.ts',
