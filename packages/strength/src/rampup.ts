@@ -44,7 +44,10 @@ export function buildRampups(e: Exercise, env: Env, o: RampupOptions): SetPrescr
       return cut(steps).map((s) => ({ kind: 'rampup', reps: s.reps, restAfterS: rest, intensity: { mode: 'load', kg: s.kg, certainty: 'prescribed' } }));
     }
     case 'estimated': {
-      const band = r.known[0];
+      // Ruleset scientifique V1 : la montée spécifique reste prioritaire quand la charge n'est que suggérée
+      // (confiance MEDIUM) — bande selon l'intensité relative, sans palier au-delà du plafond estimé.
+      const policy = env.params['strength.rampup.estimatedPolicy']?.band ?? 'first';
+      const band = policy === 'first' ? r.known[0] : [...r.known].filter((b) => o.relativeIntensity === undefined || b.minRelative <= o.relativeIntensity).sort((a, b) => b.minRelative - a.minRelative)[0] ?? r.known[0];
       if (!band) return [];
       const steps = band.steps.filter((s) => s.fraction <= r.estimatedLastStepMax);
       return cut(steps).map((s) => ({ kind: 'rampup', reps: s.reps, restAfterS: rest, intensity: { mode: 'relative_to_working', fraction: s.fraction } }));

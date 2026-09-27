@@ -4,7 +4,7 @@
  * (`parametersUsed`). Paramètre absent ou mal formé ⇒ RulesetParameterError (erreur explicite).
  */
 import { z } from 'zod';
-import { LEVELS, zCompressionLever, zSlotRequirement } from '@hybridsport/domain';
+import { DEMAND_LEVELS, LEVELS, zCompressionLever, zSlotRequirement } from '@hybridsport/domain';
 import type { GovernanceClass } from '@hybridsport/domain';
 import { RulesetParameterError } from '@hybridsport/engine';
 import type { CoreParameterSpec, LoadedRuleset } from '@hybridsport/engine';
@@ -133,13 +133,75 @@ export const STRENGTH_PARAMETER_SCHEMAS = {
   'strength.proposals.max': { governance: 'G4', schema: int.positive() },
 } as const satisfies Record<string, { governance: GovernanceClass; schema: z.ZodType }>;
 
+export const CONFIDENCE_LEVELS = ['none', 'low', 'medium', 'high'] as const;
+export const INTERFERENCE_LEVELS = ['NONE', 'LOW', 'MODERATE', 'HIGH', 'VERY_HIGH'] as const;
+export type InterferenceLevel = (typeof INTERFERENCE_LEVELS)[number];
+export const INTERFERENCE_ACTIONS = ['none', 'trace', 'rir_only', 'full', 'full_and_signal'] as const;
+export type InterferenceAction = (typeof INTERFERENCE_ACTIONS)[number];
+
+/**
+ * Paramètres FACULTATIFS introduits par le ruleset scientifique V1 (phase 4E). Leur ABSENCE n'est pas une
+ * valeur par défaut sportive : c'est la sémantique de version du ruleset 0.2.0 (comportement historique
+ * reproduit à l'identique). Leur PRÉSENCE active la politique versionnée correspondante ; mal formés ⇒
+ * RulesetParameterError comme tout paramètre.
+ */
+export const STRENGTH_OPTIONAL_PARAMETER_SCHEMAS = {
+  /** Version du registre scientifique (provenance des paramètres) avec laquelle ce ruleset a été construit. */
+  'strength.science.registryVersion': { governance: 'G4', schema: id },
+  /** PrescriptionConfidence ordinale : règles versionnées, sans coefficient (addendum 4E §E). */
+  'strength.prescriptionConfidence': { governance: 'G2', schema: z.object({
+    rulesVersion: id,
+    high: z.object({ minSessions: int.positive(), minObservations: int.positive() }).strict(),
+    /** Niveaux pour lesquels le RIR rapporté est traité comme incertain (jamais HIGH). */
+    rirUncertainLevels: z.array(z.enum(LEVELS)),
+    /** Plafond de confiance d'une capacité DÉCLARÉE (jamais au-dessus de données mesurées). */
+    declaredCap: z.enum(CONFIDENCE_LEVELS),
+  }).strict() },
+  /**
+   * Répétition plutôt que variété (principe H, novice) : pour les niveaux listés, le critère `recency` préfère
+   * l'exercice pratiqué le plus récemment (jamais de rotation artificielle au sein d'un emplacement).
+   */
+  'strength.selection.repetitionPolicy': { governance: 'G2', schema: z.object({ levels: z.array(z.enum(LEVELS)), recency: z.enum(['prefer_repeat']) }).strict() },
+  /** Hiérarchie de référence : observation récente spécifique (reps et RIR proches de la cible) avant l'e1RM générique. */
+  'strength.load.specificObservation': { governance: 'G2', schema: z.object({ repsTolerance: int.nonnegative(), rirTolerance: nonNeg, requireRir: z.boolean() }).strict() },
+  /** InterferenceAssessment : matrice ordinale transparente et actions graduées (addendum 4E §F). */
+  'strength.interference.assessment': { governance: 'G2', schema: z.object({
+    searchWindowHours: pos,
+    proximityBands: z.array(z.object({ maxHours: pos, delta: int }).strict()).min(1)
+      .refine((b) => b.every((x, i) => i === 0 || (b[i - 1]?.maxHours ?? 0) < x.maxHours), 'bandes croissantes'),
+    beyondBandsDelta: int,
+    importanceDelta: z.object({ key: int, standard: int, optional: int }).strict(),
+    impactModifiers: z.array(z.object({ demand: id, atLeast: z.enum(DEMAND_LEVELS), structures: z.array(id).min(1), structureAtLeast: z.enum(DEMAND_LEVELS), delta: int }).strict()),
+    actions: z.record(z.enum(INTERFERENCE_LEVELS), z.enum(INTERFERENCE_ACTIONS)),
+  }).strict() },
+  /**
+   * Montée en charge d'une charge de travail SUGGÉRÉE (estimée) : `first` = première bande (0.2.0) ;
+   * `by_relative_intensity` = bande choisie par l'intensité relative, paliers plafonnés à `estimatedLastStepMax`.
+   */
+  'strength.rampup.estimatedPolicy': { governance: 'G2', schema: z.object({ band: z.enum(['first', 'by_relative_intensity']) }).strict() },
+  /** Horizon des ancres : `review` ⇒ la durée devient un horizon de revue (jamais une clôture automatique). */
+  'strength.tracks.horizon': { governance: 'G2', schema: z.object({ policy: z.enum(['close', 'review']) }).strict() },
+  /**
+   * Ordre de priorité de la durée (4E §I) : échauffement général (part au-delà du minimum) et retour au calme
+   * seulement s'ils tiennent APRÈS les optionnels ; sous contrainte, le repos du principal est réduit EN DERNIER.
+   */
+  'strength.session.durationPriority': { governance: 'G2', schema: z.object({
+    warmupExtra: z.enum(['always', 'if_fits_after_optionals']),
+    cooldown: z.enum(['always', 'if_fits_after_optionals']),
+    primaryRest: z.enum(['reduce_with_others', 'reduce_last']),
+  }).strict() },
+} as const satisfies Record<string, { governance: GovernanceClass; schema: z.ZodType }>;
+
 export type StrengthParamId = keyof typeof STRENGTH_PARAMETER_SCHEMAS;
-export type StrengthParams = { readonly [K in StrengthParamId]: z.infer<(typeof STRENGTH_PARAMETER_SCHEMAS)[K]['schema']> };
+export type StrengthOptionalParamId = keyof typeof STRENGTH_OPTIONAL_PARAMETER_SCHEMAS;
+export type StrengthParams = { readonly [K in StrengthParamId]: z.infer<(typeof STRENGTH_PARAMETER_SCHEMAS)[K]['schema']> }
+  & { readonly [K in StrengthOptionalParamId]?: z.infer<(typeof STRENGTH_OPTIONAL_PARAMETER_SCHEMAS)[K]['schema']> };
 
 /** Spécifications des paramètres pour le contrôle préalable du CORE (`preflightCoreParameters`). */
-export const STRENGTH_PARAMETERS: readonly CoreParameterSpec[] = (Object.keys(STRENGTH_PARAMETER_SCHEMAS) as StrengthParamId[]).map((pid) => ({
-  id: pid, type: 'table', governance: STRENGTH_PARAMETER_SCHEMAS[pid].governance, usedBy: 'strength',
-}));
+export const STRENGTH_PARAMETERS: readonly CoreParameterSpec[] = [
+  ...(Object.keys(STRENGTH_PARAMETER_SCHEMAS) as StrengthParamId[]).map((pid) => ({ id: pid, type: 'table' as const, governance: STRENGTH_PARAMETER_SCHEMAS[pid].governance, usedBy: 'strength' })),
+  ...(Object.keys(STRENGTH_OPTIONAL_PARAMETER_SCHEMAS) as StrengthOptionalParamId[]).map((pid) => ({ id: pid, type: 'table' as const, governance: STRENGTH_OPTIONAL_PARAMETER_SCHEMAS[pid].governance, usedBy: 'strength', optional: true })),
+];
 
 export interface LoadedStrengthParams {
   readonly values: StrengthParams;
@@ -154,6 +216,17 @@ export function readStrengthParams(ruleset: LoadedRuleset): LoadedStrengthParams
     const { schema, governance } = STRENGTH_PARAMETER_SCHEMAS[pid];
     const meta = ruleset.parameter(pid);
     if (!meta || meta.status === 'deprecated') throw new RulesetParameterError(pid, 'missing');
+    if (meta.governance !== governance) throw new RulesetParameterError(pid, 'type', `gouvernance ${governance}`);
+    const parsed = (schema as z.ZodType).safeParse(meta.value);
+    if (!parsed.success) throw new RulesetParameterError(pid, 'type', parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(' ; '));
+    values[pid] = parsed.data;
+    used.push({ id: pid, version: meta.version });
+  }
+  // Paramètres facultatifs (4E) : absents ⇒ sémantique du ruleset 0.2.0 ; présents ⇒ validés et tracés.
+  for (const pid of Object.keys(STRENGTH_OPTIONAL_PARAMETER_SCHEMAS).sort() as StrengthOptionalParamId[]) {
+    const { schema, governance } = STRENGTH_OPTIONAL_PARAMETER_SCHEMAS[pid];
+    const meta = ruleset.parameter(pid);
+    if (!meta || meta.status === 'deprecated') continue;
     if (meta.governance !== governance) throw new RulesetParameterError(pid, 'type', `gouvernance ${governance}`);
     const parsed = (schema as z.ZodType).safeParse(meta.value);
     if (!parsed.success) throw new RulesetParameterError(pid, 'type', parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join(' ; '));

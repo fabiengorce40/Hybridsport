@@ -64,8 +64,11 @@ export function criterionValue(c: Criterion, e: Exercise, slot: SlotInstance, en
     }
     case 'recency': {
       const days = env.familyDaysSince(e.family);
-      if (days === undefined) return [env.params['strength.selection.recencyBandsDays'].length];
-      return [env.params['strength.selection.recencyBandsDays'].filter((b) => days >= b).length];
+      const bands = env.params['strength.selection.recencyBandsDays'];
+      const older = days === undefined ? bands.length : bands.filter((b) => days >= b).length;
+      // Ruleset scientifique V1 (principe H) : au niveau novice, la répétition prime (famille la plus récente d'abord).
+      const repeat = env.params['strength.selection.repetitionPolicy'];
+      return [repeat && repeat.levels.includes(env.level) ? -older : older];
     }
     case 'preference': {
       const p = env.input.discipline.preferences;

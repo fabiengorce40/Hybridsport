@@ -97,7 +97,8 @@ export function envFor(s: Scenario): Env {
   const archetype = findArchetype(params, input.intent.archetypeId);
   if (!archetype) throw new Error(input.intent.archetypeId);
   const goal = input.discipline.goal.primary;
-  return buildEnv(input, params, archetype, goal, goalKey(goal), loweredStructures(input, params).lowered, SeededRng.fromSeed(input.context.seed));
+  const inter = loweredStructures(input, params);
+  return buildEnv(input, params, archetype, goal, goalKey(goal), inter.lowered, SeededRng.fromSeed(input.context.seed), inter.rirOnly);
 }
 
 /** Scénario de base pour les tests unitaires (surchargé champ par champ). */

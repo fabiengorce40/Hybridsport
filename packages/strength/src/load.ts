@@ -7,6 +7,8 @@
 import type { Exercise, ReasonCode, SetIntensity } from '@hybridsport/domain';
 import type { Env } from './model.js';
 import { strengthReasons } from './codes.js';
+import { assessDeclared, assessMeasured, assessTransferred } from './confidence.js';
+import type { ConfidenceAssessment } from './confidence.js';
 import { daysBetween, median, roundDownToStep } from './util.js';
 
 export const CONFIDENCES = ['none', 'low', 'medium', 'high'] as const;
@@ -22,6 +24,8 @@ export interface LoadKnowledge {
   readonly lastReps?: number;
   readonly source: 'measured' | 'declared' | 'transferred' | 'none';
   readonly reasons: readonly ReasonCode[];
+  /** PrescriptionConfidence ordinale (ruleset scientifique V1) : facteurs tracés ; absente en 0.2.0. */
+  readonly assessment?: ConfidenceAssessment;
 }
 
 /** Pas réalisable (kg) : incrément déclaré pour le matériel de l'exercice, sinon incrément par défaut du modèle de charge. */
@@ -61,6 +65,7 @@ function ageConfidence(base: Confidence, asOf: string, env: Env): Confidence {
 function ownKnowledge(e: Exercise, env: Env): Omit<LoadKnowledge, 'reasons'> & { conflict: boolean } {
   const ctx = env.input.discipline;
   const p = env.params['strength.load'];
+  const rules = env.params['strength.prescriptionConfidence'];
   const exposures = ctx.recentExposures.filter((x) => x.exerciseId === e.id).sort((a, b) => (a.at < b.at ? 1 : -1));
   const measured: { value: number; withRir: boolean; at: string }[] = [];
   // Série trop LÉGÈRE pour la formule (reps jusqu'à l'échec au-delà de la plage valide) : seule une BORNE
@@ -83,15 +88,20 @@ function ownKnowledge(e: Exercise, env: Env): Omit<LoadKnowledge, 'reasons'> & {
   if (measured.length > 0) {
     const recent = measured.slice(0, p.smoothingWindow);
     const value = median(recent.map((m) => m.value)) ?? 0;
+    const conflict = declaredValues.some((d) => Math.abs(d.v - value) / value > p.conflictTolerance);
+    if (rules) {
+      const assessment = assessMeasured(measured, { now: env.input.context.now, level: env.level, conflict }, env.params, rules);
+      return { confidence: assessment.level, e1rmKg: value, source: 'measured', conflict, assessment, ...lastPart };
+    }
     let conf: Confidence = recent.some((m) => m.withRir) ? 'high' : 'medium';
     conf = ageConfidence(conf, recent[0]?.at ?? env.input.context.now, env);
-    const conflict = declaredValues.some((d) => Math.abs(d.v - value) / value > p.conflictTolerance);
     if (conflict) conf = notch(conf, -1);
     return { confidence: conf, e1rmKg: value, source: 'measured', conflict, ...lastPart };
   }
   if (lowerBound !== undefined && declaredValues.length === 0) {
     const conf = ageConfidence('low', exposures[0]?.at ?? env.input.context.now, env);
-    return { confidence: conf, e1rmKg: lowerBound, source: 'measured', conflict: false, ...lastPart };
+    const assessment: ConfidenceAssessment | undefined = rules ? { level: conf, rulesVersion: rules.rulesVersion, factors: { recency: conf === 'none' ? 'expired' : 'fresh', observations: 0, sessions: 0, consistency: 'consistent', rir: 'uncertain', conflict: false, transfer: false, source: 'lower_bound' } } : undefined;
+    return { confidence: conf, e1rmKg: lowerBound, source: 'measured', conflict: false, ...(assessment ? { assessment } : {}), ...lastPart };
   }
   if (declaredValues.length > 0) {
     const best = [...declaredValues].sort((a, b) => (a.c.asOf < b.c.asOf ? 1 : -1))[0];
@@ -99,6 +109,10 @@ function ownKnowledge(e: Exercise, env: Env): Omit<LoadKnowledge, 'reasons'> & {
       const base: Confidence = best.c.source === 'app_sets_with_rir' ? 'high' : best.c.source === 'declared_1rm' || best.c.source === 'app_sets_without_rir' ? 'medium' : 'low';
       const vals = declaredValues.map((d) => d.v);
       const conflict = vals.some((v) => Math.abs(v - best.v) / best.v > p.conflictTolerance);
+      if (rules) {
+        const assessment = assessDeclared(base, best.c.asOf, { now: env.input.context.now, conflict }, env.params, rules);
+        return { confidence: assessment.level, e1rmKg: best.v, source: 'declared', conflict, assessment, ...lastPart };
+      }
       const conf = notch(ageConfidence(base, best.c.asOf, env), conflict ? -1 : 0);
       return { confidence: conf, e1rmKg: best.v, source: 'declared', conflict, ...lastPart };
     }
@@ -114,7 +128,7 @@ export function loadKnowledge(e: Exercise, env: Env): LoadKnowledge {
   const reasons: ReasonCode[] = [];
   const own = ownKnowledge(e, env);
   if (own.conflict) reasons.push(strengthReasons.emit('STATE.REFERENCE_CONFLICT', { exerciseId: e.id }));
-  if (own.confidence !== 'none' || own.lastLoadKg !== undefined) return { ...stripConflict(own), reasons };
+  if (own.confidence !== 'none' || own.lastLoadKg !== undefined) return withAssessmentReason(e, { ...stripConflict(own), reasons });
   const p = env.params['strength.load'];
   const transferable = (x: Exercise) => x.loadModel !== undefined && p.transferableLoadModels.includes(x.loadModel);
   if (transferable(e)) {
@@ -122,11 +136,26 @@ export function loadKnowledge(e: Exercise, env: Env): LoadKnowledge {
     for (const peer of peers) {
       const k = ownKnowledge(peer, env);
       if (k.e1rmKg !== undefined && k.confidence !== 'none') {
+        if (k.assessment) {
+          const assessment = assessTransferred(k.assessment, p.equivalenceTransferPenalty);
+          return withAssessmentReason(e, { confidence: assessment.level, e1rmKg: k.e1rmKg, source: 'transferred', reasons, assessment });
+        }
         return { confidence: notch(k.confidence, -p.equivalenceTransferPenalty), e1rmKg: k.e1rmKg, source: 'transferred', reasons };
       }
     }
   }
   return { confidence: 'none', source: 'none', reasons };
+}
+
+/** Trace des facteurs de la PrescriptionConfidence ordinale (ruleset scientifique V1 seulement). */
+function withAssessmentReason(e: Exercise, k: LoadKnowledge): LoadKnowledge {
+  const a = k.assessment;
+  if (!a) return k;
+  const f = a.factors;
+  return { ...k, reasons: [...k.reasons, strengthReasons.emit('DOSE.LOAD.CONFIDENCE', {
+    exerciseId: e.id, level: a.level, rules: a.rulesVersion, source: f.source, recency: f.recency, observations: f.observations, sessions: f.sessions,
+    consistency: f.consistency, rir: f.rir, conflict: f.conflict, transfer: f.transfer,
+  })] };
 }
 
 function stripConflict(k: Omit<LoadKnowledge, 'reasons'> & { conflict: boolean }): Omit<LoadKnowledge, 'reasons'> {
@@ -173,6 +202,20 @@ export function decideLoad(e: Exercise, reps: number, rir: number, env: Env, fro
     const certainty = k.confidence === 'high' ? 'prescribed' : 'suggested';
     return { intensity: { mode: 'load', kg, certainty, effort }, source: 'track', workingKg: kg, knowledge: certainty === 'prescribed' ? 'known' : 'estimated', reasons, capped: c.capped };
   }
+  // Hiérarchie de référence (ruleset scientifique V1) : une observation RÉCENTE et SPÉCIFIQUE (reps et RIR
+  // proches de la cible, sur CET exercice) prime sur l'e1RM générique, qui n'est qu'un repli. La track reste
+  // l'autorité quand elle porte la référence (trois autorités).
+  const spec = env.params['strength.load.specificObservation'];
+  if (spec && allowPercent && !fromTrack && step && (k.confidence === 'high' || k.confidence === 'medium')) {
+    const obs = specificObservation(e, reps, rir, env, spec);
+    if (obs) {
+      const c = cap(obs.loadKg);
+      const kg = round(c.kg) ?? c.kg;
+      reasons.push(strengthReasons.emit('DOSE.LOAD.FROM_SPECIFIC', { exerciseId: e.id, observedKg: obs.loadKg, observedReps: obs.reps, observedRir: obs.rir, at: obs.at, confidence: k.confidence }));
+      const certainty = k.confidence === 'high' ? 'prescribed' : 'suggested';
+      return { intensity: { mode: 'load', kg, certainty, effort }, source: 'history', workingKg: kg, knowledge: certainty === 'prescribed' ? 'known' : 'estimated', reasons, capped: c.capped };
+    }
+  }
   const pct = pctFor(reps, rir, env);
   // Le % d'e1RM n'est utilisé que sur un composé principal ou secondaire (jamais sur l'isolation ni un accessoire).
   if (allowPercent && k.confidence === 'high' && k.e1rmKg !== undefined && pct !== undefined && step) {
@@ -206,4 +249,27 @@ export function decideLoad(e: Exercise, reps: number, rir: number, env: Env, fro
   // Poids du corps lestable sans référence : au poids du corps, à l'effort (aucun lest inventé).
   if (e.loadModel === 'bodyweight_plus') return { intensity: { mode: 'bodyweight', effort }, source: 'calibration', knowledge: 'unknown', reasons, capped: false };
   return { intensity: { mode: 'effort', effort }, source: 'calibration', knowledge: 'unknown', reasons, capped: false };
+}
+
+/**
+ * Observation spécifique récente (fraîche) : série réalisée sur CET exercice à des répétitions et un RIR
+ * proches de la cible (tolérances G2). La séance la plus récente qui en contient une fait foi ; en cas
+ * d'égalité, la série la plus proche de la cible puis la plus légère (prudence). Aucune extrapolation.
+ */
+export function specificObservation(e: Exercise, targetReps: number, targetRir: number, env: Env, spec: NonNullable<Env['params']['strength.load.specificObservation']>): { loadKg: number; reps: number; rir: number; at: string } | undefined {
+  const p = env.params['strength.load'];
+  const exposures = env.input.discipline.recentExposures.filter((x) => x.exerciseId === e.id).sort((a, b) => (a.at < b.at ? 1 : a.at > b.at ? -1 : 0));
+  for (const x of exposures) {
+    if (daysBetween(x.at, env.input.context.now) > p.referenceWindowsDays.high) continue;
+    const matches = x.sets.flatMap((s) => {
+      if (s.loadKg === undefined || s.loadKg <= 0 || (spec.requireRir && s.rir === undefined)) return [];
+      const r = s.rir ?? p.assumedRirWhenUnknown;
+      const dReps = Math.abs(s.reps - targetReps);
+      const dRir = Math.abs(r - targetRir);
+      return dReps <= spec.repsTolerance && dRir <= spec.rirTolerance ? [{ loadKg: s.loadKg, reps: s.reps, rir: r, at: x.at, d: dReps + dRir }] : [];
+    }).sort((a, b) => a.d - b.d || a.loadKg - b.loadKg);
+    const best = matches[0];
+    if (best) return { loadKg: best.loadKg, reps: best.reps, rir: best.rir, at: best.at };
+  }
+  return undefined;
 }

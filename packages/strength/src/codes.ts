@@ -8,6 +8,7 @@ import type { ReasonCodeDefinition } from '@hybridsport/engine';
 const S = 'string' as const;
 const N = 'number' as const;
 const L = 'string[]' as const;
+const B = 'boolean' as const;
 
 export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'PLAN.ANCHOR_CHOICE_GROUP_CONFLICT', categories: ['technical'], params: { group: S, trackIds: L }, audience: 'internal', severity: 'error' },
@@ -21,6 +22,8 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'SELECT.CONTEXT_COMPROMISE', categories: ['business_soft'], params: { slot: S, structure: S }, audience: 'internal', severity: 'warning' },
   { code: 'SELECT.SLOT_OMITTED', categories: ['optimization'], params: { slot: S, cause: S }, audience: 'internal', severity: 'info' },
   { code: 'DOSE.LOAD.FROM_E1RM', categories: ['information'], params: { exerciseId: S, fraction: N, confidence: S, e1rmKg: N, reference: S, unroundedKg: N, stepKg: N }, audience: 'internal', severity: 'info' },
+  { code: 'DOSE.LOAD.FROM_SPECIFIC', categories: ['information'], params: { exerciseId: S, observedKg: N, observedReps: N, observedRir: N, at: S, confidence: S }, audience: 'internal', severity: 'info' },
+  { code: 'DOSE.LOAD.CONFIDENCE', categories: ['information'], params: { exerciseId: S, level: S, rules: S, source: S, recency: S, observations: N, sessions: N, consistency: S, rir: S, conflict: B, transfer: B }, audience: 'internal', severity: 'info' },
   { code: 'DOSE.LOAD.FROM_HISTORY', categories: ['information'], params: { exerciseId: S, confidence: S }, audience: 'internal', severity: 'info' },
   { code: 'DOSE.LOAD.RPE_BASED_LOW_CONFIDENCE', categories: ['information'], params: { exerciseId: S }, audience: 'user', severity: 'info' },
   { code: 'DOSE.LOAD.CALIBRATION', categories: ['information'], params: { exerciseId: S }, audience: 'user', severity: 'info' },
@@ -48,6 +51,10 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'PLAN.STRUCTURE_LOWERED', categories: ['optimization'], params: { structure: S, cause: S }, audience: 'internal', severity: 'info' },
   { code: 'DURATION.TARGET_BELOW_ARCHETYPE_MIN', categories: ['feasibility'], params: { requiredS: N, targetS: N }, audience: 'user', severity: 'error' },
   { code: 'DATA.WEEK_CONTEXT_UNKNOWN', categories: ['information'], params: {}, audience: 'internal', severity: 'info' },
+  { code: 'PLAN.INTERFERENCE_ASSESSED', categories: ['optimization'], params: { structure: S, level: S, action: S, source: S, hours: N, priority: S, demand: S }, audience: 'internal', severity: 'info' },
+  { code: 'PLAN.INTERFERENCE_SIGNAL', categories: ['business_soft'], params: { structure: S, level: S, source: S, overlap: S }, audience: 'internal', severity: 'warning' },
+  { code: 'PROGRESSION.REVIEW_DUE', categories: ['information'], params: { trackId: S, weeks: N }, audience: 'internal', severity: 'notice' },
+  { code: 'DATA.SCIENCE_REGISTRY', categories: ['information'], params: { version: S }, audience: 'internal', severity: 'info' },
   { code: 'STATE.REFERENCE_CONFLICT', categories: ['information'], params: { exerciseId: S }, audience: 'internal', severity: 'info' },
 ];
 

@@ -1,0 +1,112 @@
+/**
+ * Principes scientifiques de programmation 1–13 (addendum 4E §C) : énoncé, statut, sources, paramètres qui
+ * les implémentent, comportement du moteur, et ce qui n'est PAS revendiqué (garde contre la fausse précision).
+ */
+import type { SciencePrinciple } from './types.js';
+
+export const SCIENCE_PRINCIPLES: readonly SciencePrinciple[] = [
+  {
+    id: 'P1.FORCE', title: 'Force maximale et charges',
+    statement: 'Les charges élevées ou modérées favorisent davantage les gains de force maximale que les charges faibles.',
+    status: 'SUPPORTED', sourceIds: ['SRC.LOPEZ_2021'],
+    parameterIds: ['strength.dose.base', 'strength.selection.primaryLoadRequired', 'strength.selection.minLoadCeiling'],
+    engineBehaviour: 'Le profil « heavy » du principal utilise des répétitions basses ; le principal d’un stimulus lourd doit être chargeable (F10).',
+    notClaimed: 'Aucune règle « tout au-dessus de 80 % du 1RM » ; les plages de répétitions exactes du profil restent des heuristiques.',
+  },
+  {
+    id: 'P2.HYPERTROPHIE', title: 'Hypertrophie sur une large plage de charges',
+    statement: 'L’hypertrophie est obtenue sur une large plage de charges ; volume, proximité de l’échec, progression, faisabilité et récupération comptent davantage que la charge seule.',
+    status: 'SUPPORTED', sourceIds: ['SRC.LOPEZ_2021', 'SRC.ROBINSON_2024'],
+    parameterIds: ['strength.dose.base', 'strength.volume'],
+    engineBehaviour: 'Profils « volume » et « general » à répétitions plus hautes ; aucune exigence de charge élevée hors stimulus lourd.',
+    notClaimed: 'Aucune plage de répétitions « optimale » pour l’hypertrophie.',
+  },
+  {
+    id: 'P3.VOLUME', title: 'Volume : dose–réponse à rendements décroissants',
+    statement: 'Le volume hebdomadaire suit une relation dose–réponse à rendements décroissants ; « 10–20 séries » n’est pas une frontière.',
+    status: 'SUPPORTED', sourceIds: ['SRC.PELLAND_2026'],
+    parameterIds: ['strength.volume', 'strength.volume.sessionCap'],
+    engineBehaviour: 'Plancher et haut SOFT par groupe ; `secondaryWeight` 0,5 conservé comme approximation fractionnaire ; réponse individuelle préparée (future donnée de contexte).',
+    notClaimed: 'Les bornes hebdomadaires et le poids 0,5 ne sont pas des valeurs démontrées.',
+  },
+  {
+    id: 'P4.RIR', title: 'RIR : central mais inexact',
+    statement: 'La proximité de l’échec est une variable centrale de l’hypertrophie, mais l’échec n’est pas supérieur à l’arrêt avant l’échec ; l’estimation du RIR est imprécise.',
+    status: 'CONTEXT_DEPENDENT', sourceIds: ['SRC.ROBINSON_2024', 'SRC.REFALO_2023', 'SRC.HALPERIN_2022', 'SRC.HUGHES_2020'],
+    parameterIds: ['strength.dose.base', 'strength.dose.modifiers', 'strength.prescriptionConfidence'],
+    engineBehaviour: 'RIR ≥ 1 par défaut (jamais l’échec) ; l’isolation peut aller plus près de l’échec (RIR 1) ; un RIR incertain abaisse la PrescriptionConfidence. Plages de RIR : extension CORE-EXT-5 documentée, non implémentée.',
+    notClaimed: 'Aucune précision de RIR au-delà d’une répétition environ n’est supposée.',
+  },
+  {
+    id: 'P5.REPOS', title: 'Repos : préserver la qualité',
+    statement: 'Le repos sert la qualité des séries : long pour le travail lourd principal, intermédiaire pour le secondaire, plus court pour les accessoires ; les durées se chevauchent largement pour l’hypertrophie.',
+    status: 'CONTEXT_DEPENDENT', sourceIds: ['SRC.GRGIC_2018', 'SRC.SINGER_2024'],
+    parameterIds: ['strength.dose.base', 'strength.dose.modifiers', 'strength.session.durationPriority'],
+    engineBehaviour: 'Le CORE interdit reduce_rest sur le principal ; un optionnel n’est ajouté que s’il tient sans réduire un repos ; ruleset V1 : sous contrainte, le repos du principal est réduit en dernier.',
+    notClaimed: 'Aucune durée de repos exacte n’est présentée comme démontrée.',
+  },
+  {
+    id: 'P6.FREQUENCE', title: 'Fréquence : outil de répartition',
+    statement: 'La fréquence répartit le volume : effet positif sur la force, négligeable sur l’hypertrophie à volume égal.',
+    status: 'CONTEXT_DEPENDENT', sourceIds: ['SRC.PELLAND_2026'],
+    parameterIds: ['strength.archetypes'],
+    engineBehaviour: 'Le moteur n’impose aucune fréquence : la répartition hebdomadaire appartient au planificateur.',
+    notClaimed: 'Aucun « exactement 2 × par semaine ».',
+  },
+  {
+    id: 'P7.PROGRESSION', title: 'Progression',
+    statement: 'Une progression structurée (périodisée, autorégulée) est favorable à la force ; les fractions de progression exactes sont des heuristiques.',
+    status: 'CONTEXT_DEPENDENT', sourceIds: ['SRC.MOESGAARD_2022', 'SRC.AUTOREG_NMA_2025', 'SRC.HICKMOTT_2022'],
+    parameterIds: ['strength.progression'],
+    engineBehaviour: 'Familles de modèles conservées ; cycleCapFraction 0,15, regressionFraction 0,10, regressAfterBelow 2, stagnationHolds 3 reclassés en heuristiques.',
+    notClaimed: 'Aucune fraction de progression n’est démontrée.',
+  },
+  {
+    id: 'P8.DECHARGE', title: 'Décharge',
+    statement: 'La décharge est un mécanisme utile mais non universel ; son déclenchement doit devenir contextuel.',
+    status: 'PROGRAMMING_HEURISTIC', sourceIds: [],
+    parameterIds: ['strength.dose.modifiers'],
+    engineBehaviour: 'Mécanisme conservé (phase « deload » décidée par le planificateur) ; valeurs reclassées en heuristiques.',
+    notClaimed: 'Aucune fréquence ni ampleur de décharge démontrée.',
+  },
+  {
+    id: 'P9.MONTEE', title: 'Montée en charge spécifique',
+    statement: 'Une montée spécifique précède le travail lourd ; l’échauffement musculaire améliore le taux de développement de la force et la puissance, pas la force maximale.',
+    status: 'CONTEXT_DEPENDENT', sourceIds: ['SRC.WARMUP_FORCE_MA', 'SRC.FRADKIN_2010'],
+    parameterIds: ['strength.rampup', 'strength.rampup.estimatedPolicy'],
+    engineBehaviour: 'Montée conservée et prioritaire (jamais réduite sous contrainte de temps) ; paliers exacts reclassés en heuristiques.',
+    notClaimed: 'Les paliers (fractions, répétitions) ne sont pas optimaux ni démontrés ; la source 39593476 (identité partielle) n’est pas utilisée.',
+  },
+  {
+    id: 'P10.ANCRES', title: 'Ancres et tracks',
+    statement: 'Une variation systématique peut aider, une variation aléatoire excessive peut nuire : l’ancre ne change que pour une raison traçable.',
+    status: 'CONTEXT_DEPENDENT', sourceIds: ['SRC.KASSIANO_2022'],
+    parameterIds: ['strength.tracks', 'strength.tracks.horizon', 'strength.selection.recencyBandsDays', 'strength.selection.repetitionPolicy'],
+    engineBehaviour: 'Trois niveaux conservés ; 12/10/8/6 semaines deviennent un horizon de REVUE (PROGRESSION.REVIEW_DUE), jamais une clôture à elles seules.',
+    notClaimed: 'Aucune durée de vie d’ancre démontrée.',
+  },
+  {
+    id: 'P11.AXIAL', title: 'Charge axiale',
+    statement: 'Limiter les exercices à forte charge axiale par séance est un garde-fou produit ; une dose axiale cumulée est à préparer.',
+    status: 'PRODUCT_GUARDRAIL', sourceIds: [],
+    parameterIds: ['strength.selection.axialHighMaxPerSession'],
+    engineBehaviour: '`axialHighMaxPerSession` = 1 conservé, reclassé garde-fou produit.',
+    notClaimed: 'Aucune preuve qu’un seul exercice axial par séance soit une limite physiologique.',
+  },
+  {
+    id: 'P12.ECHAUFFEMENT', title: 'Échauffement général et montée spécifique',
+    statement: 'L’échauffement général est contextuel ; la montée spécifique est distincte et prioritaire.',
+    status: 'CONTEXT_DEPENDENT', sourceIds: ['SRC.WARMUP_FORCE_MA', 'SRC.FRADKIN_2010'],
+    parameterIds: ['strength.session.mobility', 'strength.session.durationPriority', 'strength.rampup'],
+    engineBehaviour: 'Ruleset V1 : échauffement général au minimum, sa part supplémentaire seulement si elle tient après les optionnels ; plus de 5 min + 3 min imposées.',
+    notClaimed: 'Aucune durée d’échauffement général démontrée.',
+  },
+  {
+    id: 'P13.RETOUR_AU_CALME', title: 'Retour au calme facultatif',
+    statement: 'Le retour au calme est facultatif : il ne sacrifie jamais les séries principales, les repos nécessaires ni la montée spécifique.',
+    status: 'PRODUCT_GUARDRAIL', sourceIds: [],
+    parameterIds: ['strength.session.mobility', 'strength.session.durationPriority'],
+    engineBehaviour: 'Ruleset V1 : ajouté en dernier, seulement s’il tient ; sinon SELECT.SLOT_OMITTED (cause duration).',
+    notClaimed: 'Aucun bénéfice physiologique du retour au calme n’est revendiqué.',
+  },
+];

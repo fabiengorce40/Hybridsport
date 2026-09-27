@@ -239,10 +239,27 @@ export function closureCause(track: StrengthTrack, o: { readonly now: string; re
   const DAYS_PER_WEEK = 7;
   if (o.inadmissible) return 'inadmissible';
   if (o.stagnant) return 'stagnation';
-  if (daysBetween(track.openedAt, o.now) > t.anchorMaxWeeks[o.level] * DAYS_PER_WEEK) return 'max_weeks';
+  // Ruleset scientifique V1 : la durée n'est qu'un HORIZON DE REVUE (voir `anchorReviewDue`), jamais une cause
+  // de clôture à elle seule ; une ancre ne change que pour une raison traçable.
+  const horizon = params['strength.tracks.horizon']?.policy ?? 'close';
+  if (horizon === 'close' && daysBetween(track.openedAt, o.now) > t.anchorMaxWeeks[o.level] * DAYS_PER_WEEK) return 'max_weeks';
   // Rotation en fin de mésocycle selon le niveau (un débutant garde ses ancres pour la progression linéaire).
   if (o.mesocycleEnded && t.rotateAtMesocycleEnd[o.level]) return 'mesocycle_end';
   return undefined;
+}
+
+/**
+ * Horizon de revue d'une ancre (ruleset scientifique V1, politique `review`) : au-delà de `anchorMaxWeeks`,
+ * le ProgressionEngine signale une revue (PROGRESSION.REVIEW_DUE) ; la track reste active tant qu'aucune
+ * cause traçable (stagnation, inadmissibilité, fin de mésocycle déclarée) ne la clôt.
+ */
+export function anchorReviewDue(track: StrengthTrack, o: { readonly now: string; readonly level: keyof StrengthParams['strength.tracks']['anchorMaxWeeks'] }, params: StrengthParams): { due: boolean; reasons: readonly ReasonCode[] } {
+  // technical-constant: jours par semaine (conversion d'unités)
+  const DAYS_PER_WEEK = 7;
+  if (track.status !== 'active' || params['strength.tracks.horizon']?.policy !== 'review') return { due: false, reasons: [] };
+  const weeks = params['strength.tracks'].anchorMaxWeeks[o.level];
+  if (daysBetween(track.openedAt, o.now) <= weeks * DAYS_PER_WEEK) return { due: false, reasons: [] };
+  return { due: true, reasons: [strengthReasons.emit('PROGRESSION.REVIEW_DUE', { trackId: track.trackId, weeks })] };
 }
 
 export function closeTrack(track: StrengthTrack, cause: string): { track: StrengthTrack; reasons: readonly ReasonCode[] } {

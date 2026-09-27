@@ -76,6 +76,11 @@ export function computeDose(e: Exercise, env: Env, opts: DoseOptions): Dose {
     const adj = env.params['strength.interference'].perStructure[s];
     if (adj && (structures[s] ?? 0) >= touch) deltas.push({ modifier: `interference:${s}:${cause}`, setsDelta: adj.setsDelta, rirDelta: adj.rirDelta });
   }
+  // Interférence MODÉRÉE (ruleset scientifique V1) : effort seulement, jamais de série retirée.
+  for (const [s, cause] of env.rirOnly) {
+    const adj = env.params['strength.interference'].perStructure[s];
+    if (adj && !env.lowered.has(s) && (structures[s] ?? 0) >= touch) deltas.push({ modifier: `interference_rir:${s}:${cause}`, setsDelta: 0, rirDelta: adj.rirDelta });
+  }
   const active = deltas.filter((d) => d.setsDelta !== 0 || d.rirDelta !== 0);
   const setsDelta = active.length === 0 ? 0 : m.conflictPolicy === 'sum' ? active.reduce((a, d) => a + d.setsDelta, 0) : Math.min(...active.map((d) => d.setsDelta));
   const rirDelta = active.length === 0 ? 0 : m.conflictPolicy === 'sum' ? active.reduce((a, d) => a + d.rirDelta, 0) : Math.max(...active.map((d) => d.rirDelta));

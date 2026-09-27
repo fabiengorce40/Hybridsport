@@ -20,6 +20,8 @@ export interface Env {
   readonly equipment: ReadonlySet<string>;
   /** Structures « abaissées » par le contexte multisport (structure → cause). */
   readonly lowered: ReadonlyMap<string, string>;
+  /** Structures à ajustement d'effort seulement (InterferenceAssessment MODERATE, ruleset scientifique V1). */
+  readonly rirOnly: ReadonlyMap<string, string>;
   /** Tracks ACTIVES de cet archétype, par emplacement : ancres déclarées par l'intention, et accessoires suivis. */
   readonly anchorBySlot: ReadonlyMap<string, StrengthTrack>;
   readonly trackedBySlot: ReadonlyMap<string, StrengthTrack>;
@@ -36,7 +38,7 @@ export function exerciseClass(e: Exercise, params: StrengthParams): ExerciseClas
   return e.loadCeiling >= t.highLoadCeilingMin ? 'compound_high_load' : 'compound_other';
 }
 
-export function buildEnv(input: SportEngineInput<StrengthContext>, params: StrengthParams, archetype: StrengthArchetype, goal: StrengthGoalRef, goalKey: string, lowered: ReadonlyMap<string, string>, rng: SeededRng): Env {
+export function buildEnv(input: SportEngineInput<StrengthContext>, params: StrengthParams, archetype: StrengthArchetype, goal: StrengthGoalRef, goalKey: string, lowered: ReadonlyMap<string, string>, rng: SeededRng, rirOnly: ReadonlyMap<string, string> = new Map()): Env {
   const ctx = input.discipline;
   const catalog = input.catalog;
   const table: DerivationTable = input.ruleset.table('demand.derivationTable', isDerivationTable, 'DerivationTable');
@@ -51,7 +53,7 @@ export function buildEnv(input: SportEngineInput<StrengthContext>, params: Stren
   for (const h of input.history) for (const f of h.fingerprint.families) note(f, h.at);
   return {
     input, params, catalog, level: input.profile.athleteLevel, goal, goalKey, stimulus: input.intent.stimulus, archetype,
-    equipment: new Set(input.constraints.availableEquipment), lowered, anchorBySlot, trackedBySlot, rng,
+    equipment: new Set(input.constraints.availableEquipment), lowered, rirOnly, anchorBySlot, trackedBySlot, rng,
     structuresOf: (e) => { let v = cache.get(e.id); if (!v) { v = deriveExerciseStructures(e, table); cache.set(e.id, v); } return v; },
     familyDaysSince: (family) => { const at = lastSeen.get(family); return at === undefined ? undefined : daysBetween(at, input.context.now); },
   };

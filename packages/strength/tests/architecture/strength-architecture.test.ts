@@ -10,7 +10,7 @@ import ts from 'typescript';
 import {
   collectImports, findBypassIdentifiers, findClockAndRandomUsage, findForbiddenGlobals, findUnjustifiedNumericLiterals, loadCoreSources, REPO_ROOT, visit,
 } from '../../../engine/tests/architecture/source-scanner.js';
-import { STRENGTH_PARAMETER_SCHEMAS } from '../../src/index.js';
+import { STRENGTH_OPTIONAL_PARAMETER_SCHEMAS, STRENGTH_PARAMETER_SCHEMAS } from '../../src/index.js';
 
 const STRENGTH = loadCoreSources(['packages/strength/src']);
 const CORE = loadCoreSources();
@@ -22,7 +22,7 @@ describe('dépendances', () => {
   });
 
   it('strength n’importe que domain, engine, zod et ses propres modules', () => {
-    const external = collectImports(STRENGTH).filter((i) => !i.module.startsWith('./')).map((i) => i.module);
+    const external = collectImports(STRENGTH).filter((i) => !i.module.startsWith('./') && !i.module.startsWith('../')).map((i) => i.module);
     expect([...new Set(external)].sort()).toEqual(['@hybridsport/domain', '@hybridsport/engine', 'zod']);
     const pkg = JSON.parse(readFileSync(join(REPO_ROOT, 'packages/strength/package.json'), 'utf8')) as { dependencies: Record<string, string> };
     expect(Object.keys(pkg.dependencies).sort()).toEqual(['@hybridsport/domain', '@hybridsport/engine', 'zod']);
@@ -63,9 +63,10 @@ describe('aucune constante sportive cachée (spec 09 §3.1)', () => {
   });
 
   it('tout paramètre strength.* cité dans les sources est déclaré (gouvernance) ; aucun paramètre déclaré n’est mort', () => {
-    const declared = new Set(Object.keys(STRENGTH_PARAMETER_SCHEMAS));
+    const declared = new Set([...Object.keys(STRENGTH_PARAMETER_SCHEMAS), ...Object.keys(STRENGTH_OPTIONAL_PARAMETER_SCHEMAS)]);
     const cited = new Set<string>();
-    for (const f of STRENGTH.filter((x) => !x.path.endsWith('params.ts'))) visit(f, (n) => {
+    // Le registre scientifique cite TOUS les paramètres (provenance) : exclu, sinon « aucun paramètre mort » serait vide de sens.
+    for (const f of STRENGTH.filter((x) => !x.path.endsWith('params.ts') && !x.path.includes('/science/'))) visit(f, (n) => {
       if (ts.isStringLiteral(n) && /^strength\.[a-zA-Z.]+$/.test(n.text) && !n.text.startsWith('strength.rule')) cited.add(n.text);
     });
     const citedParams = [...cited].filter((c) => !/^strength\.(sessionCap|intensity|rampup|loadMode|noviceTechnical|maxEffort)$/.test(c));

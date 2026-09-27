@@ -16,3 +16,5 @@ export * from './engine.js';
 export * from './models.js';
 export * from './progression.js';
 export * from './catalog-review.js';
+export * from './confidence.js';
+export * from './science/index.js';

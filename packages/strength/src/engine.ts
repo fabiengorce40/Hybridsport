@@ -20,6 +20,7 @@ import { firstFailingFilter, maxEffortEligible, slotCandidatesFor } from './cand
 import type { FilterId } from './candidates.js';
 import { decidingCriterion, rankCandidates } from './selection.js';
 import type { Ranked, SessionSoFar } from './selection.js';
+import type { InterferenceAssessment } from './interference.js';
 import { computeDose, doseCell } from './dose.js';
 import { decideLoad, loadKnowledge, loadStep, pctFor } from './load.js';
 import { buildRampups } from './rampup.js';
@@ -34,7 +35,11 @@ import { roundDownToStep } from './util.js';
 export const STRENGTH_ENGINE_ID = 'engine.strength';
 /** Paramètres du CORE lus par le moteur (dérivation des structures, estimation de durée), déclarés dans chaque proposition. */
 const CORE_PARAMETERS_READ = ['demand.derivationTable', 'duration.toleranceProfiles', 'duration.blockTransitionS', 'duration.briefingS', 'duration.defaultTiming', 'duration.transitionTable', 'duration.uncertaintyCorrelation'];
-export const STRENGTH_ENGINE_VERSION = '0.1.0' as const;
+/**
+ * 0.2.0 (phase 4E) : politiques du ruleset scientifique V1 derrière des paramètres FACULTATIFS versionnés ;
+ * avec un ruleset 0.2.0 (sans ces paramètres), les séances sont identiques à celles de la version 0.1.0.
+ */
+export const STRENGTH_ENGINE_VERSION = '0.2.0' as const;
 
 type Input = SportEngineInput<StrengthContext>;
 
@@ -248,10 +253,18 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
 
   const mob = params['strength.session.mobility'];
   const primaryPattern = picks[0]?.exercise.patterns.primary;
+  // Politique de mobilité (ruleset scientifique V1) : l'échauffement GÉNÉRAL au-delà du minimum et le retour
+  // au calme ne passent qu'APRÈS le travail principal, ses repos, la montée spécifique et les optionnels
+  // (ordre de priorité 4E §I). Sans la politique (0.2.0) : les deux sont toujours présents.
+  const mobPolicy = params['strength.session.durationPriority'];
+  let warmupExtra = !mobPolicy || mobPolicy.warmupExtra === 'always';
+  // Repos du principal (priorité 2) : sous contrainte, réduit seulement si la séance ne tient pas autrement.
+  let keepPrimaryRest = false;
+  let withCooldown = !mobPolicy || mobPolicy.cooldown === 'always';
   // Échauffement / retour au calme : durée haute par défaut, basse sous contrainte de temps (plages G2).
   const mobility = (tp: boolean) => ({
-    warmup: mobilityItem(env, 'i.warmup', tp ? mob.warmupS.min : mob.warmupS.max, primaryPattern),
-    cooldown: mobilityItem(env, 'i.cooldown', tp ? mob.cooldownS.min : mob.cooldownS.max, primaryPattern),
+    warmup: mobilityItem(env, 'i.warmup', tp || !warmupExtra ? mob.warmupS.min : mob.warmupS.max, primaryPattern),
+    cooldown: withCooldown ? mobilityItem(env, 'i.cooldown', tp ? mob.cooldownS.min : mob.cooldownS.max, primaryPattern) : undefined,
   });
   const duration = readDurationParams(input.ruleset);
   const profile = readToleranceProfile(input.ruleset, env.archetype.toleranceProfile);
@@ -272,7 +285,7 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
       const { cell } = doseCell(p.exercise, p.slot.def.role, env);
       const alloc = need === undefined ? undefined : Math.min(cell.sets.max, Math.max(cell.sets.min, Math.floor(need)));
       const before = patternRamped.get(p.exercise.patterns.primary) ?? 0;
-      const rx = prescribe(p, env, timePressure, alloc, before, local);
+      const rx = prescribe(p, env, timePressure && !(keepPrimaryRest && p.slot.def.role === 'primary'), alloc, before, local);
       if (rx.hasRampup) patternRamped.set(p.exercise.patterns.primary, before + 1);
       const w = rx.working;
       for (const g of groups) allocated[g] = (allocated[g] ?? 0) + w;
@@ -345,7 +358,15 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
   // 1. Noyau (emplacements requis) ; si trop long, M6 (séries des non-principaux au plancher, repos courts).
   let timePressure = false;
   let core = assemble(picks, false, undefined);
-  if (!fits(core)) { timePressure = true; core = assemble(picks, true, undefined); }
+  if (!fits(core)) {
+    timePressure = true;
+    if (mobPolicy?.primaryRest === 'reduce_last') {
+      keepPrimaryRest = true;
+      core = assemble(picks, true, undefined);
+      if (!fits(core)) { keepPrimaryRest = false; reasons.push(strengthReasons.emit('DOSE.MODIFIED', { modifier: 'time:primary_rest', exerciseId: picks[0]?.exercise.id ?? '', setsDelta: 0, rirDelta: 0 })); }
+    }
+    if (!keepPrimaryRest) core = assemble(picks, true, undefined);
+  }
   if (!fits(core)) throw new NoProposal([strengthReasons.emit('DURATION.TARGET_BELOW_ARCHETYPE_MIN', { requiredS: Math.round(core.p50), targetS: input.intent.targetDurationS }), ...reasons]);
   // 2. Emplacements optionnels, par ordre de priorité, tant que la cible raisonnable n'est pas dépassée.
   const addTried = (slot: SlotInstance) => {
@@ -374,6 +395,24 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
     const have = picks.filter((p) => p.slot.def.id === s.def.id).length;
     if (have > 0 && have < s.def.count.max) addTried(s);
   }
+  // 4. Politique de mobilité : échauffement général supplémentaire (7), puis retour au calme facultatif (8).
+  if (mobPolicy) {
+    const tryAdd = (enable: () => void, disable: () => void, slot: string) => {
+      enable();
+      const trial = assemble(picks, timePressure, undefined);
+      if (fits(trial)) { core = trial; return; }
+      disable();
+      reasons.push(strengthReasons.emit('SELECT.SLOT_OMITTED', { slot, cause: 'duration' }));
+    };
+    if (mobPolicy.warmupExtra === 'if_fits_after_optionals' && mob.warmupS.max > mob.warmupS.min) {
+      if (timePressure) reasons.push(strengthReasons.emit('SELECT.SLOT_OMITTED', { slot: 'i.warmup_extra', cause: 'duration' }));
+      else tryAdd(() => { warmupExtra = true; }, () => { warmupExtra = false; }, 'i.warmup_extra');
+    }
+    if (mobPolicy.cooldown === 'if_fits_after_optionals') {
+      if ((timePressure ? mob.cooldownS.min : mob.cooldownS.max) > 0) tryAdd(() => { withCooldown = true; }, () => { withCooldown = false; }, 'i.cooldown');
+      else reasons.push(strengthReasons.emit('SELECT.SLOT_OMITTED', { slot: 'i.cooldown', cause: 'duration' }));
+    }
+  }
   const trace: ReasonCode[] = [];
   const final = assemble(picks, timePressure, trace);
   // Volume hebdomadaire : plancher d'un groupe inatteignable cette semaine ⇒ signal au planificateur.
@@ -386,6 +425,23 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
     }
   }
   return { session: final.session, picks: final.picks, reasons: [...reasons, ...trace], p50: final.p50, markers: final.markers, volumeByItem: final.volumeByItem, anchorsUsed: final.anchorsUsed, slotIds: [...slots.required, ...slots.optional].map((s) => s.def.id) };
+}
+
+/**
+ * Signal au planificateur (InterferenceAssessment VERY_HIGH) : seulement si la séance proposée RECOUVRE la
+ * structure (un exercice la sollicite, ou un optionnel a été retiré pour elle). Le moteur ne déplace ni ne
+ * supprime la séance : le planificateur global décide.
+ */
+function interferenceSignals(b: Built, env: Env, signals: readonly InterferenceAssessment[]): ReasonCode[] {
+  const inter = env.params['strength.interference'];
+  const needOf = (slotId: string) => env.archetype.slots.find((s) => s.id === slotId)?.need;
+  return signals.flatMap((sg) => {
+    const byExercise = b.picks.some((p) => (env.structuresOf(p.exercise)[sg.structure] ?? 0) >= inter.touchThreshold);
+    const drops = inter.perStructure[sg.structure]?.dropOptionalNeeds ?? [];
+    const byOmission = b.reasons.some((r) => r.code === 'SELECT.SLOT_OMITTED' && r.params.cause === 'interference' && drops.includes(needOf(String(r.params.slot)) ?? ''));
+    const overlap = byExercise ? 'exercise' : byOmission ? 'omitted_slot' : 'none';
+    return overlap === 'none' ? [] : [strengthReasons.emit('PLAN.INTERFERENCE_SIGNAL', { structure: sg.structure, level: sg.level, source: sg.source, overlap })];
+  });
 }
 
 /** Borne technique du plafond L4 : au plus (séries max du profil) réductions par exercice. */
@@ -460,11 +516,14 @@ export function proposeStrength(input: Input): ProposeResult {
   if (!archetype.levels.includes(input.profile.athleteLevel)) return na('level_not_admitted');
   if (!archetype.goals.includes(gk)) return na('goal_not_admitted');
   if (!params['strength.stimuli'][input.intent.stimulus]) return na('unknown_stimulus');
-  const { lowered, reasons: lr } = loweredStructures(input, params);
-  const env = buildEnv(input, params, archetype, goal, gk, lowered, SeededRng.fromSeed(input.context.seed));
+  const inter = loweredStructures(input, params);
+  // Version du registre scientifique (provenance) : tracée dans chaque séance, avec la version du ruleset.
+  const registry = params['strength.science.registryVersion'];
+  const lr = [...(registry !== undefined ? [strengthReasons.emit('DATA.SCIENCE_REGISTRY', { version: registry })] : []), ...inter.reasons];
+  const env = buildEnv(input, params, archetype, goal, gk, inter.lowered, SeededRng.fromSeed(input.context.seed), inter.rirOnly);
   try {
     const main = build(env, input, new Map());
-    const out = [proposal({ ...main, reasons: [...lr, ...main.reasons] }, env, input, loaded, 0)];
+    const out = [proposal({ ...main, reasons: [...lr, ...main.reasons, ...interferenceSignals(main, env, inter.signals)] }, env, input, loaded, 0)];
     // Alternatives : même séance, seul un emplacement NON ancré change d'exercice (sa première alternative).
     const variable = main.picks.filter((p) => !p.track && p.slot.def.role === 'accessory' && p.ranked.length > 1);
     for (const p of variable.slice(0, params['strength.proposals.max'] - 1)) {
@@ -472,7 +531,7 @@ export function proposeStrength(input: Input): ProposeResult {
       if (!alt) continue;
       try {
         const b = build(env, input, new Map([[p.slot.def.id, alt]]));
-        out.push(proposal({ ...b, reasons: [...lr, ...b.reasons] }, env, input, loaded, out.length));
+        out.push(proposal({ ...b, reasons: [...lr, ...b.reasons, ...interferenceSignals(b, env, inter.signals)] }, env, input, loaded, out.length));
       } catch (e) {
         if (!(e instanceof NoProposal)) throw e; // une alternative infaisable est simplement omise
       }

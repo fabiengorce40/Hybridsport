@@ -5,8 +5,8 @@
  * §1 (elles-mêmes provisoires).
  */
 import type { GovernanceClass, Level, ParameterValue, RulesetDocumentInput } from '@hybridsport/domain';
-import { STRENGTH_PARAMETER_SCHEMAS, STRENGTH_RULES } from '../../src/index.js';
-import type { StrengthParamId } from '../../src/index.js';
+import { SCIENCE_REGISTRY_VERSION, SCIENCE_RULESET_VERSION, STRENGTH_OPTIONAL_PARAMETER_SCHEMAS, STRENGTH_PARAMETER_SCHEMAS, STRENGTH_RULES } from '../../src/index.js';
+import type { StrengthOptionalParamId, StrengthParamId } from '../../src/index.js';
 import { param, rule, testRulesetDocumentWithDuplicate } from '../../../engine/tests/fixtures/ruleset.js';
 import { ALL_PRESET_IDS } from './catalog.js';
 
@@ -245,4 +245,39 @@ export function strengthRules() {
 export function strengthRulesetDocument(overrides: Partial<Record<StrengthParamId, unknown>> = {}): RulesetDocumentInput {
   const base = testRulesetDocumentWithDuplicate();
   return { ...base, rulesetVersion: '0.2.0-strength-test', parameters: [...base.parameters, ...strengthParameters(overrides)], rules: [...base.rules, ...strengthRules()] };
+}
+
+/**
+ * RULESET SCIENTIFIQUE V1 CANDIDAT (phase 4E). Il ÉTEND le ruleset de test 0.2.0 sans en modifier AUCUNE valeur :
+ * seules s'ajoutent les politiques versionnées facultatives, dont chaque valeur est tracée dans le registre
+ * scientifique (provenance, statut). Le ruleset 0.2.0 reste disponible et reproductible à l'identique.
+ */
+export const STRENGTH_SCIENCE_CANDIDATE_VALUES: Record<StrengthOptionalParamId, unknown> = {
+  'strength.science.registryVersion': SCIENCE_REGISTRY_VERSION,
+  'strength.prescriptionConfidence': { rulesVersion: 'pc-1.0.0', high: { minSessions: 2, minObservations: 4 }, rirUncertainLevels: ['novice', 'beginner'], declaredCap: 'medium' },
+  'strength.load.specificObservation': { repsTolerance: 1, rirTolerance: 1, requireRir: true },
+  'strength.interference.assessment': {
+    searchWindowHours: 72,
+    proximityBands: [{ maxHours: 12, delta: 1 }, { maxHours: 24, delta: 0 }, { maxHours: 48, delta: -1 }],
+    beyondBandsDelta: -2,
+    importanceDelta: { key: 0, standard: -1, optional: -2 },
+    impactModifiers: [{ demand: 'locomotor_impact', atLeast: 'high', structures: ['lower_knee', 'lower_hip'], structureAtLeast: 'high', delta: 1 }],
+    actions: { NONE: 'none', LOW: 'trace', MODERATE: 'rir_only', HIGH: 'full', VERY_HIGH: 'full_and_signal' },
+  },
+  'strength.rampup.estimatedPolicy': { band: 'by_relative_intensity' },
+  'strength.selection.repetitionPolicy': { levels: ['novice'], recency: 'prefer_repeat' },
+  'strength.tracks.horizon': { policy: 'review' },
+  'strength.session.durationPriority': { warmupExtra: 'if_fits_after_optionals', cooldown: 'if_fits_after_optionals', primaryRest: 'reduce_last' },
+};
+
+export function strengthScientificRulesetDocument(overrides: Partial<Record<StrengthParamId, unknown>> = {}, optional: Partial<Record<StrengthOptionalParamId, unknown | null>> = {}): RulesetDocumentInput {
+  const base = strengthRulesetDocument(overrides);
+  const extra = (Object.keys(STRENGTH_OPTIONAL_PARAMETER_SCHEMAS) as StrengthOptionalParamId[]).flatMap((pid) => {
+    const v = pid in optional ? optional[pid] : STRENGTH_SCIENCE_CANDIDATE_VALUES[pid];
+    if (v === null || v === undefined) return [];
+    return [param(pid, v as ParameterValue, STRENGTH_OPTIONAL_PARAMETER_SCHEMAS[pid].governance as GovernanceClass, {
+      version: '0.3.0', justification: `Ruleset scientifique V1 : politique versionnée, provenance dans le registre ${SCIENCE_REGISTRY_VERSION} (STRENGTH-SCIENCE-REGISTRY-V1).`,
+    })];
+  });
+  return { ...base, rulesetVersion: SCIENCE_RULESET_VERSION, parameters: [...base.parameters, ...extra] };
 }
