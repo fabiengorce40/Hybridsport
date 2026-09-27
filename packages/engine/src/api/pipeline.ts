@@ -23,7 +23,7 @@ import { buildFingerprint } from '../duplicate/fingerprint.js';
 import { analyzeDuplicates } from '../duplicate/analysis.js';
 import type { DuplicateReport } from '../duplicate/analysis.js';
 import { CORE_RULES } from '../validation/rules.js';
-import type { CoreCandidate, CoreProfile, CoreState, DuplicateContext, RejectedProposal } from '../contracts/core-types.js';
+import type { CoreCandidate, CoreProfile, CoreState, DuplicateContext, RejectedProposal, SessionCheck } from '../contracts/core-types.js';
 
 export type { CoreCandidate, CoreProfile, CoreState, DuplicateContext, RejectedProposal } from '../contracts/core-types.js';
 
@@ -37,6 +37,8 @@ export interface CorePipelineRequest {
   readonly duplicate?: DuplicateContext;
   /** Propositions refusées à l'acceptation (frontière moteur sportif) : tracées, jamais évaluées. */
   readonly rejectedProposals?: readonly RejectedProposal[];
+  /** Contrôles propres à la discipline, exécutés par le validateur et la réparation du CORE. */
+  readonly extraChecks?: readonly SessionCheck[];
 }
 
 export interface CorePipelineOutcome {
@@ -125,7 +127,7 @@ export function runCorePipeline(request: CorePipelineRequest, ctx: Ctx): CorePip
       excludedExercises: request.profile.excludedExercises, dayAvailable: request.state.dayAvailable,
       ...(request.state.recovery ? { recovery: request.state.recovery } : {}),
     };
-    const deps = { catalog: ctx.catalog, ruleset: ctx.ruleset, engineVersion: ctx.engineVersion, ...(request.state.timing ? { timing: request.state.timing } : {}) };
+    const deps = { catalog: ctx.catalog, ruleset: ctx.ruleset, engineVersion: ctx.engineVersion, ...(request.state.timing ? { timing: request.state.timing } : {}), ...(request.extraChecks ? { extraChecks: request.extraChecks } : {}) };
 
     // 3. Durée puis validation de chaque candidat ⇒ admissibilité (couche A)
     const evaluated: EvaluatedCandidate<SessionDraft | undefined>[] = [];

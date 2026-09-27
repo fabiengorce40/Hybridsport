@@ -42,4 +42,6 @@ export interface DuplicateContext {
   readonly declaredIntents: readonly RepetitionIntent[];
 }
 
+export type { SessionCheck } from '../validation/checks.js';
+
 export interface RejectedProposal { readonly id: string; readonly reasons: readonly ReasonCode[] }

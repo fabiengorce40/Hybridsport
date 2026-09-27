@@ -5,13 +5,13 @@
 import { describe, expect, it } from 'vitest';
 import { asISODateTime } from '@hybridsport/domain';
 import type { FingerprintHistoryEntry, SportEngineProposalInput } from '@hybridsport/domain';
-import { acceptProposal, buildFingerprint, canonicalStringify, runSportSession } from '../../src/index.js';
-import type { SportEngineInput } from '../../src/index.js';
+import { acceptProposal, buildFingerprint, canonicalStringify, createCoreRegistry, runSportSession } from '../../src/index.js';
+import type { SessionCheck, SportEngineInput } from '../../src/index.js';
 import { coreContext } from '../harness/context.js';
 import { machineVariant, pain, PROFILE_GYM, STATE_FRESH } from '../harness/requests.js';
 import { presetEquipment } from '../fixtures/context.js';
 import { testRuleset } from '../fixtures/load.js';
-import { testRulesetDocumentWithDuplicate } from '../fixtures/ruleset.js';
+import { rule, testRulesetDocumentWithDuplicate } from '../fixtures/ruleset.js';
 import { session, strengthSessionInput } from '../fixtures/sessions.js';
 import { FAKE_ENGINE, fakeEngine, fingerprintInputsFor, INTENT, proposalFor, TWO_PROPOSALS } from '../fixtures/sport-engine.js';
 import type { FakeContext } from '../fixtures/sport-engine.js';
@@ -222,5 +222,29 @@ describe('CORE-EXT-1/2/3 — ancres déclarées, contexte de discipline, absence
     const o = runSportSession(fakeEngine(() => { throw new Error('bug'); }), request(), ctx());
     expect(codeOf(o.result)).toBe('INVALID_INPUT');
     expect(o.trace.entries.find((e) => e.step === 'proposal')?.decision).toBe('INVALID_INPUT');
+  });
+});
+
+describe('contrôles de discipline exécutés par le CORE (SportEngine.checks)', () => {
+  it('un contrôle HARD fourni par le moteur est exécuté par le validateur du CORE (le moteur ne s’auto-valide pas)', () => {
+    const doc = testRulesetDocumentWithDuplicate();
+    const rs = testRuleset({ ...doc, rules: [...doc.rules, rule('test.discipline.no_bench', { nature: 'SAFETY', governance: 'G1', category: 'safety' })] });
+    const reasonsReg = createCoreRegistry();
+    const check: SessionCheck = {
+      rule: { id: 'test.discipline.no_bench', version: '1.0.0' }, layer: 'A1', nature: 'SAFETY',
+      evaluate: ({ session: s }) => ({
+        violations: s.blocks.flatMap((b) => b.items).filter((i) => i.exerciseId === 'ex.bench_press').map((i) => ({
+          ruleId: 'test.discipline.no_bench', ruleVersion: '1.0.0', nature: 'SAFETY' as const, level: 'hard' as const, target: { kind: 'exercise' as const, id: i.id },
+          reason: reasonsReg.emit('RULE.VIOLATION', { ruleId: 'test.discipline.no_bench', detail: i.exerciseId }),
+        })),
+        repairs: [],
+      }),
+    };
+    const engine = { ...fakeEngine((input) => [proposalFor(input, strengthSessionInput())]), checks: [check] };
+    const o = runSportSession(engine, request(), coreContext('checks', rs));
+    expect(o.result.status).not.toBe('ok');
+    expect(o.trace.entries.filter((e) => e.step === 'validate').flatMap((e) => e.reasons.map((r) => r.code))).toContain('RULE.VIOLATION');
+    // Sans le contrôle, la même proposition passe : c'est bien le CORE qui l'a appliqué.
+    expect(runSportSession(fakeEngine((input) => [proposalFor(input, strengthSessionInput())]), request(), coreContext('checks', rs)).result.status).toBe('ok');
   });
 });

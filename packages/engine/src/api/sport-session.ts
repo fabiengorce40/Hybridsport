@@ -92,6 +92,7 @@ export function runSportSession<TContext>(engine: SportEngine<TContext>, request
     candidates: accepted.flatMap((a) => (a.ok ? [a.candidate] : [])),
     rejectedProposals: accepted.flatMap((a) => (a.ok ? [] : [{ id: a.id, reasons: a.reasons }])),
     duplicate: { history: request.history, declaredIntents: intent.repetitionIntents },
+    ...(engine.checks ? { extraChecks: engine.checks } : {}),
   }, ctx);
 }
 

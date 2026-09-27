@@ -7,6 +7,7 @@ import type { LoadedRuleset } from '../rules/ruleset.js';
 import type { LoadedCatalog } from '../catalog/catalog.js';
 import { intentKey } from '../duplicate/analysis.js';
 import type { CoreCandidate, CoreProfile, CoreState } from './core-types.js';
+import type { SessionCheck } from '../validation/checks.js';
 
 const reasons = createCoreRegistry();
 
@@ -66,6 +67,11 @@ export interface SportEngine<TContext = unknown> {
   readonly discipline: Discipline;
   /** Validation stricte du contexte de discipline (pure). Le CORE refuse l'entrée si elle échoue. */
   parseContext(raw: unknown): ContextParse<TContext>;
+  /**
+   * Contrôles propres à la discipline (fiches de règles dans le ruleset), EXÉCUTÉS PAR LE CORE dans
+   * son validateur et sa réparation — jamais une auto-validation du moteur.
+   */
+  readonly checks?: readonly SessionCheck[];
   propose(input: SportEngineInput<TContext>): ProposeResult;
 }
 
