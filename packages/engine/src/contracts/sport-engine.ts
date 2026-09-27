@@ -126,6 +126,6 @@ export function acceptProposal<TContext>(raw: unknown, index: number, input: Spo
   }
   // Une séance illisible n'est pas refusée ici : le validateur la rejettera (TECHNICAL), tracée.
   if (out.length > 0) return { ok: false, id: p.proposalId, reasons: out };
-  return { ok: true, id: p.proposalId, candidate: { session: p.session, optimization: p.optimization, fingerprintInputs: p.fingerprintInputs } };
+  return { ok: true, id: p.proposalId, candidate: { session: p.session, optimization: p.optimization, fingerprintInputs: p.fingerprintInputs, ...(p.reasons.length > 0 ? { reasons: p.reasons as ReasonCode[] } : {}) } };
 }
 

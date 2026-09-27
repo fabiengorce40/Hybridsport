@@ -139,6 +139,8 @@ export function runCorePipeline(request: CorePipelineRequest, ctx: Ctx): CorePip
       const id = parsed.success ? parsed.data.id : `candidate-${index}`;
       let session: SessionDraft | undefined = parsed.success ? parsed.data : undefined;
       let estimate: DurationEstimate | undefined;
+      // Explicabilité : les raisons du moteur de discipline sont inscrites dans la trace du CORE.
+      if (c.reasons && c.reasons.length > 0) trace.add({ step: 'proposal', subject: { kind: 'session', id }, decision: 'accepted', reasons: [...c.reasons] });
       if (session) {
         const fit = fitDuration(session, ctx.catalog, ctx.ruleset, request.state.timing);
         trace.add({ step: 'duration', subject: { kind: 'session', id }, decision: fit.status, reasons: [...fit.reasons] });

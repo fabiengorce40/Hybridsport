@@ -34,6 +34,8 @@ export interface CoreCandidate {
   readonly session: unknown;
   readonly optimization: OptimizationVector;
   readonly fingerprintInputs?: unknown;
+  /** Reason codes du moteur de discipline (« pourquoi cet exercice ») : tracés par le CORE, jamais perdus. */
+  readonly reasons?: readonly ReasonCode[];
 }
 
 /** Contexte de l'anti-doublon : historique d'empreintes et intentions DÉCLARÉES par le planificateur. */
