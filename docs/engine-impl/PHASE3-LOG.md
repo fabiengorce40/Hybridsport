@@ -66,7 +66,7 @@ Voir la section « Phase 3.5 » ci-dessous (dette mise à jour).
 |---------|-------|-------|
 | `unit/duration-levers.test.ts` | 27 | Leviers : aucun levier, sans effet, répété, p50 réduit mais p90 infaisable, principal / échauffement / retour au calme protégés, ordre déterministe, plafond, déjà faisable, impossible après tous les leviers, aucun ajout artificiel (propriété), formats, paramètres |
 | `unit/repair-hardening.test.ts` | 20 | Violation différente recréée, cycle A → B → A, état visité, plafond exact, aucune réparation, HARD irréparable, régénération, action inconnue, matériel absent, temps invariant, contexte intact, régressions nommées lot 12 et lot 14, convergences, déterminisme |
-| `integration/pipeline-branches.test.ts` | 20 | Toutes les issues et branches du pipeline, indépendance à l'ordre des candidats (propriété) |
+| `integration/pipeline-branches.test.ts` | 19 | Toutes les issues et branches du pipeline, indépendance à l'ordre des candidats (propriété) |
 | `unit/duplicate.test.ts` | 19 | Empreinte, similarité (bornes, symétrie), accidentel, prévu, stagnation, retest, ancre, intention jamais inférée, fenêtre, déterminisme |
 | `integration/sport-engine-boundary.test.ts` | 24 | Flux complet avec moteur FACTICE, garde, contraintes dérivées, refus d'auto-validation, écarts à l'intention, intention inventée, B6 contre B2, réparation |
 | `unit/archetype.test.ts` | 15 | Invariants de schéma, catalogue, faisabilité par preset, restrictions, CC1 |
