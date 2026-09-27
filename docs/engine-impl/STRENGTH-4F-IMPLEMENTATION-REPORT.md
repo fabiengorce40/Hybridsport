@@ -16,7 +16,7 @@
 Critères du STRENGTH_4F_CORRECTION_GATE :
 
 - les 4 corrections sont effectuées ;
-- 590 tests verts, typecheck, lint et architecture verts ;
+- 606 tests verts, typecheck, lint et architecture verts ;
 - aucun changement du CORE (test F20, empreinte des sources) ;
 - S1–S7 sans différence inattendue (`UNEXPECTED = 0`, test) ;
 - 0.2.0 et 4E reproductibles (F1, F2).
@@ -124,7 +124,7 @@ Seule S2 change de prescription en 4F. S3 et S4 ne gagnent qu’une trace.
 
 ## 6. Tests
 
-- **Total** : 590 tests verts sur 54 fichiers (CORE 370, strength 220 ; +30 depuis la 4E).
+- **Total** : 606 tests verts sur 55 fichiers (CORE 370, strength 236 ; +46 depuis la 4E), dont 16 tests de durcissement ciblés (`tests/unit/mutation-4f.test.ts`).
 - **F1–F20** et le verrou : `tests/unit/science-lock.test.ts` (21 tests).
 - **Goldens 4F** : `tests/golden/science-lock.test.ts`.
 - **Classification** : test `UNEXPECTED = 0` dans `tests/golden/science-docs.test.ts`.
@@ -132,7 +132,44 @@ Seule S2 change de prescription en 4F. S3 et S4 ne gagnent qu’une trace.
 
 ## 7. Mutation
 
-MUTATION_SECTION
+Configuration : `stryker.strength-4f.config.json`.
+
+- **Cibles** : `confidence.ts`, `interference.ts`, `selection.ts` (critères et continuité, lignes 60–145), `engine.ts` (préservation du stimulus, lignes 400–439), `science/validate.ts`.
+- **Tests exécutés** : unitaires et d’intégration strength. F20 est ignoré dans le bac à sable, comme les tests d’architecture.
+
+| Module | Passage 1 | Passage 2 (après 16 tests ciblés) | Survivants | Timeouts | Sans couverture |
+|---|---|---|---|---|---|
+| PrescriptionConfidence (`confidence.ts`) | 76,9 % | **89,4 %** | 18 | 0 | 0 |
+| InterferenceAssessment (`interference.ts`) | 66,3 % | **78,6 %** | 40 | 0 | 0 |
+| Continuité et critères (`selection.ts`) | 85,3 % | **91,4 %** | 17 | 2 | 0 |
+| StimulusPreservation (`engine.ts` 400–439) | 59,4 % | **64,1 %** | 46 | 0 | 0 |
+| Validation du registre (`science/validate.ts`) | 60,6 % | **63,1 %** | 151 | 0 | 0 |
+| **Total** | 68,5 % | **75,1 %** | 272 | 2 | 0 |
+
+Durée : 80 minutes par passage, 1 088 mutants. Aucun score de 100 % n’a été visé.
+
+**Survivants pouvant modifier une prescription réelle**
+
+1. **Préservation du stimulus**, `engine.ts:408, 424, 426, 427` (22 survivants).
+   - Mutations de l’éligibilité de l’optionnel retiré (`optional`, sans track, rang inférieur) et des conditions d’échange (`own > 0`, « majorité », couverture `every`/`some`, `fits && groups`).
+   - Un seul golden (S2 : retrait mono-groupe, un échange) exerce la règle.
+   - Une mutation pourrait autoriser le retrait d’un optionnel suivi, ou un échange sans perte disproportionnée.
+   - **Dette** : scénarios dédiés (retrait multi-groupes, optionnel suivi, deux échanges candidats).
+2. **Préservation du stimulus**, `engine.ts:409` (ordre de retrait, du moins prioritaire au plus prioritaire) : pourrait changer l’optionnel retiré quand plusieurs sont admissibles. Aucun golden n’en a deux.
+3. **Interférence**, `interference.ts:99` : départage à niveau égal entre voisines. Il change la voisine citée dans la trace, pas le niveau retenu, sauf si les actions diffèrent à niveau égal (impossible : action = fonction du niveau).
+
+**Survivants sans effet sur la prescription**
+
+- **Trace** :
+  - `engine.ts:429–433` : nettoyage de l’omission initiale, paramètres de `STIMULUS_PRESERVED` ;
+  - `interference.ts:102, 111` : ordre d’émission des raisons ;
+  - `interference.ts:113` : repli `INSUFFICIENT_EVIDENCE` sur un registre toujours présent.
+- **Équivalents** :
+  - `confidence.ts:64` : le comparateur de tri ne change que l’ordre, et la récence est prise sur le maximum ;
+  - `confidence.ts:72` : garde `mid > 0` ;
+  - `interference.ts:79` : tri des voisines, dont le niveau retenu est le maximum.
+- **Messages et diagnostics** de `validate.ts` : 58 conditions et 51 chaînes. Aucune ne touche une séance ; les règles bloquantes clés sont couvertes par K1–K3 et F15–F18.
+- **Code antérieur à la 4E** inclus dans la plage de `selection.ts` (logistique, boucles de classement) : déjà audité en 4C.
 
 ## 8. Paramètres encore heuristiques
 
@@ -174,7 +211,7 @@ Chaque fiche contient les questions falsifiables, les marges observées dans S1�
 - `strength.calibration.mediumAfterExposures` / `highAfterExposures` : déclarés, non lus.
 - `anchorReviewDue` et `PersonalLoadModel` : non branchés.
 - La préservation du stimulus n’examine qu’un optionnel retiré à la fois.
-- Survivants de mutation listés au §7.
+- Survivants de mutation de la préservation du stimulus (§7) : scénarios dédiés à ajouter.
 
 ## 11. CORE-EXT-5
 

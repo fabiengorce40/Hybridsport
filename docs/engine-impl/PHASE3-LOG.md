@@ -168,5 +168,5 @@ Rapport : [`STRENGTH-4F-IMPLEMENTATION-REPORT.md`](STRENGTH-4F-IMPLEMENTATION-RE
 Résultats :
 
 - STRENGTH_4F_CORRECTION_GATE = PASS ; STRENGTH_SCIENTIFIC_LOCK_V1 = LOCKED_PROVISIONAL ;
-- 590 tests verts (CORE 370, strength 220) ; aucune modification du CORE ;
+- 606 tests verts (CORE 370, strength 236) ; mutation 4F 75,1 % ; aucune modification du CORE ;
 - ruleset `0.4.0-strength-science-lock` ; 0.2.0 et 4E reproductibles ; RunningEngine non commencé.
