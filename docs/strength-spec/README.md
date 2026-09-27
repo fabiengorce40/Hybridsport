@@ -16,6 +16,7 @@
 | 06 | [Niveaux, feedback, échecs, reason codes](06-levels-feedback-failures-codes.md) | 18 beginner/advanced · 19 feedback · 20 failure modes · 21 reason codes |
 | 07 | [Paramètres, règles G2, risques, décisions ouvertes](07-parameters-g2-risks-decisions.md) | 22 ruleset parameters · 26 G2 rules · 27 risks · 28 unresolved decisions |
 | 08 | [Tests, profils golden, simulations longitudinales](08-tests-golden-longitudinal.md) | 23 tests · 24 golden profiles · 25 longitudinal |
+| 09 | [**Addendum V1.1 — contrats et décisions ouvertes**](09-addendum-v1-1-contract-review.md) (prévaut sur la V1) | CORE-EXT-1 à 3, ancres, D-S1 à D-S8 |
 
 ## Principe
 
