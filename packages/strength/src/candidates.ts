@@ -1,5 +1,5 @@
 /**
- * Candidats d'un emplacement (spec strength 03 §7.1) : filtres ÉLIMINATOIRES F1–F9, chaque rejet
+ * Candidats d'un emplacement (spec strength 03 §7.1) : filtres ÉLIMINATOIRES F1–F10, chaque rejet
  * compté par raison. La classe d'équipement n'intervient que via la faisabilité matérielle (F3).
  */
 import type { Exercise } from '@hybridsport/domain';
@@ -8,7 +8,7 @@ import type { Env } from './model.js';
 import type { SlotInstance } from './archetypes.js';
 import { levelIndex } from './util.js';
 
-export const FILTERS = ['F1_deprecated', 'F2_slot', 'F2b_prescription', 'F3_equipment', 'F4_restriction', 'F5_pain', 'F6_user_exclusion', 'F7_skill', 'F7b_novice_technical', 'F8_discipline', 'F9_context'] as const;
+export const FILTERS = ['F1_deprecated', 'F2_slot', 'F2b_prescription', 'F3_equipment', 'F4_restriction', 'F5_pain', 'F6_user_exclusion', 'F7_skill', 'F7b_novice_technical', 'F8_discipline', 'F9_context', 'F10_primary_load'] as const;
 export type FilterId = (typeof FILTERS)[number];
 
 export interface CandidateResult {
@@ -43,6 +43,8 @@ export function firstFailingFilter(e: Exercise, slot: SlotInstance, env: Env, cu
     const cut = per[s]?.excludeContributionAtLeast;
     if (cut !== undefined && (structures[s] ?? 0) >= cut) return 'F9_context';
   }
+  // Principal d'un stimulus lourd : un exercice plafonné (poids du corps non lestable) ne porte pas la dose.
+  if (slot.def.role === 'primary' && env.params['strength.selection.primaryLoadRequired'].includes(env.stimulus) && e.loadCeiling < env.params['strength.selection.minLoadCeiling'][env.level]) return 'F10_primary_load';
   return undefined;
 }
 

@@ -154,6 +154,7 @@ export const STRENGTH_TEST_VALUES: Record<StrengthParamId, unknown> = {
   },
   'strength.selection.recencyBandsDays': [2, 5],
   'strength.selection.axialHighMaxPerSession': 1,
+  'strength.selection.primaryLoadRequired': ['strength_heavy'],
   'strength.selection.minLoadCeiling': { novice: 0, beginner: 0, intermediate: 1, advanced: 1 },
   'strength.selection.skillCeiling': { novice: 2, beginner: 3, intermediate: 4, advanced: 5 },
   'strength.novice.technicalUnderFatigue': { levels: ['novice', 'beginner'], minTechnical: 2, maxPerSession: 1, allowedRoles: ['primary'] },

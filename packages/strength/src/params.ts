@@ -73,6 +73,8 @@ export const STRENGTH_PARAMETER_SCHEMAS = {
   'strength.selection.axialHighMaxPerSession': { governance: 'G2', schema: int.nonnegative() },
   /** Plafond de charge minimal (échelle ordinale 0–3 du catalogue) pour qu'un exercice puisse porter la dose, par niveau. */
   'strength.selection.minLoadCeiling': { governance: 'G2', schema: byLevel(int.nonnegative()) },
+  /** Stimuli dont le travail PRINCIPAL exige un exercice chargeable au niveau de l'athlète (filtre éliminatoire F10). */
+  'strength.selection.primaryLoadRequired': { governance: 'G2', schema: z.array(id) },
   'strength.selection.skillCeiling': { governance: 'G1', schema: byLevel(int.positive()) },
   'strength.novice.technicalUnderFatigue': { governance: 'G1', schema: z.object({ levels: z.array(z.enum(LEVELS)), minTechnical: ordinal, maxPerSession: int.nonnegative(), allowedRoles: z.array(z.enum(ROLES)) }).strict() },
   'strength.dose.base': { governance: 'G2', schema: z.record(id, z.record(z.enum(ROLES), z.record(z.enum(EXERCISE_CLASSES), zDoseCell))) },

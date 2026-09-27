@@ -31,6 +31,8 @@ import { STRENGTH_CHECKS } from './checks.js';
 import { roundDownToStep } from './util.js';
 
 export const STRENGTH_ENGINE_ID = 'engine.strength';
+/** Paramètres du CORE lus par le moteur (dérivation des structures, estimation de durée), déclarés dans chaque proposition. */
+const CORE_PARAMETERS_READ = ['demand.derivationTable', 'duration.toleranceProfiles', 'duration.blockTransitionS', 'duration.briefingS', 'duration.defaultTiming', 'duration.transitionTable', 'duration.uncertaintyCorrelation'];
 export const STRENGTH_ENGINE_VERSION = '0.1.0' as const;
 
 type Input = SportEngineInput<StrengthContext>;
@@ -432,7 +434,7 @@ function proposal(b: Built, env: Env, input: Input, loaded: LoadedStrengthParams
     repetitionIntents: intents,
     reasons: asProposalReasons(b.reasons),
     provenance: { engineId: STRENGTH_ENGINE_ID, engineVersion: STRENGTH_ENGINE_VERSION, rulesetVersion: input.ruleset.version, catalogVersion: input.catalog.version, seed: input.context.seed },
-    parametersUsed: [...loaded.used, ...(['demand.derivationTable', 'duration.toleranceProfiles'].flatMap((pid) => { const m = input.ruleset.parameter(pid); return m ? [{ id: pid, version: m.version }] : []; }))],
+    parametersUsed: [...loaded.used, ...(CORE_PARAMETERS_READ.flatMap((pid) => { const m = input.ruleset.parameter(pid); return m ? [{ id: pid, version: m.version }] : []; }))],
   };
 }
 

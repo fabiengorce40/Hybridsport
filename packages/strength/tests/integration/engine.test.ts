@@ -51,6 +51,15 @@ describe('NO_VALID_PROPOSAL explicite (étape 21)', () => {
     expect(traceCodes(general)).toContain('SELECT.PATTERN_FALLBACK');
   });
 
+  it('stimulus lourd sans exercice chargeable (poids du corps seul) ⇒ refus explicable, jamais un air squat « lourd » pour un intermédiaire', () => {
+    const s = scenario({ archetype: 'str_lower', stimulus: 'strength_heavy', preset: 'preset.bodyweight', context: { goal: { primary: { goal: 'strength' } } } });
+    const r = proposeStrength(engineInput(s));
+    expect(r.status).toBe('no_valid_proposal');
+    if (r.status === 'no_valid_proposal') expect(r.reasons.map((x) => x.code)).toContain('SELECT.NO_CANDIDATE_FOR_SLOT');
+    // Novice (plafond minimal 0) : le poids du corps reste admis.
+    expect(proposeStrength(engineInput({ ...s, profile: { ...s.profile, athleteLevel: 'novice' } })).status).toBe('proposals');
+  });
+
   it('D-S4 (régression) : contexte incompatible avec l’objet de l’archétype ⇒ PLAN.CONTEXT_INCOMPATIBLE, jamais un changement silencieux de stimulus ou d’archétype', () => {
     const interference = STRENGTH_TEST_VALUES['strength.interference'] as { perStructure: Record<string, Record<string, unknown>> };
     const strict = { ...interference, perStructure: { ...interference.perStructure, lower_knee: { ...interference.perStructure.lower_knee, excludeContributionAtLeast: 1 }, lower_hip: { ...interference.perStructure.lower_hip, excludeContributionAtLeast: 1 } } };
