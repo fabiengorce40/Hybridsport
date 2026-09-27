@@ -33,6 +33,8 @@ export const CORE_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'TECHNICAL.PARAMETER_MISSING', categories: ['technical'], params: { parameterId: S }, audience: 'internal', severity: 'error' },
   { code: 'TECHNICAL.PARAMETER_TYPE', categories: ['technical'], params: { parameterId: S, expected: S }, audience: 'internal', severity: 'error' },
   { code: 'TECHNICAL.RULESET_INVALID', categories: ['technical'], params: { path: S, problem: S }, audience: 'internal', severity: 'error' },
+  { code: 'TECHNICAL.SCHEMA_VERSION_UNSUPPORTED', categories: ['technical'], params: { kind: S, version: N, current: N }, audience: 'internal', severity: 'error' },
+  { code: 'TECHNICAL.MIGRATION_FAILED', categories: ['technical'], params: { kind: S, from: N, to: N, problem: S }, audience: 'internal', severity: 'error' },
   { code: 'TECHNICAL.CATALOG_INVALID', categories: ['technical'], params: { path: S, problem: S }, audience: 'internal', severity: 'error' },
   // RULE — règles métier (HARD ou SOFT selon la politique)
   { code: 'RULE.ENFORCEMENT', categories: ['business_hard', 'business_soft', 'information'], params: { rule: S, level: S, threshold: N, factors: L }, audience: 'internal', severity: 'info', optionalParams: ['threshold'] },

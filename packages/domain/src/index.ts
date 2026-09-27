@@ -14,3 +14,4 @@ export * from './safety.js';
 export * from './duplicate.js';
 export * from './sport-engine.js';
 export * from './archetype.js';
+export * from './serialization.js';

@@ -12,5 +12,6 @@ export * from './duplicate/index.js';
 export * from './validation/index.js';
 export * from './repair/index.js';
 export * from './safety/index.js';
+export * from './migration/index.js';
 export * from './contracts/index.js';
 export * from './api/index.js';
