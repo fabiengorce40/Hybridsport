@@ -124,3 +124,17 @@ Rapport complet : [`STRENGTH-ENGINE-REPORT.md`](STRENGTH-ENGINE-REPORT.md). Il c
 
 - 45 fichiers de test, 486 tests verts (CORE 367, strength 119) ; typecheck, lint et architecture verts.
 - Le CORE n'a été modifié que par CORE-EXT-1/2/3, `SportEngine.checks` et le traçage des raisons des moteurs.
+
+## Phase 4C — STRENGTH_V1_LOCK_GATE = PASS
+
+Rapport : [`STRENGTH-V1-LOCK-REPORT.md`](STRENGTH-V1-LOCK-REPORT.md). Documents associés :
+
+- spec strength doc 10 (addendum V1.2) ;
+- [inventaire des paramètres](STRENGTH-V1-PARAMETERS.md) ;
+- [Evidence Review Pack](STRENGTH-EVIDENCE-REVIEW-PACK.md).
+
+Résultats :
+
+- 525 tests verts (CORE 370, strength 155) ;
+- mutation ciblée strength : 59,3 % → 75,4 % ;
+- moteur techniquement verrouillable, valeurs toujours provisoires.
