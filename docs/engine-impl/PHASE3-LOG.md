@@ -170,3 +170,14 @@ Résultats :
 - STRENGTH_4F_CORRECTION_GATE = PASS ; STRENGTH_SCIENTIFIC_LOCK_V1 = LOCKED_PROVISIONAL ;
 - 606 tests verts (CORE 370, strength 236) ; mutation 4F 75,1 % ; aucune modification du CORE ;
 - ruleset `0.4.0-strength-science-lock` ; 0.2.0 et 4E reproductibles ; RunningEngine non commencé.
+
+## Phase 4G — STIMULUS PRESERVATION MUTATION HARDENING
+
+Rapport : [`STRENGTH-4G-IMPLEMENTATION-REPORT.md`](STRENGTH-4G-IMPLEMENTATION-REPORT.md) ; inventaire : [`STRENGTH-4G-MUTANT-INVENTORY.md`](STRENGTH-4G-MUTANT-INVENTORY.md).
+
+Résultats :
+
+- STRENGTH_STIMULUS_PRESERVATION_GATE = PASS ; STRENGTH_ENGINE_V1_FINAL_TECHNICAL_LOCK = LOCKED ;
+- STRENGTH_SCIENTIFIC_LOCK_V1 = LOCKED_PROVISIONAL (inchangé) ;
+- 630 tests verts ; mutation ciblée 90,0 %, 0 survivant PRESCRIPTION_RELEVANT ;
+- S1–S7 identiques à la 4F ; aucune modification du CORE.
