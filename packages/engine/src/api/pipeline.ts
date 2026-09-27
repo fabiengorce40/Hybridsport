@@ -96,6 +96,20 @@ export function runCorePipeline(request: CorePipelineRequest, ctx: Ctx): CorePip
     return technicalError(rs);
   }
 
+  // Intégrité des entrées : identifiants de candidats uniques (sinon la décision dépendrait de l'ordre
+  // d'entrée) ; aucun rapport de douleur persisté sans consentement aux données de santé.
+  const ids = request.candidates.map((c) => zSessionDraft.safeParse(c.session)).flatMap((p) => (p.success ? [p.data.id] : []));
+  const duplicated = [...new Set(ids.filter((id, i) => ids.indexOf(id) !== i))].sort();
+  const persistedWithoutConsent = request.profile.healthDataConsent ? [] : request.state.activePain.filter((r) => r.persisted).map((r) => r.id);
+  if (duplicated.length > 0 || persistedWithoutConsent.length > 0) {
+    const rs = [
+      ...duplicated.map((id) => reasons.emit('TECHNICAL.STRUCTURE_INVALID', { problem: 'identifiant de candidat dupliqué', target: id })),
+      ...persistedWithoutConsent.map((id) => reasons.emit('TECHNICAL.STRUCTURE_INVALID', { problem: 'rapport de douleur persisté sans consentement', target: id })),
+    ];
+    trace.add({ step: 'context', subject: pipelineSubject, decision: 'rejected', reasons: rs });
+    return technicalError(rs);
+  }
+
   try {
     // 2. Sécurité et éligibilité
     const active = request.state.activePain.filter(isActive);
@@ -104,6 +118,8 @@ export function runCorePipeline(request: CorePipelineRequest, ctx: Ctx): CorePip
     const info: ReasonCode[] = [...safety.reasons, ...status.reasons];
     if (request.state.readiness === 'unknown') info.push(reasons.emit('DATA.READINESS_UNKNOWN'));
     if (request.state.painHistory === 'unavailable') info.push(reasons.emit('DATA.HEALTH_HISTORY_UNAVAILABLE'));
+    // Sans consentement : la douleur adapte la séance du jour mais n'est pas conservée (spec 02 §8, V1.2).
+    if (!request.profile.healthDataConsent && active.length > 0) info.push(reasons.emit('DATA.NOT_PERSISTED_NO_CONSENT'));
     trace.add({ step: 'safety', subject: pipelineSubject, decision: status.status, reasons: info });
     const guard = generationGuard(status.status, request.profile.eligibility);
     if (!guard.ok) return finish((ref) => ({ status: 'error', error: guard.error, trace: ref }));

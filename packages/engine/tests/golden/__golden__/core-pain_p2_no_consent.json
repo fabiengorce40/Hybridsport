@@ -28,7 +28,7 @@
     ],
     "status": "rest_recommended",
     "trace": {
-      "traceId": "t2705c3cb8a89a1be"
+      "traceId": "t65041058b37b4a69"
     }
   },
   "trace": {
@@ -49,6 +49,15 @@
             "audience": "internal",
             "category": "information",
             "code": "DATA.HEALTH_HISTORY_UNAVAILABLE",
+            "domain": "DATA",
+            "params": {},
+            "ruleRefs": [],
+            "severity": "info"
+          },
+          {
+            "audience": "internal",
+            "category": "information",
+            "code": "DATA.NOT_PERSISTED_NO_CONSENT",
             "domain": "DATA",
             "params": {},
             "ruleRefs": [],
@@ -424,7 +433,7 @@
       }
     ],
     "seed": "golden/pain_p2_no_consent",
-    "traceId": "t2705c3cb8a89a1be",
+    "traceId": "t65041058b37b4a69",
     "versions": {
       "catalogVersion": "0.1.0-test",
       "engineVersion": "0.1.0",
