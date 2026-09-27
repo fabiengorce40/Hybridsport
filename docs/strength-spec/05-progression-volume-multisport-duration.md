@@ -21,6 +21,8 @@ Variantes plutôt que modèles supplémentaires :
 
 Le choix du modèle se fait par track : `strength.progression.modelFor[level][role][exerciseClass]` (G2).
 
+> **Amendé par l'addendum V1.2** (doc 10 §4 : `progressionModelFor`, pas grossier ⇒ double progression ; doc 10 §1 : trois autorités).
+
 ### 12.2 Classement d'une exposition
 
 | Classement | Définition (paramètres G2) | Effet |

@@ -94,3 +94,20 @@ describe('invariant anti-biais de la sélection (spec 4B étape 6)', () => {
     expect(hits).toEqual([]);
   });
 });
+
+describe('règles contradictoires éliminées (addendum V1.2 §11)', () => {
+  it('le dosage ne relit jamais séries ni RIR de la track (trois autorités, §1)', () => {
+    const hits: string[] = [];
+    visit(file('dose.ts'), (n) => {
+      if (ts.isPropertyAccessExpression(n) && ['sets', 'rir'].includes(n.name.text) && /next|nextPrescription/.test(n.expression.getText())) hits.push(n.getText());
+    });
+    expect(hits).toEqual([]);
+  });
+
+  it('la génération ne lit aucun identifiant de préréglage (décision B, §9) : seul l’audit de couverture du catalogue les consulte', () => {
+    const readers = STRENGTH.filter((f) => /preset/i.test(f.text.replace(/\/\*[\s\S]*?\*\/|\/\/.*$/gm, ''))).map((f) => f.path.split('/').pop());
+    expect(readers.sort()).toEqual(['archetypes.ts', 'params.ts']);
+    const gen = ['engine.ts', 'selection.ts', 'candidates.ts', 'dose.ts', 'load.ts', 'model.ts', 'context.ts', 'intent-contract.ts'];
+    for (const g of gen) expect(/preset/i.test(file(g).text), g).toBe(false);
+  });
+});

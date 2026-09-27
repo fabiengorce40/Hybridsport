@@ -43,6 +43,8 @@
 | `strength.fingerprint.energyByStimulus` | `stimulus → {low, moderate, high}` | G2 | empreinte |
 | `strength.frequency.maxPerWeek` | nombre | G3 | périmètre |
 
+> **Amendé par l'addendum V1.2** (doc 10 §5 et §10 : `strength.tracks.*` ; inventaire final des paramètres : `docs/engine-impl/STRENGTH-V1-PARAMETERS.md`).
+
 ## 2. Règles G2 à faire relire (section 26)
 
 Colonne « Source » : **aucune référence n'est inventée**. `EVIDENCE_REVIEW_REQUIRED` signifie qu'une recherche documentaire est nécessaire avant approbation. Les pistes citées sont des **directions de recherche à vérifier**, pas des citations validées.

@@ -1,0 +1,8 @@
+variante                               libres  machines  poulies  poids-corps
+V0 référence                            22 %   50 %     19 %     9 %
+V1 haltères stabilité 2                 22 %   50 %     19 %     9 %
+V2 haltères stabilité 3                 45 %   34 %      9 %    11 %
+V3 machines stabilité 2                 22 %   46 %     24 %     7 %
+V4 machines stabilité 1                 26 %   43 %     24 %     7 %
+V5 inversé (haltères 3, machines 1)     78 %    4 %     10 %     8 %
+V6 = V4 + coût technique des haltères à 0  37 %   31 %     24 %     7 %

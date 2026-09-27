@@ -59,6 +59,8 @@ Principe (doc 08 §2) : **uniquement ce qui modifie une décision future**, avec
 | Intention incohérente (autre discipline, stimulus inconnu) | `TECHNICAL.STRUCTURE_INVALID` | Aucune proposition | Non |
 | Programme inactif | — | Le moteur n'est **pas appelé** (garde du CORE) | — |
 
+> **Amendé par l'addendum V1.2** (doc 10 §9 : décision B — l'infaisabilité est CALCULÉE depuis l'équipement réel (NO_CANDIDATE_FOR_SLOT, filtre F10) ; aucun identifiant de préréglage n'entre dans la génération).
+
 ### Contrôles propres de la discipline (validateur CORE, `extraChecks`)
 
 Chaque contrôle a sa fiche de règle, versionnée dans le ruleset :

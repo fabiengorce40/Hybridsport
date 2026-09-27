@@ -244,3 +244,19 @@ describe('contrat planificateur (CORE-EXT-4) : ancres déclarées cohérentes, s
     expect(() => proposeStrength(engineInput(lower([knee(), hip()], ['track.squat', 'track.rdl'])))).toThrow(/contrat planificateur/);
   });
 });
+
+describe('préréglage de matériel : l’équipement réel fait autorité (addendum V1.2 §9)', () => {
+  it('équipement identique sous deux noms de préréglage (ou liste libre, ordre quelconque) ⇒ séance identique', () => {
+    const gym = scenario({ preset: 'preset.full_gym' });
+    const custom = { ...gym, profile: { ...gym.profile, availableEquipment: [...gym.profile.availableEquipment].reverse() } };
+    expect(JSON.stringify(ok(run(custom)))).toBe(JSON.stringify(ok(run(gym))));
+  });
+
+  it('liste « poids du corps » transmise sans aucun nom de préréglage ⇒ même refus calculé (F10), et enrichie d’un lest ⇒ décision recalculée', () => {
+    const bw = scenario({ archetype: 'str_lower', stimulus: 'strength_heavy', preset: 'preset.bodyweight', context: { goal: { primary: { goal: 'strength' } } } });
+    const free = { ...bw, profile: { ...bw.profile, availableEquipment: ['bands', 'pullup_bar'] } };
+    expect(errorCodes(run(free))).toEqual(errorCodes(run(bw)));
+    const weighted = { ...bw, profile: { ...bw.profile, availableEquipment: [...bw.profile.availableEquipment, 'dumbbells', 'bench'] } };
+    expect(run(weighted).result.status).toBe('ok');
+  });
+});

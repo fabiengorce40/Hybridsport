@@ -107,4 +107,6 @@ Chaque étape est une fonction pure ; la graine est celle transmise par le CORE,
 | P12 | Assemblage | Tout | Leviers de l'archétype, empreinte, marqueurs, reason codes, paramètres utilisés | 1 à 3 propositions | Contrôles propres (STR-V*, §20) exécutés en auto-contrôle ; le CORE les réexécute | — |
 | → CORE | Acceptation, durée, empreinte, anti-doublon, validation, sélection, réparation | | | Résultat final | | |
 
+> **Amendé par l'addendum V1.2** (doc 10 §9 : la compatibilité avec le matériel est calculée depuis l'équipement réel, jamais depuis le nom du préréglage).
+
 **Contrôles propres de la discipline** (`extraChecks` du validateur CORE, exécutés par le CORE et non par le moteur) : STR-V1 à STR-V8 (06 §20). Le moteur les appelle aussi en auto-contrôle avant de proposer : c'est une aide, jamais une autorité.

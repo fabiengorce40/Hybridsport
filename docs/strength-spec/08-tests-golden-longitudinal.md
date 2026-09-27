@@ -25,6 +25,8 @@ Tests conçus **avant** l'implémentation. Ils utilisent le banc du CORE : grain
 | Durée | Construction dans le budget ; emplacements optionnels ajoutés par priorité ; rien ajouté pour remplir ; `DURATION.TARGET_BELOW_ARCHETYPE_MIN` |
 | Contrôles STR-V1 à V8 | Un cas conforme et un cas violant pour chacun ; fiche de règle présente |
 
+> **Amendé par l'addendum V1.2** (doc 10 §9 : remplacé par la faisabilité calculée depuis l'équipement réel).
+
 ### 23.2 Tests de propriété (fast-check)
 
 Pour tout profil, preset, contexte et graine générés :

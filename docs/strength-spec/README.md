@@ -1,6 +1,6 @@
 # STRENGTH ENGINE SPECIFICATION V1
 
-> Statut : **V1, prête pour revue** (phase 4A). Aucun code du StrengthEngine n'est écrit, et le CORE n'est pas modifié.
+> Statut : **V1 implémentée et verrouillable** (phases 4B–4C). Ordre de précédence : addendum V1.2 (doc 10) > addendum V1.1 (doc 09) > V1 (docs 01–08).
 > Référence normative : [TRAINING ENGINE SPECIFICATION V1.2](../engine-spec/README.md) et [frontière SportEngine / CORE](../engine-impl/SPORT-ENGINE-BOUNDARY.md).
 > **Aucune valeur sportive n'est figée ici.** Toute valeur numérique d'entraînement est un paramètre du ruleset, en classe G1 ou G2 selon le cas. Les chiffres cités en exemple viennent des hypothèses déjà présentes dans la spec V1.2 (doc 06 §1) et restent `provisional` jusqu'à la relecture experte.
 
@@ -17,6 +17,7 @@
 | 07 | [Paramètres, règles G2, risques, décisions ouvertes](07-parameters-g2-risks-decisions.md) | 22 ruleset parameters · 26 G2 rules · 27 risks · 28 unresolved decisions |
 | 08 | [Tests, profils golden, simulations longitudinales](08-tests-golden-longitudinal.md) | 23 tests · 24 golden profiles · 25 longitudinal |
 | 09 | [**Addendum V1.1 — contrats et décisions ouvertes**](09-addendum-v1-1-contract-review.md) (prévaut sur la V1) | CORE-EXT-1 à 3, ancres, D-S1 à D-S8 |
+| 10 | [**Addendum V1.2 — validation finale**](10-addendum-v1-2-final-validation.md) (prévaut sur la V1 et la V1.1) | Trois autorités, écarts 1–7, contrat planificateur CORE-EXT-4, préréglages |
 
 ## Principe
 

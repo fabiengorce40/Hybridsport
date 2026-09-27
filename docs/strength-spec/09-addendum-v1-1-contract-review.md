@@ -218,6 +218,8 @@ PLANNER ── lit les tracks ACTIVES ──► SESSION INTENT.repetitionIntents
 | Gérer une substitution ponctuelle | StrengthEngine (à la génération) ou utilisateur (en séance) ; la track n'est pas touchée | Génération / séance |
 | Clôturer une ancre | ProgressionEngine | Frontière de semaine |
 
+> **Amendé par l'addendum V1.2** (doc 10 §1 : le StrengthEngine applique la CHARGE et les RÉPÉTITIONS de la track ; séries = allocation du volume, RIR = stimulus + modificateurs ; `nextPrescription.sets/rir` sont informatifs).
+
 Invariants testés :
 1. un `progression_anchor` n'est jamais déclaré pour une track inexistante ou clôturée ;
 2. `anchor: 'declared'` n'apparaît que si l'intention le déclare ;
@@ -244,6 +246,8 @@ Distinction : **ProgressionTrack = suivi de la progression d'un exercice** ; **a
 - pour T3, il est déterminé à chaque fois par la même règle, au niveau de l'exercice ;
 - **jamais au niveau de la séance ni de la série**. Une séance mélange donc naturellement : principal PM3, secondaire PM2, accessoire T2 PM2, tronc T3.
 - **PM4** (progression de séries) n'est pas un modèle de track : il s'applique au **volume hebdomadaire par groupe** (répartition M3) et ajoute des séries aux emplacements, sans changer le modèle des tracks concernées.
+
+> **Amendé par l'addendum V1.2** (doc 10 §4 : modèle choisi par `progressionModelFor` — double progression si le pas est grossier).
 
 **Force et hypertrophie dans un même archétype** : le stimulus ne modifie **jamais** la structure.
 

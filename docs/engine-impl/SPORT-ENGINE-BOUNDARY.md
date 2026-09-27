@@ -105,3 +105,10 @@ Lien avec le catalogue : `slotAccepts` est le prédicat unique d'emplacement, pa
 3. **Classification anti-doublon** : `none | planned | accidental_warn | accidental_strong`. La valeur `hard_justified` de la spec est portée par les règles HARD de discipline, dans le validateur, et non par une classification du CORE.
 4. **Composante « exercice »** : maximum des Jaccard pondérés (exercice, équivalence, famille). La spec dit « Jaccard pondéré » sans préciser l'agrégation ; les crédits sont dans le ruleset.
 5. **Patterns et muscles de l'empreinte** : primaires uniquement, pondérés par le volume fourni par le moteur. Pondérer les secondaires aurait exigé une valeur sportive non validée.
+
+## CORE-EXT-4 — contrat planificateur de la discipline (phase 4C)
+
+- `SportEngine.validateIntent?(input: IntentContractInput<TContext>): readonly ReasonCode[]` : fonction pure, optionnelle et générique. Elle reçoit l'intention, le contexte de discipline **déjà validé** par `parseContext`, le ruleset et le catalogue.
+- Le CORE l'exécute **après** `parseContext` et **avant** `propose`. Une raison ou plus ⇒ `INVALID_INPUT` déterministe (étape de trace `intent_contract`) et le moteur n'est jamais appelé. Une exception ⇒ `INVALID_INPUT` technique (`TECHNICAL.STRUCTURE_INVALID`).
+- Pourquoi dans le CORE : une intention incohérente avec le contexte est un défaut du **planificateur**, donc une entrée invalide, pas une issue métier. `parseContext` ne voit pas l'intention ; seul le CORE voit les deux.
+- Première utilisation : contrat des ancres de la Musculation (spec strength doc 10 §7).

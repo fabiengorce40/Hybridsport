@@ -4,7 +4,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { proposeStrength, STRENGTH_PARAMETER_SCHEMAS } from '../../src/index.js';
-import { engineInput, scenario } from '../fixtures/harness.js';
+import { engineInput, run, scenario, strengthRuleset } from '../fixtures/harness.js';
+import { strengthRulesetDocument } from '../fixtures/ruleset.js';
 
 describe('paramètres consommés (étape 22)', () => {
   it('chaque proposition déclare ses paramètres (id + version) ; tous les paramètres strength déclarés sont consommés', async () => {
@@ -22,5 +23,19 @@ describe('paramètres consommés (étape 22)', () => {
   it('aucun paramètre G1 sans sens prudent ni référence approuvée (le CORE refuse le ruleset sinon)', () => {
     const g1 = Object.entries(STRENGTH_PARAMETER_SCHEMAS).filter(([, s]) => s.governance === 'G1').map(([id]) => id).sort();
     expect(g1).toEqual(['strength.maxEffort.threshold', 'strength.novice.technicalUnderFatigue', 'strength.selection.skillCeiling', 'strength.volume.sessionCap']);
+  });
+});
+
+describe('paramètre absent ou invalide ⇒ refus technique explicite, jamais une valeur par défaut', () => {
+  it('ruleset sans strength.rampup ⇒ INVALID_INPUT nommant le paramètre ; valeur hors schéma ⇒ idem', () => {
+    const doc = strengthRulesetDocument();
+    const missing = strengthRuleset({ ...doc, parameters: doc.parameters.filter((p) => p.id !== 'strength.rampup') });
+    const o = run({ ...scenario(), ruleset: missing });
+    expect(o.result.status === 'error' && o.result.error.code).toBe('INVALID_INPUT');
+    expect(JSON.stringify(o.result)).toMatch(/strength\.rampup/);
+    const invalid = strengthRuleset(strengthRulesetDocument({ 'strength.calibration': { targetRir: -1 } }));
+    const o2 = run({ ...scenario(), ruleset: invalid });
+    expect(o2.result.status === 'error' && o2.result.error.code).toBe('INVALID_INPUT');
+    expect(JSON.stringify(o2.result)).toMatch(/strength\.calibration/);
   });
 });

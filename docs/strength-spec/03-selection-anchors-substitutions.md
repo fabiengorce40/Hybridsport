@@ -25,6 +25,8 @@
 
 ### 7.2 Choisir parmi les candidats : tri lexicographique par rôle
 
+> **Amendé par l'addendum V1.2** (doc 10 §2 : critères ordinaux `load_adequacy` et `volume_fit` ajoutés ; doc 10 §3 : filtres F2b et F10 ; doc 10 §6 : groupes de choix).
+
 Il n'y a **ni somme pondérée ni bonus**. Les critères sont **ordinaux** et comparés dans l'ordre ; le critère suivant ne départage que les égalités (au sens des bandes d'ordinaux). L'ordre des critères dépend du rôle (table G2 `strength.selection.criteriaOrder[role]`) ; ci-dessous, l'ordre proposé pour la revue :
 
 | Ordre | Critère | Valeur (ordinale) | Rôle `primary` | `secondary` | `accessory` |
@@ -51,6 +53,8 @@ Remarques :
 
 Une passe d'**amélioration locale** suit (échange d'un exercice si la séance progresse lexicographiquement sur B1, puis B2, puis B5). Elle est bornée par un paramètre G4.
 
+> **Amendé par l'addendum V1.2** (doc 10 §10 : non implémentée en V1 ; variantes sur emplacements accessoires non ancrés, choix par le CORE (couche B)).
+
 **Alternatives prévalidées** : pour chaque emplacement, les 2 à 3 candidats suivants dans l'ordre, qui franchissent aussi F1–F9. Elles sont stockées dans l'item (CORE-EXT-1) et servent aux substitutions manuelles de l'utilisateur.
 
 **VALIDATION** : déterminisme (même graine ⇒ même choix) ; invariance à l'ordre du catalogue (tri par identifiant avant sélection) ; S7 (§24) ; propriété d'absence de biais de modalité.
@@ -75,6 +79,8 @@ Une **ancre** est un exercice rattaché à une `ProgressionTrack` identifiée pa
 | **Stagnation** | `DUPLICATE.PLANNED_BUT_STAGNANT` (CORE), ou `below` / maintien répétés : 1) changer de variable progressée ; 2) si cela persiste, variante de la même famille (fidélité élevée) à la prochaine frontière de semaine | ProgressionEngine → StrengthEngine |
 | **Remplacement** | Fin de mésocycle (variation planifiée, paramètre `strength.anchor.rotationPolicy`) ; restriction ou douleur rendant l'exercice inadmissible ; matériel perdu ; exclusion par l'utilisateur ; stagnation persistante | ProgressionEngine / contraintes |
 | **Suspension** | Douleur ou `safety_pause` : la track est **gelée**, sans baisse ni hausse (V1.2) | CORE / ProgressionEngine |
+
+> **Amendé par l'addendum V1.2** (doc 10 §5 : `strength.tracks.rotateAtMesocycleEnd[level]`, reprise `resumeTrack`, nouveau cycle `startCycle` ; doc 10 §7 : contrat planificateur (une ancre déclarée par groupe de choix et par séance)).
 
 ### 8.3 Variation planifiée ou changement accidentel
 
