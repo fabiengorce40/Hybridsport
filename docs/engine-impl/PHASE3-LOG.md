@@ -181,3 +181,14 @@ Résultats :
 - STRENGTH_SCIENTIFIC_LOCK_V1 = LOCKED_PROVISIONAL (inchangé) ;
 - 630 tests verts ; mutation ciblée 90,0 %, 0 survivant PRESCRIPTION_RELEVANT ;
 - S1–S7 identiques à la 4F ; aucune modification du CORE.
+
+## Phase 5A — RUNNING ENGINE SCIENTIFIC & DOMAIN SPEC
+
+Rapport : [`RUNNING-5A-REPORT.md`](RUNNING-5A-REPORT.md).
+
+Résultats :
+
+- RUNNING_5A_SPEC_GATE = PASS (spécification seulement) ;
+- 9 documents Running (domaine, références, taxonomie, charge et progression, concurrent, preuves, registre brouillon, scénarios R1–R12, rapport) ;
+- 75 questions falsifiables ; 22 sources au mieux SEARCH_SUMMARY ; 7 G1 candidats ;
+- aucune modification du code (CORE, strength) ; 630 tests verts ; RunningEngine non commencé.
