@@ -35,10 +35,19 @@ export const zSessionRecordV2 = z.object({
     z.object({ status: z.literal('unavailable'), reason: z.enum(['migrated_from_v1', 'duplicate_analysis_inactive']) }).strict(),
   ]),
 }).strict();
-export type SessionRecord = z.infer<typeof zSessionRecordV2>;
+/**
+ * session_record v3 (Phase 4B, COURANTE) : même enveloppe que la v2 ; la séance accepte les champs
+ * facultatifs de CORE-EXT-1 (séries typées, références d'item). La version change pour qu'un lecteur v2
+ * refuse explicitement une donnée v3 au lieu d'en ignorer les nouveaux champs.
+ */
+export const zSessionRecordV3 = zSessionRecordV2;
+export type SessionRecord = z.infer<typeof zSessionRecordV3>;
+
+/** Versions et schémas connus par un lecteur : { type → { version, schema } }. */
+export type SchemaVersions = { readonly [K in SerializedKind]: { readonly version: number; readonly schema: z.ZodType } };
 
 /** Version courante et schéma courant de chaque type de donnée sérialisée. */
-export const CURRENT_SCHEMA: { readonly [K in SerializedKind]: { readonly version: number; readonly schema: z.ZodType } } = {
+export const CURRENT_SCHEMA: SchemaVersions = {
   // technical-constant: numéro de version du format sérialisé (contrat de schéma), pas une valeur sportive
-  session_record: { version: 2, schema: zSessionRecordV2 },
+  session_record: { version: 3, schema: zSessionRecordV3 },
 };

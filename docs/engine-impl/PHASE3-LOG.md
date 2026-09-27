@@ -100,3 +100,20 @@ Défaut de conception de ma propre phase 3.5, corrigé avant la fin : l'anti-dou
 - Aucun ruleset de production : les valeurs provisoires existent seulement dans les fixtures de test, et le contenu G1 y est fictif. Les paramètres `duplicate.*` sont des valeurs de test.
 - Archétypes concrets : à définir avec chaque moteur de discipline.
 - `hard_justified` (anti-doublon) : à porter par les règles HARD de discipline dans le validateur.
+
+## Phase 4B — Baseline (avant toute modification)
+
+| Élément | Constat |
+|---------|---------|
+| Commit | `9647a19` |
+| Tests | 33 fichiers, 335 tests, tous verts |
+| Typecheck / lint | Verts |
+| Couverture | Instructions 93,51 %, branches 85,03 %, fonctions 97,26 %, lignes 96,97 % |
+
+## Phase 4B — STRENGTH_CORE_EXTENSION_GATE = PASS
+
+- CORE-EXT-1 : séries typées (`zRepTarget`, `zEffort`, `zSetIntensity` avec les modes load / percent_of_reference / effort / relative_to_working / bodyweight, tempo, `optional`) ; références d'item (`refs`, `alternatives`). DurationEngine : plage de reps (min, milieu, max) et séries facultatives (hors p50, dans p90). `reduce_sets` retire d'abord une série facultative. L'acceptation refuse une ancre déclarée absente de l'intention.
+- CORE-EXT-2 : `SportEngine<TContext>` avec `parseContext`, et `SportEngineInput<TContext>.discipline`, typé et validé. `SportSessionRequest.disciplineContext` reste brut jusqu'au parseur.
+- CORE-EXT-3 : `ProposeResult` (`proposals` | `no_valid_proposal`, schéma strict `zNoValidProposal`). Les raisons, besoins bloquants et données manquantes sont conservés jusqu'au `NO_VALID_SOLUTION`. Une exception du moteur reste `INVALID_INPUT`.
+- Migration `session_record` v2 → v3 : identité ; un lecteur v2 refuse une donnée v3 (paramètre `known` de `migrateToCurrent`).
+- Résultats : 365 tests (dont les 335 anciens) verts ; goldens inchangés ; typecheck et lint verts.

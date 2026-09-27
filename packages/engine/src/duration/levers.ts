@@ -69,6 +69,18 @@ function withItems(b: SessionBlock, items: SessionItem[]): SessionBlock {
 }
 
 function reduceOneSet(b: SessionBlock, min: number): SessionBlock | null {
+  // 1. Une série facultative part toujours en premier (elle n'appartient pas au noyau prescrit).
+  const withOptional = b.items.findIndex((it) => it.prescription.type === 'sets' && it.prescription.sets.some((s) => s.optional === true));
+  if (withOptional >= 0) {
+    const items = b.items.map((it, i) => {
+      if (i !== withOptional || it.prescription.type !== 'sets') return it;
+      const sets = [...it.prescription.sets];
+      sets.splice(sets.findLastIndex((s) => s.optional === true), 1);
+      return { ...it, prescription: { ...it.prescription, sets } };
+    });
+    return withItems(b, items);
+  }
+  // 2. Sinon, la dernière série de travail de l'exercice qui en a le plus (jamais une montée en charge).
   let bestIdx = -1;
   let bestCount = min;
   b.items.forEach((it, i) => {

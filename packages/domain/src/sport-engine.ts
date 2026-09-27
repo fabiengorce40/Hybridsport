@@ -72,3 +72,17 @@ export const zSportEngineProposal = z.object({
 }).strict();
 export type SportEngineProposal = z.infer<typeof zSportEngineProposal>;
 export type SportEngineProposalInput = z.input<typeof zSportEngineProposal>;
+
+/**
+ * Absence de proposition (CORE-EXT-3) : issue MÉTIER normale. Le moteur n'invente jamais une séance
+ * pour satisfaire son contrat ; il dit pourquoi (au moins une raison), ce qui bloque et ce qui manque.
+ */
+export const zNoValidProposal = z.object({
+  status: z.literal('no_valid_proposal'),
+  reasons: z.array(zProposalReason).min(1),
+  blockingNeeds: z.array(z.object({ slotId: zId, need: zId }).strict()).default([]),
+  missingData: z.array(z.enum(['capacities', 'week_context', 'tracks', 'catalog_coverage'])).default([]),
+  provenance: z.object({ engineId: zId, engineVersion: zSemVer, rulesetVersion: zSemVer, catalogVersion: zSemVer, seed: z.string().min(1) }).strict(),
+}).strict();
+export type NoValidProposal = z.infer<typeof zNoValidProposal>;
+export type NoValidProposalInput = z.input<typeof zNoValidProposal>;

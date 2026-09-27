@@ -1,5 +1,5 @@
 import { CURRENT_SCHEMA, zSerializedEnvelope, zSessionRecordV1 } from '@hybridsport/domain';
-import type { ReasonCode, SerializedEnvelope, SerializedKind } from '@hybridsport/domain';
+import type { ReasonCode, SchemaVersions, SerializedEnvelope, SerializedKind } from '@hybridsport/domain';
 import { canonicalStringify } from '../core/canonical.js';
 import { createCoreRegistry } from '../trace/index.js';
 
@@ -36,19 +36,25 @@ export const MIGRATIONS: readonly MigrationStep[] = [
       return { ok: true, data: { session: v1.data.session, provenance: v1.data.provenance, fingerprint: { status: 'unavailable', reason: 'migrated_from_v1' } } };
     },
   },
+  {
+    // technical-constant: numéros de version du format sérialisé (contrat de schéma), pas des valeurs sportives
+    kind: 'session_record', from: 2, to: 3,
+    description: 'CORE-EXT-1 : champs facultatifs de séries et d’items ; données v2 inchangées (identité).',
+    migrate: (data) => ({ ok: true, data }),
+  },
 ];
 
 /** Vérifie qu'un registre est complet : pour chaque type, une étape n → n+1 pour chaque n de 1 à courante − 1. */
-export function migrationRegistryIssues(registry: readonly MigrationStep[] = MIGRATIONS): string[] {
+export function migrationRegistryIssues(registry: readonly MigrationStep[] = MIGRATIONS, current: SchemaVersions = CURRENT_SCHEMA): string[] {
   const out: string[] = [];
-  for (const [kind, current] of Object.entries(CURRENT_SCHEMA) as [SerializedKind, { version: number }][]) {
-    for (let v = 1; v < current.version; v++) {
+  for (const [kind, cur] of Object.entries(current) as [SerializedKind, { version: number }][]) {
+    for (let v = 1; v < cur.version; v++) {
       const steps = registry.filter((s) => s.kind === kind && s.from === v);
       if (steps.length === 0) out.push(`${kind} : aucune migration ${String(v)} → ${String(v + 1)}`);
       if (steps.length > 1) out.push(`${kind} : plusieurs migrations depuis ${String(v)}`);
       for (const s of steps) if (s.to !== v + 1) out.push(`${kind} : migration ${String(s.from)} → ${String(s.to)} (un pas à la fois)`);
     }
-    for (const s of registry.filter((x) => x.kind === kind && x.from >= current.version)) out.push(`${kind} : migration depuis ${String(s.from)} ≥ version courante`);
+    for (const s of registry.filter((x) => x.kind === kind && x.from >= cur.version)) out.push(`${kind} : migration depuis ${String(s.from)} ≥ version courante`);
   }
   return out;
 }
@@ -62,11 +68,12 @@ export type MigrationResult<T> =
  * par le schéma courant. Refus explicite d'une version future inconnue. Pure, déterministe, n'altère
  * jamais l'entrée ; toute migration qui modifierait le contenu sportif est refusée.
  */
-export function migrateToCurrent<T = unknown>(raw: unknown, registry: readonly MigrationStep[] = MIGRATIONS): MigrationResult<T> {
+/** `current` : versions connues du lecteur (par défaut, celles de ce CORE) — permet d'éprouver un lecteur ancien. */
+export function migrateToCurrent<T = unknown>(raw: unknown, registry: readonly MigrationStep[] = MIGRATIONS, known: SchemaVersions = CURRENT_SCHEMA): MigrationResult<T> {
   const env = zSerializedEnvelope.safeParse(raw);
   if (!env.success) return { ok: false, reasons: env.error.issues.map((i) => reasons.emit('TECHNICAL.SCHEMA_INVALID', { path: `envelope.${i.path.join('.')}`, problem: i.message })) };
   const { kind, schemaVersion } = env.data;
-  const current = CURRENT_SCHEMA[kind];
+  const current = known[kind];
   if (schemaVersion > current.version) {
     return { ok: false, reasons: [reasons.emit('TECHNICAL.SCHEMA_VERSION_UNSUPPORTED', { kind, version: schemaVersion, current: current.version })] };
   }

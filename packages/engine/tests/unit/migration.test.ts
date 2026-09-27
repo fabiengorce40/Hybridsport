@@ -17,14 +17,14 @@ const v1 = (s: unknown = session()) => ({ kind: 'session_record', schemaVersion:
 describe('migrations — registre', () => {
   it('le registre du CORE est complet : une étape n → n+1 jusqu’à la version courante', () => {
     expect(migrationRegistryIssues()).toEqual([]);
-    expect(CURRENT_SCHEMA.session_record.version).toBe(2);
+    expect(CURRENT_SCHEMA.session_record.version).toBe(3);
   });
 
   it('trou, doublon ou saut de version dans un registre ⇒ détectés', () => {
-    expect(migrationRegistryIssues([])).toEqual(['session_record : aucune migration 1 → 2']);
-    const step = MIGRATIONS[0]!;
-    expect(migrationRegistryIssues([step, step])).toEqual(['session_record : plusieurs migrations depuis 1']);
-    expect(migrationRegistryIssues([{ ...step, to: 3 }])).toEqual(['session_record : migration 1 → 3 (un pas à la fois)']);
+    expect(migrationRegistryIssues([])).toEqual(['session_record : aucune migration 1 → 2', 'session_record : aucune migration 2 → 3']);
+    const [step, step2] = [MIGRATIONS[0]!, MIGRATIONS[1]!];
+    expect(migrationRegistryIssues([step, step, step2])).toEqual(['session_record : plusieurs migrations depuis 1']);
+    expect(migrationRegistryIssues([{ ...step, to: 3 }, step2])).toEqual(['session_record : migration 1 → 3 (un pas à la fois)']);
   });
 });
 
@@ -34,7 +34,7 @@ describe('migrations — V1 sérialisée → version courante → validation', (
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.fromVersion).toBe(1);
-    expect(r.applied).toEqual(['session_record:1→2']);
+    expect(r.applied).toEqual(['session_record:1→2', 'session_record:2→3']);
     expect(r.value.fingerprint).toEqual({ status: 'unavailable', reason: 'migrated_from_v1' });
     expect(canonicalStringify(r.value.session)).toBe(canonicalStringify(session()));
     expect(r.value.provenance).toEqual(provenance);
@@ -48,9 +48,9 @@ describe('migrations — V1 sérialisée → version courante → validation', (
   });
 
   it('version future inconnue ⇒ refus explicite (jamais une lecture « au mieux »)', () => {
-    const r = migrateToCurrent({ kind: 'session_record', schemaVersion: 3, data: {} });
+    const r = migrateToCurrent({ kind: 'session_record', schemaVersion: 4, data: {} });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reasons[0]).toMatchObject({ code: 'TECHNICAL.SCHEMA_VERSION_UNSUPPORTED', params: { version: 3, current: 2 } });
+    if (!r.ok) expect(r.reasons[0]).toMatchObject({ code: 'TECHNICAL.SCHEMA_VERSION_UNSUPPORTED', params: { version: 4, current: 3 } });
   });
 
   it('enveloppe invalide, type inconnu, version nulle ⇒ TECHNICAL', () => {
@@ -104,5 +104,41 @@ describe('migrations — V1 sérialisée → version courante → validation', (
       expect(r.ok).toBe(true);
       if (r.ok) expect(canonicalStringify(r.value.session)).toBe(canonicalStringify(s));
     }), { numRuns: 50 });
+  });
+});
+
+describe('migrations — v2 → v3 (CORE-EXT-1) et lecteur ancien', () => {
+  const record = (s: unknown) => ({ session: s, provenance, fingerprint: { status: 'unavailable', reason: 'duplicate_analysis_inactive' } });
+  const extended = () => {
+    const base = strengthSessionInput();
+    const main = base.blocks[1]!;
+    const bench = main.items[0]!;
+    return session({ ...base, blocks: [base.blocks[0]!, { ...main, items: [{ ...bench,
+      refs: { slotId: 'slot.push', prescriptionSource: 'base_profile' },
+      prescription: { type: 'sets', sets: [
+        { kind: 'rampup', reps: 5, restAfterS: 60, intensity: { mode: 'relative_to_working', fraction: 0.5 } },
+        { kind: 'working', reps: { min: 6, max: 8 }, restAfterS: 150, intensity: { mode: 'effort', effort: { rir: 2 } } },
+        { kind: 'working', reps: { min: 6, max: 8 }, restAfterS: 150, intensity: { mode: 'effort', effort: { rir: 2 } }, optional: true },
+      ] } }] } as typeof main, base.blocks[2]!] });
+  };
+
+  it('une donnée v2 est migrée à l’identique (séance canoniquement inchangée)', () => {
+    const r = migrateToCurrent<SessionRecord>({ kind: 'session_record', schemaVersion: 2, data: record(session()) });
+    expect(r.ok && r.applied).toEqual(['session_record:2→3']);
+    if (r.ok) expect(canonicalStringify(r.value.session)).toBe(canonicalStringify(session()));
+  });
+
+  it('une donnée v3 avec les nouveaux champs est lue par le lecteur courant', () => {
+    const r = migrateToCurrent<SessionRecord>(JSON.parse(JSON.stringify(toEnvelope('session_record', record(extended())))));
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(canonicalStringify(r.value.session)).toBe(canonicalStringify(extended()));
+  });
+
+  it('lecteur ancien (v2) : une donnée v3 est REFUSÉE explicitement, jamais lue en ignorant ses champs', () => {
+    const oldReader = { session_record: { version: 2, schema: CURRENT_SCHEMA.session_record.schema } };
+    const r = migrateToCurrent(toEnvelope('session_record', record(extended())), MIGRATIONS.slice(0, 1), oldReader);
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.reasons[0]).toMatchObject({ code: 'TECHNICAL.SCHEMA_VERSION_UNSUPPORTED', params: { version: 3, current: 2 } });
+    expect(migrationRegistryIssues(MIGRATIONS.slice(0, 1), oldReader)).toEqual([]);
   });
 });

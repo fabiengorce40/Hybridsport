@@ -1,6 +1,6 @@
 import { zSessionDraft, zSportEngineProposal } from '@hybridsport/domain';
 import type {
-  Discipline, FingerprintHistoryEntry, ISODateTime, ReasonCode, SemVerString, SessionDraft, SessionIntent, SportEngineProposalInput,
+  Discipline, FingerprintHistoryEntry, ISODateTime, NoValidProposalInput, ReasonCode, SemVerString, SessionDraft, SessionIntent, SportEngineProposalInput,
 } from '@hybridsport/domain';
 import { createCoreRegistry } from '../trace/index.js';
 import type { LoadedRuleset } from '../rules/ruleset.js';
@@ -24,8 +24,12 @@ export interface SessionConstraints {
   readonly suspendHighIntensity: boolean;
 }
 
-/** Entrée commune minimale des quatre moteurs de discipline. */
-export interface SportEngineInput {
+/**
+ * Entrée commune minimale des quatre moteurs de discipline, générique sur le contexte propre à la
+ * discipline (CORE-EXT-2). Le CORE transporte `discipline` sans en connaître la sémantique : il n'y
+ * arrive qu'après validation par le parseur du moteur.
+ */
+export interface SportEngineInput<TContext = unknown> {
   readonly intent: SessionIntent;
   readonly profile: CoreProfile;
   readonly state: CoreState;
@@ -36,18 +40,33 @@ export interface SportEngineInput {
   readonly history: readonly FingerprintHistoryEntry[];
   /** Contexte injecté : graine DÉDIÉE au moteur (dérivée de celle du CORE), instant, versions. */
   readonly context: { readonly seed: string; readonly now: ISODateTime; readonly engineVersion: SemVerString };
+  /** Contexte propre à la discipline, VALIDÉ par `SportEngine.parseContext`. */
+  readonly discipline: TContext;
 }
+
+/** Résultat de la validation du contexte de discipline par son moteur. */
+export type ContextParse<TContext> = { readonly ok: true; readonly context: TContext } | { readonly ok: false; readonly reasons: readonly ReasonCode[] };
+
+/**
+ * Issue d'une proposition (CORE-EXT-3) : au moins une proposition, OU une absence de proposition
+ * explicable. `no_valid_proposal` est une issue MÉTIER normale, jamais une exception.
+ */
+export type ProposeResult =
+  | { readonly status: 'proposals'; readonly proposals: readonly SportEngineProposalInput[] }
+  | NoValidProposalInput;
 
 /**
  * Un moteur de discipline : il PROPOSE une ou plusieurs séances pour une intention donnée. Il ne
  * valide, ne répare, ne place, ne publie et ne persiste rien. Sa sortie est traitée comme une entrée
  * NON fiable : schéma strict, cohérence avec l'intention, puis pipeline CORE complet.
  */
-export interface SportEngine {
+export interface SportEngine<TContext = unknown> {
   readonly id: string;
   readonly version: SemVerString;
   readonly discipline: Discipline;
-  propose(input: SportEngineInput): readonly SportEngineProposalInput[];
+  /** Validation stricte du contexte de discipline (pure). Le CORE refuse l'entrée si elle échoue. */
+  parseContext(raw: unknown): ContextParse<TContext>;
+  propose(input: SportEngineInput<TContext>): ProposeResult;
 }
 
 export type ProposalAcceptance =
@@ -62,7 +81,7 @@ export const structureProblem = (problem: string, target: string): ReasonCode =>
  * ou une graine qui ne sont pas celles du contexte, ou cite un paramètre inconnu du ruleset.
  * Ne juge PAS la qualité sportive : c'est le rôle du validateur et de la couche B.
  */
-export function acceptProposal(raw: unknown, index: number, input: SportEngineInput, engine: Pick<SportEngine, 'id' | 'version'>): ProposalAcceptance {
+export function acceptProposal<TContext>(raw: unknown, index: number, input: SportEngineInput<TContext>, engine: Pick<SportEngine, 'id' | 'version'>): ProposalAcceptance {
   const parsed = zSportEngineProposal.safeParse(raw);
   const fallbackId = `proposal-${String(index)}`;
   if (!parsed.success) return { ok: false, id: fallbackId, reasons: parsed.error.issues.map((i) => reasons.emit('TECHNICAL.SCHEMA_INVALID', { path: `proposal.${i.path.join('.')}`, problem: i.message })) };
@@ -91,6 +110,13 @@ export function acceptProposal(raw: unknown, index: number, input: SportEngineIn
     const s: SessionDraft = session.data;
     if (s.discipline !== intent.discipline) out.push(structureProblem('séance d’une autre discipline', s.id));
     if (s.availableTimeS !== intent.availableTimeS || s.targetDurationS !== intent.targetDurationS) out.push(structureProblem('temps disponible ou durée cible modifiés par le moteur', s.id));
+    // CORE-EXT-1 : une ancre DÉCLARÉE doit l'être par l'intention (jamais inventée par le moteur).
+    const anchors = new Set(intent.repetitionIntents.flatMap((r) => (r.kind === 'progression_anchor' ? [r.trackId] : [])));
+    for (const it of s.blocks.flatMap((b) => b.items)) {
+      if (it.refs?.anchor === 'declared' && !anchors.has(it.refs.progressionTrackId ?? '')) {
+        out.push(reasons.emit('DUPLICATE.INTENT_NOT_DECLARED', { intent: `progression_anchor:${it.refs.progressionTrackId ?? ''}` }));
+      }
+    }
   }
   // Une séance illisible n'est pas refusée ici : le validateur la rejettera (TECHNICAL), tracée.
   if (out.length > 0) return { ok: false, id: p.proposalId, reasons: out };

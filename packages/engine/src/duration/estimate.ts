@@ -1,4 +1,4 @@
-import type { Exercise, Level, ReasonCode, SessionBlock, SessionDraft, SessionItem } from '@hybridsport/domain';
+import type { Exercise, Level, ReasonCode, SessionBlock, SessionDraft, SessionItem, SetPrescription } from '@hybridsport/domain';
 import { createCoreRegistry } from '../trace/index.js';
 import type { LoadedRuleset } from '../rules/ruleset.js';
 import type { LoadedCatalog } from '../catalog/catalog.js';
@@ -15,6 +15,16 @@ const span = (min: number, p50: number, p90: number): Span => ({ min, p50, p90 }
 const add = (a: Span, b: Span): Span => span(a.min + b.min, a.p50 + b.p50, a.p90 + b.p90);
 const scale = (a: Span, k: number): Span => span(a.min * k, a.p50 * k, a.p90 * k);
 const ZERO = span(0, 0, 0);
+const mul = (a: Span, b: Span): Span => span(a.min * b.min, a.p50 * b.p50, a.p90 * b.p90);
+/** Série facultative : absente de min et de p50, présente dans p90 (prudence sur le temps disponible). */
+const onlyP90 = (a: Span): Span => span(0, 0, a.p90);
+
+/** Répétitions d'une série : exactes, ou plage (min → min, milieu → p50, max → p90). */
+function repsSpan(reps: SetPrescription['reps']): Span {
+  if (typeof reps === 'number') return span(reps, reps, reps);
+  // technical-constant: milieu de la plage de répétitions (moyenne arithmétique)
+  return span(reps.min, (reps.min + reps.max) / 2, reps.max);
+}
 
 /** Facteurs de timing personnels (calibrés plus tard ; valeurs par défaut lues dans le ruleset). */
 export interface AthleteTimingProfile {
@@ -90,7 +100,10 @@ function paceSpan(distanceM: number, pace: { min: number; max: number } | undefi
 function itemWork(item: SessionItem, e: Exercise, level: Level): Span {
   const p = item.prescription;
   switch (p.type) {
-    case 'sets': return p.sets.reduce((acc, s) => add(acc, scale(perRep(e), s.reps)), ZERO);
+    case 'sets': return p.sets.reduce((acc, s) => {
+      const w = mul(perRep(e), repsSpan(s.reps));
+      return add(acc, s.optional === true ? onlyP90(w) : w);
+    }, ZERO);
     case 'timed': return scale(span(p.workS, p.workS, p.workS), p.rounds);
     case 'distance': return paceSpan(p.distanceM, p.paceSecPerKm, e, level);
     case 'calories': { const r = rateFor(e, level, 'cal_per_min'); return span((p.calories / (r.p50 * (r.p50 / r.p90Slow))) * SECONDS_PER_MINUTE, (p.calories / r.p50) * SECONDS_PER_MINUTE, (p.calories / r.p90Slow) * SECONDS_PER_MINUTE); }
@@ -113,7 +126,8 @@ function itemRest(item: SessionItem, params: DurationParams): Span {
   const t = params.timing;
   const r = (s: number): Span => span(s, s * t.restOverrunFactor, s * t.restOverrunFactor * t.restP90Factor);
   switch (p.type) {
-    case 'sets': return p.sets.slice(0, -1).reduce((acc, s) => add(acc, r(s.restAfterS)), ZERO);
+    // Le repos précédant une série facultative n'est compté que dans p90.
+    case 'sets': return p.sets.slice(0, -1).reduce((acc, s, i) => add(acc, p.sets[i + 1]?.optional === true ? onlyP90(r(s.restAfterS)) : r(s.restAfterS)), ZERO);
     case 'timed': return r(p.restS * (p.rounds - 1));
     case 'hold': return r(p.restS * (p.sets - 1));
     case 'intervals': return span(p.recoveryS * (p.reps - 1), p.recoveryS * (p.reps - 1), p.recoveryS * (p.reps - 1));

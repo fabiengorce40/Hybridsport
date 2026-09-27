@@ -45,6 +45,8 @@ export const CORE_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'SELECT.DECIDED_AT_LEVEL', categories: ['optimization'], params: { winnerId: S, level: S, gap: N }, audience: 'internal', severity: 'info' },
   { code: 'SELECT.ADHERENCE_TIEBREAK', categories: ['optimization'], params: { winnerId: S }, audience: 'user', severity: 'info' },
   { code: 'SELECT.TIE_BROKEN_BY_SEED', categories: ['optimization'], params: { winnerId: S, tiedWith: L }, audience: 'internal', severity: 'info' },
+  { code: 'SELECT.BLOCKING_NEED', categories: ['feasibility'], params: { slotId: S, need: S, engineId: S }, audience: 'internal', severity: 'error' },
+  { code: 'DATA.MISSING_FOR_PROPOSAL', categories: ['information'], params: { key: S, engineId: S }, audience: 'internal', severity: 'info' },
   { code: 'SELECT.NO_ADMISSIBLE_CANDIDATE', categories: ['optimization'], params: { candidates: N }, audience: 'internal', severity: 'error' },
   // Durée
   { code: 'DURATION.ESTIMATED', categories: ['information'], params: { p50S: N, p90S: N }, audience: 'internal', severity: 'info' },
