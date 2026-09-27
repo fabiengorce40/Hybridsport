@@ -60,7 +60,10 @@ export function computeDose(e: Exercise, env: Env, opts: DoseOptions): Dose {
 
   // Modificateurs : chacun est tracé ; la politique de conflit (ruleset) combine les deltas.
   const deltas: { modifier: string; setsDelta: number; rirDelta: number }[] = [];
-  deltas.push({ modifier: `level:${env.level}`, ...m.level[env.level] });
+  // Niveau : les cibles hebdomadaires sont DÉJÀ mises à l'échelle du niveau ; quand les séries viennent de
+  // l'allocation du volume, le modificateur de niveau ne retire pas une série de plus (double comptage).
+  const lv = m.level[env.level];
+  deltas.push({ modifier: `level:${env.level}`, setsDelta: opts.allocatedSets !== undefined ? 0 : lv.setsDelta, rirDelta: lv.rirDelta });
   const phase = env.input.discipline.phase.kind;
   deltas.push({ modifier: `phase:${phase}`, setsDelta: m.phase[phase].setsDelta, rirDelta: m.phase[phase].rirDelta });
   const readiness = env.input.state.readiness === 'unknown' ? (m.unknownReadiness === 'as_caution' ? 'caution' : 'normal') : env.input.state.readiness;
