@@ -31,7 +31,7 @@ const arbScenario: fc.Arbitrary<Scenario> = fc.record({
   readiness: fc.constantFrom('normal', 'caution', 'reduce', 'unknown'),
   exposures: fc.array(fc.record({ id: fc.constantFrom(...STRENGTH_EX), day: fc.integer({ min: 1, max: 4 }), kg: fc.integer({ min: 4, max: 60 }).map((k) => k * 2.5), reps: fc.integer({ min: 3, max: 15 }), rir: fc.option(fc.integer({ min: 0, max: 4 }), { nil: undefined }) }), { maxLength: 6 }),
   excluded: fc.subarray(STRENGTH_EX, { maxLength: 4 }),
-  neighbor: fc.option(fc.record({ hours: fc.integer({ min: -48, max: 48 }), demand: fc.constantFrom({ lower_knee: 'high' as const }, { grip: 'high' as const }, { lower_hip: 'high' as const, lower_knee: 'moderate' as const }) }), { nil: undefined }),
+  neighbor: fc.option(fc.record({ hours: fc.integer({ min: -48, max: 48 }), demand: fc.constantFrom<Record<string, 'high' | 'moderate'>>({ lower_knee: 'high' }, { grip: 'high' }, { lower_hip: 'high', lower_knee: 'moderate' }) }), { nil: undefined }),
   weekKnown: fc.boolean(),
   phase: fc.constantFrom('accumulation', 'intensification', 'deload', 'maintenance') as fc.Arbitrary<'accumulation'>,
 }).map((r) => scenario({
