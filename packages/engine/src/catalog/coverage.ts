@@ -2,6 +2,7 @@ import type { Exercise, ReleaseStage } from '@hybridsport/domain';
 import { RulesetParameterError } from '../rules/errors.js';
 import type { LoadedRuleset } from '../rules/ruleset.js';
 import type { LoadedCatalog } from './catalog.js';
+import { slotAccepts } from './archetype.js';
 import { deriveExerciseStructures, isDerivationTable } from './structures.js';
 
 export type CoverageStatus = 'PASS' | 'FAIL' | 'NOT_APPLICABLE' | 'NOT_READY';
@@ -75,7 +76,7 @@ export function evaluateCoverage(catalog: LoadedCatalog, ruleset: LoadedRuleset,
       const gaps: string[] = [];
       for (const a of archetypes) for (const p of a.feasiblePresets) for (const slot of a.slots) {
         const ok = feasibleIn(p);
-        const cands = active.filter((e) => ok(e) && (slot.pattern === undefined || e.patterns.primary === slot.pattern) && (slot.movementTypes === undefined || slot.movementTypes.includes(e.movementType)));
+        const cands = active.filter((e) => ok(e) && slotAccepts(e, slot, catalog));
         const families = new Set(cands.map((e) => e.family)).size;
         if (cands.length < min) gaps.push(`${a.id}/${slot.id} @ ${p} : ${cands.length} candidat(s) < ${min}`);
         if (families < (slot.minFamilies ?? 1)) gaps.push(`${a.id}/${slot.id} @ ${p} : ${families} famille(s) < ${slot.minFamilies ?? 1}`);
@@ -193,7 +194,7 @@ export function evaluateCoverage(catalog: LoadedCatalog, ruleset: LoadedRuleset,
         if (a.declaredInfeasibleRestrictions.includes(tag)) continue;
         for (const p of a.feasiblePresets) for (const slot of a.slots) {
           const ok = feasibleIn(p);
-          if (!active.some((e) => ok(e) && !e.contraindicationTags.includes(tag) && (slot.pattern === undefined || e.patterns.primary === slot.pattern))) {
+          if (!active.some((e) => ok(e) && !e.contraindicationTags.includes(tag) && slotAccepts(e, slot, catalog))) {
             gaps.push(`${a.id}/${slot.id} @ ${p} sous ${tag} : aucune alternative`);
           }
         }

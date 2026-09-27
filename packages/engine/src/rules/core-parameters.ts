@@ -44,6 +44,15 @@ export const CORE_PARAMETERS: readonly CoreParameterSpec[] = [
   { id: 'coverage.cc6.presetId', type: 'string', governance: 'G5', usedBy: 'catalog/coverage', optional: true },
   { id: 'coverage.cc6.mainMuscles', type: 'string[]', governance: 'G5', usedBy: 'catalog/coverage', optional: true },
   { id: 'coverage.cc11.requiredPresets', type: 'string[]', governance: 'G5', usedBy: 'catalog/coverage', optional: true },
+  // Anti-doublon (spec 07 §4) : facultatifs tant qu'aucun moteur de discipline ne fournit d'empreinte ;
+  // toute analyse demandée sans eux échoue explicitement (TECHNICAL), jamais avec une valeur par défaut.
+  { id: 'duplicate.windowDays', type: 'number', governance: 'G2', usedBy: 'duplicate/analysis', optional: true },
+  { id: 'duplicate.weights', type: 'table', governance: 'G2', usedBy: 'duplicate/analysis', optional: true },
+  { id: 'duplicate.thresholds', type: 'number-record', governance: 'G2', usedBy: 'duplicate/analysis', optional: true },
+  { id: 'duplicate.exerciseLevelWeights', type: 'number-record', governance: 'G2', usedBy: 'duplicate/analysis', optional: true },
+  { id: 'duplicate.stimulusNeighbors', type: 'table', governance: 'G2', usedBy: 'duplicate/analysis', optional: true },
+  { id: 'duplicate.intentPolicy', type: 'table', governance: 'G2', usedBy: 'duplicate/analysis', optional: true },
+  { id: 'duplicate.penalties', type: 'number-record', governance: 'G2', usedBy: 'duplicate/analysis', optional: true },
 ];
 
 export interface PreflightIssue { readonly id: string; readonly problem: string }

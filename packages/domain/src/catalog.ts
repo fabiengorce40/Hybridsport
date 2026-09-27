@@ -98,7 +98,7 @@ export const zPreset = z.object({
 }).strict();
 export type Preset = z.infer<typeof zPreset>;
 
-/** Archétype (contenu des moteurs de discipline, à venir) : seul le minimum requis par CC1 est modélisé. */
+/** Projection d'un SessionArchetype (archetype.ts) utile à la couverture CC1/CC7 : voir `toCoverageSpec`. */
 export const zArchetypeCoverageSpec = z.object({
   id: zId,
   discipline: z.enum(DISCIPLINES),
@@ -106,6 +106,8 @@ export const zArchetypeCoverageSpec = z.object({
     id: zId,
     pattern: zId.optional(),
     movementTypes: z.array(z.string()).optional(),
+    region: z.enum(['lower', 'upper', 'full', 'core', 'cyclic', 'none']).optional(),
+    compound: z.boolean().optional(),
     minFamilies: z.number().int().positive().optional(),
   }).strict()).min(1),
   feasiblePresets: z.array(zId),

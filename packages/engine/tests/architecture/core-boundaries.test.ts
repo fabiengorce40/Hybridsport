@@ -60,8 +60,16 @@ describe('lot 15 — dépendances interdites (UI, DB, réseau, paiements, LLM, s
     expect(collectImports(files).filter((i) => i.module === '<dynamic>')).toEqual([]);
   });
 
+  /** Import du paquet moteur (par nom de paquet ou par chemin), pas un simple mot « engine » dans un nom de fichier. */
+  const importsEnginePackage = (m: string): boolean => /^@hybridsport\/engine(\/|$)/.test(m) || /(^|\/)packages\/engine\//.test(m) || /^(\.\.\/)+engine\//.test(m);
+
   it('le domaine ne dépend pas du moteur', () => {
-    expect(collectImports(domainFiles).filter((i) => i.module.includes('engine'))).toEqual([]);
+    expect(collectImports(domainFiles).filter((i) => importsEnginePackage(i.module))).toEqual([]);
+  });
+
+  it('auto-test : détection d’un import du moteur depuis le domaine', () => {
+    expect(['@hybridsport/engine', '@hybridsport/engine/x', '../engine/src/index.js', '../../packages/engine/src/a.js'].every(importsEnginePackage)).toBe(true);
+    expect(['./sport-engine.js', 'zod', './duplicate.js'].some(importsEnginePackage)).toBe(false);
   });
 
   it('package.json : engine → @hybridsport/domain seul ; domain → zod seul ; aucune dépendance pair ou optionnelle', () => {

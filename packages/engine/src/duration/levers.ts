@@ -19,18 +19,29 @@ const PROTECTED_KINDS = new Set(['warmup', 'cooldown']);
  */
 const FORBIDDEN_ON_PRIMARY = new Set<CompressionLever['kind']>(['drop_optional_block', 'reduce_sets', 'drop_accessory', 'reduce_rest']);
 
+/** Déclaration de leviers d'un bloc (séance ou archétype), vérifiée par les mêmes règles. */
+export interface LeverDeclaringBlock {
+  readonly id: string;
+  readonly kind: SessionBlock['kind'];
+  readonly role: SessionBlock['role'];
+  readonly optional: boolean;
+  readonly levers: readonly CompressionLever[];
+}
+
 /** L'échauffement et le retour au calme ne portent jamais de levier (spec 07 §3.3). */
-export function leverDeclarationIssues(session: SessionDraft): string[] {
+export function blockLeverIssues(b: LeverDeclaringBlock): string[] {
   const out: string[] = [];
-  for (const b of session.blocks) {
-    if (PROTECTED_KINDS.has(b.kind) && b.levers.length > 0) out.push(`${b.id} : levier interdit sur un bloc ${b.kind}`);
-    for (const l of b.levers) {
-      if (b.role === 'primary' && FORBIDDEN_ON_PRIMARY.has(l.kind)) out.push(`${b.id} : ${l.kind} interdit sur le bloc principal`);
-      if (l.kind === 'reduce_main_volume' && b.role !== 'primary') out.push(`${b.id} : reduce_main_volume réservé au bloc principal`);
-      if (l.kind === 'drop_optional_block' && !b.optional) out.push(`${b.id} : drop_optional_block sur un bloc non optionnel`);
-    }
+  if (PROTECTED_KINDS.has(b.kind) && b.levers.length > 0) out.push(`${b.id} : levier interdit sur un bloc ${b.kind}`);
+  for (const l of b.levers) {
+    if (b.role === 'primary' && FORBIDDEN_ON_PRIMARY.has(l.kind)) out.push(`${b.id} : ${l.kind} interdit sur le bloc principal`);
+    if (l.kind === 'reduce_main_volume' && b.role !== 'primary') out.push(`${b.id} : reduce_main_volume réservé au bloc principal`);
+    if (l.kind === 'drop_optional_block' && !b.optional) out.push(`${b.id} : drop_optional_block sur un bloc non optionnel`);
   }
   return out;
+}
+
+export function leverDeclarationIssues(session: SessionDraft): string[] {
+  return session.blocks.flatMap(blockLeverIssues);
 }
 
 // technical-constant: rang structurel des rôles (ordre de compression), pas une valeur sportive

@@ -120,3 +120,31 @@ export function testRulesetDocument(overrides: Partial<RulesetDocumentInput> = {
     ...overrides,
   };
 }
+
+/**
+ * Paramètres de TEST de l'anti-doublon (spec 07 §4). Valeurs provisoires inspirées des exemples de la
+ * spec (poids 1 / 0,8 / 0,6), jamais des valeurs validées : elles n'existent que dans les tests.
+ */
+export function duplicateTestParameters(): ParamInput[] {
+  const w = { exercise: 0.3, movement: 0.15, muscle: 0.15, structure: 0.1, stimulus: 0.15, energy: 0.05, format: 0.1 };
+  return [
+    param('duplicate.windowDays', 28, 'G2', { unit: 'd' }),
+    param('duplicate.weights', { strength: w, running: w, crosstraining: w, hybrid_race: w }, 'G2'),
+    param('duplicate.thresholds', { warn: 0.6, strong: 0.85 }, 'G2'),
+    param('duplicate.exerciseLevelWeights', { exercise: 1, equivalence: 0.8, family: 0.6 }, 'G2'),
+    param('duplicate.stimulusNeighbors', { 'stim.strength_upper': { 'stim.hypertrophy_upper': 0.5 } }, 'G2'),
+    param('duplicate.intentPolicy', {
+      progression_anchor: { covers: ['exercise'], requiresEvolution: true },
+      progression_series: { covers: ['exercise', 'movement', 'muscle', 'structure', 'stimulus', 'format'], requiresEvolution: true },
+      benchmark_retest: { covers: ['exercise', 'movement', 'muscle', 'structure', 'stimulus', 'energy', 'format'], requiresEvolution: false },
+      recurring_slot: { covers: ['structure', 'stimulus', 'format'], requiresEvolution: false },
+      deload_mirror: { covers: ['exercise', 'movement', 'muscle', 'structure', 'stimulus', 'format'], requiresEvolution: false },
+    }, 'G2'),
+    param('duplicate.penalties', { accidental_warn: 0.2, accidental_strong: 0.6 }, 'G2'),
+  ];
+}
+
+export function testRulesetDocumentWithDuplicate(): RulesetDocumentInput {
+  const base = testRulesetDocument();
+  return { ...base, parameters: [...base.parameters, ...duplicateTestParameters()] };
+}

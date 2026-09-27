@@ -51,6 +51,11 @@ export const CORE_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'DURATION.SHORTER_ACCEPTED', categories: ['optimization'], params: { p50S: N, targetS: N }, audience: 'user', severity: 'info' },
   { code: 'DURATION.INFEASIBLE', categories: ['feasibility'], params: { p90S: N, availableS: N }, audience: 'internal', severity: 'error' },
   { code: 'DURATION.OUT_OF_TOLERANCE', categories: ['business_soft'], params: { p50S: N, lowerS: N, upperS: N }, audience: 'internal', severity: 'warning' },
+  // Anti-doublon (spec 07 §4) — SOFT par défaut ; les cas HARD sont des règles de discipline avec fiche
+  { code: 'DUPLICATE.ACCIDENTAL', categories: ['business_soft'], params: { sessionId: S, similarity: N, level: S }, audience: 'internal', severity: 'warning' },
+  { code: 'DUPLICATE.PLANNED', categories: ['information'], params: { sessionId: S, intents: L }, audience: 'internal', severity: 'info' },
+  { code: 'DUPLICATE.PLANNED_BUT_STAGNANT', categories: ['business_soft'], params: { sessionId: S, intent: S }, audience: 'internal', severity: 'warning' },
+  { code: 'DUPLICATE.INTENT_NOT_DECLARED', categories: ['technical'], params: { intent: S }, audience: 'internal', severity: 'error' },
   // Adaptation (couche C)
   { code: 'ADAPT.KEPT_STABILITY', categories: ['adaptation'], params: { level: S, gain: N, threshold: N }, audience: 'user', severity: 'info', optionalParams: ['level'] },
   { code: 'ADAPT.CHANGED', categories: ['adaptation'], params: { cause: S, level: S, gain: N }, audience: 'user', severity: 'notice', optionalParams: ['level', 'gain'] },

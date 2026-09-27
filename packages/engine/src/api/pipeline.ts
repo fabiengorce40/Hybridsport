@@ -1,7 +1,5 @@
 import { zSessionDraft } from '@hybridsport/domain';
-import type {
-  Eligibility, EngineResult, Level, PainHistoryAvailability, PainReport, ReadinessCategory, ReasonCode, SessionDraft, TraceRef, UserDeclaration,
-} from '@hybridsport/domain';
+import type { EngineResult, ReasonCode, SessionDraft, SessionFingerprint, TraceRef, Violation } from '@hybridsport/domain';
 import type { EngineContext } from '../core/context.js';
 import { checkEngineContext } from '../core/context.js';
 import { SeededRng } from '../core/rng.js';
@@ -14,56 +12,49 @@ import type { LoadedCatalog } from '../catalog/catalog.js';
 import { evaluateAdmissibility } from '../decision/admissibility.js';
 import type { AdmissibilityCheck, EvaluatedCandidate } from '../decision/admissibility.js';
 import { readTolerances, selectBest, toArray } from '../decision/optimization.js';
-import type { OptimizationVector } from '../decision/optimization.js';
 import { fitDuration } from '../duration/fit.js';
-import type { AthleteTimingProfile } from '../duration/estimate.js';
+import type { DurationEstimate } from '../duration/estimate.js';
 import { validateSession } from '../validation/validator.js';
 import type { ValidationContext } from '../validation/context.js';
 import { repairSession } from '../repair/repair.js';
 import { deriveSafetyRestrictions, isActive } from '../safety/pain.js';
 import { deriveProgramStatus, generationGuard } from '../safety/eligibility.js';
+import { buildFingerprint } from '../duplicate/fingerprint.js';
+import { analyzeDuplicates } from '../duplicate/analysis.js';
+import type { DuplicateReport } from '../duplicate/analysis.js';
+import { CORE_RULES } from '../validation/rules.js';
+import type { CoreCandidate, CoreProfile, CoreState, DuplicateContext, RejectedProposal } from '../contracts/core-types.js';
+
+export type { CoreCandidate, CoreProfile, CoreState, DuplicateContext, RejectedProposal } from '../contracts/core-types.js';
 
 const reasons = createCoreRegistry();
-
-/** Profil minimal vu par le CORE (données fournies, jamais inventées). */
-export interface CoreProfile {
-  readonly athleteLevel: Level;
-  readonly eligibility: Eligibility;
-  readonly declarations: readonly UserDeclaration[];
-  readonly healthDataConsent: boolean;
-  readonly restrictions: readonly string[];
-  readonly excludedExercises: readonly string[];
-  readonly availableEquipment: readonly string[];
-}
-
-/** État minimal vu par le CORE. */
-export interface CoreState {
-  readonly readiness: ReadinessCategory;
-  readonly activePain: readonly PainReport[];
-  readonly painHistory: PainHistoryAvailability;
-  readonly dayAvailable: boolean;
-  readonly recovery?: ValidationContext['recovery'];
-  readonly timing?: AthleteTimingProfile;
-}
-
-/**
- * Candidat fourni par l'appelant (futurs moteurs de discipline ; ici des fixtures) : séance proposée et
- * vecteur d'optimisation B1–B6. Le CORE ne génère aucune séance : il décide, vérifie, répare et trace.
- */
-export interface CoreCandidate {
-  readonly session: unknown;
-  readonly optimization: OptimizationVector;
-}
 
 export interface CorePipelineRequest {
   readonly profile: CoreProfile;
   readonly state: CoreState;
   readonly candidates: readonly CoreCandidate[];
+  /** Anti-doublon actif : chaque candidat DOIT fournir des entrées d'empreinte valides (sinon A4). */
+  readonly duplicate?: DuplicateContext;
+  /** Propositions refusées à l'acceptation (frontière moteur sportif) : tracées, jamais évaluées. */
+  readonly rejectedProposals?: readonly RejectedProposal[];
 }
 
 export interface CorePipelineOutcome {
   readonly result: EngineResult<SessionDraft>;
   readonly trace: DecisionTrace;
+  /** Empreinte de la séance retenue (anti-doublon actif), à stocker avec elle (spec 07 §1, étape 11). */
+  readonly fingerprint?: SessionFingerprint;
+  readonly duplicate?: DuplicateReport;
+}
+
+const isRecord = (v: unknown): v is Record<string, unknown> => v !== null && typeof v === 'object' && !Array.isArray(v);
+
+/** Après réparation, les volumes des items retirés par le CORE sont écartés (jamais d'autre modification). */
+function restrictVolumes(inputs: unknown, session: SessionDraft): unknown {
+  if (!isRecord(inputs) || !isRecord(inputs.volumeByItem)) return inputs;
+  const present = new Set(session.blocks.flatMap((b) => b.items.map((i) => i.id)));
+  const vol = inputs.volumeByItem;
+  return { ...inputs, volumeByItem: Object.fromEntries(Object.keys(vol).filter((k) => present.has(k)).map((k) => [k, vol[k]])) };
 }
 
 type Ctx = EngineContext<LoadedRuleset, LoadedCatalog>;
@@ -78,9 +69,9 @@ export function runCorePipeline(request: CorePipelineRequest, ctx: Ctx): CorePip
   const versions = { engineVersion: ctx.engineVersion, rulesetVersion: ctx.ruleset.version, catalogVersion: ctx.catalog.version };
   const trace = new TraceBuilder(versions, ctx.seed);
   const pipelineSubject = { kind: 'program' as const, id: ctx.seed };
-  const finish = (make: (ref: TraceRef) => EngineResult<SessionDraft>): CorePipelineOutcome => {
+  const finish = (make: (ref: TraceRef) => EngineResult<SessionDraft>, extra: { fingerprint?: SessionFingerprint; duplicate?: DuplicateReport } = {}): CorePipelineOutcome => {
     const built = trace.build();
-    return { result: make({ traceId: built.traceId }), trace: built };
+    return { result: make({ traceId: built.traceId }), trace: built, ...extra };
   };
   const technicalError = (rs: ReasonCode[]) => finish((ref) => ({ status: 'error', error: { code: 'INVALID_INPUT', reasons: rs, alternatives: [] }, trace: ref }));
 
@@ -110,6 +101,9 @@ export function runCorePipeline(request: CorePipelineRequest, ctx: Ctx): CorePip
     return technicalError(rs);
   }
 
+  // Propositions refusées à la frontière moteur sportif / CORE : tracées, jamais évaluées ni réparées.
+  for (const r of request.rejectedProposals ?? []) trace.add({ step: 'proposal', subject: { kind: 'session', id: r.id }, decision: 'rejected', reasons: [...r.reasons] });
+
   try {
     // 2. Sécurité et éligibilité
     const active = request.state.activePain.filter(isActive);
@@ -135,25 +129,47 @@ export function runCorePipeline(request: CorePipelineRequest, ctx: Ctx): CorePip
 
     // 3. Durée puis validation de chaque candidat ⇒ admissibilité (couche A)
     const evaluated: EvaluatedCandidate<SessionDraft | undefined>[] = [];
+    const analyses = new Map<string, { fingerprint: SessionFingerprint; report: DuplicateReport }>();
+    const brokenFingerprint = new Set<string>();
+    const inputsById = new Map<string, unknown>();
     request.candidates.forEach((c, index) => {
       const parsed = zSessionDraft.safeParse(c.session);
       const id = parsed.success ? parsed.data.id : `candidate-${index}`;
       let session: SessionDraft | undefined = parsed.success ? parsed.data : undefined;
+      let estimate: DurationEstimate | undefined;
       if (session) {
         const fit = fitDuration(session, ctx.catalog, ctx.ruleset, request.state.timing);
         trace.add({ step: 'duration', subject: { kind: 'session', id }, decision: fit.status, reasons: [...fit.reasons] });
-        if (fit.status !== 'INFEASIBLE') session = fit.session;
+        if (fit.status !== 'INFEASIBLE') { session = fit.session; estimate = fit.estimate; }
+      }
+      // Empreinte puis anti-doublon (spec 07 §4), sur la séance APRÈS ajustement de durée : SOFT (B6), jamais HARD par défaut.
+      const fingerprintViolations: Violation[] = [];
+      let penalty = 0;
+      if (request.duplicate && session) {
+        inputsById.set(id, c.fingerprintInputs);
+        const fp = buildFingerprint(session, ctx.catalog, c.fingerprintInputs, estimate);
+        if (!fp.ok) {
+          brokenFingerprint.add(id);
+          fingerprintViolations.push(...fp.reasons.map((reason) => ({ ruleId: CORE_RULES.integrity.id, ruleVersion: CORE_RULES.integrity.version, nature: 'TECHNICAL' as const, level: 'hard' as const, layer: 'A4' as const, target: { kind: 'session' as const, id }, reason })));
+          trace.add({ step: 'fingerprint', subject: { kind: 'session', id }, decision: 'rejected', reasons: [...fp.reasons] });
+        } else {
+          const report = analyzeDuplicates(fp.fingerprint, request.duplicate.history, request.duplicate.declaredIntents, ctx.ruleset, ctx.now);
+          analyses.set(id, { fingerprint: fp.fingerprint, report });
+          penalty = report.penalty;
+          trace.add({ step: 'duplicate', subject: { kind: 'session', id }, decision: report.classification, reasons: [...report.reasons] });
+        }
       }
       const v = validateSession(session ?? c.session, vctx, deps);
       trace.add({ step: 'validate', subject: { kind: 'session', id }, decision: v.report.status, reasons: [...v.report.errors, ...v.report.warnings].map((x) => x.reason) });
       const checks: AdmissibilityCheck<null>[] = (['A1', 'A2', 'A3', 'A4'] as const).map((layer) => ({
         id: `pipeline.${layer}`, version: '1.0.0', layer,
         nature: layer === 'A1' ? 'SAFETY' : layer === 'A2' ? 'FEASIBILITY' : layer === 'A3' ? 'PROGRAMMING_HEURISTIC' : 'TECHNICAL',
-        evaluate: () => v.report.errors.filter((e) => (e.layer ?? 'A4') === layer),
+        evaluate: () => [...v.report.errors.filter((e) => (e.layer ?? 'A4') === layer), ...(layer === 'A4' ? fingerprintViolations : [])],
       }));
       // Les violations restent attachées à leur couche ; la nature du contrôle d'agrégation ne les réécrit pas.
       const admissibility = evaluateAdmissibility(null, checks);
-      evaluated.push({ id, payload: v.session ?? session, admissibility, optimization: toArray(c.optimization) });
+      // La pénalité anti-doublon est appliquée par le CORE au niveau B6 (variété), quel que soit le vecteur du moteur.
+      evaluated.push({ id, payload: v.session ?? session, admissibility, optimization: toArray({ ...c.optimization, B6: c.optimization.B6 - penalty }) });
     });
 
     // 4. Sélection (couche B)
@@ -166,11 +182,13 @@ export function runCorePipeline(request: CorePipelineRequest, ctx: Ctx): CorePip
     if (selection.status === 'selected' && winnerSession) {
       const final = validateSession(winnerSession, vctx, deps);
       trace.add({ step: 'result', subject: { kind: 'session', id: selection.winner.id }, decision: final.report.status, reasons: final.report.warnings.map((w) => w.reason) });
-      return finish((ref) => ({ status: 'ok', value: winnerSession, validation: final.report, trace: ref, warnings: final.report.warnings.map((w) => w.reason) }));
+      const dup = analyses.get(selection.winner.id);
+      return finish((ref) => ({ status: 'ok', value: winnerSession, validation: final.report, trace: ref, warnings: [...final.report.warnings.map((w) => w.reason), ...(dup?.report.reasons ?? [])] }), dup ? { fingerprint: dup.fingerprint, duplicate: dup.report } : {});
     }
 
     // 5. Aucune solution admissible : réparation du candidat le mieux placé sur la couche B (ordre déterministe).
-    const repairable = evaluated.flatMap((e) => (e.payload ? [{ ...e, payload: e.payload }] : [])).sort((a, b) => {
+    // Une proposition à l'empreinte invalide est techniquement défectueuse : jamais réparée.
+    const repairable = evaluated.filter((e) => !brokenFingerprint.has(e.id)).flatMap((e) => (e.payload ? [{ ...e, payload: e.payload }] : [])).sort((a, b) => {
       for (let i = 0; i < a.optimization.length; i++) { const d = (b.optimization[i] ?? 0) - (a.optimization[i] ?? 0); if (d !== 0) return d; }
       return a.id < b.id ? -1 : 1;
     })[0];
@@ -180,6 +198,19 @@ export function runCorePipeline(request: CorePipelineRequest, ctx: Ctx): CorePip
     }
     const repaired = repairSession(repairable.payload, vctx, deps, { seed: `${ctx.seed}/repair` });
     for (const e of repaired.trace.entries) trace.add({ step: e.step, subject: e.subject, decision: e.decision, reasons: e.reasons });
+    if (request.duplicate && repaired.result.status === 'ok') {
+      // Séance modifiée par la réparation : empreinte et anti-doublon recalculés sur la séance finale.
+      const finalSession = repaired.result.value;
+      const fp = buildFingerprint(finalSession, ctx.catalog, restrictVolumes(inputsById.get(repairable.id), finalSession));
+      if (!fp.ok) {
+        trace.add({ step: 'fingerprint', subject: { kind: 'session', id: finalSession.id }, decision: 'rejected', reasons: [...fp.reasons] });
+        return technicalError([...fp.reasons]);
+      }
+      const report = analyzeDuplicates(fp.fingerprint, request.duplicate.history, request.duplicate.declaredIntents, ctx.ruleset, ctx.now);
+      trace.add({ step: 'duplicate', subject: { kind: 'session', id: finalSession.id }, decision: report.classification, reasons: [...report.reasons] });
+      const ok = repaired.result;
+      return finish((ref) => ({ ...ok, trace: ref, warnings: [...ok.warnings, ...report.reasons] }), { fingerprint: fp.fingerprint, duplicate: report });
+    }
     return finish((ref) => ({ ...repaired.result, trace: ref }));
   } catch (e) {
     // Paramètre ou politique absents : erreur TECHNICAL explicite, jamais masquée ni contournée.
