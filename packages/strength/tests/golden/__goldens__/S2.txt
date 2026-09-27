@@ -1,0 +1,27 @@
+# Intermédiaire, 4 séances / semaine, 60 min, salle complète, hypertrophie (séance haut du corps)
+résultat : ok · validation : VALID · durée : FITS
+  [warmup · support]
+    ex.shoulder_mobility_flow  (mobility) — mobilité 5 min
+  [strength · primary]
+    ex.barbell_ohp  (up.main_push_v · ancre:candidate · calibration) — choix : role_fit
+      montée : 8 @ RPE 3 → 5 @ RPE 5 → 3 @ RPE 7
+      2 × 6 · RIR 3 · repos 150 s
+      1 × 6 · RIR 2 · repos 150 s
+  [strength · secondary]
+    ex.seated_cable_row  (up.pull_h · ancre:candidate · calibration) — choix : seed_tiebreak
+      2 × 8–12 · RIR 3 · repos 105 s
+      1 × 8–12 · RIR 2 · repos 105 s
+  [accessory · support]
+    ex.bench_press  (up.push_2h · history) — choix : variant
+      2 × 8–12 · 70 kg · RIR 2 · repos 90 s
+    ex.lat_pulldown  (up.pull_2v · history) — choix : role_fit
+      2 × 8–12 · 55 kg · RIR 2 · repos 90 s
+    ex.cable_triceps_pushdown  (up.iso_upper · calibration) — choix : logistics
+      2 × 12–20 · RIR 3 · repos 60 s
+      1 × 12–20 · RIR 1 · repos 60 s
+    ex.cable_pallof_press  (up.trunk · calibration) — choix : load_adequacy
+      2 × 12–20 · RIR 3 · repos 60 s
+      1 × 12–20 · RIR 1 · repos 60 s
+  [cooldown · support]
+    ex.shoulder_mobility_flow  (mobility) — mobilité 3 min
+  Durée estimée (p50) : 50 min

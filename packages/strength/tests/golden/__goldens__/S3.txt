@@ -1,0 +1,18 @@
+# Intermédiaire, 3 musculation + 3 course (10 km) : soutien course, séance clé d’intervalles 20 h après
+résultat : ok · validation : VALID · durée : SHORTER_ACCEPTED
+  [warmup · support]
+    ex.lower_mobility_flow  (mobility) — mobilité 5 min
+  [strength · primary]
+    ex.db_rdl  (sp.main_hip · ancre:candidate · calibration) — choix : role_fit
+      2 × 5 · RIR 3 · repos 150 s
+  [strength · secondary]
+    ex.seated_cable_row  (sp.row · ancre:candidate · calibration) — choix : seed_tiebreak
+      2 × 6–10 · RIR 3 · repos 105 s
+      1 × 6–10 · RIR 2 · repos 105 s
+  [accessory · support]
+    ex.cable_pallof_press  (sp.trunk · calibration) — choix : load_adequacy
+      2 × 10–15 · RIR 3 · repos 60 s
+    ex.farmers_carry  (sp.carry) — 2 × 30 m · repos 60 s
+  [cooldown · support]
+    ex.lower_mobility_flow  (mobility) — mobilité 3 min
+  Durée estimée (p50) : 28 min

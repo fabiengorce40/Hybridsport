@@ -1,0 +1,23 @@
+# Débutant, 3 séances / semaine, 45 min, haltères + banc, objectif général
+résultat : ok · validation : VALID · durée : FITS
+  [warmup · support]
+    ex.lower_mobility_flow  (mobility) — mobilité 5 min
+  [strength · primary]
+    ex.goblet_squat  (fb.main_knee · ancre:candidate · calibration) — choix : role_fit
+      2 × 6 · RIR 4 · repos 120 s
+  [strength · secondary]
+    ex.db_bench_press  (fb.push_h · ancre:candidate · calibration) — choix : goal_relevance
+      2 × 8 · RIR 4 · repos 105 s
+    ex.db_row  (fb.pull_h · ancre:candidate · calibration) — choix : only_candidate
+      2 × 8 · RIR 4 · repos 105 s
+  [accessory · support]
+    ex.bulgarian_split_squat  (fb.single_leg · calibration) — choix : variant
+      2 × 8–12 · RIR 4 · repos 75 s
+    ex.db_curl  (fb.iso_upper · calibration) — choix : seed_tiebreak
+      2 × 12–15 · RIR 4 · repos 60 s
+    ex.db_calf_raise  (fb.iso_lower · calibration) — choix : only_candidate
+      2 × 12–15 · RIR 4 · repos 60 s
+    ex.plank  (fb.trunk) — 2 × 30 s tenue · repos 60 s
+  [cooldown · support]
+    ex.lower_mobility_flow  (mobility) — mobilité 3 min
+  Durée estimée (p50) : 39 min

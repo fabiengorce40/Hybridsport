@@ -1,0 +1,198 @@
+/**
+ * Prescription de charge (spec strength 04 §10, addendum V1.1 §7). L'e1RM est une ESTIMATION avec une
+ * confiance, jamais une vérité : aucun 1RM inventé, aucune conversion de charge entre machines ni vers
+ * la barre, aucune précision supérieure aux données. Sans référence fiable : prescription autorégulée
+ * prudente (calibration) dont les valeurs sont des paramètres G2.
+ */
+import type { Exercise, ReasonCode, SetIntensity } from '@hybridsport/domain';
+import type { Env } from './model.js';
+import { strengthReasons } from './codes.js';
+import { daysBetween, median, roundDownToStep } from './util.js';
+
+export const CONFIDENCES = ['none', 'low', 'medium', 'high'] as const;
+export type Confidence = (typeof CONFIDENCES)[number];
+const notch = (c: Confidence, d: number): Confidence => CONFIDENCES[Math.max(0, Math.min(CONFIDENCES.length - 1, CONFIDENCES.indexOf(c) + d))] ?? 'none';
+
+export interface LoadKnowledge {
+  readonly confidence: Confidence;
+  /** e1RM lissé (kg), seulement si une estimation est possible. */
+  readonly e1rmKg?: number;
+  /** Dernière charge de travail réellement réalisée sur CET exercice (double progression). */
+  readonly lastLoadKg?: number;
+  readonly lastReps?: number;
+  readonly source: 'measured' | 'declared' | 'transferred' | 'none';
+  readonly reasons: readonly ReasonCode[];
+}
+
+/** Pas réalisable (kg) : incrément déclaré pour le matériel de l'exercice, sinon incrément par défaut du modèle de charge. */
+export function loadStep(e: Exercise, env: Env): { stepKg: number; maxKg?: number } | undefined {
+  const declared = env.input.discipline.equipmentIncrements ?? {};
+  for (const q of [...e.equipment.allOf, ...e.equipment.anyOf].sort()) {
+    const d = declared[q];
+    if (d && env.equipment.has(q)) return { stepKg: d.stepKg, ...(d.maxKg !== undefined ? { maxKg: d.maxKg } : {}) };
+  }
+  if (!e.loadModel) return undefined;
+  const def = env.params['strength.load.defaultIncrements'][e.loadModel];
+  return def === undefined ? undefined : { stepKg: def };
+}
+
+function e1rm(loadKg: number, repsToFailure: number, env: Env): number | undefined {
+  const p = env.params['strength.load'];
+  if (repsToFailure < p.validRepRange.min || repsToFailure > p.validRepRange.max) return undefined;
+  return loadKg * (1 + repsToFailure / p.e1rmDivisor);
+}
+
+/** Fraction de l'e1RM pour (reps + RIR) = reps jusqu'à l'échec, lue dans la table du ruleset. */
+export function pctFor(reps: number, rir: number, env: Env): number | undefined {
+  const rtf = Math.round(reps + rir);
+  return env.params['strength.load'].pctByRepsToFailure[String(rtf)];
+}
+
+function ageConfidence(base: Confidence, asOf: string, env: Env): Confidence {
+  const w = env.params['strength.load'].referenceWindowsDays;
+  const days = daysBetween(asOf, env.input.context.now);
+  if (days > w.low) return 'none';
+  if (days > w.medium) return notch(base, -1 - 1);
+  if (days > w.high) return notch(base, -1);
+  return base;
+}
+
+/** Références propres à l'exercice (mesurées d'abord, déclarées ensuite), sans aucun transfert. */
+function ownKnowledge(e: Exercise, env: Env): Omit<LoadKnowledge, 'reasons'> & { conflict: boolean } {
+  const ctx = env.input.discipline;
+  const p = env.params['strength.load'];
+  const exposures = ctx.recentExposures.filter((x) => x.exerciseId === e.id).sort((a, b) => (a.at < b.at ? 1 : -1));
+  const measured: { value: number; withRir: boolean; at: string }[] = [];
+  for (const x of exposures) for (const s of x.sets) {
+    if (s.loadKg === undefined || s.loadKg <= 0 || s.reps <= 0) continue;
+    const v = e1rm(s.loadKg, s.reps + (s.rir ?? p.assumedRirWhenUnknown), env);
+    if (v !== undefined) measured.push({ value: v, withRir: s.rir !== undefined, at: x.at });
+  }
+  const last = exposures.find((x) => x.sets.some((s) => s.loadKg !== undefined && s.loadKg > 0));
+  const lastSet = last?.sets.filter((s) => s.loadKg !== undefined && s.loadKg > 0).at(-1);
+  const lastPart = lastSet?.loadKg !== undefined ? { lastLoadKg: lastSet.loadKg, lastReps: lastSet.reps } : {};
+  const caps = ctx.capacities.filter((c) => c.exerciseId === e.id && (c.contextKey === undefined || c.contextKey === ctx.currentContextKey));
+  const declaredValues = caps.map((c) => ({ c, v: c.e1rmKg ?? (c.loadKg !== undefined && c.reps !== undefined ? e1rm(c.loadKg, c.reps + (c.rir ?? p.assumedRirWhenUnknown), env) : undefined) }))
+    .filter((x): x is { c: (typeof caps)[number]; v: number } => x.v !== undefined);
+
+  if (measured.length > 0) {
+    const recent = measured.slice(0, p.smoothingWindow);
+    const value = median(recent.map((m) => m.value)) ?? 0;
+    let conf: Confidence = recent.some((m) => m.withRir) ? 'high' : 'medium';
+    conf = ageConfidence(conf, recent[0]?.at ?? env.input.context.now, env);
+    const conflict = declaredValues.some((d) => Math.abs(d.v - value) / value > p.conflictTolerance);
+    if (conflict) conf = notch(conf, -1);
+    return { confidence: conf, e1rmKg: value, source: 'measured', conflict, ...lastPart };
+  }
+  if (declaredValues.length > 0) {
+    const best = [...declaredValues].sort((a, b) => (a.c.asOf < b.c.asOf ? 1 : -1))[0];
+    if (best) {
+      const base: Confidence = best.c.source === 'app_sets_with_rir' ? 'high' : best.c.source === 'declared_1rm' || best.c.source === 'app_sets_without_rir' ? 'medium' : 'low';
+      const vals = declaredValues.map((d) => d.v);
+      const conflict = vals.some((v) => Math.abs(v - best.v) / best.v > p.conflictTolerance);
+      const conf = notch(ageConfidence(base, best.c.asOf, env), conflict ? -1 : 0);
+      return { confidence: conf, e1rmKg: best.v, source: 'declared', conflict, ...lastPart };
+    }
+  }
+  return { confidence: 'none', source: 'none', conflict: false, ...lastPart };
+}
+
+/**
+ * Connaissance de la charge : références propres, sinon transfert LIMITÉ à la classe d'équivalence et aux
+ * modèles de charge transférables (jamais une machine), avec un déclassement paramétré (D-S5).
+ */
+export function loadKnowledge(e: Exercise, env: Env): LoadKnowledge {
+  const reasons: ReasonCode[] = [];
+  const own = ownKnowledge(e, env);
+  if (own.conflict) reasons.push(strengthReasons.emit('STATE.REFERENCE_CONFLICT', { exerciseId: e.id }));
+  if (own.confidence !== 'none' || own.lastLoadKg !== undefined) return { ...stripConflict(own), reasons };
+  const p = env.params['strength.load'];
+  const transferable = (x: Exercise) => x.loadModel !== undefined && p.transferableLoadModels.includes(x.loadModel);
+  if (transferable(e)) {
+    const peers = env.catalog.exercises().filter((x) => x.id !== e.id && x.equivalenceClass === e.equivalenceClass && transferable(x)).sort((a, b) => (a.id < b.id ? -1 : 1));
+    for (const peer of peers) {
+      const k = ownKnowledge(peer, env);
+      if (k.e1rmKg !== undefined && k.confidence !== 'none') {
+        return { confidence: notch(k.confidence, -p.equivalenceTransferPenalty), e1rmKg: k.e1rmKg, source: 'transferred', reasons };
+      }
+    }
+  }
+  return { confidence: 'none', source: 'none', reasons };
+}
+
+function stripConflict(k: Omit<LoadKnowledge, 'reasons'> & { conflict: boolean }): Omit<LoadKnowledge, 'reasons'> {
+  const { conflict: _c, ...rest } = k;
+  return rest;
+}
+
+export interface LoadDecision {
+  readonly intensity: SetIntensity;
+  readonly source: 'track' | 'base_profile' | 'calibration' | 'history';
+  /** Charge de travail en kg (connue ou suggérée), pour la montée en charge et les marqueurs. */
+  readonly workingKg?: number;
+  readonly knowledge: 'known' | 'estimated' | 'effort' | 'unknown';
+  readonly reasons: readonly ReasonCode[];
+  /** Plafond matériel atteint : la variable progressée devient les répétitions. */
+  readonly capped: boolean;
+}
+
+/**
+ * Mode de prescription selon la confiance (spec 04 §10.2) : high ⇒ charge (ou % d'e1RM si la table le
+ * permet) ; medium ⇒ charge suggérée + effort ; low ⇒ effort + fourchette indicative ; none ⇒ effort
+ * seul (calibration). Poids du corps non lestable ⇒ `bodyweight`.
+ */
+export function decideLoad(e: Exercise, reps: number, rir: number, env: Env, fromTrackKg?: number, allowPercent = true, trackE1rmKg?: number): LoadDecision {
+  const effort = { rir };
+  if (!e.loadable || !e.loadModel) {
+    return { intensity: { mode: 'bodyweight', effort }, source: 'base_profile', knowledge: 'known', reasons: [], capped: false };
+  }
+  const step = loadStep(e, env);
+  const own = loadKnowledge(e, env);
+  // e1RM LISSÉ de la track (modèle autorégulé, propriété du ProgressionEngine) : il fait foi sur la dernière
+  // exposition brute ; la confiance reste celle des données (jamais relevée au-delà de ce qu'elles montrent).
+  const k: LoadKnowledge = trackE1rmKg !== undefined && own.confidence !== 'none' ? { ...own, e1rmKg: trackE1rmKg } : own;
+  const reasons: ReasonCode[] = [...k.reasons];
+  const round = (kg: number): number | undefined => (step ? Math.max(step.stepKg, roundDownToStep(kg, step.stepKg)) : undefined);
+  const cap = (kg: number): { kg: number; capped: boolean } => (step?.maxKg !== undefined && kg > step.maxKg ? { kg: step.maxKg, capped: true } : { kg, capped: false });
+
+  // Prescription de la track (ProgressionEngine) : elle fait foi si elle porte une charge.
+  if (fromTrackKg !== undefined && step) {
+    const c = cap(fromTrackKg);
+    if (c.capped) reasons.push(strengthReasons.emit('DOSE.LOAD.CAP_REACHED', { exerciseId: e.id, maxKg: c.kg }));
+    const kg = round(c.kg) ?? c.kg;
+    const certainty = k.confidence === 'high' ? 'prescribed' : 'suggested';
+    return { intensity: { mode: 'load', kg, certainty, effort }, source: 'track', workingKg: kg, knowledge: certainty === 'prescribed' ? 'known' : 'estimated', reasons, capped: c.capped };
+  }
+  const pct = pctFor(reps, rir, env);
+  // Le % d'e1RM n'est utilisé que sur un composé principal ou secondaire (jamais sur l'isolation ni un accessoire).
+  if (allowPercent && k.confidence === 'high' && k.e1rmKg !== undefined && pct !== undefined && step) {
+    const c = cap(k.e1rmKg * pct);
+    if (c.capped) reasons.push(strengthReasons.emit('DOSE.LOAD.CAP_REACHED', { exerciseId: e.id, maxKg: c.kg }));
+    const kg = round(c.kg) ?? c.kg;
+    reasons.push(strengthReasons.emit('DOSE.LOAD.FROM_E1RM', { exerciseId: e.id, fraction: pct, confidence: k.confidence }));
+    return { intensity: { mode: 'percent_of_reference', fraction: pct, reference: 'e1rm', kgRounded: kg, effort }, source: 'base_profile', workingKg: kg, knowledge: 'known', reasons, capped: c.capped };
+  }
+  if ((k.confidence === 'high' || k.confidence === 'medium') && step && (k.e1rmKg !== undefined || k.lastLoadKg !== undefined)) {
+    // Accessoire / isolation (double progression) : dernière charge réellement réalisée sur CET exercice.
+    const raw = !allowPercent && k.lastLoadKg !== undefined ? k.lastLoadKg : k.e1rmKg !== undefined && pct !== undefined ? k.e1rmKg * pct : k.lastLoadKg ?? 0;
+    const c = cap(raw);
+    const kg = round(c.kg) ?? c.kg;
+    reasons.push(strengthReasons.emit('DOSE.LOAD.FROM_HISTORY', { exerciseId: e.id, confidence: k.confidence }));
+    const certainty = k.confidence === 'high' ? 'prescribed' : 'suggested';
+    return { intensity: { mode: 'load', kg, certainty, effort }, source: 'history', workingKg: kg, knowledge: certainty === 'prescribed' ? 'known' : 'estimated', reasons, capped: c.capped };
+  }
+  if (k.confidence === 'low' && step && (k.e1rmKg !== undefined || k.lastLoadKg !== undefined)) {
+    const raw = k.e1rmKg !== undefined && pct !== undefined ? k.e1rmKg * pct : k.lastLoadKg ?? 0;
+    const spread = env.params['strength.load'].indicativeSpread;
+    const lo = round(raw * (1 - spread));
+    const hi = round(raw * (1 + spread));
+    reasons.push(strengthReasons.emit('DOSE.LOAD.RPE_BASED_LOW_CONFIDENCE', { exerciseId: e.id }));
+    const indicative = lo !== undefined && hi !== undefined && lo <= hi ? { indicativeKg: { min: lo, max: hi } } : {};
+    return { intensity: { mode: 'effort', effort, ...indicative }, source: 'history', knowledge: 'effort', reasons, capped: false };
+  }
+  // Aucune référence fiable : calibration (valeurs G2 : cible d'effort et nombre de séries, voir dose).
+  reasons.push(strengthReasons.emit('DOSE.LOAD.CALIBRATION', { exerciseId: e.id }));
+  // Poids du corps lestable sans référence : au poids du corps, à l'effort (aucun lest inventé).
+  if (e.loadModel === 'bodyweight_plus') return { intensity: { mode: 'bodyweight', effort }, source: 'calibration', knowledge: 'unknown', reasons, capped: false };
+  return { intensity: { mode: 'effort', effort }, source: 'calibration', knowledge: 'unknown', reasons, capped: false };
+}

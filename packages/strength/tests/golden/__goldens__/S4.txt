@@ -1,0 +1,20 @@
+# Intermédiaire, 2 musculation + HYROX : soutien HYROX, séance sled/farmers (grip élevé) 18 h après
+résultat : ok · validation : VALID · durée : SHORTER_ACCEPTED
+  [warmup · support]
+    ex.hip_mobility_flow  (mobility) — mobilité 5 min
+  [strength · primary]
+    ex.walking_lunge_db  (sp.main_single · ancre:candidate · calibration) — choix : seed_tiebreak
+      2 × 5 · RIR 3 · repos 150 s
+  [strength · secondary]
+    ex.db_row  (sp.row · ancre:candidate · calibration) — choix : fatigue_fit
+      2 × 6–10 · RIR 3 · repos 105 s
+      1 × 6–10 · RIR 2 · repos 105 s
+  [accessory · support]
+    ex.db_calf_raise  (sp.iso_lower · calibration) — choix : seed_tiebreak
+      2 × 10–15 · RIR 3 · repos 60 s
+    ex.cable_pallof_press  (sp.trunk · calibration) — choix : load_adequacy
+      2 × 10–15 · RIR 3 · repos 60 s
+    ex.sandbag_lunge  (sp.single_leg) — 2 × 30 m · repos 60 s
+  [cooldown · support]
+    ex.hip_mobility_flow  (mobility) — mobilité 3 min
+  Durée estimée (p50) : 34 min

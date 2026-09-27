@@ -1,0 +1,15 @@
+# 30 minutes seulement, salle complète, intermédiaire, objectif général
+résultat : ok · validation : VALID · durée : FITS
+  [warmup · support]
+    ex.lower_mobility_flow  (mobility) — mobilité 3 min
+  [strength · primary]
+    ex.back_squat  (fb.main_knee · ancre:candidate · calibration) — choix : goal_relevance
+      montée : 8 @ RPE 3 → 5 @ RPE 5 → 3 @ RPE 7
+      2 × 6 · RIR 3 · repos 90 s
+      1 × 6 · RIR 2 · repos 90 s
+  [strength · secondary]
+    ex.machine_chest_press  (fb.push_h · ancre:candidate · calibration) — choix : logistics
+      2 × 8–12 · RIR 3 · repos 90 s
+    ex.seated_cable_row  (fb.pull_h · ancre:candidate · calibration) — choix : seed_tiebreak
+      2 × 8–12 · RIR 3 · repos 90 s
+  Durée estimée (p50) : 23 min
