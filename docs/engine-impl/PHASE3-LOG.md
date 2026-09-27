@@ -154,3 +154,19 @@ Résultats :
 - STRENGTH_SCIENCE_INTEGRATION_GATE = PASS ; STRENGTH_SCIENTIFIC_V1_GATE = PASS_PROVISIONAL ;
 - 560 tests verts (CORE 370, strength 190) ; aucune modification du CORE ;
 - aucune valeur existante modifiée ; goldens 0.2.0 inchangés ; ruleset candidat `0.3.0-strength-science-candidate`.
+
+## Phase 4F — STRENGTH SCIENTIFIC LOCK & G1 HANDOFF
+
+Rapport : [`STRENGTH-4F-IMPLEMENTATION-REPORT.md`](STRENGTH-4F-IMPLEMENTATION-REPORT.md). Documents :
+
+- [diff 0.2.0 → 4E → 4F](STRENGTH-4F-BASELINE-DIFF.md) ;
+- [dossier G1](STRENGTH-G1-REVIEW-PACK.md) ;
+- [RFC CORE-EXT-5](CORE-EXT-5-RIR-RANGE-RFC.md) ;
+- [préservation du stimulus](STRENGTH-STIMULUS-PRESERVATION-V1.md) ;
+- registre, ruleset, interférence et confiance régénérés.
+
+Résultats :
+
+- STRENGTH_4F_CORRECTION_GATE = PASS ; STRENGTH_SCIENTIFIC_LOCK_V1 = LOCKED_PROVISIONAL ;
+- 590 tests verts (CORE 370, strength 220) ; aucune modification du CORE ;
+- ruleset `0.4.0-strength-science-lock` ; 0.2.0 et 4E reproductibles ; RunningEngine non commencé.
