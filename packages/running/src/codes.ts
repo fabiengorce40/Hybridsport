@@ -73,6 +73,14 @@ export const RUNNING_CODES = {
   TEST_PROTOCOL_APPLIED: 'DOSE.RUNNING.TEST_PROTOCOL_APPLIED',
   TEST_REFUSED: 'DOSE.RUNNING.TEST_REFUSED',
   PACE_TARGET_APPLIED: 'DOSE.RUNNING.PACE_TARGET_APPLIED',
+  // Vague R5b : composition hebdomadaire (§R) et séances manquées (§W)
+  WEEK_MAINTENANCE_MODE: 'PLAN.RUNNING.WEEK_MAINTENANCE_MODE',
+  WEEK_SLOT_SELECTED: 'PLAN.RUNNING.WEEK_SLOT_SELECTED',
+  WEEK_LONG_NOT_PLACED: 'PLAN.RUNNING.WEEK_LONG_NOT_PLACED',
+  WEEK_TEST_REPLACES_KEY: 'PLAN.RUNNING.WEEK_TEST_REPLACES_KEY',
+  WEEK_KEY_FALLBACK: 'PLAN.RUNNING.WEEK_KEY_FALLBACK',
+  WEEK_MISSED_DECISION: 'PLAN.RUNNING.WEEK_MISSED_DECISION',
+  WEEK_REPLANNED: 'PLAN.RUNNING.WEEK_REPLANNED',
 } as const;
 export type RunningCode = (typeof RUNNING_CODES)[keyof typeof RUNNING_CODES];
 
@@ -128,6 +136,13 @@ export const RUNNING_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: RUNNING_CODES.TEST_PROTOCOL_APPLIED, categories: ['information'], params: { distanceM: N, parameterId: S, observedSessionIds: L }, audience: 'user', severity: 'notice' },
   { code: RUNNING_CODES.TEST_REFUSED, categories: ['feasibility'], params: { parameterId: S, cause: S }, audience: 'user', severity: 'error' },
   { code: RUNNING_CODES.PACE_TARGET_APPLIED, categories: ['information'], params: { archetype: S, referenceId: S, confidence: S, parameterId: S }, audience: 'user', severity: 'info' },
+  { code: RUNNING_CODES.WEEK_MAINTENANCE_MODE, categories: ['adaptation'], params: { sessions: N, cause: S }, audience: 'user', severity: 'notice' },
+  { code: RUNNING_CODES.WEEK_SLOT_SELECTED, categories: ['information'], params: { archetype: S, role: S, date: S }, audience: 'internal', severity: 'info' },
+  { code: RUNNING_CODES.WEEK_LONG_NOT_PLACED, categories: ['adaptation'], params: { cause: S }, audience: 'user', severity: 'notice' },
+  { code: RUNNING_CODES.WEEK_TEST_REPLACES_KEY, categories: ['adaptation'], params: { cause: S }, audience: 'user', severity: 'notice' },
+  { code: RUNNING_CODES.WEEK_KEY_FALLBACK, categories: ['adaptation'], params: { archetype: S, cause: S }, audience: 'internal', severity: 'info' },
+  { code: RUNNING_CODES.WEEK_MISSED_DECISION, categories: ['adaptation'], params: { archetype: S, date: S, decision: S, code: S, to: S }, audience: 'user', severity: 'notice' },
+  { code: RUNNING_CODES.WEEK_REPLANNED, categories: ['adaptation'], params: { missed: N, progression: S }, audience: 'user', severity: 'notice' },
   { code: RUNNING_CODES.HIGH_DEMAND_DEFAULT_CONSERVATIVE, categories: ['information'], params: { archetype: S, parameterId: S }, audience: 'internal', severity: 'notice' },
 ];
 

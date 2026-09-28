@@ -26,3 +26,5 @@ export * from './wave3/first-exposure.js';
 export * from './wave3/pace.js';
 export * from './wave3/test.js';
 export * from './wave3/progression.js';
+export * from './week/compose.js';
+export * from './week/missed.js';

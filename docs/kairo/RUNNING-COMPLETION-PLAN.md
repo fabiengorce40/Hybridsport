@@ -152,3 +152,19 @@ Ces décisions du propriétaire du produit sont importées au registre comme val
   - conflit entre performances ⇒ confiance LOW ⇒ effort seul (jamais une moyenne) ;
   - HILLS : jamais d'allure (§N) ; THRESHOLD : effort seul (V05 absent du registre, V04 ambigu) ; EASY / LONG : jamais (V40).
 - Tests : `tests/integration/r5-test-pace.test.ts` (frontières 56 / 57 jours, 3 000 / 5 000 / 2 999 / 5 001 m, 4 500 / 4 499 s, confiance, CORE, déterminisme).
+
+### R5b — composition hebdomadaire (§R) et séances manquées (§W)
+
+- `week/compose.ts` : sur les jours attribués à la course, choix de l'archétype de chaque séance. Aucune dose : la faisabilité vient d'une **sonde** (le moteur réel), dont les refus sont les seuls critères de repli.
+  - fréquence < V26 ⇒ mode MAINTIEN (EASY seulement) ;
+  - V10 (fenêtre glissante, par niveau) et V11 (jamais deux jours consécutifs) comptent le réalisé, le planifié et les séances verrouillées ;
+  - LONG d'abord si l'objectif est un semi ou un marathon et la fréquence ≥ 3 ; pour le marathon, la sortie longue **est** la KEY ;
+  - KEY selon la table §R par objectif (phase non gouvernée en V0 ⇒ ligne de l'objectif ; STEADY absent de V1) ; course générale ⇒ EASY (première préférence) ;
+  - le TEST **remplace** la KEY si les références sont en conflit (§F), ou si la première exposition exige un test récent (D2) ;
+  - complément EASY ; départage : temps disponible décroissant, puis date.
+- `week/missed.ts` (§W) :
+  - EASY ⇒ DROP ;
+  - KEY, LONG ou TEST ⇒ MOVE vers le premier jour libre conforme (V10, V11, accord du moteur), au plus tôt le surlendemain (zone gelée), sinon DROP ;
+  - plusieurs séances manquées ⇒ semaine replanifiée, progression en HOLD ;
+  - « EASY allongée » à la place d'une LONG : **non appliquée** (aucune bande habituelle gouvernée).
+- Tests : `tests/integration/r5-week.test.ts` (sonde = moteur réel ; CORE ; déterminisme).
