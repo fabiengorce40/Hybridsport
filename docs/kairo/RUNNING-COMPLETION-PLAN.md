@@ -96,3 +96,20 @@ Options reprises du dossier `RUNNING-5E-EXPERT-DECISION-PACK.md`. Rien n'est dé
   - temps dépassé ;
   - PRODUCTION.
 - **EASY inchangé.**
+
+## 5. Décisions produit du 2026-09-28
+
+Ces décisions du propriétaire du produit sont importées au registre comme valeurs **candidates** (maturité `EXPERT_PROPOSED`, provenance « décision produit »). Elles ne sont utilisées qu'en simulation ; la production exige toujours les signatures expertes et G1.
+
+| Id | Décision | Paramètre |
+|---|---|---|
+| D1 | **Pas minimal (E-PROG C)** : +1 min pour les variables de durée (EASY, LONG, travail continu) ; +1 répétition pour le fractionné ; après **2 séances consécutives tolérées** du même type (terminées, sans retour négatif) ; une seule variable à la fois (§T) | V23 `running.progression.magnitude` |
+| D2 | **Première exposition après un TEST (E-FIRST B)**. Le test (§Q) : contre-la-montre de **5 km**, ou **10 km** pour un objectif 10K. Il fournit la référence d'allure. La première structure de travail est une **structure minimale fixée** par type et par niveau : **valeurs attendues du propriétaire du produit** ; tant qu'elles manquent, la première exposition reste bloquée | V35–V37, protocole TEST |
+| D3 | **LONG = dernière sortie longue réalisée (V19), sans maximum produit (E-LONG A)** ; progression par D1 | V19 (LONG), V32 |
+| D5 | **Séance interrompue** : repli sur la **dernière dose réussie** avant l'interruption (jamais supérieure), tracé | V19 (règle après retour négatif) |
+| D6 | Non tranché : le code suit le registre V02 | — |
+
+**Valeurs attendues (D2)** : pour THRESHOLD, SEVERE, SHORT_INTERVAL et HILLS, et pour chaque niveau P-R2, P-R3 et P-R4, fournir :
+- le nombre de répétitions × la durée de travail ;
+- la récupération (durée et mode) ;
+- l'échauffement et le retour au calme.
