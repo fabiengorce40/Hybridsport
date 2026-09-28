@@ -78,6 +78,7 @@ describe('reprise (§X, §Q)', () => {
       expect(x.parameterIds).toEqual([RESUME]);
       const lifted = guard(a, ret('MODERATE', clean2));
       expect(lifted.ok).toBe(true);
+      expect(lifted.reasons.map((x) => x.params.parameterId)).toEqual([RESUME, V10, V11]);
       expect(lifted.parameterIds).toEqual([RESUME, V10, V11]);
     }
   });

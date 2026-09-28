@@ -40,6 +40,8 @@ describe('severePace', () => {
     expect(pace({ enabled: false })).toMatchObject({ status: 'effort', causes: ['PACE_TARGETS_DISABLED'] });
     expect(pace({ wearable: false })).toMatchObject({ status: 'effort', causes: ['NO_WEARABLE'] });
     expect(causes(pace({ enabled: false, wearable: false }))).toEqual(['PACE_TARGETS_DISABLED', 'NO_WEARABLE']);
+    // Les raisons des paramètres lus restent tracées, même quand l'allure est refusée.
+    expect(pace({ enabled: false }).reasons.map((x) => x.params.parameterId)).toEqual(['running.severe.paceAnchor', 'running.target.paceRangeWidthByConfidence']);
   });
 
   it('V18 absent ou illisible ⇒ ANCHOR_UNRESOLVED (causes cumulées)', () => {
@@ -111,6 +113,8 @@ describe('testSession', () => {
     expect(cause(t([run('m', 4)], { returnState: { state: 'SHORT', postReturnSessions: 1 }, ...since }))).toBe('APPLIED');
     expect(cause(t([run('m', 5)], { returnState: { state: 'SHORT', postReturnSessions: 1 }, ...since }))).toBe('OBSERVED_PACE_UNAVAILABLE');
     expect(cause(t([run('m', 5)], since))).toBe('APPLIED');
+    // Reprise déclarée sans date de début : aucune exclusion (et jamais d'erreur).
+    expect(cause(t([run('m', 5)], { returnState: { state: 'SHORT', postReturnSessions: 1 } }))).toBe('APPLIED');
   });
 });
 

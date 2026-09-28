@@ -76,6 +76,16 @@ describe('tolérance démontrée (N séances consécutives à la dose ancrée)',
     expect(cause(progressionStep(input([s('a', 6, o), s('b', 3)])))).toBe('TOLERANCE_NOT_DEMONSTRATED');
   });
 
+  it('réalisation inconnue ou annulée (même pour manque de temps) : jamais tolérée', () => {
+    expect(cause(progressionStep(input([s('a', 6, { completion: 'UNKNOWN' }), s('b', 3)])))).toBe('TOLERANCE_NOT_DEMONSTRATED');
+    expect(cause(progressionStep(input([s('a', 6, { completion: 'SKIPPED', skipReason: 'TIME' }), s('b', 3)])))).toBe('TOLERANCE_NOT_DEMONSTRATED');
+  });
+
+  it('seules les N dernières comptent : une séance non tolérée plus ancienne n’empêche pas le pas ; autre famille ignorée', () => {
+    expect(cause(progressionStep(input([s('z', 9, { completion: 'PARTIAL' }), ...OK])))).toBe('STEP');
+    expect(cause(progressionStep(input([s('a', 6), s('x', 4, { structureFamily: 'INTERVALS', unexpectedDifficulty: 'MUCH_HARDER' }), s('b', 3)])))).toBe('STEP');
+  });
+
   it('EASIER est toléré', () => {
     expect(cause(progressionStep(input([s('a', 6, { unexpectedDifficulty: 'EASIER' }), s('b', 3, { unexpectedDifficulty: 'EASIER' })])))).toBe('STEP');
   });
