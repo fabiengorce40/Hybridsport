@@ -116,7 +116,9 @@ export function historyAnchor(q: AnchorQuery): HistoryAnchor {
   const later = sameKind.filter((s) => at(s) > latest);
   if (later.some(sessionNegativeResponse)) return unavailable('LATER_NEGATIVE_RESPONSE');
   if (later.some((s) => s.completion === 'UNKNOWN')) return unavailable('LATER_SESSION_UNKNOWN');
-  const session = [...tied].sort((a, b) => (a.sessionId < b.sessionId ? -1 : a.sessionId > b.sessionId ? 1 : 0))[0] ?? first;
+  // Identifiant le plus petit ; à identifiant égal (données dupliquées), ordre total sur l'enregistrement : indépendant de l'ordre d'entrée.
+  const cmp = (x: string, y: string): number => (x < y ? -1 : x > y ? 1 : 0);
+  const session = [...tied].sort((a, b) => cmp(a.sessionId, b.sessionId) || cmp(JSON.stringify(a), JSON.stringify(b)))[0] ?? first;
   const feedbackKnown = session.unexpectedDifficulty !== 'UNKNOWN';
   reasons.push(runningReasons.emit(RUNNING_CODES.DOSE_ANCHOR_SELECTED, { archetype: q.archetype, sessionId: session.sessionId, realizedDurationS: session.realizedDurationS, feedbackKnown }));
   return { status: 'anchored', session, feedbackKnown, parameterIds, reasons };

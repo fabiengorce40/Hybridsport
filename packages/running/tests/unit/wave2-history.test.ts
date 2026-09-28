@@ -28,6 +28,11 @@ describe('retour négatif (définition 5E, au niveau de la séance)', () => {
     [{ unexpectedDifficulty: 'UNKNOWN' }, false],
     [{ intoleranceOrPainSignal: true }, true],
     [{ readinessOrToleranceDegraded: true }, true],
+    [{ completion: 'SKIPPED', skipReason: 'EQUIPMENT' }, true],
+    [{ completion: 'SKIPPED', skipReason: 'FATIGUE' }, true],
+    [{ completion: 'SKIPPED', skipReason: 'OTHER' }, true],
+    [{ unexpectedDifficulty: 'EASIER' }, false],
+    [{ unexpectedDifficulty: 'AS_EXPECTED' }, false],
     [{}, false],
   ] as const)('%j ⇒ %s', (o, expected) => {
     expect(sessionNegativeResponse(session({ sessionId: 's', completedAt: daysAgo(1), ...o }))).toBe(expected);
@@ -69,6 +74,9 @@ describe('ancre V19 — gouvernance', () => {
     }
     const nonObject = withParameter(CURRENT_RUNNING_GOVERNANCE, 'running.dose.historyAnchorPolicy', (p): RunningParameter => ({ ...p, value: { status: 'candidate', value: 'LAST_REALIZED_DOSE' } })).parameters;
     expect(causeOf(historyAnchor(q([{ sessionId: 'h1', completedAt: daysAgo(3) }], { parameters: nonObject })))).toBe('POLICY_UNRESOLVED');
+    // 6C.2 (mutation L1) : une valeur JSON null est refusée, jamais déréférencée.
+    const nullValue = withParameter(CURRENT_RUNNING_GOVERNANCE, 'running.dose.historyAnchorPolicy', (p): RunningParameter => ({ ...p, value: { status: 'candidate', value: null } })).parameters;
+    expect(causeOf(historyAnchor(q([{ sessionId: 'h1', completedAt: daysAgo(3) }], { parameters: nullValue })))).toBe('POLICY_UNRESOLVED');
   });
 
   it('bande de récence V12 absente ou altérée ⇒ RECENCY_UNRESOLVED', () => {
@@ -141,6 +149,35 @@ describe('ancre V19 — sélection de la séance', () => {
     expect(doseOf(historyAnchor(q([{ sessionId: 'd0', completedAt: daysAgo(10) }], { returning: true, returnStartedAt: daysAgo(10) })))).toBe(2400);
     // Hors reprise, le début de reprise éventuel n'est pas appliqué.
     expect(doseOf(historyAnchor(q([history[0] as SessionIn], { returning: false, returnStartedAt: daysAgo(10) })))).toBe(4000);
+  });
+
+  it('séance terminée exactement à l’instant présent : non future, retenue (borne incluse)', () => {
+    expect(doseOf(historyAnchor(q([{ sessionId: 'now', completedAt: NOW, realizedDurationS: 2000 }])))).toBe(2000);
+  });
+
+  it('séances négatives ou inconnues ANTÉRIEURES ou SIMULTANÉES à l’ancre : ne bloquent pas (seules les plus récentes comptent)', () => {
+    const anchor = { sessionId: 'ok', completedAt: daysAgo(3), realizedDurationS: 2500 };
+    for (const o of [{ completion: 'PARTIAL' }, { completion: 'UNKNOWN' }, { unexpectedDifficulty: 'MUCH_HARDER' }, { intoleranceOrPainSignal: true }] as const) {
+      expect(doseOf(historyAnchor(q([{ sessionId: 'older', completedAt: daysAgo(9), ...o }, anchor]))), `antérieure ${JSON.stringify(o)}`).toBe(2500);
+      expect(doseOf(historyAnchor(q([{ sessionId: 'same', completedAt: daysAgo(3), ...o }, anchor]))), `simultanée ${JSON.stringify(o)}`).toBe(2500);
+    }
+  });
+
+  it('ancres simultanées de même dose : identifiant le plus petit pour TOUTE permutation', () => {
+    const t = daysAgo(3);
+    const ids = ['m', 'a', 'z'];
+    const perms = ids.flatMap((x) => ids.filter((y) => y !== x).flatMap((y) => ids.filter((z) => z !== x && z !== y).map((z) => [x, y, z])));
+    expect(perms).toHaveLength(6);
+    for (const p of perms) {
+      const a = historyAnchor(q(p.map((sessionId) => ({ sessionId, completedAt: t, unexpectedDifficulty: sessionId === 'a' ? 'AS_EXPECTED' : 'UNKNOWN' }))));
+      expect(a.status === 'anchored' && [a.session.sessionId, a.feedbackKnown], p.join()).toEqual(['a', true]);
+    }
+  });
+
+  it('identifiants de séance dupliqués (même instant, même dose, retours différents) : ancre indépendante de l’ordre', () => {
+    const t = daysAgo(3);
+    const h = [{ sessionId: 'dup', completedAt: t, unexpectedDifficulty: 'AS_EXPECTED' }, { sessionId: 'dup', completedAt: t, unexpectedDifficulty: 'UNKNOWN' }] as const;
+    expect(historyAnchor(q([...h]))).toEqual(historyAnchor(q([...h].reverse())));
   });
 
   it('l’ordre de l’historique ne change pas l’ancre (déterminisme)', () => {
