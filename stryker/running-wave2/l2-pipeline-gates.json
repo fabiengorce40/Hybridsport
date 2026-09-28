@@ -1,0 +1,35 @@
+{
+  "$schema": "../../node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "testRunner": "command",
+  "checkers": [],
+  "mutate": [
+    "packages/running/src/wave2/pipeline.ts"
+  ],
+  "reporters": [
+    "clear-text",
+    "json"
+  ],
+  "thresholds": {
+    "high": 90,
+    "low": 75,
+    "break": null
+  },
+  "tempDirName": ".stryker-tmp-run-w2-l2",
+  "timeoutMS": 10000,
+  "timeoutFactor": 1.5,
+  "concurrency": 1,
+  "plugins": [],
+  "commandRunner": {
+    "command": "sh -c 'd=$(mktemp -d -p \"$PWD\" .vt.XXXX); TMPDIR=$d NODE_OPTIONS=--max-old-space-size=1024 timeout -k 2 60 pnpm exec vitest run --config vitest.mutation.running.config.ts --reporter=dot; s=$?; rm -rf \"$d\"; exit $s'"
+  },
+  "coverageAnalysis": "off",
+  "jsonReporter": {
+    "fileName": "reports/mutation/running-wave2-l2-pipeline-gates.json"
+  },
+  "ignorePatterns": [
+    "reports/**",
+    "docs/**",
+    ".stryker-tmp*/**"
+  ]
+}
