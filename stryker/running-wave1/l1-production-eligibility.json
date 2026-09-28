@@ -1,0 +1,30 @@
+{
+  "$schema": "../../node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "testRunner": "command",
+  "checkers": [],
+  "mutate": [
+    "packages/running/src/eligibility.ts"
+  ],
+  "reporters": [
+    "clear-text",
+    "json"
+  ],
+  "thresholds": {
+    "high": 90,
+    "low": 75,
+    "break": null
+  },
+  "tempDirName": ".stryker-tmp-run-l1",
+  "timeoutMS": 10000,
+  "timeoutFactor": 1.5,
+  "concurrency": 3,
+  "plugins": [],
+  "commandRunner": {
+    "command": "NODE_OPTIONS=--max-old-space-size=1024 timeout -k 2 60 pnpm exec vitest run --config vitest.mutation.running.config.ts --reporter=dot"
+  },
+  "coverageAnalysis": "off",
+  "jsonReporter": {
+    "fileName": "reports/mutation/running-wave1-l1-production-eligibility.json"
+  }
+}
