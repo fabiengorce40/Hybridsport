@@ -152,6 +152,8 @@ describe('variabilité — durcissement (lot 7c)', () => {
 
   it('performances comparables : courses ET contre-la-montre à la même distance seulement ; nombre minimal > 1', () => {
     const refs = [race('a', 3000), race('b', 3060, 'TIME_TRIAL'), race('c', 2940), race('x', 1200, 'RACE_RESULT', 5000), ref({ referenceId: 'd', type: 'USER_DECLARED', values: { paceSecPerKm: 280 } })];
+    const withCalibration = [...refs.slice(0, 2), ref({ referenceId: 'cal', type: 'CALIBRATION_RESULT', values: { distanceM: 10000, durationS: 3300 } })];
+    expect(estimateVariability({ references: withCalibration, distanceM: 10000, governance: personal(3), mode: 'PRODUCTION' }).kind).toBe('UNKNOWN');
     const e = estimateVariability({ references: refs, distanceM: 10000, governance: personal(3), mode: 'PRODUCTION' });
     expect(e).toMatchObject({ kind: 'PERSONAL', sampleSize: 3, distanceM: 10000, provenance: 'personal-repeated-performances' });
     expect(estimateVariability({ references: refs, distanceM: 10000, governance: personal(4), mode: 'PRODUCTION' }).kind).toBe('UNKNOWN');
@@ -172,6 +174,11 @@ describe('variabilité — durcissement (lot 7c)', () => {
     expect(estimateVariability({ references: [race('a', 3000)], distanceM: 10000, priorKey: 'UNKNOWN_KEY', governance: noPersonal, mode: 'PRODUCTION' }).reasons.at(-1)?.params).toEqual({ cause: 'PERSONAL_OR_PRIOR_UNAVAILABLE' });
     const malformed = withParameter(noPersonal, 'running.reference.performanceVariabilityEstimate', (p) => ({ ...p, value: { status: 'candidate', value: { prior: { HALF_MARATHON: { min: 'x', max: 0.04 } } } } }));
     expect(estimateVariability({ references: [], distanceM: 21097.5, priorKey: 'HALF_MARATHON', governance: malformed, mode: 'PRODUCTION' }).kind).toBe('UNKNOWN');
+    const malformedMax = withParameter(noPersonal, 'running.reference.performanceVariabilityEstimate', (p) => ({ ...p, value: { status: 'candidate', value: { prior: { HALF_MARATHON: { min: 0.02, max: 'x' } } } } }));
+    expect(estimateVariability({ references: [], distanceM: 21097.5, priorKey: 'HALF_MARATHON', governance: malformedMax, mode: 'PRODUCTION' }).kind).toBe('UNKNOWN');
+    // Décision approuvée mais paramètre non éligible en PRODUCTION : UNKNOWN, jamais une exception.
+    const ineligible = { ...G, decisions: { ...G.decisions, 'E-VARIABILITY': 'APPROVED' as const } };
+    expect(estimateVariability({ references: [], distanceM: 21097.5, priorKey: 'HALF_MARATHON', governance: ineligible, mode: 'PRODUCTION' }).kind).toBe('UNKNOWN');
     expect(estimateVariability({ references: [], distanceM: 21097.5, priorKey: 'HALF_MARATHON', governance: G, mode: 'PRODUCTION' }).reasons.map((r) => r.params.parameterId).filter(Boolean)).toEqual(['running.reference.variabilityMinComparablePerformances', 'running.reference.performanceVariabilityEstimate']);
   });
 });

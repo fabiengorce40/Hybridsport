@@ -26,6 +26,7 @@ describe('exigences par type (5B §E)', () => {
       ['TRAINING_OBSERVATION', { durationS: 1800 }, { distanceM: 5000 }],
       ['RPE_BASED', { rpe: 3, durationS: 1800 }, { durationS: 1800 }],
       ['RPE_BASED', { rpe: 3, durationS: 1800 }, { rpe: 3 }],
+      ['RPE_BASED', { rpe: 3, durationS: 1800 }, { durationS: 1800, distanceM: 5000 }],
       ['CALIBRATION_RESULT', { durationS: 1200, distanceM: 4000 }, { distanceM: 4000 }],
       ['CALIBRATION_RESULT', { durationS: 1200, rpe: 5 }, { durationS: 1200 }],
       ['USER_DECLARED', { distanceM: 10000, durationS: 3000 }, { distanceM: 10000 }],
@@ -78,7 +79,9 @@ describe('confiance : frontières et paramètres', () => {
     const bad = withParameter(CURRENT_RUNNING_GOVERNANCE, 'running.reference.recencyBands', (p) => ({ ...p, value: { status: 'candidate', value: { recentMaxWeeks: 8 } } }));
     const r = referenceConfidence(ref({ referenceId: 'r' }), 'INTENSITY_TARGETING', { ...cand, parameters: bad.parameters }).confidence;
     expect(r.factors.find((f) => f.factor === 'RECENCY')).toEqual({ factor: 'RECENCY', level: 'NONE', cause: 'PARAMETER_MALFORMED' });
-    const noCap = withParameter(CURRENT_RUNNING_GOVERNANCE, 'running.reference.recencyBands', (p) => ({ ...p, value: { status: 'candidate', value: { recentMaxWeeks: 8, agingMaxWeeks: 16 } } }));
+    const partial = withParameter(CURRENT_RUNNING_GOVERNANCE, 'running.reference.recencyBands', (p) => ({ ...p, value: { status: 'candidate', value: { recentMaxWeeks: 8, confidenceCapByBand: { RECENT: 'HIGH', AGING: 'MEDIUM', STALE: 'LOW' } } } }));
+    expect(referenceConfidence(ref({ referenceId: 'r' }), 'INTENSITY_TARGETING', { ...cand, parameters: partial.parameters }).confidence.factors.find((f) => f.factor === 'RECENCY')?.cause).toBe('PARAMETER_MALFORMED');
+        const noCap = withParameter(CURRENT_RUNNING_GOVERNANCE, 'running.reference.recencyBands', (p) => ({ ...p, value: { status: 'candidate', value: { recentMaxWeeks: 8, agingMaxWeeks: 16 } } }));
     expect(referenceConfidence(ref({ referenceId: 'r' }), 'INTENSITY_TARGETING', { ...cand, parameters: noCap.parameters }).confidence.level).toBe('NONE');
     const noTypeCap = withParameter(CURRENT_RUNNING_GOVERNANCE, 'running.reference.typeConfidenceCaps', (p) => ({ ...p, value: { status: 'candidate', value: {} } }));
     expect(referenceConfidence(ref({ referenceId: 'r' }), 'INTENSITY_TARGETING', { ...cand, parameters: noTypeCap.parameters }).confidence.factors[0]).toEqual({ factor: 'TYPE_CAP', level: 'NONE', cause: 'CAP_UNDEFINED_FOR_TYPE' });
@@ -105,6 +108,19 @@ describe('sélection : confiance d’abord, puis prudence, puis récence', () =>
     const c = ref({ referenceId: 'c', values: { distanceM: 10000, durationS: 3100 }, date: asISODateTime('2026-09-20T08:00:00Z') });
     expect(selectReference([a, b, c], 'INTENSITY_TARGETING', cand).selected?.referenceId).toBe('c');
     expect(selectReference([c, b, a], 'INTENSITY_TARGETING', cand).selected?.referenceId).toBe('c');
+  });
+
+  it('prudence indépendante de l’ordre alphabétique ; conflits réservés aux courses et contre-la-montre ; péremption tracée dans la sélection', () => {
+    const slow = ref({ referenceId: 'a', values: { distanceM: 10000, durationS: 3100 }, date: asISODateTime('2026-09-01T08:00:00Z') });
+    const fast = ref({ referenceId: 'b', values: { distanceM: 10000, durationS: 2900 }, date: asISODateTime('2026-09-25T08:00:00Z') });
+    expect(selectReference([fast, slow], 'INTENSITY_TARGETING', cand).selected?.referenceId).toBe('a');
+    const cal = (id: string, durationS: number) => ref({ referenceId: id, type: 'CALIBRATION_RESULT', values: { distanceM: 3000, durationS } });
+    expect(detectConflicts([cal('c1', 900), cal('c2', 960)])).toEqual([]);
+    const stale = ref({ referenceId: 'stale', date: asISODateTime('2026-01-05T08:00:00Z') });
+    const sel = selectReference([stale], 'INTENSITY_TARGETING', cand);
+    expect(sel.reasons.find((r) => r.code === RUNNING_CODES.REFERENCE_STALE)?.params).toEqual({ referenceId: 'stale' });
+    const none = selectReference([ref({ referenceId: 'v', type: 'VO2MAX_TEST', values: { vo2MlKgMin: 50 } })], 'INTENSITY_TARGETING', cand);
+    expect(none.candidates.map((c) => [c.referenceId, c.level])).toEqual([['v', 'NONE']]);
   });
 
   it('conflits : contre-la-montre compris, groupes triés par distance, identifiants triés ; distance absente ignorée', () => {
