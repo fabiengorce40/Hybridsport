@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  APPROVER_ROLE, CAPABILITIES, CAPABILITY_IDS, CURRENT_RUNNING_GOVERNANCE, RUNNING_CODES, analyzeRunning, assessProductionEligibility, capabilityState,
+  APPROVER_ROLE, CAPABILITIES, CAPABILITY_IDS, CURRENT_RUNNING_GOVERNANCE, FOUNDATION, RUNNING_CODES, analyzeRunning, assessProductionEligibility, capabilityState,
   eligibilityBlockers, governanceIssues, meetsRequiredMaturity, registryIssues, sortDegradations, targetPrecision, transitionMaturity, zRunningParameter,
 } from '../../src/index.js';
 import type { Degradation, RunningContextInput, RunningParameter, RunningWave1Analysis } from '../../src/index.js';
@@ -47,6 +47,22 @@ describe('dépendances EXACTES de chaque capacité (lot 2)', () => {
       firstThresholdExposure: ['E-FIRST', 'E-RECOVERY'], firstSevereExposure: ['E-FIRST', 'E-RECOVERY'], marathon: ['E-LONG', 'E-TAPER'],
       performanceExtrapolation: ['E-MODEL', 'E-VARIABILITY'], taper: ['E-TAPER'], paceTargets: ['E-PACE'], hybridPlanning: [],
     });
+    expect(Object.fromEntries(CAPABILITY_IDS.map((id) => [id, CAPABILITIES[id].parameters]))).toEqual({
+      noviceEntry: ['running.safety.noviceEntryProtocol', 'running.novice.entryDose'],
+      longReturn: ['running.return.stateBoundaries', 'running.return.protocol', 'running.return.unknownStateHandling', 'running.return.firstExposureDose'],
+      progressionBeyondHistory: ['running.load.recentLoadContext', 'running.progression.magnitude'],
+      longRunProgression: ['running.longRun.marginAndBound', 'running.progression.magnitude'],
+      firstThresholdExposure: ['running.firstExposure.threshold', 'running.interval.recoveryRatio'],
+      firstSevereExposure: ['running.firstExposure.severe', 'running.firstExposure.hills', 'running.interval.recoveryRatio'],
+      marathon: ['running.longRun.marginAndBound', 'running.taper.durationMarathon'],
+      performanceExtrapolation: ['running.performance.extrapolationModelFamily', 'running.performance.extrapolationExponent', 'running.performance.predictionUncertaintyWidth', 'running.reference.performanceVariabilityEstimate'],
+      taper: ['running.taper.volumeReduction', 'running.taper.durationByEvent'],
+      paceTargets: ['running.target.paceRangeWidthByConfidence', 'running.threshold.likeMargin'],
+      hybridPlanning: [],
+    });
+    // Identifiants et clés de configuration 5G (`running.<capacité>.enabled`) cohérents avec leur entrée.
+    for (const id of CAPABILITY_IDS) expect([CAPABILITIES[id].id, CAPABILITIES[id].flagKey]).toEqual([id, `running.${id}.enabled`]);
+    expect([FOUNDATION.id, FOUNDATION.flagKey]).toEqual(['foundation', 'running.foundation']);
     expect(CAPABILITIES.noviceEntry.g1Policies).toEqual(['G1-SCOPE', 'G1-NOVICE']);
     expect(CAPABILITIES.longReturn.g1Policies).toEqual(['G1-RETURN']);
   });
@@ -85,6 +101,17 @@ describe('registre et maturité (lot 3)', () => {
     expect(registryIssues([{ ...safe.parameter, approvals: [{ state: 'EXPERT_APPROVED', role: 'SAFETY', reference: 'S' }] }])).toEqual(['running.return.stateBoundaries : état SAFETY_APPROVED sans approbation SAFETY']);
     expect(registryIssues([{ ...safe.parameter, maturity: 'PRODUCTION_ELIGIBLE' }])).toEqual(['running.return.stateBoundaries : état PRODUCTION_ELIGIBLE sans approbation RULESET_GATE']);
     expect(registryIssues([{ ...param('running.target.rpeByDomain'), maturity: 'PRODUCT_APPROVED' }])).toEqual(expect.arrayContaining(['running.target.rpeByDomain : maturité PRODUCT_APPROVED hors du chemin EXPERT']));
+  });
+
+  it('une dose G1 légitimement signée (V33 : proposée → experte → sécurité) est cohérente pour le registre', () => {
+    let v33 = param('running.novice.entryDose');
+    for (const [to, role, value] of [['EXPERT_PROPOSED', 'AUTHOR', { testOnly: true }], ['EXPERT_APPROVED', 'EXPERT', undefined], ['SAFETY_APPROVED', 'SAFETY', undefined]] as const) {
+      const r = transitionMaturity(v33, to, { role, reference: `T-${to}` }, { rulesetLocked: false, ...(value !== undefined ? { value } : {}) });
+      if (!r.ok) throw new Error(String(r.reason.params.cause));
+      v33 = r.parameter;
+    }
+    expect(v33.maturity).toBe('SAFETY_APPROVED');
+    expect(registryIssues([v33])).toEqual([]);
   });
 
   it('par défaut, le ruleset est considéré NON verrouillé (fail-closed) ; révision réservée à l’auteur', () => {
@@ -159,6 +186,13 @@ describe('éligibilité ≠ précision (lot 5)', () => {
     expect(targetPrecision({ ...base, mode: 'CANDIDATE', parameters: empty.parameters }).causes).toEqual(['REFERENCE_CONFIDENCE_INSUFFICIENT']);
     const ok = targetPrecision({ ...base, mode: 'CANDIDATE', parameters: G.parameters });
     expect(ok).toMatchObject({ level: 'PACE_RANGE', reasons: [{ code: RUNNING_CODES.CANDIDATE_VALUE_USED }] });
+  });
+
+  it('la raison attachée à la dégradation de précision est bien PRESCRIPTION_PRECISION_REDUCED, causes jointes', () => {
+    const declared = session(run({ references: [ref({ referenceId: 'd', type: 'USER_DECLARED', values: { paceSecPerKm: 300 } })] }), 'EASY');
+    expect(declared.degradations[0]?.reason).toMatchObject({ code: RUNNING_CODES.PRESCRIPTION_PRECISION_REDUCED, params: { archetype: 'EASY', precision: 'EFFORT_ONLY', cause: 'REFERENCE_CONFIDENCE_INSUFFICIENT' } });
+    const both = session(run({ capabilityRequests: [], sensors: { wearable: false, heartRate: false } }), 'EASY');
+    expect(both.degradations[0]?.reason.params.cause).toBe('PACE_TARGETS_DISABLED,NO_WEARABLE,REFERENCE_MISSING');
   });
 
   it('la variabilité connue ou inconnue change la confiance de prescription (pas l’éligibilité)', () => {

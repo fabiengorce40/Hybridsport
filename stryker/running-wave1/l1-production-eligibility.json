@@ -21,10 +21,15 @@
   "concurrency": 3,
   "plugins": [],
   "commandRunner": {
-    "command": "NODE_OPTIONS=--max-old-space-size=1024 timeout -k 2 60 pnpm exec vitest run --config vitest.mutation.running.config.ts --reporter=dot"
+    "command": "sh -c 'd=$(mktemp -d -p \"$PWD\" .vt.XXXX); TMPDIR=$d NODE_OPTIONS=--max-old-space-size=1024 timeout -k 2 60 pnpm exec vitest run --config vitest.mutation.running.config.ts --reporter=dot; s=$?; rm -rf \"$d\"; exit $s'"
   },
   "coverageAnalysis": "off",
   "jsonReporter": {
     "fileName": "reports/mutation/running-wave1-l1-production-eligibility.json"
-  }
+  },
+  "ignorePatterns": [
+    "reports/**",
+    "docs/**",
+    ".stryker-tmp*/**"
+  ]
 }
