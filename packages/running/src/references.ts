@@ -85,7 +85,7 @@ export interface ReferenceConfidence {
 
 const isConfidence = (x: unknown): x is ConfidenceLevel => typeof x === 'string' && (['NONE', 'LOW', 'MEDIUM', 'HIGH'] as const).includes(x as ConfidenceLevel);
 // technical-constant: conversion d'unités (ms → semaines)
-const MS_PER_WEEK = 7 * 24 * 3600 * 1000;
+export const MS_PER_WEEK = 7 * 24 * 3600 * 1000;
 // technical-constant: conversion d'unités (m/km)
 const METERS_PER_KM = 1000;
 

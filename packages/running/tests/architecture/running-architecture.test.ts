@@ -57,10 +57,12 @@ describe('aucune valeur magique', () => {
 });
 
 describe('aucun contournement du CORE', () => {
-  it('Running ne se valide pas lui-même et n’émet aucune proposition de séance en vague 1', () => {
+  it('Running ne se valide pas lui-même ; une proposition n’est émise qu’à un seul endroit, depuis le candidat retenu du pipeline de vague 2', () => {
     const text = algorithms.map((f) => f.text).join('\n');
-    expect(text).not.toMatch(/status:\s*'proposals'/);
     expect(text).not.toMatch(/validateSession|zSessionDraft\.parse|status:\s*'VALID'/);
+    const emitters = algorithms.flatMap((f) => f.text.split('\n').flatMap((l, i) => (/status:\s*'proposals'/.test(l) ? [`${f.path}:${String(i + 1)}: ${l.trim()}`] : [])));
+    expect(emitters).toHaveLength(1);
+    expect(emitters[0]).toMatch(/^packages\/running\/src\/engine\.ts:\d+: if \(outcome\.status === 'selected'\) return \{ status: 'proposals', proposals: \[toCoreProposal\(input, outcome\.selection/);
   });
 
   it('Running ne calcule aucune durée (le DurationEngine reste l’unique autorité)', () => {

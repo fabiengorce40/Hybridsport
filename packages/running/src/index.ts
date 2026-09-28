@@ -14,4 +14,7 @@ export * from './variability.js';
 export * from './performance-model.js';
 export * from './context.js';
 export * from './analysis.js';
+export * from './wave2/history.js';
+export * from './wave2/candidate.js';
+export * from './wave2/pipeline.js';
 export * from './engine.js';

@@ -12,6 +12,7 @@ import { RETURN_STATES, RUNNING_GOALS, RUNNING_LEVELS, RUNNING_MODES, RUNNING_SE
 import { zRunningReference } from './references.js';
 import { zWeekObservation, RECENT_LOAD_DIMENSIONS } from './recent-load.js';
 import { CAPABILITY_IDS } from './capability-definitions.js';
+import { zRealizedSession } from './wave2/history.js';
 import { RUNNING_CODES, runningReasons } from './codes.js';
 
 const core = createCoreRegistry();
@@ -34,6 +35,8 @@ export const zRunningContext = z.object({
     returnStartedAt: instant.optional(),
     dimensions: z.array(z.object({ dimension: z.enum(RECENT_LOAD_DIMENSIONS), weeks: z.array(zWeekObservation) }).strict()),
   }).strict().optional(),
+  /** Séances réalisées (vague 2 : ancre de dose V19). Absentes ⇒ aucune ancre ⇒ aucune dose (jamais une dose par défaut). */
+  sessionHistory: z.array(zRealizedSession).default([]),
   sensors: z.object({ wearable: z.boolean(), heartRate: z.boolean() }).strict(),
   mode: z.enum(RUNNING_MODES),
   /** Capacités demandées (drapeaux) : leur état effectif est TOUJOURS dérivé de la gouvernance. */

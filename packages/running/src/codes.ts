@@ -9,6 +9,7 @@ import type { ReasonCodeDefinition } from '@hybridsport/engine';
 const S = 'string' as const;
 const L = 'string[]' as const;
 const B = 'boolean' as const;
+const N = 'number' as const;
 
 /** Codes stables exigés (phase 6B §M) → code enregistré. */
 export const RUNNING_CODES = {
@@ -49,6 +50,13 @@ export const RUNNING_CODES = {
   HOLD_OR_RESTORE_ONLY: 'PROGRESSION.RUNNING.HOLD_OR_RESTORE_ONLY',
   HYBRID_PLANNER_UNAVAILABLE: 'SCOPE.RUNNING.HYBRID_PLANNER_UNAVAILABLE',
   PRESCRIPTION_NOT_IMPLEMENTED: 'PLAN.RUNNING.PRESCRIPTION_NOT_IMPLEMENTED',
+  // Vague 2 (phase 6C) : prescription
+  DOSE_ANCHOR_SELECTED: 'DOSE.RUNNING.DOSE_ANCHOR_SELECTED',
+  DOSE_ANCHOR_UNAVAILABLE: 'DOSE.RUNNING.DOSE_ANCHOR_UNAVAILABLE',
+  SIMULATION_REQUIRED: 'RULE.RUNNING.SIMULATION_REQUIRED',
+  SIMULATED_PROPOSAL: 'RULE.RUNNING.SIMULATED_PROPOSAL',
+  EXERCISE_UNAVAILABLE: 'PLAN.RUNNING.EXERCISE_UNAVAILABLE',
+  TIME_EXCEEDED: 'PLAN.RUNNING.TIME_EXCEEDED',
 } as const;
 export type RunningCode = (typeof RUNNING_CODES)[keyof typeof RUNNING_CODES];
 
@@ -87,6 +95,12 @@ export const RUNNING_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: RUNNING_CODES.HOLD_OR_RESTORE_ONLY, categories: ['adaptation'], params: { capability: S }, audience: 'user', severity: 'notice' },
   { code: RUNNING_CODES.HYBRID_PLANNER_UNAVAILABLE, categories: ['feasibility'], params: { capability: S }, audience: 'internal', severity: 'error' },
   { code: RUNNING_CODES.PRESCRIPTION_NOT_IMPLEMENTED, categories: ['information'], params: { archetype: S, wave: S }, audience: 'internal', severity: 'info' },
+  { code: RUNNING_CODES.DOSE_ANCHOR_SELECTED, categories: ['information'], params: { archetype: S, sessionId: S, realizedDurationS: N, feedbackKnown: B }, audience: 'internal', severity: 'info' },
+  { code: RUNNING_CODES.DOSE_ANCHOR_UNAVAILABLE, categories: ['feasibility'], params: { archetype: S, cause: S }, audience: 'internal', severity: 'error' },
+  { code: RUNNING_CODES.SIMULATION_REQUIRED, categories: ['business_hard'], params: { mode: S }, audience: 'internal', severity: 'error' },
+  { code: RUNNING_CODES.SIMULATED_PROPOSAL, categories: ['information'], params: { rulesetVersion: S }, audience: 'internal', severity: 'warning' },
+  { code: RUNNING_CODES.EXERCISE_UNAVAILABLE, categories: ['feasibility'], params: { cause: S, candidates: L }, audience: 'internal', severity: 'error' },
+  { code: RUNNING_CODES.TIME_EXCEEDED, categories: ['feasibility'], params: { archetype: S, availableTimeS: N, estimatedMaxS: N }, audience: 'internal', severity: 'error' },
 ];
 
 export const runningReasons = createCoreRegistry(RUNNING_REASON_CODES);

@@ -23,18 +23,24 @@ describe('contrat SportEngine', () => {
     expect(engine.parseContext(ctxInput()).ok).toBe(true);
   });
 
-  it('vague 1 : aucune séance proposée ; NO_VALID_SOLUTION par le CORE avec les raisons exactes (aucune séance factice)', () => {
+  it('vague 2 : EASY en mode CANDIDATE sans simulation ⇒ aucune séance ; NO_VALID_SOLUTION avec SIMULATION_REQUIRED', () => {
     const o = runSportSession(engine, runRequest(ctxInput({ references: [ref({ referenceId: 'r' })] })), coreContext('run-1'));
     const e = errorOf(o);
     expect(e?.code).toBe('NO_VALID_SOLUTION');
-    expect(codes(e?.reasons)[0]).toBe(RUNNING_CODES.PRESCRIPTION_NOT_IMPLEMENTED);
-    expect(e?.reasons[0]?.params).toEqual({ archetype: 'EASY', wave: '1' });
+    expect(codes(e?.reasons)[0]).toBe(RUNNING_CODES.SIMULATION_REQUIRED);
+    expect(e?.reasons[0]?.params).toEqual({ mode: 'CANDIDATE' });
     expect(o.trace.entries.map((t) => t.step)).not.toContain('validate'); // rien à valider : aucune séance
+  });
+
+  it('vague 2 : archétype hors vague 2 ⇒ PRESCRIPTION_NOT_IMPLEMENTED (vague 2), aucune séance', () => {
+    const e = errorOf(runSportSession(engine, runRequest(ctxInput(), 'running.threshold'), coreContext('run-1b')));
+    expect(e?.code).toBe('NO_VALID_SOLUTION');
+    expect(e?.reasons[0]).toMatchObject({ code: RUNNING_CODES.PRESCRIPTION_NOT_IMPLEMENTED, params: { archetype: 'THRESHOLD', wave: '2' } });
   });
 
   it('P-R0 : les raisons d’indisponibilité (V33) accompagnent le NO_VALID', () => {
     const e = errorOf(runSportSession(engine, runRequest(ctxInput({ population: { level: 'P_R0', hybrid: false } })), coreContext('run-2')));
-    expect(codes(e?.reasons)).toEqual(expect.arrayContaining([RUNNING_CODES.PRESCRIPTION_NOT_IMPLEMENTED, RUNNING_CODES.NOVICE_ENTRY_UNRESOLVED]));
+    expect(codes(e?.reasons)).toEqual(expect.arrayContaining([RUNNING_CODES.NOVICE_ENTRY_UNRESOLVED]));
   });
 
   it('PRODUCTION : G1 non signées tracées dans le NO_VALID', () => {
@@ -100,7 +106,7 @@ describe('adversarial (fail-closed)', () => {
     if (!parsed.ok) throw new Error('contexte');
     const base = { discipline: parsed.context, context: { seed: 's', now: '2026-10-05T08:00:00Z', engineVersion: '0.1.0' }, ruleset: { version: '1.0.0' }, catalog: { version: '1.0.0' } };
     const unknown = engine.propose({ ...base, intent: { archetypeId: 'running.nope' } } as unknown as Parameters<typeof engine.propose>[0]);
-    expect(unknown.status === 'no_valid_proposal' && unknown.reasons.map((r) => [r.code, r.params])).toEqual([[RUNNING_CODES.PRESCRIPTION_NOT_IMPLEMENTED, { archetype: 'running.nope', wave: '1' }], [RUNNING_CODES.ARCHETYPE_UNKNOWN, { archetypeId: 'running.nope' }]]);
+    expect(unknown.status === 'no_valid_proposal' && unknown.reasons.map((r) => [r.code, r.params])).toEqual([[RUNNING_CODES.PRESCRIPTION_NOT_IMPLEMENTED, { archetype: 'running.nope', wave: '2' }], [RUNNING_CODES.ARCHETYPE_UNKNOWN, { archetypeId: 'running.nope' }]]);
     const easy = engine.propose({ ...base, intent: { archetypeId: 'running.easy' } } as unknown as Parameters<typeof engine.propose>[0]);
     const keys = easy.status === 'no_valid_proposal' ? easy.reasons.map((r) => JSON.stringify([r.code, r.params])) : [];
     expect(new Set(keys).size).toBe(keys.length);

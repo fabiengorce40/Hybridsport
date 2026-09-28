@@ -10,7 +10,7 @@
  */
 import type { RunningParameter } from './parameters.js';
 
-export const RUNNING_RULESET_VERSION = 'running-0.1.0-candidate';
+export const RUNNING_RULESET_VERSION = 'running-0.2.0-candidate';
 
 type Entry = Omit<RunningParameter, 'rulesetVersion' | 'approvals' | 'provisional' | 'maturity' | 'value'> & { readonly candidate?: unknown; readonly unresolvedReason?: string };
 
@@ -38,6 +38,8 @@ const E: Entry[] = [
   { parameterId: 'running.interval.cooldownDuration', tag: 'V07', candidate: { minS: 300, maxS: 600 }, unit: 's', provenanceClass: 'EXPERT_PROPOSED', evidenceReferenceIds: [], sensitivity: 'LOW', governance: 'EXPERT', statusClass: 'EXPERT_DESIGN_REVIEW', decisionIds: ['E-QUALITY'] },
   { parameterId: 'running.interval.recoveryRatio', tag: 'V08', candidate: { THRESHOLD: { min: 0.2, max: 0.35 }, SEVERE: { min: 0.5, max: 1 }, SHORT_INTERVAL: { min: 0.5, max: 1 } }, unit: 'ratio', provenanceClass: 'SOURCE_INFORMED', evidenceReferenceIds: ['RS-HIIT-METAREG', 'RS-HIIT-SHORTLONG'], sensitivity: 'HIGH', governance: 'EXPERT', statusClass: 'EXPERT_DESIGN_REVIEW', decisionIds: ['E-RECOVERY'] },
   { parameterId: 'running.strides.module', tag: 'V09', candidate: { reps: { min: 4, max: 6 }, workS: { min: 15, max: 20 }, recoveryS: { min: 45, max: 90 } }, unit: 'mixed', provenanceClass: 'EXPERT_PROPOSED', evidenceReferenceIds: [], sensitivity: 'LOW', governance: 'EXPERT', statusClass: 'EXPERT_DESIGN_REVIEW', decisionIds: ['E-QUALITY'] },
+  // Phase 6C : V19 importé tel que défini en V0 (RUNNING-PARAMETERS-V0 §2.2, inchangé en V1-CANDIDATE) ; règle, aucune valeur numérique.
+  { parameterId: 'running.dose.historyAnchorPolicy', tag: 'V19', candidate: { anchor: 'LAST_REALIZED_DOSE', sameArchetype: true, sameStructureFamily: true, recencyBand: 'RECENT', recencyParameter: 'running.reference.recencyBands', requiresNoNegativeResponse: true, otherwise: 'FIRST_EXPOSURE_PARAMETER' }, unit: 'rule', provenanceClass: 'EXPERT_PROPOSED', evidenceReferenceIds: [], sensitivity: 'MEDIUM', governance: 'EXPERT', statusClass: 'PROGRAMMING_HEURISTIC', decisionIds: [] },
   { parameterId: 'running.quality.minimumDose', tag: 'V31', unit: 'mixed', provenanceClass: 'NONE', evidenceReferenceIds: [], sensitivity: 'HIGH', governance: 'EXPERT', statusClass: 'EXPERT_DESIGN_REVIEW', decisionIds: ['E-QUALITY'], unresolvedReason: 'aucun minimum universel' },
   { parameterId: 'running.severe.paceAnchor', tag: 'V18', candidate: { anchor: 'RACE_3K_TO_5K', widthParameter: 'running.target.paceRangeWidthByConfidence' }, unit: 'reference', provenanceClass: 'EXPERT_PROPOSED', evidenceReferenceIds: [], sensitivity: 'MEDIUM', governance: 'EXPERT', statusClass: 'EXPERT_DESIGN_REVIEW', decisionIds: ['E-PACE'] },
   { parameterId: 'running.severe.defaultRepDuration', tag: 'V41', unit: 's', provenanceClass: 'NONE', evidenceReferenceIds: [], sensitivity: 'UNKNOWN', governance: 'EXPERT', statusClass: 'EXPERT_DESIGN_REVIEW', decisionIds: ['E-QUALITY'] },
