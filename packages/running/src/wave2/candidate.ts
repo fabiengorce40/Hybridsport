@@ -26,9 +26,9 @@ export const WAVE2_STRUCTURE_FAMILIES: Readonly<Partial<Record<RunningSessionArc
  * Vague 3 : séances de qualité en HOLD (rejeu de la dernière structure réalisée, V19), en plus d'EASY.
  * Familles : §K (seuil continu ou fractionné), §L–§N (sévère, intervalles courts, côtes : fractionné).
  */
-export const WAVE3_ARCHETYPES: readonly RunningSessionArchetype[] = ['EASY', 'LONG', 'THRESHOLD', 'SEVERE', 'SHORT_INTERVAL', 'HILLS'];
+export const WAVE3_ARCHETYPES: readonly RunningSessionArchetype[] = ['EASY', 'LONG', 'THRESHOLD', 'SEVERE', 'SHORT_INTERVAL', 'HILLS', 'TEST'];
 export const WAVE3_STRUCTURE_FAMILIES: Readonly<Partial<Record<RunningSessionArchetype, readonly StructureFamily[]>>> = {
-  ...WAVE2_STRUCTURE_FAMILIES, LONG: ['CONTINUOUS'], THRESHOLD: ['CONTINUOUS', 'INTERVALS'], SEVERE: ['INTERVALS'], SHORT_INTERVAL: ['INTERVALS'], HILLS: ['INTERVALS'],
+  ...WAVE2_STRUCTURE_FAMILIES, LONG: ['CONTINUOUS'], THRESHOLD: ['CONTINUOUS', 'INTERVALS'], SEVERE: ['INTERVALS'], SHORT_INTERVAL: ['INTERVALS'], HILLS: ['INTERVALS'], TEST: ['CONTINUOUS'],
 };
 
 export interface ParameterUse {
@@ -59,6 +59,15 @@ export type CandidateDose =
     readonly workS: number;
     readonly source: { readonly parameterId: string; readonly sessionId: string; readonly completedAt: string };
     readonly progression?: CandidateProgression;
+  }
+  | {
+    /** Vague R5 : TEST (§Q) — distance du protocole ; l'allure observée ne sert qu'à borner l'estimation CORE. */
+    readonly kind: 'test';
+    readonly distanceM: number;
+    readonly warmupS: number;
+    readonly cooldownS: number;
+    readonly observedPace: { readonly min: number; readonly max: number };
+    readonly source: { readonly parameterId: string; readonly observedSessionIds: readonly string[] };
   };
 
 export interface CandidateProgression { readonly variable: string; readonly from: number; readonly to: number; readonly parameterId: string }
@@ -73,6 +82,15 @@ export type CandidateIntensity =
   | {
     /** Vague 3 : bande RPE du domaine de travail (V02) ; échauffement et retour au calme sous le plafond EASY_LOW. */
     readonly domain: 'THRESHOLD_LIKE' | 'SEVERE';
+    readonly rpe: { readonly min: number; readonly max: number };
+    readonly easyCeiling: number;
+    readonly source: { readonly parameterId: string };
+    /** Vague R5 : plage d'allure gouvernée (V18 ± V03), SEVERE / SHORT_INTERVAL seulement. */
+    readonly pace?: { readonly secPerKm: { readonly min: number; readonly max: number }; readonly referenceId: string; readonly parameterId: string };
+  }
+  | {
+    /** Vague R5 : TEST — effort maximal (bande V02 TEST), jamais une allure. */
+    readonly domain: 'TEST';
     readonly rpe: { readonly min: number; readonly max: number };
     readonly easyCeiling: number;
     readonly source: { readonly parameterId: string };

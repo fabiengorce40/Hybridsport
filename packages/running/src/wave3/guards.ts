@@ -24,11 +24,11 @@ export type QualityArchetype = (typeof QUALITY_ARCHETYPES)[number];
  */
 export const HIGH_DEMAND_ARCHETYPES: readonly RunningSessionArchetype[] = ['THRESHOLD', 'SEVERE', 'SHORT_INTERVAL', 'HILLS', 'RACE_PACE', 'LONG', 'TEST'];
 
-/** Archétypes soumis aux gardes de forte demande : qualité + LONG (§G.3, §S : LONG désigné compté HIGH_DEMAND, V32 sans marge). */
-export type GuardedArchetype = QualityArchetype | 'LONG';
+/** Archétypes soumis aux gardes de forte demande : qualité + LONG (§G.3, §S : LONG désigné compté HIGH_DEMAND, V32 sans marge) + TEST (§Q). */
+export type GuardedArchetype = QualityArchetype | 'LONG' | 'TEST';
 
-/** Niveau minimal (§G.3 : qualité P-R2 et plus ; LONG_RUN P-R1 et plus). */
-const MIN_LEVEL: Readonly<Record<GuardedArchetype, RunningLevel>> = { THRESHOLD: 'P_R2', SEVERE: 'P_R2', SHORT_INTERVAL: 'P_R2', HILLS: 'P_R2', LONG: 'P_R1' };
+/** Niveau minimal (§G.3 : qualité P-R2 et plus ; LONG_RUN P-R1 et plus ; §Q : TEST P-R1 et plus, jamais P-R0). */
+const MIN_LEVEL: Readonly<Record<GuardedArchetype, RunningLevel>> = { THRESHOLD: 'P_R2', SEVERE: 'P_R2', SHORT_INTERVAL: 'P_R2', HILLS: 'P_R2', LONG: 'P_R1', TEST: 'P_R1' };
 /** §K : CONTINUOUS réservé à P-R3 et plus, ou confiance ≥ MEDIUM. */
 const CONTINUOUS_THRESHOLD_LEVEL: RunningLevel = 'P_R3';
 const CONTINUOUS_THRESHOLD_CONFIDENCE: ConfidenceLevel = 'MEDIUM';
@@ -84,9 +84,10 @@ export function qualityGuards(g: GuardInput): GuardResult {
   if (a === 'HILLS' && ctx.terrain?.hills !== true) return refuse('N_TERRAIN_UNDECLARED', 'hills');
 
   // §X : LONG ⇒ EASY seulement ; UNKNOWN ⇒ aucune séance HIGH_DEMAND ; MODERATE ⇒ sévère et LONG_RUN seulement après levée (V25).
+  // §Q : TEST jamais en RETURN non levé (SHORT compris).
   const state = ctx.returnState.state;
   if (state === 'LONG' || state === 'UNKNOWN') return refuse('X_RETURN_STATE', state);
-  if (state === 'MODERATE' && a !== 'THRESHOLD') {
+  if ((state === 'MODERATE' && a !== 'THRESHOLD') || (state === 'SHORT' && a === 'TEST')) {
     const r = returnLifted(ctx, g.parameters, ctx.mode);
     reasons.push(...r.reasons);
     used.push(RESUME);

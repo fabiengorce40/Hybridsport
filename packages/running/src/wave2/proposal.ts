@@ -30,8 +30,14 @@ export function uniqueReasons(rs: readonly ReasonCode[]): ReasonCode[] {
  * (EASY_LOW ⊂ MODERATE ⇒ low ; THRESHOLD_LIKE, haut du domaine HEAVY ⇒ moderate ; SEVERE ⇒ high). Échauffement,
  * retour au calme et récupérations sont sous le plafond EASY_LOW. Donnée de la structure, jamais une estimation.
  */
-export function energyOf(candidate: Wave2Selection['candidate']): { low: number; moderate: number; high: number } {
+export function energyOf(candidate: Wave2Selection['candidate'], estimate?: Wave2Selection['structure']['estimate']): { low: number; moderate: number; high: number } {
   const dose = candidate.dose;
+  if (dose?.kind === 'test') {
+    // TEST : effort maximal (domaine SEVERE) ; part du test = durée estimée MAXIMALE du CORE (borne prudente) sur le total estimé.
+    if (estimate === undefined) return { low: 0, moderate: 0, high: 1 };
+    const work = estimate.workS.max / estimate.totalS.max;
+    return { low: 1 - work, moderate: 0, high: work };
+  }
   if (dose?.kind !== 'structure' || candidate.intensity?.domain === 'EASY_LOW') return { low: 1, moderate: 0, high: 0 };
   const s = dose.structure;
   const easyS = (s.warmupS ?? 0) + (s.cooldownS ?? 0) + (s.reps > 1 ? (s.reps - 1) * (s.recoveryS ?? 0) : 0);
@@ -66,12 +72,14 @@ export function toCoreProposal(input: SportEngineInput<RunningContext>, sel: Wav
     fingerprintInputs: {
       archetypeId: input.intent.archetypeId,
       stimulus: input.intent.stimulus,
-      energy: energyOf(candidate),
+      energy: energyOf(candidate, structure.estimate),
       format: dose.kind === 'structure' && dose.structure.reps > 1 ? 'intervals' : 'continuous',
-      volumeByItem: { [itemId]: dose.kind === 'duration' ? dose.durationS : dose.workS },
+      volumeByItem: { [itemId]: dose.kind === 'duration' ? dose.durationS : dose.kind === 'test' ? dose.distanceM : dose.workS },
       prescriptionMarkers: dose.kind === 'duration'
         ? { [`${candidate.archetype}.doseS`]: dose.durationS }
-        : { [`${candidate.archetype}.workS`]: dose.workS, [`${candidate.archetype}.reps`]: dose.structure.reps },
+        : dose.kind === 'test'
+          ? { [`${candidate.archetype}.distanceM`]: dose.distanceM }
+          : { [`${candidate.archetype}.workS`]: dose.workS, [`${candidate.archetype}.reps`]: dose.structure.reps },
     },
     repetitionIntents: [],
     reasons: toProposalReasons(uniqueReasons(candidate.reasons)),

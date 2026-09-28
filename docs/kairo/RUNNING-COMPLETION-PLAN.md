@@ -134,3 +134,21 @@ Ces décisions du propriétaire du produit sont importées au registre comme val
   - Le TEST ne change jamais le volume (propriété testée).
   - HILLS : première exposition bloquée (`BLOCKED_PENDING_SOURCES`).
   - Ensuite : l'historique (V19) prend le relais, puis la progression D1.
+
+### R5a — TEST et cibles d'allure gouvernées
+
+- **Contrat** : `distanceM` réalisée (facultative, positive et finie) sur une séance réalisée.
+- **TEST (§Q)**, paramètre `running.test.protocol` ajouté par la surcouche (candidat, provenance `PRODUCT_DECISION`, sans approbation) :
+  - contre-la-montre de **5 km**, ou **10 km** pour un objectif 10K ; échauffement 10 min, retour au calme 5 min ;
+  - cible : effort maximal (V02 `TEST`, RPE 9–10), **jamais une allure** ;
+  - le segment est une distance. Le CORE exige une allure sourcée pour borner la durée : c'est l'allure **observée** de l'athlète, provenance `observed_athlete_range`. Elle est calculée sur les séances continues terminées avec distance, dans la bande RECENT, post-retour en reprise. Elle ne sert qu'à l'estimation ;
+  - **refus** sans séance observée avec distance (`OBSERVED_PACE_UNAVAILABLE`), avec le registre expert seul (protocole absent), en PRODUCTION, en P-R0, en RETURN non levé (SHORT compris) ;
+  - compté HIGH_DEMAND (V10, V11) ; temps insuffisant ⇒ refus (jamais un test tronqué) ;
+  - le TEST ne fixe aucun volume : sa distance et sa cible ne dépendent pas de l'allure observée (propriété testée).
+- **Allure des séances sévères** (`wave3/pace.ts`) :
+  - SEVERE et SHORT_INTERVAL : ancre V18 (course ou contre-la-montre de **3 000 à 5 000 m**) ± V03 selon la confiance (HIGH ±3 %, MEDIUM ±6 %, LOW ⇒ effort seul) ;
+  - priorité à l'allure (§H), effort V02 secondaire ; échauffement, récupération et retour au calme sans allure ;
+  - conditions cumulées : capacité `paceTargets`, montre, ancre lisible, référence conforme ; sinon effort seul avec **toutes** les causes ;
+  - conflit entre performances ⇒ confiance LOW ⇒ effort seul (jamais une moyenne) ;
+  - HILLS : jamais d'allure (§N) ; THRESHOLD : effort seul (V05 absent du registre, V04 ambigu) ; EASY / LONG : jamais (V40).
+- Tests : `tests/integration/r5-test-pace.test.ts` (frontières 56 / 57 jours, 3 000 / 5 000 / 2 999 / 5 001 m, 4 500 / 4 499 s, confiance, CORE, déterminisme).

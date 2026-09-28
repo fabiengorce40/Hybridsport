@@ -23,4 +23,6 @@ export * from './wave3/structure.js';
 export * from './engine.js';
 export * from './governance/product-decisions.js';
 export * from './wave3/first-exposure.js';
+export * from './wave3/pace.js';
+export * from './wave3/test.js';
 export * from './wave3/progression.js';

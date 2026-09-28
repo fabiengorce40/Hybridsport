@@ -69,6 +69,10 @@ export const RUNNING_CODES = {
   // Décision produit D2
   FIRST_EXPOSURE_APPLIED: 'DOSE.RUNNING.FIRST_EXPOSURE_APPLIED',
   FIRST_EXPOSURE_REFUSED: 'DOSE.RUNNING.FIRST_EXPOSURE_REFUSED',
+  // Vague R5 : TEST (§Q) et cibles d'allure gouvernées (V18 ± V03)
+  TEST_PROTOCOL_APPLIED: 'DOSE.RUNNING.TEST_PROTOCOL_APPLIED',
+  TEST_REFUSED: 'DOSE.RUNNING.TEST_REFUSED',
+  PACE_TARGET_APPLIED: 'DOSE.RUNNING.PACE_TARGET_APPLIED',
 } as const;
 export type RunningCode = (typeof RUNNING_CODES)[keyof typeof RUNNING_CODES];
 
@@ -121,6 +125,9 @@ export const RUNNING_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: RUNNING_CODES.PROGRESSION_HOLD, categories: ['adaptation'], params: { archetype: S, cause: S }, audience: 'user', severity: 'info' },
   { code: RUNNING_CODES.FIRST_EXPOSURE_APPLIED, categories: ['information'], params: { archetype: S, level: S, parameterId: S, testReferenceId: S }, audience: 'user', severity: 'notice' },
   { code: RUNNING_CODES.FIRST_EXPOSURE_REFUSED, categories: ['feasibility'], params: { archetype: S, parameterId: S, cause: S }, audience: 'user', severity: 'error' },
+  { code: RUNNING_CODES.TEST_PROTOCOL_APPLIED, categories: ['information'], params: { distanceM: N, parameterId: S, observedSessionIds: L }, audience: 'user', severity: 'notice' },
+  { code: RUNNING_CODES.TEST_REFUSED, categories: ['feasibility'], params: { parameterId: S, cause: S }, audience: 'user', severity: 'error' },
+  { code: RUNNING_CODES.PACE_TARGET_APPLIED, categories: ['information'], params: { archetype: S, referenceId: S, confidence: S, parameterId: S }, audience: 'user', severity: 'info' },
   { code: RUNNING_CODES.HIGH_DEMAND_DEFAULT_CONSERVATIVE, categories: ['information'], params: { archetype: S, parameterId: S }, audience: 'internal', severity: 'notice' },
 ];
 

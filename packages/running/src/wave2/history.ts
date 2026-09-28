@@ -62,6 +62,11 @@ export const zRealizedSession = z.object({
   readinessOrToleranceDegraded: z.boolean().default(false),
   /** Vague 3 : structure réalisée (séances de qualité) ; absente pour une course continue simple. */
   structure: zRealizedStructure.optional(),
+  /**
+   * Vague R5 : distance RÉALISÉE (m), mesurée ou déclarée. Sert uniquement à l'allure OBSERVÉE qui borne
+   * l'estimation d'un TEST (provenance observed_athlete_range), jamais à une cible d'allure.
+   */
+  distanceM: z.number().positive().finite().optional(),
 }).strict();
 export type RealizedSession = z.infer<typeof zRealizedSession>;
 

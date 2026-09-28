@@ -68,6 +68,31 @@ export const PRODUCT_DECISION_VALUES: Readonly<Record<string, { readonly value: 
   },
 };
 
+/**
+ * Paramètres AJOUTÉS par la surcouche (absents du registre expert) : même forme typée, provenance
+ * PRODUCT_DECISION, maturité EXPERT_PROPOSED, aucune approbation (jamais utilisables en PRODUCTION).
+ */
+export const PRODUCT_DECISION_NEW_PARAMETERS: readonly RunningParameter[] = [
+  {
+    // D2 + protocole §Q (choix du 2026-09-28) : contre-la-montre de 5 km, ou 10 km pour un objectif 10K (§Q « Type »).
+    // Échauffement / retour au calme : mêmes planchers que les premières structures D2 (V06 / V07). Le TEST fixe
+    // l'INTENSITÉ ; sa durée n'est jamais prescrite : l'allure OBSERVÉE (séances réalisées avec distance, bande
+    // RECENT) sert seulement à BORNER l'estimation CORE (provenance observed_athlete_range), jamais de cible.
+    parameterId: 'running.test.protocol', unit: 'mixed', provenanceClass: 'PRODUCT_DECISION', evidenceReferenceIds: ['RULESET-V0-Q'],
+    sensitivity: 'MEDIUM', maturity: 'EXPERT_PROPOSED', governance: 'EXPERT', statusClass: 'PRODUCT_DECISION', decisionIds: ['D2', 'D8'],
+    value: {
+      status: 'candidate',
+      value: {
+        referenceType: 'TIME_TRIAL', distanceMByGoal: { TEN_K: 10000, OTHER: 5000 }, warmupS: 600, cooldownS: 300,
+        observedPace: { source: 'REALIZED_SESSIONS_WITH_DISTANCE', recencyBand: 'RECENT', use: 'ESTIMATE_BOUND_ONLY' },
+        implementationDecisions: ['5 km par défaut (borne haute de §Q « 3 à 5 km »), 10 km pour un objectif 10K', 'échauffement / retour au calme : planchers V06 / V07', 'allure observée : borne d’estimation seulement'],
+        confidence: 'LOW_TO_MEDIUM',
+      },
+    },
+    approvals: [], rulesetVersion: PRODUCT_DECISIONS_RULESET_VERSION, provisional: true,
+  },
+];
+
 /** Gouvernance + décisions produit (surcouche). Toute autre donnée (G1, décisions expertes, verrou) est inchangée. */
 export function withProductDecisions(g: RunningGovernance): RunningGovernance {
   const parameters = g.parameters.map((p): RunningParameter => {
@@ -76,5 +101,6 @@ export function withProductDecisions(g: RunningGovernance): RunningGovernance {
     if (!d) return base;
     return { ...base, value: { status: 'candidate', value: d.value }, maturity: 'EXPERT_PROPOSED', approvals: [], provenanceClass: 'PRODUCT_DECISION', decisionIds: [...new Set([...p.decisionIds, d.decisionId])] };
   });
-  return { ...g, rulesetVersion: PRODUCT_DECISIONS_RULESET_VERSION, parameters };
+  const known = new Set(parameters.map((p) => p.parameterId));
+  return { ...g, rulesetVersion: PRODUCT_DECISIONS_RULESET_VERSION, parameters: [...parameters, ...PRODUCT_DECISION_NEW_PARAMETERS.filter((p) => !known.has(p.parameterId))] };
 }
