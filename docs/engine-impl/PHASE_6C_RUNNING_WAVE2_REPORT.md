@@ -220,7 +220,7 @@ Commande par lot : `timeout -k 10 1800 npx stryker run stryker/running-wave2/<lo
 
 | # | Question | Effet tant que non décidé |
 |---|---|---|
-| Q-W2-1 | Agrégation de V19 : « dernière dose réalisée » (registre des paramètres) ou « médiane des séances récentes » (RULESET-V0 §I) ? | EASY suit la valeur du registre ; la divergence est documentée |
+| Q-W2-1 (Q-W2-V19-SOURCE-OF-TRUTH) | Agrégation de V19 : « dernière dose réalisée » (registre des paramètres) ou « médiane des séances récentes » (RULESET-V0 §I) ? | EASY suit la valeur du registre ; la divergence est documentée |
 | Q-W2-2 | Ancre LONG : V19 ou « médiane des plus longues sorties sur 4 semaines » (RULESET-V0 §J) ; V32 | LONG non prescriptible (C) |
 | Q-W2-3 | Après un retour négatif : règle de « baisse vers la dernière dose réussie » quand celle-ci n'est pas inférieure | Refus (LATER_NEGATIVE_RESPONSE) |
 | Q-W2-4 | STRIDES : critère « après régularité établie » ; import de V20 (sélection de borne) | STRIDES non prescriptible (C) |
@@ -244,3 +244,7 @@ Décisions de la phase 5 toujours ouvertes : 14 décisions expertes PENDING ; 4 
 | RUNNING_WAVE2_IMPLEMENTATION_GATE | **PASS** | Pipeline complet ; EASY prescriptible là où l'autorité existe (simulation ou approbation) ; production inchangée (no_valid partout) ; CORE et Strength intacts ; 921 tests, typecheck et lint verts |
 | RUNNING_WAVE2_HARDENING_GATE | **NOT PASSED (incomplet)** | Tests adverses et de propriétés verts, mais la mutation exigée n'a pas pu être exécutée (disque saturé, STOP conforme au prompt) |
 | RUNNING_WAVE2_STATUS | **PARTIAL** | Implémenté et testé ; durcissement par mutation en attente d'espace disque |
+
+## 12. Suite : phase 6C.1
+
+Clôture du durcissement : voir [`PHASE_6C1_RUNNING_WAVE2_HARDENING.md`](PHASE_6C1_RUNNING_WAVE2_HARDENING.md). Mutation toujours non exécutée (disque) ; gates inchangés : IMPLEMENTATION PASS, HARDENING NOT PASSED, STATUS PARTIAL.

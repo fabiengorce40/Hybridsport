@@ -356,12 +356,13 @@ describe('faisabilité (adversarial)', () => {
 
   it('dose ancrée hors tolérance de la durée cible : Running ne modifie ni T ni la dose ; le CORE décide', () => {
     const o = runSportSession(sim(), request(withHistory({}, [easy({ realizedDurationS: 1500 })])), coreContext('tol'));
-    if (o.result.status === 'ok') {
-      // Si le CORE retient la séance, T et A sont ceux de l'intention.
-      expect(o.result.value).toMatchObject({ availableTimeS: 3600, targetDurationS: 2700 });
-    } else if (o.result.status === 'error') {
-      expect(o.result.error.code).not.toBe('INVALID_INPUT');
-    }
+    // Caractérisation (6C.1, Q-W2-6) : le CORE retient la séance plus courte (doc 06 §5, DURATION.SHORTER_ACCEPTED) ;
+    // T et A restent ceux de l'intention, la dose reste la dose réalisée (aucun remplissage par Running).
+    expect(o.result.status).toBe('ok');
+    if (o.result.status !== 'ok') return;
+    expect(o.result.value).toMatchObject({ availableTimeS: 3600, targetDurationS: 2700 });
+    expect(o.result.value.blocks[0]?.items[0]?.prescription).toMatchObject({ segments: [{ dose: { durationS: 1500 } }] });
+    expect(JSON.stringify(o)).toContain('DURATION.SHORTER_ACCEPTED');
   });
 
   it('historique hostile (sans séance EASY exploitable) ⇒ aucune dose par défaut', () => {
@@ -374,8 +375,8 @@ describe('faisabilité (adversarial)', () => {
     expect(out.candidates[0]?.dose).toBeUndefined();
   });
 
-  it('contexte : historique invalide rejeté à la frontière (fail-closed)', () => {
-    const o = runSportSession(sim(), request({ ...withHistory(), sessionHistory: [{ ...easy(), realizedDurationS: -5 }] }), coreContext('bad'));
+  it.each([-5, 0, Number.NaN, Number.POSITIVE_INFINITY])('contexte : durée réalisée %s rejetée à la frontière (fail-closed)', (realizedDurationS) => {
+    const o = runSportSession(sim(), request({ ...withHistory(), sessionHistory: [{ ...easy(), realizedDurationS }] }), coreContext('bad'));
     expect(o.result.status).toBe('error');
     if (o.result.status === 'error') expect(o.result.error.code).toBe('INVALID_INPUT');
   });

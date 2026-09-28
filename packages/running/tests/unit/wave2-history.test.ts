@@ -155,5 +155,6 @@ describe('ancre V19 — sélection de la séance', () => {
     expect(zRealizedSession.safeParse({ sessionId: 's', archetype: 'EASY', structureFamily: 'CONTINUOUS', completedAt: 'hier', realizedDurationS: 10, completion: 'COMPLETED' }).success).toBe(false);
     expect(zRealizedSession.safeParse({ sessionId: 's', archetype: 'EASY', structureFamily: 'CONTINUOUS', completedAt: '2026-10-01T08:00:00Z', realizedDurationS: 10, completion: 'COMPLETED', dose: 1 }).success).toBe(false);
     expect(zRealizedSession.safeParse({ sessionId: 's', archetype: 'EASY', structureFamily: 'CONTINUOUS', completedAt: '2026-10-01T08:00:00Z', realizedDurationS: Number.POSITIVE_INFINITY, completion: 'COMPLETED' }).success).toBe(false);
+    expect(zRealizedSession.safeParse({ sessionId: 's', archetype: 'EASY', structureFamily: 'CONTINUOUS', completedAt: '2026-10-01T08:00:00Z', realizedDurationS: Number.NaN, completion: 'COMPLETED' }).success).toBe(false);
   });
 });
