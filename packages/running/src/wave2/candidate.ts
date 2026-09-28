@@ -26,9 +26,9 @@ export const WAVE2_STRUCTURE_FAMILIES: Readonly<Partial<Record<RunningSessionArc
  * Vague 3 : séances de qualité en HOLD (rejeu de la dernière structure réalisée, V19), en plus d'EASY.
  * Familles : §K (seuil continu ou fractionné), §L–§N (sévère, intervalles courts, côtes : fractionné).
  */
-export const WAVE3_ARCHETYPES: readonly RunningSessionArchetype[] = ['EASY', 'THRESHOLD', 'SEVERE', 'SHORT_INTERVAL', 'HILLS'];
+export const WAVE3_ARCHETYPES: readonly RunningSessionArchetype[] = ['EASY', 'LONG', 'THRESHOLD', 'SEVERE', 'SHORT_INTERVAL', 'HILLS'];
 export const WAVE3_STRUCTURE_FAMILIES: Readonly<Partial<Record<RunningSessionArchetype, readonly StructureFamily[]>>> = {
-  ...WAVE2_STRUCTURE_FAMILIES, THRESHOLD: ['CONTINUOUS', 'INTERVALS'], SEVERE: ['INTERVALS'], SHORT_INTERVAL: ['INTERVALS'], HILLS: ['INTERVALS'],
+  ...WAVE2_STRUCTURE_FAMILIES, LONG: ['CONTINUOUS'], THRESHOLD: ['CONTINUOUS', 'INTERVALS'], SEVERE: ['INTERVALS'], SHORT_INTERVAL: ['INTERVALS'], HILLS: ['INTERVALS'],
 };
 
 export interface ParameterUse {
@@ -49,6 +49,8 @@ export type CandidateDose =
     readonly durationS: number;
     /** Provenance de la valeur (I18) : paramètre de règle et séance réalisée d'ancrage. */
     readonly source: { readonly parameterId: string; readonly sessionId: string };
+    /** Décision D1 : pas minimal appliqué (absent en HOLD). */
+    readonly progression?: CandidateProgression;
   }
   | {
     /** Vague 3 : structure réalisée rejouée à l'identique (HOLD), aucune valeur recalculée. */
@@ -56,7 +58,10 @@ export type CandidateDose =
     readonly structure: RealizedStructure;
     readonly workS: number;
     readonly source: { readonly parameterId: string; readonly sessionId: string; readonly completedAt: string };
+    readonly progression?: CandidateProgression;
   };
+
+export interface CandidateProgression { readonly variable: string; readonly from: number; readonly to: number; readonly parameterId: string }
 
 export type CandidateIntensity =
   | {

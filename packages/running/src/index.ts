@@ -21,3 +21,4 @@ export * from './wave2/proposal.js';
 export * from './wave3/guards.js';
 export * from './wave3/structure.js';
 export * from './engine.js';
+export * from './governance/product-decisions.js';

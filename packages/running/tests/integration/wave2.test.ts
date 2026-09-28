@@ -238,10 +238,10 @@ describe('gouvernance simulée — archétypes non prescriptibles (classe C)', (
   const others = [...RUNNING_SESSION_ARCHETYPES.filter((a) => !WAVE3_ARCHETYPES.includes(a)), ...POST_V1_ARCHETYPES];
   const richHistory = RUNNING_SESSION_ARCHETYPES.flatMap((a, i) => [easy({ sessionId: `c${String(i)}`, archetype: a }), easy({ sessionId: `i${String(i)}`, archetype: a, structureFamily: 'INTERVALS' })]);
 
-  it('vague 2 : EASY seul ; vague 3 : EASY + qualité en HOLD (LONG, RACE_PACE, TEST, STRIDES, PROGRESSION_RUN exclus)', () => {
+  it('vague 2 : EASY seul ; vague 3 : EASY, LONG + qualité (RACE_PACE, TEST, STRIDES, PROGRESSION_RUN exclus)', () => {
     expect(WAVE2_ARCHETYPES).toEqual(['EASY']);
-    expect(WAVE3_ARCHETYPES).toEqual(['EASY', 'THRESHOLD', 'SEVERE', 'SHORT_INTERVAL', 'HILLS']);
-    expect(others).toEqual(['LONG', 'RACE_PACE', 'TEST', 'STRIDES', 'PROGRESSION_RUN']);
+    expect(WAVE3_ARCHETYPES).toEqual(['EASY', 'LONG', 'THRESHOLD', 'SEVERE', 'SHORT_INTERVAL', 'HILLS']);
+    expect(others).toEqual(['RACE_PACE', 'TEST', 'STRIDES', 'PROGRESSION_RUN']);
   });
 
   it.each(others)('%s : aucune séance, même tout approuvé (simulé), historique complet et références', (a) => {

@@ -113,3 +113,15 @@ Ces décisions du propriétaire du produit sont importées au registre comme val
 - le nombre de répétitions × la durée de travail ;
 - la récupération (durée et mode) ;
 - l'échauffement et le retour au calme.
+
+### R4 (décisions D1, D3, D5)
+
+- **Surcouche explicite** `withProductDecisions` (ruleset `running-0.3.0-candidate+pd-2026-09-28`, provenance `PRODUCT_DECISION`) : le registre expert `running-0.2.0-candidate` est **inchangé** et conserve son comportement (HOLD, refus après un retour négatif).
+- **D1 — progression** (`wave3/progression.ts`) :
+  - +1 min pour une course continue (EASY, LONG, seuil continu), +1 répétition pour un fractionné ;
+  - seulement après 2 séances consécutives du même type réalisées **à la dose ancrée**, terminées, sans retour négatif, avec un ressenti connu et non plus dur que prévu ;
+  - une seule variable à la fois.
+  - HOLD tracé (`PROGRESSION_HOLD`) : capacité désactivée, V23 illisible, repli D5, reprise non levée, tolérance non démontrée, temps disponible insuffisant (jamais de dose tronquée).
+- **D3 — LONG** : dernière sortie longue réalisée, plafond EASY_LOW, comptée à forte demande (V32 sans marge, défaut conservateur tracé) ; gardes §G.3 (P-R1+), §X, V10, V11. Aucune dose déduite d'une course facile.
+- **D5 — repli** : après une séance plus récente négative, ancre = dernière dose réussie, tracée `DOSE_ANCHOR_FALLBACK`, et aucune hausse juste après.
+- **Encore bloqué** : première exposition (D2 : valeurs de structure minimale attendues), RACE_PACE, STRIDES, TEST (protocole à implémenter), allure (vague R5).

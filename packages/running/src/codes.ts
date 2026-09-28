@@ -62,6 +62,10 @@ export const RUNNING_CODES = {
   STRUCTURE_UNAVAILABLE: 'DOSE.RUNNING.STRUCTURE_UNAVAILABLE',
   FAMILY_AMBIGUOUS: 'PLAN.RUNNING.FAMILY_AMBIGUOUS',
   HIGH_DEMAND_DEFAULT_CONSERVATIVE: 'DOSE.RUNNING.HIGH_DEMAND_DEFAULT_CONSERVATIVE',
+  // Décisions produit (D1, D5)
+  DOSE_ANCHOR_FALLBACK: 'DOSE.RUNNING.DOSE_ANCHOR_FALLBACK',
+  PROGRESSION_STEP_APPLIED: 'PROGRESSION.RUNNING.PROGRESSION_STEP_APPLIED',
+  PROGRESSION_HOLD: 'PROGRESSION.RUNNING.PROGRESSION_HOLD',
 } as const;
 export type RunningCode = (typeof RUNNING_CODES)[keyof typeof RUNNING_CODES];
 
@@ -109,6 +113,9 @@ export const RUNNING_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: RUNNING_CODES.QUALITY_GUARD_FAILED, categories: ['feasibility', 'safety'], params: { archetype: S, rule: S, detail: S }, audience: 'user', severity: 'error' },
   { code: RUNNING_CODES.STRUCTURE_UNAVAILABLE, categories: ['feasibility'], params: { archetype: S, sessionId: S, cause: S }, audience: 'user', severity: 'error' },
   { code: RUNNING_CODES.FAMILY_AMBIGUOUS, categories: ['feasibility'], params: { archetype: S, families: L }, audience: 'internal', severity: 'error' },
+  { code: RUNNING_CODES.DOSE_ANCHOR_FALLBACK, categories: ['adaptation'], params: { archetype: S, sessionId: S, negativeSessionIds: L }, audience: 'user', severity: 'notice' },
+  { code: RUNNING_CODES.PROGRESSION_STEP_APPLIED, categories: ['adaptation'], params: { archetype: S, variable: S, from: N, to: N, parameterId: S }, audience: 'user', severity: 'info' },
+  { code: RUNNING_CODES.PROGRESSION_HOLD, categories: ['adaptation'], params: { archetype: S, cause: S }, audience: 'user', severity: 'info' },
   { code: RUNNING_CODES.HIGH_DEMAND_DEFAULT_CONSERVATIVE, categories: ['information'], params: { archetype: S, parameterId: S }, audience: 'internal', severity: 'notice' },
 ];
 

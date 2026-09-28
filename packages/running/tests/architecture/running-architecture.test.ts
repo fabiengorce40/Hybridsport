@@ -14,7 +14,9 @@ const core = loadCoreSources(['packages/domain/src', 'packages/engine/src']);
 const strength = loadCoreSources(['packages/strength/src']);
 /** Seul fichier de données autorisé à porter des valeurs numériques de programmation (candidates, gouvernées). */
 const REGISTRY_DATA = 'packages/running/src/governance/registry-v1-candidate.ts';
-const algorithms = running.filter((f) => f.path !== REGISTRY_DATA);
+/** Décisions produit (surcouche de valeurs candidates, 2026-09-28) : fichier de DONNÉES, comme le registre. */
+const PRODUCT_DECISIONS_DATA = 'packages/running/src/governance/product-decisions.ts';
+const algorithms = running.filter((f) => f.path !== REGISTRY_DATA && f.path !== PRODUCT_DECISIONS_DATA);
 
 describe('frontières de dépendances', () => {
   it('Running n’importe que du relatif, @hybridsport/domain, @hybridsport/engine et zod', () => {

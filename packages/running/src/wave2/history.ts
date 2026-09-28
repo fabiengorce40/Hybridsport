@@ -80,7 +80,11 @@ export const ANCHOR_UNAVAILABLE_CAUSES = [
 export type AnchorUnavailableCause = (typeof ANCHOR_UNAVAILABLE_CAUSES)[number];
 
 export type HistoryAnchor =
-  | { readonly status: 'anchored'; readonly session: RealizedSession; readonly feedbackKnown: boolean; readonly parameterIds: readonly string[]; readonly reasons: readonly ReasonCode[] }
+  | {
+    readonly status: 'anchored'; readonly session: RealizedSession; readonly feedbackKnown: boolean; readonly parameterIds: readonly string[]; readonly reasons: readonly ReasonCode[];
+    /** D5 : ancre de repli (dernière dose réussie) après une séance plus récente négative — jamais une base de hausse. */
+    readonly afterNegativeFallback?: true;
+  }
   | { readonly status: 'unavailable'; readonly cause: AnchorUnavailableCause; readonly parameterIds: readonly string[]; readonly reasons: readonly ReasonCode[] };
 
 export interface AnchorQuery {
@@ -102,8 +106,12 @@ function readV19(v: unknown): boolean {
   if (v === null || typeof v !== 'object') return false;
   const o = v as Record<string, unknown>;
   return o.anchor === 'LAST_REALIZED_DOSE' && o.sameArchetype === true && o.sameStructureFamily === true && o.recencyBand === 'RECENT'
-    && o.recencyParameter === V12 && o.requiresNoNegativeResponse === true && o.otherwise === 'FIRST_EXPOSURE_PARAMETER';
+    && o.recencyParameter === V12 && o.requiresNoNegativeResponse === true && o.otherwise === 'FIRST_EXPOSURE_PARAMETER'
+    && (o.afterNegativeResponse === undefined || o.afterNegativeResponse === 'REFUSE' || o.afterNegativeResponse === 'LAST_SUCCESSFUL_DOSE');
 }
+
+/** Règle après un retour négatif plus récent : REFUS (V19 d'origine) ou repli sur la dernière dose réussie (décision D5). */
+const fallbackAfterNegative = (v: unknown): boolean => (v as { afterNegativeResponse?: unknown }).afterNegativeResponse === 'LAST_SUCCESSFUL_DOSE';
 
 /** Ancre de dose V19. Pure et déterministe ; toute incertitude conduit à `unavailable`, jamais à une dose par défaut. */
 export function historyAnchor(q: AnchorQuery): HistoryAnchor {
@@ -138,12 +146,18 @@ export function historyAnchor(q: AnchorQuery): HistoryAnchor {
   if (tied.some((s) => s.realizedDurationS !== first.realizedDurationS || JSON.stringify(s.structure) !== JSON.stringify(first.structure))) return unavailable('AMBIGUOUS');
   if ((nowMs - latest) / MS_PER_WEEK > recentMaxWeeks) return unavailable('NOT_RECENT');
   const later = sameKind.filter((s) => at(s) > latest);
-  if (later.some(sessionNegativeResponse)) return unavailable('LATER_NEGATIVE_RESPONSE');
+  const negativeLater = later.filter(sessionNegativeResponse);
+  if (negativeLater.length > 0 && !fallbackAfterNegative(policy.value)) return unavailable('LATER_NEGATIVE_RESPONSE');
   if (later.some((s) => s.completion === 'UNKNOWN')) return unavailable('LATER_SESSION_UNKNOWN');
   // Identifiant le plus petit ; à identifiant égal (données dupliquées), ordre total sur l'enregistrement : indépendant de l'ordre d'entrée.
   const cmp = (x: string, y: string): number => (x < y ? -1 : x > y ? 1 : 0);
   const session = [...tied].sort((a, b) => cmp(a.sessionId, b.sessionId) || cmp(JSON.stringify(a), JSON.stringify(b)))[0] ?? first;
   const feedbackKnown = session.unexpectedDifficulty !== 'UNKNOWN';
   reasons.push(runningReasons.emit(RUNNING_CODES.DOSE_ANCHOR_SELECTED, { archetype: q.archetype, sessionId: session.sessionId, realizedDurationS: session.realizedDurationS, feedbackKnown }));
+  if (negativeLater.length > 0) {
+    // D5 : la séance interrompue (ou négative) n'est jamais l'ancre ; on rejoue la dernière dose réussie, sans hausse.
+    reasons.push(runningReasons.emit(RUNNING_CODES.DOSE_ANCHOR_FALLBACK, { archetype: q.archetype, sessionId: session.sessionId, negativeSessionIds: negativeLater.map((s) => s.sessionId).sort() }));
+    return { status: 'anchored', session, feedbackKnown, parameterIds, reasons, afterNegativeFallback: true };
+  }
   return { status: 'anchored', session, feedbackKnown, parameterIds, reasons };
 }

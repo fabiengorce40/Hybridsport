@@ -25,7 +25,8 @@ export type MaturityState = (typeof MATURITY_STATES)[number];
 export const GOVERNANCE_CLASSES = ['G1_POLICY', 'G1_DOSE', 'EXPERT', 'PRODUCT_GUARDRAIL', 'PRODUCT_GUARDRAIL_AND_EXPERT', 'TECHNICAL'] as const;
 export type GovernanceClass = (typeof GOVERNANCE_CLASSES)[number];
 
-export const PROVENANCE_CLASSES = ['SOURCE_DERIVED', 'SOURCE_INFORMED', 'EXPERT_PROPOSED', 'PRODUCT_GUARDRAIL', 'TECHNICAL', 'NONE'] as const;
+/** PRODUCT_DECISION : arbitrage du propriétaire du produit (candidat, jamais une approbation experte). */
+export const PROVENANCE_CLASSES = ['SOURCE_DERIVED', 'SOURCE_INFORMED', 'EXPERT_PROPOSED', 'PRODUCT_GUARDRAIL', 'PRODUCT_DECISION', 'TECHNICAL', 'NONE'] as const;
 export type ProvenanceClass = (typeof PROVENANCE_CLASSES)[number];
 
 export const SENSITIVITIES = ['HIGH', 'MEDIUM', 'LOW', 'UNKNOWN'] as const;

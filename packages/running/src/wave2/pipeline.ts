@@ -29,7 +29,9 @@ import type { RunningContext } from '../context.js';
 import { historyAnchor } from './history.js';
 import type { RealizedSession, StructureFamily } from './history.js';
 import { WAVE3_ARCHETYPES, WAVE3_STRUCTURE_FAMILIES } from './candidate.js';
-import { qualityGuards, QUALITY_ARCHETYPES } from '../wave3/guards.js';
+import { qualityGuards, QUALITY_ARCHETYPES, returnLifted } from '../wave3/guards.js';
+import { progressionStep, V23 } from '../wave3/progression.js';
+import type { StepResult } from '../wave3/progression.js';
 import type { QualityArchetype } from '../wave3/guards.js';
 import { buildQualityStructure, QUALITY_DOMAIN } from '../wave3/structure.js';
 import type { CandidateRejection, ParameterUse, PipelineStage, RunningCandidate } from './candidate.js';
@@ -188,10 +190,10 @@ function evaluate(a: RunningSessionArchetype, family: StructureFamily, env: Eval
     used.push(paramUse(params, RETURN_PROTOCOL));
   }
   const quality = (QUALITY_ARCHETYPES as readonly string[]).includes(a);
-  if (quality) {
+  if (quality || a === 'LONG') {
     // Vague 3 : gardes documentées des séances de qualité (§G.3, §K, §M, §N, §X, V10, V11).
     const thresholdRef = analysis.references.find((r) => r.decision === 'THRESHOLD_BOUNDARY')?.confidence ?? 'NONE';
-    const guard = qualityGuards({ archetype: a as QualityArchetype, family, ctx, now: input.context.now, parameters: params, thresholdReferenceConfidence: thresholdRef });
+    const guard = qualityGuards({ archetype: a as QualityArchetype | 'LONG', family, ctx, now: input.context.now, parameters: params, thresholdReferenceConfidence: thresholdRef });
     if (!guard.ok) return reject('SAFETY_G1', guard.reasons);
     reasons.push(...guard.reasons);
     for (const pid of guard.parameterIds) used.push(paramUse(params, pid));
@@ -206,8 +208,16 @@ function evaluate(a: RunningSessionArchetype, family: StructureFamily, env: Eval
   if (anchor.status === 'unavailable') return reject('FEASIBILITY', anchor.reasons);
   reasons.push(...anchor.reasons);
   for (const pid of anchor.parameterIds) used.push(paramUse(params, pid));
-  if (quality) return qualityTail(a as QualityArchetype, family, anchor.session, anchor.reasons, anchor.parameterIds[0] ?? '', { input, assessment, trace, used, reasons, base, reject, snapshot, getDegradations: () => degradations, setDegradations: (d) => { degradations = d; }, governance, opts });
-  const dose = { kind: 'duration' as const, durationS: anchor.session.realizedDurationS, source: { parameterId: anchor.parameterIds[0] ?? '', sessionId: anchor.session.sessionId } };
+  if (quality) {
+    const step = stepFor(a, family, anchor, { ctx, analysis, params, now: input.context.now, lifted: returnLifted(ctx, params, ctx.mode).lifted, capability: 'progressionBeyondHistory' });
+    return qualityTail(a as QualityArchetype, family, anchor.session, anchor.reasons, anchor.parameterIds[0] ?? '', step, { input, assessment, trace, used, reasons, base, reject, snapshot, getDegradations: () => degradations, setDegradations: (d) => { degradations = d; }, governance, opts });
+  }
+  const lifted = returnLifted(ctx, params, ctx.mode).lifted;
+  const step = stepFor(a, family, anchor, { ctx, analysis, params, now: input.context.now, lifted, capability: a === 'LONG' ? 'longRunProgression' : 'progressionBeyondHistory' });
+  const holdDose = { kind: 'duration' as const, durationS: anchor.session.realizedDurationS, source: { parameterId: anchor.parameterIds[0] ?? '', sessionId: anchor.session.sessionId } };
+  let dose: typeof holdDose & { progression?: { variable: string; from: number; to: number; parameterId: string } } = step.kind === 'step' && step.durationS !== undefined
+    ? { ...holdDose, durationS: step.durationS, progression: { variable: step.variable, from: step.from, to: step.to, parameterId: V23 } }
+    : holdDose;
   const exercises = runExercises(input);
   const exercise = exercises[0];
   if (exercise === undefined || exercises.length > 1) {
@@ -237,16 +247,40 @@ function evaluate(a: RunningSessionArchetype, family: StructureFamily, env: Eval
     domain: CORE_RUN_DOMAIN.EASY_LOW, effort: { rpe: { min: ceiling, max: ceiling } }, priority: 'effort',
     ...(ctx.sensors.wearable ? {} : { noWearable: true }),
   };
-  const structure = withDerivedEstimate({ type: 'run_structure', segments: [{ kind: 'steady', id: 'steady', dose: { durationS: dose.durationS }, target }] });
+  const buildSteady = (durationS: number) => withDerivedEstimate({ type: 'run_structure', segments: [{ kind: 'steady', id: 'steady', dose: { durationS }, target }] });
+  let structure = buildSteady(dose.durationS);
   // Invariant : dose positive finie (schéma) et cible complète ⇒ le CORE dérive toujours l'estimation.
   if (structure === undefined) throw new TypeError(`structure run_structure non dérivable : ${base.candidateId}`);
+  let stepReasons = step.reasons;
+  if (dose.progression !== undefined && structure.estimate.totalS.max > input.intent.availableTimeS) {
+    // Le pas ne tient pas dans le temps disponible : HOLD tracé (jamais une dose tronquée).
+    dose = holdDose;
+    structure = buildSteady(dose.durationS);
+    if (structure === undefined) throw new TypeError(`structure run_structure non dérivable : ${base.candidateId}`);
+    stepReasons = [runningReasons.emit(RUNNING_CODES.PROGRESSION_HOLD, { archetype: a, cause: 'TIME_AVAILABLE' })];
+  }
+  reasons.push(...stepReasons);
+  if (dose.progression !== undefined) used.push(paramUse(params, V23));
   if (structure.estimate.totalS.max > input.intent.availableTimeS) {
     return reject('FEASIBILITY', [runningReasons.emit(RUNNING_CODES.TIME_EXCEEDED, { archetype: a, availableTimeS: input.intent.availableTimeS, estimatedMaxS: structure.estimate.totalS.max })], { dose, intensity, exerciseId: exercise.id });
   }
+  if (a === 'LONG') reasons.push(runningReasons.emit(RUNNING_CODES.HIGH_DEMAND_DEFAULT_CONSERVATIVE, { archetype: a, parameterId: 'running.longRun.marginAndBound' }));
   if (opts.simulation && ctx.mode === 'CANDIDATE') reasons.push(runningReasons.emit(RUNNING_CODES.SIMULATED_PROPOSAL, { rulesetVersion: governance.rulesetVersion }));
   reasons.push(...sortDegradations(degradations).filter((d) => d.effect !== 'PRECISION_REDUCED').map((d) => d.reason));
   const candidate = snapshot({ precision: 'EFFORT_ONLY', dose, intensity, exerciseId: exercise.id });
   return { candidate, built: { structure, exercise } };
+}
+
+/** Pas de progression (D1) pour l'ancre retenue : capacité de vague 1, reprise levée, tolérance démontrée. */
+function stepFor(a: RunningSessionArchetype, family: StructureFamily, anchor: Extract<ReturnType<typeof historyAnchor>, { status: 'anchored' }>, e: {
+  readonly ctx: RunningContext; readonly analysis: RunningWave1Analysis; readonly params: readonly RunningParameter[]; readonly now: string; readonly lifted: boolean; readonly capability: 'longRunProgression' | 'progressionBeyondHistory';
+}): StepResult {
+  return progressionStep({
+    archetype: a, family, anchor: anchor.session, afterNegativeFallback: anchor.afterNegativeFallback === true, history: e.ctx.sessionHistory, now: e.now,
+    capabilityEnabled: e.analysis.capabilities.find((c) => c.capability === e.capability)?.enabled === true, returnLifted: e.lifted,
+    ...(e.ctx.returnState.state !== 'NONE' && e.ctx.recentLoad?.returnStartedAt !== undefined ? { returnStartedAt: e.ctx.recentLoad.returnStartedAt } : {}),
+    parameters: e.params, mode: e.ctx.mode,
+  });
 }
 
 interface QualityEnv {
@@ -272,7 +306,7 @@ const QUALITY_PACE_NOT_PRESCRIBED = 'QUALITY_PACE_NOT_PRESCRIBED';
  * même famille), cibles à l'effort (bandes V02), échauffement et retour au calme sous le plafond EASY_LOW.
  * Aucune hausse (V23 vide), aucune première exposition (V35–V37), aucune allure (vague R4).
  */
-function qualityTail(a: QualityArchetype, family: StructureFamily, anchored: RealizedSession, anchorReasons: readonly ReasonCode[], policyId: string, env: QualityEnv): Evaluated {
+function qualityTail(a: QualityArchetype, family: StructureFamily, anchored: RealizedSession, anchorReasons: readonly ReasonCode[], policyId: string, step: StepResult, env: QualityEnv): Evaluated {
   const { input, assessment, trace, used, reasons, base, reject, snapshot, governance, opts } = env;
   const ctx = input.discipline;
   const params = governance.parameters;
@@ -281,7 +315,11 @@ function qualityTail(a: QualityArchetype, family: StructureFamily, anchored: Rea
   if (st === undefined || realizedFamily !== family) {
     return reject('FEASIBILITY', [...anchorReasons, runningReasons.emit(RUNNING_CODES.STRUCTURE_UNAVAILABLE, { archetype: a, sessionId: anchored.sessionId, cause: st === undefined ? 'NOT_RECORDED' : 'FAMILY_MISMATCH' })]);
   }
-  const dose = { kind: 'structure' as const, structure: st, workS: st.reps * st.workS, source: { parameterId: policyId, sessionId: anchored.sessionId, completedAt: anchored.completedAt } };
+  const holdDose = { kind: 'structure' as const, structure: st, workS: st.reps * st.workS, source: { parameterId: policyId, sessionId: anchored.sessionId, completedAt: anchored.completedAt } };
+  const stepped = step.kind === 'step' && step.structure !== undefined ? step.structure : undefined;
+  let dose: typeof holdDose & { progression?: { variable: string; from: number; to: number; parameterId: string } } = stepped !== undefined && step.kind === 'step'
+    ? { ...holdDose, structure: stepped, workS: stepped.reps * stepped.workS, progression: { variable: step.variable, from: step.from, to: step.to, parameterId: V23 } }
+    : holdDose;
   const exercises = runExercises(input);
   const exercise = exercises[0];
   if (exercise === undefined || exercises.length > 1) {
@@ -312,8 +350,19 @@ function qualityTail(a: QualityArchetype, family: StructureFamily, anchored: Rea
   const intensity = { domain, rpe: { min: lo, max: hi }, easyCeiling: easy, source: { parameterId: V02 } };
   trace.push({ stage: 'PRECISION', subject: base.candidateId, decision: 'EFFORT_ONLY', reasons: [precisionReason] });
 
-  const structure = buildQualityStructure(st, { domain, rpe: { min: lo, max: hi }, easyCeiling: easy, noWearable: !ctx.sensors.wearable });
+  const targets = { domain, rpe: { min: lo, max: hi }, easyCeiling: easy, noWearable: !ctx.sensors.wearable };
+  let structure = buildQualityStructure(dose.structure, targets);
   if (structure === undefined) throw new TypeError(`structure run_structure non dérivable : ${base.candidateId}`);
+  let stepReasons = step.reasons;
+  if (dose.progression !== undefined && structure.estimate.totalS.max > input.intent.availableTimeS) {
+    // Le pas ne tient pas dans le temps disponible : HOLD tracé (jamais une structure tronquée).
+    dose = holdDose;
+    structure = buildQualityStructure(dose.structure, targets);
+    if (structure === undefined) throw new TypeError(`structure run_structure non dérivable : ${base.candidateId}`);
+    stepReasons = [runningReasons.emit(RUNNING_CODES.PROGRESSION_HOLD, { archetype: a, cause: 'TIME_AVAILABLE' })];
+  }
+  reasons.push(...stepReasons);
+  if (dose.progression !== undefined) used.push(paramUse(params, V23));
   if (structure.estimate.totalS.max > input.intent.availableTimeS) {
     return reject('FEASIBILITY', [runningReasons.emit(RUNNING_CODES.TIME_EXCEEDED, { archetype: a, availableTimeS: input.intent.availableTimeS, estimatedMaxS: structure.estimate.totalS.max })], { dose, intensity, exerciseId: exercise.id });
   }

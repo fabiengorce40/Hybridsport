@@ -32,10 +32,10 @@ describe('contrat SportEngine', () => {
     expect(o.trace.entries.map((t) => t.step)).not.toContain('validate'); // rien à valider : aucune séance
   });
 
-  it('vague 3 : archétype hors vague 3 (LONG) ⇒ PRESCRIPTION_NOT_IMPLEMENTED (vague 3), aucune séance', () => {
-    const e = errorOf(runSportSession(engine, runRequest(ctxInput(), 'running.long'), coreContext('run-1b')));
+  it('vague 3 : archétype hors vague 3 (RACE_PACE) ⇒ PRESCRIPTION_NOT_IMPLEMENTED (vague 3), aucune séance', () => {
+    const e = errorOf(runSportSession(engine, runRequest(ctxInput(), 'running.race_pace'), coreContext('run-1b')));
     expect(e?.code).toBe('NO_VALID_SOLUTION');
-    expect(e?.reasons[0]).toMatchObject({ code: RUNNING_CODES.PRESCRIPTION_NOT_IMPLEMENTED, params: { archetype: 'LONG', wave: '3' } });
+    expect(e?.reasons[0]).toMatchObject({ code: RUNNING_CODES.PRESCRIPTION_NOT_IMPLEMENTED, params: { archetype: 'RACE_PACE', wave: '3' } });
   });
 
   it('P-R0 : les raisons d’indisponibilité (V33) accompagnent le NO_VALID', () => {

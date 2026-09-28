@@ -24,8 +24,11 @@ export type QualityArchetype = (typeof QUALITY_ARCHETYPES)[number];
  */
 export const HIGH_DEMAND_ARCHETYPES: readonly RunningSessionArchetype[] = ['THRESHOLD', 'SEVERE', 'SHORT_INTERVAL', 'HILLS', 'RACE_PACE', 'LONG', 'TEST'];
 
-/** Niveau minimal par archétype de qualité (§G.3 : P-R2 et plus). */
-const MIN_LEVEL: Readonly<Record<QualityArchetype, RunningLevel>> = { THRESHOLD: 'P_R2', SEVERE: 'P_R2', SHORT_INTERVAL: 'P_R2', HILLS: 'P_R2' };
+/** Archétypes soumis aux gardes de forte demande : qualité + LONG (§G.3, §S : LONG désigné compté HIGH_DEMAND, V32 sans marge). */
+export type GuardedArchetype = QualityArchetype | 'LONG';
+
+/** Niveau minimal (§G.3 : qualité P-R2 et plus ; LONG_RUN P-R1 et plus). */
+const MIN_LEVEL: Readonly<Record<GuardedArchetype, RunningLevel>> = { THRESHOLD: 'P_R2', SEVERE: 'P_R2', SHORT_INTERVAL: 'P_R2', HILLS: 'P_R2', LONG: 'P_R1' };
 /** §K : CONTINUOUS réservé à P-R3 et plus, ou confiance ≥ MEDIUM. */
 const CONTINUOUS_THRESHOLD_LEVEL: RunningLevel = 'P_R3';
 const CONTINUOUS_THRESHOLD_CONFIDENCE: ConfidenceLevel = 'MEDIUM';
@@ -41,7 +44,7 @@ const MS_PER_DAY = 86_400_000;
 const dayOf = (iso: string): number => Math.floor(Date.parse(iso) / MS_PER_DAY);
 
 export interface GuardInput {
-  readonly archetype: QualityArchetype;
+  readonly archetype: GuardedArchetype;
   readonly family: StructureFamily;
   readonly ctx: RunningContext;
   readonly now: string;
@@ -80,7 +83,7 @@ export function qualityGuards(g: GuardInput): GuardResult {
   if (a === 'SHORT_INTERVAL' && !SHORT_INTERVAL_GOALS.includes(ctx.goal.type)) return refuse('G3_GOAL', ctx.goal.type);
   if (a === 'HILLS' && ctx.terrain?.hills !== true) return refuse('N_TERRAIN_UNDECLARED', 'hills');
 
-  // §X : LONG ⇒ EASY seulement ; UNKNOWN ⇒ aucune séance HIGH_DEMAND ; MODERATE ⇒ sévère seulement après levée (V25).
+  // §X : LONG ⇒ EASY seulement ; UNKNOWN ⇒ aucune séance HIGH_DEMAND ; MODERATE ⇒ sévère et LONG_RUN seulement après levée (V25).
   const state = ctx.returnState.state;
   if (state === 'LONG' || state === 'UNKNOWN') return refuse('X_RETURN_STATE', state);
   if (state === 'MODERATE' && a !== 'THRESHOLD') {
