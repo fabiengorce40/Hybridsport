@@ -133,10 +133,22 @@ describe('§R — composition hebdomadaire', () => {
     expect(c.slots.filter((s) => s.role === 'KEY')).toHaveLength(1);
   });
 
-  it('séances verrouillées conservées ; une forte demande verrouillée compte pour V11', () => {
+  it('séance clé déjà faite cette semaine (verrouillée) ⇒ aucune seconde KEY', () => {
     const week = days([WEEK[0], WEEK[1], WEEK[3]]).map((d) => (d.date === WEEK[0] ? { ...d, locked: 'SEVERE' as const } : d));
     const c = compose(disc([thr(), run('e', 3)]), week);
-    expect(plan(c)).toEqual(['28:SEVERE:LOCKED', '29:EASY:EASY', '01:THRESHOLD:KEY']);
+    expect(plan(c)).toEqual(['28:SEVERE:LOCKED', '29:EASY:EASY', '01:EASY:EASY']);
+  });
+
+  it('forte demande verrouillée hors KEY (sortie longue, 10K) : compte pour V11, la KEY évite le lendemain', () => {
+    const week = days([WEEK[0], WEEK[1], WEEK[3]]).map((d) => (d.date === WEEK[0] ? { ...d, locked: 'LONG' as const } : d));
+    const c = compose(disc([thr(), run('e', 3)]), week);
+    expect(plan(c)).toEqual(['28:LONG:LOCKED', '29:EASY:EASY', '01:THRESHOLD:KEY']);
+  });
+
+  it('recomposition partielle : fréquence hebdomadaire conservée (V26), jours restants seulement', () => {
+    const c = composeRunningWeek({ ctx: parsed(disc([thr(), run('e', 3)])), days: days([WEEK[4]]), weeklySessions: 3, parameters: governance.parameters, mode: 'CANDIDATE', probe: realProbe(disc([thr(), run('e', 3)]), () => 3600) });
+    expect(c.mode).toBe('NORMAL');
+    expect(plan(c)).toEqual(['02:THRESHOLD:KEY']);
   });
 
   it('chaque séance composée est acceptée par le CORE ; déterminisme (ordre des jours sans effet)', () => {

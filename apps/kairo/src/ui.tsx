@@ -1,6 +1,6 @@
 /** Composants communs (présentation uniquement). */
 import type { ReactNode } from 'react';
-import { AUTHORITY_LABELS, SPORT_LABELS } from '@hybridsport/app-core';
+import { AUTHORITY_LABELS, RUNNING_ARCHETYPE_LABELS, SPORT_LABELS } from '@hybridsport/app-core';
 import type { Authority, GeneratedSession, Sport } from '@hybridsport/app-core';
 
 export type Tab = 'home' | 'plan' | 'run' | 'history' | 'profile';
@@ -48,7 +48,7 @@ export function Notice({ tone = 'info', children }: { tone?: 'info' | 'warn' | '
 export const sportLabel = (s: Sport): string => SPORT_LABELS[s];
 
 export function sessionTitle(g: GeneratedSession): string {
-  if (g.sport === 'running') return 'Footing facile';
+  if (g.sport === 'running') return RUNNING_ARCHETYPE_LABELS[g.archetypeId] ?? 'Course';
   return 'Full body';
 }
 
@@ -59,6 +59,10 @@ export const WEEKDAY_NAMES = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi',
 export function formatDate(date: string): string {
   const d = new Date(`${date}T12:00:00Z`);
   return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+}
+
+export function formatDateShort(date: string): string {
+  return new Date(`${date}T12:00:00Z`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 }
 
 export function Topbar({ title, onBack, right }: { title: string; onBack: () => void; right?: ReactNode }) {

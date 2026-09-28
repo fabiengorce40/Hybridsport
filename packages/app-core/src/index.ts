@@ -3,6 +3,7 @@ export * from './dates.js';
 export * from './provisional-content.js';
 export * from './planner.js';
 export * from './generate.js';
+export * from './running-week.js';
 export * from './progression.js';
 export * from './app.js';
 export * from './store.js';

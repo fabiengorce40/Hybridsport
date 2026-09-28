@@ -77,6 +77,11 @@ export interface ComposeInput {
   readonly parameters: readonly RunningParameter[];
   readonly mode: RunningMode;
   readonly probe: Probe;
+  /**
+   * Nombre de séances de course de la SEMAINE (V26, §R étape 4), quand `days` n'en contient qu'une partie
+   * (recomposition des jours restants). Par défaut : `days.length`.
+   */
+  readonly weeklySessions?: number;
 }
 
 const isHd = (a: RunningSessionArchetype): boolean => HIGH_DEMAND_ARCHETYPES.includes(a);
@@ -96,8 +101,9 @@ export function composeRunningWeek(i: ComposeInput): WeekComposition {
   const v26 = resolveParameter(i.parameters, V26, i.mode);
   reasons.push(...v26.reasons);
   const minimum = v26.status === 'resolved' ? (v26.value as { sessionsPerWeek?: unknown }).sessionsPerWeek : undefined;
-  if (typeof minimum !== 'number' || days.length < minimum) {
-    reasons.push(runningReasons.emit(RUNNING_CODES.WEEK_MAINTENANCE_MODE, { sessions: days.length, cause: typeof minimum === 'number' ? 'BELOW_MINIMUM_FREQUENCY' : 'V26_UNRESOLVED' }));
+  const weekly = i.weeklySessions ?? days.length;
+  if (typeof minimum !== 'number' || weekly < minimum) {
+    reasons.push(runningReasons.emit(RUNNING_CODES.WEEK_MAINTENANCE_MODE, { sessions: weekly, cause: typeof minimum === 'number' ? 'BELOW_MINIMUM_FREQUENCY' : 'V26_UNRESOLVED' }));
     return easyRest('MAINTENANCE');
   }
 
@@ -110,7 +116,7 @@ export function composeRunningWeek(i: ComposeInput): WeekComposition {
   const cap = dv?.[i.ctx.population.level];
   const separated = sep.status === 'resolved' && (sep.value as { default?: unknown }).default === 'NO_CONSECUTIVE_HIGH_DEMAND_DAYS';
   if (typeof perDays !== 'number' || !(perDays > 0) || typeof cap !== 'number' || !(cap >= 0) || !separated) {
-    reasons.push(runningReasons.emit(RUNNING_CODES.WEEK_MAINTENANCE_MODE, { sessions: days.length, cause: 'HIGH_DEMAND_RULES_UNRESOLVED' }));
+    reasons.push(runningReasons.emit(RUNNING_CODES.WEEK_MAINTENANCE_MODE, { sessions: weekly, cause: 'HIGH_DEMAND_RULES_UNRESOLVED' }));
     return easyRest('MAINTENANCE');
   }
   const realizedHd = i.ctx.sessionHistory.filter((s) => isHd(s.archetype) && s.completion !== 'SKIPPED').map((s) => dayOfInstant(s.completedAt));
@@ -136,7 +142,9 @@ export function composeRunningWeek(i: ComposeInput): WeekComposition {
   };
 
   const goal = i.ctx.goal.type;
-  const longWanted = LONG_GOALS.includes(goal) && days.length >= LONG_MIN_SESSIONS;
+  const locked = [...slots.values()];
+  const longDone = locked.some((s) => s.archetype === 'LONG');
+  const longWanted = LONG_GOALS.includes(goal) && weekly >= LONG_MIN_SESSIONS && !longDone;
   // 4 (avant 3). LONG d'abord : c'est la séance la plus longue ; la KEY du marathon EST la sortie longue.
   if (longWanted) {
     const role: SlotRole = KEY_PREFERENCES[goal][0] === 'LONG' ? 'KEY' : 'LONG';
@@ -144,12 +152,14 @@ export function composeRunningWeek(i: ComposeInput): WeekComposition {
     reasons.push(r.placed
       ? runningReasons.emit(RUNNING_CODES.WEEK_SLOT_SELECTED, { archetype: 'LONG', role, date: [...slots.values()].find((s) => s.archetype === 'LONG')?.date ?? '' })
       : runningReasons.emit(RUNNING_CODES.WEEK_LONG_NOT_PLACED, { cause: 'NO_ADMISSIBLE_DAY' }));
-  } else if (LONG_GOALS.includes(goal)) {
+  } else if (LONG_GOALS.includes(goal) && !longDone) {
     reasons.push(runningReasons.emit(RUNNING_CODES.WEEK_LONG_NOT_PLACED, { cause: 'FREQUENCY_BELOW_THREE' }));
   }
 
-  // 3. KEY (si la sortie longue n'est pas déjà la KEY) ; TEST en remplacement quand une calibration est demandée.
-  const keyTaken = [...slots.values()].some((s) => s.role === 'KEY');
+  // 3. KEY (si la sortie longue n'est pas déjà la KEY, et si aucune séance clé n'est déjà verrouillée cette semaine) ;
+  // TEST en remplacement quand une calibration est demandée.
+  const keyArchetypes = new Set<RunningSessionArchetype>([...KEY_PREFERENCES[goal].filter((x) => x !== 'EASY'), 'TEST']);
+  const keyTaken = [...slots.values()].some((s) => s.role === 'KEY') || locked.some((s) => keyArchetypes.has(s.archetype) && (s.archetype !== 'LONG' || KEY_PREFERENCES[goal][0] === 'LONG'));
   if (!keyTaken) {
     const conflict = detectConflicts(i.ctx.references).length > 0;
     let done = false;
@@ -160,7 +170,7 @@ export function composeRunningWeek(i: ComposeInput): WeekComposition {
     }
     for (const a of KEY_PREFERENCES[goal].filter((x) => x !== 'LONG' || !longWanted)) {
       if (done) break;
-      if (a === 'LONG' && days.length < LONG_MIN_SESSIONS) continue;
+      if (a === 'LONG' && weekly < LONG_MIN_SESSIONS) continue;
       const r = place(a, 'KEY');
       if (r.placed) { reasons.push(runningReasons.emit(RUNNING_CODES.WEEK_SLOT_SELECTED, { archetype: a, role: 'KEY', date: [...slots.values()].find((s) => s.role === 'KEY')?.date ?? '' })); done = true; break; }
       if (r.testRequired) {

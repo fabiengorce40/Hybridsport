@@ -24,7 +24,7 @@ import { strengthContent } from './provisional-content.js';
 export const STRENGTH_ARCHETYPE = 'str_full_body';
 /** Stimulus de l'intention selon l'objectif (spec strength 02 l.64 : le stimulus porte l'orientation force / hypertrophie / générale ; choix du planificateur). */
 export const STIMULUS_BY_GOAL: Readonly<Record<StrengthGoal, string>> = { strength: 'strength_heavy', hypertrophy: 'strength_volume', general: 'strength_general' };
-/** Seul archétype Running prescriptible (vague 2). */
+/** Archétype Running PROVISOIRE du planificateur : l'archétype réel de chaque jour est choisi par la composition du moteur Course (§R). */
 export const RUNNING_ARCHETYPE = 'running.easy';
 
 export const PLANNER_RULES = ['P1_SPORT_ENGINE', 'P2_DAY_AVAILABLE', 'P3_ONE_PER_DAY', 'P4_ARCHETYPE_FITS', 'P5_LOCKED_KEPT'] as const;
@@ -105,5 +105,5 @@ export function planWeek(input: PlanInput): WeekPlan {
       notices.push({ code: 'PLAN.RECOVERY_RULE_UNGOVERNED', params: { from: prev.date, to: cur.date } });
     }
   }
-  return { weekStart, entries, unplaced, notices, plannedAt: input.plannedAt };
+  return { weekStart, entries, unplaced, notices, plannedAt: input.plannedAt, dropped: [] };
 }

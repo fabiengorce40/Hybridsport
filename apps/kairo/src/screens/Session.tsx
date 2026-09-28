@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import {
-  approxMinutes, AUTHORITY_LABELS, DIFFICULTY_LABELS, durationLabel, exerciseLabel, finishSession, intensityLabel, PAIN_AREAS, reasonMessage, recordRun, recordSet, repsLabel, setKindLabel, setKindShort, startSession, togglePainItem,
+  approxMinutes, AUTHORITY_LABELS, DIFFICULTY_LABELS, durationLabel, exerciseLabel, finishSession, intensityLabel, PAIN_AREAS, paceLabel, reasonMessage, recordRun, recordSet, repsLabel, setKindLabel, setKindShort, startSession, togglePainItem,
 } from '@hybridsport/app-core';
 import type { AppState, Feedback, GeneratedSession, SessionItem, SessionLog, SetPrescription } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
@@ -9,6 +9,48 @@ import type { RestState } from '../RestTimer.js';
 import { AuthorityBadge, formatDate, Notice, sessionTitle, sportLabel, Topbar } from '../ui.js';
 
 const rpeLabel = (r: { min: number; max: number }): string => (r.min === r.max ? String(r.min) : `${String(r.min)}–${String(r.max)}`);
+
+type RunPrescription = Extract<SessionItem['prescription'], { type: 'run_structure' }>;
+type RunSeg = RunPrescription['segments'][number];
+const RECOVERY_MODES: Record<string, string> = { jog: 'trottinée', walk: 'marchée', standing: 'à l’arrêt' };
+
+function targetLine(t: RunSeg['target'], test: boolean): string {
+  const rpe = t.effort && 'rpe' in t.effort ? t.effort.rpe : undefined;
+  const effort = rpe ? (test ? `Effort maximal (${rpeLabel(rpe)}/10)` : rpe.min === rpe.max ? `Effort ≤ ${String(rpe.max)}/10` : `Effort ${rpeLabel(rpe)}/10`) : '';
+  // Allure affichée SEULEMENT quand elle est la cible prescrite (priorité allure) ; jamais la borne d'estimation d'un test.
+  const pace = t.priority === 'pace' && t.pace ? `allure ${paceLabel(t.pace.secPerKm.min)}–${paceLabel(t.pace.secPerKm.max)} /km` : '';
+  return [pace, effort].filter(Boolean).join(' · ');
+}
+
+function RunStructureView({ p, archetypeId }: { p: RunPrescription; archetypeId: string }) {
+  const test = archetypeId === 'running.test';
+  const paced = p.segments.some((x) => x.target.priority === 'pace');
+  const row = (key: string, title: string, value: string, sub: string) => (
+    <div key={key} className="set"><div className="idx">{title}</div><div className="target">{value}<div className="sub">{sub}</div></div></div>
+  );
+  return (
+    <div className="stack" style={{ padding: '0 16px 16px' }}>
+      {p.segments.map((seg) => {
+        switch (seg.kind) {
+          case 'warmup': case 'cooldown': case 'preparation':
+            return row(seg.id, seg.kind === 'warmup' ? 'Échauf.' : seg.kind === 'cooldown' ? 'Retour' : 'Prépa.', 'durationS' in seg.dose ? durationLabel(seg.dose.durationS) : `${String(seg.dose.distanceM / 1000)} km`, targetLine(seg.target, false));
+          case 'steady':
+            return row(seg.id, test ? 'Test' : 'Course', 'durationS' in seg.dose ? durationLabel(seg.dose.durationS) : `${String(seg.dose.distanceM / 1000)} km`, targetLine(seg.target, test));
+          case 'repeat':
+            return row(seg.id, 'Travail', `${String(seg.reps)} × ${'durationS' in seg.work ? durationLabel(seg.work.durationS) : `${String(seg.work.distanceM)} m`}`,
+              [targetLine(seg.target, false), `récupération ${'durationS' in seg.recovery.dose ? durationLabel(seg.recovery.dose.durationS) : `${String(seg.recovery.dose.distanceM)} m`} ${RECOVERY_MODES[seg.recovery.mode] ?? ''}`].filter(Boolean).join(' · '));
+        }
+      })}
+      <div className="tiny">
+        {test
+          ? 'Sur un parcours mesuré (piste, parcours connu ou montre), le plus vite possible et régulièrement. Notez ensuite le temps du test seul : il fixe l’intensité de vos séances de qualité, jamais leur volume. La durée estimée s’appuie seulement sur vos courses récentes.'
+          : archetypeId === 'running.easy' || archetypeId === 'running.long'
+            ? 'Effort facile, conversation possible. Durée = votre dernière durée réalisée ; +1 min seulement après deux séances bien tolérées. Aucune allure : la règle d’allure facile n’est pas validée.'
+            : `${paced ? 'Allure issue de votre performance de référence de 3 à 5 km (marge selon sa fiabilité) ; l’effort reste le garde-fou.' : 'Cible à l’effort perçu : aucune allure validée pour ce type de séance ou sans référence fiable.'} Structure reprise de votre dernière séance (ou première séance après test) ; +1 répétition seulement après deux séances bien tolérées.`}
+      </div>
+    </div>
+  );
+}
 
 const BLOCK_LABELS: Record<string, string> = { warmup: 'Échauffement', activation: 'Activation', strength: 'Force', accessory: 'Accessoires', running: 'Course', conditioning: 'Conditioning', cooldown: 'Retour au calme', skill: 'Technique', finisher: 'Finisher', hybrid_station_work: 'Stations' };
 
@@ -40,27 +82,53 @@ function SetRow({ item, set, index, workingNumber, log, editable, onRecord }: {
   );
 }
 
-function FeedbackSheet({ run, onCancel, onSubmit }: { run: boolean; onCancel: () => void; onSubmit: (f: Feedback, r?: SessionLog['run']) => void }) {
+function FeedbackSheet({ run, test, onCancel, onSubmit }: { run: boolean; test: boolean; onCancel: () => void; onSubmit: (f: Feedback, r?: SessionLog['run']) => void }) {
   const [difficulty, setDifficulty] = useState<Feedback['difficulty'] | null>(null);
   const [pain, setPain] = useState(false);
   const [areas, setAreas] = useState<string[]>([]);
   const [note, setNote] = useState('');
   const [minutes, setMinutes] = useState('');
   const [completion, setCompletion] = useState<'COMPLETED' | 'PARTIAL'>('COMPLETED');
-  const runOk = !run || (Number(minutes) > 0);
+  const [km, setKm] = useState('');
+  const [testMin, setTestMin] = useState('');
+  const [testSec, setTestSec] = useState('');
+  const distanceM = km === '' ? undefined : Number(km) * 1000;
+  const testTimeS = testMin === '' && testSec === '' ? undefined : Number(testMin || '0') * 60 + Number(testSec || '0');
+  const runOk = !run || (Number(minutes) > 0 && (distanceM === undefined || (Number.isFinite(distanceM) && distanceM > 0))
+    && (!test || completion !== 'COMPLETED' || (testTimeS !== undefined && testTimeS > 0 && Number(testSec || '0') < 60)));
+  const runLog = (): SessionLog['run'] => ({
+    realizedDurationS: Number(minutes) * 60, completion,
+    ...(!test && distanceM !== undefined ? { distanceM } : {}),
+    ...(test && completion === 'COMPLETED' && testTimeS !== undefined ? { testTimeS } : {}),
+  });
   return (
     <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-label="Fin de séance">
       <div className="sheet">
         <h2 style={{ margin: 0 }}>Fin de séance</h2>
         {run && (
           <div className="stack-3">
-            <label className="field">Durée réellement courue (minutes)
+            <label className="field">Durée totale de la séance (minutes)
               <input inputMode="numeric" value={minutes} onChange={(e) => setMinutes(e.target.value.replace(/[^0-9]/g, ''))} placeholder="ex. 35" />
             </label>
             <div className="row">
-              <button type="button" className={`chip ${completion === 'COMPLETED' ? 'on' : ''}`} onClick={() => setCompletion('COMPLETED')}>Séance complète</button>
+              <button type="button" className={`chip ${completion === 'COMPLETED' ? 'on' : ''}`} onClick={() => setCompletion('COMPLETED')}>Faite comme prévue</button>
               <button type="button" className={`chip ${completion === 'PARTIAL' ? 'on' : ''}`} onClick={() => setCompletion('PARTIAL')}>Interrompue</button>
             </div>
+            {test ? (
+              completion === 'COMPLETED' && (
+                <div className="stack">
+                  <div className="small muted">Temps du test seul (sans échauffement ni retour au calme)</div>
+                  <div className="row">
+                    <label className="field">min<input aria-label="Minutes du test" inputMode="numeric" value={testMin} onChange={(e) => setTestMin(e.target.value.replace(/[^0-9]/g, ''))} placeholder="45" /></label>
+                    <label className="field">s<input aria-label="Secondes du test" inputMode="numeric" value={testSec} onChange={(e) => setTestSec(e.target.value.replace(/[^0-9]/g, ''))} placeholder="00" /></label>
+                  </div>
+                </div>
+              )
+            ) : (
+              <label className="field">Distance (km, facultatif)
+                <input inputMode="decimal" value={km} onChange={(e) => setKm(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))} placeholder="ex. 5.2" />
+              </label>
+            )}
           </div>
         )}
         <div className="stack">
@@ -81,7 +149,7 @@ function FeedbackSheet({ run, onCancel, onSubmit }: { run: boolean; onCancel: ()
         <label className="field">Note (facultatif)<textarea maxLength={500} value={note} onChange={(e) => setNote(e.target.value)} /></label>
         <div className="row">
           <button className="btn secondary" onClick={onCancel}>Annuler</button>
-          <button className="btn primary block" disabled={!difficulty || !runOk} onClick={() => difficulty && onSubmit({ difficulty, pain, painAreas: areas, note }, run ? { realizedDurationS: Number(minutes) * 60, completion } : undefined)}>Enregistrer</button>
+          <button className="btn primary block" disabled={!difficulty || !runOk} onClick={() => difficulty && onSubmit({ difficulty, pain, painAreas: areas, note }, run ? runLog() : undefined)}>Enregistrer</button>
         </div>
       </div>
     </div>
@@ -173,13 +241,7 @@ export function SessionScreen({ sessionKey, onBack, onEditProfile }: { sessionKe
                     </>
                   )}
                   {p.type === 'mobility' && <div className="set"><div className="idx">—</div><div className="target">{durationLabel(p.seconds)}{p.sides > 1 ? ` × ${String(p.sides)} côtés` : ''}</div></div>}
-                  {p.type === 'run_structure' && p.segments.map((seg) => (
-                    <div key={seg.id} className="stack" style={{ padding: '0 16px 16px' }}>
-                      {seg.kind === 'steady' && 'durationS' in seg.dose && <div className="stat"><div className="v">{durationLabel(seg.dose.durationS)}</div><div className="l">Course continue</div></div>}
-                      {seg.kind === 'steady' && seg.target.effort && 'rpe' in seg.target.effort && <div className="small">Effort perçu : {rpeLabel(seg.target.effort.rpe)} sur 10 (facile, conversation possible).</div>}
-                      <div className="tiny">Aucune allure n’est prescrite : la règle d’allure n’est pas validée. Durée = dernière durée réalisée, jamais augmentée.</div>
-                    </div>
-                  ))}
+                  {p.type === 'run_structure' && <RunStructureView p={p} archetypeId={g.archetypeId} />}
                 </div>
               );
             })}
@@ -191,7 +253,7 @@ export function SessionScreen({ sessionKey, onBack, onEditProfile }: { sessionKe
       </div>
       <RestTimer rest={rest} onChange={setRest} />
       {finishing && (
-        <FeedbackSheet run={run} onCancel={() => setFinishing(false)} onSubmit={(f, r) => {
+        <FeedbackSheet run={run} test={g.archetypeId === 'running.test'} onCancel={() => setFinishing(false)} onSubmit={(f, r) => {
           const ok = store.apply((s, c) => finishSession(r ? recordRun(s, sessionKey, r) : s, sessionKey, f, c));
           if (ok) { setFinishing(false); setRest(null); }
         }} />

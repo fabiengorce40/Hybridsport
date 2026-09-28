@@ -1,8 +1,8 @@
-import { PLAN_NOTICES, SPORT_LABELS, UNPLACED_REASONS, weekdayIndex } from '@hybridsport/app-core';
+import { PLAN_NOTICES, RUNNING_ARCHETYPE_LABELS, SILENT_PLAN_NOTICES, SPORT_LABELS, UNPLACED_REASONS, weekdayIndex } from '@hybridsport/app-core';
 import type { Sport } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
 import { weekView } from '../derive.js';
-import { Notice, weekdayShort } from '../ui.js';
+import { formatDateShort, Notice, weekdayShort } from '../ui.js';
 import { SessionCard } from './Home.js';
 
 export function Planning({ onOpen, onEditProfile }: { onOpen: (key: string) => void; onEditProfile: () => void }) {
@@ -40,7 +40,15 @@ export function Planning({ onOpen, onEditProfile }: { onOpen: (key: string) => v
         })}
       </div>
 
-      {plan?.notices.map((n) => <Notice key={JSON.stringify(n)} tone={n.code === 'PLAN.RECOVERY_RULE_UNGOVERNED' ? 'warn' : 'info'}>{PLAN_NOTICES[n.code]?.(n.params) ?? n.code}</Notice>)}
+      {plan && plan.dropped.length > 0 && (
+        <Notice tone="warn">
+          <div className="stack">
+            <strong>Séances de course manquées, non compensées</strong>
+            {plan.dropped.map((d) => <span key={`${d.date}${d.archetypeId}`} className="small">{formatDateShort(d.date)} · {RUNNING_ARCHETYPE_LABELS[d.archetypeId] ?? d.archetypeId}</span>)}
+          </div>
+        </Notice>
+      )}
+      {plan?.notices.filter((n) => !SILENT_PLAN_NOTICES.includes(n.code)).map((n) => <Notice key={JSON.stringify(n)} tone={n.code === 'PLAN.RECOVERY_RULE_UNGOVERNED' ? 'warn' : 'info'}>{PLAN_NOTICES[n.code]?.(n.params) ?? n.code}</Notice>)}
       <button className="btn secondary" onClick={onEditProfile}>Revoir mes contraintes</button>
     </div>
   );

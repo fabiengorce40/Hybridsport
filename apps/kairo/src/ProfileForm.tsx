@@ -35,7 +35,7 @@ export function SportsSection({ p, set }: { p: ProfileInput; set: Setter }) {
   });
   const status: Record<Sport, string> = {
     strength: 'Séances complètes — contenu provisoire',
-    running: 'Footing facile en simulation — après une course enregistrée',
+    running: 'Simulation : footing, test, séances de qualité — après une course enregistrée',
     crosstraining: 'Indisponible : aucune règle validée',
     hyrox: 'Indisponible : aucune règle validée',
   };
@@ -109,6 +109,7 @@ export function GoalsSection({ p, set }: { p: ProfileInput; set: Setter }) {
             </label>
           )}
           <label className="check"><input type="checkbox" checked={p.running.wearable} onChange={(e) => set((x) => ({ ...x, running: { ...x.running, wearable: e.target.checked } }))} />Je cours avec une montre GPS</label>
+          <label className="check"><input type="checkbox" checked={p.running.hills === true} onChange={(e) => set((x) => ({ ...x, running: { ...x.running, hills: e.target.checked } }))} />J’ai accès à une côte praticable</label>
           {(p.strength.enabled || p.crosstraining.enabled || p.hyrox.enabled) && (
             <Notice tone="warn">Course + autre sport : le moteur course refuse pour l’instant de programmer (planificateur multisport non validé). Les refus seront affichés tels quels.</Notice>
           )}

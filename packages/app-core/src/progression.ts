@@ -8,7 +8,8 @@
 import type { FingerprintHistoryEntry, ISODateTime, SessionDraft, SetPrescription } from '@hybridsport/domain';
 import { classifyExposure, createTrack, progressionModelFor, readStrengthParams, updateTrack } from '@hybridsport/strength';
 import type { ExecutedItem, PerformedSet, SlotRole, StrengthTrack } from '@hybridsport/strength';
-import type { RealizedSession } from '@hybridsport/running';
+import { archetypeFromIntentId, isV1Archetype } from '@hybridsport/running';
+import type { RealizedSession, RealizedStructure, RunningReference, RunningSessionArchetype } from '@hybridsport/running';
 import type { AppState, GeneratedSession, SessionLog } from './model.js';
 import { strengthContent } from './provisional-content.js';
 import { STIMULUS_BY_GOAL } from './planner.js';
@@ -78,13 +79,63 @@ function applyStrength(state: AppState, g: GeneratedSession, log: SessionLog, at
   return { tracks: [...tracks.values()].sort((a, b) => (a.trackId < b.trackId ? -1 : 1)), exposures, accessoryCounts: counts };
 }
 
+/** Structure PRESCRITE d'une séance de course (réalisée « comme prévu ») : lecture de la structure CORE, rien de calculé. */
+export function prescribedRunStructure(session: SessionDraft): { family: 'CONTINUOUS' | 'INTERVALS'; structure?: RealizedStructure } {
+  const p = session.blocks.flatMap((b) => b.items).map((i) => i.prescription).find((x) => x.type === 'run_structure');
+  if (p?.type !== 'run_structure') return { family: 'CONTINUOUS' };
+  const dur = (d: { durationS: number } | { distanceM: number }): number | undefined => ('durationS' in d ? d.durationS : undefined);
+  const warm = p.segments.find((x) => x.kind === 'warmup');
+  const cool = p.segments.find((x) => x.kind === 'cooldown');
+  const rep = p.segments.find((x) => x.kind === 'repeat');
+  const steady = p.segments.filter((x) => x.kind === 'steady');
+  const warmupS = warm ? dur(warm.dose) : undefined;
+  const cooldownS = cool ? dur(cool.dose) : undefined;
+  const edges = { ...(warmupS !== undefined ? { warmupS } : {}), ...(cooldownS !== undefined ? { cooldownS } : {}) };
+  if (rep && rep.sets === 1) {
+    const workS = dur(rep.work);
+    const recoveryS = dur(rep.recovery.dose);
+    if (workS === undefined || recoveryS === undefined) return { family: 'INTERVALS' };
+    return { family: rep.reps > 1 ? 'INTERVALS' : 'CONTINUOUS', structure: { ...edges, reps: rep.reps, workS, ...(rep.reps > 1 ? { recoveryS, recoveryMode: rep.recovery.mode } : {}) } };
+  }
+  // Course continue simple (EASY, LONG) : aucune structure de qualité ; seuil continu : échauffement + bloc + retour au calme.
+  const only = steady.length === 1 ? steady[0] : undefined;
+  const workS = only ? dur(only.dose) : undefined;
+  if (only === undefined || workS === undefined || (warm === undefined && cool === undefined)) return { family: 'CONTINUOUS' };
+  return { family: 'CONTINUOUS', structure: { ...edges, reps: 1, workS } };
+}
+
 function realizedRun(g: GeneratedSession, log: SessionLog, at: ISODateTime): RealizedSession | undefined {
-  if (!log.run) return undefined;
+  if (!log.run || g.outcome.status !== 'ok') return undefined;
   const fb = log.feedback;
+  const archetype = archetypeFromIntentId(g.archetypeId);
+  const a: RunningSessionArchetype = archetype !== undefined && isV1Archetype(archetype) ? archetype : 'EASY';
+  const { family, structure } = prescribedRunStructure(g.outcome.session);
+  // Structure réalisée = structure prescrite, seulement si la séance est COMPLÈTE (déclarée « comme prévu ») ;
+  // interrompue : aucune structure (retour négatif, V19 l'exclut de toute façon).
+  const keepStructure = log.run.completion === 'COMPLETED' && structure !== undefined && a !== 'EASY' && a !== 'LONG' && a !== 'TEST';
+  // TEST : la durée totale inclut échauffement et retour au calme ⇒ aucune distance (l'allure serait fausse) ;
+  // la performance est enregistrée comme référence TIME_TRIAL.
+  const distanceM = a === 'TEST' ? undefined : log.run.distanceM;
   return {
-    sessionId: g.key, archetype: 'EASY', structureFamily: 'CONTINUOUS', completedAt: at, realizedDurationS: log.run.realizedDurationS, completion: log.run.completion,
+    sessionId: g.key, archetype: a, structureFamily: family, completedAt: at, realizedDurationS: log.run.realizedDurationS, completion: log.run.completion,
     ...(log.run.completion === 'SKIPPED' ? { skipReason: 'OTHER' as const } : {}),
     unexpectedDifficulty: fb?.difficulty ?? 'UNKNOWN', intoleranceOrPainSignal: fb?.pain ?? false, readinessOrToleranceDegraded: false,
+    ...(keepStructure ? { structure } : {}),
+    ...(distanceM !== undefined ? { distanceM } : {}),
+  };
+}
+
+/** TEST complet et chronométré ⇒ référence TIME_TRIAL (APP_RECORDED, protocole KAIRO) à la distance du protocole. */
+function testReference(g: GeneratedSession, log: SessionLog, at: ISODateTime): RunningReference | undefined {
+  if (g.outcome.status !== 'ok' || archetypeFromIntentId(g.archetypeId) !== 'TEST' || log.run?.completion !== 'COMPLETED' || log.run.testTimeS === undefined || log.feedback?.pain === true) return undefined;
+  const p = g.outcome.session.blocks.flatMap((b) => b.items).map((i) => i.prescription).find((x) => x.type === 'run_structure');
+  const seg = p?.type === 'run_structure' ? p.segments.find((x) => x.kind === 'steady') : undefined;
+  const distanceM = seg?.kind === 'steady' && 'distanceM' in seg.dose ? seg.dose.distanceM : undefined;
+  if (distanceM === undefined) return undefined;
+  return {
+    referenceId: `test:${g.key}`, type: 'TIME_TRIAL', values: { distanceM, durationS: log.run.testTimeS }, date: at,
+    provenance: { source: 'APP_RECORDED', protocol: 'KAIRO_TEST_TT' },
+    confidenceInputs: { protocolDeclared: true, maximalEffortDeclared: true, conditions: 'NORMAL', interruptionSince: 'NONE' },
   };
 }
 
@@ -96,11 +147,12 @@ export function applyCompletion(state: AppState, key: string, at: ISODateTime): 
   const fp = g.outcome.fingerprint as FingerprintHistoryEntry['fingerprint'] | undefined;
   const entry: FingerprintHistoryEntry[] = fp ? [{ fingerprint: fp, at, status: 'completed', repetitionIntents: [] }] : [];
   const run = g.sport === 'running' ? realizedRun(g, log, at) : undefined;
+  const ref = g.sport === 'running' ? testReference(g, log, at) : undefined;
   const pain = log.feedback?.pain === true || log.painItems.length > 0;
   return {
     ...state,
     strength: g.sport === 'strength' ? applyStrength(state, g, log, at) : state.strength,
-    running: run ? { realized: [...state.running.realized, run] } : state.running,
+    running: run ? { realized: [...state.running.realized, run], references: [...state.running.references, ...(ref ? [ref] : [])] } : state.running,
     fingerprints: { ...state.fingerprints, [g.sport]: [...state.fingerprints[g.sport], ...entry] },
     safety: pain ? { activePain: { reportedAt: at, areas: log.feedback?.painAreas ?? [], sessionKey: key } } : state.safety,
     revision: state.revision + 1,

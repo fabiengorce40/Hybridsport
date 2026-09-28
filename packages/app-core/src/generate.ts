@@ -13,8 +13,8 @@ import { ENGINE_VERSION, readToleranceProfile, runSportSession, targetFromAvaila
 import type { FingerprintHistoryEntry, ISODateTime, SessionDraft } from '@hybridsport/domain';
 import { findArchetype, groupsOf, readStrengthParams, StrengthEngine } from '@hybridsport/strength';
 import type { Env, StrengthContextInput } from '@hybridsport/strength';
-import { createRunningEngine } from '@hybridsport/running';
-import type { RunningContextInput } from '@hybridsport/running';
+import { createRunningEngine, CURRENT_RUNNING_GOVERNANCE, withProductDecisions } from '@hybridsport/running';
+import type { CapabilityId, RunningContextInput } from '@hybridsport/running';
 import { dateOf, daysBetween, sessionInstant, weekStartOf } from './dates.js';
 import type { AppState, Authority, GeneratedSession, PlanEntry, Profile, Reason } from './model.js';
 import { STIMULUS_BY_GOAL } from './planner.js';
@@ -92,7 +92,14 @@ function strengthContext(state: AppState, p: Profile, entry: PlanEntry, content:
   };
 }
 
-function runningContext(state: AppState, p: Profile, entry: PlanEntry): RunningContextInput {
+/**
+ * Capacités DEMANDÉES par l'application (décisions produit du 2026-09-28) : progression par pas minimal (D1),
+ * sortie longue (D3), premières séances après TEST (D2), cibles d'allure gouvernées (V18 ± V03). Elles ne
+ * s'activent qu'en simulation (valeurs candidates tracées), jamais en production.
+ */
+export const RUNNING_CAPABILITY_REQUESTS: readonly CapabilityId[] = ['progressionBeyondHistory', 'longRunProgression', 'firstThresholdExposure', 'firstSevereExposure', 'paceTargets'];
+
+export function runningContext(state: AppState, p: Profile, entry: Pick<PlanEntry, 'date'>): RunningContextInput {
   const now = sessionInstant(entry.date);
   const realized = state.running.realized.filter((s) => s.completedAt <= now);
   const returning = p.running.returnState !== 'NONE';
@@ -107,17 +114,19 @@ function runningContext(state: AppState, p: Profile, entry: PlanEntry): RunningC
     population: { level: p.running.population, hybrid: p.strength.enabled || p.crosstraining.enabled || p.hyrox.enabled },
     goal: { type: p.running.goal },
     returnState: { state: p.running.returnState, postReturnSessions: returning && returnAt ? realized.filter((s) => s.completedAt >= returnAt).length : 0 },
-    references: [],
+    references: state.running.references.filter((r) => r.date <= now),
     exposures: [...byArch].map(([archetype, v]) => ({ archetype: archetype as 'EASY', lastAt: v.lastAt, count: v.count })),
     ...(returning && returnAt ? { recentLoad: { returnStartedAt: returnAt, dimensions: [] } } : {}),
     sessionHistory: realized,
     sensors: { wearable: p.running.wearable, heartRate: false },
+    terrain: { hills: p.running.hills },
     mode: 'CANDIDATE',
-    capabilityRequests: [],
+    capabilityRequests: [...RUNNING_CAPABILITY_REQUESTS],
   };
 }
 
-const simulatedRunning = createRunningEngine({ simulation: true });
+/** Moteur Course : gouvernance candidate + décisions produit (surcouche identifiable), mode simulation. */
+export const simulatedRunning = createRunningEngine({ governance: withProductDecisions(CURRENT_RUNNING_GOVERNANCE), simulation: true });
 
 export interface GenerateInput {
   readonly state: AppState;

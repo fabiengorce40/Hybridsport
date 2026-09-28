@@ -1,4 +1,4 @@
-import { approxMinutes, PLAN_NOTICES, primaryReason, reasonMessage, weekdayIndex } from '@hybridsport/app-core';
+import { approxMinutes, PLAN_NOTICES, primaryReason, reasonMessage, RUNNING_ROLE_LABELS, weekdayIndex } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
 import { recommended, weekStats, weekView } from '../derive.js';
 import type { DayView } from '../derive.js';
@@ -27,7 +27,7 @@ export function SessionCard({ day, onOpen, highlight = false }: { day: DayView; 
       </div>
       <h3>{sessionTitle(g)}</h3>
       <div className="small muted num">
-        {g.sport === 'strength' ? `${String(items.length)} exercices` : 'Allure libre · effort perçu'}
+        {g.sport === 'strength' ? `${String(items.length)} exercices` : (RUNNING_ROLE_LABELS[day.entry.role ?? ''] ?? 'Course')}
         {est ? ` · ≈ ${approxMinutes(est.p50S)}` : ''}
         {` · ${String(day.entry.availableMinutes)} min disponibles`}
       </div>

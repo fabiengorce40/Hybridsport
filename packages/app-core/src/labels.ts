@@ -74,14 +74,33 @@ const REASONS: Readonly<Record<string, (p: Record<string, unknown>) => string>> 
   'KAIRO.SAFETY_PAUSE_ACTIVE_PAIN': () => 'Séances suspendues : une douleur a été signalée. Consultez un professionnel de santé ; levez la pause dans votre profil quand elle a disparu.',
   'SCOPE.RUNNING.HYBRID_PLANNER_UNAVAILABLE': () => 'Course + autre sport : le planificateur global qui répartit la charge entre disciplines n’est pas encore validé. Aucune séance de course n’est proposée.',
   'SCOPE.RUNNING.NOVICE_ENTRY_UNRESOLVED': () => 'Débutant en course (P-R0) : la dose de première exposition n’est pas encore validée par un expert.',
-  'DOSE.RUNNING.DOSE_ANCHOR_UNAVAILABLE': (p) => `Aucune dose de course établie (${String(p.cause)}). Enregistrez une course réalisée : la séance reprendra sa durée, sans jamais l’augmenter.`,
+  'DOSE.RUNNING.DOSE_ANCHOR_UNAVAILABLE': (p) => `Aucune dose de course établie (${String(p.cause)}). Enregistrez une course réalisée : la séance reprend sa durée et n’augmente que d’un petit pas après deux séances bien tolérées.`,
+  'DOSE.RUNNING.TEST_REFUSED': (p) => (p.cause === 'OBSERVED_PACE_UNAVAILABLE'
+    ? 'Test impossible pour l’instant : enregistrez d’abord une course récente avec sa distance (elle sert seulement à estimer la durée du test, jamais de cible).'
+    : `Test indisponible (${String(p.cause)}).`),
+  'DOSE.RUNNING.FIRST_EXPOSURE_REFUSED': (p) => (p.cause === 'RECENT_TEST_REQUIRED'
+    ? 'Première séance de ce type : un test récent (5 km, ou 10 km pour un objectif 10 km) est d’abord nécessaire.'
+    : p.cause === 'BLOCKED_PENDING_SOURCES' ? 'Côtes : la première séance n’est pas encore validée (sources à confirmer).' : `Première séance indisponible (${String(p.cause)}).`),
+  'SCOPE.RUNNING.QUALITY_GUARD_FAILED': (p) => QUALITY_GUARDS[String(p.rule)] ?? `Séance intense non autorisée (${String(p.rule)}).`,
+  'DOSE.RUNNING.STRUCTURE_UNAVAILABLE': () => 'La structure de votre dernière séance de ce type n’a pas été enregistrée : elle ne peut pas être reprise.',
   'STATE.RUNNING.RETURN_PROTOCOL_UNRESOLVED': () => 'Reprise après coupure : le protocole de reprise n’est pas encore validé.',
-  'PLAN.RUNNING.TIME_EXCEEDED': (p) => `La dernière durée réalisée (${durationLabel(Number(p.estimatedMaxS))}) dépasse le temps disponible ce jour-là.`,
+  'PLAN.RUNNING.TIME_EXCEEDED': (p) => `Durée estimée (jusqu’à ${durationLabel(Number(p.estimatedMaxS))}) supérieure au temps disponible ce jour-là : la séance n’est jamais raccourcie.`,
   'PLAN.RUNNING.EXERCISE_UNAVAILABLE': () => 'Aucun exercice de course utilisable (restrictions ou exclusions).',
   'RULE.RUNNING.SIMULATION_REQUIRED': () => 'Prescription de course possible uniquement en simulation.',
   'GOAL.RUNNING.MARATHON_RULE_UNRESOLVED': () => 'Objectif marathon : règle spécifique non validée.',
   'PLAN.RUNNING.PRESCRIPTION_NOT_IMPLEMENTED': () => 'Ce type de séance de course n’est pas encore implémenté.',
   'KAIRO.ARCHETYPE_MISSING': () => 'Type de séance absent du contenu.',
+};
+
+const QUALITY_GUARDS: Readonly<Record<string, string>> = {
+  G3_POPULATION: 'Niveau déclaré insuffisant pour ce type de séance.',
+  K_CONTINUOUS_LEVEL: 'Seuil en continu réservé aux coureurs confirmés ou à une référence fiable.',
+  G3_GOAL: 'Type de séance non prévu pour cet objectif.',
+  N_TERRAIN_UNDECLARED: 'Aucune côte praticable déclarée dans votre profil.',
+  X_RETURN_STATE: 'Reprise après une longue coupure : séances faciles seulement.',
+  X_RETURN_NOT_LIFTED: 'Reprise en cours : les séances intenses attendent la fin de la reprise.',
+  V10_DENSITY: 'Nombre de séances intenses de la semaine atteint.',
+  V11_CONSECUTIVE: 'Jamais deux jours d’affilée à forte intensité.',
 };
 
 export function reasonMessage(r: Reason): string {
@@ -96,7 +115,39 @@ export function primaryReason(reasons: readonly Reason[]): Reason | undefined {
 export const PLAN_NOTICES: Readonly<Record<string, (p: Record<string, string | number>) => string>> = {
   'PLAN.ENGINE_UNAVAILABLE': (p) => `${SPORT_LABELS[p.sport as Sport] ?? String(p.sport)} : aucun moteur ni règle validée pour l’instant. Aucune séance n’est générée.`,
   'PLAN.RECOVERY_RULE_UNGOVERNED': (p) => `Séances les ${String(p.from)} et ${String(p.to)} consécutives : aucune règle de récupération validée ne s’applique encore.`,
+  'PLAN.RUNNING.WEEK_MAINTENANCE_MODE': (p) => `Course : ${String(p.sessions)} séance par semaine, sous le minimum pour une séance intense ⇒ footings uniquement.`,
+  'PLAN.RUNNING.WEEK_TEST_REPLACES_KEY': (p) => (String(p.cause) === 'REFERENCE_CONFLICT'
+    ? 'Course : vos références se contredisent ⇒ un test remplace la séance clé cette semaine.'
+    : 'Course : un test remplace la séance clé cette semaine ; il fixera l’intensité de vos premières séances de qualité.'),
+  'PLAN.RUNNING.WEEK_LONG_NOT_PLACED': (p) => (String(p.cause) === 'FREQUENCY_BELOW_THREE' ? 'Course : moins de 3 séances par semaine ⇒ pas de sortie longue distincte.' : 'Course : aucun jour admissible pour la sortie longue cette semaine.'),
+  'PLAN.RUNNING.WEEK_MISSED_DECISION': (p) => (p.decision === 'MOVE'
+    ? `Course : séance du ${String(p.date)} manquée, déplacée au ${String(p.to)}.`
+    : `Course : séance du ${String(p.date)} manquée, non compensée (aucun rattrapage de volume).`),
+  'PLAN.RUNNING.WEEK_REPLANNED': () => 'Course : plusieurs séances manquées ⇒ semaine replanifiée, aucune progression tant que la régularité n’est pas retrouvée.',
 };
+/** Avis internes de composition (tracés, non affichés). */
+export const SILENT_PLAN_NOTICES: readonly string[] = ['PLAN.RUNNING.WEEK_SLOT_SELECTED', 'PLAN.RUNNING.WEEK_KEY_FALLBACK'];
+
+/** Titres des séances de course (identifiant d'archétype de l'intention). */
+export const RUNNING_ARCHETYPE_LABELS: Readonly<Record<string, string>> = {
+  'running.easy': 'Footing facile', 'running.long': 'Sortie longue', 'running.threshold': 'Seuil', 'running.severe': 'Fractionné VO₂',
+  'running.short_interval': 'Intervalles courts', 'running.hills': 'Côtes', 'running.test': 'Test chronométré', 'running.race_pace': 'Allure spécifique',
+  'running.strides': 'Lignes droites',
+};
+export const RUNNING_ROLE_LABELS: Readonly<Record<string, string>> = { KEY: 'Séance clé', TEST: 'Calibration', LONG: 'Sortie longue', EASY: 'Footing' };
+export const RUNNING_ARCHETYPE_SHORT: Readonly<Record<string, string>> = {
+  EASY: 'Footing', LONG: 'Sortie longue', THRESHOLD: 'Seuil', SEVERE: 'VO₂', SHORT_INTERVAL: 'Intervalles courts', HILLS: 'Côtes', TEST: 'Test', RACE_PACE: 'Allure spécifique', STRIDES: 'Lignes droites',
+};
+
+/** Allure s/km ⇒ « m:ss /km » (affichage seulement). */
+export function paceLabel(secPerKm: number): string {
+  // technical-constant: conversion secondes → minutes (affichage)
+  const m = Math.floor(secPerKm / 60);
+  // technical-constant: conversion secondes → minutes (affichage)
+  const s = Math.round(secPerKm % 60);
+  // technical-constant: arrondi d’affichage (60 s)
+  return s === 60 ? `${String(m + 1)}:00` : `${String(m)}:${String(s).padStart(2, '0')}`;
+}
 
 export const UNPLACED_REASONS: Readonly<Record<string, string>> = {
   NOT_ENOUGH_DAYS: 'pas assez de jours disponibles (une séance par jour au plus)',

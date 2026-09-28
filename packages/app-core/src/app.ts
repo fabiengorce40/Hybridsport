@@ -8,6 +8,7 @@ import type { AppState, Feedback, GeneratedSession, PlanEntry, ProfileInput, Ses
 import { zFeedback, zProfile } from './model.js';
 import { planWeek } from './planner.js';
 import { applyCompletion } from './progression.js';
+import { applyMissedRuns, composeRunningDays } from './running-week.js';
 
 export interface Clock {
   /** Instant courant ISO (injecté). */
@@ -26,7 +27,8 @@ const lockedOf = (state: AppState, entries: readonly PlanEntry[]): PlanEntry[] =
 export function replanWeek(state: AppState, clock: Clock, weekStart = weekStartOf(clock.today)): AppState {
   if (!state.profile) throw new AppError('PROFILE_MISSING');
   const prev = state.plans[weekStart];
-  const plan = planWeek({ profile: state.profile, weekStart, locked: lockedOf(state, prev?.entries ?? []), plannedAt: normalizeInstant(clock.now) });
+  // Jours de course : archétypes choisis ensuite par le moteur Course (composition §R, dans refreshSessions).
+  const plan = { ...planWeek({ profile: state.profile, weekStart, locked: lockedOf(state, prev?.entries ?? []), plannedAt: normalizeInstant(clock.now) }), dropped: prev?.dropped ?? [] };
   // Les séances non commencées de la semaine sont retirées puis régénérées avec le profil courant :
   // aucune séance orpheline, aucun doublon, aucune séance commencée modifiée.
   const dropped = new Set((prev?.entries ?? []).map((e) => e.key).filter((k) => state.logs[k] === undefined));
@@ -36,9 +38,12 @@ export function replanWeek(state: AppState, clock: Clock, weekStart = weekStartO
 
 /** Génère les séances manquantes ou périmées de la semaine (jamais une séance commencée ou passée). */
 export function refreshSessions(state: AppState, clock: Clock, weekStart = weekStartOf(clock.today)): AppState {
-  const plan = state.plans[weekStart];
-  if (!plan) return state;
-  let s = state;
+  const before = state.plans[weekStart];
+  if (!before) return state;
+  // Historique modifié depuis la dernière composition Course : les jours de course restants sont recomposés (§R).
+  const plan = before.runningRevision === state.revision ? before : composeRunningDays(state, before, normalizeInstant(clock.now), clock.today);
+  const changed = new Set(plan.entries.filter((e) => before.entries.find((b) => b.key === e.key)?.archetypeId !== e.archetypeId).map((e) => e.key));
+  let s: AppState = plan === before ? state : { ...state, plans: { ...state.plans, [weekStart]: plan }, sessions: Object.fromEntries(Object.entries(state.sessions).filter(([k]) => !changed.has(k))) };
   // Ordre chronologique : chaque génération voit les séances de la semaine déjà générées (contexte de semaine).
   for (const e of plan.entries) {
     const g = s.sessions[e.key];
@@ -51,7 +56,9 @@ export function refreshSessions(state: AppState, clock: Clock, weekStart = weekS
 /** À l'ouverture : planifie la semaine courante si besoin, sinon régénère les séances périmées. */
 export function ensureCurrentWeek(state: AppState, clock: Clock): AppState {
   if (!state.profile) return state;
-  return state.plans[weekStartOf(clock.today)] ? refreshSessions(state, clock) : replanWeek(state, clock);
+  const weekStart = weekStartOf(clock.today);
+  // §W : séances de course manquées (passées, jamais commencées) ⇒ déplacées ou abandonnées par le moteur Course.
+  return state.plans[weekStart] ? refreshSessions(applyMissedRuns(state, weekStart, clock.today, normalizeInstant(clock.now)), clock) : replanWeek(state, clock);
 }
 
 export function completeOnboarding(state: AppState, input: ProfileInput, clock: Clock): AppState {
@@ -119,7 +126,8 @@ export function finishSession(state: AppState, key: string, feedback: Feedback, 
 }
 
 /** Course libre déclarée (hors planning) : donnée réalisée, base de l'ancre V19 (aucune dose par défaut sinon). */
-export function logFreeRun(state: AppState, run: { realizedDurationS: number; completion: 'COMPLETED' | 'PARTIAL' | 'SKIPPED'; difficulty: Feedback['difficulty']; pain: boolean }, clock: Clock): AppState {
+export function logFreeRun(state: AppState, run: { realizedDurationS: number; completion: 'COMPLETED' | 'PARTIAL' | 'SKIPPED'; difficulty: Feedback['difficulty']; pain: boolean; distanceM?: number }, clock: Clock): AppState {
+  if (run.distanceM !== undefined && !(Number.isFinite(run.distanceM) && run.distanceM > 0)) throw new AppError('DISTANCE_INVALID');
   const at = normalizeInstant(clock.now);
   const id = `free:${at}`;
   if (state.running.realized.some((r) => r.sessionId === id)) throw new AppError('DUPLICATE_RUN');
@@ -127,9 +135,10 @@ export function logFreeRun(state: AppState, run: { realizedDurationS: number; co
     sessionId: id, archetype: 'EASY' as const, structureFamily: 'CONTINUOUS' as const, completedAt: at, realizedDurationS: run.realizedDurationS, completion: run.completion,
     ...(run.completion === 'SKIPPED' ? { skipReason: 'OTHER' as const } : {}),
     unexpectedDifficulty: run.difficulty, intoleranceOrPainSignal: run.pain, readinessOrToleranceDegraded: false,
+    ...(run.distanceM !== undefined ? { distanceM: run.distanceM } : {}),
   };
   const next: AppState = {
-    ...state, running: { realized: [...state.running.realized, realized] }, revision: state.revision + 1,
+    ...state, running: { ...state.running, realized: [...state.running.realized, realized] }, revision: state.revision + 1,
     safety: run.pain ? { activePain: { reportedAt: at, areas: [] } } : state.safety,
   };
   return refreshSessions(next, clock);

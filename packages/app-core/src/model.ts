@@ -8,7 +8,7 @@
 import { z } from 'zod';
 import { isISODateTime, LEVELS, zFingerprintHistoryEntry, zSessionDraft } from '@hybridsport/domain';
 import { zExerciseExposure, zStrengthTrack } from '@hybridsport/strength';
-import { RETURN_STATES, RUNNING_GOALS, RUNNING_LEVELS, zRealizedSession } from '@hybridsport/running';
+import { RETURN_STATES, RUNNING_GOALS, RUNNING_LEVELS, zRealizedSession, zRunningReference } from '@hybridsport/running';
 
 export const SPORTS = ['strength', 'running', 'crosstraining', 'hyrox'] as const;
 export type Sport = (typeof SPORTS)[number];
@@ -42,6 +42,8 @@ export const zProfile = z.object({
     /** État de reprise DÉCLARÉ (jamais déduit) et début de la reprise. */
     returnState: z.enum(RETURN_STATES),
     returnStartedAt: date.optional(),
+    /** Côte praticable déclarée (§N : jamais de séance de côtes sans terrain déclaré). */
+    hills: z.boolean().default(false),
   }).strict(),
   crosstraining: z.object({ enabled: z.boolean() }).strict(),
   hyrox: z.object({ enabled: z.boolean() }).strict(),
@@ -69,6 +71,8 @@ export const zPlanEntry = z.object({
   sport: z.enum(ENGINE_SPORTS),
   archetypeId: z.string().min(1),
   availableMinutes: z.number().int().positive(),
+  /** Course : rôle dans la semaine (composition §R du moteur Course). */
+  role: z.enum(['KEY', 'TEST', 'LONG', 'EASY', 'LOCKED']).optional(),
 }).strict();
 export type PlanEntry = z.infer<typeof zPlanEntry>;
 
@@ -82,6 +86,10 @@ export const zWeekPlan = z.object({
   unplaced: z.array(z.object({ sport: z.enum(SPORTS), count: z.number().int().positive(), reason: z.string() }).strict()),
   notices: z.array(zPlanNotice),
   plannedAt: instant,
+  /** Séances de course manquées puis abandonnées (§W : jamais compensées). */
+  dropped: z.array(z.object({ date, archetypeId: z.string().min(1), code: z.string() }).strict()).default([]),
+  /** Révision de l'historique ayant servi à la dernière composition Course (§R) des jours restants. */
+  runningRevision: z.number().int().nonnegative().optional(),
 }).strict();
 export type WeekPlan = z.infer<typeof zWeekPlan>;
 
@@ -140,6 +148,10 @@ export const zSessionLog = z.object({
   run: z.object({
     realizedDurationS: z.number().positive().finite(),
     completion: z.enum(['COMPLETED', 'PARTIAL', 'SKIPPED']),
+    /** Distance réalisée (m), facultative : sert l'allure OBSERVÉE (borne d'estimation d'un TEST). */
+    distanceM: z.number().positive().finite().optional(),
+    /** TEST : temps du contre-la-montre seul (s) ; devient une référence TIME_TRIAL. */
+    testTimeS: z.number().positive().finite().optional(),
   }).strict().optional(),
   finishedAt: instant.optional(),
   feedback: zFeedback.optional(),
@@ -153,7 +165,11 @@ export const zAppState = z.object({
   sessions: z.record(z.string(), zGeneratedSession),
   logs: z.record(z.string(), zSessionLog),
   strength: z.object({ tracks: z.array(zStrengthTrack), exposures: z.array(zExerciseExposure), accessoryCounts: z.record(z.string(), z.number().int().nonnegative()) }).strict(),
-  running: z.object({ realized: z.array(zRealizedSession) }).strict(),
+  running: z.object({
+    realized: z.array(zRealizedSession),
+    /** Références de performance enregistrées par l'application (TEST réalisés). */
+    references: z.array(zRunningReference).default([]),
+  }).strict(),
   fingerprints: z.object({ strength: z.array(zFingerprintHistoryEntry), running: z.array(zFingerprintHistoryEntry) }).strict(),
   safety: z.object({ activePain: z.object({ reportedAt: instant, areas: z.array(z.string()), sessionKey: z.string().optional() }).strict().nullable() }).strict(),
   /** Incrémentée à chaque séance terminée ou course enregistrée (l'historique a changé). */
@@ -166,7 +182,7 @@ export const CURRENT_SCHEMA_VERSION = 1;
 export function emptyState(): AppState {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION, profile: null, plans: {}, sessions: {}, logs: {},
-    strength: { tracks: [], exposures: [], accessoryCounts: {} }, running: { realized: [] },
+    strength: { tracks: [], exposures: [], accessoryCounts: {} }, running: { realized: [], references: [] },
     fingerprints: { strength: [], running: [] }, safety: { activePain: null }, revision: 0,
   };
 }

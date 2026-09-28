@@ -87,13 +87,16 @@ await page.getByRole('button', { name: 'Enregistrer et replanifier' }).click();
 await page.getByRole('button', { name: 'Course', exact: true }).click();
 check((await text()).includes('Aucune dose de course établie'), 'course sans historique : refus exact (aucune dose inventée)');
 await page.getByLabel('Durée (minutes)').fill('30');
+await page.getByLabel(/Distance \(km/).fill('5');
 await page.getByRole('button', { name: 'Enregistrer la course' }).click();
+check((await text()).includes('5.0 km'), 'course libre : distance enregistrée (allure observée, jamais une cible)');
 await page.getByText('SIMULATION').first().waitFor();
 await shot('10-course');
 await page.locator('.card.button-card').first().click();
 await shot('11-seance-course');
-check((await text()).includes('30 min'), 'séance de course simulée : dernière durée réalisée (30 min), jamais augmentée');
-check((await text()).includes('Aucune allure n’est prescrite'), 'séance de course : aucune allure');
+check((await text()).includes('30 min'), 'séance de course simulée : dernière durée réalisée (30 min), aucune hausse sans deux séances tolérées');
+check((await text()).includes('Aucune allure : la règle d’allure facile n’est pas validée'), 'séance de course facile : aucune allure');
+check((await text()).includes('Footing facile'), 'séance de course : titre par type de séance');
 
 check(errors.length === 0, `aucune erreur console (${errors.join(' | ')})`);
 await browser.close();

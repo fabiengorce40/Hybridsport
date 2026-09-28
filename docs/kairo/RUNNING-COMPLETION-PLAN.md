@@ -168,3 +168,17 @@ Ces décisions du propriétaire du produit sont importées au registre comme val
   - plusieurs séances manquées ⇒ semaine replanifiée, progression en HOLD ;
   - « EASY allongée » à la place d'une LONG : **non appliquée** (aucune bande habituelle gouvernée).
 - Tests : `tests/integration/r5-week.test.ts` (sonde = moteur réel ; CORE ; déterminisme).
+
+### R5c — connexion complète à l'application
+
+- **Génération** : moteur Course avec la gouvernance candidate + surcouche de décisions produit, en simulation. Capacités demandées : progression (D1), sortie longue (D3), premières séances (D2), allure gouvernée. Références enregistrées, côte déclarée (profil).
+- **Semaine** : le planificateur KAIRO attribue les jours ; le moteur Course choisit l'archétype de chaque jour (§R), avec comme sonde la génération réelle.
+  - Recomposition des jours restants dès que l'historique change.
+  - Séances commencées conservées ; une séance clé déjà faite compte ; jours passés jamais modifiés.
+- **§W à l'ouverture** : séance passée non commencée ⇒ déplacée ou abandonnée par le moteur, tracée (`dropped`, avis), idempotent.
+- **Saisie** : durée totale, « faite comme prévue » ou interrompue, distance facultative, temps du test seul pour un TEST.
+  - Séance de qualité complète ⇒ structure réalisée = structure prescrite.
+  - TEST complet, sans douleur ⇒ référence `TIME_TRIAL` (APP_RECORDED, `KAIRO_TEST_TT`) ; aucune distance sur la séance réalisée (la durée totale inclut l'échauffement).
+- **Affichage** : titre par type de séance, rôle dans la semaine, structure (échauffement, répétitions, récupération, retour au calme), effort. Allure affichée seulement quand elle est la cible prescrite (VO₂ / intervalles courts), jamais pour un TEST. Tests enregistrés, séances manquées non compensées, côte praticable dans le profil.
+- **Données** : champs ajoutés avec valeurs par défaut (schéma 1 inchangé) ; un état enregistré avant R5 se relit sans perte (test).
+- Tests : `packages/app-core/tests/course.test.ts`, `apps/kairo/tests/app.test.tsx` (TEST de bout en bout), e2e Chromium.

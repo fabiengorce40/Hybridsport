@@ -5,7 +5,7 @@
  */
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { MemoryStorage, STORAGE_KEY } from '@hybridsport/app-core';
+import { completeOnboarding, EQUIPMENT_PRESETS, emptyState, logFreeRun, MemoryStorage, saveState, STORAGE_KEY } from '@hybridsport/app-core';
 import type { Clock } from '@hybridsport/app-core';
 import { App } from '../src/App.js';
 import { StoreProvider } from '../src/store.js';
@@ -94,5 +94,38 @@ describe('interface KAIRO', () => {
     expect(screen.getByText('Données illisibles')).toBeTruthy();
     expect(storage.getItem(STORAGE_KEY)).toBe('{"schemaVersion":1,"profile":"x"}');
     expect(storage.keys().some((k) => k.startsWith('kairo.unreadable.'))).toBe(true);
+  });
+
+  it('Course : test chronométré — 10 km à l’effort maximal, aucune allure affichée ; temps du test exigé ; référence enregistrée', () => {
+    const storage = new MemoryStorage();
+    const c0: Clock = { today: '2026-10-05', now: '2026-10-05T05:00:00Z' };
+    let s = completeOnboarding(emptyState(), {
+      displayName: '', level: 'intermediate', priorities: ['running'],
+      strength: { enabled: false, goal: 'general', sessionsPerWeek: 1 },
+      running: { enabled: true, population: 'P_R3', goal: 'TEN_K', wearable: true, sessionsPerWeek: 3, returnState: 'NONE' },
+      crosstraining: { enabled: false }, hyrox: { enabled: false },
+      equipment: { presetId: 'preset.full_gym', items: [...(EQUIPMENT_PRESETS.find((p) => p.id === 'preset.full_gym')?.equipment ?? [])] },
+      availability: [60, 0, 60, 0, 60, 90, 0], excludedExercises: [], acceptedProvisionalAt: '2026-10-04T10:00:00Z',
+    }, c0);
+    s = logFreeRun(s, { realizedDurationS: 1800, completion: 'COMPLETED', difficulty: 'AS_EXPECTED', pain: false, distanceM: 5000 }, { today: '2026-10-05', now: '2026-10-05T06:00:00Z' });
+    expect(saveState(storage, s).ok).toBe(true);
+    const saturday = (): Clock => ({ today: '2026-10-10', now: '2026-10-10T07:30:00.000Z' });
+    render(<StoreProvider storage={storage} clock={saturday}><App /></StoreProvider>);
+    click('Démarrer la séance');
+    expect(screen.getAllByText('Test chronométré').length).toBeGreaterThan(0);
+    expect(screen.getByText('10 km')).toBeTruthy();
+    expect(screen.getByText(/Effort maximal \(9–10\/10\)/)).toBeTruthy();
+    expect(screen.queryByText(/\/km/)).toBeNull();
+    click('Démarrer la séance');
+    click('Terminer la séance');
+    const sheet = within(screen.getByRole('dialog', { name: 'Fin de séance' }));
+    fireEvent.change(sheet.getByLabelText(/Durée totale/), { target: { value: '75' } });
+    fireEvent.click(sheet.getByRole('button', { name: /Comme prévu/ }));
+    expect((sheet.getByRole('button', { name: 'Enregistrer' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(sheet.getByLabelText('Minutes du test'), { target: { value: '45' } });
+    expect((sheet.getByRole('button', { name: 'Enregistrer' }) as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(sheet.getByRole('button', { name: 'Enregistrer' }));
+    const saved = JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}') as { running: { references: { type: string; values: { distanceM: number; durationS: number } }[] } };
+    expect(saved.running.references).toEqual([expect.objectContaining({ type: 'TIME_TRIAL', values: { distanceM: 10000, durationS: 2700 } })]);
   });
 });
