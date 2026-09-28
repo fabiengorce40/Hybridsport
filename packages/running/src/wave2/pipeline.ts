@@ -134,7 +134,8 @@ function evaluate(a: RunningSessionArchetype, family: StructureFamily, env: Eval
   const params = governance.parameters;
   const used: ParameterUse[] = [];
   const reasons: ReasonCode[] = [];
-  let degradations: Degradation[] = [...(assessment?.degradations ?? [])];
+  // Dégradations globales (HOLD de progression, marathon sans prétention, calibration) + propres à l'archétype.
+  let degradations: Degradation[] = [...analysis.degradations, ...(assessment?.degradations ?? [])];
   const base = {
     candidateId: `${input.intent.id}.${a}.${family}`, archetype: a, structureFamily: family, goal: ctx.goal.type,
     capabilities: analysis.capabilities.map((c) => ({ capability: c.capability, enabled: c.enabled })),
@@ -158,6 +159,12 @@ function evaluate(a: RunningSessionArchetype, family: StructureFamily, env: Eval
   // Sécurité / G1 et mode.
   if (ctx.mode === 'PRODUCTION' && !analysis.foundation.eligible) return reject('SAFETY_G1', analysis.foundation.reasonCodes);
   if (ctx.mode === 'CANDIDATE' && !opts.simulation) return reject('SAFETY_G1', [runningReasons.emit(RUNNING_CODES.SIMULATION_REQUIRED, { mode: ctx.mode })]);
+  // V33 / V34 : la vague 2 n'applique AUCUNE dose d'entrée novice ni de première exposition après une longue
+  // coupure, même si une valeur (simulée) existe ; ces cas restent refusés (jamais d'ancre substituée).
+  if (ctx.population.level === 'P_R0') return reject('SAFETY_G1', [runningReasons.emit(RUNNING_CODES.NOVICE_ENTRY_UNRESOLVED, { population: 'P_R0' })]);
+  if ((ctx.returnState.state === 'LONG' || ctx.returnState.state === 'UNKNOWN') && ctx.returnState.postReturnSessions === 0) {
+    return reject('SAFETY_G1', [runningReasons.emit(RUNNING_CODES.RETURN_PROTOCOL_UNRESOLVED, { returnState: ctx.returnState.state })]);
+  }
   const returning = ctx.returnState.state !== 'NONE';
   if (returning) {
     const protocol = resolveParameter(params, RETURN_PROTOCOL, ctx.mode);
@@ -215,6 +222,7 @@ function evaluate(a: RunningSessionArchetype, family: StructureFamily, env: Eval
     return reject('FEASIBILITY', [runningReasons.emit(RUNNING_CODES.TIME_EXCEEDED, { archetype: a, availableTimeS: input.intent.availableTimeS, estimatedMaxS: structure.estimate.totalS.max })], { dose, intensity, exerciseId: exercise.id });
   }
   if (opts.simulation && ctx.mode === 'CANDIDATE') reasons.push(runningReasons.emit(RUNNING_CODES.SIMULATED_PROPOSAL, { rulesetVersion: governance.rulesetVersion }));
+  reasons.push(...sortDegradations(degradations).filter((d) => d.effect !== 'PRECISION_REDUCED').map((d) => d.reason));
   const candidate = snapshot({ precision: 'EFFORT_ONLY', dose, intensity, exerciseId: exercise.id });
   return { candidate, built: { structure, exercise } };
 }
