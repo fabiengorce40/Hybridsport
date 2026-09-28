@@ -10,15 +10,15 @@ import { defineConfig } from 'vitest/config';
 export default defineConfig({
   resolve: { alias: { '@hybridsport/domain': resolve(import.meta.dirname, 'packages/domain/src/index.ts') } },
   test: {
+    // Un seul worker par exécution : avec la concurrence de Stryker, plusieurs workers par mutant
+    // saturaient le CPU (charge ≈ 33 sur 4 cœurs lors du passage interrompu).
+    fileParallelism: false,
     include: [
       'packages/engine/tests/unit/core-ext-r1.test.ts',
       'packages/engine/tests/unit/core-ext-r1-hardening.test.ts',
       'packages/engine/tests/property/core-ext-r1.property.test.ts',
       'packages/engine/tests/integration/core-ext-r1-boundary.test.ts',
       'packages/engine/tests/unit/migration.test.ts',
-      'packages/engine/tests/unit/duration.test.ts',
-      'packages/engine/tests/unit/duration-levers.test.ts',
-      'packages/engine/tests/unit/validator.test.ts',
     ],
     env: { STRENGTH_MUTATION_RUN: '1' },
   },

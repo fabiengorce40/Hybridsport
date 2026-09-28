@@ -1,0 +1,33 @@
+{
+  "$schema": "../../node_modules/@stryker-mutator/core/schema/stryker-schema.json",
+  "packageManager": "pnpm",
+  "testRunner": "command",
+  "checkers": [],
+  "mutate": [
+    "packages/engine/src/migration/migrations.ts:45-80",
+    "packages/engine/src/migration/migrations.ts:120-136",
+    "packages/domain/src/serialization.ts:52-80",
+    "packages/engine/src/trace/schema-issue.ts"
+  ],
+  "reporters": [
+    "clear-text",
+    "json"
+  ],
+  "thresholds": {
+    "high": 90,
+    "low": 75,
+    "break": null
+  },
+  "tempDirName": ".stryker-tmp-r1-l5",
+  "timeoutMS": 10000,
+  "timeoutFactor": 1.5,
+  "concurrency": 3,
+  "plugins": [],
+  "commandRunner": {
+    "command": "NODE_OPTIONS=--max-old-space-size=1024 timeout -k 2 45 pnpm exec vitest run --config vitest.mutation.core-ext-r1.config.ts --reporter=dot"
+  },
+  "coverageAnalysis": "off",
+  "jsonReporter": {
+    "fileName": "reports/mutation/core-ext-r1-l5-schema-version-legacy.json"
+  }
+}
