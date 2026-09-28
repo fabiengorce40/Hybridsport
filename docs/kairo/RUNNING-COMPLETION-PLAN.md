@@ -125,3 +125,12 @@ Ces décisions du propriétaire du produit sont importées au registre comme val
 - **D3 — LONG** : dernière sortie longue réalisée, plafond EASY_LOW, comptée à forte demande (V32 sans marge, défaut conservateur tracé) ; gardes §G.3 (P-R1+), §X, V10, V11. Aucune dose déduite d'une course facile.
 - **D5 — repli** : après une séance plus récente négative, ancre = dernière dose réussie, tracée `DOSE_ANCHOR_FALLBACK`, et aucune hausse juste après.
 - **Encore bloqué** : première exposition (D2 : valeurs de structure minimale attendues), RACE_PACE, STRIDES, TEST (protocole à implémenter), allure (vague R5).
+
+### D2 et D6 (validés, revue `RUNNING-D2-D6-REVIEW.md`)
+
+- **D6** : V02 de la surcouche : EASY ≤ 3, STEADY 4–5, THRESHOLD 5–6, SEVERE / SHORT / HILLS 7–8, TEST 9–10 (Seiler & Kjerland 2006).
+- **D2** : `running.firstExposure.threshold` et `.severe` contiennent les tables par niveau. Chaque table porte ses sources, ses décisions d'implémentation et sa confiance.
+  - Application : branche « sinon » de V19 (aucune dose récente), famille fractionnée seulement, et **TEST récent** exigé (contre-la-montre de 5 ou 10 km, dans la bande RECENT, sans interruption).
+  - Le TEST ne change jamais le volume (propriété testée).
+  - HILLS : première exposition bloquée (`BLOCKED_PENDING_SOURCES`).
+  - Ensuite : l'historique (V19) prend le relais, puis la progression D1.

@@ -66,6 +66,9 @@ export const RUNNING_CODES = {
   DOSE_ANCHOR_FALLBACK: 'DOSE.RUNNING.DOSE_ANCHOR_FALLBACK',
   PROGRESSION_STEP_APPLIED: 'PROGRESSION.RUNNING.PROGRESSION_STEP_APPLIED',
   PROGRESSION_HOLD: 'PROGRESSION.RUNNING.PROGRESSION_HOLD',
+  // Décision produit D2
+  FIRST_EXPOSURE_APPLIED: 'DOSE.RUNNING.FIRST_EXPOSURE_APPLIED',
+  FIRST_EXPOSURE_REFUSED: 'DOSE.RUNNING.FIRST_EXPOSURE_REFUSED',
 } as const;
 export type RunningCode = (typeof RUNNING_CODES)[keyof typeof RUNNING_CODES];
 
@@ -116,6 +119,8 @@ export const RUNNING_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: RUNNING_CODES.DOSE_ANCHOR_FALLBACK, categories: ['adaptation'], params: { archetype: S, sessionId: S, negativeSessionIds: L }, audience: 'user', severity: 'notice' },
   { code: RUNNING_CODES.PROGRESSION_STEP_APPLIED, categories: ['adaptation'], params: { archetype: S, variable: S, from: N, to: N, parameterId: S }, audience: 'user', severity: 'info' },
   { code: RUNNING_CODES.PROGRESSION_HOLD, categories: ['adaptation'], params: { archetype: S, cause: S }, audience: 'user', severity: 'info' },
+  { code: RUNNING_CODES.FIRST_EXPOSURE_APPLIED, categories: ['information'], params: { archetype: S, level: S, parameterId: S, testReferenceId: S }, audience: 'user', severity: 'notice' },
+  { code: RUNNING_CODES.FIRST_EXPOSURE_REFUSED, categories: ['feasibility'], params: { archetype: S, parameterId: S, cause: S }, audience: 'user', severity: 'error' },
   { code: RUNNING_CODES.HIGH_DEMAND_DEFAULT_CONSERVATIVE, categories: ['information'], params: { archetype: S, parameterId: S }, audience: 'internal', severity: 'notice' },
 ];
 

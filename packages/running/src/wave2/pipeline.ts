@@ -31,6 +31,7 @@ import type { RealizedSession, StructureFamily } from './history.js';
 import { WAVE3_ARCHETYPES, WAVE3_STRUCTURE_FAMILIES } from './candidate.js';
 import { qualityGuards, QUALITY_ARCHETYPES, returnLifted } from '../wave3/guards.js';
 import { progressionStep, V23 } from '../wave3/progression.js';
+import { firstExposure } from '../wave3/first-exposure.js';
 import type { StepResult } from '../wave3/progression.js';
 import type { QualityArchetype } from '../wave3/guards.js';
 import { buildQualityStructure, QUALITY_DOMAIN } from '../wave3/structure.js';
@@ -205,7 +206,21 @@ function evaluate(a: RunningSessionArchetype, family: StructureFamily, env: Eval
     archetype: a, structureFamily: family, history: ctx.sessionHistory, now: input.context.now as ISODateTime, mode: ctx.mode, parameters: params, returning,
     ...(ctx.recentLoad?.returnStartedAt !== undefined ? { returnStartedAt: ctx.recentLoad.returnStartedAt } : {}),
   });
-  if (anchor.status === 'unavailable') return reject('FEASIBILITY', anchor.reasons);
+  if (anchor.status === 'unavailable') {
+    // D2 : branche « sinon » de V19 (aucune dose réalisée récente) ⇒ première exposition gouvernée, après un TEST récent.
+    if (!quality || family !== 'INTERVALS' || (anchor.cause !== 'NO_REALIZED_SESSION' && anchor.cause !== 'NOT_RECENT')) return reject('FEASIBILITY', anchor.reasons);
+    const fe = firstExposure({ archetype: a as QualityArchetype, level: ctx.population.level, ctx, now: input.context.now, parameters: params, mode: ctx.mode });
+    if (fe.status === 'refused') return reject('FEASIBILITY', [...anchor.reasons, ...fe.reasons]);
+    reasons.push(...fe.reasons);
+    for (const pid of fe.parameterIds) used.push(paramUse(params, pid));
+    const total = (fe.structure.warmupS ?? 0) + fe.structure.reps * fe.structure.workS + (fe.structure.reps - 1) * (fe.structure.recoveryS ?? 0) + (fe.structure.cooldownS ?? 0);
+    const seed: RealizedSession = {
+      sessionId: `first-exposure:${fe.testReferenceId}`, archetype: a, structureFamily: family, completedAt: fe.testDate, realizedDurationS: total, completion: 'COMPLETED',
+      unexpectedDifficulty: 'UNKNOWN', intoleranceOrPainSignal: false, readinessOrToleranceDegraded: false, structure: fe.structure,
+    };
+    const firstHold: StepResult = { kind: 'hold', cause: 'FIRST_EXPOSURE', parameterIds: [], reasons: [runningReasons.emit(RUNNING_CODES.PROGRESSION_HOLD, { archetype: a, cause: 'FIRST_EXPOSURE' })] };
+    return qualityTail(a as QualityArchetype, family, seed, [...anchor.reasons, ...fe.reasons], fe.parameterId, firstHold, { input, assessment, trace, used, reasons, base, reject, snapshot, getDegradations: () => degradations, setDegradations: (d) => { degradations = d; }, governance, opts });
+  }
   reasons.push(...anchor.reasons);
   for (const pid of anchor.parameterIds) used.push(paramUse(params, pid));
   if (quality) {

@@ -1,6 +1,6 @@
 # Course : revue D2 (premières séances de qualité) et D6 (convention RPE)
 
-**Statut : PROPOSITION soumise à validation.** Rien n'est encore figé dans le code.
+**Statut : VALIDÉ par le propriétaire du produit (2026-09-28)**, tel que proposé. Implémenté dans la surcouche `withProductDecisions` : valeurs candidates, sources et décisions d'implémentation tracées. Le registre expert reste inchangé.
 
 ## 0. Méthode et limites de la revue
 

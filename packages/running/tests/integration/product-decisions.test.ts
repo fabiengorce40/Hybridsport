@@ -159,3 +159,104 @@ describe('D3 — sortie longue', () => {
     expect(o.reasons.at(-1)).toMatchObject({ code: RUNNING_CODES.DOSE_ANCHOR_UNAVAILABLE, params: { archetype: 'LONG', cause: 'NO_REALIZED_SESSION' } });
   });
 });
+
+describe('D6 — convention RPE unique (Seiler & Kjerland 2006)', () => {
+  const thr = (id: string, d: number) => run(id, d, { archetype: 'THRESHOLD', structureFamily: 'INTERVALS', realizedDurationS: 3000, structure: { warmupS: 600, reps: 4, workS: 300, recoveryS: 60, recoveryMode: 'jog' as const, cooldownS: 300 } });
+  const sev = (id: string, d: number) => run(id, d, { archetype: 'SEVERE', structureFamily: 'INTERVALS', realizedDurationS: 2400, structure: { reps: 4, workS: 240, recoveryS: 180, recoveryMode: 'jog' as const } });
+  const band = (o: ReturnType<typeof outcome>) => (o.status === 'selected' && o.selection.candidate.intensity && 'rpe' in o.selection.candidate.intensity ? o.selection.candidate.intensity.rpe : undefined);
+
+  it('seuil 5–6 (jamais au-delà de VT2), sévère 7–8 (9–10 réservé au TEST), EASY inchangé (plafond 3)', () => {
+    expect(band(outcome(disc([thr('t', 5)]), 'running.threshold'))).toEqual({ min: 5, max: 6 });
+    expect(band(outcome(disc([sev('s', 5)]), 'running.severe'))).toEqual({ min: 7, max: 8 });
+    const easy = outcome(disc([run('e', 3)]));
+    expect(easy.status === 'selected' && easy.selection.candidate.intensity).toMatchObject({ domain: 'EASY_LOW', rpeCeiling: 3 });
+  });
+
+  it('registre expert seul : bandes 5D inchangées (5–7 / 7–9) — la convention n’est portée que par la surcouche', () => {
+    expect(band(outcome(disc([thr('t', 5)]), 'running.threshold', expertOnly()))).toEqual({ min: 5, max: 7 });
+    const v02 = withProductDecisions(CURRENT_RUNNING_GOVERNANCE).parameters.find((p) => p.parameterId === 'running.target.rpeByDomain');
+    expect(v02?.value.status === 'candidate' && v02.value.value).toMatchObject({ STEADY: { min: 4, max: 5 }, THRESHOLD_LIKE: { min: 5, max: 6 }, SEVERE: { min: 7, max: 8 }, TEST: { min: 9, max: 10 } });
+  });
+});
+
+describe('D2 — première séance de qualité après un TEST récent', () => {
+  const FIRST = ['progressionBeyondHistory', 'longRunProgression', 'firstThresholdExposure', 'firstSevereExposure'] as const;
+  const tt = (o: { id?: string; distanceM?: number; durationS?: number; d?: number; interruption?: 'NONE' | 'YES' } = {}) => ({
+    referenceId: o.id ?? 'tt5', type: 'TIME_TRIAL' as const, values: { distanceM: o.distanceM ?? 5000, durationS: o.durationS ?? 1500 }, date: daysAgo(o.d ?? 3),
+    provenance: { source: 'APP_RECORDED' as const, protocol: 'KAIRO_TEST_TT' }, confidenceInputs: { protocolDeclared: true, maximalEffortDeclared: true, conditions: 'NORMAL' as const, interruptionSince: o.interruption ?? 'NONE' },
+  });
+  const fresh = (level: 'P_R2' | 'P_R3' | 'P_R4', refs = [tt()], history: HistoryIn[] = [run('e', 3)]): RunningContextInput =>
+    ({ ...disc(history, { population: { level, hybrid: false }, references: refs }), capabilityRequests: [...FIRST] });
+  const structureOf = (o: ReturnType<typeof outcome>) => (o.status === 'selected' && o.selection.candidate.dose?.kind === 'structure' ? o.selection.candidate.dose.structure : undefined);
+  const refusal = (o: ReturnType<typeof outcome>) => o.reasons.find((r) => r.code === RUNNING_CODES.FIRST_EXPOSURE_REFUSED)?.params.cause;
+
+  it.each([
+    ['P_R2', 'running.threshold', { warmupS: 600, reps: 3, workS: 300, recoveryS: 60, recoveryMode: 'jog', cooldownS: 300 }],
+    ['P_R3', 'running.threshold', { warmupS: 600, reps: 4, workS: 300, recoveryS: 60, recoveryMode: 'jog', cooldownS: 300 }],
+    ['P_R4', 'running.threshold', { warmupS: 600, reps: 4, workS: 360, recoveryS: 75, recoveryMode: 'jog', cooldownS: 300 }],
+    ['P_R2', 'running.severe', { warmupS: 600, reps: 3, workS: 240, recoveryS: 180, recoveryMode: 'jog', cooldownS: 300 }],
+    ['P_R3', 'running.severe', { warmupS: 600, reps: 4, workS: 240, recoveryS: 180, recoveryMode: 'jog', cooldownS: 300 }],
+    ['P_R4', 'running.severe', { warmupS: 600, reps: 4, workS: 240, recoveryS: 120, recoveryMode: 'jog', cooldownS: 300 }],
+    ['P_R2', 'running.short_interval', { warmupS: 600, reps: 10, workS: 30, recoveryS: 30, recoveryMode: 'jog', cooldownS: 300 }],
+    ['P_R3', 'running.short_interval', { warmupS: 600, reps: 12, workS: 30, recoveryS: 30, recoveryMode: 'jog', cooldownS: 300 }],
+    ['P_R4', 'running.short_interval', { warmupS: 600, reps: 15, workS: 30, recoveryS: 30, recoveryMode: 'jog', cooldownS: 300 }],
+  ] as const)('%s %s : structure du registre, exactement', (level, archetypeId, expected) => {
+    const o = outcome(fresh(level), archetypeId);
+    expect(structureOf(o)).toEqual(expected);
+    expect(o.reasons.find((r) => r.code === RUNNING_CODES.FIRST_EXPOSURE_APPLIED)?.params).toMatchObject({ level, testReferenceId: 'tt5' });
+    expect(o.reasons.find((r) => r.code === RUNNING_CODES.PROGRESSION_HOLD)?.params.cause).toBe('FIRST_EXPOSURE');
+    expect(o.status === 'selected' && o.selection.candidate.dose?.source.parameterId).toMatch(/^running\.firstExposure\./);
+  });
+
+  it('séance acceptée, validée et retenue par le CORE', () => {
+    const r = runSportSession(decided(), { intent: { ...runIntent('running.threshold'), availableTimeS: 3600, targetDurationS: 3450 }, profile: PROFILE_GYM, state: STATE_FRESH, history: [], disciplineContext: fresh('P_R3') }, coreContext('pd-fe'));
+    expect(r.result.status).toBe('ok');
+  });
+
+  it('frontières du TEST : 8 semaines exactement ⇒ accepté ; 8 semaines + 1 jour ⇒ refusé ; futur, autre distance, interruption ⇒ refusés', () => {
+    expect(outcome(fresh('P_R3', [tt({ d: 56 })]), 'running.threshold').status).toBe('selected');
+    expect(refusal(outcome(fresh('P_R3', [tt({ d: 57 })]), 'running.threshold'))).toBe('RECENT_TEST_REQUIRED');
+    expect(refusal(outcome(fresh('P_R3', [tt({ d: -1 })]), 'running.threshold'))).toBe('RECENT_TEST_REQUIRED');
+    expect(refusal(outcome(fresh('P_R3', [tt({ distanceM: 3000 })]), 'running.threshold'))).toBe('RECENT_TEST_REQUIRED');
+    expect(refusal(outcome(fresh('P_R3', [tt({ interruption: 'YES' })]), 'running.threshold'))).toBe('RECENT_TEST_REQUIRED');
+    expect(refusal(outcome(fresh('P_R3', []), 'running.threshold'))).toBe('RECENT_TEST_REQUIRED');
+    expect(outcome(fresh('P_R3', [tt({ distanceM: 10000, durationS: 3000 })]), 'running.threshold').status).toBe('selected');
+  });
+
+  it('le TEST fixe l’intensité, jamais le volume : même structure quel que soit le chrono (propriété)', () => {
+    const ref = structureOf(outcome(fresh('P_R3'), 'running.severe'));
+    fc.assert(fc.property(fc.integer({ min: 900, max: 3600 }), (durationS) => canonicalStringify(structureOf(outcome(fresh('P_R3', [tt({ durationS })]), 'running.severe'))) === canonicalStringify(ref)), { numRuns: 20, seed: 6_601 });
+  });
+
+  it('côtes : première exposition BLOQUÉE (sources non lues), jamais inventée', () => {
+    const o = outcome({ ...fresh('P_R3'), terrain: { hills: true } }, 'running.hills');
+    expect(o.status).toBe('no_valid');
+    expect(refusal(o)).toBe('BLOCKED_PENDING_SOURCES');
+  });
+
+  it('jamais en seuil CONTINU ; registre expert seul : aucune première exposition', () => {
+    const o = outcome(fresh('P_R4'), 'running.threshold');
+    expect(o.status === 'selected' && o.selection.candidate.structureFamily).toBe('INTERVALS');
+    expect(outcome(fresh('P_R3'), 'running.threshold', expertOnly()).status).toBe('no_valid');
+  });
+
+  it('séance réalisée ensuite : l’historique (V19) remplace la table, puis D1 fait progresser (+1 répétition)', () => {
+    const done = (id: string, d: number) => run(id, d, { archetype: 'SEVERE', structureFamily: 'INTERVALS', realizedDurationS: 2340, structure: { warmupS: 600, reps: 4, workS: 240, recoveryS: 180, recoveryMode: 'jog', cooldownS: 300 } });
+    const replay = outcome(fresh('P_R3', [tt()], [done('s1', 9)]), 'running.severe');
+    expect(replay.reasons.map((r) => r.code)).not.toContain(RUNNING_CODES.FIRST_EXPOSURE_APPLIED);
+    expect(structureOf(replay)?.reps).toBe(4);
+    expect(structureOf(outcome(fresh('P_R4', [tt()], [done('s1', 12), done('s2', 9)]), 'running.severe'))?.reps).toBe(5);
+  });
+
+  it('dernière séance du type trop ancienne (hors bande RECENT) : nouvelle première exposition (V19 « sinon »)', () => {
+    const old = run('old', 70, { archetype: 'THRESHOLD', structureFamily: 'INTERVALS', realizedDurationS: 3000, structure: { reps: 6, workS: 600, recoveryS: 120, recoveryMode: 'jog' } });
+    expect(structureOf(outcome(fresh('P_R3', [tt()], [old]), 'running.threshold'))?.reps).toBe(4);
+  });
+
+  it('déterminisme : même entrée ⇒ même sortie ; ordre des références sans effet', () => {
+    const refs = [tt({ id: 'a', d: 10 }), tt({ id: 'b', d: 4, distanceM: 10000, durationS: 3000 })];
+    const a = canonicalStringify(outcome(fresh('P_R3', refs), 'running.threshold'));
+    expect(canonicalStringify(outcome(fresh('P_R3', [...refs].reverse()), 'running.threshold'))).toBe(a);
+    expect(outcome(fresh('P_R3', refs), 'running.threshold').reasons.find((r) => r.code === RUNNING_CODES.FIRST_EXPOSURE_APPLIED)?.params.testReferenceId).toBe('b');
+  });
+});
