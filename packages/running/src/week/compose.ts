@@ -120,7 +120,9 @@ export function composeRunningWeek(i: ComposeInput): WeekComposition {
     return easyRest('MAINTENANCE');
   }
   const realizedHd = i.ctx.sessionHistory.filter((s) => isHd(s.archetype) && s.completion !== 'SKIPPED').map((s) => dayOfInstant(s.completedAt));
-  const plannedHd = (): number[] => [...slots.values()].filter((s) => isHd(s.archetype)).map((s) => dayOfDate(s.date));
+  // Une séance verrouillée déjà réalisée figure aussi dans l'historique : même jour ⇒ même séance, comptée une fois.
+  const realizedDays = new Set(realizedHd);
+  const plannedHd = (): number[] => [...slots.values()].filter((s) => isHd(s.archetype)).map((s) => dayOfDate(s.date)).filter((d) => !realizedDays.has(d));
   const hdAllowed = (date: string): boolean => {
     const d = dayOfDate(date);
     const all = [...realizedHd.filter((x) => x <= d), ...plannedHd()];

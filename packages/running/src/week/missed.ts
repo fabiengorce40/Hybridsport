@@ -70,7 +70,8 @@ export function replanMissed(i: MissedInput): { readonly decisions: readonly Mis
   const admissible = (date: string): boolean => {
     if (!rulesOk) return false;
     const d = dayOfDate(date);
-    const all = [...realizedHd.filter((x) => x <= d), ...planned.filter((p) => isHd(p.archetype)).map((p) => dayOfDate(p.date))];
+    // Une séance planifiée déjà réalisée figure aussi dans l'historique : même jour ⇒ même séance, comptée une fois.
+    const all = [...realizedHd.filter((x) => x <= d), ...planned.filter((p) => isHd(p.archetype)).map((p) => dayOfDate(p.date)).filter((x) => !realizedHd.includes(x))];
     if (all.some((x) => Math.abs(x - d) <= 1)) return false;
     return all.filter((x) => Math.abs(x - d) < perDays).length + 1 <= cap;
   };

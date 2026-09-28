@@ -145,6 +145,12 @@ describe('§R — composition hebdomadaire', () => {
     expect(plan(c)).toEqual(['28:LONG:LOCKED', '29:EASY:EASY', '01:THRESHOLD:KEY']);
   });
 
+  it('régression : une séance intense faite cette semaine (réalisée ET verrouillée) n’est comptée qu’une fois pour V10', () => {
+    const d = disc([long('l', 8), thr('t', 0), run('e', 3)], { goal: { type: 'HALF_MARATHON' } });
+    const week = days([WEEK[0], WEEK[2], WEEK[5]], (x) => (x === WEEK[5] ? 7200 : 3600)).map((w) => (w.date === WEEK[0] ? { ...w, locked: 'THRESHOLD' as const } : w));
+    expect(plan(compose(d, week))).toEqual(['28:THRESHOLD:LOCKED', '30:EASY:EASY', '03:LONG:LONG']);
+  });
+
   it('recomposition partielle : fréquence hebdomadaire conservée (V26), jours restants seulement', () => {
     const c = composeRunningWeek({ ctx: parsed(disc([thr(), run('e', 3)])), days: days([WEEK[4]]), weeklySessions: 3, parameters: governance.parameters, mode: 'CANDIDATE', probe: realProbe(disc([thr(), run('e', 3)]), () => 3600) });
     expect(c.mode).toBe('NORMAL');
@@ -188,6 +194,13 @@ describe('§W — séances manquées', () => {
     const d = disc([thr('t', 9)]);
     const r = missed(d, [{ date: WEEK[1], archetype: 'THRESHOLD' }], [], [WEEK[4], WEEK[6]], realProbe(d, (x) => (x === WEEK[4] ? 600 : 3600)));
     expect(r.decisions[0]).toMatchObject({ decision: 'MOVE', to: WEEK[6] });
+  });
+
+  it('régression : séance planifiée déjà réalisée comptée une fois (V10)', () => {
+    // P-R3 : 2 par 7 jours. Seuil réalisé aujourd'hui ET encore listé comme planifié ; la KEY manquée doit pouvoir être déplacée.
+    const d = disc([run('t', -2, { archetype: 'THRESHOLD', structureFamily: 'INTERVALS', realizedDurationS: 2340, structure: THR })]);
+    const r = missed(d, [{ date: WEEK[1], archetype: 'SEVERE' }], [{ date: WEEK[2], archetype: 'THRESHOLD' }], [WEEK[4]]);
+    expect(r.decisions[0]).toMatchObject({ decision: 'MOVE', to: WEEK[4] });
   });
 
   it('plusieurs séances manquées ⇒ semaine replanifiée, progression en HOLD, tracé', () => {
