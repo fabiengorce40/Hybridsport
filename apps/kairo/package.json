@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:single": "VITE_TARGET=single vite build --outDir dist-single && node scripts/single-file.mjs dist-single/kairo-preview.html"
   },
   "dependencies": {
     "@hybridsport/app-core": "workspace:*",

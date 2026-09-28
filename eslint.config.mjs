@@ -5,7 +5,7 @@ import tseslint from 'typescript-eslint';
 const domainSources = ['packages/domain/src/**/*.ts', 'packages/engine/src/**/*.ts', 'packages/strength/src/**/*.ts', 'packages/running/src/**/*.ts'];
 
 export default tseslint.config(
-  { ignores: ['**/node_modules/**', '**/dist/**', 'coverage/**', 'exports/**', 'reports/**', '.stryker-tmp/**', '.stryker-tmp-*/**'] },
+  { ignores: ['**/node_modules/**', '**/dist/**', '**/dist-single/**', 'coverage/**', 'exports/**', 'reports/**', '.stryker-tmp/**', '.stryker-tmp-*/**'] },
   js.configs.recommended,
   ...tseslint.configs.strict,
   {

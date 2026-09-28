@@ -16,6 +16,7 @@ if (root) {
 }
 
 // Hors ligne : service worker uniquement en production, sur http(s).
-if (import.meta.env.PROD && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
+// Désactivé pour l'aperçu autonome (page unique hébergée sans service worker possible).
+if (import.meta.env.PROD && import.meta.env.VITE_TARGET !== 'single' && 'serviceWorker' in navigator && location.protocol.startsWith('http')) {
   window.addEventListener('load', () => { navigator.serviceWorker.register('./sw.js').catch(() => undefined); });
 }

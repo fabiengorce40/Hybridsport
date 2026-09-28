@@ -60,7 +60,9 @@ export function Profile() {
       <Notice>
         <span>Vos données sont enregistrées uniquement sur cet appareil, dans ce navigateur{store.persistent ? '' : ' — STOCKAGE INDISPONIBLE : rien ne sera conservé à la fermeture'}. Aucune synchronisation entre appareils. Exportez-les pour les sauvegarder.</span>
       </Notice>
-      <button className="btn secondary" onClick={() => download(`kairo-${store.clock().today}.json`, exportState(state))}>Exporter mes données</button>
+      {import.meta.env.VITE_TARGET === 'single'
+        ? <Notice tone="warn">Aperçu : l’export de fichier n’est pas disponible dans cette page d’aperçu. Il l’est dans l’application installée.</Notice>
+        : <button className="btn secondary" onClick={() => download(`kairo-${store.clock().today}.json`, exportState(state))}>Exporter mes données</button>}
       {!confirmReset
         ? <button className="btn danger" onClick={() => setConfirmReset(true)}>Effacer toutes les données</button>
         : (
