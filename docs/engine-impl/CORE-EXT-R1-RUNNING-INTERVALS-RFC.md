@@ -1,6 +1,6 @@
 # CORE-EXT-R1 — RFC : séance de course structurée (fractionné, cibles en plages)
 
-> **Statut (phase 6A) : APPROVED → IMPLEMENTED_CANDIDATE** (approbation du fondateur ; implémentation : [`CORE-EXT-R1-IMPLEMENTATION.md`](CORE-EXT-R1-IMPLEMENTATION.md) ; durcissement en cours d’évaluation).
+> **Statut (phase 6A) : APPROVED → IMPLEMENTED_CANDIDATE → IMPLEMENTED_HARDENED** (approbation du fondateur ; implémentation : [`CORE-EXT-R1-IMPLEMENTATION.md`](CORE-EXT-R1-IMPLEMENTATION.md) ; gates : [`CORE-EXT-R1-TEST-REPORT.md`](CORE-EXT-R1-TEST-REPORT.md)).
 >
 > *Historique :* **RFC FINALE (5C), NON IMPLÉMENTÉE.** Phase 5B (section Y), finalisée en 5C (B4, AI) : comparaison entre profondeur fixe et récursion bornée, recommandation finale au §8. Aucun fichier du CORE n’est modifié. CORE-EXT-5 (RIR en plage) est indépendante et reste non implémentée.
 
@@ -244,4 +244,4 @@ run_structure
 - `estimates.totalS` = échauffement + préparation + travail + récupérations (sans la récupération après la dernière répétition d’une série, et avec une `betweenSetRecovery` entre séries) + transitions + retour au calme.
 - Une dose en distance est convertie en durée **seulement** avec une plage d’allure (bornes de la plage) ; sinon l’estimation est marquée `UNKNOWN_DURATION_COMPONENT` et la séance ne peut pas être placée sans confirmation.
 
-*(5C)* CORE-EXT-R1 NOT IMPLEMENTED. **Phase 6A : IMPLEMENTED_CANDIDATE.**
+*(5C)* CORE-EXT-R1 NOT IMPLEMENTED. **Phase 6A : IMPLEMENTED_HARDENED.**

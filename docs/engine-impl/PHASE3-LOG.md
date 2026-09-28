@@ -262,3 +262,15 @@ Résultats :
 - matrices de capacités cibles, 11 drapeaux de capacité, éligibilité à la production (états de maturité), graphe des 14 + 4 + 2 décisions ;
 - CORE-EXT-R1 : trois points d'intégration arbitrés en conception, dossier d'approbation, READY_FOR_FOUNDER_APPROVAL ;
 - vagues 0–5, stratégie de tests, critères d'acceptation ; entrées golden figées ; aucune modification du code.
+
+## Phase 6A — CORE-EXT-R1 IMPLEMENTATION & HARDENING
+
+Rapports : [`CORE-EXT-R1-IMPLEMENTATION.md`](CORE-EXT-R1-IMPLEMENTATION.md), [`CORE-EXT-R1-MIGRATION.md`](CORE-EXT-R1-MIGRATION.md), [`CORE-EXT-R1-TEST-REPORT.md`](CORE-EXT-R1-TEST-REPORT.md).
+
+Résultats :
+
+- CORE_EXT_R1_FOUNDER_APPROVAL = APPROVED (Q1 distance ⇒ allure sourcée ; Q2 estimations stockées, recalculées, UNAVAILABLE_LEGACY ; Q3 échauffement / retour au calme exclusifs) ; aucun paramètre scientifique, décision experte, G1, V33 ni V34 approuvés ;
+- variante `run_structure` à profondeur fixe, `session_record` v4, dérivation unique dans le DurationEngine, 26 codes structurels explicites, levier, métadonnées d'exécution neutres ; contrat SportEngine et Strength inchangés ; empreinte F20 mise à jour de façon motivée ;
+- 696 tests verts (+66) ; mutation en 7 lots bornés : 980 mutants, 96,84 %, 0 survivant pertinent non expliqué ; passage global de 4 h diagnostiqué (mutants de boucle infinie → 8 Go par worker, thrashing) ;
+- CORE_EXT_R1_IMPLEMENTATION_GATE = PASS ; CORE_EXT_R1_HARDENING_GATE = PASS ; CORE_EXT_R1_STATUS = IMPLEMENTED_HARDENED ; RunningEngine non démarré.
+

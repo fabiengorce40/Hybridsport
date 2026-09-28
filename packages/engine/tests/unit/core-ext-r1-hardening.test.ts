@@ -199,6 +199,16 @@ describe('durcissement — recalcul, lecture, vérification', () => {
     expect(toRecordedDurationEstimate(e.estimate)).toEqual({ availability: 'AVAILABLE', method: 'core.duration_engine', unit: 's', p10: e.estimate.p10, p50: e.estimate.p50, p90: e.estimate.p90 });
   });
 
+  it('lecture v4 : estimation de séance stockée avec p10 ≤ p50 ≤ p90 violé ⇒ refus (jamais lue)', () => {
+    const s = zSessionDraft.parse(runInput([rs([rep()])]));
+    const env = (e: Record<string, number>) => ({ kind: 'session_record', schemaVersion: 4, data: { session: s, provenance, fingerprint: { status: 'unavailable', reason: 'duplicate_analysis_inactive' }, durationEstimate: { availability: 'AVAILABLE', method: 'core.duration_engine', unit: 's', ...e } } });
+    for (const bad of [{ p10: 500, p50: 400, p90: 600 }, { p10: 300, p50: 700, p90: 600 }]) {
+      const r = migrateToCurrent(env(bad));
+      expect(!r.ok && r.reasons.map((x) => x.code)).toEqual(['TECHNICAL.SCHEMA_INVALID']);
+    }
+    expect(migrateToCurrent(env({ p10: 400, p50: 400, p90: 400 })).ok).toBe(true);
+  });
+
   it('migration v3 → v4 : données malformées refusées sans exception ; run_structure détectée même parmi d’autres items', () => {
     const base = { provenance, fingerprint: { status: 'unavailable', reason: 'duplicate_analysis_inactive' } };
     const failed = (data: unknown) => {
@@ -228,6 +238,12 @@ describe('durcissement — levier reduce_run_volume', () => {
     const p = rs([seg('warmup', { durationS: 300 }), seg('steady', { durationS: 600 }), rep(), seg('cooldown', { durationS: 600 })]);
     const r = reduceRunStructure(p, { kind: 'reduce_run_volume', minS: 300 }, steps)!;
     expect(r.segments.map((s) => ('dose' in s ? s.dose : null))).toEqual([{ durationS: 300 }, { durationS: 600 }, null, { durationS: 480 }]);
+  });
+
+  it('plusieurs segments continus : le premier au plancher est sauté, le suivant réductible est réduit', () => {
+    const p = rs([seg('steady', { durationS: 300 }, 's1'), rep(), seg('steady', { durationS: 600 }, 's2')]);
+    const r = reduceRunStructure(p, { kind: 'reduce_run_volume', minS: 300 }, steps)!;
+    expect(r.segments.map((x) => ('dose' in x ? x.dose : null))).toEqual([{ durationS: 300 }, null, { durationS: 480 }]);
   });
 
   it('dose en distance : pas en mètres, plancher inclus (égalité autorisée), allure conservée', () => {
