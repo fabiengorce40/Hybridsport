@@ -5,7 +5,7 @@
 | Contrôle | Résultat |
 |---|---|
 | Base (début 6B) | 696 tests verts ; HEAD `fc665bb` ; CORE-EXT-R1 vérifiée sur les artefacts (`CURRENT_SCHEMA.session_record.version = 4`, `run_structure` présent) |
-| `pnpm test` | **826 / 826** verts (+130 tests Running) |
+| `pnpm test` | **827 / 827** verts (+131 tests Running) |
 | `pnpm typecheck`, `pnpm lint` | verts (le paquet Running est soumis aux mêmes règles de frontière que le CORE : horloge, hasard, réseau) |
 | Architecture | verte : CORE (dont F20 : empreinte inchangée), Strength, Running |
 
@@ -16,7 +16,7 @@
 | `unit/governance.test.ts` | 15 | Registre, absence de valeurs, résolution par mode, transitions de maturité, G1, V33 / V34 |
 | `unit/capabilities.test.ts` | 9 | Capacités, éligibilité à la production, déterminisme (propriété) |
 | `unit/references.test.ts` | 15 | Références, ReferenceConfidence, sélection, conflits, départage (propriété) |
-| `unit/references-hardening.test.ts` | 10 | Exigences par type, confiance avant date, prudence, frontières |
+| `unit/references-hardening.test.ts` | 11 | Exigences par type, confiance avant date, prudence, frontières |
 | `unit/analysis.test.ts` | 15 | Éligibilité ≠ précision, dégradations, V33 / V34, marathon, premières expositions, trace, déterminisme (propriété) |
 | `unit/hardening.test.ts` | 21 | Dépendances exactes, dose G1 signée, fail-closed, trace, dégradations (propriété) |
 | `unit/load-variability-model.test.ts` | 22 | RecentLoadContext, variabilité, interface de modèle |
@@ -117,11 +117,61 @@ Résultats après durcissement : §2.6.
 
 **Survivants pertinents non expliqués : 0.**
 
-### 2.6 Annexe après durcissement
+### 2.6 Annexe après durcissement (dernière exécution)
 
-_(à compléter à la fin des lots 7a–7d)_
+| Lot | Fichiers | Total | Tués | Survivants | Timeouts | Score | Durée |
+|---|---|---|---|---|---|---|---|
+| 7a | `references.ts` | 485 | 427 | 58 | 0 | 88,04 % | 1 437 s |
+| 7b | `recent-load.ts` | 234 | 227 | 7 | 0 | 97,01 % | 672 s |
+| 7c | `variability.ts`, `performance-model.ts` | 189 | 155 | 34 | 0 | 82,01 % | 602 s |
+| 7d | `context.ts`, `engine.ts` | 143 | 133 | 10 | 0 | 93,01 % | 413 s |
+| **Annexe** | | **1 051** | **942** | **109** | **0** | **89,63 %** | ≈ 52 min |
+| **Total vague 1** | | **2 185** | **2 037** | **148** | **0** | **93,23 %** | |
 
-## 3. Audit des valeurs magiques
+**Survivants restants de l'annexe (109) : justifiés.**
+
+| Catégorie | Mutants | Justification |
+|---|---|---|
+| Inatteignables en vague 1 | Sélection d'un modèle implémenté (`performance-model.ts:65–69`, 18 mutants) ; garde CORE-EXT-R1 absente (`engine.ts:31, 55`) | Aucun modèle n'est implémenté ; le CORE porte v4. Ce code sert les vagues suivantes |
+| Équivalence algébrique | `variability.ts:26`, `x − m → x + m` : Σ(x + m)(x − m) = Σx² − n·m² = Σ(x − m)² | Résultat identique |
+| Équivalents | Tri préalable des références (ordre des candidats déterministe dans tous les cas) ; `g.length > 1` (une discordance exige deux allures) ; distance visée absente (la distance diffère alors toujours) ; plafond ordinal par objet (seul VO2max en a un, et il n'est utilisable pour aucune décision) ; gardes `typeof` redondantes avec `Number.isInteger` ; médiane (gardes d'ensemble vide) ; filtres de chemins du contexte (aucun autre chemin ne porte `level` ou `type` en 2ᵉ position) | Aucune différence observable |
+| Défensifs | Branches de repli « aucune référence » dupliquées ; `ruleRefs` (toujours vides) | Inatteignables pour une entrée validée |
+| Diagnostic | Messages et libellés de schéma, raison `DECISION_PENDING` supplémentaire quand la décision est déjà approuvée | Aucune décision affectée |
+
+## 3. Gates
+
+### RUNNING_WAVE1_IMPLEMENTATION_GATE = **PASS**
+
+| Critère | Statut |
+|---|---|
+| Paquet implémenté (conventions SportEngine, aucune duplication du CORE) | ✅ |
+| Tests, typecheck, lint, architecture verts | ✅ 827 / 827 |
+| Registre des paramètres fonctionnel (champs, maturité, transitions, résolution par mode) | ✅ |
+| Aucune valeur non résolue codée en dur | ✅ (audit §4) |
+| Capacités déterministes, dérivées de la gouvernance | ✅ |
+| Éligibilité à la production fail-closed | ✅ |
+| G1 toujours non signées | ✅ (4 UNSIGNED) |
+| V33 / V34 non résolus | ✅ (sans valeur) |
+| Éligibilité distincte de la précision | ✅ |
+| Dégradations explicites | ✅ |
+| Observabilité (trace) | ✅ |
+| Contrat SportEngine respecté (pipeline réel du CORE) | ✅ |
+| Strength inchangé | ✅ |
+| CORE inchangé | ✅ (aucune source ; empreinte F20 intacte) |
+
+### RUNNING_WAVE1_HARDENING_GATE = **PASS**
+
+| Critère | Statut |
+|---|---|
+| Mutation ciblée en lots bornés (mémoire, worker unique, délais, concurrence, tests ciblés) | ✅ 10 lots, aucun passage global |
+| Zones prioritaires (éligibilité, dépendances, paramètres, G1, éligibilité ≠ précision, dégradation, maturité) | ✅ 96,56 % |
+| Survivants pertinents corrigés (test ou implémentation) | ✅ (1 défaut d'implémentation corrigé) |
+| Survivants restants analysés sémantiquement et justifiés | ✅ (39 prioritaires + 109 annexe) |
+| Adversariaux verts | ✅ |
+
+**RUNNING_WAVE1_STATUS = IMPLEMENTED_HARDENED**
+
+## 4. Audit des valeurs magiques
 
 | Contrôle | Résultat |
 |---|---|
@@ -131,10 +181,23 @@ _(à compléter à la fin des lots 7a–7d)_
 | Correspondances RPE / FC / allure ↔ domaine | Aucune codée ; V02 non appliquée (statut exposé seulement) |
 | Repli universel de variabilité (2 / 3 / 4 %) | Absent |
 
-## 4. Régressions
+## 5. Régressions
 
 | Élément | Résultat |
 |---|---|
 | **Strength** | Aucune source modifiée ; suites Strength (goldens F1 / F2, science-lock, intégration, propriétés) vertes ; Strength n'importe pas Running (test d'architecture) |
 | **CORE** | Aucune source modifiée (empreinte F20 inchangée) ; suites CORE vertes ; CORE n'importe pas Running ; aucun terme Running (P_R*, G1-*, `running.*`, E-*) dans le CORE |
 | Seules modifications hors paquet | `eslint.config.mjs` (paquet Running sous les règles de frontière), `pnpm-lock.yaml` (lien d'espace de travail) |
+
+## 6. Dette technique
+
+| Élément | Nature |
+|---|---|
+| Plafonds ordinaux de confiance par type (`typeConfidenceCaps`) et plafond par bande de récence (V12) | Interprétations ordinales de 5B, EXPERT_PROPOSED : à revoir avec E-RECENCY |
+| Correspondance population ↔ historique observable | Non implémentée : la population est FOURNIE (frontières PROGRAMMING_HEURISTIC sans valeur en 5A) |
+| État de reprise | FOURNI (frontières V24 non signées), jamais calculé |
+| Levier de production « ruleset verrouillé » | Représenté par un booléen de gouvernance ; la procédure de verrouillage (gate du ruleset) reste à outiller |
+| Modèle de performance | Interface seulement ; aucune formule |
+| Planificateur global (P_HYBRID) | Dépendance technique non satisfaite |
+| `/tmp` de la session | ~30 Go de répertoires temporaires vitest laissés par des exécutions tuées des passages de mutation (6A et 6B) : nettoyage à décider par l'utilisateur |
+

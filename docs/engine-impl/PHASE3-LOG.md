@@ -274,3 +274,15 @@ Résultats :
 - 696 tests verts (+66) ; mutation en 7 lots bornés : 980 mutants, 96,84 %, 0 survivant pertinent non expliqué ; passage global de 4 h diagnostiqué (mutants de boucle infinie → 8 Go par worker, thrashing) ;
 - CORE_EXT_R1_IMPLEMENTATION_GATE = PASS ; CORE_EXT_R1_HARDENING_GATE = PASS ; CORE_EXT_R1_STATUS = IMPLEMENTED_HARDENED ; RunningEngine non démarré.
 
+## Phase 6B — RUNNING ENGINE WAVE 1 (fondations, gouvernance, éligibilité à la production)
+
+Rapports : [`RUNNING-WAVE1-IMPLEMENTATION.md`](RUNNING-WAVE1-IMPLEMENTATION.md), [`RUNNING-WAVE1-TEST-REPORT.md`](RUNNING-WAVE1-TEST-REPORT.md).
+
+Résultats :
+
+- paquet `@hybridsport/running` (SportEngine<RunningContext>, `propose` ⇒ no_valid_proposal explicite) : infrastructure seulement, aucun algorithme de prescription ;
+- registre typé de 46 paramètres (31 valeurs candidates, 15 sans valeur, aucun approuvé), maturité et transitions contrôlées, résolution fail-closed ; 11 capacités + socle dérivées de la gouvernance ; RunningProductionEligibility déterministe : tout non éligible aujourd'hui ;
+- 14 décisions PENDING, 4 G1 UNSIGNED, V23 / V33 / V34 non résolus ; références et ReferenceConfidence séparées de la PrescriptionConfidence ; éligibilité ≠ précision ; dégradations explicites ; RecentLoadContext provisoire ; variabilité contextuelle ; interface de modèle (MODEL_UNAVAILABLE) ;
+- 827 tests verts (+131) ; mutation en 10 lots bornés : 2 185 mutants, 93,23 % (zones prioritaires 96,56 %), 1 défaut d'implémentation corrigé, survivants justifiés ; CORE et Strength inchangés ;
+- RUNNING_WAVE1_IMPLEMENTATION_GATE = PASS ; RUNNING_WAVE1_HARDENING_GATE = PASS ; RUNNING_WAVE1_STATUS = IMPLEMENTED_HARDENED.
+
