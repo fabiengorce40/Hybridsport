@@ -78,7 +78,8 @@ export function targetPrecision(i: PrecisionInput): TargetPrecision {
     }
   }
   if (causes.length === 0) return { level: 'PACE_RANGE', causes: [], effortMapping, reasons };
-  if (!(causes.length === 1 && causes[0] === 'EFFORT_BY_NATURE')) {
+  // Une séance ciblée à l'effort par nature n'est jamais « dégradée » : l'allure n'y était pas prévue.
+  if (!causes.includes('EFFORT_BY_NATURE')) {
     reasons.push(runningReasons.emit(RUNNING_CODES.PRESCRIPTION_PRECISION_REDUCED, { archetype: i.archetype, precision: 'EFFORT_ONLY', cause: causes.join(',') }));
   }
   return { level: 'EFFORT_ONLY', causes, effortMapping, reasons };

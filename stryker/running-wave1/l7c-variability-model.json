@@ -4,12 +4,8 @@
   "testRunner": "command",
   "checkers": [],
   "mutate": [
-    "packages/running/src/references.ts",
-    "packages/running/src/recent-load.ts",
     "packages/running/src/variability.ts",
-    "packages/running/src/performance-model.ts",
-    "packages/running/src/context.ts",
-    "packages/running/src/engine.ts"
+    "packages/running/src/performance-model.ts"
   ],
   "reporters": [
     "clear-text",
@@ -20,7 +16,7 @@
     "low": 75,
     "break": null
   },
-  "tempDirName": ".stryker-tmp-run-l7",
+  "tempDirName": ".stryker-tmp-run-l7c",
   "timeoutMS": 10000,
   "timeoutFactor": 1.5,
   "concurrency": 3,
@@ -30,6 +26,6 @@
   },
   "coverageAnalysis": "off",
   "jsonReporter": {
-    "fileName": "reports/mutation/running-wave1-l7-annexe-references-load-variability-model.json"
+    "fileName": "reports/mutation/running-wave1-l7c-variability-model.json"
   }
 }

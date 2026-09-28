@@ -207,7 +207,7 @@ export function assessSession(archetype: RunningSessionArchetype | PostV1Archety
     archetype: a, sessionAvailable: eligibility.status === 'ELIGIBLE', paceTargetsEnabled: cap('paceTargets').enabled,
     wearable: ctx.sensors.wearable, referenceConfidence: ref.confidence, mode: ctx.mode, parameters: s.governance.parameters,
   });
-  if (precision.level === 'EFFORT_ONLY' && !precision.causes.every((c) => c === 'EFFORT_BY_NATURE')) {
+  if (precision.level === 'EFFORT_ONLY' && !precision.causes.includes('EFFORT_BY_NATURE')) {
     degradations.push({ effect: 'PRECISION_REDUCED', subject: a, capability: 'paceTargets', parameterIds: ['running.target.paceRangeWidthByConfidence'], reason: precision.reasons.find((r) => r.code === RUNNING_CODES.PRESCRIPTION_PRECISION_REDUCED) ?? runningReasons.emit(RUNNING_CODES.PRESCRIPTION_PRECISION_REDUCED, { archetype: a, precision: precision.level, cause: precision.causes.join(',') }) });
   }
   return {
