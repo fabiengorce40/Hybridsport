@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import { asISODateTime } from '@hybridsport/domain';
-import { CURRENT_RUNNING_GOVERNANCE, historyAnchor, RUNNING_CODES, sessionNegativeResponse, zRealizedSession } from '../../src/index.js';
+import { CURRENT_RUNNING_GOVERNANCE, historyAnchor, RUNNING_CODES, sessionNegativeResponse, zRealizedSession, zRealizedStructure } from '../../src/index.js';
 import type { AnchorQuery, RealizedSession, RunningParameter } from '../../src/index.js';
 import { fullyApprovedGovernance, NOW, withParameter } from '../fixtures.js';
 
@@ -193,5 +193,47 @@ describe('ancre V19 — sélection de la séance', () => {
     expect(zRealizedSession.safeParse({ sessionId: 's', archetype: 'EASY', structureFamily: 'CONTINUOUS', completedAt: '2026-10-01T08:00:00Z', realizedDurationS: 10, completion: 'COMPLETED', dose: 1 }).success).toBe(false);
     expect(zRealizedSession.safeParse({ sessionId: 's', archetype: 'EASY', structureFamily: 'CONTINUOUS', completedAt: '2026-10-01T08:00:00Z', realizedDurationS: Number.POSITIVE_INFINITY, completion: 'COMPLETED' }).success).toBe(false);
     expect(zRealizedSession.safeParse({ sessionId: 's', archetype: 'EASY', structureFamily: 'CONTINUOUS', completedAt: '2026-10-01T08:00:00Z', realizedDurationS: Number.NaN, completion: 'COMPLETED' }).success).toBe(false);
+  });
+});
+
+describe('gate Course (mutation G1) — structure réalisée et règle après retour négatif', () => {
+  const zRS = zRealizedStructure;
+  const issues = (s: unknown) => { const r = zRS.safeParse(s); return r.success ? [] : r.error.issues.map((i) => ({ path: i.path, message: i.message })); };
+
+  it('fractionné : durée ET mode de récupération obligatoires (un seul des deux ⇒ refus, chemin recoveryS)', () => {
+    expect(issues({ reps: 4, workS: 240, recoveryS: 120 })).toEqual([{ path: ['recoveryS'], message: 'fractionné : récupération (durée et mode) obligatoire' }]);
+    expect(issues({ reps: 4, workS: 240, recoveryMode: 'jog' })).toEqual([{ path: ['recoveryS'], message: 'fractionné : récupération (durée et mode) obligatoire' }]);
+    expect(issues({ reps: 4, workS: 240, recoveryS: 120, recoveryMode: 'jog' })).toEqual([]);
+  });
+
+  it('continu : aucune récupération (un seul des deux champs ⇒ refus, chemin recoveryS)', () => {
+    expect(issues({ reps: 1, workS: 1200, recoveryS: 60 })).toEqual([{ path: ['recoveryS'], message: 'continu : aucune récupération' }]);
+    expect(issues({ reps: 1, workS: 1200, recoveryMode: 'walk' })).toEqual([{ path: ['recoveryS'], message: 'continu : aucune récupération' }]);
+    expect(issues({ reps: 1, workS: 1200 })).toEqual([]);
+  });
+
+  const withRule = (afterNegativeResponse: unknown) => withParameter(CURRENT_RUNNING_GOVERNANCE, 'running.dose.historyAnchorPolicy', (p): RunningParameter => ({ ...p, value: { status: 'candidate', value: { ...(p.value.status === 'candidate' ? p.value.value as object : {}), afterNegativeResponse } } })).parameters;
+  const neg = [{ sessionId: 'ok', completedAt: daysAgo(9) }, { sessionId: 'n2', completedAt: daysAgo(3), completion: 'PARTIAL' as const }, { sessionId: 'n1', completedAt: daysAgo(5), completion: 'PARTIAL' as const }];
+
+  it('règle après retour négatif : REFUSE explicite ⇒ refus ; valeur inconnue ⇒ règle illisible (POLICY_UNRESOLVED)', () => {
+    expect(causeOf(historyAnchor(q(neg, { parameters: withRule('REFUSE') })))).toBe('LATER_NEGATIVE_RESPONSE');
+    expect(causeOf(historyAnchor(q(neg, { parameters: withRule('RETRY') })))).toBe('POLICY_UNRESOLVED');
+    expect(causeOf(historyAnchor(q(neg, { parameters: withRule('') })))).toBe('POLICY_UNRESOLVED');
+  });
+
+  it('D5 : repli ancré (statut anchored, drapeau), séances négatives tracées TRIÉES', () => {
+    const a = historyAnchor(q(neg, { parameters: withRule('LAST_SUCCESSFUL_DOSE') }));
+    expect(a.status).toBe('anchored');
+    expect(a.status === 'anchored' && a.afterNegativeFallback).toBe(true);
+    expect(a.reasons.find((r) => r.code === RUNNING_CODES.DOSE_ANCHOR_FALLBACK)?.params).toEqual({ archetype: 'EASY', sessionId: 'ok', negativeSessionIds: ['n1', 'n2'] });
+  });
+
+  it('deux ancres simultanées de même durée mais de structures différentes ⇒ AMBIGUOUS', () => {
+    const at = daysAgo(3);
+    const a = historyAnchor(q([
+      { sessionId: 'a', completedAt: at, archetype: 'SEVERE', structureFamily: 'INTERVALS', structure: { reps: 4, workS: 240, recoveryS: 120, recoveryMode: 'jog' } },
+      { sessionId: 'b', completedAt: at, archetype: 'SEVERE', structureFamily: 'INTERVALS', structure: { reps: 5, workS: 192, recoveryS: 120, recoveryMode: 'jog' } },
+    ], { archetype: 'SEVERE', structureFamily: 'INTERVALS' }));
+    expect(causeOf(a)).toBe('AMBIGUOUS');
   });
 });
