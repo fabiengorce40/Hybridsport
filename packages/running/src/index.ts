@@ -17,4 +17,7 @@ export * from './analysis.js';
 export * from './wave2/history.js';
 export * from './wave2/candidate.js';
 export * from './wave2/pipeline.js';
+export * from './wave2/proposal.js';
+export * from './wave3/guards.js';
+export * from './wave3/structure.js';
 export * from './engine.js';

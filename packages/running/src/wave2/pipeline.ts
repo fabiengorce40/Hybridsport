@@ -27,8 +27,11 @@ import type { Degradation } from '../degradation.js';
 import type { RunningWave1Analysis, SessionAssessment } from '../analysis.js';
 import type { RunningContext } from '../context.js';
 import { historyAnchor } from './history.js';
-import type { StructureFamily } from './history.js';
-import { WAVE2_ARCHETYPES, WAVE2_STRUCTURE_FAMILIES } from './candidate.js';
+import type { RealizedSession, StructureFamily } from './history.js';
+import { WAVE3_ARCHETYPES, WAVE3_STRUCTURE_FAMILIES } from './candidate.js';
+import { qualityGuards, QUALITY_ARCHETYPES } from '../wave3/guards.js';
+import type { QualityArchetype } from '../wave3/guards.js';
+import { buildQualityStructure, QUALITY_DOMAIN } from '../wave3/structure.js';
 import type { CandidateRejection, ParameterUse, PipelineStage, RunningCandidate } from './candidate.js';
 
 export interface Wave2Options {
@@ -88,7 +91,7 @@ export function runWave2(input: SportEngineInput<RunningContext>, analysis: Runn
   const assessment = analysis.sessions.find((s) => s.archetype === archetype);
   trace.push({ stage: 'ANALYSIS', subject: input.intent.archetypeId, decision: assessment ? `${assessment.eligibility.status}/${assessment.precision.level}` : 'ARCHETYPE_UNKNOWN', reasons: sessionReasons(assessment) });
 
-  if (archetype === undefined || !(WAVE2_ARCHETYPES as readonly string[]).includes(archetype)) {
+  if (archetype === undefined || !(WAVE3_ARCHETYPES as readonly string[]).includes(archetype)) {
     const reasons = [
       runningReasons.emit(RUNNING_CODES.PRESCRIPTION_NOT_IMPLEMENTED, { archetype: archetype ?? input.intent.archetypeId, wave: opts.wave }),
       ...(assessment ? sessionReasons(assessment) : [runningReasons.emit(RUNNING_CODES.ARCHETYPE_UNKNOWN, { archetypeId: input.intent.archetypeId })]),
@@ -97,19 +100,28 @@ export function runWave2(input: SportEngineInput<RunningContext>, analysis: Runn
     return { status: 'no_valid', candidates: [], reasons, trace };
   }
   const a = archetype as RunningSessionArchetype;
-  const families = WAVE2_STRUCTURE_FAMILIES[a] ?? [];
+  const families = WAVE3_STRUCTURE_FAMILIES[a] ?? [];
   const candidates = families.map((family) => evaluate(a, family, { input, analysis, governance, opts, assessment, trace }));
   trace.push({ stage: 'GENERATION', subject: a, decision: `GENERATED:${String(candidates.length)}`, reasons: [] });
 
-  // Sélection déterministe : un candidat par famille de structure (EASY : une seule famille) ; aucun score.
-  const survivors = candidates.filter((c) => c.built !== undefined);
+  // Sélection déterministe, aucun score : un candidat par famille (EASY : une seule famille). Plusieurs familles
+  // ancrées (seuil continu ET fractionné) : HOLD = rejouer la famille réalisée le plus récemment ; égalité ⇒ refus.
+  const all = candidates.filter((c) => c.built !== undefined);
+  const lastAt = (c: Evaluated): string => (c.candidate.dose?.kind === 'structure' ? c.candidate.dose.source.completedAt : '');
+  const latest = all.reduce((m, c) => (lastAt(c) > m ? lastAt(c) : m), '');
+  const survivors = all.length > 1 ? all.filter((c) => lastAt(c) === latest) : all;
+  if (survivors.length > 1) {
+    const reasons = [runningReasons.emit(RUNNING_CODES.FAMILY_AMBIGUOUS, { archetype: a, families: survivors.map((c) => c.candidate.structureFamily) })];
+    trace.push({ stage: 'SELECTION', subject: a, decision: 'NO_CANDIDATE', reasons });
+    return { status: 'no_valid', candidates: candidates.map((c) => c.candidate), reasons, trace };
+  }
   const chosen = survivors[0];
-  if (chosen?.built === undefined || survivors.length !== 1) {
+  if (chosen?.built === undefined) {
     const reasons = candidates.flatMap((c) => c.candidate.rejection?.reasons ?? []);
     trace.push({ stage: 'SELECTION', subject: a, decision: 'NO_CANDIDATE', reasons });
     return { status: 'no_valid', candidates: candidates.map((c) => c.candidate), reasons, trace };
   }
-  trace.push({ stage: 'SELECTION', subject: chosen.candidate.candidateId, decision: 'SELECTED:SINGLE_CANDIDATE', reasons: [] });
+  trace.push({ stage: 'SELECTION', subject: chosen.candidate.candidateId, decision: all.length > 1 ? 'SELECTED:MOST_RECENT_FAMILY' : 'SELECTED:SINGLE_CANDIDATE', reasons: [] });
   return {
     status: 'selected',
     selection: { candidate: chosen.candidate, structure: chosen.built.structure, exercise: chosen.built.exercise, parametersUsed: chosen.candidate.parameters },
@@ -175,6 +187,15 @@ function evaluate(a: RunningSessionArchetype, family: StructureFamily, env: Eval
     }
     used.push(paramUse(params, RETURN_PROTOCOL));
   }
+  const quality = (QUALITY_ARCHETYPES as readonly string[]).includes(a);
+  if (quality) {
+    // Vague 3 : gardes documentées des séances de qualité (§G.3, §K, §M, §N, §X, V10, V11).
+    const thresholdRef = analysis.references.find((r) => r.decision === 'THRESHOLD_BOUNDARY')?.confidence ?? 'NONE';
+    const guard = qualityGuards({ archetype: a as QualityArchetype, family, ctx, now: input.context.now, parameters: params, thresholdReferenceConfidence: thresholdRef });
+    if (!guard.ok) return reject('SAFETY_G1', guard.reasons);
+    reasons.push(...guard.reasons);
+    for (const pid of guard.parameterIds) used.push(paramUse(params, pid));
+  }
   trace.push({ stage: 'SAFETY_G1', subject: base.candidateId, decision: opts.simulation && ctx.mode === 'CANDIDATE' ? 'PASSED_SIMULATION' : 'PASSED', reasons: [] });
 
   // Faisabilité : ancre de dose (V19), exercice du catalogue.
@@ -185,6 +206,7 @@ function evaluate(a: RunningSessionArchetype, family: StructureFamily, env: Eval
   if (anchor.status === 'unavailable') return reject('FEASIBILITY', anchor.reasons);
   reasons.push(...anchor.reasons);
   for (const pid of anchor.parameterIds) used.push(paramUse(params, pid));
+  if (quality) return qualityTail(a as QualityArchetype, family, anchor.session, anchor.reasons, anchor.parameterIds[0] ?? '', { input, assessment, trace, used, reasons, base, reject, snapshot, getDegradations: () => degradations, setDegradations: (d) => { degradations = d; }, governance, opts });
   const dose = { kind: 'duration' as const, durationS: anchor.session.realizedDurationS, source: { parameterId: anchor.parameterIds[0] ?? '', sessionId: anchor.session.sessionId } };
   const exercises = runExercises(input);
   const exercise = exercises[0];
@@ -221,6 +243,83 @@ function evaluate(a: RunningSessionArchetype, family: StructureFamily, env: Eval
   if (structure.estimate.totalS.max > input.intent.availableTimeS) {
     return reject('FEASIBILITY', [runningReasons.emit(RUNNING_CODES.TIME_EXCEEDED, { archetype: a, availableTimeS: input.intent.availableTimeS, estimatedMaxS: structure.estimate.totalS.max })], { dose, intensity, exerciseId: exercise.id });
   }
+  if (opts.simulation && ctx.mode === 'CANDIDATE') reasons.push(runningReasons.emit(RUNNING_CODES.SIMULATED_PROPOSAL, { rulesetVersion: governance.rulesetVersion }));
+  reasons.push(...sortDegradations(degradations).filter((d) => d.effect !== 'PRECISION_REDUCED').map((d) => d.reason));
+  const candidate = snapshot({ precision: 'EFFORT_ONLY', dose, intensity, exerciseId: exercise.id });
+  return { candidate, built: { structure, exercise } };
+}
+
+interface QualityEnv {
+  readonly input: SportEngineInput<RunningContext>;
+  readonly assessment: SessionAssessment;
+  readonly trace: PipelineTraceEntry[];
+  readonly used: ParameterUse[];
+  readonly reasons: ReasonCode[];
+  readonly base: { readonly candidateId: string };
+  readonly reject: (stage: PipelineStage, rs: readonly ReasonCode[], extra?: Partial<RunningCandidate>) => Evaluated;
+  readonly snapshot: (extra: Partial<RunningCandidate>) => RunningCandidate;
+  readonly getDegradations: () => Degradation[];
+  readonly setDegradations: (d: Degradation[]) => void;
+  readonly governance: RunningGovernance;
+  readonly opts: Wave2Options;
+}
+
+const QUALITY_MIN_DOSE = 'running.quality.minimumDose';
+const QUALITY_PACE_NOT_PRESCRIBED = 'QUALITY_PACE_NOT_PRESCRIBED';
+
+/**
+ * Vague 3 — séance de qualité en HOLD : rejeu EXACT de la structure réalisée ancrée (V19, même archétype et
+ * même famille), cibles à l'effort (bandes V02), échauffement et retour au calme sous le plafond EASY_LOW.
+ * Aucune hausse (V23 vide), aucune première exposition (V35–V37), aucune allure (vague R4).
+ */
+function qualityTail(a: QualityArchetype, family: StructureFamily, anchored: RealizedSession, anchorReasons: readonly ReasonCode[], policyId: string, env: QualityEnv): Evaluated {
+  const { input, assessment, trace, used, reasons, base, reject, snapshot, governance, opts } = env;
+  const ctx = input.discipline;
+  const params = governance.parameters;
+  const st = anchored.structure;
+  const realizedFamily = st === undefined ? undefined : st.reps > 1 ? 'INTERVALS' : 'CONTINUOUS';
+  if (st === undefined || realizedFamily !== family) {
+    return reject('FEASIBILITY', [...anchorReasons, runningReasons.emit(RUNNING_CODES.STRUCTURE_UNAVAILABLE, { archetype: a, sessionId: anchored.sessionId, cause: st === undefined ? 'NOT_RECORDED' : 'FAMILY_MISMATCH' })]);
+  }
+  const dose = { kind: 'structure' as const, structure: st, workS: st.reps * st.workS, source: { parameterId: policyId, sessionId: anchored.sessionId, completedAt: anchored.completedAt } };
+  const exercises = runExercises(input);
+  const exercise = exercises[0];
+  if (exercise === undefined || exercises.length > 1) {
+    return reject('FEASIBILITY', [runningReasons.emit(RUNNING_CODES.EXERCISE_UNAVAILABLE, { cause: exercise === undefined ? 'NONE' : 'AMBIGUOUS', candidates: exercises.map((e) => e.id) })], { dose });
+  }
+  trace.push({ stage: 'FEASIBILITY', subject: base.candidateId, decision: `ANCHORED:${anchored.sessionId}`, reasons: anchorReasons });
+
+  // Résolution de précision : bande RPE du domaine de travail et plafond EASY_LOW (V02) ; allure non prescrite.
+  const v02 = resolveParameter(params, V02, ctx.mode);
+  const bands = v02.status === 'resolved' ? v02.value as Record<string, { min?: unknown; max?: unknown } | undefined> : {};
+  const domain = QUALITY_DOMAIN[a];
+  const lo = bands[domain]?.min;
+  const hi = bands[domain]?.max;
+  const easy = bands.EASY_LOW?.max;
+  if (typeof lo !== 'number' || typeof hi !== 'number' || typeof easy !== 'number' || !(lo > 0) || !(hi >= lo) || !(easy > 0)) {
+    return reject('PRECISION', [...v02.reasons], { dose, exerciseId: exercise.id });
+  }
+  reasons.push(...v02.reasons);
+  used.push(paramUse(params, V02));
+  const priorCauses = assessment.precision.level === 'EFFORT_ONLY' ? assessment.precision.causes : [];
+  const precisionReason = runningReasons.emit(RUNNING_CODES.PRESCRIPTION_PRECISION_REDUCED, { archetype: a, precision: 'EFFORT_ONLY', cause: [...priorCauses, QUALITY_PACE_NOT_PRESCRIBED].join(',') });
+  const degradations: Degradation[] = [
+    ...env.getDegradations().filter((d) => d.effect !== 'PRECISION_REDUCED'),
+    { effect: 'PRECISION_REDUCED', subject: a, capability: 'paceTargets', parameterIds: ['running.target.paceRangeWidthByConfidence'], reason: precisionReason },
+  ];
+  env.setDegradations(degradations);
+  reasons.push(precisionReason);
+  const intensity = { domain, rpe: { min: lo, max: hi }, easyCeiling: easy, source: { parameterId: V02 } };
+  trace.push({ stage: 'PRECISION', subject: base.candidateId, decision: 'EFFORT_ONLY', reasons: [precisionReason] });
+
+  const structure = buildQualityStructure(st, { domain, rpe: { min: lo, max: hi }, easyCeiling: easy, noWearable: !ctx.sensors.wearable });
+  if (structure === undefined) throw new TypeError(`structure run_structure non dérivable : ${base.candidateId}`);
+  if (structure.estimate.totalS.max > input.intent.availableTimeS) {
+    return reject('FEASIBILITY', [runningReasons.emit(RUNNING_CODES.TIME_EXCEEDED, { archetype: a, availableTimeS: input.intent.availableTimeS, estimatedMaxS: structure.estimate.totalS.max })], { dose, intensity, exerciseId: exercise.id });
+  }
+  // V31 vide : toute dose de qualité compte comme séance à forte demande (défaut conservateur tracé, §S).
+  const minDose = resolveParameter(params, QUALITY_MIN_DOSE, ctx.mode);
+  if (minDose.status === 'unresolved') reasons.push(runningReasons.emit(RUNNING_CODES.HIGH_DEMAND_DEFAULT_CONSERVATIVE, { archetype: a, parameterId: QUALITY_MIN_DOSE }));
   if (opts.simulation && ctx.mode === 'CANDIDATE') reasons.push(runningReasons.emit(RUNNING_CODES.SIMULATED_PROPOSAL, { rulesetVersion: governance.rulesetVersion }));
   reasons.push(...sortDegradations(degradations).filter((d) => d.effect !== 'PRECISION_REDUCED').map((d) => d.reason));
   const candidate = snapshot({ precision: 'EFFORT_ONLY', dose, intensity, exerciseId: exercise.id });

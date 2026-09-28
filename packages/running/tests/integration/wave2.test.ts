@@ -10,7 +10,7 @@ import { canonicalStringify, runSportSession } from '@hybridsport/engine';
 import type { SportEngineInput } from '@hybridsport/engine';
 import {
   ARCHETYPE_INTENT_IDS, createRunningEngine, CURRENT_RUNNING_GOVERNANCE, PIPELINE_STAGES, POST_V1_ARCHETYPES, RUNNING_CODES, RUNNING_ENGINE_ID, RUNNING_ENGINE_VERSION,
-  RUNNING_SESSION_ARCHETYPES, runningReasons, WAVE2_ARCHETYPES,
+  RUNNING_SESSION_ARCHETYPES, runningReasons, WAVE2_ARCHETYPES, WAVE3_ARCHETYPES,
 } from '../../src/index.js';
 import type { RunningContext, RunningContextInput, RunningEngine, RunningGovernance, RunningParameter } from '../../src/index.js';
 import { PROFILE_GYM, STATE_FRESH } from '../../../engine/tests/harness/requests.js';
@@ -235,10 +235,14 @@ describe('gouvernance simulée — EASY (classe A)', () => {
 });
 
 describe('gouvernance simulée — archétypes non prescriptibles (classe C)', () => {
-  const others = [...RUNNING_SESSION_ARCHETYPES.filter((a) => !WAVE2_ARCHETYPES.includes(a)), ...POST_V1_ARCHETYPES];
+  const others = [...RUNNING_SESSION_ARCHETYPES.filter((a) => !WAVE3_ARCHETYPES.includes(a)), ...POST_V1_ARCHETYPES];
   const richHistory = RUNNING_SESSION_ARCHETYPES.flatMap((a, i) => [easy({ sessionId: `c${String(i)}`, archetype: a }), easy({ sessionId: `i${String(i)}`, archetype: a, structureFamily: 'INTERVALS' })]);
 
-  it('seul EASY est prescriptible en vague 2', () => { expect(WAVE2_ARCHETYPES).toEqual(['EASY']); });
+  it('vague 2 : EASY seul ; vague 3 : EASY + qualité en HOLD (LONG, RACE_PACE, TEST, STRIDES, PROGRESSION_RUN exclus)', () => {
+    expect(WAVE2_ARCHETYPES).toEqual(['EASY']);
+    expect(WAVE3_ARCHETYPES).toEqual(['EASY', 'THRESHOLD', 'SEVERE', 'SHORT_INTERVAL', 'HILLS']);
+    expect(others).toEqual(['LONG', 'RACE_PACE', 'TEST', 'STRIDES', 'PROGRESSION_RUN']);
+  });
 
   it.each(others)('%s : aucune séance, même tout approuvé (simulé), historique complet et références', (a) => {
     for (const engine of [approvedProd(), sim()]) {
@@ -246,7 +250,7 @@ describe('gouvernance simulée — archétypes non prescriptibles (classe C)', (
       const out = outcome(engine, disc, ARCHETYPE_INTENT_IDS[a]);
       expect(out.status).toBe('no_valid');
       expect(out.candidates).toEqual([]);
-      expect(out.reasons[0]).toMatchObject({ code: RUNNING_CODES.PRESCRIPTION_NOT_IMPLEMENTED, params: { archetype: a, wave: '2' } });
+      expect(out.reasons[0]).toMatchObject({ code: RUNNING_CODES.PRESCRIPTION_NOT_IMPLEMENTED, params: { archetype: a, wave: '3' } });
       expect(runSportSession(engine, request(disc, ARCHETYPE_INTENT_IDS[a]), coreContext('c')).result.status).toBe('error');
     }
   });
@@ -273,7 +277,7 @@ describe('sécurité, G1 et éligibilité (adversarial)', () => {
   it('reprise LONG avec une séance post-retour : dose ≤ réalisée depuis le retour (les doses d’avant la coupure sont ignorées)', () => {
     const history = [easy({ sessionId: 'pre', completedAt: daysAgo(45), realizedDurationS: 3600 }), easy({ sessionId: 'post', completedAt: daysAgo(2), realizedDurationS: 1200 })];
     const out = outcome(sim(), withHistory({ returnState: { state: 'LONG', postReturnSessions: 1 }, recentLoad: { returnStartedAt: daysAgo(10), dimensions: [] } }, history));
-    expect(out.status === 'selected' && out.selection.candidate.dose?.durationS).toBe(1200);
+    expect(out.status === 'selected' && (out.selection.candidate.dose?.kind === 'duration' ? out.selection.candidate.dose.durationS : undefined)).toBe(1200);
     expect(out.status === 'selected' && out.selection.candidate.parameters.map((p) => p.parameterId)).toContain('running.return.protocol');
     const onlyPre = outcome(sim(), withHistory({ returnState: { state: 'LONG', postReturnSessions: 1 }, recentLoad: { returnStartedAt: daysAgo(10), dimensions: [] } }, [history[0] as HistoryIn]));
     expect(onlyPre.reasons.at(-1)?.params).toEqual({ archetype: 'EASY', cause: 'NO_REALIZED_SESSION' });
@@ -331,7 +335,7 @@ describe('faisabilité (adversarial)', () => {
       if (profile.availableEquipment) { expect(out.status).toBe('selected'); continue; } // poids du corps : aucun matériel requis
       expect(out.status, JSON.stringify(profile)).toBe('no_valid');
       expect(out.reasons.at(-1)).toMatchObject({ code: RUNNING_CODES.EXERCISE_UNAVAILABLE, params: { cause: 'NONE', candidates: [] } });
-      expect(out.candidates[0]?.dose?.durationS).toBe(2700);
+      expect(out.candidates[0]?.dose?.kind === 'duration' && out.candidates[0].dose.durationS).toBe(2700);
     }
   });
 
@@ -399,7 +403,7 @@ describe('déterminisme et invariants (propriétés)', () => {
     fc.assert(fc.property(fc.array(arbSession, { maxLength: 8 }), (history) => {
       const out = outcome(engine, withHistory({}, history));
       if (out.status !== 'selected') return true;
-      const dose = out.selection.candidate.dose?.durationS;
+      const dose = (out.selection.candidate.dose?.kind === 'duration' ? out.selection.candidate.dose.durationS : undefined);
       const realized = history.filter((h) => h.archetype === 'EASY' && h.structureFamily === 'CONTINUOUS' && h.completion === 'COMPLETED').map((h) => h.realizedDurationS);
       return dose !== undefined && realized.includes(dose) && dose <= Math.max(...realized) && dose <= 3600;
     }), { numRuns: 60, seed: 6_302 });

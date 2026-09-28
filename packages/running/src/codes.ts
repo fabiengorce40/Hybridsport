@@ -57,6 +57,11 @@ export const RUNNING_CODES = {
   SIMULATED_PROPOSAL: 'RULE.RUNNING.SIMULATED_PROPOSAL',
   EXERCISE_UNAVAILABLE: 'PLAN.RUNNING.EXERCISE_UNAVAILABLE',
   TIME_EXCEEDED: 'PLAN.RUNNING.TIME_EXCEEDED',
+  // Vague 3 (séances de qualité en HOLD)
+  QUALITY_GUARD_FAILED: 'SCOPE.RUNNING.QUALITY_GUARD_FAILED',
+  STRUCTURE_UNAVAILABLE: 'DOSE.RUNNING.STRUCTURE_UNAVAILABLE',
+  FAMILY_AMBIGUOUS: 'PLAN.RUNNING.FAMILY_AMBIGUOUS',
+  HIGH_DEMAND_DEFAULT_CONSERVATIVE: 'DOSE.RUNNING.HIGH_DEMAND_DEFAULT_CONSERVATIVE',
 } as const;
 export type RunningCode = (typeof RUNNING_CODES)[keyof typeof RUNNING_CODES];
 
@@ -101,6 +106,10 @@ export const RUNNING_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: RUNNING_CODES.SIMULATED_PROPOSAL, categories: ['information'], params: { rulesetVersion: S }, audience: 'internal', severity: 'warning' },
   { code: RUNNING_CODES.EXERCISE_UNAVAILABLE, categories: ['feasibility'], params: { cause: S, candidates: L }, audience: 'internal', severity: 'error' },
   { code: RUNNING_CODES.TIME_EXCEEDED, categories: ['feasibility'], params: { archetype: S, availableTimeS: N, estimatedMaxS: N }, audience: 'internal', severity: 'error' },
+  { code: RUNNING_CODES.QUALITY_GUARD_FAILED, categories: ['feasibility', 'safety'], params: { archetype: S, rule: S, detail: S }, audience: 'user', severity: 'error' },
+  { code: RUNNING_CODES.STRUCTURE_UNAVAILABLE, categories: ['feasibility'], params: { archetype: S, sessionId: S, cause: S }, audience: 'user', severity: 'error' },
+  { code: RUNNING_CODES.FAMILY_AMBIGUOUS, categories: ['feasibility'], params: { archetype: S, families: L }, audience: 'internal', severity: 'error' },
+  { code: RUNNING_CODES.HIGH_DEMAND_DEFAULT_CONSERVATIVE, categories: ['information'], params: { archetype: S, parameterId: S }, audience: 'internal', severity: 'notice' },
 ];
 
 export const runningReasons = createCoreRegistry(RUNNING_REASON_CODES);

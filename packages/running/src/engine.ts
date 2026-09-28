@@ -23,9 +23,9 @@ import type { Wave2Outcome } from './wave2/pipeline.js';
 import { toCoreProposal, toProposalReasons, uniqueReasons } from './wave2/proposal.js';
 
 export const RUNNING_ENGINE_ID = 'engine.running';
-export const RUNNING_ENGINE_VERSION = '0.2.0' as const satisfies SemVerString;
-/** Vague d'implémentation (vague 2 : première vague de prescription, EASY seul). */
-export const RUNNING_ENGINE_WAVE = '2';
+export const RUNNING_ENGINE_VERSION = '0.3.0' as const satisfies SemVerString;
+/** Vague d'implémentation (vague 3 : EASY + séances de qualité en HOLD, rejeu de l'historique réalisé). */
+export const RUNNING_ENGINE_WAVE = '3';
 
 // technical-constant: version du format session_record (CORE-EXT-R1) exigée pour les séances structurées
 const REQUIRED_SESSION_RECORD_VERSION = 4;

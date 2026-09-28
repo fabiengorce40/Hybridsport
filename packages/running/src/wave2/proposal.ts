@@ -25,6 +25,21 @@ export function uniqueReasons(rs: readonly ReasonCode[]): ReasonCode[] {
   return rs.filter((r) => { const k = JSON.stringify([r.code, r.params]); if (seen.has(k)) return false; seen.add(k); return true; });
 }
 
+/**
+ * Répartition E5 (low / moderate / high) : parts de TEMPS de la structure, selon le modèle de domaines Running
+ * (EASY_LOW ⊂ MODERATE ⇒ low ; THRESHOLD_LIKE, haut du domaine HEAVY ⇒ moderate ; SEVERE ⇒ high). Échauffement,
+ * retour au calme et récupérations sont sous le plafond EASY_LOW. Donnée de la structure, jamais une estimation.
+ */
+export function energyOf(candidate: Wave2Selection['candidate']): { low: number; moderate: number; high: number } {
+  const dose = candidate.dose;
+  if (dose?.kind !== 'structure' || candidate.intensity?.domain === 'EASY_LOW') return { low: 1, moderate: 0, high: 0 };
+  const s = dose.structure;
+  const easyS = (s.warmupS ?? 0) + (s.cooldownS ?? 0) + (s.reps > 1 ? (s.reps - 1) * (s.recoveryS ?? 0) : 0);
+  const total = easyS + dose.workS;
+  const work = dose.workS / total;
+  return candidate.intensity?.domain === 'SEVERE' ? { low: 1 - work, moderate: 0, high: work } : { low: 1 - work, moderate: work, high: 0 };
+}
+
 export function toCoreProposal(input: SportEngineInput<RunningContext>, sel: Wave2Selection, engine: { readonly id: string; readonly version: string }): SportEngineProposalInput {
   const { candidate, structure, exercise } = sel;
   const dose = candidate.dose;
@@ -51,11 +66,12 @@ export function toCoreProposal(input: SportEngineInput<RunningContext>, sel: Wav
     fingerprintInputs: {
       archetypeId: input.intent.archetypeId,
       stimulus: input.intent.stimulus,
-      // Toute la séance est dans le domaine EASY_LOW (donnée de la structure, pas une estimation).
-      energy: { low: 1, moderate: 0, high: 0 },
-      format: 'continuous',
-      volumeByItem: { [itemId]: dose.durationS },
-      prescriptionMarkers: { [`${candidate.archetype}.doseS`]: dose.durationS },
+      energy: energyOf(candidate),
+      format: dose.kind === 'structure' && dose.structure.reps > 1 ? 'intervals' : 'continuous',
+      volumeByItem: { [itemId]: dose.kind === 'duration' ? dose.durationS : dose.workS },
+      prescriptionMarkers: dose.kind === 'duration'
+        ? { [`${candidate.archetype}.doseS`]: dose.durationS }
+        : { [`${candidate.archetype}.workS`]: dose.workS, [`${candidate.archetype}.reps`]: dose.structure.reps },
     },
     repetitionIntents: [],
     reasons: toProposalReasons(uniqueReasons(candidate.reasons)),

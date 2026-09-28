@@ -26,6 +26,27 @@ import { MS_PER_WEEK } from '../references.js';
 export const STRUCTURE_FAMILIES = ['CONTINUOUS', 'INTERVALS'] as const;
 export type StructureFamily = (typeof STRUCTURE_FAMILIES)[number];
 
+export const RECOVERY_MODES_REALIZED = ['jog', 'walk', 'standing'] as const;
+
+/**
+ * Structure RÉALISÉE d'une séance de qualité (vague 3), déclarée ou mesurée, en TEMPS (une dose en distance
+ * exige une allure sourcée, CORE-EXT-R1) : échauffement, répétitions × travail, récupération, retour au calme.
+ * Une seule répétition = forme continue (aucune récupération) ; plusieurs = fractionné (récupération obligatoire).
+ */
+export const zRealizedStructure = z.object({
+  warmupS: z.number().positive().finite().optional(),
+  reps: z.number().int().positive(),
+  workS: z.number().positive().finite(),
+  recoveryS: z.number().positive().finite().optional(),
+  recoveryMode: z.enum(RECOVERY_MODES_REALIZED).optional(),
+  cooldownS: z.number().positive().finite().optional(),
+}).strict().superRefine((s, ctx) => {
+  const fractioned = s.reps > 1;
+  if (fractioned && (s.recoveryS === undefined || s.recoveryMode === undefined)) ctx.addIssue({ code: 'custom', message: 'fractionné : récupération (durée et mode) obligatoire', path: ['recoveryS'] });
+  if (!fractioned && (s.recoveryS !== undefined || s.recoveryMode !== undefined)) ctx.addIssue({ code: 'custom', message: 'continu : aucune récupération', path: ['recoveryS'] });
+});
+export type RealizedStructure = z.infer<typeof zRealizedStructure>;
+
 /** Séance réalisée déclarée (données produit, jamais un diagnostic). */
 export const zRealizedSession = z.object({
   sessionId: z.string().min(1),
@@ -39,6 +60,8 @@ export const zRealizedSession = z.object({
   unexpectedDifficulty: z.enum(['EASIER', 'AS_EXPECTED', 'HARDER', 'MUCH_HARDER', 'UNKNOWN']).default('UNKNOWN'),
   intoleranceOrPainSignal: z.boolean().default(false),
   readinessOrToleranceDegraded: z.boolean().default(false),
+  /** Vague 3 : structure réalisée (séances de qualité) ; absente pour une course continue simple. */
+  structure: zRealizedStructure.optional(),
 }).strict();
 export type RealizedSession = z.infer<typeof zRealizedSession>;
 
@@ -111,7 +134,8 @@ export function historyAnchor(q: AnchorQuery): HistoryAnchor {
   const tied = realized.filter((s) => at(s) === latest);
   const first = tied[0];
   if (first === undefined) return unavailable('NO_REALIZED_SESSION');
-  if (tied.some((s) => s.realizedDurationS !== first.realizedDurationS)) return unavailable('AMBIGUOUS');
+  // Deux ancres simultanées : doses OU structures différentes ⇒ ambiguïté exposée.
+  if (tied.some((s) => s.realizedDurationS !== first.realizedDurationS || JSON.stringify(s.structure) !== JSON.stringify(first.structure))) return unavailable('AMBIGUOUS');
   if ((nowMs - latest) / MS_PER_WEEK > recentMaxWeeks) return unavailable('NOT_RECENT');
   const later = sameKind.filter((s) => at(s) > latest);
   if (later.some(sessionNegativeResponse)) return unavailable('LATER_NEGATIVE_RESPONSE');

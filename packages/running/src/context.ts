@@ -38,6 +38,8 @@ export const zRunningContext = z.object({
   /** Séances réalisées (vague 2 : ancre de dose V19). Absentes ⇒ aucune ancre ⇒ aucune dose (jamais une dose par défaut). */
   sessionHistory: z.array(zRealizedSession).default([]),
   sensors: z.object({ wearable: z.boolean(), heartRate: z.boolean() }).strict(),
+  /** Terrain DÉCLARÉ (§N : une séance de côtes exige une côte déclarée praticable). Absent ⇒ aucune côte. */
+  terrain: z.object({ hills: z.boolean() }).strict().optional(),
   mode: z.enum(RUNNING_MODES),
   /** Capacités demandées (drapeaux) : leur état effectif est TOUJOURS dérivé de la gouvernance. */
   capabilityRequests: z.array(z.enum(CAPABILITY_IDS)).default([]),
