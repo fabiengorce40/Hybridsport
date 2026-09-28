@@ -82,6 +82,32 @@ describe('adversarial (fail-closed)', () => {
     expect(e).toMatchObject({ code: 'INVALID_INPUT', reasons: [{ code: RUNNING_CODES.POPULATION_UNSUPPORTED }] });
   });
 
+  it('rapport d’erreurs du contexte : code propre ET autres anomalies conservées ; champ manquant signalé ; défauts vides', () => {
+    const r = parseRunningContext({ ...ctxInput(), population: { level: 'P_R9' } });
+    expect(!r.ok && r.reasons.map((x) => [x.code, x.params.path])).toEqual([[RUNNING_CODES.POPULATION_UNSUPPORTED, undefined], ['TECHNICAL.SCHEMA_INVALID', 'disciplineContext.population.hybrid']]);
+    const g = parseRunningContext({ ...ctxInput(), goal: { type: 'MOON', strict: 'yes' } });
+    expect(!g.ok && g.reasons.map((x) => [x.code, x.params.path])).toEqual([[RUNNING_CODES.GOAL_UNSUPPORTED, undefined], ['TECHNICAL.SCHEMA_INVALID', 'disciplineContext.goal.strict']]);
+    const missing = parseRunningContext({ ...ctxInput(), population: { hybrid: false } });
+    expect(!missing.ok && missing.reasons.map((x) => [x.code, x.params.path])).toEqual([['TECHNICAL.SCHEMA_INVALID', 'disciplineContext.population.level']]);
+    const noGoal = parseRunningContext({ ...ctxInput(), goal: {} });
+    expect(!noGoal.ok && noGoal.reasons.map((x) => x.params.path)).toEqual(['disciplineContext.goal.type']);
+    const minimal = parseRunningContext({ population: { level: 'P_R1', hybrid: false }, goal: { type: 'FIVE_K' }, returnState: { state: 'NONE', postReturnSessions: 0 }, sensors: { wearable: false, heartRate: false }, mode: 'CANDIDATE' });
+    expect(minimal.ok && minimal.context).toMatchObject({ references: [], exposures: [], capabilityRequests: [], goal: { strict: false } });
+  });
+
+  it('propose direct avec un archétype inconnu : raison explicite ; raisons NO_VALID sans doublon', () => {
+    const parsed = parseRunningContext(ctxInput({ population: { level: 'P_R0', hybrid: true } }));
+    if (!parsed.ok) throw new Error('contexte');
+    const base = { discipline: parsed.context, context: { seed: 's', now: '2026-10-05T08:00:00Z', engineVersion: '0.1.0' }, ruleset: { version: '1.0.0' }, catalog: { version: '1.0.0' } };
+    const unknown = engine.propose({ ...base, intent: { archetypeId: 'running.nope' } } as unknown as Parameters<typeof engine.propose>[0]);
+    expect(unknown.status === 'no_valid_proposal' && unknown.reasons.map((r) => [r.code, r.params])).toEqual([[RUNNING_CODES.PRESCRIPTION_NOT_IMPLEMENTED, { archetype: 'running.nope', wave: '1' }], [RUNNING_CODES.ARCHETYPE_UNKNOWN, { archetypeId: 'running.nope' }]]);
+    const easy = engine.propose({ ...base, intent: { archetypeId: 'running.easy' } } as unknown as Parameters<typeof engine.propose>[0]);
+    const keys = easy.status === 'no_valid_proposal' ? easy.reasons.map((r) => JSON.stringify([r.code, r.params])) : [];
+    expect(new Set(keys).size).toBe(keys.length);
+    expect(keys.filter((k) => k.includes(RUNNING_CODES.NOVICE_ENTRY_UNRESOLVED))).toHaveLength(1);
+    expect(easy.status === 'no_valid_proposal' && easy.provenance).toEqual({ engineId: RUNNING_ENGINE_ID, engineVersion: RUNNING_ENGINE_VERSION, rulesetVersion: '1.0.0', catalogVersion: '1.0.0', seed: 's' });
+  });
+
   it('gouvernance incohérente (valeur « zéro » glissée sans maturité, approbation fictive) ⇒ moteur refusé', () => {
     const zero = withParameter(CURRENT_RUNNING_GOVERNANCE, 'running.novice.entryDose', (p) => ({ ...p, value: { status: 'candidate', value: 0 } }));
     expect(() => createRunningEngine({ governance: zero })).toThrow(/valeur candidate mais maturité UNRESOLVED/);

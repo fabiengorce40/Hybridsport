@@ -3,6 +3,7 @@
  * (dépendances exactes des capacités, fail-closed par défaut, éligibilité ≠ précision, trace).
  */
 import { describe, expect, it } from 'vitest';
+import fc from 'fast-check';
 import {
   APPROVER_ROLE, CAPABILITIES, CAPABILITY_IDS, CURRENT_RUNNING_GOVERNANCE, FOUNDATION, RUNNING_CODES, analyzeRunning, assessProductionEligibility, capabilityState,
   eligibilityBlockers, governanceIssues, meetsRequiredMaturity, registryIssues, sortDegradations, targetPrecision, transitionMaturity, zRunningParameter,
@@ -241,5 +242,10 @@ describe('dégradations globales et trace (lot 6)', () => {
     const d = (subject: string, effect: Degradation['effect'], capability?: Degradation['capability']): Degradation => ({ effect, subject, ...(capability ? { capability } : {}), parameterIds: [], reason: runningReasons.emit(RUNNING_CODES.CALIBRATION_REQUIRED, { cause: 'x' }) });
     const out = sortDegradations([d('B', 'NO_VALID'), d('A', 'PRECISION_REDUCED', 'paceTargets'), d('A', 'NO_VALID'), d('B', 'NO_VALID'), d('A', 'NO_VALID', 'taper')]);
     expect(out.map((x) => `${x.subject}/${x.effect}/${x.capability ?? '-'}`)).toEqual(['A/NO_VALID/taper', 'A/NO_VALID/-', 'A/PRECISION_REDUCED/paceTargets', 'B/NO_VALID/-']);
+    // Propriété : l'ordre de la trace ne dépend jamais de l'ordre d'entrée.
+    const pool = [d('B', 'NO_VALID'), d('A', 'PRECISION_REDUCED', 'paceTargets'), d('A', 'NO_VALID'), d('C', 'CALIBRATION_REQUIRED'), d('A', 'NO_VALID', 'taper')];
+    fc.assert(fc.property(fc.shuffledSubarray(pool, { minLength: pool.length, maxLength: pool.length }), (perm) => {
+      expect(sortDegradations(perm).map((x) => `${x.subject}/${x.effect}/${x.capability ?? '-'}`)).toEqual(sortDegradations(pool).map((x) => `${x.subject}/${x.effect}/${x.capability ?? '-'}`));
+    }), { numRuns: 60 });
   });
 });

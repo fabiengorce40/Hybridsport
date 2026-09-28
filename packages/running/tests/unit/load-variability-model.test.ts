@@ -75,6 +75,48 @@ describe('RecentLoadContext', () => {
   });
 });
 
+describe('RecentLoadContext — durcissement (lot 7b)', () => {
+  const valid = { windowWeeks: 4, typicalLevel: 'MEDIAN', bestTolerated: 'MAX_WITHOUT_NEGATIVE_RESPONSE', minKnownWeeks: 2, outlierFlagMultipleOfMedian: 2 };
+  const withV21 = (value: unknown) => withParameter(G, 'running.load.recentLoadContext', (p) => ({ ...p, value: { status: 'candidate', value } })).parameters;
+
+  it('chaque malformation de V21 ⇒ UNKNOWN (PARAMETER_MALFORMED), jamais une valeur par défaut', () => {
+    const variants: unknown[] = [
+      null, 'x', { ...valid, windowWeeks: 0 }, { ...valid, windowWeeks: 2.5 }, { ...valid, windowWeeks: '4' }, { ...valid, minKnownWeeks: 0 },
+      { ...valid, minKnownWeeks: undefined }, { ...valid, outlierFlagMultipleOfMedian: 0 }, { ...valid, outlierFlagMultipleOfMedian: '2' },
+      { ...valid, typicalLevel: 'MEAN' }, { ...valid, bestTolerated: 'MAX' },
+    ];
+    for (const v of variants) {
+      const c = recentLoadContext('WEEKLY_DURATION', [wk(0, 1), wk(1, 2)], { mode: 'CANDIDATE', parameters: withV21(v) });
+      expect(c, JSON.stringify(v)).toMatchObject({ status: 'UNKNOWN', provisional: true, flags: [], weeks: [] });
+      expect(c.reasons.at(-1)?.params, JSON.stringify(v)).toEqual({ dimension: 'WEEKLY_DURATION', cause: 'PARAMETER_MALFORMED' });
+    }
+    expect(recentLoadContext('WEEKLY_DURATION', [wk(0, 1), wk(1, 2)], { mode: 'CANDIDATE', parameters: withV21(valid) }).status).toBe('AVAILABLE');
+  });
+
+  it('fenêtre : les N DERNIÈRES semaines par date, quel que soit l’ordre d’entrée', () => {
+    const weeks = [wk(4, 80), wk(0, 999), wk(2, 60), wk(1, 50), wk(3, 70)];
+    expect(recentLoadContext('LONG_RUN', weeks, opts).weeks.map((w) => w.value)).toEqual([50, 60, 70, 80]);
+  });
+
+  it('semaine aberrante : strictement au-delà du multiple de la médiane', () => {
+    expect(recentLoadContext('WEEKLY_DURATION', [wk(0, 50), wk(1, 50), wk(2, 50), wk(3, 100)], opts).flags).toEqual([]);
+    expect(recentLoadContext('WEEKLY_DURATION', [wk(0, 50), wk(1, 50), wk(2, 50), wk(3, 101)], opts).flags).toEqual(['OUTLIER_WEEK']);
+  });
+
+  it('historique insuffisant : contexte UNKNOWN provisoire, raisons exactes', () => {
+    const c = recentLoadContext('LONG_RUN', [wk(0, 60)], opts);
+    expect(c).toMatchObject({ status: 'UNKNOWN', provisional: true, parameterIds: ['running.load.recentLoadContext'] });
+    expect(c.reasons.map((r) => [r.code, r.params.cause])).toEqual([[RUNNING_CODES.CANDIDATE_VALUE_USED, undefined], [RUNNING_CODES.RECENT_LOAD_UNKNOWN, 'INSUFFICIENT_HISTORY']]);
+  });
+
+  it('observation hebdomadaire : valeurs admises', () => {
+    for (const skipReason of ['TIME', 'EQUIPMENT', 'PAIN', 'FATIGUE', 'OTHER'] as const) expect(zWeekObservation.safeParse({ weekStart: '2026-09-01T00:00:00Z', value: 1, completion: 'SKIPPED', skipReason }).success).toBe(true);
+    for (const d of ['EASIER', 'AS_EXPECTED', 'HARDER', 'MUCH_HARDER', 'UNKNOWN'] as const) expect(zWeekObservation.safeParse({ weekStart: '2026-09-01T00:00:00Z', value: 1, completion: 'UNKNOWN', unexpectedDifficulty: d }).success).toBe(true);
+    expect(zWeekObservation.parse({ weekStart: '2026-09-01T00:00:00Z', value: 1, completion: 'COMPLETED' }).unexpectedDifficulty).toBe('UNKNOWN');
+    expect(zWeekObservation.safeParse({ weekStart: 'lundi', value: 1, completion: 'COMPLETED' }).error?.issues[0]?.message).toBe('instant ISO attendu');
+  });
+});
+
 describe('RunningPerformanceVariabilityEstimate', () => {
   const races = [ref({ referenceId: 'a', values: { distanceM: 10000, durationS: 3000 } }), ref({ referenceId: 'b', values: { distanceM: 10000, durationS: 3060 } }), ref({ referenceId: 'c', values: { distanceM: 10000, durationS: 2940 } })];
 
@@ -99,11 +141,51 @@ describe('RunningPerformanceVariabilityEstimate', () => {
   });
 });
 
+describe('variabilité — durcissement (lot 7c)', () => {
+  const race = (id: string, durationS: number, type: 'RACE_RESULT' | 'TIME_TRIAL' = 'RACE_RESULT', distanceM = 10000) => ref({ referenceId: id, type, values: { distanceM, durationS } });
+  const personal = (n: unknown) => withParameter(fullyApprovedGovernance(), 'running.reference.variabilityMinComparablePerformances', (p) => ({ ...p, value: { status: 'candidate', value: n } }));
+
+  it('coefficient de variation : valeur exacte (écart type d’échantillon / moyenne)', () => {
+    expect(coefficientOfVariation([300, 306, 294])).toBeCloseTo(0.02, 12);
+    expect(coefficientOfVariation([100, 200])).toBeCloseTo(Math.SQRT2 / 3, 12);
+  });
+
+  it('performances comparables : courses ET contre-la-montre à la même distance seulement ; nombre minimal > 1', () => {
+    const refs = [race('a', 3000), race('b', 3060, 'TIME_TRIAL'), race('c', 2940), race('x', 1200, 'RACE_RESULT', 5000), ref({ referenceId: 'd', type: 'USER_DECLARED', values: { paceSecPerKm: 280 } })];
+    const e = estimateVariability({ references: refs, distanceM: 10000, governance: personal(3), mode: 'PRODUCTION' });
+    expect(e).toMatchObject({ kind: 'PERSONAL', sampleSize: 3, distanceM: 10000, provenance: 'personal-repeated-performances' });
+    expect(estimateVariability({ references: refs, distanceM: 10000, governance: personal(4), mode: 'PRODUCTION' }).kind).toBe('UNKNOWN');
+    for (const bad of [1, 0, 2.5, '3']) expect(estimateVariability({ references: refs, distanceM: 10000, governance: personal(bad), mode: 'PRODUCTION' }).kind, String(bad)).toBe('UNKNOWN');
+    const cand = estimateVariability({ references: refs, distanceM: 10000, governance: withParameter(G, 'running.reference.variabilityMinComparablePerformances', (p) => ({ ...p, maturity: 'EXPERT_PROPOSED', value: { status: 'candidate', value: 2 } })), mode: 'CANDIDATE' });
+    expect(cand).toMatchObject({ kind: 'PERSONAL', confidence: 'LOW' });
+  });
+
+  it('a priori en PRODUCTION : exige E-VARIABILITY APPROUVÉE et le paramètre éligible', () => {
+    const noPersonal = fullyApprovedGovernance();
+    expect(estimateVariability({ references: [], distanceM: 21097.5, priorKey: 'HALF_MARATHON', governance: noPersonal, mode: 'PRODUCTION' })).toMatchObject({ kind: 'CONTEXT_PRIOR', range: { min: 0.027, max: 0.042 }, provenance: 'RS-HOPKINS-2001-VAR (a priori, non personnel)' });
+    const pending = { ...noPersonal, decisions: { ...noPersonal.decisions, 'E-VARIABILITY': 'PENDING' as const } };
+    const u = estimateVariability({ references: [], distanceM: 21097.5, priorKey: 'HALF_MARATHON', governance: pending, mode: 'PRODUCTION' });
+    expect(u.kind).toBe('UNKNOWN');
+    expect(u.reasons.find((r) => r.code === RUNNING_CODES.DECISION_PENDING)?.params).toEqual({ decisionId: 'E-VARIABILITY' });
+    expect(u.reasons.at(-1)?.params).toEqual({ cause: 'NO_COMPARABLE_PERFORMANCE' });
+    expect(estimateVariability({ references: [ref({ referenceId: 'r' })], distanceM: 21097.5, priorKey: 'HALF_MARATHON', governance: pending, mode: 'PRODUCTION' }).reasons.at(-1)?.params).toEqual({ cause: 'NO_COMPARABLE_PERFORMANCE' });
+    expect(estimateVariability({ references: [race('a', 3000)], distanceM: 10000, priorKey: 'UNKNOWN_KEY', governance: noPersonal, mode: 'PRODUCTION' }).reasons.at(-1)?.params).toEqual({ cause: 'PERSONAL_OR_PRIOR_UNAVAILABLE' });
+    const malformed = withParameter(noPersonal, 'running.reference.performanceVariabilityEstimate', (p) => ({ ...p, value: { status: 'candidate', value: { prior: { HALF_MARATHON: { min: 'x', max: 0.04 } } } } }));
+    expect(estimateVariability({ references: [], distanceM: 21097.5, priorKey: 'HALF_MARATHON', governance: malformed, mode: 'PRODUCTION' }).kind).toBe('UNKNOWN');
+    expect(estimateVariability({ references: [], distanceM: 21097.5, priorKey: 'HALF_MARATHON', governance: G, mode: 'PRODUCTION' }).reasons.map((r) => r.params.parameterId).filter(Boolean)).toEqual(['running.reference.variabilityMinComparablePerformances', 'running.reference.performanceVariabilityEstimate']);
+  });
+});
+
 describe('interface de modèle de performance', () => {
   it('le candidat type Riegel n’est ni autoritaire ni implémenté ; aucun modèle ne couvre le marathon', () => {
     expect(PERFORMANCE_MODELS.every((m) => m.authoritative === false && m.implementation === 'NOT_IMPLEMENTED')).toBe(true);
     expect(PERFORMANCE_MODELS.flatMap((m) => m.supportedGoals)).not.toContain('MARATHON');
-    for (const m of PERFORMANCE_MODELS) expect(Object.keys(m).sort()).toEqual(expect.arrayContaining(['modelId', 'version', 'supportedGoals', 'inputRequirements', 'uncertainty', 'provenance']));
+    expect(PERFORMANCE_MODELS).toEqual([{
+      modelId: 'riegel-type-candidate', version: '0.0.0', supportedGoals: ['FIVE_K', 'TEN_K', 'HALF_MARATHON'],
+      inputRequirements: ['one recent race or time trial (distance, duration)'], uncertainty: 'RANGE_REQUIRED',
+      parameterIds: ['running.performance.extrapolationModelFamily', 'running.performance.extrapolationExponent', 'running.performance.predictionUncertaintyWidth'],
+      provenance: 'RS-VICKERS-2016-PRED (famille candidate ; exposant non verrouillé)', authoritative: false, implementation: 'NOT_IMPLEMENTED',
+    }]);
   });
 
   it('marathon : MODEL_UNAVAILABLE même avec une gouvernance entièrement approuvée', () => {
