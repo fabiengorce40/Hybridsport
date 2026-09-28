@@ -97,7 +97,11 @@ export const zGeneratedSession = z.object({
   contentOrigin: z.string(),
   rulesetVersion: z.string(),
   outcome: z.discriminatedUnion('status', [
-    z.object({ status: z.literal('ok'), session: zSessionDraft, fingerprint: z.unknown().optional() }).strict(),
+    z.object({
+      status: z.literal('ok'), session: zSessionDraft, fingerprint: z.unknown().optional(),
+      /** Estimation de durée du CORE (DURATION.ESTIMATED de la trace, séance retenue). */
+      estimate: z.object({ p50S: z.number().nonnegative(), p90S: z.number().nonnegative() }).strict().optional(),
+    }).strict(),
     z.object({ status: z.literal('unavailable'), reasons: z.array(zReason) }).strict(),
   ]),
 }).strict();

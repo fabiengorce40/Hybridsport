@@ -47,6 +47,10 @@ describe('Strength : séances réelles, provisoires', () => {
     const d = okSession(sessions[0]);
     expect(d?.availableTimeS).toBe(3600);
     expect(d?.targetDurationS).toBe(3240);
+    // Estimation du CORE conservée pour l'affichage : p90 ≤ temps disponible (contrainte HARD du CORE).
+    const est = sessions[0]?.outcome.status === 'ok' ? sessions[0].outcome.estimate : undefined;
+    expect(est?.p90S).toBeLessThanOrEqual(3600);
+    expect(est?.p50S).toBeGreaterThan(0);
   });
 
   it('première séance sans historique : calibration à l’effort (aucune charge inventée)', () => {

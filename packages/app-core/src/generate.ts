@@ -169,7 +169,12 @@ export function generateSession({ state, entry, generatedAt }: GenerateInput): G
     },
     profile: coreProfile(p), state: FRESH_STATE, history, disciplineContext,
   }, ctx(content, entry.date, seed));
-  if (o.result.status === 'ok') return { ...base, outcome: { status: 'ok', session: o.result.value, ...(o.fingerprint ? { fingerprint: o.fingerprint } : {}) } };
+  if (o.result.status === 'ok') {
+    const session = o.result.value;
+    const est = o.trace.entries.filter((t) => t.subject.id === session.id).flatMap((t) => t.reasons).filter((r) => r.code === 'DURATION.ESTIMATED').at(-1)?.params;
+    const estimate = est && typeof est.p50S === 'number' && typeof est.p90S === 'number' ? { p50S: est.p50S, p90S: est.p90S } : undefined;
+    return { ...base, outcome: { status: 'ok', session, ...(o.fingerprint ? { fingerprint: o.fingerprint } : {}), ...(estimate ? { estimate } : {}) } };
+  }
   const reasons = o.result.status === 'error' ? o.result.error.reasons : [];
   return unavailable(reasons.length > 0 ? reasons.map((r) => ({ code: r.code, params: { ...r.params } })) : [{ code: `KAIRO.ENGINE_${o.result.status.toUpperCase()}`, params: {} }]);
 }

@@ -5,11 +5,11 @@ import tseslint from 'typescript-eslint';
 const domainSources = ['packages/domain/src/**/*.ts', 'packages/engine/src/**/*.ts', 'packages/strength/src/**/*.ts', 'packages/running/src/**/*.ts'];
 
 export default tseslint.config(
-  { ignores: ['**/node_modules/**', 'coverage/**', 'exports/**', 'reports/**', '.stryker-tmp/**', '.stryker-tmp-*/**'] },
+  { ignores: ['**/node_modules/**', '**/dist/**', 'coverage/**', 'exports/**', 'reports/**', '.stryker-tmp/**', '.stryker-tmp-*/**'] },
   js.configs.recommended,
   ...tseslint.configs.strict,
   {
-    files: ['**/*.ts'],
+    files: ['**/*.ts', '**/*.tsx'],
     languageOptions: { parserOptions: { ecmaVersion: 2022, sourceType: 'module' } },
     rules: {
       '@typescript-eslint/consistent-type-imports': 'error',
@@ -44,8 +44,18 @@ export default tseslint.config(
     },
   },
   {
+    // Service worker de la PWA (contexte ServiceWorkerGlobalScope).
+    files: ['apps/*/public/**/*.js'],
+    languageOptions: { sourceType: 'script', globals: { self: 'readonly', caches: 'readonly', fetch: 'readonly', URL: 'readonly', Promise: 'readonly' } },
+  },
+  {
+    // Scripts Node de l'application (icônes, parcours de bout en bout).
+    files: ['apps/*/scripts/**/*.mjs'],
+    languageOptions: { globals: { process: 'readonly', console: 'readonly', URL: 'readonly' } },
+  },
+  {
     // Les tests portent sur des fixtures connues : l'assertion non nulle y est acceptable.
-    files: ['packages/*/tests/**/*.ts'],
+    files: ['packages/*/tests/**/*.ts', 'apps/*/tests/**/*.{ts,tsx}'],
     rules: { '@typescript-eslint/no-non-null-assertion': 'off' },
   },
 );
