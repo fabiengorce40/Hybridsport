@@ -119,6 +119,18 @@ describe('précision, raisons et traces', () => {
     }
   });
 
+  it('reprise : raisons du protocole de reprise tracées', () => {
+    const o = run(disc([h('a', 9), h('b', 3)], { returnState: { state: 'SHORT', postReturnSessions: 1 }, recentLoad: { returnStartedAt: daysAgo(5), dimensions: [] } }), 'running.easy');
+    expect(o.reasons.filter((r) => r.code === CV).map((r) => r.params.parameterId)).toContain('running.return.protocol');
+  });
+
+  it('§K : seule la confiance de la référence de SEUIL compte (une observation d’entraînement ne suffit pas)', () => {
+    const obs = { referenceId: 'obs', type: 'TRAINING_OBSERVATION' as const, values: { durationS: 1800, paceSecPerKm: 300 }, date: daysAgo(3), provenance: { source: 'APP_RECORDED' as const }, confidenceInputs: { protocolDeclared: true, conditions: 'NORMAL' as const, interruptionSince: 'NONE' as const } };
+    const cont = h('c', 5, { archetype: 'THRESHOLD', realizedDurationS: 2100, structure: { warmupS: 600, reps: 1, workS: 1200, cooldownS: 300 } });
+    const o = run(disc([cont], { population: { level: 'P_R2', hybrid: false }, references: [obs] }), 'running.threshold');
+    expect(reason(o, RUNNING_CODES.QUALITY_GUARD_FAILED)).toEqual({ archetype: 'THRESHOLD', rule: 'K_CONTINUOUS_LEVEL', detail: 'P_R2/NONE' });
+  });
+
   it('TEST : précision EFFORT_ONLY sur le candidat', () => {
     const o = run(disc([h('m', 4, { distanceM: 5000 })]), 'running.test');
     expect(o.status === 'selected' && o.selection.candidate.precision).toBe('EFFORT_ONLY');

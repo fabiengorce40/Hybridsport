@@ -182,3 +182,7 @@ Ces décisions du propriétaire du produit sont importées au registre comme val
 - **Affichage** : titre par type de séance, rôle dans la semaine, structure (échauffement, répétitions, récupération, retour au calme), effort. Allure affichée seulement quand elle est la cible prescrite (VO₂ / intervalles courts), jamais pour un TEST. Tests enregistrés, séances manquées non compensées, côte praticable dans le profil.
 - **Données** : champs ajoutés avec valeurs par défaut (schéma 1 inchangé) ; un état enregistré avant R5 se relit sans perte (test).
 - Tests : `packages/app-core/tests/course.test.ts`, `apps/kairo/tests/app.test.tsx` (TEST de bout en bout), e2e Chromium.
+
+## 6. Gate Course : PASSÉ (simulation)
+
+Rapport : `RUNNING-COURSE-GATE.md`. Mutation Running 94,1 % (3 023 mutants ; survivants classés), 2 défauts réels corrigés, propriétés adverses, déterminisme, CORE et Strength inchangés. Dette Wave 2 (lots 2 et 3) soldée. Prochaine étape (après validation) : Cross-training.
