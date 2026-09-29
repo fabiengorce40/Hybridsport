@@ -129,6 +129,13 @@ describe('composition §R', () => {
     expect(params(refused, RUNNING_CODES.WEEK_KEY_FALLBACK).map((p) => (p as { archetype: string }).archetype)).toEqual(['THRESHOLD', 'RACE_PACE', 'NONE']);
   });
 
+  it('avis SLOT_SELECTED : date de la séance choisie, jamais celle d’une séance verrouillée antérieure', () => {
+    const lockEasy = (idx: number[]) => days(idx).map((d) => (d.date === D(0) ? { ...d, locked: 'EASY' as const } : d));
+    const half = compose({ ctx: ctx({ goal: { type: 'HALF_MARATHON' } }), days: lockEasy([0, 2, 5, 6]).map((d) => (d.date === D(6) ? { ...d, availableS: 7200 } : d)) });
+    expect(params(half, RUNNING_CODES.WEEK_SLOT_SELECTED)).toEqual([{ archetype: 'LONG', role: 'LONG', date: D(6) }, { archetype: 'THRESHOLD', role: 'KEY', date: D(2) }]);
+    expect(params(compose({ days: lockEasy([0, 2, 4]) }), RUNNING_CODES.WEEK_SLOT_SELECTED)).toEqual([{ archetype: 'THRESHOLD', role: 'KEY', date: D(2) }]);
+  });
+
   it('TEST placé ⇒ la recherche de KEY s’arrête (plan complet)', () => {
     const c = compose({ probe: refuse(['THRESHOLD'], NEEDS_TEST) });
     expect(plan(c)).toEqual(['28:TEST:TEST', '30:EASY:EASY', '2:EASY:EASY']);
