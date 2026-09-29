@@ -473,3 +473,64 @@ Identifications seulement, **aucune n'est une décision** :
   - C2 **moteur seulement**, ou connecté à l'application (enregistrement des séances réalisées Cross-training, aujourd'hui absent).
 
 **STOP.** C2 n'est pas codé. CORE, Running et Strength sont inchangés. C3–C7, HYROX et le planificateur global ne sont pas commencés.
+
+## J. Annexe — parts d'énergie (`fingerprintInputs.energy`) et bootstrap problem
+
+**Statut : pour arbitrage.** Cette annexe ne prend aucune décision, n'ajoute aucune valeur au registre et ne modifie ni le CORE, ni Running, ni Strength, ni `crosstraining/src`.
+
+Fichier : `packages/crosstraining/tests/spike/c2-replay-energy-shares.test.ts` (13 tests, verts). Les assertions figent les résultats mesurés lors d'une première exécution en mode observation.
+
+Méthode :
+- `runSportSession` réel ; catalogue de test du CORE ; ruleset de test **avec** paramètres anti-doublon ;
+- moteur **de test** qui propose une séance AMRAP fixe et transmet `energy` **tel quel** ;
+- **fixture TEST-ONLY** : l'empreinte « historique » des blocs E est fabriquée par un premier passage avec des parts de test. Elle ne prouve **pas** qu'une telle donnée existe en production ;
+- le bloc B (bootstrap) n'utilise **aucune** fixture d'énergie ni empreinte Cross-training fabriquée.
+
+État vérifié : typecheck et lint propres ; suite complète **1 378** tests au vert (1 365 + 13), test d'architecture compris.
+
+### J.1 MEASURED (établi par le spike exécuté)
+
+| # | Cas | Résultat mesuré |
+|---|---|---|
+| E1 | Rejeu sous un **nouvel** identifiant avec les parts de l'empreinte historique (fixture) | Accepté ; séance **identique** ; parts conservées **bit à bit** (écart 0) ; somme = 1. Anti-doublon : `accidental_strong`, similarité 1, composante `energy` = 1 |
+| E2 | Renormalisation répétée x → N(x) → N(N(x)) → N(N(N(x))), chaque étape par le pipeline | **Idempotente bit à bit** sur les 5 vecteurs testés (tiers, dixièmes, {0.2, 0.3, 0.5}, entiers {3, 5, 11}, pur). N(x) = x/Σ exactement ; Σ N(x) = 1 exactement |
+| E3 | Deux passages identiques | Empreinte et rapport anti-doublon identiques octet à octet (déterministe) |
+| E4 | Effet du `sessionId` | Seule clé d'empreinte qui change. Nouvel id ⇒ comparé à l'historique (`accidental_strong`). **Même** id que l'historique ⇒ comparaison exclue (`none`, aucune comparaison) |
+| V1 | Parts absentes : clé absente, `null`, `{}`, clé `high` manquante | Empreinte rejetée (`TECHNICAL.SCHEMA_INVALID`, chemin `fingerprintInputs.energy[.x]`), candidat non admissible, **aucune réparation**. Issue publique : `NO_VALID_SOLUTION` / `SELECT.NO_ADMISSIBLE_CANDIDATE` ; la raison technique n'apparaît que dans la **trace** (pas de `INVALID_INPUT`) |
+| V2 | Négative, NaN, +∞, −∞, chaîne, clé en trop | Même issue que V1, raison `TECHNICAL.SCHEMA_INVALID` précise |
+| V2 | Tout à zéro | Même issue, raison `TECHNICAL.STRUCTURE_INVALID` « répartition énergétique nulle » |
+| V3 | Valides non normalisées : {2, 3, 5}, {10, 0, 0}, {0.1, 0.1, 0.1}, `Number.MIN_VALUE` | Acceptées, séance identique, parts normalisées (somme 1) |
+| V3 | **Dépassement flottant** : {`MAX_VALUE`, `MAX_VALUE`, 0} | La somme vaut +∞ et passe le contrôle « > 0 » ⇒ empreinte **acceptée** avec parts **{0, 0, 0}** (somme 0). Rejouée comme parts historiques, cette empreinte est **refusée** (répartition nulle) |
+| O1 | Ce spike | N'utilise ni `CT_STIMULI` ni `ct.stimulus.intensityBand` |
+| O2 | Contrat `zRealizedCtSession` (C1) | Champs : `sessionId`, `completedAt`, `stimulus`, `prescription`, `result` (+ `sessionRpe`, `pain` optionnels). Un champ `energy` ou `fingerprint` est **refusé** (`unrecognized_keys`) |
+| O3 | État applicatif (`AppState`) | Emplacements d'empreintes : `strength`, `running` seulement. Un emplacement `crosstraining` est **refusé** |
+| B1 | Moteur Cross-training réel (C1), gouvernance actuelle, historique réalisé fourni | `NO_VALID_SOLUTION` ; aucune empreinte ; trace limitée à `proposal` |
+| B2 | **TEST-ONLY** — gouvernance simulée entièrement valorisée + simulation (isole l'effet de la gouvernance C1, ne simule pas un état de production valide) | `NO_VALID_SOLUTION` avec **seulement** `PLAN.CROSSTRAINING.PRESCRIPTION_NOT_IMPLEMENTED` ; aucune empreinte |
+| B3 | **Bout en bout** depuis les seules données d'un utilisateur Cross-training seul : onboarding réel, 4 semaines planifiées, export puis relecture de l'état persisté, séance réalisée C1 (champs optionnels renseignés), moteur Cross-training réel | 0 entrée et 0 séance Cross-training planifiées ; seul avis `PLAN.ENGINE_UNAVAILABLE:crosstraining`. État persisté : **aucun** objet {low, moderate, high}, **aucune** clé `energy`. Séance réalisée : aucune donnée d'énergie, aucun emplacement dans `AppState` (ni dédié, ni dans `running.realized`). Moteur réel : aucune empreinte. Sans source, le rejeu ne peut rien transmettre ⇒ refus (V1). **Verdict : BOOTSTRAP PATH ABSENT** |
+
+### J.2 STATIC CODE FINDING (lecture du code, non mesuré directement)
+
+- Le schéma est `energy: {low, moderate, high}` strict, chaque part `z.number().nonnegative()` (`domain/src/duplicate.ts`). zod 4 y refuse NaN et ±∞ (confirmé par V2).
+- `buildFingerprint` vérifie seulement `Σ > 0`, puis divise chaque part par Σ (`engine/src/duplicate/fingerprint.ts`). Aucune borne sur Σ, d'où le cas limite de V3.
+- L'empreinte stockée dans l'historique porte les parts **déjà normalisées**. L'anti-doublon compare `1 − ½·Σ|Δ|` entre empreintes (`analysis.ts`). L'historique n'est pas revalidé par `runSportSession` (il est transmis tel quel à `analyzeDuplicates`).
+- Une proposition dont l'empreinte est invalide n'est **jamais** réparée (`pipeline.ts`, `brokenFingerprint`).
+- Origine actuelle des parts :
+  - Strength : paramètre gouverné `strength.stimuli[*].energy` ;
+  - Running : `energyOf` (`running/src/wave2/proposal.ts`) ;
+  - Cross-training : **aucune**. `ct.stimulus.intensityBand` est `UNRESOLVED` (CT-D1).
+- Le planificateur applicatif ne place que `ENGINE_SPORTS = ['strength', 'running']`. `generateSession` n'a pas de branche Cross-training. `applyCompletion` n'ajoute une empreinte que si la séance générée en porte une.
+- `zRealizedCtSession` n'existe que dans le contexte du moteur Cross-training (`sessionHistory`). Aucun flux applicatif ne l'enregistre.
+- La nuance sur F-9 (§F) : « refus technique » y désignait la raison de trace. L'issue publique mesurée est `NO_VALID_SOLUTION`, pas `INVALID_INPUT`.
+
+### J.3 DECISION REQUIRED (arbitrage, aucune option retenue ici)
+
+1. **Source des parts pour le premier rejeu (bootstrap).** Aucune donnée persistée ne les fournit (J.1-B3). Pistes déjà listées en H.2-c, non tranchées :
+   - A : bande par stimulus décidée (CT-D1) ;
+   - B : dérivation depuis la séance réalisée (règle à écrire) ;
+   - KEEP BLOCKED.
+2. **« BOOTSTRAP PATH ABSENT » n'implique pas d'ajouter les parts au résultat réalisé ou à `AppState`.** Les options structurelles (enregistrer des séances Cross-training réalisées dans l'application ; y attacher une empreinte ou des parts ; les calculer à la volée au rejeu) sont une décision produit et architecture, **hors CT-D**. Elles rejoignent la question déjà ouverte en §I : C2 « moteur seulement » ou connecté à l'application.
+3. **Réutilisation des parts historiques au rejeu.** Techniquement sûre, car les parts sont conservées bit à bit et la renormalisation est idempotente sur les vecteurs testés (J.1-E1, E2). Reste à décider si un rejeu **doit** reprendre les parts de l'empreinte historique ou les recalculer, ce qui dépend du choix 1.
+4. **Cas limite de dépassement flottant (J.1-V3).** Accepter une empreinte {0, 0, 0} est un comportement du CORE, **non corrigé ici** (le CORE est gelé). Si un correctif est souhaité (borner Σ ou exiger Σ fini), c'est une modification du CORE à arbitrer séparément. Avec des parts issues d'une bande décidée, ce cas ne se présente pas.
+5. **Rejeu sous le même identifiant.** Il contourne l'anti-doublon (J.1-E4, déjà F-10a). L'obligation d'un nouvel identifiant pour tout rejeu reste à inscrire dans la spécification de C2.
+
+**STOP.** C2 n'est pas codé. Aucune décision CT-D n'est prise.
