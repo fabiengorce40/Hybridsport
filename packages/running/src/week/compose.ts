@@ -172,7 +172,8 @@ export function composeRunningWeek(i: ComposeInput): WeekComposition {
     }
     for (const a of KEY_PREFERENCES[goal].filter((x) => x !== 'LONG' || !longWanted)) {
       if (done) break;
-      if (a === 'LONG' && weekly < LONG_MIN_SESSIONS) continue;
+      // §R 4 : sortie longue comme KEY seulement si la fréquence le permet et si aucune n'est déjà faite cette semaine.
+      if (a === 'LONG' && (weekly < LONG_MIN_SESSIONS || longDone)) continue;
       const r = place(a, 'KEY');
       if (r.placed) { reasons.push(runningReasons.emit(RUNNING_CODES.WEEK_SLOT_SELECTED, { archetype: a, role: 'KEY', date: [...slots.values()].find((s) => s.role === 'KEY')?.date ?? '' })); done = true; break; }
       if (r.testRequired) {

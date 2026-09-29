@@ -120,6 +120,26 @@ describe('composition §R', () => {
     expect(plan(compose({ days: lock(0, 'LONG', [0, 2, 4]) })).filter((x) => x.endsWith(':KEY'))).toEqual(['30:THRESHOLD:KEY']);
   });
 
+  it('régression : sortie longue déjà faite (semi) ⇒ la KEY reste le seuil ; seuil refusé ⇒ jamais une seconde sortie longue', () => {
+    const half = ctx({ goal: { type: 'HALF_MARATHON' } });
+    const lockedLong = days([0, 2, 4]).map((d) => (d.date === D(0) ? { ...d, locked: 'LONG' as const } : d));
+    expect(plan(compose({ ctx: half, days: lockedLong }))).toEqual(['28:LONG:LOCKED', '30:THRESHOLD:KEY', '2:EASY:EASY']);
+    const refused = compose({ ctx: half, days: lockedLong, probe: refuse(['THRESHOLD', 'RACE_PACE']) });
+    expect(refused.slots.filter((s) => s.archetype === 'LONG')).toHaveLength(1);
+    expect(params(refused, RUNNING_CODES.WEEK_KEY_FALLBACK).map((p) => (p as { archetype: string }).archetype)).toEqual(['THRESHOLD', 'RACE_PACE', 'NONE']);
+  });
+
+  it('TEST placé ⇒ la recherche de KEY s’arrête (plan complet)', () => {
+    const c = compose({ probe: refuse(['THRESHOLD'], NEEDS_TEST) });
+    expect(plan(c)).toEqual(['28:TEST:TEST', '30:EASY:EASY', '2:EASY:EASY']);
+    expect(codes(c)).not.toContain(RUNNING_CODES.WEEK_KEY_FALLBACK);
+  });
+
+  it('données incohérentes : une forte demande « réalisée » après le jour évalué n’est pas comptée', () => {
+    const p1 = ctx({ population: { level: 'P_R1', hybrid: false }, goal: { type: 'HALF_MARATHON' } }, [h('f', 8, 'LONG')]);
+    expect(plan(compose({ ctx: p1, days: days([2, 4, 5], (i) => (i === 5 ? 120 : 60)) }))).toContain('3:LONG:LONG');
+  });
+
   it('LONG : avis exacts ; objectifs sans LONG : aucun avis ; LONG jamais retentée comme KEY', () => {
     const half = ctx({ goal: { type: 'HALF_MARATHON' } });
     const ok = compose({ ctx: half, days: days([0, 2, 5], (i) => (i === 5 ? 120 : 60)) });
@@ -164,6 +184,16 @@ describe('séances manquées §W', () => {
     const adj = run({ missed: [{ date: D(0), archetype: 'THRESHOLD' }, { date: D(1), archetype: 'SEVERE' }], free: days([4, 5]) });
     expect(adj.decisions.map((d) => d.decision)).toEqual(['MOVE', 'DROP']);
     expect(params(adj, RUNNING_CODES.WEEK_REPLANNED)).toEqual([{ missed: 2, progression: 'HOLD_LOW_ADHERENCE' }]);
+  });
+
+  it('ordre par date AVANT l’archétype (entrée déjà triée par date, archétypes en ordre inverse)', () => {
+    const r = run({ missed: [{ date: D(0), archetype: 'THRESHOLD' }, { date: D(1), archetype: 'SEVERE' }], free: days([4, 6]) });
+    expect(r.decisions.map((d) => [d.archetype, d.decision === 'MOVE' ? d.to : 'DROP'])).toEqual([['THRESHOLD', D(4)], ['SEVERE', D(6)]]);
+  });
+
+  it('données incohérentes : une forte demande « réalisée » après le jour cible n’est pas comptée', () => {
+    const r = run({ ctx: ctx({ population: { level: 'P_R1', hybrid: false } }, [h('f', 8, 'LONG')]), missed: [{ date: D(0), archetype: 'LONG' }], free: days([4]) });
+    expect(r.decisions[0]).toMatchObject({ decision: 'MOVE', to: D(4) });
   });
 
   it('même date : départage par archétype', () => {
