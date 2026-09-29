@@ -45,6 +45,10 @@ describe('surcouche de décisions produit', () => {
     expect(v23).toMatchObject({ maturity: 'EXPERT_PROPOSED', provenanceClass: 'PRODUCT_DECISION', approvals: [] });
     expect(CURRENT_RUNNING_GOVERNANCE.parameters.find((p) => p.parameterId === 'running.progression.magnitude')?.value.status).toBe('unresolved');
     expect(g.g1Policies).toEqual(CURRENT_RUNNING_GOVERNANCE.g1Policies);
+    // Décisions : celles du registre expert conservées, la décision produit ajoutée (sans doublon).
+    expect(v23?.decisionIds).toEqual(['E-PROG', 'D1']);
+    expect(g.parameters.find((p) => p.parameterId === 'running.target.rpeByDomain')?.decisionIds).toEqual([...(CURRENT_RUNNING_GOVERNANCE.parameters.find((p) => p.parameterId === 'running.target.rpeByDomain')?.decisionIds ?? []), 'D6']);
+    expect(withProductDecisions(g).parameters.find((p) => p.parameterId === 'running.progression.magnitude')?.decisionIds).toEqual(['E-PROG', 'D1']);
     expect(g.decisions).toEqual(CURRENT_RUNNING_GOVERNANCE.decisions);
   });
 
