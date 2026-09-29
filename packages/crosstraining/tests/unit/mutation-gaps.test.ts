@@ -130,6 +130,22 @@ describe('contrat de contexte : précisions', () => {
   };
   const item = { exerciseId: 'e', quantity: { kind: 'reps', value: 5 } };
 
+  it('chaque type de quantité, chaque format et chaque type de résultat cohérent est ACCEPTÉ par le parseur', () => {
+    for (const quantity of [{ kind: 'reps', value: 5 }, { kind: 'calories', value: 12 }, { kind: 'distance_m', value: 250 }, { kind: 'duration_s', value: 30 }]) {
+      expect(bad({ prescription: { format: 'amrap', durationS: 600, items: [{ exerciseId: 'e', quantity }] } }), quantity.kind).toEqual([]);
+    }
+    const pairs: [Record<string, unknown>, Record<string, unknown>][] = [
+      [{ format: 'for_time', rounds: 3, timeCapS: 600, items: [item] }, { kind: 'time', completionS: 540 }],
+      [{ format: 'for_time', rounds: 3, timeCapS: 600, items: [item] }, { kind: 'capped', repsCompleted: 40 }],
+      [{ format: 'amrap', durationS: 600, items: [item] }, { kind: 'rounds_reps', rounds: 4, reps: 2 }],
+      [{ format: 'emom', minutes: 10, items: [item] }, { kind: 'emom', minutesCompleted: 9 }],
+      [{ format: 'intervals', rounds: 6, workS: 40, restS: 20, items: [item] }, { kind: 'intervals', intervalsCompleted: 6 }],
+      [{ format: 'continuous', durationS: 1200, items: [item] }, { kind: 'total', calories: 250 }],
+      [{ format: 'continuous', durationS: 1200, items: [item] }, { kind: 'total', distanceM: 4000 }],
+    ];
+    for (const [prescription, result] of pairs) expect(bad({ prescription, result }), `${String(prescription.format)}/${String(result.kind)}`).toEqual([]);
+  });
+
   it('chaque format exige au moins un item', () => {
     const empty = [
       { format: 'for_time', rounds: 1, items: [] }, { format: 'amrap', durationS: 60, items: [] }, { format: 'emom', minutes: 5, items: [] },
@@ -148,9 +164,9 @@ describe('contrat de contexte : précisions', () => {
     expect(withItem({ ...item, load: {} }).length).toBeGreaterThan(0);
   });
 
-  it('messages des contrôles : instant ISO et nombre fini', () => {
+  it('messages des contrôles : instant ISO ; nombre non fini refusé', () => {
     expect(bad({ completedAt: 'hier' })).toEqual(['disciplineContext.sessionHistory.0.completedAt : instant ISO attendu']);
-    expect(bad({ prescription: { format: 'amrap', durationS: Number.POSITIVE_INFINITY, items: [item] } }).join()).toMatch(/valeur finie attendue|Infinity|infini/i);
+    expect(bad({ prescription: { format: 'amrap', durationS: Number.POSITIVE_INFINITY, items: [item] } }).join()).toMatch(/received Infinity/);
   });
 
   it('résultat « capped » hors for_time : une seule incohérence (le format), jamais « sans time cap »', () => {

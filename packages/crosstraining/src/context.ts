@@ -18,7 +18,8 @@ import { CT_CAPABILITY_IDS } from './capabilities.js';
 const core = createCoreRegistry();
 const instant = z.string().refine(isISODateTime, 'instant ISO attendu');
 const exerciseId = z.string().min(1);
-const positive = z.number().positive().refine(Number.isFinite, 'valeur finie attendue');
+// zod 4 refuse nativement les nombres non finis (Infinity, NaN).
+const positive = z.number().positive();
 const count = z.number().int().nonnegative();
 // technical-constant: borne haute de l'échelle CR10 modifiée 0–10 utilisée pour le sRPE (Foster 2001) : définition de l'échelle, pas une cible
 const CR10_MAX = 10;
