@@ -198,17 +198,22 @@ describe('ancre V19 — sélection de la séance', () => {
 
 describe('gate Course (mutation G1) — structure réalisée et règle après retour négatif', () => {
   const zRS = zRealizedStructure;
-  const issues = (s: unknown) => { const r = zRS.safeParse(s); return r.success ? [] : r.error.issues.map((i) => ({ path: i.path, message: i.message })); };
+  const issues = (s: unknown) => { const r = zRS.safeParse(s); return r.success ? [] : r.error.issues.map((i) => ({ code: i.code, path: i.path, message: i.message })); };
+
+  it('instant de réalisation invalide : message explicite', () => {
+    const r = zRealizedSession.safeParse({ sessionId: 's', archetype: 'EASY', structureFamily: 'CONTINUOUS', completedAt: 'hier', realizedDurationS: 10, completion: 'COMPLETED' });
+    expect(r.success ? [] : r.error.issues.map((i) => i.message)).toEqual(['instant ISO attendu']);
+  });
 
   it('fractionné : durée ET mode de récupération obligatoires (un seul des deux ⇒ refus, chemin recoveryS)', () => {
-    expect(issues({ reps: 4, workS: 240, recoveryS: 120 })).toEqual([{ path: ['recoveryS'], message: 'fractionné : récupération (durée et mode) obligatoire' }]);
-    expect(issues({ reps: 4, workS: 240, recoveryMode: 'jog' })).toEqual([{ path: ['recoveryS'], message: 'fractionné : récupération (durée et mode) obligatoire' }]);
+    expect(issues({ reps: 4, workS: 240, recoveryS: 120 })).toEqual([{ code: 'custom', path: ['recoveryS'], message: 'fractionné : récupération (durée et mode) obligatoire' }]);
+    expect(issues({ reps: 4, workS: 240, recoveryMode: 'jog' })).toEqual([{ code: 'custom', path: ['recoveryS'], message: 'fractionné : récupération (durée et mode) obligatoire' }]);
     expect(issues({ reps: 4, workS: 240, recoveryS: 120, recoveryMode: 'jog' })).toEqual([]);
   });
 
   it('continu : aucune récupération (un seul des deux champs ⇒ refus, chemin recoveryS)', () => {
-    expect(issues({ reps: 1, workS: 1200, recoveryS: 60 })).toEqual([{ path: ['recoveryS'], message: 'continu : aucune récupération' }]);
-    expect(issues({ reps: 1, workS: 1200, recoveryMode: 'walk' })).toEqual([{ path: ['recoveryS'], message: 'continu : aucune récupération' }]);
+    expect(issues({ reps: 1, workS: 1200, recoveryS: 60 })).toEqual([{ code: 'custom', path: ['recoveryS'], message: 'continu : aucune récupération' }]);
+    expect(issues({ reps: 1, workS: 1200, recoveryMode: 'walk' })).toEqual([{ code: 'custom', path: ['recoveryS'], message: 'continu : aucune récupération' }]);
     expect(issues({ reps: 1, workS: 1200 })).toEqual([]);
   });
 
