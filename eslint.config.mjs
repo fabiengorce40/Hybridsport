@@ -2,7 +2,7 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 
-const domainSources = ['packages/domain/src/**/*.ts', 'packages/engine/src/**/*.ts', 'packages/strength/src/**/*.ts', 'packages/running/src/**/*.ts'];
+const domainSources = ['packages/domain/src/**/*.ts', 'packages/engine/src/**/*.ts', 'packages/strength/src/**/*.ts', 'packages/running/src/**/*.ts', 'packages/crosstraining/src/**/*.ts'];
 
 export default tseslint.config(
   { ignores: ['**/node_modules/**', '**/dist/**', '**/dist-single/**', 'coverage/**', 'exports/**', 'reports/**', '.stryker-tmp/**', '.stryker-tmp-*/**'] },
