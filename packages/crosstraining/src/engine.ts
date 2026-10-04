@@ -105,7 +105,7 @@ function refuse(input: SportEngineInput<CrossTrainingContext>, reasons: readonly
 }
 
 /**
- * C2 : ordre fixe des contrôles, chacun fail-closed — multisport, simulation (CANDIDATE), socle (politiques G1,
+ * C2 : ordre fixe des contrôles, chacun fail-closed — multisport (capacité gouvernée `ctHybridPlanning`), simulation (CANDIDATE), socle (politiques G1,
  * contenu), reprise (seul `NONE` admis : CT-G1-RETURN), puis source de dose :
  * - historique réalisé NON vide ⇒ rejeu strict de la DERNIÈRE séance, ou refus (aucune recherche plus ancienne,
  *   aucun repli sur l'amorçage) ;
@@ -116,13 +116,16 @@ function proposeC2(input: SportEngineInput<CrossTrainingContext>, governance: Ct
   const ctx = input.discipline;
   const mode = ctx.mode;
   const requested = new Set<string>(ctx.capabilityRequests);
-  if (ctx.population.hybrid) return refuse(input, [ctReasons.emit(CT_CODES.HYBRID_PLANNER_UNAVAILABLE, { cause: 'GLOBAL_PLANNER_REQUIRED' })]);
+  // Multisport : admis seulement si la capacité gouvernée `ctHybridPlanning` est active (CT-D11, `ct.hybrid.policy`,
+  // planificateur global). L'interférence n'est JAMAIS résolue ici : elle appartient au planificateur.
+  const hybrid = ctx.population.hybrid ? capabilityState('ctHybridPlanning', governance, mode, requested.has('ctHybridPlanning')) : undefined;
+  if (hybrid && !hybrid.enabled) return refuse(input, [ctReasons.emit(CT_CODES.HYBRID_PLANNER_UNAVAILABLE, { cause: 'GLOBAL_PLANNER_REQUIRED' }), ...hybrid.reasons]);
   if (mode === 'CANDIDATE' && !simulation) return refuse(input, [ctReasons.emit(CT_CODES.SIMULATION_REQUIRED, { mode })]);
   const foundation = foundationState(governance, mode);
   if (!foundation.enabled) return refuse(input, foundation.reasons);
   if (ctx.returnState.state !== 'NONE') return refuse(input, [ctReasons.emit(CT_CODES.RETURN_NOT_SUPPORTED, { returnState: ctx.returnState.state })]);
   const engine = { id: CT_ENGINE_ID, version: CT_ENGINE_VERSION };
-  const trace = [...foundation.reasons];
+  const trace = [...foundation.reasons, ...(hybrid?.reasons ?? [])];
 
   const latest = latestRealized(ctx.sessionHistory);
   let exerciseId: string;

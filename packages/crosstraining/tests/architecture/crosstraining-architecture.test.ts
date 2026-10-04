@@ -28,6 +28,10 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/engine/src/duplicate/analysis.ts',
   'packages/engine/src/duplicate/fingerprint.ts',
   'packages/engine/src/migration/migrations.ts',
+  // Frontière de sécurité générique : aucune charge transférée à un substitut par la réparation.
+  'packages/engine/src/repair/repair.ts',
+  'packages/engine/src/trace/core-codes.ts',
+  'packages/engine/tests/unit/repair-load-transfer.test.ts',
   'packages/engine/tests/unit/core-ext-r1.test.ts',
   'packages/engine/tests/unit/duplicate.test.ts',
   'packages/engine/tests/unit/fingerprint-explicit.test.ts',

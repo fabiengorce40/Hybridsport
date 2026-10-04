@@ -24,8 +24,12 @@ export const zHyroxContext = z.object({
   population: z.object({ level: z.enum(LEVELS), hybrid: z.boolean() }).strict(),
   mode: z.enum(HR_MODES),
   returnState: z.object({ state: z.enum(HR_RETURN_STATES) }).strict(),
-  /** Station demandée par le planificateur (identifiant de station du catalogue) : le moteur ne la choisit pas. */
-  requestedStation: z.string().min(1),
+  /**
+   * Station demandée par l'intention utilisateur / programme (identifiant de station du catalogue), transmise telle
+   * quelle par le planificateur. Ni le moteur ni le planificateur ne la choisissent (aucune règle de choix gouvernée) :
+   * absente ⇒ refus explicite STATION_NOT_REQUESTED.
+   */
+  requestedStation: z.string().min(1).optional(),
 }).strict();
 export type HyroxContext = z.infer<typeof zHyroxContext>;
 export type HyroxContextInput = z.input<typeof zHyroxContext>;

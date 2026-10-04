@@ -34,6 +34,11 @@ export const HR_PARAMETERS = {
   'hybrid_race.h1.stationDoses': { governance: 'G1', schema: z.array(zStationDose) },
   /** G1 : niveaux déclarés admis en H1 (aucun niveau n'est admis par défaut). */
   'hybrid_race.h1.eligibleLevels': { governance: 'G1', schema: z.array(z.enum(LEVELS)) },
+  /**
+   * G1 : H1 admis dans une semaine MULTISPORT orchestrée par le planificateur global (`true` ⇒ admis). Décision de
+   * gouvernance, pas une valeur sportive : l'interférence reste au planificateur. Absent ⇒ multisport refusé.
+   */
+  'hybrid_race.h1.hybridPlanning': { governance: 'G1', schema: z.boolean() },
   /** G3 : profil de tolérance de durée du ruleset appliqué à la séance H1 (identifiant). */
   'hybrid_race.h1.toleranceProfile': { governance: 'G3', schema: z.string().min(1) },
 } as const;

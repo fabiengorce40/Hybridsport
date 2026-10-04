@@ -1,4 +1,4 @@
-import type { EngineErrorCode, EngineResult, ReasonCode, RepairAction, SessionDraft, TraceRef, ValidationReport } from '@hybridsport/domain';
+import type { EngineErrorCode, EngineResult, Prescription, ReasonCode, RepairAction, SessionDraft, TraceRef, ValidationReport } from '@hybridsport/domain';
 import { canonicalStringify } from '../core/canonical.js';
 import { createCoreRegistry, TraceBuilder } from '../trace/index.js';
 import type { DecisionTrace } from '../trace/index.js';
@@ -29,14 +29,50 @@ export interface RepairOutcome {
 const PAIN_CODES = new Set(['SAFETY.PAIN.ZONE_RESTRICTED', 'SAFETY.PAIN.MOVEMENT_RESTRICTED']);
 const defaultRestIsValid = (r: ValidationReport): boolean => r.errors.length > 0 && r.errors.every((e) => PAIN_CODES.has(e.reason.code));
 
-/** Applique des actions de réparation. Ne touche JAMAIS au temps disponible, au matériel, aux restrictions ni au ruleset. */
-function applyActions(s: SessionDraft, actions: readonly RepairAction[], deps: ValidatorDeps): SessionDraft {
+/**
+ * Une prescription porte-t-elle une CHARGE propre à son mouvement ? Toute charge absolue ou relative à une référence
+ * du mouvement : `load` hors séries ; en séries, `load`, `percent_of_reference` (e1RM du mouvement), `effort` avec
+ * charge indicative, `bodyweight` avec charge ajoutée, `relative_to_working` (fraction de la charge de travail).
+ * Un effort pur (RIR, RPE) ou une dose sans charge n'en porte pas.
+ */
+export function carriesMovementLoad(p: Prescription): boolean {
+  switch (p.type) {
+    case 'timed': case 'distance': case 'calories': case 'reps':
+      return p.load !== undefined;
+    case 'sets':
+      return p.sets.some((s) => {
+        const i = s.intensity;
+        if (!i) return false;
+        if (i.mode === 'effort') return i.indicativeKg !== undefined;
+        if (i.mode === 'bodyweight') return i.addedKg !== undefined && i.addedKg > 0;
+        return true;
+      });
+    default:
+      return false;
+  }
+}
+
+interface Applied { readonly session: SessionDraft; readonly refused: readonly ReasonCode[] }
+
+/**
+ * Applique des actions de réparation. Ne touche JAMAIS au temps disponible, au matériel, aux restrictions ni au ruleset.
+ * Frontière de sécurité : une charge prescrite pour un mouvement n'est JAMAIS transférée à un autre mouvement. Aucune
+ * règle gouvernée de conversion n'existe : la substitution d'un item chargé est refusée (sans effet, tracée), la
+ * violation subsiste et l'issue est un refus explicite — jamais un substitut portant la charge d'origine.
+ */
+function applyActions(s: SessionDraft, actions: readonly RepairAction[], deps: ValidatorDeps): Applied {
   let current = s;
+  const refused: ReasonCode[] = [];
   for (const a of actions) {
     switch (a.kind) {
       case 'replace_exercise': {
         const next = a.candidates[0];
         if (next === undefined) break;
+        const item = current.blocks.flatMap((b) => b.items).find((i) => i.id === a.itemId);
+        if (item && carriesMovementLoad(item.prescription)) {
+          refused.push(reasons.emit('REPAIR.LOAD_TRANSFER_REFUSED', { itemId: item.id, exerciseId: item.exerciseId, substituteId: next }));
+          break;
+        }
         current = { ...current, blocks: current.blocks.map((b) => ({ ...b, items: b.items.map((i) => (i.id === a.itemId ? { ...i, exerciseId: next } : i)) })) };
         break;
       }
@@ -64,7 +100,7 @@ function applyActions(s: SessionDraft, actions: readonly RepairAction[], deps: V
     }
   }
   // Garde : le temps disponible et la cible sont invariants (défense en profondeur).
-  return { ...current, availableTimeS: s.availableTimeS, targetDurationS: s.targetDurationS };
+  return { session: { ...current, availableTimeS: s.availableTimeS, targetDurationS: s.targetDurationS }, refused };
 }
 
 /**
@@ -82,6 +118,7 @@ export function repairSession(proposal: SessionDraft, ctx: ValidationContext, de
   let attempts = 0;
   let exhausted = false;
   let last: ValidationReport | undefined;
+  const loadRefusals: ReasonCode[] = [];
 
   // La référence de trace du résultat est celle de la trace réellement construite.
   const done = (make: (ref: TraceRef) => EngineResult<SessionDraft>): RepairOutcome => {
@@ -114,7 +151,12 @@ export function repairSession(proposal: SessionDraft, ctx: ValidationContext, de
     attempts++;
     if (actions.length > 0) {
       actions.forEach((a) => trace.add({ step: 'repair', subject, decision: a.kind, reasons: [reasons.emit('REPAIR.ACTION', { action: a.kind, target: 'itemId' in a ? a.itemId : 'blockId' in a ? a.blockId : proposal.id, attempt: attempts })] }));
-      current = applyActions(current, actions, deps);
+      const applied = applyActions(current, actions, deps);
+      for (const r of applied.refused) {
+        if (!loadRefusals.some((x) => canonicalStringify(x.params) === canonicalStringify(r.params))) loadRefusals.push(r);
+      }
+      if (applied.refused.length > 0) trace.add({ step: 'repair', subject, decision: 'load_transfer_refused', reasons: [...applied.refused] });
+      current = applied.session;
       continue;
     }
     regenerated = true;
@@ -125,7 +167,7 @@ export function repairSession(proposal: SessionDraft, ctx: ValidationContext, de
   }
 
   const finalReport = last;
-  const lastReasons: ReasonCode[] = finalReport?.errors.map((e) => e.reason) ?? [];
+  const lastReasons: ReasonCode[] = [...loadRefusals, ...(finalReport?.errors.map((e) => e.reason) ?? [])];
   if (finalReport && (options.restIsValid ?? defaultRestIsValid)(finalReport)) {
     const cause = finalReport.errors[0]?.reason.code ?? 'unknown';
     const rest = reasons.emit('REPAIR.REST_RECOMMENDED', { cause });

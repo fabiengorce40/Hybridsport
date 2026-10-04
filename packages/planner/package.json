@@ -1,0 +1,18 @@
+{
+  "name": "@hybridsport/planner",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "dependencies": {
+    "@hybridsport/crosstraining": "workspace:*",
+    "@hybridsport/domain": "workspace:*",
+    "@hybridsport/engine": "workspace:*",
+    "@hybridsport/hyrox": "workspace:*",
+    "@hybridsport/running": "workspace:*",
+    "@hybridsport/strength": "workspace:*",
+    "zod": "^4.6.5"
+  }
+}

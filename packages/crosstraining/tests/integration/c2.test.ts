@@ -144,6 +144,15 @@ describe('C2 — politiques CT-G1 (comportements arbitrés, signature TEST)', ()
     const o = runCrossTrainingC2(createCrossTrainingEngine({ governance: testGovernance() }), c2Request(), coreContext('ct-c2-sim'));
     expect(refusal(o)[0]?.code).toBe(CT_CODES.SIMULATION_REQUIRED);
   });
+
+  it('multisport : admis seulement si la capacité gouvernée ctHybridPlanning est active (ct.hybrid.policy + planificateur global)', () => {
+    const hybrid = { population: { level: 'intermediate' as const, hybrid: true } };
+    expect(refusal(run(hybrid)).map((r) => r.code).slice(0, 2)).toEqual([CT_CODES.HYBRID_PLANNER_UNAVAILABLE, CT_CODES.CAPABILITY_DISABLED]);
+    let g = withParameter(testGovernance(), 'ct.hybrid.policy', (p) => withCandidate(p));
+    expect(refusal(run(hybrid, g)).map((r) => r.params.blockers ?? r.params.dependencyId).filter(Boolean)).toEqual([['GLOBAL_PLANNER'], 'GLOBAL_PLANNER']);
+    g = { ...g, technical: { ...g.technical, GLOBAL_PLANNER: 'SATISFIED' } };
+    expect(sessionOf(run(hybrid, g))?.blocks[0]?.items[0]?.exerciseId).toBe('ex.air_squat');
+  });
 });
 
 describe('C2 rejeu strict (CT-D15)', () => {

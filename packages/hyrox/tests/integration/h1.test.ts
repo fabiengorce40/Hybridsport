@@ -12,7 +12,9 @@ import { HR_CODES, HR_ENGINE_ID, HR_ENGINE_VERSION, createHyroxEngine, runHyroxH
 import type { HyroxContext, HyroxContextInput, HyroxEngine } from '../../src/index.js';
 import { coreContext } from '../../../engine/tests/harness/context.js';
 import { PROFILE_GYM, STATE_FRESH, pain } from '../../../engine/tests/harness/requests.js';
-import { DOSES, PROFILE_HYROX, TEST, approvedTestOnly, hrCtx, hrRequest, hyroxCatalog, hyroxRuleset } from '../fixtures.js';
+import { DOSES, PROFILE_HYROX, TEST, approvedTestOnly, hrCtx, hrRequest, hyroxCatalog, hyroxRuleset, hyroxRulesetDocument } from '../fixtures.js';
+import { testRuleset } from '../../../engine/tests/fixtures/load.js';
+import { param } from '../../../engine/tests/fixtures/ruleset.js';
 import type { HrParamsOverride } from '../fixtures.js';
 
 // technical-constant: TEST_ONLY — durée cible de la requête de test (le CORE reste juge de la durée)
@@ -105,11 +107,26 @@ describe('H1 — paramètres absents ou non gouvernés ⇒ refus', () => {
     expect(refusal(run({}, {}, { archetypeId: 'hybrid_race.full_sim' }))[0]?.code).toBe(HR_CODES.ARCHETYPE_UNKNOWN);
   });
 
-  it('contexte incomplet (station absente) ⇒ refus de schéma, aucune valeur par défaut', () => {
+  it('station non demandée (intention absente) ⇒ STATION_NOT_REQUESTED : ni le moteur ni le planificateur ne la choisissent', () => {
     const { requestedStation: _omit, ...partial } = hrCtx();
     const o = runHyroxH1(engineOf(), hrRequest(partial as HyroxContextInput, TARGET_S), ctxOf());
-    expect(o.result.status).toBe('error');
+    expect(refusal(o)).toEqual([{ code: HR_CODES.STATION_NOT_REQUESTED, params: {} }]);
+  });
+
+  it('contexte malformé (station vide) ⇒ refus de schéma, aucune valeur par défaut', () => {
+    const o = runHyroxH1(engineOf(), hrRequest({ ...hrCtx(), requestedStation: '' }, TARGET_S), ctxOf());
     expect(refusal(o)[0]?.code).toBe('TECHNICAL.SCHEMA_INVALID');
+  });
+
+  it('multisport : admis seulement par le paramètre G1 `hybrid_race.h1.hybridPlanning` (true) ; absent ou false ⇒ refus', () => {
+    const hybrid = { population: { level: 'intermediate' as const, hybrid: true } };
+    expect(refusal(run(hybrid))[0]).toEqual({ code: HR_CODES.HYBRID_PLANNER_UNAVAILABLE, params: { cause: 'GLOBAL_PLANNER_REQUIRED' } });
+    const withParam = (v: boolean) => {
+      const doc = hyroxRulesetDocument();
+      return runHyroxH1(engineOf(), hrRequest(hrCtx(hybrid), TARGET_S), coreContext('hr-h1', testRuleset({ ...doc, parameters: [...doc.parameters, param('hybrid_race.h1.hybridPlanning', v, 'G1')] }), hyroxCatalog()));
+    };
+    expect(refusal(withParam(false))[0]).toEqual({ code: HR_CODES.HYBRID_PLANNER_UNAVAILABLE, params: { cause: 'POLICY_DISALLOWS' } });
+    expect(sessionOf(withParam(true))?.blocks[0]?.items[0]?.exerciseId).toBe('ex.sled_push');
   });
 });
 
@@ -147,16 +164,25 @@ describe('H1 — matériel, restriction, douleur, charge ⇒ refus sans substitu
     expect(refusal(run({}, { doses: [{ ...DOSES[0]!, exerciseId: 'ex.unknown' }] }))[0]?.params.causes).toEqual(['UNKNOWN_MOVEMENT']);
   });
 
-  it('garde stricte : si le CORE substitue le mouvement, runHyroxH1 refuse (H1_MODIFIED_BY_CORE) alors que le pipeline nu publierait le substitut', () => {
+  it('défense en profondeur : moteur défaillant proposant un traîneau indisponible ⇒ le CORE refuse le transfert de charge (aucun substitut chargé publié)', () => {
     const base = engineOf();
     // Moteur volontairement défaillant : il croit le traîneau disponible ; le CORE, lui, voit le profil réel.
     const blind: HyroxEngine = { ...base, propose: (i: SportEngineInput<HyroxContext>) => base.propose({ ...i, constraints: { ...i.constraints, availableEquipment: [...i.constraints.availableEquipment, 'sled'] } }) };
     const request = hrRequest(hrCtx(), TARGET_S, { profile: PROFILE_GYM });
+    for (const o of [runSportSession(blind, request, ctxOf()), runHyroxH1(blind, request, ctxOf())]) {
+      expect(o.result.status).toBe('error');
+      expect(refusal(o)[0]).toEqual({ code: 'REPAIR.LOAD_TRANSFER_REFUSED', params: { itemId: 'intent.hr.h1.station', exerciseId: 'ex.sled_push', substituteId: 'ex.sandbag_lunge' } });
+      expect(JSON.stringify(o.result)).not.toMatch(/"exerciseId":"ex\.sandbag_lunge","prescription"/);
+    }
+  });
+
+  it('garde stricte H1 : station NON chargée substituée par le CORE ⇒ H1_MODIFIED_BY_CORE (le pipeline nu publierait le substitut)', () => {
+    const base = engineOf();
+    const blind: HyroxEngine = { ...base, propose: (i: SportEngineInput<HyroxContext>) => base.propose({ ...i, constraints: { ...i.constraints, availableEquipment: [...i.constraints.availableEquipment, 'skierg'] } }) };
+    const request = hrRequest(hrCtx({ requestedStation: 'skierg' }), TARGET_S, { profile: PROFILE_GYM });
     const naked = runSportSession(blind, request, ctxOf());
-    const strict = runHyroxH1(blind, request, ctxOf());
-    // Risque documenté : la réparation du CORE conserve la prescription (charge comprise) sur le substitut.
-    expect(naked.result.status === 'ok' && naked.result.value.blocks[0]?.items[0]).toMatchObject({ exerciseId: 'ex.sandbag_lunge', prescription: { load: { kg: TEST.sledKg } } });
-    expect(refusal(strict)).toEqual([{ code: HR_CODES.H1_MODIFIED_BY_CORE, params: { sessionId: 'intent.hr.h1.hr' } }]);
+    expect(naked.result.status === 'ok' && naked.result.value.blocks[0]?.items[0]?.exerciseId).toBe('ex.row_erg');
+    expect(refusal(runHyroxH1(blind, request, ctxOf()))).toEqual([{ code: HR_CODES.H1_MODIFIED_BY_CORE, params: { sessionId: 'intent.hr.h1.hr' } }]);
   });
 });
 

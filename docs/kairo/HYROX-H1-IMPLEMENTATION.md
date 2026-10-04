@@ -92,4 +92,4 @@ Chaque dimension est séparée et a un seul porteur.
 
 - **Anti-doublon** : diagnostic seulement, avec une seule proposition. Aucun poids ni seuil `hybrid_race` gouverné. Sans eux, un historique comparable rend l'analyse techniquement impossible (fail-closed du CORE). `stimulus`/`energy` valent `not_applicable`. `structure` est constante (`hybrid_station_work`/`continuous`).
 - **Durée** : estimée par le CORE à partir des débits du catalogue, **indépendamment de la charge**.
-- **Réparation CORE** : elle conserve la prescription, charge comprise, sur un substitut. Ce risque existait déjà pour `sets`. Pour H1, il est neutralisé par la garde stricte. Une correction CORE générique, par exemple ne pas reporter `load` sur un substitut, reste à décider.
+- **Réparation CORE** : corrigée depuis (voir `GLOBAL-PLANNER-V1.md` §A) ; une substitution d’item chargé est refusée (`REPAIR.LOAD_TRANSFER_REFUSED`). La garde stricte H1 reste active pour les stations non chargées.

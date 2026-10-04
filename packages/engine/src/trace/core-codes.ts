@@ -74,6 +74,7 @@ export const CORE_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'REPAIR.ACTION', categories: ['adaptation'], params: { action: S, target: S, attempt: N }, audience: 'internal', severity: 'info' },
   { code: 'REPAIR.REST_RECOMMENDED', categories: ['adaptation'], params: { cause: S }, audience: 'user', severity: 'notice' },
   { code: 'REPAIR.EXHAUSTED', categories: ['adaptation'], params: { attempts: N }, audience: 'internal', severity: 'error' },
+  { code: 'REPAIR.LOAD_TRANSFER_REFUSED', categories: ['safety', 'adaptation'], params: { itemId: S, exerciseId: S, substituteId: S }, audience: 'internal', severity: 'error' },
   // Périmètre et données
   { code: 'SCOPE.OUT_OF_SCOPE', categories: ['safety'], params: { eligibility: S }, audience: 'user', severity: 'error' },
   { code: 'SCOPE.DECLARATION_REQUIRED', categories: ['safety'], params: { declarationKind: S }, audience: 'user', severity: 'error' },

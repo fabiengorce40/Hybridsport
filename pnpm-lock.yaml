@@ -127,6 +127,30 @@ importers:
         specifier: ^4.6.5
         version: 4.6.5
 
+  packages/planner:
+    dependencies:
+      '@hybridsport/crosstraining':
+        specifier: workspace:*
+        version: link:../crosstraining
+      '@hybridsport/domain':
+        specifier: workspace:*
+        version: link:../domain
+      '@hybridsport/engine':
+        specifier: workspace:*
+        version: link:../engine
+      '@hybridsport/hyrox':
+        specifier: workspace:*
+        version: link:../hyrox
+      '@hybridsport/running':
+        specifier: workspace:*
+        version: link:../running
+      '@hybridsport/strength':
+        specifier: workspace:*
+        version: link:../strength
+      zod:
+        specifier: ^4.6.5
+        version: 4.6.5
+
   packages/running:
     dependencies:
       '@hybridsport/domain':

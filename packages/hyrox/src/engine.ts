@@ -55,15 +55,18 @@ export function createHyroxEngine(options: HyroxEngineOptions = {}): HyroxEngine
 }
 
 /**
- * H1 : ordre fixe des contrôles, chacun fail-closed — archétype, multisport (planificateur global requis),
- * simulation (CANDIDATE), reprise (seul `NONE` admis), paramètres gouvernés, niveau admis, dose de la station
+ * H1 : ordre fixe des contrôles, chacun fail-closed — archétype, simulation (CANDIDATE), multisport (paramètre G1
+ * `hybrid_race.h1.hybridPlanning` requis), reprise (seul `NONE` admis), paramètres gouvernés, niveau admis, dose de la station
  * demandée, cohérence de charge, éligibilité du mouvement (matériel, restriction, douleur, exclusion).
  */
 function proposeH1(input: SportEngineInput<HyroxContext>, simulation: boolean): ProposeResult {
   if (input.intent.archetypeId !== HR_H1_ARCHETYPE) return refuse(input, [hrReasons.emit(HR_CODES.ARCHETYPE_UNKNOWN, { archetypeId: input.intent.archetypeId })]);
   const ctx = input.discipline;
-  if (ctx.population.hybrid) return refuse(input, [hrReasons.emit(HR_CODES.HYBRID_PLANNER_UNAVAILABLE, { cause: 'GLOBAL_PLANNER_REQUIRED' })]);
   if (ctx.mode === 'CANDIDATE' && !simulation) return refuse(input, [hrReasons.emit(HR_CODES.SIMULATION_REQUIRED, { mode: ctx.mode })]);
+  const hybrid = ctx.population.hybrid ? readHrParam(input.ruleset, 'hybrid_race.h1.hybridPlanning', ctx.mode) : undefined;
+  if (hybrid && !(hybrid.ok && hybrid.value)) {
+    return refuse(input, [hrReasons.emit(HR_CODES.HYBRID_PLANNER_UNAVAILABLE, { cause: hybrid.ok ? 'POLICY_DISALLOWS' : 'GLOBAL_PLANNER_REQUIRED' }), ...hybrid.reasons]);
+  }
   if (ctx.returnState.state !== 'NONE') return refuse(input, [hrReasons.emit(HR_CODES.RETURN_NOT_SUPPORTED, { returnState: ctx.returnState.state })]);
 
   const doses = readHrParam(input.ruleset, 'hybrid_race.h1.stationDoses', ctx.mode);
@@ -73,6 +76,7 @@ function proposeH1(input: SportEngineInput<HyroxContext>, simulation: boolean): 
   if (!doses.ok || !levels.ok || !tolerance.ok) return refuse(input, failed);
 
   if (!levels.value.includes(ctx.population.level)) return refuse(input, [hrReasons.emit(HR_CODES.LEVEL_NOT_ELIGIBLE, { level: ctx.population.level })]);
+  if (ctx.requestedStation === undefined) return refuse(input, [hrReasons.emit(HR_CODES.STATION_NOT_REQUESTED, {})]);
   const entries = doses.value.filter((d) => d.stationId === ctx.requestedStation);
   const dose = entries[0];
   if (!dose || entries.length !== 1) {
@@ -85,11 +89,12 @@ function proposeH1(input: SportEngineInput<HyroxContext>, simulation: boolean): 
   if (load) return refuse(input, [hrReasons.emit(HR_CODES.LOAD_INVALID, { exerciseId: dose.exerciseId, cause: load })]);
 
   const used = [
+    ...(hybrid?.ok ? [{ id: 'hybrid_race.h1.hybridPlanning', version: hybrid.version }] : []),
     { id: 'hybrid_race.h1.stationDoses', version: doses.version },
     { id: 'hybrid_race.h1.eligibleLevels', version: levels.version },
     { id: 'hybrid_race.h1.toleranceProfile', version: tolerance.version },
   ];
-  const trace = [...doses.reasons, ...levels.reasons, ...tolerance.reasons];
+  const trace = [...(hybrid?.reasons ?? []), ...doses.reasons, ...levels.reasons, ...tolerance.reasons];
   return { status: 'proposals', proposals: [h1Proposal(input, dose, tolerance.value, { id: HR_ENGINE_ID, version: HR_ENGINE_VERSION }, used, trace)] };
 }
 
