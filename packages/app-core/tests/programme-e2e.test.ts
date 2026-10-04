@@ -10,7 +10,7 @@ import { StrengthEngine } from '@hybridsport/strength';
 import { createRunningEngine } from '@hybridsport/running';
 import {
   closeProgrammeWeekInApp, completeOnboarding, decodeState, emptyState, EQUIPMENT_PRESETS, exportState, logFreeRun, planProgrammeCurrentWeek, ProgrammeError,
-  recordProgrammeSession, runningContent, startProgramme, strengthContent,
+  recordSessionExecution, runningContent, startProgramme, strengthContent,
 } from '../src/index.js';
 import type { AppState, ProgrammeEnvironment } from '../src/index.js';
 import { createCrossTrainingEngine } from '../../crosstraining/src/index.js';
@@ -18,6 +18,7 @@ import type { CrossTrainingEngine } from '../../crosstraining/src/index.js';
 import { createHyroxEngine } from '../../hyrox/src/index.js';
 import type { HyroxEngine } from '../../hyrox/src/index.js';
 import { clock, profile } from './fixtures.js';
+import { workSetsDone } from './executions.js';
 import { ctGovernance, hyroxContent, plannerGovernance, runningGovernance, withDemand } from '../../planner/tests/fixtures.js';
 import { FOUR_SPORTS, definition, programmeGovernance } from '../../programme/tests/fixtures.js';
 import { testCatalog, testRuleset } from '../../engine/tests/fixtures/load.js';
@@ -67,7 +68,8 @@ const DEF = definition({
   ...FOUR_SPORTS,
   sports: FOUR_SPORTS.sports?.map((x) => {
     if (x.sport === 'running') return { ...x, assessment: { kind: 'TIME_TRIAL', intent: { ...RUNNING_INTENT, archetypeId: 'running.test' } } };
-    if (x.sport === 'crosstraining') return { ...x, declarations: { population: { level: 'intermediate', hybrid: false }, returnState: { state: 'NONE' }, declaredSkills: [], benchmarks: [] } };
+    // Stimulus de la séance réalisée : identifiant du contrat Cross-training, DÉCLARÉ par le programme (TEST_ONLY).
+    if (x.sport === 'crosstraining') return { ...x, intent: { ...x.intent, stimulus: 'mixed_modal_medium' }, declarations: { population: { level: 'intermediate', hybrid: false }, returnState: { state: 'NONE' }, declaredSkills: [], benchmarks: [] } };
     if (x.sport === 'hyrox') return { ...x, declarations: { population: { level: 'intermediate', hybrid: false }, returnState: { state: 'NONE' } } };
     return x;
   }) ?? [],
@@ -88,12 +90,13 @@ describe('E2E programme : semaine 1 → résultats → décision → semaine 2',
     expect(s.programmeState?.weeks[0]?.plannerRef).toBe(W1);
     // 6–7. réalisations : tel que prescrit, modifiée, abandonnée ; une séance manquée (aucune saisie)
     const id = (sport: string, k: number) => `${W1}.${sport}.${String(k)}`;
-    s = recordProgrammeSession(s, clock(W1, '19:00:00'), { requestId: id('strength', 1), completion: 'completed_as_prescribed', pain: false });
-    s = recordProgrammeSession(s, clock(W1, '19:00:00'), { requestId: id('strength', 2), completion: 'completed_as_prescribed', pain: false });
+    // technical-constant: TEST_ONLY — charge saisie par l'utilisateur (kg) et RIR déclaré
+    for (const k of [1, 2]) s = recordSessionExecution(s, clock(W1, '19:00:00'), { sport: 'strength', requestId: id('strength', k), completion: 'completed_as_prescribed', pain: 'NONE', sets: workSetsDone(s, id('strength', k), { loadKg: 60, rir: 2 }) });
     // technical-constant: TEST_ONLY — courses réalisées déclarées (s, m)
-    s = recordProgrammeSession(s, clock(W1, '19:00:00'), { requestId: id('running', 1), completion: 'completed_as_prescribed', pain: false, run: { realizedDurationS: 1800, distanceM: 5200 } });
-    s = recordProgrammeSession(s, clock(W1, '19:00:00'), { requestId: id('running', 2), completion: 'completed_as_prescribed', pain: false, run: { realizedDurationS: 1800, distanceM: 5300 } });
-    s = recordProgrammeSession(s, clock(W1, '19:00:00'), { requestId: id('crosstraining', 1), completion: 'modified', pain: false });
+    s = recordSessionExecution(s, clock(W1, '19:00:00'), { sport: 'running', requestId: id('running', 1), completion: 'completed_as_prescribed', pain: 'NONE', run: { realizedDurationS: 1800, distanceM: 5200 } });
+    s = recordSessionExecution(s, clock(W1, '19:00:00'), { sport: 'running', requestId: id('running', 2), completion: 'completed_as_prescribed', pain: 'NONE', run: { realizedDurationS: 1800, distanceM: 5300 } });
+    // technical-constant: TEST_ONLY — durée réalisée déclarée (s)
+    s = recordSessionExecution(s, clock(W1, '19:00:00'), { sport: 'crosstraining', requestId: id('crosstraining', 1), completion: 'modified', pain: 'NONE', result: { durationS: 420 } });
     // HYROX : manquée (aucune saisie)
     expect(s.running.realized).toHaveLength(3);
     expect(s.fingerprints.strength.length).toBeGreaterThan(0);
@@ -116,7 +119,7 @@ describe('E2E programme : semaine 1 → résultats → décision → semaine 2',
     const a = s.programmeState?.assessments[0];
     expect(a?.status).toBe('scheduled');
     // technical-constant: TEST_ONLY — TEST réalisé (s)
-    s = recordProgrammeSession(s, clock(W2, '19:00:00'), { requestId: a?.requestId ?? '', completion: 'completed_as_prescribed', pain: false, run: { realizedDurationS: 2400, testTimeS: 1500 } });
+    s = recordSessionExecution(s, clock(W2, '19:00:00'), { sport: 'running', requestId: a?.requestId ?? '', completion: 'completed_as_prescribed', pain: 'NONE', run: { realizedDurationS: 2400, testTimeS: 1500 } });
     expect(s.programmeState?.assessments[0]?.status).toBe('completed');
     expect(s.running.references.map((r) => r.type)).toEqual(['TIME_TRIAL']);
     // Export / import : état restauré à l'identique (programme compris).
@@ -124,13 +127,13 @@ describe('E2E programme : semaine 1 → résultats → décision → semaine 2',
     expect(d.ok && d.state).toEqual(s);
   });
 
-  it('évaluation demandée mais refusée par le moteur (TEST plus long que le créneau) ⇒ « not_planned », raison du moteur conservée', () => {
+  it('évaluation demandée mais TEST plus long que TOUS les créneaux (réessai borné épuisé) ⇒ « not_planned » (slot_unavailable), raison du moteur conservée', () => {
     let s = startProgramme(athlete(SHORT), DEF, clock(W1));
     s = planProgrammeCurrentWeek(s, clock(W1), env());
-    for (const k of [1, 2]) s = recordProgrammeSession(s, clock(W1, '19:00:00'), { requestId: `${W1}.running.${String(k)}`, completion: 'completed_as_prescribed', pain: false, run: { realizedDurationS: 1800, distanceM: 5200 } });
+    for (const k of [1, 2]) s = recordSessionExecution(s, clock(W1, '19:00:00'), { sport: 'running', requestId: `${W1}.running.${String(k)}`, completion: 'completed_as_prescribed', pain: 'NONE', run: { realizedDurationS: 1800, distanceM: 5200 } });
     s = closeProgrammeWeekInApp(s, clock(W2), env());
     s = planProgrammeCurrentWeek(s, clock(W2), env());
-    expect(s.programmeState?.assessments[0]).toMatchObject({ status: 'not_planned', reasons: expect.arrayContaining([expect.objectContaining({ code: 'PROGRESSION.PROGRAMME.ASSESSMENT_NOT_PLANNED', params: expect.objectContaining({ category: 'engine_refused' }) })]) });
+    expect(s.programmeState?.assessments[0]).toMatchObject({ status: 'not_planned', reasons: expect.arrayContaining([expect.objectContaining({ code: 'PROGRESSION.PROGRAMME.ASSESSMENT_NOT_PLANNED', params: expect.objectContaining({ category: 'slot_unavailable' }) })]) });
     expect(s.planner.weeks[W2]?.requests.find((r) => r.requestId === `${W2}.running.1`)?.reasons.map((r) => r.code)).toContain('PLAN.RUNNING.TIME_EXCEEDED');
   });
 
@@ -168,7 +171,7 @@ describe('E2E programme : semaine 1 → résultats → décision → semaine 2',
   it('résultat d’une séance inconnue refusé, raisons structurées ; programme absent ⇒ erreur explicite', () => {
     let s = startProgramme(athlete(), DEF, clock(W1));
     s = planProgrammeCurrentWeek(s, clock(W1), env());
-    expect(() => recordProgrammeSession(s, clock(W1), { requestId: 'nope', completion: 'modified', pain: false })).toThrow(ProgrammeError);
+    expect(() => recordSessionExecution(s, clock(W1), { sport: 'strength', requestId: 'nope', completion: 'modified', pain: 'NONE' })).toThrow(ProgrammeError);
     expect(() => planProgrammeCurrentWeek(athlete(), clock(W1), env())).toThrow('PROGRAMME_MISSING');
     expect(() => startProgramme(athlete(), { ...DEF, priorities: ['strength'] }, clock(W1))).toThrow(ProgrammeError);
   });
@@ -177,7 +180,7 @@ describe('E2E programme : semaine 1 → résultats → décision → semaine 2',
     const run = () => {
       let s = startProgramme(athlete(), DEF, clock(W1));
       s = planProgrammeCurrentWeek(s, clock(W1), env());
-      s = recordProgrammeSession(s, clock(W1, '19:00:00'), { requestId: `${W1}.strength.1`, completion: 'modified', pain: true });
+      s = recordSessionExecution(s, clock(W1, '19:00:00'), { sport: 'strength', requestId: `${W1}.strength.1`, completion: 'modified', pain: 'P2', sets: [] });
       return exportState(closeProgrammeWeekInApp(s, clock(W2), env()));
     };
     expect(run()).toBe(run());

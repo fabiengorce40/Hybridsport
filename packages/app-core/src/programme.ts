@@ -4,18 +4,19 @@
  * la semaine planifiée et l'état du programme, et renvoie les réalisations à l'historique des moteurs par leurs
  * contrats existants (course réalisée, référence TEST, empreintes, douleur).
  */
-import type { FingerprintHistoryEntry, ReasonCode, SessionDraft, SessionRecord } from '@hybridsport/domain';
+import type { FingerprintHistoryEntry, PainLevel, ReasonCode, SessionRecord } from '@hybridsport/domain';
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { LoadedRuleset } from '@hybridsport/engine';
-import { closeProgrammeWeek, createProgramme, planProgrammeWeek, recordProgrammeResult, requestIntent, weekIndexOf } from '@hybridsport/programme';
+import { PG_CODES, closeProgrammeWeek, createProgramme, pgReasons, planProgrammeWeek, recordProgrammeResult, requestIntent, weekIndexOf } from '@hybridsport/programme';
 import type { Completion, ProgrammeDefinitionInput, ProgrammeState } from '@hybridsport/programme';
 import { AppError } from './app.js';
 import type { Clock } from './app.js';
 import { addDays, normalizeInstant } from './dates.js';
-import type { AppState, ProgrammeIntent, SessionLog } from './model.js';
+import type { AppState, Feedback, ProgrammeIntent, SessionLog, SetLog } from './model.js';
 import { appPlannerEnvironment, buildPorts, clockOf, persistWeek, recentOf } from './planning.js';
 import type { EngineGoals, PlannerEnvironment } from './planning.js';
-import { realizedRunFrom, testReferenceFrom } from './progression.js';
+import { applyStrengthExecution, realizedRunFrom, testReferenceFrom } from './progression.js';
+import { realizeCrossTrainingC2, realizeHyroxStation } from '@hybridsport/planner';
 
 /** Erreur applicative portant les raisons structurées (jamais « échec » sans cause). */
 export class ProgrammeError extends AppError {
@@ -63,6 +64,8 @@ export function planProgrammeCurrentWeek(state: AppState, clock: Clock, env: Pro
   const p = state.profile;
   if (!p) throw new AppError('PROFILE_MISSING');
   const ps = requireProgramme(state);
+  // Douleur active : aucune règle G1 validée ⇒ suspension de la planification (même règle que le chemin V0).
+  if (state.safety.activePain) throw new ProgrammeError('SAFETY_PAUSE_ACTIVE_PAIN', []);
   const i = weekIndex ?? weekIndexOf(ps, clock.today);
   const weekStart = addDays(ps.definition.startWeek, i * p.availability.length);
   const { intent, goals } = portInputs(ps);
@@ -75,50 +78,111 @@ export function planProgrammeCurrentWeek(state: AppState, clock: Clock, env: Pro
   return { ...state, programmeState: r.value.state, planner: { weeks: { ...state.planner.weeks, [weekStart]: persistWeek(r.value.week, normalizeInstant(clock.now), ps.definition.origin) } } };
 }
 
-export interface ProgrammeSessionResult {
+/**
+ * Saisie de RÉALISATION d'une séance planifiée : partie générique (identité, complétion, douleur, tolérance) +
+ * détails propres à la discipline, typés (séries Strength, course, résultat continu CT, résultat de station HYROX).
+ * Rien n'est déduit de la prescription : une donnée absente reste absente.
+ */
+interface ExecutionCommon {
   readonly requestId: string;
   readonly completion: Completion;
-  readonly pain: boolean;
-  /** Course : durée réalisée et, facultativement, distance et temps de TEST (résultat mesuré). */
-  readonly run?: { readonly realizedDurationS: number; readonly distanceM?: number; readonly testTimeS?: number };
-  readonly difficulty?: NonNullable<SessionLog['feedback']>['difficulty'];
+  /** Douleur déclarée (niveau du domaine) ; `NONE` = aucune ; absente = inconnue. */
+  readonly pain?: 'NONE' | PainLevel;
+  readonly tolerance?: 'tolerated' | 'poorly_tolerated';
 }
+export type SessionExecutionInput = ExecutionCommon & (
+  | { readonly sport: 'strength'; readonly sets?: readonly SetLog[]; readonly painItems?: readonly string[] }
+  | { readonly sport: 'running'; readonly run?: { readonly realizedDurationS: number; readonly distanceM?: number; readonly testTimeS?: number }; readonly difficulty?: Feedback['difficulty'] }
+  | { readonly sport: 'crosstraining'; readonly result?: { readonly durationS?: number; readonly calories?: number; readonly distanceM?: number }; readonly sessionRpe?: number }
+  | { readonly sport: 'hyrox'; readonly result?: { readonly achieved?: number; readonly elapsedS?: number; readonly actualLoadKg?: number } }
+);
 
-const RUN_COMPLETION: Readonly<Record<Completion, NonNullable<SessionLog['run']>['completion']>> = { completed_as_prescribed: 'COMPLETED', modified: 'PARTIAL', abandoned: 'PARTIAL', missed: 'SKIPPED' };
+const RUN_COMPLETION: Readonly<Record<Exclude<Completion, 'missed'>, NonNullable<SessionLog['run']>['completion']>> = { completed_as_prescribed: 'COMPLETED', modified: 'PARTIAL', abandoned: 'PARTIAL' };
+const reject = (code: string, ...reasons: ReasonCode[]): never => { throw new ProgrammeError(code, reasons); };
 
 /**
- * Enregistre la réalisation d'une séance planifiée : état du programme + historique des moteurs par leurs contrats
- * (course réalisée et référence TEST, empreinte anti-doublon, pause douleur existante). Aucune progression calculée ici.
+ * Point d'entrée UNIQUE d'enregistrement d'une séance réalisée (chemin programme) :
+ *   validation générique (séance planifiée connue, discipline, identité non encore enregistrée)
+ *   → dispatch typé par discipline → validation sportive (contrat du moteur) → historique du moteur
+ *   → retour au programme (statut générique + référence de preuve) → état persisté.
+ * Identités : séance planifiée = `requestId` ; exécution = une seule par `requestId` (refus explicite sinon) ;
+ * occurrence dans l'historique du moteur = `requestId` (un rejeu CT de la semaine suivante est une NOUVELLE occurrence).
  */
-export function recordProgrammeSession(state: AppState, clock: Clock, x: ProgrammeSessionResult): AppState {
+export function recordSessionExecution(state: AppState, clock: Clock, x: SessionExecutionInput): AppState {
   const ps = requireProgramme(state);
   const at = normalizeInstant(clock.now);
   const week = ps.weeks.find((w) => w.requests.some((r) => r.requestId === x.requestId));
+  const req = week?.requests.find((r) => r.requestId === x.requestId);
   const planned = week ? state.planner.weeks[week.plannerRef]?.requests.find((r) => r.requestId === x.requestId) : undefined;
-  const decoded = planned?.record ? migrateToCurrent<SessionRecord>(planned.record) : undefined;
+  if (!week || req?.status !== 'planned' || !planned) return reject('EXECUTION_UNKNOWN_SESSION', pgReasons.emit(PG_CODES.RESULT_UNKNOWN_REQUEST, { requestId: x.requestId }));
+  if (req.sport !== x.sport) return reject('EXECUTION_SPORT_MISMATCH');
+  if (ps.results.some((r) => r.requestId === x.requestId)) return reject('EXECUTION_DUPLICATE', pgReasons.emit(PG_CODES.RESULT_DUPLICATE, { requestId: x.requestId }));
+  const decoded = planned.record ? migrateToCurrent<SessionRecord>(planned.record) : undefined;
   const record = decoded?.ok ? decoded.value : undefined;
-  const intent = requestIntent(ps, x.requestId);
-  const r = recordProgrammeResult(ps, {
-    requestId: x.requestId, completion: x.completion, pain: x.pain, recordedAt: at,
-    ...(x.run?.testTimeS !== undefined ? { measured: { kind: 'TIME_TRIAL', values: { durationS: x.run.testTimeS } } } : {}),
-  });
-  if (!r.ok) throw new ProgrammeError('PROGRAMME_RESULT_REJECTED', r.reasons);
-  let s: AppState = { ...state, programmeState: r.value, revision: state.revision + 1 };
-  const sport = planned?.sport;
-  const session: SessionDraft | undefined = record?.session;
-  if (sport === 'running' && session && intent && x.run && x.completion !== 'missed') {
-    const run = { realizedDurationS: x.run.realizedDurationS, completion: RUN_COMPLETION[x.completion], ...(x.run.distanceM !== undefined ? { distanceM: x.run.distanceM } : {}), ...(x.run.testTimeS !== undefined ? { testTimeS: x.run.testTimeS } : {}) };
-    const real = { sessionId: x.requestId, archetypeId: intent.archetypeId, session, run, ...(x.difficulty ? { difficulty: x.difficulty } : {}), pain: x.pain, at };
-    const ref = testReferenceFrom(real);
-    s = { ...s, running: { realized: [...s.running.realized, realizedRunFrom(real)], references: [...s.running.references, ...(ref ? [ref] : [])] } };
+  if (!record) return reject('EXECUTION_SESSION_UNREADABLE');
+  const session = record.session;
+  const pained = (x.pain !== undefined && x.pain !== 'NONE') || (x.sport === 'strength' && (x.painItems?.length ?? 0) > 0);
+  let s: AppState = state;
+  let evidence: { history: ProgrammeState['definition']['priorities'][number]; ref: string; measurement?: string } | undefined;
+
+  if (x.completion !== 'missed') {
+    const common = { sessionId: x.requestId, completedAt: at, completion: x.completion, ...(x.pain !== undefined ? { pain: x.pain } : {}), ...(x.tolerance !== undefined ? { tolerance: x.tolerance } : {}) };
+    switch (x.sport) {
+      case 'strength': {
+        const intent = requestIntent(ps, x.requestId);
+        if (!intent) return reject('EXECUTION_INTENT_UNKNOWN');
+        const sets = x.sets ?? [];
+        const work = session.blocks.filter((b) => b.kind !== 'warmup' && b.kind !== 'cooldown').flatMap((b) => b.items)
+          .flatMap((it) => (it.prescription.type === 'sets' ? it.prescription.sets.map((p, i) => ({ itemId: it.id, i, work: p.kind !== 'rampup' && p.optional !== true, count: it.prescription.type === 'sets' ? it.prescription.sets.length : 0 })) : []));
+        const unknown = sets.filter((l) => !work.some((w) => w.itemId === l.itemId && w.i === l.setIndex));
+        if (unknown.length > 0) return reject('EXECUTION_STRENGTH_SET_UNKNOWN');
+        // « Telle que prescrite » n'est jamais supposé : chaque série de travail doit être saisie, faite, avec ses répétitions.
+        if (x.completion === 'completed_as_prescribed' && !work.filter((w) => w.work).every((w) => sets.some((l) => l.itemId === w.itemId && l.setIndex === w.i && l.done && l.reps !== undefined))) return reject('EXECUTION_STRENGTH_INCOMPLETE');
+        s = { ...s, strength: applyStrengthExecution(s, { archetypeId: intent.archetypeId, session, sets: [...sets], painItems: [...(x.painItems ?? [])] }, at) };
+        evidence = { history: 'strength', ref: x.requestId };
+        break;
+      }
+      case 'running': {
+        const intent = requestIntent(ps, x.requestId);
+        if (!intent || !x.run) return reject('EXECUTION_RUN_DETAILS_REQUIRED');
+        const run = { realizedDurationS: x.run.realizedDurationS, completion: RUN_COMPLETION[x.completion], ...(x.run.distanceM !== undefined ? { distanceM: x.run.distanceM } : {}), ...(x.run.testTimeS !== undefined ? { testTimeS: x.run.testTimeS } : {}) };
+        const real = { sessionId: x.requestId, archetypeId: intent.archetypeId, session, run, ...(x.difficulty ? { difficulty: x.difficulty } : {}), pain: pained, at };
+        const ref = testReferenceFrom(real);
+        s = { ...s, running: { realized: [...s.running.realized, realizedRunFrom(real)], references: [...s.running.references, ...(ref ? [ref] : [])] } };
+        evidence = { history: 'running', ref: x.requestId, ...(ref ? { measurement: ref.type } : {}) };
+        break;
+      }
+      case 'crosstraining': {
+        const intent = requestIntent(ps, x.requestId);
+        if (!intent) return reject('EXECUTION_INTENT_UNKNOWN');
+        if (s.crosstraining.realized.some((r) => r.sessionId === x.requestId)) return reject('EXECUTION_DUPLICATE');
+        const r = realizeCrossTrainingC2(session, { ...common, stimulus: intent.stimulus, ...(x.result ? { result: x.result } : {}), ...(x.sessionRpe !== undefined ? { sessionRpe: x.sessionRpe } : {}) });
+        if (!r.ok) return reject('EXECUTION_INVALID', ...r.reasons);
+        s = { ...s, crosstraining: { realized: [...s.crosstraining.realized, { ...r.value }] } };
+        evidence = { history: 'crosstraining', ref: x.requestId };
+        break;
+      }
+      case 'hyrox': {
+        const station = week.intent.demands.find((d) => d.sport === 'hyrox')?.station;
+        if (!station) return reject('EXECUTION_STATION_UNKNOWN');
+        if (s.hyrox.realized.some((r) => r.sessionId === x.requestId)) return reject('EXECUTION_DUPLICATE');
+        const r = realizeHyroxStation(session, { ...common, stationId: station, ...(x.result ? { result: x.result } : {}) });
+        if (!r.ok) return reject('EXECUTION_INVALID', ...r.reasons);
+        s = { ...s, hyrox: { realized: [...s.hyrox.realized, { ...r.value }] } };
+        evidence = { history: 'hyrox', ref: x.requestId };
+        break;
+      }
+    }
   }
-  const fp = record?.fingerprint.status === 'available' ? record.fingerprint.value : undefined;
-  if (fp && x.completion !== 'missed' && (sport === 'strength' || sport === 'running' || sport === 'crosstraining')) {
-    const entry = { fingerprint: fp, at, status: 'completed', repetitionIntents: [] } as FingerprintHistoryEntry;
-    s = { ...s, fingerprints: { ...s.fingerprints, [sport]: [...s.fingerprints[sport], entry] } };
+  const result = recordProgrammeResult(ps, { requestId: x.requestId, completion: x.completion, pain: pained, recordedAt: at, ...(evidence ? { evidence } : {}) });
+  if (!result.ok) return reject('EXECUTION_REJECTED', ...result.reasons);
+  s = { ...s, programmeState: result.value, revision: s.revision + 1 };
+  const fp = record.fingerprint.status === 'available' ? record.fingerprint.value : undefined;
+  if (fp && x.completion !== 'missed' && x.sport !== 'hyrox') {
+    s = { ...s, fingerprints: { ...s.fingerprints, [x.sport]: [...s.fingerprints[x.sport], { fingerprint: fp, at, status: 'completed', repetitionIntents: [] } as FingerprintHistoryEntry] } };
   }
-  // Douleur déclarée : même règle G1 fail-closed que le chemin V0 (pause de toutes les séances jusqu'à levée explicite).
-  if (x.pain) s = { ...s, safety: { activePain: { reportedAt: at, areas: [], sessionKey: x.requestId } } };
+  // Douleur déclarée : même règle G1 fail-closed que le chemin V0 (pause jusqu'à levée explicite).
+  if (pained) s = { ...s, safety: { activePain: { reportedAt: at, areas: [], sessionKey: x.requestId } } };
   return s;
 }
 

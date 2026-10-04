@@ -71,7 +71,7 @@ export interface NeighbourContext { readonly known: boolean; readonly neighbours
 
 /** Catégorie applicative d'une demande (auditable, jamais « planning failed »). */
 export const REQUEST_CATEGORIES = [
-  'planned', 'engine_refused', 'governance_blocked', 'interference_conflict', 'slot_unavailable', 'engine_unavailable', 'programme_intent_incomplete',
+  'planned', 'engine_refused', 'governance_blocked', 'safety_blocked', 'invalid_intent', 'interference_conflict', 'slot_unavailable', 'engine_unavailable', 'programme_intent_incomplete',
 ] as const;
 export type RequestCategory = (typeof REQUEST_CATEGORIES)[number];
 

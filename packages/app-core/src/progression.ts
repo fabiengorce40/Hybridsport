@@ -29,19 +29,37 @@ export function performedSets(itemId: string, prescribed: readonly SetPrescripti
 const mainItems = (s: SessionDraft) => s.blocks.filter((b) => b.kind !== 'warmup' && b.kind !== 'cooldown').flatMap((b) => b.items);
 
 function applyStrength(state: AppState, g: GeneratedSession, log: SessionLog, at: ISODateTime): AppState['strength'] {
-  if (g.outcome.status !== 'ok' || !state.profile) return state.strength;
+  if (g.outcome.status !== 'ok') return state.strength;
+  return applyStrengthExecution(state, { archetypeId: g.archetypeId, session: g.outcome.session, sets: log.sets, painItems: log.painItems }, at);
+}
+
+/** Réalisation Strength : séance générée + séries RÉELLEMENT saisies (jamais déduites de la prescription). */
+export interface StrengthExecution {
+  readonly archetypeId: string;
+  readonly session: SessionDraft;
+  readonly sets: SessionLog['sets'];
+  readonly painItems: SessionLog['painItems'];
+}
+
+/**
+ * Applique une réalisation Strength à l'historique (tracks, expositions, compteurs) par les SEULES fonctions du moteur
+ * Strength (classifyExposure, updateTrack, createTrack) : chemin V0 inchangé, entrée factorisée pour le programme.
+ */
+export function applyStrengthExecution(state: AppState, x: StrengthExecution, at: ISODateTime): AppState['strength'] {
+  if (!state.profile) return state.strength;
+  const log = { sets: x.sets, painItems: x.painItems } as SessionLog;
   const p = state.profile;
   const params = readStrengthParams(strengthContent().ruleset).values;
   const catalog = strengthContent().catalog;
   const stimulus = STIMULUS_BY_GOAL[p.strength.goal];
-  const archetypeId = g.archetypeId;
+  const archetypeId = x.archetypeId;
   const slots = params['strength.archetypes'].find((a) => a.id === archetypeId)?.slots ?? [];
   const tracks = new Map(state.strength.tracks.map((t) => [t.trackId, t]));
   const exposures = [...state.strength.exposures];
   const counts = { ...state.strength.accessoryCounts };
   const now = at;
 
-  for (const it of mainItems(g.outcome.session)) {
+  for (const it of mainItems(x.session)) {
     if (it.prescription.type !== 'sets') continue;
     const e = catalog.exercise(it.exerciseId);
     if (!e) continue;

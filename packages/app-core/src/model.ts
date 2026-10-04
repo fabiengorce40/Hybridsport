@@ -226,6 +226,11 @@ export const zAppState = z.object({
    * ne dépend pas de ce paquet (règle d'architecture). Absent d'un état antérieur ⇒ vide (champ additif).
    */
   crosstraining: z.object({ realized: z.array(z.record(z.string(), z.unknown())) }).strict().default({ realized: [] }),
+  /**
+   * HYROX (H1) : stations RÉALISÉES (contrat de réalisation du moteur HYROX, validé à la réalisation et à la frontière
+   * du moteur) ; app-core ne dépend pas de ce paquet. Absent d'un état antérieur ⇒ vide (champ additif).
+   */
+  hyrox: z.object({ realized: z.array(z.record(z.string(), z.unknown())) }).strict().default({ realized: [] }),
   fingerprints: z.object({ strength: z.array(zFingerprintHistoryEntry), running: z.array(zFingerprintHistoryEntry), crosstraining: z.array(zFingerprintHistoryEntry).default([]) }).strict(),
   safety: z.object({ activePain: z.object({ reportedAt: instant, areas: z.array(z.string()), sessionKey: z.string().optional() }).strict().nullable() }).strict(),
   /** Intention de programme multisport (absente d'un état antérieur ⇒ null : champ additif). */
@@ -244,7 +249,7 @@ export const CURRENT_SCHEMA_VERSION = 1;
 export function emptyState(): AppState {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION, profile: null, plans: {}, sessions: {}, logs: {},
-    strength: { tracks: [], exposures: [], accessoryCounts: {} }, running: { realized: [], references: [] }, crosstraining: { realized: [] },
+    strength: { tracks: [], exposures: [], accessoryCounts: {} }, running: { realized: [], references: [] }, crosstraining: { realized: [] }, hyrox: { realized: [] },
     fingerprints: { strength: [], running: [], crosstraining: [] }, safety: { activePain: null }, programme: null, programmeState: null, planner: { weeks: {} }, revision: 0,
   };
 }

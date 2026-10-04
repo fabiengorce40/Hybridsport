@@ -112,6 +112,8 @@ export function ctGovernance(o: { hybrid?: boolean } = {}): CtGovernance {
   };
   for (const id of ['ct.safety.novicePolicy', 'ct.return.protocol', 'ct.safety.novelEccentricVolume', 'ct.history.anchorPolicy', 'ct.history.negativeResponse', 'ct.history.completionCriterion']) g = withParameter(g, id, (p: CtParameter) => withCandidate(p));
   g = withParameter(g, 'ct.bootstrap.movementAllowlist', (p: CtParameter) => withCandidate(p, [{ movementId: 'ex.air_squat', status: 'APPROVED', approvedBootstrapDurationS: CT_TEST_DURATION_S, durationApproval: TEST_APPROVAL, eligibility: { contentReviewRef: 'TEST-ONLY' } }]));
+  // technical-constant: TEST_ONLY — fenêtre de rejeu C2 (jours), comme dans les tests C2
+  g = withParameter(g, 'ct.history.recencyBand', (p: CtParameter) => withCandidate(p, 14));
   if (o.hybrid !== false) g = withParameter(g, 'ct.hybrid.policy', (p: CtParameter) => withCandidate(p));
   return g;
 }

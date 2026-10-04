@@ -107,7 +107,7 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
       baseContext: (slot) => ({ ...decl('crosstraining'), ...(goals.crosstraining ? { goal: { type: goals.crosstraining } } : {}), sessionHistory: state.crosstraining.realized.filter((r) => typeof r.completedAt === 'string' && r.completedAt < sessionInstant(slot.date)), mode: env.mode, capabilityRequests: [...CT_CAPABILITY_REQUESTS] }) as never,
     });
   }
-  if (env.hyrox) ports.hyrox = hyroxPort({ engine: env.hyrox.engine, content: env.hyrox.content, profile, state: state0, history: [], clock, baseContext: () => ({ ...decl('hyrox'), mode: env.mode }) as never });
+  if (env.hyrox) ports.hyrox = hyroxPort({ engine: env.hyrox.engine, content: env.hyrox.content, profile, state: state0, history: [], clock, baseContext: (slot) => ({ ...decl('hyrox'), mode: env.mode, sessionHistory: state.hyrox.realized.filter((r) => typeof r.completedAt === 'string' && r.completedAt < sessionInstant(slot.date)) }) as never });
   return ports;
 }
 

@@ -103,8 +103,14 @@ export const zProgrammeResult = z.object({
   /** declared : saisi par l'utilisateur ; derived_missed : aucune réalisation après la date de la séance. */
   provenance: z.enum(['declared', 'derived_missed']),
   recordedAt: instant,
-  /** Résultat mesuré (facultatif, propre au moteur : ex. temps d'un TEST). */
+  /** Forme historique (non écrite depuis F1) : conservée en lecture pour les états existants. */
   measured: z.object({ kind: z.string().min(1), values: z.record(z.string(), z.number()) }).strict().optional(),
+  /**
+   * Preuve RÉFÉRENCÉE (jamais interprétée) : historique du moteur qui détient le détail (séries, course, séance CT,
+   * station HYROX) et identifiant d'occurrence ; `measurement` si une mesure exploitable a été produite (ex. référence
+   * TIME_TRIAL d'un TEST). Le programme n'en lit que l'existence.
+   */
+  evidence: z.object({ history: sport, ref: z.string().min(1), measurement: z.string().min(1).optional() }).strict().optional(),
 }).strict();
 export type ProgrammeResult = z.infer<typeof zProgrammeResult>;
 

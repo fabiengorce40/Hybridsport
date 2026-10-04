@@ -37,7 +37,8 @@ describe('aucune logique sportive déplacée dans le planificateur', () => {
   });
 
   it('aucune construction de prescription, de charge, d’allure ou de dose ; aucun choix d’exercice, de station ou d’archétype', () => {
-    const hits = gp.flatMap((f) => code(f).split('\n').flatMap((l, i) => (/prescription\s*:|\bkg\b|loadKg|pace|distanceM|reps\s*:|workS|requestedStation\s*:(?!\s*slot\.station)|exerciseId\s*:|archetypeId\s*:\s*['"`]|station\s*:\s*['"`]/.test(l) ? [`${f.path}:${String(i + 1)}: ${l.trim()}`] : [])));
+    // execution.ts : routage de CONTRAT (prescription LUE dans la séance générée, validée par le schéma du moteur) — règle dédiée ci-dessous.
+    const hits = gp.filter((f) => !f.path.endsWith('execution.ts')).flatMap((f) => code(f).split('\n').flatMap((l, i) => (/prescription\s*:|\bkg\b|loadKg|pace|distanceM|reps\s*:|workS|requestedStation\s*:(?!\s*slot\.station)|exerciseId\s*:|archetypeId\s*:\s*['"`]|station\s*:\s*['"`]/.test(l) ? [`${f.path}:${String(i + 1)}: ${l.trim()}`] : [])));
     expect(hits).toEqual([]);
   });
 
@@ -51,6 +52,14 @@ describe('aucune logique sportive déplacée dans le planificateur', () => {
     const ports = gp.find((f) => f.path.endsWith('ports.ts'));
     expect(ports?.text).toMatch(/deriveSessionDemand\(/);
     expect(gp.map(code).join('\n')).not.toMatch(/doseUnits|intensityBand|levelThresholds/);
+  });
+
+  it('réalisations : chaque constructeur valide par le schéma STRICT du moteur ; aucune valeur par défaut ni constante', () => {
+    const ex = gp.find((f) => f.path.endsWith('execution.ts'));
+    const text = code(ex ?? { text: '' });
+    expect(text).toMatch(/zRealizedCtSession\.safeParse\(/);
+    expect(text).toMatch(/zHyroxStationExecution\.safeParse\(/);
+    expect(text).not.toMatch(/\?\?\s*\d|default\(/);
   });
 
   it('les variantes STRICTES sont utilisées pour Cross-training et HYROX (aucune substitution publiée)', () => {

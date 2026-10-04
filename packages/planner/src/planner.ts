@@ -26,12 +26,12 @@ import { readPlannerParam } from './governance.js';
 import { INTENT_FIELDS, zPlannerInput } from './model.js';
 import type { DayResult, DeclaredIntent, DemandOutcome, NeighbourContext, PlannedWeek, PlannerClock, PlannerInput, PlannerSport, RequestCategory, RequestResult } from './model.js';
 import type { PortOutcome, SportPort, StructuresResult } from './ports.js';
+import { classifyRefusal } from './refusal.js';
+import type { RefusalClass } from './refusal.js';
 
 // technical-constant: millisecondes par heure (conversion d'unités)
 const MS_PER_HOUR = 3_600_000;
 const STRUCTURE_RULE = 'planner.interference.structureWindows';
-/** Familles de codes signalant une GOUVERNANCE manquante (et non un refus sur le fond) : classement applicatif. */
-const GOVERNANCE_CODE = /HYBRID_PLANNER_UNAVAILABLE|CAPABILITY_DISABLED|G1_POLICY_UNSIGNED|^RULE\./;
 const GOVERNANCE_RULE = /:UNAVAILABLE$|:UNGOVERNED_STRUCTURE$|^STRUCTURES_UNAVAILABLE$/;
 
 export type SportPorts = Partial<Readonly<Record<PlannerSport, SportPort>>>;
@@ -108,7 +108,10 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
 
   const results = new Map<string, RequestResult>();
   const conflicts: ReasonCode[] = [];
-  const refusedCategory = (reasons: readonly ReasonCode[]): RequestCategory => (reasons.some((r) => GOVERNANCE_CODE.test(r.code)) ? 'governance_blocked' : 'engine_refused');
+  const CATEGORY_OF: Readonly<Record<RefusalClass, RequestCategory>> = {
+    retryable_slot_constraint: 'slot_unavailable', safety_blocked: 'safety_blocked', governance_blocked: 'governance_blocked', invalid_intent: 'invalid_intent', non_retryable_engine_refusal: 'engine_refused',
+  };
+  const refusedCategory = (reasons: readonly ReasonCode[]): RequestCategory => CATEGORY_OF[classifyRefusal(reasons)];
   const conflictCategory = (requestId: string, sport: PlannerSport, tried: readonly string[]): RequestCategory => {
     const own = conflicts.filter((c) => c.params.sport === sport && tried.includes(String(c.params.date)));
     return own.length > 0 && own.every((c) => GOVERNANCE_RULE.test(String(c.params.rule))) ? 'governance_blocked' : 'interference_conflict';
@@ -131,11 +134,21 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     if (candidates.length === 0) { results.set(r.requestId, { ...base, status: 'unplaced', category: 'slot_unavailable', reasons: [gpReasons.emit(GP_CODES.NOT_ENOUGH_DAYS, { sport: r.sport, requestId: r.requestId })] }); continue; }
     let done = false;
     const tried: string[] = [];
+    // Réessai BORNÉ : seulement après un refus dû au SEUL créneau, et seulement vers un créneau plus long ;
+    // la demande (sport, intention, station, graine propre au jour) n'est jamais modifiée.
+    let slotRetry: { minutes: number; trace: ReasonCode[]; last: { date: string; reasons: readonly ReasonCode[] } } | undefined;
     for (const date of candidates) {
+      if (slotRetry && (minutes.get(date) ?? 0) <= slotRetry.minutes) continue;
       tried.push(date);
       const out = port.generate({ requestId: r.requestId, date, availableMinutes: minutes.get(date) ?? 0, hybrid, seed: `planner:${r.requestId}:${date}`, intent: r.intent, ...(r.station === undefined ? {} : { station: r.station }) });
       if (out.status === 'refused') {
-        const reasons = [gpReasons.emit(GP_CODES.ENGINE_REFUSED, { sport: r.sport, requestId: r.requestId, date }), ...out.reasons];
+        if (classifyRefusal(out.reasons) === 'retryable_slot_constraint') {
+          const m = minutes.get(date) ?? 0;
+          const note = gpReasons.emit(GP_CODES.SLOT_RETRY, { sport: r.sport, requestId: r.requestId, fromDate: date, fromMinutes: m, causes: out.reasons.map((x) => x.code) });
+          slotRetry = { minutes: Math.max(m, slotRetry?.minutes ?? 0), trace: [...(slotRetry?.trace ?? []), note], last: { date, reasons: out.reasons } };
+          continue;
+        }
+        const reasons = [...(slotRetry?.trace ?? []), gpReasons.emit(GP_CODES.ENGINE_REFUSED, { sport: r.sport, requestId: r.requestId, date }), ...out.reasons];
         results.set(r.requestId, { ...base, status: 'refused', category: refusedCategory(out.reasons), date, reasons });
         done = true;
         break;
@@ -146,9 +159,16 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
       if (found.length > 0) continue;
       const p: Placed = { sport: r.sport, date, requestId: r.requestId, stimulus: r.intent.stimulus, session: out.session, structures, demand: port.demand(out.session, input.mode) };
       placed.set(r.requestId, p);
-      results.set(r.requestId, plannedResult(base, date, out, p));
+      const placedResult = plannedResult(base, date, out, p);
+      results.set(r.requestId, slotRetry ? { ...placedResult, reasons: [...slotRetry.trace, ...placedResult.reasons] } : placedResult);
       done = true;
       break;
+    }
+    if (!done && slotRetry && !tried.some((d) => conflicts.some((c) => c.params.sport === r.sport && c.params.date === d))) {
+      // Aucun créneau assez long : refus du moteur conservé (dernier créneau essayé), tentatives tracées.
+      const { date, reasons } = slotRetry.last;
+      results.set(r.requestId, { ...base, status: 'refused', category: 'slot_unavailable', date, reasons: [...slotRetry.trace, gpReasons.emit(GP_CODES.ENGINE_REFUSED, { sport: r.sport, requestId: r.requestId, date }), ...reasons] });
+      done = true;
     }
     if (!done) results.set(r.requestId, { ...base, status: 'unplaced', category: conflictCategory(r.requestId, r.sport, tried), reasons: [gpReasons.emit(GP_CODES.INTERFERENCE_UNRESOLVED, { sport: r.sport, requestId: r.requestId, triedDates: tried })] });
   }

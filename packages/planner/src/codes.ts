@@ -33,6 +33,8 @@ export const GP_CODES = {
   NEIGHBOUR_CONTEXT: 'PLAN.PLANNER.NEIGHBOUR_CONTEXT',
   /** Profil de demande non utilisable dans ce mode (normalisation des doses non approuvée en production). */
   DEMAND_PROFILE_NOT_APPROVED: 'RULE.PLANNER.DEMAND_PROFILE_NOT_APPROVED',
+  /** Refus du moteur dû au SEUL créneau (trop court) : même demande essayée sur un créneau plus long. */
+  SLOT_RETRY: 'PLAN.PLANNER.SLOT_RETRY',
   /** Jour sans séance : indisponible (0 min) ou aucune demande restante. */
   DAY_EMPTY: 'PLAN.PLANNER.DAY_EMPTY',
 } as const;
@@ -50,6 +52,7 @@ export const GP_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: GP_CODES.PROGRAMME_INTENT_INCOMPLETE, categories: ['feasibility'], params: { sport: S, missing: L }, audience: 'user', severity: 'error' },
   { code: GP_CODES.NEIGHBOUR_CONTEXT, categories: ['information'], params: { requestId: S, known: S, neighbours: N, unknown: L }, audience: 'internal', severity: 'info' },
   { code: GP_CODES.DEMAND_PROFILE_NOT_APPROVED, categories: ['business_hard'], params: { sport: S, parameterId: S, mode: S }, audience: 'internal', severity: 'warning' },
+  { code: GP_CODES.SLOT_RETRY, categories: ['information'], params: { sport: S, requestId: S, fromDate: S, fromMinutes: N, causes: L }, audience: 'internal', severity: 'info' },
   { code: GP_CODES.DAY_EMPTY, categories: ['information'], params: { date: S, cause: S }, audience: 'internal', severity: 'info' },
 ];
 

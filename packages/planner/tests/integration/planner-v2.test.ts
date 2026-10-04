@@ -107,7 +107,7 @@ describe('intention de programme (aucune composition ni intention inventée)', (
     const r = req(w, 'hyrox.1');
     expect(r?.status === 'planned' && r.session.blocks[0]?.items[0]?.exerciseId).toBe('ex.wall_ball');
     const none = req(plan([want('hyrox', 1, { station: undefined })]), 'hyrox.1');
-    expect(none).toMatchObject({ status: 'refused', category: 'engine_refused' });
+    expect(none).toMatchObject({ status: 'refused', category: 'invalid_intent' });
   });
 });
 

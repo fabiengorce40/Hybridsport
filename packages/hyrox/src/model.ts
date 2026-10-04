@@ -9,6 +9,7 @@
 import { z } from 'zod';
 import { LEVELS } from '@hybridsport/domain';
 import type { ContextParse } from '@hybridsport/engine';
+import { zHyroxStationExecution } from './execution.js';
 import { createCoreRegistry } from '@hybridsport/engine';
 
 /** Archétype technique de H1 : UNE station, une dose gouvernée, sans course (le segment couru relève de la suite). */
@@ -30,6 +31,11 @@ export const zHyroxContext = z.object({
    * absente ⇒ refus explicite STATION_NOT_REQUESTED.
    */
   requestedStation: z.string().min(1).optional(),
+  /**
+   * Stations RÉALISÉES (contrat de réalisation H1), transportées et validées à la frontière. H1 ne les exploite pas
+   * encore pour prescrire (aucune progression gouvernée) : absent ⇒ historique vide.
+   */
+  sessionHistory: z.array(zHyroxStationExecution).default([]),
 }).strict();
 export type HyroxContext = z.infer<typeof zHyroxContext>;
 export type HyroxContextInput = z.input<typeof zHyroxContext>;

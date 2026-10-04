@@ -140,7 +140,7 @@ export function recordProgrammeResult(s: ProgrammeState, raw: Omit<ProgrammeResu
   const reasons: ReasonCode[] = [];
   const assessments = s.assessments.map((a): Assessment => {
     if (a.requestId !== result.requestId) return a;
-    const done = (result.completion === 'completed_as_prescribed' || result.completion === 'modified') && result.measured !== undefined;
+    const done = (result.completion === 'completed_as_prescribed' || result.completion === 'modified') && (result.measured !== undefined || result.evidence?.measurement !== undefined);
     const r = done ? pgReasons.emit(PG_CODES.ASSESSMENT_COMPLETED, { sport: a.sport, assessmentId: a.assessmentId, requestId: result.requestId }) : pgReasons.emit(PG_CODES.ASSESSMENT_RESULT_MISSING, { sport: a.sport, assessmentId: a.assessmentId });
     reasons.push(r);
     return { ...a, status: done ? 'completed' : 'result_missing', reasons: [...a.reasons, toReason(r)] };
