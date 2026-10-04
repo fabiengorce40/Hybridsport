@@ -12,8 +12,8 @@ d80d389cbc34806c  domain/src/ruleset-document.ts
 94effda811aac4fc  domain/src/run-execution.ts
 8fabd15558695402  domain/src/run-structure.ts
 029edc22d7a0b3e3  domain/src/safety.ts
-2542e02282c55a01  domain/src/serialization.ts
-85251178eed366e6  domain/src/session.ts
+2ca92095f87b46b0  domain/src/serialization.ts
+bfaeadb66d9c9697  domain/src/session.ts
 3948c30f8407549c  domain/src/sport-engine.ts
 5da48fc0512bfab9  domain/src/time.ts
 e726c1e7fbae03e6  domain/src/validation.ts
@@ -49,7 +49,7 @@ c230a7c29d30e156  engine/src/duration/levers.ts
 0141abbffeb9ddc4  engine/src/duration/tolerance.ts
 62c4b48c6dae2c45  engine/src/index.ts
 9a6e6a8f4c3858a9  engine/src/migration/index.ts
-81980b4111e74e3c  engine/src/migration/migrations.ts
+23311d2d0904a68d  engine/src/migration/migrations.ts
 a27b18edba4a8b14  engine/src/repair/index.ts
 b2b9dc9966559472  engine/src/repair/repair.ts
 fab90a78fd63e072  engine/src/rules/core-parameters.ts

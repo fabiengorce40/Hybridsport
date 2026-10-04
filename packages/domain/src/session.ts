@@ -58,12 +58,21 @@ export const zSetPrescription = z.object({
 });
 export type SetPrescription = z.infer<typeof zSetPrescription>;
 
+/**
+ * Charge externe prescrite sur une dose HORS séries (répétitions, distance, calories, durée) : même forme que la
+ * charge d'une série (`SetIntensity` mode `load`), sans effort associé. Propriété GÉNÉRIQUE de prescription : le
+ * CORE la transporte sans l'interpréter (ni durée, ni validation ne la lisent) ; la DÉCISION de la charge
+ * appartient au moteur de discipline. Absente = aucune charge externe prescrite (forme historique inchangée).
+ */
+export const zItemLoad = z.object({ kg: positive, certainty: z.enum(['prescribed', 'suggested']) }).strict();
+export type ItemLoad = z.infer<typeof zItemLoad>;
+
 export const zPrescription = z.discriminatedUnion('type', [
   z.object({ type: z.literal('sets'), sets: z.array(zSetPrescription).min(1) }).strict(),
-  z.object({ type: z.literal('timed'), workS: positive, rounds: z.number().int().positive().default(1), restS: nonNeg.default(0) }).strict(),
-  z.object({ type: z.literal('distance'), distanceM: positive, paceSecPerKm: zPaceRange.optional() }).strict(),
-  z.object({ type: z.literal('calories'), calories: positive }).strict(),
-  z.object({ type: z.literal('reps'), reps: z.number().int().positive() }).strict(),
+  z.object({ type: z.literal('timed'), workS: positive, rounds: z.number().int().positive().default(1), restS: nonNeg.default(0), load: zItemLoad.optional() }).strict(),
+  z.object({ type: z.literal('distance'), distanceM: positive, paceSecPerKm: zPaceRange.optional(), load: zItemLoad.optional() }).strict(),
+  z.object({ type: z.literal('calories'), calories: positive, load: zItemLoad.optional() }).strict(),
+  z.object({ type: z.literal('reps'), reps: z.number().int().positive(), load: zItemLoad.optional() }).strict(),
   z.object({ type: z.literal('hold'), seconds: positive, sets: z.number().int().positive().default(1), restS: nonNeg.default(0) }).strict(),
   z.object({ type: z.literal('mobility'), seconds: positive, sides: z.number().int().positive().default(1) }).strict(),
   z.object({

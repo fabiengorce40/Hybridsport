@@ -67,7 +67,31 @@ export const MIGRATIONS: readonly MigrationStep[] = [
       return { ok: true, data };
     },
   },
+  {
+    // technical-constant: numéros de version du format sérialisé (contrat de schéma), pas des valeurs sportives
+    kind: 'session_record', from: 5, to: 6,
+    description: 'Charge externe facultative sur les doses hors séries (`load`) ; données v5 inchangées (identité).',
+    migrate: (data) => {
+      if (data === null || typeof data !== 'object' || Array.isArray(data)) return { ok: false, problem: 'record v5 attendu (objet)' };
+      // Combinaison de versions malformée : une donnée déclarée v5 ne peut pas porter de charge hors séries.
+      if (containsItemLoad((data as { session?: unknown }).session)) return { ok: false, problem: 'combinaison de versions malformée : charge hors séries dans une donnée v5' };
+      return { ok: true, data };
+    },
+  },
 ];
+
+/** Recherche structurelle (sans typage préalable) d'une charge sur une prescription hors séries. */
+function containsItemLoad(session: unknown): boolean {
+  if (session === null || typeof session !== 'object') return false;
+  const blocks = (session as { blocks?: unknown }).blocks;
+  return Array.isArray(blocks) && blocks.some((b: unknown) => {
+    const items = b !== null && typeof b === 'object' ? (b as { items?: unknown }).items : undefined;
+    return Array.isArray(items) && items.some((it: unknown) => {
+      const p = it !== null && typeof it === 'object' ? (it as { prescription?: unknown }).prescription : undefined;
+      return p !== null && typeof p === 'object' && (p as { type?: unknown }).type !== 'sets' && 'load' in p;
+    });
+  });
+}
 
 /** Recherche structurelle (sans typage préalable) d'une prescription `run_structure` dans une séance brute. */
 function containsRunStructure(session: unknown): boolean {

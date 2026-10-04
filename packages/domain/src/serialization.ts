@@ -71,7 +71,7 @@ export const zSessionRecordV4 = z.object({
 }).strict();
 
 /**
- * session_record v5 (Cross-training C2, COURANTE) : l'empreinte porte `stimulus` et `energy` à état explicite
+ * session_record v5 (Cross-training C2) : l'empreinte porte `stimulus` et `energy` à état explicite
  * (connu, ou `not_applicable` déclaré). Une empreinte v4 est lue telle quelle (ses valeurs restent connues) ; la
  * version change pour qu'un lecteur v4 refuse explicitement une empreinte `not_applicable`.
  */
@@ -84,7 +84,14 @@ export const zSessionRecordV5 = z.object({
   ]),
   durationEstimate: zRecordedDurationEstimate,
 }).strict();
-export type SessionRecord = z.infer<typeof zSessionRecordV5>;
+
+/**
+ * session_record v6 (HYROX H1, COURANTE) : même enveloppe que la v5 ; un item hors séries peut porter une charge
+ * externe (`load`). La version change pour qu'un lecteur v5 refuse explicitement une donnée v6 au lieu d'en ignorer
+ * la charge (même doctrine que v3 et v4).
+ */
+export const zSessionRecordV6 = zSessionRecordV5;
+export type SessionRecord = z.infer<typeof zSessionRecordV6>;
 
 /** Versions et schémas connus par un lecteur : { type → { version, schema } }. */
 export type SchemaVersions = { readonly [K in SerializedKind]: { readonly version: number; readonly schema: z.ZodType } };
@@ -92,5 +99,5 @@ export type SchemaVersions = { readonly [K in SerializedKind]: { readonly versio
 /** Version courante et schéma courant de chaque type de donnée sérialisée. */
 export const CURRENT_SCHEMA: SchemaVersions = {
   // technical-constant: numéro de version du format sérialisé (contrat de schéma), pas une valeur sportive
-  session_record: { version: 5, schema: zSessionRecordV5 },
+  session_record: { version: 6, schema: zSessionRecordV6 },
 };

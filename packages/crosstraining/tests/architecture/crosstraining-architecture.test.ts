@@ -15,19 +15,23 @@ const others = loadCoreSources(['packages/domain/src', 'packages/engine/src', 'p
 /** Baseline acceptée (gate Course) : aucun fichier de ces paquets ne doit changer pour le Cross-training… */
 const ACCEPTED_BASELINE = '1d37a50';
 /**
- * … SAUF la liste FERMÉE de l'évolution CORE autorisée pour C2 (empreinte à dimensions explicites, session_record v5),
+ * … SAUF la liste FERMÉE de l'évolution CORE autorisée pour C2 (empreinte à dimensions explicites, session_record v5)
+ * et pour HYROX H1 (charge générique facultative hors séries, session_record v6),
  * ses tests, et l'empreinte de sources F20 de Strength qui la constate. Running et Strength `src` : aucun changement.
  * Toute autre modification de ces paquets échoue ici.
  */
 const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/domain/src/duplicate.ts',
   'packages/domain/src/serialization.ts',
+  // HYROX H1 : charge générique facultative sur les doses hors séries (session_record v6).
+  'packages/domain/src/session.ts',
   'packages/engine/src/duplicate/analysis.ts',
   'packages/engine/src/duplicate/fingerprint.ts',
   'packages/engine/src/migration/migrations.ts',
   'packages/engine/tests/unit/core-ext-r1.test.ts',
   'packages/engine/tests/unit/duplicate.test.ts',
   'packages/engine/tests/unit/fingerprint-explicit.test.ts',
+  'packages/engine/tests/unit/item-load.test.ts',
   'packages/engine/tests/unit/migration.test.ts',
   'packages/strength/tests/architecture/__reports__/core-source-digest.txt',
 ];

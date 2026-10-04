@@ -78,12 +78,12 @@ describe('comparaison', () => {
   });
 });
 
-describe('session_record v5', () => {
+describe('session_record v5 / v6 (empreinte explicite)', () => {
   const provenance = { engineVersion: ENGINE_VERSION, rulesetVersion: '0.1.0-test', catalogVersion: '0.1.0-test', seed: 'seed-fp', traceId: 't0123456789abcdef' } as const;
   const record = (fingerprint: SessionFingerprint) => ({ session: zSessionDraft.parse(BENCH), provenance, fingerprint: { status: 'available', value: fingerprint }, durationEstimate: { availability: 'UNAVAILABLE_LEGACY' } });
 
-  it('version courante 5 : écriture puis lecture d’une empreinte not_applicable, distincte d’une empreinte connue', () => {
-    expect(CURRENT_SCHEMA.session_record.version).toBe(5);
+  it('version courante : écriture puis lecture d’une empreinte not_applicable, distincte d’une empreinte connue', () => {
+    expect(CURRENT_SCHEMA.session_record.version).toBe(6);
     const r = migrateToCurrent<{ fingerprint: { value: SessionFingerprint } }>(toEnvelope('session_record', record(fp({ stimulus: NOT_APPLICABLE, energy: NOT_APPLICABLE }))));
     expect(r.ok && r.value.fingerprint.value.energy).toEqual(NOT_APPLICABLE);
     const k = migrateToCurrent<{ fingerprint: { value: SessionFingerprint } }>(toEnvelope('session_record', record(fp())));
@@ -93,7 +93,7 @@ describe('session_record v5', () => {
   it('ancien record v4 (empreinte connue) ⇒ migré à l’identique, valeurs toujours connues', () => {
     const old = { kind: 'session_record', schemaVersion: 4, data: record(fp()) };
     const r = migrateToCurrent<{ fingerprint: { value: SessionFingerprint } }>(old);
-    expect(r.ok && r.applied).toEqual(['session_record:4→5']);
+    expect(r.ok && r.applied).toEqual(['session_record:4→5', 'session_record:5→6']);
     expect(r.ok && zSessionFingerprintV1.safeParse(r.value.fingerprint.value).success).toBe(true);
   });
 
@@ -102,7 +102,7 @@ describe('session_record v5', () => {
     expect(!bad.ok && bad.reasons[0]).toMatchObject({ code: 'TECHNICAL.MIGRATION_FAILED', params: { from: 4, to: 5 } });
     const v4Reader = { session_record: { version: 4, schema: CURRENT_SCHEMA.session_record.schema } };
     const r = migrateToCurrent(toEnvelope('session_record', record(fp())), MIGRATIONS.slice(0, 3), v4Reader);
-    expect(!r.ok && r.reasons[0]).toMatchObject({ code: 'TECHNICAL.SCHEMA_VERSION_UNSUPPORTED', params: { version: 5, current: 4 } });
+    expect(!r.ok && r.reasons[0]).toMatchObject({ code: 'TECHNICAL.SCHEMA_VERSION_UNSUPPORTED', params: { version: 6, current: 4 } });
   });
 
   it('schéma v4 historique : refuse not_applicable (le sens d’un ancien record ne change pas)', () => {
