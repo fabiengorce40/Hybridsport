@@ -11,7 +11,7 @@ import { capabilityState, capabilityStates, foundationState } from './capabiliti
 import type { CtCapabilityId, CtCapabilityState } from './capabilities.js';
 import type { CtGovernance } from './governance/state.js';
 
-export const DOSE_SOURCE_CAPABILITIES: readonly CtCapabilityId[] = ['ctReplayHold', 'ctCalibratedDose', 'ctFirstExposure'];
+export const DOSE_SOURCE_CAPABILITIES: readonly CtCapabilityId[] = ['ctReplayHold', 'ctBootstrapExposure', 'ctCalibratedDose', 'ctFirstExposure'];
 
 export interface CtAnalysis {
   readonly stimulus: CtStimulus;

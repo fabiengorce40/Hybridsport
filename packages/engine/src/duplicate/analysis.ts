@@ -1,4 +1,4 @@
-import { DISCIPLINES, REPETITION_INTENT_KINDS, SIMILARITY_COMPONENTS, hoursBetween } from '@hybridsport/domain';
+import { DISCIPLINES, REPETITION_INTENT_KINDS, SIMILARITY_COMPONENTS, hoursBetween, isNotApplicable } from '@hybridsport/domain';
 import type {
   DuplicateClassification, FingerprintHistoryEntry, ISODateTime, ReasonCode, RepetitionIntent, SessionFingerprint, SimilarityComponent,
 } from '@hybridsport/domain';
@@ -109,16 +109,22 @@ export function similarityBreakdown(a: SessionFingerprint, b: SessionFingerprint
     [p.exerciseLevels.family, jaccard(a.families, b.families)],
   ] as const;
   const available = levels.filter((l): l is readonly [number, number] => l[1] !== null);
-  const neighbor = p.stimulusNeighbors[a.stimulus]?.[b.stimulus] ?? p.stimulusNeighbors[b.stimulus]?.[a.stimulus] ?? 0;
+  // Dimensions à état explicite : une paire contenant `not_applicable` n'est pas comparable (null, hors dénominateur).
+  const sa = a.stimulus; const sb = b.stimulus;
+  const stimulus = isNotApplicable(sa) || isNotApplicable(sb) ? null
+    : sa === sb ? 1 : p.stimulusNeighbors[sa]?.[sb] ?? p.stimulusNeighbors[sb]?.[sa] ?? 0;
+  const ea = a.energy; const eb = b.energy;
   // technical-constant: distance de variation totale = demi-somme des écarts absolus (normalisation mathématique)
   const HALF = 0.5;
+  const energy = isNotApplicable(ea) || isNotApplicable(eb) ? null
+    : 1 - HALF * (Math.abs(ea.low - eb.low) + Math.abs(ea.moderate - eb.moderate) + Math.abs(ea.high - eb.high));
   return {
     exercise: available.length === 0 ? null : Math.max(...available.map(([w, j]) => w * j)),
     movement: cosine(a.patterns, b.patterns),
     muscle: cosine(a.muscles, b.muscles),
     structure: structureSimilarity(a.structure, b.structure),
-    stimulus: a.stimulus === b.stimulus ? 1 : neighbor,
-    energy: 1 - HALF * (Math.abs(a.energy.low - b.energy.low) + Math.abs(a.energy.moderate - b.energy.moderate) + Math.abs(a.energy.high - b.energy.high)),
+    stimulus,
+    energy,
     format: formatSimilarity(a, b),
   };
 }

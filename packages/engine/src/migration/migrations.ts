@@ -1,4 +1,4 @@
-import { CURRENT_SCHEMA, zSerializedEnvelope, zSessionRecordV1 } from '@hybridsport/domain';
+import { CURRENT_SCHEMA, isNotApplicable, zSerializedEnvelope, zSessionRecordV1 } from '@hybridsport/domain';
 import type { ReasonCode, SchemaVersions, SerializedEnvelope, SerializedKind, SessionRecord } from '@hybridsport/domain';
 import { runEstimateMismatches } from '../duration/recorded.js';
 import { canonicalStringify } from '../core/canonical.js';
@@ -53,6 +53,18 @@ export const MIGRATIONS: readonly MigrationStep[] = [
       if ('durationEstimate' in data) return { ok: false, problem: 'combinaison de versions malformée : durationEstimate dans une donnée v3' };
       if (containsRunStructure((data as { session?: unknown }).session)) return { ok: false, problem: 'combinaison de versions malformée : run_structure dans une donnée v3' };
       return { ok: true, data: { ...data, durationEstimate: { availability: 'UNAVAILABLE_LEGACY' } } };
+    },
+  },
+  {
+    // technical-constant: numéros de version du format sérialisé (contrat de schéma), pas des valeurs sportives
+    kind: 'session_record', from: 4, to: 5,
+    description: 'Empreinte à dimensions explicites (stimulus, energy : connu | not_applicable) ; une empreinte v4 reste connue (identité).',
+    migrate: (data) => {
+      if (data === null || typeof data !== 'object' || Array.isArray(data)) return { ok: false, problem: 'record v4 attendu (objet)' };
+      // Combinaison de versions malformée : une donnée déclarée v4 ne peut pas porter de dimension `not_applicable`.
+      const fp = (data as { fingerprint?: { value?: Record<string, unknown> } }).fingerprint?.value;
+      if (fp && (isNotApplicable(fp.stimulus) || isNotApplicable(fp.energy))) return { ok: false, problem: 'combinaison de versions malformée : dimension not_applicable dans une donnée v4' };
+      return { ok: true, data };
     },
   },
 ];

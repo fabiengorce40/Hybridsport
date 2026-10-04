@@ -2,6 +2,7 @@
  * Façade applicative de KAIRO V0 : transitions PURES de l'état (l'instant courant et la date du jour sont
  * toujours injectés). L'interface n'appelle que ces fonctions ; elle ne décide rien de sportif.
  */
+import { zFingerprintHistoryEntry } from '@hybridsport/domain';
 import { normalizeInstant, weekStartOf } from './dates.js';
 import { generateSession, isStale } from './generate.js';
 import type { AppState, Feedback, GeneratedSession, PlanEntry, ProfileInput, SessionLog, SetLog } from './model.js';
@@ -142,6 +143,26 @@ export function logFreeRun(state: AppState, run: { realizedDurationS: number; co
     safety: run.pain ? { activePain: { reportedAt: at, areas: [] } } : state.safety,
   };
   return refreshSessions(next, clock);
+}
+
+/**
+ * Séance Cross-training RÉALISÉE (C2) : la séance réalisée (contrat Cross-training, complétion déclarée comprise) et,
+ * si elle existe, l'empreinte de la séance générée, qui rejoint l'historique anti-doublon Cross-training. Une
+ * occurrence = un identifiant : un identifiant déjà enregistré est refusé (jamais d'écrasement ni de doublon).
+ * Le contenu est validé à la lecture par le moteur Cross-training (fail-closed), pas ici.
+ */
+export function recordCrossTrainingSession(state: AppState, entry: { readonly realized: Readonly<Record<string, unknown>>; readonly fingerprint?: unknown }, clock: Clock): AppState {
+  const id = entry.realized.sessionId;
+  if (typeof id !== 'string' || id.length === 0) throw new AppError('CT_SESSION_ID_REQUIRED');
+  if (state.crosstraining.realized.some((r) => r.sessionId === id)) throw new AppError('DUPLICATE_CT_SESSION');
+  const at = normalizeInstant(clock.now);
+  const fingerprint = entry.fingerprint === undefined ? [] : [zFingerprintHistoryEntry.parse({ fingerprint: entry.fingerprint, at, status: 'completed', repetitionIntents: [] })];
+  return {
+    ...state,
+    crosstraining: { realized: [...state.crosstraining.realized, { ...entry.realized }] },
+    fingerprints: { ...state.fingerprints, crosstraining: [...state.fingerprints.crosstraining, ...fingerprint] },
+    revision: state.revision + 1,
+  };
 }
 
 /** Levée EXPLICITE de la pause douleur par l'utilisateur (déclaration : douleur disparue ou avis professionnel). */

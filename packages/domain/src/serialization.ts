@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { zId, zSemVer } from './ruleset.js';
 import { zSessionDraft } from './session.js';
-import { zSessionFingerprint } from './duplicate.js';
+import { zSessionFingerprint, zSessionFingerprintV1 } from './duplicate.js';
 
 /**
  * Données sérialisées versionnées (spec 10 §2 : « schemaVersion — migrations explicites et testées »).
@@ -31,7 +31,7 @@ export const zSessionRecordV2 = z.object({
   session: zSessionDraft,
   provenance: zProvenance,
   fingerprint: z.discriminatedUnion('status', [
-    z.object({ status: z.literal('available'), value: zSessionFingerprint }).strict(),
+    z.object({ status: z.literal('available'), value: zSessionFingerprintV1 }).strict(),
     z.object({ status: z.literal('unavailable'), reason: z.enum(['migrated_from_v1', 'duplicate_analysis_inactive']) }).strict(),
   ]),
 }).strict();
@@ -59,7 +59,7 @@ export const zRecordedDurationEstimate = z.discriminatedUnion('availability', [
 export type RecordedDurationEstimate = z.infer<typeof zRecordedDurationEstimate>;
 
 /**
- * session_record v4 (Phase 6A, COURANTE) : la séance accepte la variante `run_structure` (CORE-EXT-R1)
+ * session_record v4 (Phase 6A) : la séance accepte la variante `run_structure` (CORE-EXT-R1)
  * et le record porte `durationEstimate`. La version change pour qu'un lecteur v3 refuse explicitement
  * une donnée v4 au lieu d'en ignorer la variante.
  */
@@ -69,7 +69,22 @@ export const zSessionRecordV4 = z.object({
   fingerprint: zSessionRecordV2.shape.fingerprint,
   durationEstimate: zRecordedDurationEstimate,
 }).strict();
-export type SessionRecord = z.infer<typeof zSessionRecordV4>;
+
+/**
+ * session_record v5 (Cross-training C2, COURANTE) : l'empreinte porte `stimulus` et `energy` à état explicite
+ * (connu, ou `not_applicable` déclaré). Une empreinte v4 est lue telle quelle (ses valeurs restent connues) ; la
+ * version change pour qu'un lecteur v4 refuse explicitement une empreinte `not_applicable`.
+ */
+export const zSessionRecordV5 = z.object({
+  session: zSessionDraft,
+  provenance: zProvenance,
+  fingerprint: z.discriminatedUnion('status', [
+    z.object({ status: z.literal('available'), value: zSessionFingerprint }).strict(),
+    z.object({ status: z.literal('unavailable'), reason: z.enum(['migrated_from_v1', 'duplicate_analysis_inactive']) }).strict(),
+  ]),
+  durationEstimate: zRecordedDurationEstimate,
+}).strict();
+export type SessionRecord = z.infer<typeof zSessionRecordV5>;
 
 /** Versions et schémas connus par un lecteur : { type → { version, schema } }. */
 export type SchemaVersions = { readonly [K in SerializedKind]: { readonly version: number; readonly schema: z.ZodType } };
@@ -77,5 +92,5 @@ export type SchemaVersions = { readonly [K in SerializedKind]: { readonly versio
 /** Version courante et schéma courant de chaque type de donnée sérialisée. */
 export const CURRENT_SCHEMA: SchemaVersions = {
   // technical-constant: numéro de version du format sérialisé (contrat de schéma), pas une valeur sportive
-  session_record: { version: 4, schema: zSessionRecordV4 },
+  session_record: { version: 5, schema: zSessionRecordV5 },
 };

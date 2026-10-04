@@ -21,6 +21,14 @@ export const CT_CODES = {
   SIMULATION_REQUIRED: 'RULE.CROSSTRAINING.SIMULATION_REQUIRED',
   MOVEMENT_LOAD_UNREPRESENTABLE: 'SCOPE.CROSSTRAINING.MOVEMENT_LOAD_UNREPRESENTABLE',
   FORMAT_ADMISSIBILITY_UNRESOLVED: 'RULE.CROSSTRAINING.FORMAT_ADMISSIBILITY_UNRESOLVED',
+  // C2
+  RETURN_NOT_SUPPORTED: 'SAFETY.CROSSTRAINING.RETURN_NOT_SUPPORTED',
+  BOOTSTRAP_UNAVAILABLE: 'DOSE.CROSSTRAINING.BOOTSTRAP_UNAVAILABLE',
+  MOVEMENT_INELIGIBLE: 'SAFETY.CROSSTRAINING.MOVEMENT_INELIGIBLE',
+  REPLAY_SOURCE_INADMISSIBLE: 'DOSE.CROSSTRAINING.REPLAY_SOURCE_INADMISSIBLE',
+  VOLUME_GUARD_REQUIRED: 'SAFETY.CROSSTRAINING.VOLUME_GUARD_REQUIRED',
+  C2_PROPOSED: 'PLAN.CROSSTRAINING.C2_PROPOSED',
+  C2_MODIFIED_BY_CORE: 'RULE.CROSSTRAINING.C2_MODIFIED_BY_CORE',
 } as const;
 export type CtCode = (typeof CT_CODES)[keyof typeof CT_CODES];
 
@@ -37,6 +45,13 @@ export const CT_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: CT_CODES.SIMULATION_REQUIRED, categories: ['business_hard'], params: { mode: S }, audience: 'internal', severity: 'error' },
   { code: CT_CODES.MOVEMENT_LOAD_UNREPRESENTABLE, categories: ['feasibility'], params: { exerciseId: S, loadModel: S }, audience: 'internal', severity: 'error' },
   { code: CT_CODES.FORMAT_ADMISSIBILITY_UNRESOLVED, categories: ['business_hard'], params: { stimulus: S, format: S, parameterId: S }, audience: 'internal', severity: 'error' },
+  { code: CT_CODES.RETURN_NOT_SUPPORTED, categories: ['safety'], params: { returnState: S }, audience: 'user', severity: 'error' },
+  { code: CT_CODES.BOOTSTRAP_UNAVAILABLE, categories: ['feasibility'], params: { cause: S, entries: L }, audience: 'user', severity: 'error' },
+  { code: CT_CODES.MOVEMENT_INELIGIBLE, categories: ['safety', 'feasibility'], params: { exerciseId: S, causes: L }, audience: 'user', severity: 'error' },
+  { code: CT_CODES.REPLAY_SOURCE_INADMISSIBLE, categories: ['feasibility'], params: { sessionId: S, causes: L }, audience: 'user', severity: 'error' },
+  { code: CT_CODES.VOLUME_GUARD_REQUIRED, categories: ['safety'], params: { parameterId: S }, audience: 'internal', severity: 'error' },
+  { code: CT_CODES.C2_PROPOSED, categories: ['information'], params: { source: S, exerciseId: S }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C2_MODIFIED_BY_CORE, categories: ['business_hard'], params: { sessionId: S }, audience: 'internal', severity: 'error' },
 ];
 
 export const ctReasons = createCoreRegistry(CT_REASON_CODES);

@@ -56,7 +56,7 @@ describe('propriétés C1', () => {
       expect(r.status).toBe('no_valid_proposal');
       if (r.status !== 'no_valid_proposal') return;
       expect(r.reasons.length).toBeGreaterThan(0);
-      expect(r.reasons.at(-1)).toMatchObject({ code: CT_CODES.PRESCRIPTION_NOT_IMPLEMENTED, params: { stimulus: i.stimulus, wave: 'C1' } });
+      expect(r.reasons.at(-1)).toMatchObject({ code: CT_CODES.PRESCRIPTION_NOT_IMPLEMENTED, params: { stimulus: i.stimulus, wave: 'C2' } });
       if (i.hybrid) expect(r.reasons[0]?.code).toBe(CT_CODES.HYBRID_PLANNER_UNAVAILABLE);
       if (i.mode === 'CANDIDATE' && !i.simulation) expect(r.reasons.map((x) => x.code)).toContain(CT_CODES.SIMULATION_REQUIRED);
     }), { numRuns: 300 });

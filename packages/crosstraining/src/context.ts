@@ -61,7 +61,8 @@ export const zCtResult = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('rounds_reps'), rounds: count, reps: count }).strict(),
   z.object({ kind: z.literal('emom'), minutesCompleted: count }).strict(),
   z.object({ kind: z.literal('intervals'), intervalsCompleted: count }).strict(),
-  z.object({ kind: z.literal('total'), calories: positive.optional(), distanceM: positive.optional() }).strict(),
+  /** Continu : au moins une mesure. `durationS` = durée de travail RÉALISÉE (mesure, pas une métrique physiologique). */
+  z.object({ kind: z.literal('total'), durationS: positive.optional(), calories: positive.optional(), distanceM: positive.optional() }).strict(),
   z.object({ kind: z.literal('abandoned') }).strict(),
 ]);
 export type CtResult = z.infer<typeof zCtResult>;
@@ -83,7 +84,30 @@ export function resultIssues(p: CtPrescription, r: CtResult): string[] {
   if (p.format === 'for_time' && r.kind === 'capped' && p.timeCapS === undefined) out.push('résultat « capped » sans time cap prescrit');
   if (p.format === 'emom' && r.kind === 'emom' && r.minutesCompleted > p.minutes) out.push('plus de minutes réalisées que prescrites');
   if (p.format === 'intervals' && r.kind === 'intervals' && r.intervalsCompleted > p.rounds) out.push('plus d’intervalles réalisés que prescrits');
-  if (r.kind === 'total' && r.calories === undefined && r.distanceM === undefined) out.push('total sans mesure');
+  if (r.kind === 'total' && r.calories === undefined && r.distanceM === undefined && r.durationS === undefined) out.push('total sans mesure');
+  return out;
+}
+
+/**
+ * Complétion DÉCLARÉE de la séance réalisée (CT-D15.d) :
+ * - `completed_as_prescribed` : réalisée intégralement telle que prescrite (seule source possible d'un rejeu strict) ;
+ * - `completed` : terminée, mais modifiée (scaling, réduction, autre mouvement…) ;
+ * - `abandoned` : arrêtée avant la fin (abandon, interruption, arrêt anticipé).
+ */
+export const CT_COMPLETIONS = ['completed_as_prescribed', 'completed', 'abandoned'] as const;
+export type CtCompletion = (typeof CT_COMPLETIONS)[number];
+
+/** Incohérences DÉFINITIONNELLES complétion ↔ prescription ↔ résultat (vide = cohérent). Aucun seuil. */
+export function completionIssues(p: CtPrescription, r: CtResult, completion: CtCompletion): string[] {
+  const out: string[] = [];
+  if ((completion === 'abandoned') !== (r.kind === 'abandoned')) out.push('complétion « abandoned » ⇔ résultat « abandoned »');
+  if (completion === 'completed_as_prescribed') {
+    if (r.kind === 'capped') out.push('résultat « capped » : la séance n’a pas été réalisée telle que prescrite');
+    if (p.format === 'emom' && r.kind === 'emom' && r.minutesCompleted < p.minutes) out.push('minutes réalisées inférieures aux minutes prescrites');
+    if (p.format === 'intervals' && r.kind === 'intervals' && r.intervalsCompleted < p.rounds) out.push('intervalles réalisés inférieurs aux intervalles prescrits');
+    if (p.format === 'continuous' && r.kind === 'total' && r.durationS !== undefined && r.durationS < p.durationS) out.push('durée réalisée inférieure à la durée prescrite');
+    if (p.format === 'continuous' && r.kind === 'total' && r.durationS === undefined) out.push('continu « tel que prescrit » : durée réalisée requise');
+  }
   return out;
 }
 
@@ -93,11 +117,17 @@ export const zRealizedCtSession = z.object({
   stimulus: z.enum(CT_STIMULI),
   prescription: zCtPrescription,
   result: zCtResult,
-  /** Effort perçu de séance (CR10) DÉCLARÉ ; absent = inconnu, jamais une valeur par défaut. */
+  /** Complétion DÉCLARÉE (obligatoire : une omission n'est jamais lue comme « tel que prescrit »). */
+  completion: z.enum(CT_COMPLETIONS),
+  /** Effort perçu de séance (CR10) DÉCLARÉ ; absent = inconnu, jamais une valeur par défaut. Aucun seuil sRPE en C2. */
   sessionRpe: z.number().min(0).max(CR10_MAX).optional(),
+  /** Douleur déclarée pendant ou après la séance ; absente = inconnue. */
   pain: z.enum(['NONE', ...PAIN_LEVELS]).optional(),
+  /** Tolérance déclarée : `poorly_tolerated` = séance explicitement mal tolérée ; absente = non déclarée. */
+  tolerance: z.enum(['tolerated', 'poorly_tolerated']).optional(),
 }).strict().superRefine((s, ctx) => {
   for (const problem of resultIssues(s.prescription, s.result)) ctx.addIssue({ code: 'custom', path: ['result'], message: problem });
+  for (const problem of completionIssues(s.prescription, s.result, s.completion)) ctx.addIssue({ code: 'custom', path: ['completion'], message: problem });
 });
 export type RealizedCtSession = z.infer<typeof zRealizedCtSession>;
 

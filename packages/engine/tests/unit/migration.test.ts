@@ -17,14 +17,14 @@ const v1 = (s: unknown = session()) => ({ kind: 'session_record', schemaVersion:
 describe('migrations — registre', () => {
   it('le registre du CORE est complet : une étape n → n+1 jusqu’à la version courante', () => {
     expect(migrationRegistryIssues()).toEqual([]);
-    expect(CURRENT_SCHEMA.session_record.version).toBe(4);
+    expect(CURRENT_SCHEMA.session_record.version).toBe(5);
   });
 
   it('trou, doublon ou saut de version dans un registre ⇒ détectés', () => {
-    expect(migrationRegistryIssues([])).toEqual(['session_record : aucune migration 1 → 2', 'session_record : aucune migration 2 → 3', 'session_record : aucune migration 3 → 4']);
-    const [step, step2, step3] = [MIGRATIONS[0]!, MIGRATIONS[1]!, MIGRATIONS[2]!];
-    expect(migrationRegistryIssues([step, step, step2, step3])).toEqual(['session_record : plusieurs migrations depuis 1']);
-    expect(migrationRegistryIssues([{ ...step, to: 3 }, step2, step3])).toEqual(['session_record : migration 1 → 3 (un pas à la fois)']);
+    expect(migrationRegistryIssues([])).toEqual(['session_record : aucune migration 1 → 2', 'session_record : aucune migration 2 → 3', 'session_record : aucune migration 3 → 4', 'session_record : aucune migration 4 → 5']);
+    const [step, step2, step3, step4] = [MIGRATIONS[0]!, MIGRATIONS[1]!, MIGRATIONS[2]!, MIGRATIONS[3]!];
+    expect(migrationRegistryIssues([step, step, step2, step3, step4])).toEqual(['session_record : plusieurs migrations depuis 1']);
+    expect(migrationRegistryIssues([{ ...step, to: 3 }, step2, step3, step4])).toEqual(['session_record : migration 1 → 3 (un pas à la fois)']);
   });
 });
 
@@ -34,7 +34,7 @@ describe('migrations — V1 sérialisée → version courante → validation', (
     expect(r.ok).toBe(true);
     if (!r.ok) return;
     expect(r.fromVersion).toBe(1);
-    expect(r.applied).toEqual(['session_record:1→2', 'session_record:2→3', 'session_record:3→4']);
+    expect(r.applied).toEqual(['session_record:1→2', 'session_record:2→3', 'session_record:3→4', 'session_record:4→5']);
     expect(r.value.durationEstimate).toEqual({ availability: 'UNAVAILABLE_LEGACY' });
     expect(r.value.fingerprint).toEqual({ status: 'unavailable', reason: 'migrated_from_v1' });
     expect(canonicalStringify(r.value.session)).toBe(canonicalStringify(session()));
@@ -49,9 +49,9 @@ describe('migrations — V1 sérialisée → version courante → validation', (
   });
 
   it('version future inconnue ⇒ refus explicite (jamais une lecture « au mieux »)', () => {
-    const r = migrateToCurrent({ kind: 'session_record', schemaVersion: 5, data: {} });
+    const r = migrateToCurrent({ kind: 'session_record', schemaVersion: 6, data: {} });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.reasons[0]).toMatchObject({ code: 'TECHNICAL.SCHEMA_VERSION_UNSUPPORTED', params: { version: 5, current: 4 } });
+    if (!r.ok) expect(r.reasons[0]).toMatchObject({ code: 'TECHNICAL.SCHEMA_VERSION_UNSUPPORTED', params: { version: 6, current: 5 } });
   });
 
   it('enveloppe invalide, type inconnu, version nulle ⇒ TECHNICAL', () => {
@@ -125,7 +125,7 @@ describe('migrations — v2 → v3 (CORE-EXT-1) et lecteur ancien', () => {
 
   it('une donnée v2 est migrée à l’identique (séance canoniquement inchangée)', () => {
     const r = migrateToCurrent<SessionRecord>({ kind: 'session_record', schemaVersion: 2, data: record(session()) });
-    expect(r.ok && r.applied).toEqual(['session_record:2→3', 'session_record:3→4']);
+    expect(r.ok && r.applied).toEqual(['session_record:2→3', 'session_record:3→4', 'session_record:4→5']);
     if (r.ok) expect(canonicalStringify(r.value.session)).toBe(canonicalStringify(session()));
   });
 

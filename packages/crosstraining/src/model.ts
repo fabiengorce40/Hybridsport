@@ -18,6 +18,12 @@ export function stimulusFromArchetypeId(id: string): CtStimulus | undefined {
   return CT_STIMULI.find((s) => archetypeIdOf(s) === id);
 }
 
+/**
+ * Archétype technique de C2 (amorçage + rejeu strict). Ce N'EST PAS un stimulus : C2 est découplé de CT-D1 ; les
+ * 9 identifiants de CT_STIMULI ne servent ni à la sélection, ni à l'éligibilité, ni à l'empreinte C2.
+ */
+export const CT_C2_ARCHETYPE = 'crosstraining.c2';
+
 /** Formats réalisés / prescrits (spec 06 §3) ; priorité à la tâche ou au temps. */
 export const CT_FORMATS = ['for_time', 'amrap', 'emom', 'intervals', 'continuous'] as const;
 export type CtFormat = (typeof CT_FORMATS)[number];

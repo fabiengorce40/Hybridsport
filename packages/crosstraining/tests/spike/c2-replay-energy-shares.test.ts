@@ -15,8 +15,8 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { asISODateTime } from '@hybridsport/domain';
-import type { FingerprintHistoryEntry, SessionDraftInput, SessionFingerprint, SportEngineProposalInput } from '@hybridsport/domain';
+import { asISODateTime, isNotApplicable } from '@hybridsport/domain';
+import type { EnergyShares, FingerprintHistoryEntry, SessionDraftInput, SessionFingerprint, SportEngineProposalInput } from '@hybridsport/domain';
 import { canonicalStringify, createCoreRegistry, runSportSession } from '@hybridsport/engine';
 import type { ContextParse, SportEngine, SportEngineInput } from '@hybridsport/engine';
 import { createCrossTrainingEngine, zRealizedCtSession } from '../../src/index.js';
@@ -96,13 +96,13 @@ function observe(o: Outcome) {
     status: o.result.status, error, fingerprintReasons: fpReasons, steps,
     identical: o.result.status === 'ok' ? shape(o.result.value.blocks) === shape(session(o.result.value.id).blocks) : undefined,
     energy: o.fingerprint?.energy,
-    energySum: o.fingerprint ? o.fingerprint.energy.low + o.fingerprint.energy.moderate + o.fingerprint.energy.high : undefined,
+    energySum: o.fingerprint && !isNotApplicable(o.fingerprint.energy) ? o.fingerprint.energy.low + o.fingerprint.energy.moderate + o.fingerprint.energy.high : undefined,
     duplicate: o.duplicate ? { classification: o.duplicate.classification, comparisons: o.duplicate.comparisons.map((c) => ({ sessionId: c.sessionId, energy: c.breakdown.energy, similarity: c.similarity })) } : undefined,
   };
 }
 
 /** Comparaison bit à bit (Object.is) et écart maximal entre deux vecteurs de parts. */
-function compare(a: SessionFingerprint['energy'], b: SessionFingerprint['energy']) {
+function compare(a: EnergyShares, b: EnergyShares) {
   const keys = ['low', 'moderate', 'high'] as const;
   return { bitwiseEqual: keys.every((k) => Object.is(a[k], b[k])), maxAbsDiff: Math.max(...keys.map((k) => Math.abs(a[k] - b[k]))) };
 }
@@ -115,8 +115,9 @@ function testOnlyHistoricalFingerprint(): SessionFingerprint {
 }
 const historyOf = (fp: SessionFingerprint): FingerprintHistoryEntry[] => [{ fingerprint: fp, at: HISTORY_AT, status: 'completed', repetitionIntents: [] }];
 
-const energyOf = (o: Outcome): SessionFingerprint['energy'] => {
+const energyOf = (o: Outcome): EnergyShares => {
   if (!o.fingerprint) throw new Error(`empreinte attendue : ${JSON.stringify(observe(o))}`);
+  if (isNotApplicable(o.fingerprint.energy)) throw new Error('énergie connue attendue');
   return o.fingerprint.energy;
 };
 
@@ -139,13 +140,14 @@ describe('E — rejeu avec parts d’énergie historiques (FIXTURE TEST-ONLY), p
     const o = run('ct.replay.r1', { energy: h0.energy, history: historyOf(h0) });
     const v = observe(o);
     expect(v).toMatchObject({ status: 'ok', identical: true, fingerprintReasons: [], steps: ['duplicate:accidental_strong', 'result:VALID'], energySum: 1 });
+    if (isNotApplicable(h0.energy)) throw new Error('énergie connue attendue');
     expect(compare(h0.energy, energyOf(o))).toEqual({ bitwiseEqual: true, maxAbsDiff: 0 });
     expect(v.duplicate).toEqual({ classification: 'accidental_strong', comparisons: [{ sessionId: 'ct.hist.h0', energy: 1, similarity: 1 }] });
   });
 
   it('E2 [4] renormalisation IDEMPOTENTE bit à bit sur les vecteurs testés : N(N(x)) = N(x) = N(N(N(x))), chaque étape par runSportSession', () => {
     // technical-constant: vecteurs de TEST choisis pour exercer l'arithmétique flottante (tiers, dixièmes, entiers)
-    const cases: readonly [string, SessionFingerprint['energy'], SessionFingerprint['energy']][] = [
+    const cases: readonly [string, EnergyShares, EnergyShares][] = [
       ['tiers', { low: 1, moderate: 1, high: 1 }, { low: 1 / 3, moderate: 1 / 3, high: 1 / 3 }],
       ['dixiemes', { low: 0.1, moderate: 0.2, high: 0.7 }, { low: 0.1, moderate: 0.2, high: 0.7 }],
       ['seed', TEST_ONLY_SEED_ENERGY, TEST_ONLY_SEED_ENERGY],
@@ -209,7 +211,7 @@ describe('V — parts absentes, invalides, non normalisées : comportement mesur
 
   it('V3 [9] valeurs valides non normalisées ⇒ acceptées et normalisées (somme 1) ; SAUF dépassement flottant : somme infinie ⇒ parts {0,0,0} ACCEPTÉES, puis refusées au rejeu', () => {
     // technical-constant: vecteurs de TEST ; les extrêmes sondent la division par la somme (sous-normaux, dépassement)
-    const normalized: readonly [string, SessionFingerprint['energy'], SessionFingerprint['energy']][] = [
+    const normalized: readonly [string, EnergyShares, EnergyShares][] = [
       ['sommeDix', { low: 2, moderate: 3, high: 5 }, { low: 0.2, moderate: 0.3, high: 0.5 }],
       ['unSeul', { low: 10, moderate: 0, high: 0 }, { low: 1, moderate: 0, high: 0 }],
       ['sommeInferieure', { low: 0.1, moderate: 0.1, high: 0.1 }, { low: 1 / 3, moderate: 1 / 3, high: 1 / 3 }],
@@ -240,19 +242,18 @@ describe('O — origine des parts d’énergie dans les contrats actuels', () =>
   it('O2 [12,13] une séance réalisée Cross-training (contrat C1) ne peut porter ni parts d’énergie ni empreinte', () => {
     const base = zRealizedCtSession.safeParse(realized());
     expect(base.success).toBe(true);
-    expect(base.success ? Object.keys(base.data).sort() : []).toEqual(['completedAt', 'prescription', 'result', 'sessionId', 'stimulus']);
+    expect(base.success ? Object.keys(base.data).sort() : []).toEqual(['completedAt', 'completion', 'prescription', 'result', 'sessionId', 'stimulus']);
     const withEnergy = zRealizedCtSession.safeParse({ ...realized(), energy: TEST_ONLY_SEED_ENERGY });
     expect(withEnergy.success).toBe(false);
     expect(withEnergy.error?.issues.map((i) => ({ code: i.code, message: i.message }))).toEqual([{ code: 'unrecognized_keys', message: 'Unrecognized key: "energy"' }]);
     expect(zRealizedCtSession.safeParse({ ...realized(), fingerprint: {} }).success).toBe(false);
   });
 
-  it('O3 [13] l’état applicatif n’a d’emplacement d’empreintes que pour Strength et Running ; un emplacement crosstraining est refusé', () => {
+  it('O3 [13] (état POST-C2) l’état applicatif a désormais un emplacement d’empreintes Cross-training ; un emplacement inconnu reste refusé', () => {
+    // Avant C2 (mesure d'origine) : seuls `running` et `strength` existaient. C2 ajoute `crosstraining` (champ additif).
     const empty = emptyState();
-    expect(Object.keys(empty.fingerprints).sort()).toEqual(['running', 'strength']);
-    const withCt = zAppState.safeParse({ ...empty, fingerprints: { ...empty.fingerprints, crosstraining: [] } });
-    expect(withCt.success).toBe(false);
-    expect(withCt.error?.issues.map((i) => ({ code: i.code, path: i.path.join('.') }))).toEqual([{ code: 'unrecognized_keys', path: 'fingerprints' }]);
+    expect(Object.keys(empty.fingerprints).sort()).toEqual(['crosstraining', 'running', 'strength']);
+    expect(zAppState.safeParse({ ...empty, fingerprints: { ...empty.fingerprints, hyrox: [] } }).success).toBe(false);
   });
 });
 
@@ -296,10 +297,10 @@ describe('B — bootstrap : une PREMIÈRE empreinte Cross-training peut-elle exi
 
     // 3. La seule séance Cross-training historique REPRÉSENTABLE : zRealizedCtSession (C1), champs optionnels renseignés.
     const r = zRealizedCtSession.parse(realized({ sessionRpe: 7, pain: 'NONE' }));
-    expect(Object.keys(r).sort()).toEqual(['completedAt', 'pain', 'prescription', 'result', 'sessionId', 'sessionRpe', 'stimulus']);
+    expect(Object.keys(r).sort()).toEqual(['completedAt', 'completion', 'pain', 'prescription', 'result', 'sessionId', 'sessionRpe', 'stimulus']);
     expect(scan(r)).toEqual({ energyShareObjects: [], energyKeys: [], crosstrainingObjects: [] });
-    // 3b. Elle n'a aucun emplacement dans l'état persisté.
-    expect(zAppState.safeParse({ ...state, crosstraining: { realized: [r] } }).success).toBe(false);
+    // 3b. (POST-C2) Elle a désormais un emplacement dédié ; elle n'entre toujours pas dans l'historique Running.
+    expect(zAppState.safeParse({ ...state, crosstraining: { realized: [r] } }).success).toBe(true);
     expect(zAppState.safeParse({ ...state, running: { ...state.running, realized: [r] } }).success).toBe(false);
 
     // 4. Son seul consommateur actuel (moteur Cross-training réel, via le CORE) ne produit aucune empreinte.

@@ -8,3 +8,4 @@ export * from './context.js';
 export * from './movement.js';
 export * from './analysis.js';
 export * from './engine.js';
+export * from './c2.js';

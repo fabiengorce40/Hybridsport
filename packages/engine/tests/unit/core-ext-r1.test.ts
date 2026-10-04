@@ -183,7 +183,7 @@ describe('CORE-EXT-R1 — 25 cas requis', () => {
     expect(!bad3.ok && bad3.reasons[0]?.code).toBe('TECHNICAL.SCHEMA_INVALID');
     const oldReader = { session_record: { version: 3, schema: CURRENT_SCHEMA.session_record.schema } };
     const bad4 = migrateToCurrent(toEnvelope('session_record', recordOf(withRun.session)), MIGRATIONS.slice(0, 2), oldReader);
-    expect(!bad4.ok && bad4.reasons[0]).toMatchObject({ code: 'TECHNICAL.SCHEMA_VERSION_UNSUPPORTED', params: { version: 4, current: 3 } });
+    expect(!bad4.ok && bad4.reasons[0]).toMatchObject({ code: 'TECHNICAL.SCHEMA_VERSION_UNSUPPORTED', params: { version: 5, current: 3 } });
   });
 
   it('17 aller-retour sérialisé : égalité sémantique, estimation de séance vérifiée', () => {

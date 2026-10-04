@@ -45,7 +45,9 @@ describe('séance réalisée : prescription ≠ résultat', () => {
 
   it('le résultat doit correspondre à la définition du format', () => {
     expect(bad({ result: { kind: 'time', completionS: 600 } })).toEqual(['disciplineContext.sessionHistory.0.result : résultat time incompatible avec le format amrap']);
-    expect(bad({ result: { kind: 'abandoned' } })).toEqual([]);
+    expect(bad({ result: { kind: 'abandoned' }, completion: 'abandoned' })).toEqual([]);
+    // Complétion déclarée cohérente avec le résultat : un abandon n'est jamais « tel que prescrit ».
+    expect(bad({ result: { kind: 'abandoned' } })).toEqual(['disciplineContext.sessionHistory.0.completion : complétion « abandoned » ⇔ résultat « abandoned »']);
   });
 
   it('les champs d’estimation ou de résultat ne peuvent pas entrer dans la prescription (et inversement)', () => {

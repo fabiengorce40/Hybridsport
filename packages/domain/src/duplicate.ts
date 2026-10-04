@@ -35,12 +35,29 @@ export const zRepetitionIntent = z.discriminatedUnion('kind', [
 export type RepetitionIntent = z.infer<typeof zRepetitionIntent>;
 export const REPETITION_INTENT_KINDS = ['progression_anchor', 'progression_series', 'benchmark_retest', 'recurring_slot', 'deload_mirror'] as const;
 
+/**
+ * Dimension d'empreinte à état EXPLICITE : `known` = la valeur (forme historique, inchangée pour Strength et
+ * Running) ; `not_applicable` = déclaration explicite qu'aucune valeur n'existe pour cette séance. Une clé
+ * ABSENTE reste une erreur de schéma : une omission n'est jamais lue comme `not_applicable`.
+ * Comparaison (analysis.ts) : known ↔ known normale ; toute paire contenant `not_applicable` est non
+ * comparable (null, exclue du dénominateur).
+ */
+export const zNotApplicable = z.object({ status: z.literal('not_applicable') }).strict();
+export type NotApplicable = z.infer<typeof zNotApplicable>;
+export const NOT_APPLICABLE: NotApplicable = { status: 'not_applicable' };
+export const isNotApplicable = (v: unknown): v is NotApplicable =>
+  v !== null && typeof v === 'object' && (v as { status?: unknown }).status === 'not_applicable';
+
+const zEnergyShares = z.object({ low: share, moderate: share, high: share }).strict();
+export type EnergyShares = z.infer<typeof zEnergyShares>;
+
 /** Ce que le moteur de discipline fournit pour l'empreinte (données, jamais une conclusion). */
 export const zFingerprintInputs = z.object({
   archetypeId: zId,
-  stimulus: zId,
-  /** Parts prévues des intensités (normalisées par le CORE). */
-  energy: z.object({ low: share, moderate: share, high: share }).strict(),
+  /** Stimulus connu, ou `not_applicable` déclaré. */
+  stimulus: z.union([zId, zNotApplicable]),
+  /** Parts prévues des intensités (normalisées par le CORE), ou `not_applicable` déclaré. */
+  energy: z.union([zEnergyShares, zNotApplicable]),
   format: zId.optional(),
   timeDomain: z.enum(['short', 'medium', 'long']).optional(),
   repScheme: z.string().min(1).optional(),
@@ -53,25 +70,32 @@ export const zFingerprintInputs = z.object({
 }).strict();
 export type FingerprintInputs = z.infer<typeof zFingerprintInputs>;
 
-/** Empreinte complète (construite par le CORE, stockée avec la séance). */
-export const zSessionFingerprint = z.object({
+/** Champs communs de l'empreinte (hors dimensions à état explicite). */
+const fingerprintShape = {
   sessionId: zId,
   discipline: z.enum(DISCIPLINES),
   archetypeId: zId,
-  stimulus: zId,
   exercises: z.array(zId),
   families: z.array(zId),
   equivalences: z.array(zId),
   patterns: zVector,
   muscles: zVector,
   structure: z.array(z.object({ kind: zId, format: zId, durationS: z.number().nonnegative() }).strict()),
-  energy: z.object({ low: share, moderate: share, high: share }).strict(),
   format: zId.optional(),
   timeDomain: z.enum(['short', 'medium', 'long']).optional(),
   repScheme: z.string().min(1).optional(),
   prescriptionMarkers: z.record(z.string().min(1), z.number()),
   contextKey: zId.optional(),
-}).strict();
+};
+
+/**
+ * Empreinte HISTORIQUE (session_record v2 à v4) : `stimulus` et `energy` toujours connus. Conservée pour que
+ * les lecteurs de ces versions gardent leur sens exact.
+ */
+export const zSessionFingerprintV1 = z.object({ ...fingerprintShape, stimulus: zId, energy: zEnergyShares }).strict();
+
+/** Empreinte COURANTE (session_record v5) : `stimulus` et `energy` connus ou `not_applicable`. */
+export const zSessionFingerprint = z.object({ ...fingerprintShape, stimulus: z.union([zId, zNotApplicable]), energy: z.union([zEnergyShares, zNotApplicable]) }).strict();
 export type SessionFingerprint = z.infer<typeof zSessionFingerprint>;
 
 /** Séance de l'historique (réalisée ou prévue) avec les intentions sous lesquelles elle a été planifiée. */

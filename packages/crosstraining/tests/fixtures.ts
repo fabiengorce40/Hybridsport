@@ -11,7 +11,7 @@ import { coreContext } from '../../engine/tests/harness/context.js';
 import { PROFILE_GYM, STATE_FRESH } from '../../engine/tests/harness/requests.js';
 
 export const ALL_CT_CAPABILITIES = [
-  'ctReplayHold', 'ctCalibratedDose', 'ctProgression', 'ctFirstExposure', 'ctLoadedMovements',
+  'ctReplayHold', 'ctBootstrapExposure', 'ctCalibratedDose', 'ctProgression', 'ctFirstExposure', 'ctLoadedMovements',
   'ctTechnicalMovements', 'ctIntensityTargets', 'ctBenchmarks', 'ctWeeklyComposition', 'ctHybridPlanning',
 ] as const;
 
@@ -41,6 +41,7 @@ export function realized(o: Record<string, unknown> = {}): Record<string, unknow
     sessionId: 's1', completedAt: '2026-09-20T08:00:00Z', stimulus: 'mixed_modal_medium',
     prescription: { format: 'amrap', durationS: 600, items: [{ exerciseId: 'ex.air_squat', quantity: { kind: 'reps', value: 15 } }] },
     result: { kind: 'rounds_reps', rounds: 5, reps: 3 },
+    completion: 'completed_as_prescribed',
     ...o,
   };
 }

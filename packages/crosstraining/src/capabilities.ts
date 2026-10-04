@@ -19,35 +19,46 @@ export interface CapabilityDefinition {
 }
 
 export const CT_CAPABILITY_IDS = [
-  'ctReplayHold', 'ctCalibratedDose', 'ctProgression', 'ctFirstExposure', 'ctLoadedMovements',
+  'ctReplayHold', 'ctBootstrapExposure', 'ctCalibratedDose', 'ctProgression', 'ctFirstExposure', 'ctLoadedMovements',
   'ctTechnicalMovements', 'ctIntensityTargets', 'ctBenchmarks', 'ctWeeklyComposition', 'ctHybridPlanning',
 ] as const;
 export type CtCapabilityId = (typeof CT_CAPABILITY_IDS)[number];
 export const CT_FOUNDATION = 'ctFoundation';
 
+/**
+ * Socle (C2) : politiques G1 et contenu relu. Il ne porte PLUS la taxonomie des stimuli (CT-D1, découplée de C2) ni
+ * les plafonds de volume CT-D6 : ceux-ci sont exigés par les capacités qui prescrivent la quantité qu'ils contrôlent
+ * (répétitions, contacts), et, pour toute prescription, par `volumeGuardParameters` (c2.ts).
+ */
 export const CT_FOUNDATION_DEFINITION: CapabilityDefinition = {
-  parameters: ['ct.stimulus.catalog', 'ct.safety.repsPerMovementCap', 'ct.safety.jumpContactsCap', 'ct.safety.novicePolicy', 'ct.return.protocol', 'ct.safety.novelEccentricVolume'],
-  decisions: ['CT-D1', 'CT-D6', 'CT-G1'],
+  parameters: ['ct.safety.novicePolicy', 'ct.return.protocol', 'ct.safety.novelEccentricVolume'],
+  decisions: ['CT-G1'],
   g1Policies: ['CT-G1-PAIN', 'CT-G1-NOVICE', 'CT-G1-RETURN', 'CT-G1-EXERTIONAL'],
   technical: ['CT_CONTENT'],
 };
 
 export const CT_CAPABILITIES: Readonly<Record<CtCapabilityId, CapabilityDefinition>> = {
+  // Rejeu strict C2 (CT-D15) : `ct.history.recencyBand` porte `maxReplayAge` (jours) ; découplé de CT-D1.
   ctReplayHold: {
-    parameters: ['ct.stimulus.admissibleFormats', 'ct.history.anchorPolicy', 'ct.history.recencyBand', 'ct.history.negativeResponse', 'ct.history.completionCriterion'],
+    parameters: ['ct.history.anchorPolicy', 'ct.history.recencyBand', 'ct.history.negativeResponse', 'ct.history.completionCriterion'],
     decisions: ['CT-D15'], g1Policies: ['CT-G1-PAIN'], technical: ['CT_CONTENT'],
   },
+  // Amorçage C2 (CT-D4) : mouvement de l'allowlist × durée fixe approuvée pour ce mouvement ; découplé de CT-D1.
+  ctBootstrapExposure: {
+    parameters: ['ct.bootstrap.movementAllowlist'],
+    decisions: ['CT-D4'], g1Policies: ['CT-G1-NOVICE', 'CT-G1-EXERTIONAL'], technical: ['CT_CONTENT'],
+  },
   ctCalibratedDose: {
-    parameters: ['ct.stimulus.admissibleFormats', 'ct.stimulus.timeDomains', 'ct.stimulus.workRestRatios', 'ct.estimation.workRates', 'ct.dose.construction', 'ct.format.timeCapMargin', 'ct.format.emomDensity'],
-    decisions: ['CT-D1', 'CT-D2', 'CT-D3', 'CT-D8'], g1Policies: [], technical: ['CT_CONTENT'],
+    parameters: ['ct.stimulus.catalog', 'ct.stimulus.admissibleFormats', 'ct.stimulus.timeDomains', 'ct.stimulus.workRestRatios', 'ct.estimation.workRates', 'ct.dose.construction', 'ct.format.timeCapMargin', 'ct.format.emomDensity', 'ct.safety.repsPerMovementCap', 'ct.safety.jumpContactsCap'],
+    decisions: ['CT-D1', 'CT-D2', 'CT-D3', 'CT-D6', 'CT-D8'], g1Policies: [], technical: ['CT_CONTENT'],
   },
   ctProgression: {
     parameters: ['ct.progression.magnitude', 'ct.progression.toleranceRule', 'ct.history.negativeResponse'],
     decisions: ['CT-D5'], g1Policies: [], technical: ['CT_CONTENT'],
   },
   ctFirstExposure: {
-    parameters: ['ct.firstExposure.byStimulus', 'ct.safety.novicePolicy', 'ct.safety.novelEccentricVolume'],
-    decisions: ['CT-D4', 'CT-G1'], g1Policies: ['CT-G1-NOVICE', 'CT-G1-EXERTIONAL'], technical: ['CT_CONTENT'],
+    parameters: ['ct.stimulus.catalog', 'ct.firstExposure.byStimulus', 'ct.safety.novicePolicy', 'ct.safety.novelEccentricVolume', 'ct.safety.repsPerMovementCap', 'ct.safety.jumpContactsCap'],
+    decisions: ['CT-D1', 'CT-D4', 'CT-D6', 'CT-G1'], g1Policies: ['CT-G1-NOVICE', 'CT-G1-EXERTIONAL'], technical: ['CT_CONTENT'],
   },
   ctLoadedMovements: {
     parameters: ['ct.load.implementStandards', 'ct.load.percentE1rmByStimulus'],

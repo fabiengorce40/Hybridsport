@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import fc from 'fast-check';
-import { SIMILARITY_COMPONENTS, asISODateTime } from '@hybridsport/domain';
+import { SIMILARITY_COMPONENTS, asISODateTime, isNotApplicable } from '@hybridsport/domain';
 import type { FingerprintHistoryEntry, RepetitionIntent, SessionDraftInput, SessionFingerprint } from '@hybridsport/domain';
 import { analyzeDuplicates, buildFingerprint, canonicalStringify, readDuplicateParams, RulesetParameterError, similarityBreakdown } from '../../src/index.js';
 import { testCatalog, testRuleset } from '../fixtures/load.js';
@@ -35,6 +35,7 @@ describe('empreinte — construite par le CORE depuis la séance et le catalogue
     expect(f.patterns).toHaveProperty('push_horizontal');
     expect(Object.values(f.patterns).reduce((a, b) => a + b, 0)).toBeCloseTo(1, 10);
     expect(f.structure.map((b) => b.kind)).toEqual(['warmup', 'strength', 'accessory']);
+    if (isNotApplicable(f.energy)) throw new Error('énergie connue attendue (Strength)');
     expect(f.energy.low + f.energy.moderate + f.energy.high).toBeCloseTo(1, 10);
   });
 

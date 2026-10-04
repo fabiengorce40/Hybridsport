@@ -36,6 +36,8 @@ export const CT_PARAMETER_REGISTRY_C1: readonly CtParameter[] = [
   unresolved('ct.format.timeCapMargin', 'CT-D3', 'PRESCRIPTION', 'ratio-over-slow-estimate', 'EXPERT', 'marge du time cap non décidée'),
   // CT-D4 — première exposition
   unresolved('ct.firstExposure.byStimulus', 'CT-D4', 'PRESCRIPTION', 'dose-per-stimulus-per-level', 'G1_DOSE', 'dose d’entrée non décidée'),
+  // CT-D4 (bootstrap C2) — mouvements d'amorçage × durée fixe approuvée PAR MOUVEMENT ; indépendant de toute taxonomie
+  unresolved('ct.bootstrap.movementAllowlist', 'CT-D4', 'PRESCRIPTION', 'movement-fixed-duration-s', 'G1_DOSE', 'aucun mouvement ni aucune durée d’amorçage approuvés'),
   // CT-D5 — progression
   unresolved('ct.progression.magnitude', 'CT-D5', 'PRESCRIPTION', 'step-per-variable', 'EXPERT', 'pas de progression non décidé'),
   unresolved('ct.progression.toleranceRule', 'CT-D5', 'HISTORY', 'rule', 'EXPERT', 'conditions de progression non décidées'),

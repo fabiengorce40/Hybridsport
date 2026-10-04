@@ -170,7 +170,13 @@ export const zAppState = z.object({
     /** Références de performance enregistrées par l'application (TEST réalisés). */
     references: z.array(zRunningReference).default([]),
   }).strict(),
-  fingerprints: z.object({ strength: z.array(zFingerprintHistoryEntry), running: z.array(zFingerprintHistoryEntry) }).strict(),
+  /**
+   * Cross-training (C2) : séances réalisées, conservées TELLES QUELLES (complétion déclarée comprise). Leur contrat est
+   * celui du paquet Cross-training, validé strictement à la frontière du moteur (`parseCrossTrainingContext`) : app-core
+   * ne dépend pas de ce paquet (règle d'architecture). Absent d'un état antérieur ⇒ vide (champ additif).
+   */
+  crosstraining: z.object({ realized: z.array(z.record(z.string(), z.unknown())) }).strict().default({ realized: [] }),
+  fingerprints: z.object({ strength: z.array(zFingerprintHistoryEntry), running: z.array(zFingerprintHistoryEntry), crosstraining: z.array(zFingerprintHistoryEntry).default([]) }).strict(),
   safety: z.object({ activePain: z.object({ reportedAt: instant, areas: z.array(z.string()), sessionKey: z.string().optional() }).strict().nullable() }).strict(),
   /** Incrémentée à chaque séance terminée ou course enregistrée (l'historique a changé). */
   revision: z.number().int().nonnegative(),
@@ -182,7 +188,7 @@ export const CURRENT_SCHEMA_VERSION = 1;
 export function emptyState(): AppState {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION, profile: null, plans: {}, sessions: {}, logs: {},
-    strength: { tracks: [], exposures: [], accessoryCounts: {} }, running: { realized: [], references: [] },
-    fingerprints: { strength: [], running: [] }, safety: { activePain: null }, revision: 0,
+    strength: { tracks: [], exposures: [], accessoryCounts: {} }, running: { realized: [], references: [] }, crosstraining: { realized: [] },
+    fingerprints: { strength: [], running: [], crosstraining: [] }, safety: { activePain: null }, revision: 0,
   };
 }

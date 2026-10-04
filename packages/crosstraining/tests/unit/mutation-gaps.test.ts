@@ -18,9 +18,10 @@ describe('dépendances déclarées par capacité (table relue)', () => {
     const table = Object.fromEntries(CT_CAPABILITY_IDS.map((id) => [id, { d: CT_CAPABILITIES[id].decisions, g: CT_CAPABILITIES[id].g1Policies, t: CT_CAPABILITIES[id].technical }]));
     expect(table).toEqual({
       ctReplayHold: { d: ['CT-D15'], g: ['CT-G1-PAIN'], t: ['CT_CONTENT'] },
-      ctCalibratedDose: { d: ['CT-D1', 'CT-D2', 'CT-D3', 'CT-D8'], g: [], t: ['CT_CONTENT'] },
+      ctBootstrapExposure: { d: ['CT-D4'], g: ['CT-G1-NOVICE', 'CT-G1-EXERTIONAL'], t: ['CT_CONTENT'] },
+      ctCalibratedDose: { d: ['CT-D1', 'CT-D2', 'CT-D3', 'CT-D6', 'CT-D8'], g: [], t: ['CT_CONTENT'] },
       ctProgression: { d: ['CT-D5'], g: [], t: ['CT_CONTENT'] },
-      ctFirstExposure: { d: ['CT-D4', 'CT-G1'], g: ['CT-G1-NOVICE', 'CT-G1-EXERTIONAL'], t: ['CT_CONTENT'] },
+      ctFirstExposure: { d: ['CT-D1', 'CT-D4', 'CT-D6', 'CT-G1'], g: ['CT-G1-NOVICE', 'CT-G1-EXERTIONAL'], t: ['CT_CONTENT'] },
       ctLoadedMovements: { d: ['CT-D12'], g: [], t: ['CORE_EXT_C1', 'CT_CONTENT'] },
       ctTechnicalMovements: { d: ['CT-D7', 'CT-D13'], g: ['CT-G1-NOVICE'], t: ['CT_CONTENT'] },
       ctIntensityTargets: { d: ['CT-D9'], g: [], t: ['CORE_EXT_C1'] },
@@ -28,7 +29,8 @@ describe('dépendances déclarées par capacité (table relue)', () => {
       ctWeeklyComposition: { d: ['CT-D10'], g: [], t: ['CT_CONTENT'] },
       ctHybridPlanning: { d: ['CT-D11'], g: [], t: ['GLOBAL_PLANNER'] },
     });
-    expect(CT_FOUNDATION_DEFINITION).toMatchObject({ decisions: ['CT-D1', 'CT-D6', 'CT-G1'], g1Policies: ['CT-G1-PAIN', 'CT-G1-NOVICE', 'CT-G1-RETURN', 'CT-G1-EXERTIONAL'], technical: ['CT_CONTENT'] });
+    // Socle C2 : ni taxonomie (CT-D1) ni plafonds de volume (CT-D6) ; ils vivent dans les capacités qui en ont besoin.
+    expect(CT_FOUNDATION_DEFINITION).toMatchObject({ parameters: ['ct.safety.novicePolicy', 'ct.return.protocol', 'ct.safety.novelEccentricVolume'], decisions: ['CT-G1'], g1Policies: ['CT-G1-PAIN', 'CT-G1-NOVICE', 'CT-G1-RETURN', 'CT-G1-EXERTIONAL'], technical: ['CT_CONTENT'] });
   });
 
   it('chaque dépendance déclarée bloque à elle seule sa capacité (décision en PRODUCTION, G1 et technique dans les deux modes)', () => {
@@ -108,10 +110,10 @@ describe('moteur : raisons dédupliquées, socle actif sans trace de blocage', (
     if (r.status !== 'no_valid_proposal') throw new Error('proposition');
     const keys = r.reasons.map((x) => JSON.stringify([x.code, x.params]));
     expect(new Set(keys).size).toBe(keys.length);
-    // ct.stimulus.admissibleFormats bloque le rejeu ET le calibrage : une seule raison.
-    expect(r.reasons.filter((x) => x.code === CT_CODES.UNRESOLVED_PARAMETER && x.params.parameterId === 'ct.stimulus.admissibleFormats')).toHaveLength(1);
+    // ct.stimulus.catalog bloque le calibrage ET la première exposition par stimulus : une seule raison.
+    expect(r.reasons.filter((x) => x.code === CT_CODES.UNRESOLVED_PARAMETER && x.params.parameterId === 'ct.stimulus.catalog')).toHaveLength(1);
     // Les listes de paramètres sont conservées telles quelles.
-    expect(r.reasons.find((x) => x.code === CT_CODES.DOSE_SOURCE_UNAVAILABLE)?.params.capabilities).toEqual(['ctReplayHold', 'ctCalibratedDose', 'ctFirstExposure']);
+    expect(r.reasons.find((x) => x.code === CT_CODES.DOSE_SOURCE_UNAVAILABLE)?.params.capabilities).toEqual(['ctReplayHold', 'ctBootstrapExposure', 'ctCalibratedDose', 'ctFirstExposure']);
   });
 
   it('valeurs candidates partout, tout décidé et signé (simulation) : seul PRESCRIPTION_NOT_IMPLEMENTED (le socle actif n’ajoute rien)', () => {
@@ -142,8 +144,11 @@ describe('contrat de contexte : précisions', () => {
       [{ format: 'intervals', rounds: 6, workS: 40, restS: 20, items: [item] }, { kind: 'intervals', intervalsCompleted: 6 }],
       [{ format: 'continuous', durationS: 1200, items: [item] }, { kind: 'total', calories: 250 }],
       [{ format: 'continuous', durationS: 1200, items: [item] }, { kind: 'total', distanceM: 4000 }],
+      [{ format: 'continuous', durationS: 1200, items: [item] }, { kind: 'total', durationS: 1200 }],
     ];
-    for (const [prescription, result] of pairs) expect(bad({ prescription, result }), `${String(prescription.format)}/${String(result.kind)}`).toEqual([]);
+    // « Tel que prescrit » exige une mesure qui le prouve : capped ⇒ jamais ; continu ⇒ durée réalisée requise.
+    const completionOf = (p: Record<string, unknown>, r: Record<string, unknown>) => (r.kind === 'capped' || (p.format === 'continuous' && r.durationS === undefined) || (p.format === 'emom' && Number(r.minutesCompleted) < Number(p.minutes)) ? 'completed' : 'completed_as_prescribed');
+    for (const [prescription, result] of pairs) expect(bad({ prescription, result, completion: completionOf(prescription, result) }), `${String(prescription.format)}/${String(result.kind)}`).toEqual([]);
   });
 
   it('chaque format exige au moins un item', () => {
@@ -151,7 +156,7 @@ describe('contrat de contexte : précisions', () => {
       { format: 'for_time', rounds: 1, items: [] }, { format: 'amrap', durationS: 60, items: [] }, { format: 'emom', minutes: 5, items: [] },
       { format: 'intervals', rounds: 2, workS: 30, restS: 30, items: [] }, { format: 'continuous', durationS: 60, items: [] },
     ];
-    for (const prescription of empty) expect(bad({ prescription, result: { kind: 'abandoned' } }), prescription.format).toHaveLength(1);
+    for (const prescription of empty) expect(bad({ prescription, result: { kind: 'abandoned' }, completion: 'abandoned' }), prescription.format).toHaveLength(1);
     expect(bad({ prescription: { format: 'emom', minutes: 5, items: [item, item] }, result: { kind: 'emom', minutesCompleted: 5 } })).toEqual([]);
   });
 
@@ -196,6 +201,13 @@ describe('codes et correspondance d’archétype', () => {
       [CT_CODES.SIMULATION_REQUIRED]: 'internal/error/business_hard',
       [CT_CODES.MOVEMENT_LOAD_UNREPRESENTABLE]: 'internal/error/feasibility',
       [CT_CODES.FORMAT_ADMISSIBILITY_UNRESOLVED]: 'internal/error/business_hard',
+      [CT_CODES.RETURN_NOT_SUPPORTED]: 'user/error/safety',
+      [CT_CODES.BOOTSTRAP_UNAVAILABLE]: 'user/error/feasibility',
+      [CT_CODES.MOVEMENT_INELIGIBLE]: 'user/error/safety+feasibility',
+      [CT_CODES.REPLAY_SOURCE_INADMISSIBLE]: 'user/error/feasibility',
+      [CT_CODES.VOLUME_GUARD_REQUIRED]: 'internal/error/safety',
+      [CT_CODES.C2_PROPOSED]: 'internal/info/information',
+      [CT_CODES.C2_MODIFIED_BY_CORE]: 'internal/error/business_hard',
     });
   });
 });

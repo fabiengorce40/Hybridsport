@@ -185,7 +185,8 @@ describe('N6 — énergie commune (A) vs énergies variables (B), 30 séances, 4
   const label = (x: { move: string; durationS: number }) => `${x.move}@${String(x.durationS)}`;
   const specOf = (x: { move: string; durationS: number; k: number }, prefix: string, energy: Energy): Spec => ({ id: `${prefix}.${String(x.k)}`, move: x.move, durationS: x.durationS, energy });
 
-  it('changements de classe, écart maximal, et comparaison à une composante énergie EXCLUE (contrefactuel calculé)', () => {
+  // Spike lourd (435 paires × 4 passages du pipeline réel) : délai explicite, indépendant de la charge de la suite.
+  it('changements de classe, écart maximal, et comparaison à une composante énergie EXCLUE (contrefactuel calculé)', { timeout: 120_000 }, () => {
     const transitions: Record<string, number> = {};
     const flippedVsVariable: string[] = [];
     const flippedVsExcluded: string[] = [];
