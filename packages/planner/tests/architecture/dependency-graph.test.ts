@@ -1,7 +1,8 @@
 /**
  * Graphe de dépendances des paquets (règle d'architecture) :
  *
- *   apps/kairo → app-core → planner → { strength, running, crosstraining, hyrox } → engine → domain
+ *   apps/kairo → app-core → programme → planner → { strength, running, crosstraining, hyrox } → engine → domain
+ *                    ├──────→ planner (chemin multisport V2)
  *                    └──────→ strength, running (chemin V0 historique), engine, domain
  *
  * Aucune dépendance inverse, aucun cycle ; le planificateur ne dépend pas d'app-core ; les moteurs ne dépendent ni du
@@ -15,7 +16,7 @@ import { collectImports, loadCoreSources, REPO_ROOT } from '../../../engine/test
 
 const PACKAGES: Readonly<Record<string, string>> = {
   domain: 'packages/domain', engine: 'packages/engine', strength: 'packages/strength', running: 'packages/running', crosstraining: 'packages/crosstraining',
-  hyrox: 'packages/hyrox', planner: 'packages/planner', 'app-core': 'packages/app-core', kairo: 'apps/kairo',
+  hyrox: 'packages/hyrox', planner: 'packages/planner', programme: 'packages/programme', 'app-core': 'packages/app-core', kairo: 'apps/kairo',
 };
 const SCOPE = '@hybridsport/';
 const depsOf = (dir: string): string[] => {
@@ -33,7 +34,8 @@ const ALLOWED: Readonly<Record<string, readonly string[]>> = {
   crosstraining: ['domain', 'engine'],
   hyrox: ['domain', 'engine'],
   planner: ['crosstraining', 'domain', 'engine', 'hyrox', 'running', 'strength'],
-  'app-core': ['domain', 'engine', 'planner', 'running', 'strength'],
+  programme: ['domain', 'engine', 'planner'],
+  'app-core': ['domain', 'engine', 'planner', 'programme', 'running', 'strength'],
   kairo: ['app-core'],
 };
 
@@ -56,6 +58,10 @@ describe('graphe de dépendances', () => {
 
   it('dépendances inverses interdites : planificateur ↛ app-core ; moteurs ↛ planificateur, app-core, autre moteur ; CORE ↛ moteurs', () => {
     expect(graph.planner).not.toContain('app-core');
+    expect(graph.planner).not.toContain('programme');
+    expect(graph.programme).not.toContain('app-core');
+    // Le programme passe par le planificateur : aucune dépendance directe vers un moteur sportif.
+    expect((graph.programme ?? []).filter((d) => ['strength', 'running', 'crosstraining', 'hyrox'].includes(d))).toEqual([]);
     for (const e of ['strength', 'running', 'crosstraining', 'hyrox']) expect((graph[e] ?? []).filter((d) => !['domain', 'engine'].includes(d)), e).toEqual([]);
     expect([...(graph.domain ?? []), ...(graph.engine ?? [])].filter((d) => d !== 'domain')).toEqual([]);
   });

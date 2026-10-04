@@ -27,6 +27,11 @@ export const zSportIntent = z.object({
   sessions: z.number().int().positive(),
   intent: z.object(Object.fromEntries(INTENT_FIELDS.map((k) => [k, z.string().min(1).optional()])) as { [K in (typeof INTENT_FIELDS)[number]]: z.ZodOptional<z.ZodString> }).strict().default({}),
   station: z.string().min(1).optional(),
+  /**
+   * Intention de séance SURCHARGÉE pour la k-ième séance du sport (1-based), complète : par exemple une évaluation
+   * demandée par le programme. Le planificateur l'exécute telle quelle, sans l'interpréter.
+   */
+  overrides: z.array(z.object({ index: z.number().int().positive(), intent: z.object(Object.fromEntries(INTENT_FIELDS.map((k) => [k, z.string().min(1)])) as { [K in (typeof INTENT_FIELDS)[number]]: z.ZodString }).strict() }).strict()).default([]),
 }).strict();
 export type SportIntent = z.input<typeof zSportIntent>;
 

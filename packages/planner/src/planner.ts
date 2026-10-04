@@ -99,8 +99,9 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
   for (let k = 1; k <= max; k++) {
     for (const d of input.demands) {
       if (k > d.sessions) continue;
-      const missing = INTENT_FIELDS.filter((f) => d.intent[f] === undefined);
-      const intent = missing.length === 0 ? (d.intent as DeclaredIntent) : undefined;
+      const override = d.overrides.find((o) => o.index === k)?.intent;
+      const missing = override ? [] : INTENT_FIELDS.filter((f) => d.intent[f] === undefined);
+      const intent = override ?? (missing.length === 0 ? (d.intent as DeclaredIntent) : undefined);
       requests.push({ requestId: `${input.weekStart}.${d.sport}.${String(k)}`, sport: d.sport, missing, ...(intent ? { intent } : {}), ...(d.station === undefined ? {} : { station: d.station }) });
     }
   }

@@ -69,10 +69,20 @@ export function setProgrammeIntent(state: AppState, intent: ProgrammeIntentInput
   return { ...state, programme: zProgrammeIntent.parse(intent) };
 }
 
-const clockOf = (): PlannerClock => ({ instantOf: sessionInstant, timezone: 'Europe/Paris' });
+export const clockOf = (): PlannerClock => ({ instantOf: sessionInstant, timezone: 'Europe/Paris' });
 
 /** Ports des moteurs raccordés, contextes construits depuis l'état (historique) et les déclarations du programme. */
-export function buildPorts(state: AppState, p: Profile, programme: ProgrammeIntent, env: PlannerEnvironment): SportPorts {
+/**
+ * Objectifs du programme transmis aux moteurs par leur CONTRAT de contexte (aucune progression déduite) : Strength
+ * `goal.primary`, Running `goal.type` / `targetDate`, Cross-training `goal.type`. HYROX : aucun champ d'objectif.
+ */
+export interface EngineGoals {
+  readonly strength?: Profile['strength']['goal'];
+  readonly running?: { readonly type: Profile['running']['goal']; readonly targetDate?: string };
+  readonly crosstraining?: string;
+}
+
+export function buildPorts(state: AppState, p: Profile, programme: ProgrammeIntent, env: PlannerEnvironment, goals: EngineGoals = {}): SportPorts {
   const clock = clockOf();
   const profile = coreProfile(p);
   const state0 = { readiness: 'normal' as const, activePain: [], painHistory: 'available' as const, dayAvailable: true };
@@ -80,18 +90,21 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
   const ports: { -readonly [K in keyof SportPorts]: SportPorts[K] } = {};
   if (env.strength) {
     const content = env.strength.content as ContentSource;
-    ports.strength = strengthPort({ engine: env.strength.engine, content, profile, state: state0, history: state.fingerprints.strength, clock, baseContext: (slot) => strengthContextAt(state, p, slot.date, content) });
+    ports.strength = strengthPort({ engine: env.strength.engine, content, profile, state: state0, history: state.fingerprints.strength, clock, baseContext: (slot) => { const b = strengthContextAt(state, p, slot.date, content); return goals.strength ? { ...b, goal: { primary: { goal: goals.strength } } } : b; } });
   }
   if (env.running) {
     ports.running = runningPort({
       engine: env.running.engine, content: env.running.content, profile, state: state0, history: state.fingerprints.running, clock,
-      baseContext: (slot) => ({ ...runningContext(state, p, slot), capabilityRequests: [...RUNNING_CAPABILITY_REQUESTS, 'hybridPlanning'] }),
+      baseContext: (slot) => ({
+        ...runningContext(state, p, slot), capabilityRequests: [...RUNNING_CAPABILITY_REQUESTS, 'hybridPlanning'],
+        ...(goals.running ? { goal: { type: goals.running.type, ...(goals.running.targetDate ? { targetDate: sessionInstant(goals.running.targetDate) } : {}) } } : {}),
+      }),
     });
   }
   if (env.crosstraining) {
     ports.crosstraining = crossTrainingPort({
       engine: env.crosstraining.engine, content: env.crosstraining.content, profile, state: state0, history: state.fingerprints.crosstraining, clock,
-      baseContext: (slot) => ({ ...decl('crosstraining'), sessionHistory: state.crosstraining.realized.filter((r) => typeof r.completedAt === 'string' && r.completedAt < sessionInstant(slot.date)), mode: env.mode, capabilityRequests: [...CT_CAPABILITY_REQUESTS] }) as never,
+      baseContext: (slot) => ({ ...decl('crosstraining'), ...(goals.crosstraining ? { goal: { type: goals.crosstraining } } : {}), sessionHistory: state.crosstraining.realized.filter((r) => typeof r.completedAt === 'string' && r.completedAt < sessionInstant(slot.date)), mode: env.mode, capabilityRequests: [...CT_CAPABILITY_REQUESTS] }) as never,
     });
   }
   if (env.hyrox) ports.hyrox = hyroxPort({ engine: env.hyrox.engine, content: env.hyrox.content, profile, state: state0, history: [], clock, baseContext: () => ({ ...decl('hyrox'), mode: env.mode }) as never });
@@ -119,7 +132,7 @@ export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOri
 }
 
 /** Séances planifiées de la semaine précédente (historique d'interférence et de contexte voisin). */
-function recentOf(state: AppState, p: Profile, weekStart: string): { date: string; sport: Sport; session: SessionDraft }[] {
+export function recentOf(state: AppState, p: Profile, weekStart: string): { date: string; sport: Sport; session: SessionDraft }[] {
   const prev = state.planner.weeks[addDays(weekStart, -p.availability.length)];
   return (prev?.requests ?? []).flatMap((r) => {
     const data = r.record?.data as { session?: SessionDraft } | undefined;

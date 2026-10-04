@@ -8,6 +8,7 @@
 import { z } from 'zod';
 import { isISODateTime, LEVELS, zFingerprintHistoryEntry, zSerializedEnvelope, zSessionDraft } from '@hybridsport/domain';
 import { INTENT_FIELDS, PLANNER_MODES, REQUEST_CATEGORIES } from '@hybridsport/planner';
+import { zProgrammeState } from '@hybridsport/programme';
 import { zExerciseExposure, zStrengthTrack } from '@hybridsport/strength';
 import { RETURN_STATES, RUNNING_GOALS, RUNNING_LEVELS, zRealizedSession, zRunningReference } from '@hybridsport/running';
 
@@ -229,6 +230,8 @@ export const zAppState = z.object({
   safety: z.object({ activePain: z.object({ reportedAt: instant, areas: z.array(z.string()), sessionKey: z.string().optional() }).strict().nullable() }).strict(),
   /** Intention de programme multisport (absente d'un état antérieur ⇒ null : champ additif). */
   programme: zProgrammeIntent.nullable().default(null),
+  /** Programme longitudinal (Programme Engine) : contrat versionné du paquet programme ; absent ⇒ null (champ additif). */
+  programmeState: zProgrammeState.nullable().default(null),
   /** Semaines planifiées par le planificateur global (absent d'un état antérieur ⇒ vide : champ additif). */
   planner: z.object({ weeks: z.record(date, zPersistedWeek) }).strict().default({ weeks: {} }),
   /** Incrémentée à chaque séance terminée ou course enregistrée (l'historique a changé). */
@@ -242,6 +245,6 @@ export function emptyState(): AppState {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION, profile: null, plans: {}, sessions: {}, logs: {},
     strength: { tracks: [], exposures: [], accessoryCounts: {} }, running: { realized: [], references: [] }, crosstraining: { realized: [] },
-    fingerprints: { strength: [], running: [], crosstraining: [] }, safety: { activePain: null }, programme: null, planner: { weeks: {} }, revision: 0,
+    fingerprints: { strength: [], running: [], crosstraining: [] }, safety: { activePain: null }, programme: null, programmeState: null, planner: { weeks: {} }, revision: 0,
   };
 }

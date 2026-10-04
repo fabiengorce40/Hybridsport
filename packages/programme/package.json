@@ -1,5 +1,5 @@
 {
-  "name": "@hybridsport/app-core",
+  "name": "@hybridsport/programme",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -10,9 +10,6 @@
     "@hybridsport/domain": "workspace:*",
     "@hybridsport/engine": "workspace:*",
     "@hybridsport/planner": "workspace:*",
-    "@hybridsport/programme": "workspace:*",
-    "@hybridsport/running": "workspace:*",
-    "@hybridsport/strength": "workspace:*",
     "zod": "^4.6.5"
   }
 }

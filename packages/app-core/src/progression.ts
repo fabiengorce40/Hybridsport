@@ -104,39 +104,62 @@ export function prescribedRunStructure(session: SessionDraft): { family: 'CONTIN
   return { family: 'CONTINUOUS', structure: { ...edges, reps: 1, workS } };
 }
 
-function realizedRun(g: GeneratedSession, log: SessionLog, at: ISODateTime): RealizedSession | undefined {
-  if (!log.run || g.outcome.status !== 'ok') return undefined;
-  const fb = log.feedback;
-  const archetype = archetypeFromIntentId(g.archetypeId);
+/** Entrée commune (chemin V0 ou programme) d'une course réalisée déclarée. */
+export interface RunRealization {
+  readonly sessionId: string;
+  readonly archetypeId: string;
+  readonly session: SessionDraft;
+  readonly run: NonNullable<SessionLog['run']>;
+  readonly difficulty?: NonNullable<SessionLog['feedback']>['difficulty'];
+  readonly pain: boolean;
+  readonly at: ISODateTime;
+}
+
+/** Séance réalisée au contrat Running (structure prescrite conservée seulement si complète ; TEST sans distance). */
+export function realizedRunFrom(x: RunRealization): RealizedSession {
+  const archetype = archetypeFromIntentId(x.archetypeId);
   const a: RunningSessionArchetype = archetype !== undefined && isV1Archetype(archetype) ? archetype : 'EASY';
-  const { family, structure } = prescribedRunStructure(g.outcome.session);
+  const { family, structure } = prescribedRunStructure(x.session);
   // Structure réalisée = structure prescrite, seulement si la séance est COMPLÈTE (déclarée « comme prévu ») ;
   // interrompue : aucune structure (retour négatif, V19 l'exclut de toute façon).
-  const keepStructure = log.run.completion === 'COMPLETED' && structure !== undefined && a !== 'EASY' && a !== 'LONG' && a !== 'TEST';
+  const keepStructure = x.run.completion === 'COMPLETED' && structure !== undefined && a !== 'EASY' && a !== 'LONG' && a !== 'TEST';
   // TEST : la durée totale inclut échauffement et retour au calme ⇒ aucune distance (l'allure serait fausse) ;
   // la performance est enregistrée comme référence TIME_TRIAL.
-  const distanceM = a === 'TEST' ? undefined : log.run.distanceM;
+  const distanceM = a === 'TEST' ? undefined : x.run.distanceM;
   return {
-    sessionId: g.key, archetype: a, structureFamily: family, completedAt: at, realizedDurationS: log.run.realizedDurationS, completion: log.run.completion,
-    ...(log.run.completion === 'SKIPPED' ? { skipReason: 'OTHER' as const } : {}),
-    unexpectedDifficulty: fb?.difficulty ?? 'UNKNOWN', intoleranceOrPainSignal: fb?.pain ?? false, readinessOrToleranceDegraded: false,
+    sessionId: x.sessionId, archetype: a, structureFamily: family, completedAt: x.at, realizedDurationS: x.run.realizedDurationS, completion: x.run.completion,
+    ...(x.run.completion === 'SKIPPED' ? { skipReason: 'OTHER' as const } : {}),
+    unexpectedDifficulty: x.difficulty ?? 'UNKNOWN', intoleranceOrPainSignal: x.pain, readinessOrToleranceDegraded: false,
     ...(keepStructure ? { structure } : {}),
     ...(distanceM !== undefined ? { distanceM } : {}),
   };
 }
 
 /** TEST complet et chronométré ⇒ référence TIME_TRIAL (APP_RECORDED, protocole KAIRO) à la distance du protocole. */
-function testReference(g: GeneratedSession, log: SessionLog, at: ISODateTime): RunningReference | undefined {
-  if (g.outcome.status !== 'ok' || archetypeFromIntentId(g.archetypeId) !== 'TEST' || log.run?.completion !== 'COMPLETED' || log.run.testTimeS === undefined || log.feedback?.pain === true) return undefined;
-  const p = g.outcome.session.blocks.flatMap((b) => b.items).map((i) => i.prescription).find((x) => x.type === 'run_structure');
-  const seg = p?.type === 'run_structure' ? p.segments.find((x) => x.kind === 'steady') : undefined;
+export function testReferenceFrom(x: RunRealization): RunningReference | undefined {
+  if (archetypeFromIntentId(x.archetypeId) !== 'TEST' || x.run.completion !== 'COMPLETED' || x.run.testTimeS === undefined || x.pain) return undefined;
+  const p = x.session.blocks.flatMap((b) => b.items).map((i) => i.prescription).find((y) => y.type === 'run_structure');
+  const seg = p?.type === 'run_structure' ? p.segments.find((y) => y.kind === 'steady') : undefined;
   const distanceM = seg?.kind === 'steady' && 'distanceM' in seg.dose ? seg.dose.distanceM : undefined;
   if (distanceM === undefined) return undefined;
   return {
-    referenceId: `test:${g.key}`, type: 'TIME_TRIAL', values: { distanceM, durationS: log.run.testTimeS }, date: at,
+    referenceId: `test:${x.sessionId}`, type: 'TIME_TRIAL', values: { distanceM, durationS: x.run.testTimeS }, date: x.at,
     provenance: { source: 'APP_RECORDED', protocol: 'KAIRO_TEST_TT' },
     confidenceInputs: { protocolDeclared: true, maximalEffortDeclared: true, conditions: 'NORMAL', interruptionSince: 'NONE' },
   };
+}
+
+const v0Run = (g: GeneratedSession, log: SessionLog, at: ISODateTime): RunRealization | undefined => (log.run && g.outcome.status === 'ok'
+  ? { sessionId: g.key, archetypeId: g.archetypeId, session: g.outcome.session, run: log.run, ...(log.feedback ? { difficulty: log.feedback.difficulty } : {}), pain: log.feedback?.pain ?? false, at }
+  : undefined);
+function realizedRun(g: GeneratedSession, log: SessionLog, at: ISODateTime): RealizedSession | undefined {
+  const x = v0Run(g, log, at);
+  return x ? realizedRunFrom(x) : undefined;
+}
+function testReference(g: GeneratedSession, log: SessionLog, at: ISODateTime): RunningReference | undefined {
+  const x = v0Run(g, log, at);
+  // V0 : la douleur du TEST se lit dans le feedback (identique à la forme historique).
+  return x ? testReferenceFrom(x) : undefined;
 }
 
 /** Applique une séance TERMINÉE à l'historique (tracks, expositions, empreintes, historique de course). */
