@@ -1,0 +1,79 @@
+# Déploiement HTTPS de la PWA KAIRO sur GitHub Pages, puis vérification RÉELLE de la build déployée.
+# Construit uniquement l'application (apps/kairo) ; aucune règle sportive, aucun moteur n'est modifié ici.
+# Publication : branche `gh-pages` (contenu de apps/kairo/dist), servie par GitHub Pages en HTTPS.
+name: KAIRO — PWA GitHub Pages
+
+on:
+  push:
+    branches: [claude/crosstraining-c1-c2-spike-vbg8dv]
+    paths: ['apps/kairo/**', 'packages/**', 'pnpm-lock.yaml', '.github/workflows/kairo-pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: kairo-pages
+  cancel-in-progress: false
+
+env:
+  SITE_URL: https://fabiengorce40.github.io/Hybridsport/
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      # Garde : la suite complète doit être verte avant toute publication.
+      - run: pnpm check
+      - run: pnpm kairo:build
+      - name: Marqueurs de publication
+        run: |
+          touch apps/kairo/dist/.nojekyll
+          echo "{\"commit\":\"${GITHUB_SHA}\"}" > apps/kairo/dist/version.json
+      - name: Publication sur la branche gh-pages
+        run: |
+          cd apps/kairo/dist
+          git init -q -b gh-pages
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "KAIRO PWA ${GITHUB_SHA}"
+          git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git" gh-pages
+
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Attente de la build déployée (version.json = ce commit)
+        run: |
+          for i in $(seq 1 60); do
+            v=$(curl -fsS "${SITE_URL}version.json?t=$(date +%s)" || true)
+            echo "essai $i : $v"
+            echo "$v" | grep -q "${GITHUB_SHA}" && exit 0
+            sleep 10
+          done
+          echo "La build déployée n'est pas en ligne (GitHub Pages activé sur la branche gh-pages ?)" && exit 1
+      - name: En-têtes HTTPS
+        run: curl -fsSI "${SITE_URL}" | head -5
+      - run: pnpm --filter @hybridsport/kairo exec playwright install --with-deps chromium
+      - name: E2E navigateur sur l'URL HTTPS déployée
+        run: mkdir -p shots && E2E_URL="${SITE_URL}" node apps/kairo/scripts/e2e.mjs shots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kairo-e2e-captures
+          path: shots

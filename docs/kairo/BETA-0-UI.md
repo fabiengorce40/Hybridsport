@@ -110,7 +110,35 @@ Comportement :
 | `packages/app-core/tests/beta0-app.test.ts` | Façade app-core |
 | `apps/kairo/scripts/e2e.mjs` | Playwright, Chromium réel, viewport téléphone, build de production. Couvre le manifest, le service worker, le parcours hybride complet, le rechargement en pleine séance avec le chrono et l'absence d'erreur console |
 
-## Lancer et tester
+## Version en ligne (HTTPS)
+
+**https://fabiengorce40.github.io/Hybridsport/**
+
+### Déploiement
+
+- **Workflow** : `.github/workflows/kairo-pages.yml`, à chaque push sur la branche de travail qui touche l'application ou les paquets.
+- **Garde** : `pnpm check` doit être vert.
+- **Build et publication** : build de la PWA, puis publication sur la branche `gh-pages`, servie par GitHub Pages en HTTPS.
+- **Identification** : `version.json` porte le commit publié.
+- **Vérification de la build déployée** :
+  - attente de `version.json` ;
+  - en-têtes HTTPS ;
+  - E2E Playwright sur l'URL publique : manifest, service worker, contexte sécurisé, installabilité selon Chrome (`Page.getInstallabilityErrors`), onboarding hybride, programme, séance, rechargement, historique.
+
+### Sur Samsung (Chrome)
+
+1. Ouvrir l'adresse ci-dessus.
+2. Appuyer sur ⋮.
+3. Appuyer sur « Installer l'application » (ou « Ajouter à l'écran d'accueil »).
+4. Ouvrir KAIRO depuis l'écran d'accueil.
+
+Les données restent dans le navigateur du téléphone (`localStorage` de l'origine `fabiengorce40.github.io`). « Exporter mes données » permet d'en garder une copie.
+
+### Retour arrière
+
+Point de retour : commit `b57038d` (tag local `kairo-beta0-ui1`). Republier une version antérieure revient à pousser cette version sur la branche de travail.
+
+## Lancer et tester en local
 
 ### Sur ordinateur
 

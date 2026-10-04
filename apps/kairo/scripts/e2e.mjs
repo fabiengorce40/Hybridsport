@@ -1,4 +1,4 @@
-/* global localStorage, document, fetch, navigator -- exécutés dans la page (page.evaluate) */
+/* global localStorage, document, fetch, navigator, window -- exécutés dans la page (page.evaluate) */
 /**
  * Parcours Beta 0 de bout en bout dans Chromium (viewport téléphone) sur la build de production servie par
  * `vite preview` : manifest + service worker → onboarding hybride → programme → planning → séance Musculation (séries
@@ -32,6 +32,11 @@ const manifest = await page.evaluate(async () => { const l = document.querySelec
 check(manifest?.display === 'standalone' && manifest.icons.some((i) => i.sizes === '512x512'), 'manifest : standalone, icônes 192/512');
 const sw = await page.evaluate(async () => { const r = await navigator.serviceWorker.ready; return Boolean(r.active); });
 check(sw, 'service worker actif (hors ligne après le premier chargement)');
+check(await page.evaluate(() => window.isSecureContext), `contexte sécurisé (${new URL(URL_).protocol.replace(':', '')})`);
+// Installabilité selon Chrome lui-même (manifest, icônes, service worker, HTTPS ou localhost).
+const cdp = await ctx.newCDPSession(page);
+const { installabilityErrors } = await cdp.send('Page.getInstallabilityErrors');
+check(installabilityErrors.length === 0, `installable comme PWA selon Chrome (${JSON.stringify(installabilityErrors)})`);
 
 // Onboarding hybride.
 await shot('01-bienvenue');
