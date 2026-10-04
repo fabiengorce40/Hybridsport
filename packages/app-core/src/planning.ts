@@ -21,6 +21,7 @@ import { runningContent, strengthContent } from './provisional-content.js';
 import type { ContentSource } from './provisional-content.js';
 import type { Clock } from './app.js';
 import { AppError } from './app.js';
+import { assertPlanningAllowed, writePlannedWeek } from './weeks.js';
 
 type Content = Pick<ContentSource, 'ruleset' | 'catalog'>;
 /** Environnement d'orchestration : moteurs, contenus, gouvernance du planificateur et mode. Injecté (tests : TEST_ONLY). */
@@ -114,7 +115,7 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
 const reason = (r: ReasonCode): Reason => ({ code: r.code, params: { ...r.params } });
 
 /** Forme persistée (sans perte d'audit) d'une semaine planifiée. */
-export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOrigin: string): PersistedWeek {
+export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOrigin: string): Omit<PersistedWeek, 'owner'> {
   return {
     weekStart: w.weekStart, plannedAt, mode: w.mode, hybrid: w.hybrid, programmeOrigin,
     days: w.days.map((d) => (d.status === 'planned' ? { date: d.date, availableMinutes: d.availableMinutes, status: 'planned', sport: d.sport, requestId: d.requestId } : { date: d.date, availableMinutes: d.availableMinutes, status: 'empty', reason: reason(d.reason) })),
@@ -147,6 +148,7 @@ export function recentOf(state: AppState, p: Profile, weekStart: string): { date
 export function planProgrammeWeek(state: AppState, clock: Clock, env: PlannerEnvironment = appPlannerEnvironment(), weekStart = weekStartOf(clock.today)): AppState {
   const p = state.profile;
   if (!p) throw new AppError('PROFILE_MISSING');
+  assertPlanningAllowed(state);
   const programme = state.programme;
   if (!programme) throw new AppError('PROGRAMME_INTENT_MISSING');
   const days = p.availability.map((m, i) => ({ date: addDays(weekStart, i), availableMinutes: m }));
@@ -155,5 +157,5 @@ export function planProgrammeWeek(state: AppState, clock: Clock, env: PlannerEnv
     demands: programme.sports.map((s) => ({ sport: s.sport, sessions: s.sessions, intent: { ...s.intent }, ...(s.station === undefined ? {} : { station: s.station }) })),
   }, buildPorts(state, p, programme, env), env.governance, clockOf());
   const plannedAt = normalizeInstant(clock.now);
-  return { ...state, planner: { weeks: { ...state.planner.weeks, [weekStart]: persistWeek(week, plannedAt, programme.origin) } } };
+  return writePlannedWeek(state, persistWeek(week, plannedAt, programme.origin), 'multisport');
 }

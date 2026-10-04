@@ -19,6 +19,7 @@ import { dateOf, daysBetween, sessionInstant, weekStartOf } from './dates.js';
 import type { AppState, Authority, GeneratedSession, PlanEntry, Profile, Reason } from './model.js';
 import { STIMULUS_BY_GOAL } from './planner.js';
 import { anchorsToDeclare } from './progression.js';
+import { activePainPause } from './weeks.js';
 import { runningContent, strengthContent } from './provisional-content.js';
 import type { ContentSource } from './provisional-content.js';
 
@@ -150,11 +151,12 @@ export function generateSession({ state, entry, generatedAt }: GenerateInput): G
   const strength = entry.sport === 'strength';
   const content = strength ? strengthContent() : runningContent();
   const authority: Authority = strength ? 'provisional' : 'simulation';
-  const base = { key: entry.key, date: entry.date, sport: entry.sport, archetypeId: entry.archetypeId, authority, generatedAt, basedOnRevision: state.revision, contentOrigin: content.origin, rulesetVersion: content.ruleset.version };
+  const base = { storage: 'legacy_v0' as const, key: entry.key, date: entry.date, sport: entry.sport, archetypeId: entry.archetypeId, authority, generatedAt, basedOnRevision: state.revision, contentOrigin: content.origin, rulesetVersion: content.ruleset.version };
   const unavailable = (reasons: Reason[]): GeneratedSession => ({ ...base, outcome: { status: 'unavailable', reasons } });
 
   // Douleur signalée : aucune règle G1 validée ⇒ suspension de TOUTES les séances (fail-closed) jusqu'à levée explicite.
-  if (state.safety.activePain) return unavailable([{ code: 'KAIRO.SAFETY_PAUSE_ACTIVE_PAIN', params: { reportedAt: state.safety.activePain.reportedAt } }]);
+  const pause = activePainPause(state);
+  if (pause) return unavailable([pause]);
 
   const A = entry.availableMinutes * S_PER_MIN;
   const seed = `kairo:${entry.key}:r${String(state.revision)}`;

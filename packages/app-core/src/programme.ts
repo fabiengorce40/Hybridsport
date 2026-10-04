@@ -10,6 +10,7 @@ import type { LoadedRuleset } from '@hybridsport/engine';
 import { PG_CODES, closeProgrammeWeek, createProgramme, pgReasons, planProgrammeWeek, recordProgrammeResult, requestIntent, weekIndexOf } from '@hybridsport/programme';
 import type { Completion, ProgrammeDefinitionInput, ProgrammeState } from '@hybridsport/programme';
 import { AppError } from './app.js';
+import { assertPlanningAllowed, writePlannedWeek } from './weeks.js';
 import type { Clock } from './app.js';
 import { addDays, normalizeInstant } from './dates.js';
 import type { AppState, Feedback, ProgrammeIntent, SessionLog, SetLog } from './model.js';
@@ -64,8 +65,8 @@ export function planProgrammeCurrentWeek(state: AppState, clock: Clock, env: Pro
   const p = state.profile;
   if (!p) throw new AppError('PROFILE_MISSING');
   const ps = requireProgramme(state);
-  // Douleur active : aucune règle G1 validée ⇒ suspension de la planification (même règle que le chemin V0).
-  if (state.safety.activePain) throw new ProgrammeError('SAFETY_PAUSE_ACTIVE_PAIN', []);
+  // Douleur active : garde COMMUNE à tous les chemins de planification (weeks.ts).
+  assertPlanningAllowed(state);
   const i = weekIndex ?? weekIndexOf(ps, clock.today);
   const weekStart = addDays(ps.definition.startWeek, i * p.availability.length);
   const { intent, goals } = portInputs(ps);
@@ -75,7 +76,9 @@ export function planProgrammeCurrentWeek(state: AppState, clock: Clock, env: Pro
     recent: recentOf(state, p, weekStart),
   });
   if (!r.ok) throw new ProgrammeError('PROGRAMME_WEEK_NOT_PLANNABLE', r.reasons);
-  return { ...state, programmeState: r.value.state, planner: { weeks: { ...state.planner.weeks, [weekStart]: persistWeek(r.value.week, normalizeInstant(clock.now), ps.definition.origin) } } };
+  // Écriture par la passerelle unique : jamais de remplacement d'une semaine commencée ou clôturée (refus, état inchangé).
+  const written = writePlannedWeek(state, persistWeek(r.value.week, normalizeInstant(clock.now), ps.definition.origin), 'programme');
+  return { ...written, programmeState: r.value.state };
 }
 
 /**

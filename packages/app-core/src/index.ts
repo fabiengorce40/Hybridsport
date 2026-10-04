@@ -11,3 +11,4 @@ export * from './labels.js';
 export type { SessionDraft, SessionItem, SetPrescription } from '@hybridsport/domain';
 export * from './planning.js';
 export * from './programme.js';
+export * from './weeks.js';

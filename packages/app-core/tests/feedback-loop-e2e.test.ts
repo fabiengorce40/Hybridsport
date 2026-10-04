@@ -10,7 +10,7 @@ import type { SportEngine } from '@hybridsport/engine';
 import { StrengthEngine } from '@hybridsport/strength';
 import { createRunningEngine } from '@hybridsport/running';
 import {
-  clearPain, closeProgrammeWeekInApp, completeOnboarding, decodeState, emptyState, EQUIPMENT_PRESETS, exportState, logFreeRun, planProgrammeCurrentWeek, ProgrammeError,
+  clearPain, closeProgrammeWeekInApp, completeOnboarding, decodeState, emptyState, EQUIPMENT_PRESETS, exportState, logFreeRun, planProgrammeCurrentWeek,
   recordSessionExecution, runningContent, startProgramme, strengthContent,
 } from '../src/index.js';
 import type { AppState, ProgrammeEnvironment, SessionExecutionInput } from '../src/index.js';
@@ -173,7 +173,7 @@ describe('F1 — semaine 1 → réalisations → semaine 2, quatre sports', () =
     let s = week1(seen, { pain: 'P2' });
     expect(s.safety.activePain).not.toBeNull();
     s = closeProgrammeWeekInApp(s, clock(W2), env(seen));
-    expect(() => planProgrammeCurrentWeek(s, clock(W2), env(fresh()))).toThrow(ProgrammeError);
+    expect(() => planProgrammeCurrentWeek(s, clock(W2), env(fresh()))).toThrow('SAFETY_PAUSE_ACTIVE_PAIN');
     s = planProgrammeCurrentWeek(clearPain(s, clock(W2)), clock(W2), env(fresh()));
     expect(s.planner.weeks[W2]?.requests.find((x) => x.sport === 'crosstraining')?.reasons.find((x) => x.code === 'DOSE.CROSSTRAINING.REPLAY_SOURCE_INADMISSIBLE')?.params.causes).toContain('PAIN_DECLARED');
   });

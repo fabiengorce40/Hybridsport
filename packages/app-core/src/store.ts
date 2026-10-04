@@ -20,7 +20,32 @@ export const STORAGE_KEY = 'kairo.state';
 export const BACKUP_PREFIX = 'kairo.unreadable.';
 
 /** Migrations successives : MIGRATIONS[n] transforme une donnée de version n en version n + 1. */
-export const MIGRATIONS: Readonly<Record<number, (data: unknown) => unknown>> = {};
+// technical-constant: numéro de version du schéma persistant (contrat de format), pas une valeur sportive
+export const MIGRATIONS: Readonly<Record<number, (data: unknown) => unknown>> = { 1: migrateV1toV2 };
+
+type Obj = Record<string, unknown>;
+const isObj = (v: unknown): v is Obj => v !== null && typeof v === 'object' && !Array.isArray(v);
+
+/**
+ * v1 → v2 (Beta 0), déterministe et sans invention :
+ * - séances V0 : marquées `storage: legacy_v0` (contenu inchangé ; aucune provenance reconstituée) ;
+ * - semaines planifiées : propriétaire DÉDUIT de la seule donnée existante — référencée par le programme ⇒ `programme`,
+ *   sinon ⇒ `multisport` (seul autre écrivain de `planner.weeks` en v1) ;
+ * - tout le reste à l'identique. Le résultat est validé STRICTEMENT par le schéma v2 (decodeState) : une donnée v1
+ *   malformée est refusée et sauvegardée, jamais réparée.
+ */
+export function migrateV1toV2(data: unknown): unknown {
+  // technical-constant: numéro de version du schéma persistant (contrat de format)
+  if (!isObj(data) || data.schemaVersion !== 1) throw new Error('migration v1 → v2 : donnée v1 attendue');
+  const sessions = isObj(data.sessions) ? Object.fromEntries(Object.entries(data.sessions).map(([k, g]) => [k, isObj(g) ? { storage: 'legacy_v0', ...g } : g])) : data.sessions;
+  const ps = isObj(data.programmeState) ? data.programmeState : undefined;
+  const refs = new Set(Array.isArray(ps?.weeks) ? ps.weeks.flatMap((w) => (isObj(w) && typeof w.plannerRef === 'string' ? [w.plannerRef] : [])) : []);
+  const planner = isObj(data.planner) && isObj(data.planner.weeks)
+    ? { ...data.planner, weeks: Object.fromEntries(Object.entries(data.planner.weeks).map(([k, w]) => [k, isObj(w) ? { ...w, owner: refs.has(k) ? 'programme' : 'multisport' } : w])) }
+    : data.planner;
+  // technical-constant: numéro de version du schéma persistant (contrat de format)
+  return { ...data, schemaVersion: 2, sessions, ...(planner === undefined ? {} : { planner }) };
+}
 
 export type LoadResult =
   | { readonly status: 'empty'; readonly state: AppState }

@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   BACKUP_PREFIX, completeOnboarding, decodeState, emptyState, exportState, finishSession, loadState, MemoryStorage, recordSet, saveState, startSession, STORAGE_KEY,
 } from '../src/index.js';
+import { CURRENT_SCHEMA_VERSION } from '../src/index.js';
 import type { KeyValueStorage } from '../src/index.js';
 import { clock, MONDAY, profile } from './fixtures.js';
 
@@ -44,8 +45,9 @@ describe('persistance', () => {
 
   it('version plus récente que l’application : jamais écrasée ni sauvegardée comme illisible', () => {
     const storage = new MemoryStorage();
-    storage.setItem(STORAGE_KEY, '{"schemaVersion":2}');
-    expect(loadState(storage, NOW)).toMatchObject({ status: 'newer_version', version: 2 });
+    // Version future = courante + 1 (la v2 est désormais la version courante).
+    storage.setItem(STORAGE_KEY, JSON.stringify({ schemaVersion: CURRENT_SCHEMA_VERSION + 1 }));
+    expect(loadState(storage, NOW)).toMatchObject({ status: 'newer_version', version: CURRENT_SCHEMA_VERSION + 1 });
     expect(storage.keys()).toEqual([STORAGE_KEY]);
   });
 
@@ -59,6 +61,6 @@ describe('persistance', () => {
 
   it('export : JSON relisible à l’identique', () => {
     const s = completeOnboarding(emptyState(), profile(), clock());
-    expect(decodeState(exportState(s))).toEqual({ ok: true, state: s, from: 1 });
+    expect(decodeState(exportState(s))).toEqual({ ok: true, state: s, from: CURRENT_SCHEMA_VERSION });
   });
 });

@@ -18,9 +18,8 @@ export interface Clock {
   readonly today: string;
 }
 
-export class AppError extends Error {
-  constructor(readonly code: string) { super(code); }
-}
+export { AppError } from './errors.js';
+import { AppError } from './errors.js';
 
 const lockedOf = (state: AppState, entries: readonly PlanEntry[]): PlanEntry[] => entries.filter((e) => state.logs[e.key] !== undefined);
 

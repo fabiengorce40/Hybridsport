@@ -96,6 +96,12 @@ export const zWeekPlan = z.object({
 export type WeekPlan = z.infer<typeof zWeekPlan>;
 
 export const zGeneratedSession = z.object({
+  /**
+   * Stockage LEGACY explicite (v2) : séance V0 conservée en `SessionDraft` brut, hors `session_record` (la provenance
+   * complète — version de catalogue, graine, trace — n'a jamais été stockée en V0 et n'est pas reconstituée).
+   * Le format canonique est le `session_record` des semaines planifiées (`planner.weeks`). Chemin V0 voué à disparaître.
+   */
+  storage: z.literal('legacy_v0'),
   key: z.string().min(1),
   date,
   sport: z.enum(ENGINE_SPORTS),
@@ -189,6 +195,8 @@ const zDemandOutcome = z.discriminatedUnion('status', [
 /** Semaine planifiée par le planificateur global, PERSISTÉE : séances en session_record (enveloppe versionnée). */
 export const zPersistedWeek = z.object({
   weekStart: date,
+  /** Propriétaire UNIQUE de la semaine (v2) : seul ce chemin peut la replanifier (voir weeks.ts). */
+  owner: z.enum(['programme', 'multisport']),
   plannedAt: instant,
   mode: z.enum(PLANNER_MODES),
   hybrid: z.boolean(),
@@ -209,7 +217,8 @@ export const zPersistedWeek = z.object({
 export type PersistedWeek = z.infer<typeof zPersistedWeek>;
 
 export const zAppState = z.object({
-  schemaVersion: z.literal(1),
+  // technical-constant: version du schéma persistant de l'état applicatif (contrat de format)
+  schemaVersion: z.literal(2),
   profile: zProfile.nullable(),
   plans: z.record(date, zWeekPlan),
   sessions: z.record(z.string(), zGeneratedSession),
@@ -244,7 +253,8 @@ export const zAppState = z.object({
 }).strict();
 export type AppState = z.infer<typeof zAppState>;
 
-export const CURRENT_SCHEMA_VERSION = 1;
+// technical-constant: version du schéma persistant de l'état applicatif (contrat de format)
+export const CURRENT_SCHEMA_VERSION = 2;
 
 export function emptyState(): AppState {
   return {
