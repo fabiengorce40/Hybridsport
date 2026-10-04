@@ -234,6 +234,35 @@ export const zPersistedWeek = z.object({
 }).strict();
 export type PersistedWeek = z.infer<typeof zPersistedWeek>;
 
+/** Chrono de repos d'une séance en cours : échéance horodatée (jamais un compteur), pause = reste figé. */
+export const zRest = z.object({
+  endsAt: instant,
+  totalS: z.number().nonnegative(),
+  /** Exercice dont la série vient d'être validée (identifiant du catalogue). */
+  exerciseId: z.string().min(1),
+  /** En pause : secondes restantes figées. */
+  pausedRemainingS: z.number().nonnegative().optional(),
+}).strict();
+export type Rest = z.infer<typeof zRest>;
+
+/** Séance du programme commencée dans l'application. */
+export const zProgrammeLog = z.object({
+  requestId: z.string().min(1),
+  sport: z.enum(ENGINE_SPORTS),
+  startedAt: instant,
+  sets: z.array(zSetLog),
+  painItems: z.array(z.string()).default([]),
+  rest: zRest.nullable().default(null),
+  finishedAt: instant.optional(),
+  /** Issue enregistrée (copie de la saisie transmise à recordSessionExecution). */
+  outcome: z.object({
+    completion: z.enum(['completed_as_prescribed', 'modified', 'abandoned']),
+    pain: z.boolean(),
+    run: z.object({ realizedDurationS: z.number().positive().finite(), distanceM: z.number().positive().finite().optional(), testTimeS: z.number().positive().finite().optional() }).strict().optional(),
+  }).strict().optional(),
+}).strict();
+export type ProgrammeLog = z.infer<typeof zProgrammeLog>;
+
 export const zAppState = z.object({
   // technical-constant: version du schéma persistant de l'état applicatif (contrat de format)
   schemaVersion: z.literal(2),
@@ -264,6 +293,11 @@ export const zAppState = z.object({
   programme: zProgrammeIntent.nullable().default(null),
   /** Programme longitudinal (Programme Engine) : contrat versionné du paquet programme ; absent ⇒ null (champ additif). */
   programmeState: zProgrammeState.nullable().default(null),
+  /**
+   * Séances du programme commencées dans l'application (Beta 0) : saisies en cours (séries réellement faites, douleur
+   * par exercice), chrono de repos (échéance horodatée) et issue une fois terminées. Champ additif (absent ⇒ vide).
+   */
+  programmeLogs: z.record(z.string(), zProgrammeLog).default({}),
   /** Semaines planifiées par le planificateur global (absent d'un état antérieur ⇒ vide : champ additif). */
   planner: z.object({ weeks: z.record(date, zPersistedWeek) }).strict().default({ weeks: {} }),
   /** Incrémentée à chaque séance terminée ou course enregistrée (l'historique a changé). */
@@ -278,6 +312,6 @@ export function emptyState(): AppState {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION, profile: null, plans: {}, sessions: {}, logs: {},
     strength: { tracks: [], exposures: [], accessoryCounts: {} }, running: { realized: [], references: [] }, crosstraining: { realized: [] }, hyrox: { realized: [] },
-    fingerprints: { strength: [], running: [], crosstraining: [] }, safety: { activePain: null }, programme: null, programmeState: null, planner: { weeks: {} }, revision: 0,
+    fingerprints: { strength: [], running: [], crosstraining: [] }, safety: { activePain: null }, programme: null, programmeState: null, programmeLogs: {}, planner: { weeks: {} }, revision: 0,
   };
 }

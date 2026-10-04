@@ -1,0 +1,54 @@
+/** Lectures et composants communs Beta 0 (présentation uniquement : projection de `selectBeta0Week`). */
+import { approxMinutes, selectBeta0Week } from '@hybridsport/app-core';
+import type { AppState, Beta0WeekView, SessionView } from '@hybridsport/app-core';
+import { isTest, notPlannedText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS } from '../../present.js';
+import type { DisplayStatus } from '../../present.js';
+
+export interface SessionItemView extends SessionView { readonly display: DisplayStatus }
+
+/** Semaine du programme vue par l'interface : statut « en cours » ajouté si une séance a été commencée. */
+export function weekOf(state: AppState, today: string): (Beta0WeekView & { readonly items: readonly SessionItemView[] }) | null {
+  const v = selectBeta0Week(state, today);
+  if (!v) return null;
+  const items = v.sessions.map((x): SessionItemView => ({ ...x, display: x.status === 'planned' && state.programmeLogs[x.requestId] ? 'in_progress' : x.status }));
+  return { ...v, items };
+}
+
+/** Prochaine séance : en cours, sinon aujourd'hui ou la suivante non réalisée. */
+export function nextOf(items: readonly SessionItemView[], today: string): SessionItemView | undefined {
+  return items.find((x) => x.display === 'in_progress') ?? items.find((x) => x.display === 'planned' && (x.date ?? '') >= today);
+}
+
+export function StatusPill({ status }: { status: DisplayStatus }) {
+  return <span className={`badge st-${status}`}><span aria-hidden="true">{STATUS_ICONS[status]} </span>{STATUS_LABELS[status]}</span>;
+}
+
+export function ExperimentalBadge() {
+  return <span className="badge sim" title="Certaines règles de planification sont encore en cours de validation.">Beta expérimentale</span>;
+}
+
+export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemView; onOpen: (id: string) => void; highlight?: boolean }) {
+  const name = sessionName(v.sport, v.archetypeId);
+  const role = roleName(v.role);
+  if (v.display === 'not_planned') {
+    return (
+      <div className="card" aria-label={`${sportName(v.sport)} non planifiée`}>
+        <div className="row between"><span className="small muted">{sportName(v.sport)}</span><StatusPill status="not_planned" /></div>
+        <div className="small">{notPlannedText(v)}</div>
+        <details className="tiny"><summary>Détail technique</summary>{v.notPlanned?.category}{v.notPlanned?.reason ? ` · ${v.notPlanned.reason.code}` : ''}</details>
+      </div>
+    );
+  }
+  return (
+    <button className={`card button-card ${highlight ? 'accent' : ''}`} onClick={() => onOpen(v.requestId)} aria-label={`${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`}>
+      <div className="row between">
+        <span className="small muted">{sportName(v.sport)}</span>
+        <span className="row">{isTest(v.archetypeId) && <span className="badge test">TEST</span>}<StatusPill status={v.display} /></span>
+      </div>
+      <h3>{name}</h3>
+      <div className="small muted num">
+        {[role, (v.estimatedDurationS ?? v.targetDurationS) !== null ? `≈ ${approxMinutes(v.estimatedDurationS ?? v.targetDurationS ?? 0)}` : null, v.pain ? 'douleur signalée' : null].filter(Boolean).join(' · ')}
+      </div>
+    </button>
+  );
+}

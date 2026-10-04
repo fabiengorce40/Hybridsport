@@ -61,7 +61,7 @@ function portInputs(ps: ProgrammeState): { intent: ProgrammeIntent; goals: Engin
 }
 
 /** Planifie la semaine du programme (par défaut la semaine courante) et persiste semaine et état. */
-export function planProgrammeCurrentWeek(state: AppState, clock: Clock, env: ProgrammeEnvironment = appPlannerEnvironment(), weekIndex?: number): AppState {
+export function planProgrammeCurrentWeek(state: AppState, clock: Clock, env: ProgrammeEnvironment = appPlannerEnvironment(), weekIndex?: number, o: { readonly pastDaysUnavailable?: boolean } = {}): AppState {
   const p = state.profile;
   if (!p) throw new AppError('PROFILE_MISSING');
   const ps = requireProgramme(state);
@@ -73,7 +73,9 @@ export function planProgrammeCurrentWeek(state: AppState, clock: Clock, env: Pro
   const { intent, goals } = portInputs(ps);
   const r = planProgrammeWeek(ps, i, {
     today: clock.today, at: normalizeInstant(clock.now), mode: env.mode, ports: buildPorts(state, p, intent, env, goals), plannerGovernance: env.governance,
-    programmeGovernance: env.programmeGovernance, clock: clockOf(), days: p.availability.map((m, k) => ({ date: addDays(weekStart, k), availableMinutes: m })),
+    programmeGovernance: env.programmeGovernance, clock: clockOf(),
+    // Jours déjà passés (option) : aucune séance ne peut y être réalisée ⇒ indisponibles (calendrier, pas une règle sportive).
+    days: p.availability.map((m, k) => { const date = addDays(weekStart, k); return { date, availableMinutes: o.pastDaysUnavailable && date < clock.today ? 0 : m }; }),
     recent: recentOf(state, p, weekStart),
   });
   if (!r.ok) throw new ProgrammeError('PROGRAMME_WEEK_NOT_PLANNABLE', r.reasons);
@@ -90,8 +92,11 @@ export function planProgrammeCurrentWeek(state: AppState, clock: Clock, env: Pro
 interface ExecutionCommon {
   readonly requestId: string;
   readonly completion: Completion;
-  /** Douleur déclarée (niveau du domaine) ; `NONE` = aucune ; absente = inconnue. */
-  readonly pain?: 'NONE' | PainLevel;
+  /**
+   * Douleur déclarée : niveau du domaine ; `REPORTED` = douleur signalée SANS niveau (Strength / Running : seule
+   * la présence est consommée ; CT / HYROX exigent un niveau) ; `NONE` = aucune ; absente = inconnue.
+   */
+  readonly pain?: 'NONE' | 'REPORTED' | PainLevel;
   readonly tolerance?: 'tolerated' | 'poorly_tolerated';
 }
 export type SessionExecutionInput = ExecutionCommon & (
@@ -129,8 +134,9 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
   let s: AppState = state;
   let evidence: { history: ProgrammeState['definition']['priorities'][number]; ref: string; measurement?: string } | undefined;
 
+  if (x.pain === 'REPORTED' && (x.sport === 'crosstraining' || x.sport === 'hyrox')) return reject('EXECUTION_PAIN_LEVEL_REQUIRED');
   if (x.completion !== 'missed') {
-    const common = { sessionId: x.requestId, completedAt: at, completion: x.completion, ...(x.pain !== undefined ? { pain: x.pain } : {}), ...(x.tolerance !== undefined ? { tolerance: x.tolerance } : {}) };
+    const common = { sessionId: x.requestId, completedAt: at, completion: x.completion, ...(x.pain !== undefined && x.pain !== 'REPORTED' ? { pain: x.pain } : {}), ...(x.tolerance !== undefined ? { tolerance: x.tolerance } : {}) };
     switch (x.sport) {
       case 'strength': {
         const intent = requestIntent(ps, x.requestId);

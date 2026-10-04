@@ -54,7 +54,7 @@ export function SportsSection({ p, set }: { p: ProfileInput; set: Setter }) {
   );
 }
 
-export function GoalsSection({ p, set }: { p: ProfileInput; set: Setter }) {
+export function GoalsSection({ p, set, beta0 = false }: { p: ProfileInput; set: Setter; beta0?: boolean }) {
   return (
     <div className="stack-3">
       <label className="field">Niveau d’entraînement général
@@ -110,7 +110,7 @@ export function GoalsSection({ p, set }: { p: ProfileInput; set: Setter }) {
           )}
           <label className="check"><input type="checkbox" checked={p.running.wearable} onChange={(e) => set((x) => ({ ...x, running: { ...x.running, wearable: e.target.checked } }))} />Je cours avec une montre GPS</label>
           <label className="check"><input type="checkbox" checked={p.running.hills === true} onChange={(e) => set((x) => ({ ...x, running: { ...x.running, hills: e.target.checked } }))} />J’ai accès à une côte praticable</label>
-          {(p.strength.enabled || p.crosstraining.enabled || p.hyrox.enabled) && (
+          {!beta0 && (p.strength.enabled || p.crosstraining.enabled || p.hyrox.enabled) && (
             <Notice tone="warn">Course + autre sport : le moteur course refuse pour l’instant de programmer (planificateur multisport non validé). Les refus seront affichés tels quels.</Notice>
           )}
           {p.running.population === 'P_R0' && <Notice tone="warn">Débutant en course : la dose de départ n’est pas encore validée ; aucune séance de course ne sera proposée.</Notice>}

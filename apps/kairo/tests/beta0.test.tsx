@@ -1,0 +1,267 @@
+// @vitest-environment jsdom
+/**
+ * Interface Beta 0 (jsdom) : onboarding Musculation / Course / hybride → programme réel → semaine → séance Strength
+ * (séries réelles, chrono persisté) → fin de séance → historique ; Course (saisie, TEST) ; douleur ; rechargement ;
+ * import ; statut expérimental ; Cross-training et HYROX absents. Horloge injectée (lundi 2026-10-05).
+ */
+import { afterEach, describe, expect, it } from 'vitest';
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { createBeta0Programme, emptyState, EQUIPMENT_PRESETS, exportState, MemoryStorage, saveState, STORAGE_KEY } from '@hybridsport/app-core';
+import type { AppState, Clock, ProfileInput } from '@hybridsport/app-core';
+import { App } from '../src/App.js';
+import { StoreProvider } from '../src/store.js';
+
+afterEach(cleanup);
+const MONDAY = '2026-10-05';
+const at = (today: string, time = '07:30:00') => (): Clock => ({ today, now: `${today}T${time}.000Z` });
+const mount = (storage: MemoryStorage, clock = at(MONDAY)) => render(<StoreProvider storage={storage} clock={clock}><App /></StoreProvider>);
+const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
+const saved = (storage: MemoryStorage): AppState => JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}') as AppState;
+const fullGym = EQUIPMENT_PRESETS.find((p) => p.id === 'preset.full_gym')?.equipment ?? [];
+
+type Choice = 'Musculation' | 'Course' | 'Musculation + Course';
+const CHOICE_NAMES: Record<Choice, RegExp> = { Musculation: /^Musculation Séances/, Course: /^Course Footing/, 'Musculation + Course': /^Musculation \+ Course/ };
+function onboard(storage: MemoryStorage, choice: Choice) {
+  mount(storage);
+  expect(screen.getByRole('button', { name: 'Commencer' })).toHaveProperty('disabled', true);
+  fireEvent.click(screen.getByLabelText(/J’ai compris/));
+  click('Commencer');
+  // CT / HYROX absents de l'onboarding Beta 0.
+  expect(screen.queryByText(/HYROX|Cross-training/)).toBeNull();
+  fireEvent.click(screen.getByRole('radio', { name: CHOICE_NAMES[choice] }));
+  click('Continuer');
+  if (choice !== 'Musculation') {
+    fireEvent.change(screen.getByLabelText('Durée (min)'), { target: { value: '30' } });
+    fireEvent.change(screen.getByLabelText('Distance (km)'), { target: { value: '5' } });
+  }
+  click('Continuer');
+  click('Continuer');
+  if (choice === 'Musculation + Course') expect(screen.getByRole('radio', { name: 'Priorité Course' })).toBeTruthy();
+  click('Créer mon programme');
+}
+
+function profileInput(o: Partial<ProfileInput> = {}): ProfileInput {
+  return {
+    displayName: '', level: 'intermediate', priorities: ['running'],
+    strength: { enabled: false, goal: 'general', sessionsPerWeek: 2 },
+    running: { enabled: true, population: 'P_R2', goal: 'HALF_MARATHON', wearable: false, sessionsPerWeek: 3, returnState: 'NONE' },
+    crosstraining: { enabled: false }, hyrox: { enabled: false },
+    equipment: { presetId: 'preset.full_gym', items: [...fullGym] },
+    availability: [60, 45, 60, 0, 60, 90, 75], excludedExercises: [], acceptedProvisionalAt: '2026-10-04T10:00:00Z', ...o,
+  };
+}
+
+/** Démarre la séance Strength du jour et renvoie l'index de la première série modifiable. */
+function openStrength() {
+  click('Commencer la séance');
+  click('Commencer la séance');
+}
+
+describe('onboarding Beta 0 et programme', () => {
+  it('Musculation : programme créé par le chemin Beta 0, semaine affichée, statut expérimental visible', () => {
+    const storage = new MemoryStorage();
+    onboard(storage, 'Musculation');
+    const s = saved(storage);
+    expect(s.programmeState?.definition.sports.map((x) => x.sport)).toEqual(['strength']);
+    expect(Object.keys(s.sessions)).toEqual([]);
+    expect(screen.getAllByText('BETA EXPÉRIMENTALE').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Commencer la séance' })).toBeTruthy();
+    click('Planning');
+    expect(screen.getAllByRole('button', { name: /Musculation : Full body, Prévue/ }).length).toBe(2);
+    expect(screen.queryByText('str_full_body')).toBeNull();
+    click('Programme');
+    expect(screen.getByText(/Certaines règles de planification sont encore en cours de validation/)).toBeTruthy();
+  });
+
+  it('Course : dernière course déclarée, séances composées par le moteur Course', () => {
+    const storage = new MemoryStorage();
+    onboard(storage, 'Course');
+    const s = saved(storage);
+    expect(s.running.realized).toHaveLength(1);
+    expect(s.programmeState?.definition.sports[0]).toMatchObject({ sport: 'running', composition: 'engine' });
+    click('Planning');
+    expect(screen.getAllByRole('button', { name: /^Course : /}).length).toBe(2);
+  });
+
+  it('Musculation + Course : hybride planifié (une séance par jour), priorité déclarée', () => {
+    const storage = new MemoryStorage();
+    onboard(storage, 'Musculation + Course');
+    const s = saved(storage);
+    expect(s.programmeState?.definition.priorities).toEqual(['strength', 'running']);
+    const w = s.planner.weeks[MONDAY];
+    expect(w?.hybrid).toBe(true);
+    expect(w?.authority).toBe('beta0_experimental');
+    const dates = (w?.requests ?? []).filter((r) => r.status === 'planned').map((r) => r.date);
+    expect(new Set(dates).size).toBe(dates.length);
+  });
+});
+
+describe('séance Strength', () => {
+  it('validation d’une série : valeurs réelles enregistrées, chrono démarré automatiquement (pause, +15 s, passer)', () => {
+    const storage = new MemoryStorage();
+    onboard(storage, 'Musculation');
+    openStrength();
+    const reps = screen.getAllByLabelText('Répétitions réalisées') as HTMLInputElement[];
+    const kg = screen.getAllByLabelText('Charge (kg)') as HTMLInputElement[];
+    const ticks = screen.getAllByRole('button', { name: 'Cocher la série' }) as HTMLButtonElement[];
+    // Aucune série n'est considérée faite d'office.
+    expect(saved(storage).programmeLogs[Object.keys(saved(storage).programmeLogs)[0] ?? '']?.sets).toEqual([]);
+    fireEvent.change(reps[0]!, { target: { value: '6' } });
+    fireEvent.change(kg[0]!, { target: { value: '37.5' } });
+    fireEvent.click(ticks[0]!);
+    const log = Object.values(saved(storage).programmeLogs)[0];
+    expect(log?.sets).toEqual([expect.objectContaining({ setIndex: 0, done: true, reps: 6, loadKg: 37.5 })]);
+    expect(log?.rest).not.toBeNull();
+    const timer = screen.getByRole('timer', { name: 'Chrono de repos' });
+    fireEvent.click(within(timer).getByRole('button', { name: 'Mettre le repos en pause' }));
+    expect(within(screen.getByRole('timer')).getByText('Repos en pause')).toBeTruthy();
+    const before = Object.values(saved(storage).programmeLogs)[0]?.rest?.pausedRemainingS ?? 0;
+    fireEvent.click(within(screen.getByRole('timer')).getByRole('button', { name: 'Ajouter 15 secondes' }));
+    expect(Object.values(saved(storage).programmeLogs)[0]?.rest?.pausedRemainingS).toBe(before + 15);
+    fireEvent.click(within(screen.getByRole('timer')).getByRole('button', { name: 'Reprendre le repos' }));
+    fireEvent.click(within(screen.getByRole('timer')).getByRole('button', { name: 'Passer' }));
+    expect(screen.queryByRole('timer')).toBeNull();
+    expect(screen.getByText(/1\/\d+ séries/)).toBeTruthy();
+  });
+
+  it('séance partiellement commencée : rechargement ⇒ série validée et chrono conservés, aucune autre série supposée faite', () => {
+    const storage = new MemoryStorage();
+    onboard(storage, 'Musculation');
+    openStrength();
+    const reps = screen.getAllByLabelText('Répétitions réalisées') as HTMLInputElement[];
+    if (reps[0]?.value === '') fireEvent.change(reps[0], { target: { value: '8' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Cocher la série' })[0]!);
+    cleanup();
+    mount(storage, at(MONDAY, '07:31:00'));
+    click('Reprendre la séance');
+    expect(screen.getAllByRole('button', { name: 'Décocher la série' })).toHaveLength(1);
+    expect(screen.getByRole('timer', { name: 'Chrono de repos' })).toBeTruthy();
+    expect(Object.values(saved(storage).programmeLogs)[0]?.sets.filter((x) => x.done)).toHaveLength(1);
+  });
+
+  it('fin de séance « adaptée » ⇒ enregistrée par le programme, terminée, visible dans l’historique avec les séries réelles ; conservée après rechargement', () => {
+    const storage = new MemoryStorage();
+    onboard(storage, 'Musculation');
+    openStrength();
+    fireEvent.change((screen.getAllByLabelText('Répétitions réalisées') as HTMLInputElement[])[0]!, { target: { value: '6' } });
+    fireEvent.change((screen.getAllByLabelText('Charge (kg)') as HTMLInputElement[])[0]!, { target: { value: '40' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Cocher la série' })[0]!);
+    click('Terminer la séance');
+    const sheet = within(screen.getByRole('dialog', { name: 'Fin de séance' }));
+    expect((sheet.getByRole('button', { name: 'Enregistrer' }) as HTMLButtonElement).disabled).toBe(true);
+    // « Comme prévu » sans toutes les séries : refus explicite, rien d'enregistré.
+    fireEvent.click(sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }));
+    fireEvent.click(sheet.getByRole('button', { name: 'Enregistrer' }));
+    expect(screen.getByRole('alert').textContent).toMatch(/J’ai adapté la séance/);
+    expect(saved(storage).programmeState?.results).toEqual([]);
+    fireEvent.click(sheet.getByRole('radio', { name: 'J’ai adapté la séance' }));
+    fireEvent.click(sheet.getByRole('button', { name: 'Enregistrer' }));
+    expect(saved(storage).programmeState?.results).toEqual([expect.objectContaining({ completion: 'modified' })]);
+    expect(screen.getByText(/Séance terminée/)).toBeTruthy();
+    click('Retour');
+    click('Planning');
+    expect(screen.getAllByRole('button', { name: /Full body, Adaptée/ })).toHaveLength(1);
+    click('Historique');
+    expect(screen.getByText(/6 × 40 kg/)).toBeTruthy();
+    cleanup();
+    mount(storage);
+    click('Historique');
+    expect(screen.getByText(/6 × 40 kg/)).toBeTruthy();
+  });
+});
+
+describe('séance Course', () => {
+  it('ouverture, saisie du résultat (durée, distance), fin ⇒ historique', () => {
+    const storage = new MemoryStorage();
+    onboard(storage, 'Course');
+    click('Commencer la séance');
+    expect(screen.getAllByText(/Effort/).length).toBeGreaterThan(0);
+    click('Commencer la séance');
+    click('Terminer la séance');
+    const sheet = within(screen.getByRole('dialog', { name: 'Fin de séance' }));
+    fireEvent.click(sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }));
+    expect((sheet.getByRole('button', { name: 'Enregistrer' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(sheet.getByLabelText(/Durée totale courue/), { target: { value: '32' } });
+    fireEvent.change(sheet.getByLabelText(/Distance/), { target: { value: '5.4' } });
+    fireEvent.click(sheet.getByRole('button', { name: 'Enregistrer' }));
+    const s = saved(storage);
+    expect(s.programmeState?.results).toEqual([expect.objectContaining({ sport: 'running', completion: 'completed_as_prescribed' })]);
+    expect(s.running.realized).toHaveLength(2);
+    click('Retour');
+    click('Historique');
+    expect(screen.getByText(/32 min · 5.4 km/)).toBeTruthy();
+  });
+
+  it('TEST chronométré identifiable ; temps du test exigé ; référence TIME_TRIAL enregistrée', () => {
+    const storage = new MemoryStorage();
+    const s0 = createBeta0Programme(emptyState(), profileInput(), at(MONDAY)(), { horizonWeeks: 4, lastRun: { realizedDurationS: 1800, distanceM: 5000, difficulty: 'AS_EXPECTED' } });
+    expect(saveState(storage, s0).ok).toBe(true);
+    mount(storage, at('2026-10-11'));
+    click('Planning');
+    const card = screen.getByRole('button', { name: /Test chronométré/ });
+    expect(within(card).getByText('TEST')).toBeTruthy();
+    fireEvent.click(card);
+    expect(screen.getByText('TEST CHRONOMÉTRÉ')).toBeTruthy();
+    click('Commencer la séance');
+    click('Terminer la séance');
+    const sheet = within(screen.getByRole('dialog', { name: 'Fin de séance' }));
+    fireEvent.click(sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }));
+    fireEvent.change(sheet.getByLabelText(/Durée totale courue/), { target: { value: '60' } });
+    expect((sheet.getByRole('button', { name: 'Enregistrer' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.change(sheet.getByLabelText('Minutes du test'), { target: { value: '25' } });
+    fireEvent.click(sheet.getByRole('button', { name: 'Enregistrer' }));
+    expect(saved(storage).running.references).toEqual([expect.objectContaining({ type: 'TIME_TRIAL', values: expect.objectContaining({ durationS: 1500 }) })]);
+  });
+});
+
+describe('douleur, persistance, import', () => {
+  it('douleur signalée ⇒ planification suspendue clairement ; levée explicite dans les réglages', () => {
+    const storage = new MemoryStorage();
+    onboard(storage, 'Musculation');
+    openStrength();
+    click('Terminer la séance');
+    const sheet = within(screen.getByRole('dialog', { name: 'Fin de séance' }));
+    fireEvent.click(sheet.getByRole('radio', { name: 'J’ai arrêté la séance' }));
+    fireEvent.click(sheet.getByLabelText('J’ai ressenti une douleur'));
+    fireEvent.click(sheet.getByRole('button', { name: 'Enregistrer' }));
+    expect(saved(storage).safety.activePain).not.toBeNull();
+    click('Retour');
+    expect(screen.getByText('La planification automatique est suspendue car une douleur a été signalée.')).toBeTruthy();
+    click('Ouvrir les réglages');
+    click('La douleur a disparu');
+    click('Je confirme');
+    expect(saved(storage).safety.activePain).toBeNull();
+    click('Accueil');
+    expect(screen.queryByText(/planification automatique est suspendue/)).toBeNull();
+  });
+
+  it('import : données d’un autre appareil relues par app-core, programme et historique restaurés', async () => {
+    const source = new MemoryStorage();
+    onboard(source, 'Musculation + Course');
+    const json = exportState(saved(source) as never);
+    cleanup();
+    const target = new MemoryStorage();
+    const s1 = createBeta0Programme(emptyState(), profileInput({ priorities: ['strength'], strength: { enabled: true, goal: 'strength', sessionsPerWeek: 1 }, running: { ...profileInput().running, enabled: false } }), at(MONDAY)(), { horizonWeeks: 4 });
+    saveState(target, s1);
+    mount(target);
+    click('Réglages');
+    fireEvent.change(screen.getByLabelText('Fichier de données à importer'), { target: { files: [new File([json], 'kairo.json', { type: 'application/json' })] } });
+    await waitFor(() => expect(screen.getByText('Données importées.')).toBeTruthy());
+    expect(saved(target).programmeState?.definition.priorities).toEqual(['strength', 'running']);
+    const bad = new File(['{"schemaVersion":99}'], 'x.json');
+    fireEvent.change(screen.getByLabelText('Fichier de données à importer'), { target: { files: [bad] } });
+    await waitFor(() => expect(screen.getByText(/Import impossible/)).toBeTruthy());
+    expect(saved(target).programmeState?.definition.priorities).toEqual(['strength', 'running']);
+  });
+
+  it('semaine suivante : ouverture le lundi d’après ⇒ semaine passée clôturée (séances non faites « manquées » dans l’historique), nouvelle semaine', () => {
+    const storage = new MemoryStorage();
+    onboard(storage, 'Musculation');
+    cleanup();
+    mount(storage, at('2026-10-12'));
+    const s = saved(storage);
+    expect(s.programmeState?.weeks.map((w) => w.closedAt !== undefined)).toEqual([true, false]);
+    click('Historique');
+    expect(screen.getAllByText('Manquée').length).toBe(2);
+  });
+});

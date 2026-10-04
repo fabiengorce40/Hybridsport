@@ -1,7 +1,7 @@
 {
   "name": "KAIRO",
   "short_name": "KAIRO",
-  "description": "Entraînement multisport — V0 (contenu provisoire)",
+  "description": "KAIRO — musculation et course, Beta expérimentale",
   "lang": "fr",
   "start_url": "./",
   "scope": "./",

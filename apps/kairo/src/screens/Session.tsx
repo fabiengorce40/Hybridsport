@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   approxMinutes, AUTHORITY_LABELS, DIFFICULTY_LABELS, durationLabel, exerciseLabel, finishSession, intensityLabel, PAIN_AREAS, paceLabel, reasonMessage, recordRun, recordSet, repsLabel, setKindLabel, setKindShort, startSession, togglePainItem,
 } from '@hybridsport/app-core';
-import type { AppState, Feedback, GeneratedSession, SessionItem, SessionLog, SetPrescription } from '@hybridsport/app-core';
+import type { AppState, Feedback, GeneratedSession, SessionItem, SessionLog, SetLog, SetPrescription } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
 import { RestTimer } from '../RestTimer.js';
 import type { RestState } from '../RestTimer.js';
@@ -22,7 +22,7 @@ function targetLine(t: RunSeg['target'], test: boolean): string {
   return [pace, effort].filter(Boolean).join(' · ');
 }
 
-function RunStructureView({ p, archetypeId }: { p: RunPrescription; archetypeId: string }) {
+export function RunStructureView({ p, archetypeId }: { p: RunPrescription; archetypeId: string }) {
   const test = archetypeId === 'running.test';
   const paced = p.segments.some((x) => x.target.priority === 'pace');
   const row = (key: string, title: string, value: string, sub: string) => (
@@ -52,13 +52,12 @@ function RunStructureView({ p, archetypeId }: { p: RunPrescription; archetypeId:
   );
 }
 
-const BLOCK_LABELS: Record<string, string> = { warmup: 'Échauffement', activation: 'Activation', strength: 'Force', accessory: 'Accessoires', running: 'Course', conditioning: 'Conditioning', cooldown: 'Retour au calme', skill: 'Technique', finisher: 'Finisher', hybrid_station_work: 'Stations' };
+export const BLOCK_LABELS: Record<string, string> = { warmup: 'Échauffement', activation: 'Activation', strength: 'Force', accessory: 'Accessoires', running: 'Course', conditioning: 'Conditioning', cooldown: 'Retour au calme', skill: 'Technique', finisher: 'Finisher', hybrid_station_work: 'Stations' };
 
-function SetRow({ item, set, index, workingNumber, log, editable, onRecord }: {
-  item: SessionItem; set: SetPrescription; index: number; workingNumber: number; log: SessionLog | undefined; editable: boolean;
+export function SetRow({ item: _item, set, index, workingNumber, saved, editable, onRecord }: {
+  item: SessionItem; set: SetPrescription; index: number; workingNumber: number; saved: SetLog | undefined; editable: boolean;
   onRecord: (index: number, v: { done: boolean; reps?: number; loadKg?: number }) => void;
 }) {
-  const saved = log?.sets.find((x) => x.itemId === item.id && x.setIndex === index);
   const prescribedKg = set.intensity?.mode === 'load' ? set.intensity.kg : set.intensity?.mode === 'percent_of_reference' ? set.intensity.kgRounded : undefined;
   // Pré-remplissage : uniquement ce que le moteur a PRESCRIT exactement (reps fixes, charge prescrite) ; une plage n'est jamais pré-remplie.
   const [reps, setReps] = useState<string>(saved?.reps !== undefined ? String(saved.reps) : typeof set.reps === 'number' ? String(set.reps) : '');
@@ -237,7 +236,7 @@ export function SessionScreen({ sessionKey, onBack, onEditProfile }: { sessionKe
                   {p.type === 'sets' && (
                     <>
                       <div className="set-head"><span>Série</span><span>Cible</span><span>Reps</span><span>Kg</span><span /></div>
-                      {p.sets.map((set, i) => <SetRow key={`${it.id}.${String(i)}`} item={it} set={set} index={i} workingNumber={p.sets.slice(0, i + 1).filter((x) => x.kind !== 'rampup').length} log={log} editable={editable} onRecord={(idx, v) => record(it, set, idx, v)} />)}
+                      {p.sets.map((set, i) => <SetRow key={`${it.id}.${String(i)}`} item={it} set={set} index={i} workingNumber={p.sets.slice(0, i + 1).filter((x) => x.kind !== 'rampup').length} saved={log?.sets.find((x) => x.itemId === it.id && x.setIndex === i)} editable={editable} onRecord={(idx, v) => record(it, set, idx, v)} />)}
                     </>
                   )}
                   {p.type === 'mobility' && <div className="set"><div className="idx">—</div><div className="target">{durationLabel(p.seconds)}{p.sides > 1 ? ` × ${String(p.sides)} côtés` : ''}</div></div>}

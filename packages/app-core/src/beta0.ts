@@ -83,6 +83,8 @@ export interface ProgrammeFromProfileOptions {
   readonly startWeek: string;
   readonly horizonWeeks: number;
   readonly origin: string;
+  /** Date cible DÉCLARÉE de l'objectif Running (contrat Running `goal.targetDate`), facultative. */
+  readonly runningTargetDate?: string;
 }
 
 /**
@@ -107,7 +109,7 @@ export function programmeDefinitionFromProfile(p: Profile, o: ProgrammeFromProfi
       assessment: { kind: 'running.test', intent: { ...runningFrame, archetypeId: ARCHETYPE_INTENT_IDS.TEST } },
     };
   });
-  const goals = enabled.map((s) => (s === 'strength' ? { goalId: 'goal.strength', sport: s, goal: p.strength.goal } : { goalId: 'goal.running', sport: s, goal: p.running.goal }));
+  const goals = enabled.map((s) => (s === 'strength' ? { goalId: 'goal.strength', sport: s, goal: p.strength.goal } : { goalId: 'goal.running', sport: s, goal: p.running.goal, ...(o.runningTargetDate ? { targetDate: o.runningTargetDate } : {}) }));
   return { programmeId: o.programmeId, origin: o.origin, startWeek: o.startWeek, horizonWeeks: o.horizonWeeks, goals, priorities: enabled, sports };
 }
 
@@ -121,6 +123,8 @@ export interface SessionView {
   readonly status: SessionViewStatus;
   /** Durée cible prescrite par le moteur (s) ; null si non planifiée. */
   readonly targetDurationS: number | null;
+  /** Durée ESTIMÉE de la séance par le CORE (p50, s), si l'enregistrement la porte ; sinon null. */
+  readonly estimatedDurationS: number | null;
   /** Archétype réellement utilisé (le libellé reste à l'interface) et rôle de composition éventuel. */
   readonly archetypeId: string | null;
   readonly role: string | null;
@@ -147,12 +151,15 @@ const INFORMATIVE = /^PLAN\.PLANNER\./;
 const mainReason = (rs: readonly Reason[]): Reason | null => rs.find((r) => !INFORMATIVE.test(r.code)) ?? rs[0] ?? null;
 
 function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResult | undefined): SessionView {
-  const session = (r.record?.data as { session?: { targetDurationS?: unknown } } | undefined)?.session;
+  const data = r.record?.data as { session?: { targetDurationS?: unknown }; durationEstimate?: { availability?: unknown; p50?: unknown } } | undefined;
+  const session = data?.session;
+  const estimate = data?.durationEstimate?.availability === 'AVAILABLE' && typeof data.durationEstimate.p50 === 'number' ? data.durationEstimate.p50 : null;
   const planned = r.status === 'planned';
   return {
     requestId: r.requestId, sport: r.sport, date: r.date ?? null,
     status: planned ? (result?.completion ?? 'planned') : 'not_planned',
     targetDurationS: planned && typeof session?.targetDurationS === 'number' ? session.targetDurationS : null,
+    estimatedDurationS: planned ? estimate : null,
     archetypeId: r.intent?.archetypeId ?? null, role: r.composition?.role ?? null, compositionAuthority: r.composition?.authority ?? null,
     notPlanned: planned ? null : { category: r.category, reason: mainReason(r.reasons) },
     pain: result?.pain ?? false,

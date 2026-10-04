@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
 /**
- * Tests fonctionnels de l'interface (jsdom) : parcours onboarding → planning → séance → séries → feedback →
- * historique, persistance à la réouverture, règles d'affichage (aucune séance vide, aucune saisie inventée).
+ * Tests fonctionnels de l'interface V0 (jsdom), chemin LEGACY conservé pour un profil antérieur sans programme :
+ * planning → séance → séries → feedback → historique, persistance à la réouverture, règles d'affichage (aucune
+ * séance vide, aucune saisie inventée), et invitation à créer le programme Beta 0.
  */
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
@@ -15,20 +16,26 @@ const clock = (): Clock => ({ today: '2026-10-05', now: '2026-10-05T07:30:00.000
 const mount = (storage: MemoryStorage) => render(<StoreProvider storage={storage} clock={clock}><App /></StoreProvider>);
 const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
 
-function onboard(storage: MemoryStorage, sports: RegExp[] = [/Musculation/]) {
+const fullGym = EQUIPMENT_PRESETS.find((p) => p.id === 'preset.full_gym')?.equipment ?? [];
+/** Profil V0 existant (créé par une version antérieure), sans programme Beta 0. */
+function onboard(storage: MemoryStorage, sports: ('strength' | 'running')[] = ['strength']) {
+  const s = completeOnboarding(emptyState(), {
+    displayName: '', level: 'beginner', priorities: sports,
+    strength: { enabled: sports.includes('strength'), goal: 'general', sessionsPerWeek: 2 },
+    running: { enabled: sports.includes('running'), population: 'P_R1', goal: 'GENERAL_RUNNING', wearable: false, sessionsPerWeek: 2, returnState: 'NONE' },
+    crosstraining: { enabled: false }, hyrox: { enabled: false },
+    equipment: { presetId: 'preset.full_gym', items: [...fullGym] },
+    availability: [60, 0, 60, 0, 60, 90, 0], excludedExercises: [], acceptedProvisionalAt: '2026-10-04T10:00:00Z',
+  }, clock());
+  expect(saveState(storage, s).ok).toBe(true);
   mount(storage);
-  expect(screen.getByRole('button', { name: 'Commencer' })).toHaveProperty('disabled', true);
-  fireEvent.click(screen.getByLabelText(/J’ai compris/));
-  click('Commencer');
-  for (const s of sports) click(s);
-  click('Continuer'); click('Continuer'); click('Continuer');
-  click('Générer mon planning');
 }
 
 describe('interface KAIRO', () => {
-  it('onboarding : avertissement obligatoire, puis accueil avec une séance réelle recommandée et la bannière provisoire', () => {
+  it('profil V0 : accueil V0 avec une séance réelle recommandée, la bannière provisoire et l’invitation Beta 0', () => {
     onboard(new MemoryStorage());
     expect(screen.getAllByText('V0 PROVISOIRE').length).toBeGreaterThan(0);
+    expect(screen.getByRole('button', { name: 'Créer mon programme' })).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Démarrer la séance' })).toBeTruthy();
     expect(screen.getAllByText('PROVISOIRE').length).toBeGreaterThan(0);
   });
@@ -77,7 +84,7 @@ describe('interface KAIRO', () => {
   });
 
   it('course seule sans course réalisée : carte « indisponible » avec la raison, jamais une séance inventée ; ouverture : aucun bouton Démarrer', () => {
-    onboard(new MemoryStorage(), [/Course à pied/]);
+    onboard(new MemoryStorage(), ['running']);
     click('Planning');
     const cards = screen.getAllByRole('button', { name: /Course à pied indisponible/ });
     expect(cards.length).toBeGreaterThan(0);
@@ -127,5 +134,18 @@ describe('interface KAIRO', () => {
     fireEvent.click(sheet.getByRole('button', { name: 'Enregistrer' }));
     const saved = JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}') as { running: { references: { type: string; values: { distanceM: number; durationS: number } }[] } };
     expect(saved.running.references).toEqual([expect.objectContaining({ type: 'TIME_TRIAL', values: { distanceM: 10000, durationS: 2700 } })]);
+  });
+
+  it('passage V0 → Beta 0 : profil repris, programme créé, la voie normale devient le Programme Engine', () => {
+    const storage = new MemoryStorage();
+    onboard(storage);
+    click('Créer mon programme');
+    fireEvent.click(screen.getByRole('radio', { name: /^Musculation Séances/ }));
+    click('Continuer'); click('Continuer'); click('Continuer');
+    click('Créer mon programme');
+    const saved = JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}') as { programmeState: { definition: { sports: { sport: string }[] } } | null };
+    expect(saved.programmeState?.definition.sports.map((x) => x.sport)).toEqual(['strength']);
+    expect(screen.getAllByText('BETA EXPÉRIMENTALE').length).toBeGreaterThan(0);
+    expect(screen.getByRole('navigation', { name: 'Navigation principale' }).textContent).toContain('Programme');
   });
 });

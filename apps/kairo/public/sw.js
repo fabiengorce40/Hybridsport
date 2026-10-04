@@ -1,6 +1,6 @@
 /* KAIRO — service worker minimal : l'application fonctionne hors ligne après le premier chargement.
    Réseau d'abord pour la page (mises à jour), cache d'abord pour les fichiers versionnés (assets/). */
-const CACHE = 'kairo-v0-1';
+const CACHE = 'kairo-beta0-1';
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png'])).then(() => self.skipWaiting()));
 });

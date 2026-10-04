@@ -138,7 +138,7 @@ Le statut glissant y est calculé sans horizon d'avance gouverné : seule la sem
 - **Adaptation** : aucune politique d'adaptation en Beta 0. Les décisions de clôture sont `BLOCKED` : ni progression ni réévaluation automatique, seulement la composition du moteur à partir de l'historique.
 - **Strength** : archétype `str_full_body` seulement.
 
-- L'UI appelle encore uniquement le chemin V0.
+- L'UI est raccordée au chemin Beta 0 (voir `BETA-0-UI.md`) ; le chemin V0 ne sert plus qu'aux profils antérieurs sans programme.
 - Aucune correction d'exécution (refus explicite d'une seconde saisie).
 - Les historiques CT et HYROX sont stockés faiblement typés (`record(unknown)`), validés aux frontières des moteurs.
 - Le stockage est local uniquement.

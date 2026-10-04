@@ -13,3 +13,4 @@ export * from './planning.js';
 export * from './programme.js';
 export * from './weeks.js';
 export * from './beta0.js';
+export * from './beta0-app.js';
