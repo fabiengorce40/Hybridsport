@@ -192,11 +192,25 @@ const zDemandOutcome = z.discriminatedUnion('status', [
   z.object({ status: z.literal('unavailable'), reasons: z.array(zReason) }).strict(),
 ]);
 
+/**
+ * Autorité de l'environnement d'orchestration (explicite, jamais un booléen global) :
+ * - `production` : mode PRODUCTION, valeurs approuvées seulement, aucune valeur SIMULATION_ONLY ;
+ * - `beta0_experimental` : mode CANDIDATE, valeurs SIMULATION_ONLY déclarées (fixtures existantes), interne ;
+ * - `test_only` : environnements construits par les tests.
+ * `unknown` : semaine persistée avant l'introduction de ce champ (aucune autorité reconstituée).
+ */
+export const ENVIRONMENT_AUTHORITIES = ['production', 'beta0_experimental', 'test_only'] as const;
+export type EnvironmentAuthority = (typeof ENVIRONMENT_AUTHORITIES)[number];
+
 /** Semaine planifiée par le planificateur global, PERSISTÉE : séances en session_record (enveloppe versionnée). */
 export const zPersistedWeek = z.object({
   weekStart: date,
   /** Propriétaire UNIQUE de la semaine (v2) : seul ce chemin peut la replanifier (voir weeks.ts). */
   owner: z.enum(['programme', 'multisport']),
+  /** Autorité de l'environnement qui a planifié la semaine (champ additif ; absent ⇒ `unknown`). */
+  authority: z.enum([...ENVIRONMENT_AUTHORITIES, 'unknown']).default('unknown'),
+  /** Valeurs SIMULATION_ONLY utilisées par l'environnement (identifiants), vide hors Beta 0 expérimental. */
+  simulation: z.array(z.string().min(1)).default([]),
   plannedAt: instant,
   mode: z.enum(PLANNER_MODES),
   hybrid: z.boolean(),
@@ -205,6 +219,10 @@ export const zPersistedWeek = z.object({
   requests: z.array(z.object({
     requestId: z.string().min(1), sport: z.enum(SPORTS), status: z.enum(['planned', 'refused', 'unplaced']), category: z.enum(REQUEST_CATEGORIES),
     date: date.optional(),
+    /** Intention RÉELLEMENT utilisée (déclarée, surchargée ou composée par le moteur). */
+    intent: z.object(Object.fromEntries(INTENT_FIELDS.map((k) => [k, z.string().min(1)])) as { [K in (typeof INTENT_FIELDS)[number]]: z.ZodString }).strict().optional(),
+    /** Composition du moteur appliquée : autorité de sa règle et rôle de la séance dans la semaine. */
+    composition: z.object({ authority: z.enum(['approved', 'provisional']), role: z.string().min(1) }).strict().optional(),
     /** Séance planifiée : session_record courant (relu par la migration du CORE). */
     record: zSerializedEnvelope.optional(),
     demand: zDemandOutcome.optional(),

@@ -35,6 +35,12 @@ export const GP_CODES = {
   DEMAND_PROFILE_NOT_APPROVED: 'RULE.PLANNER.DEMAND_PROFILE_NOT_APPROVED',
   /** Refus du moteur dû au SEUL créneau (trop court) : même demande essayée sur un créneau plus long. */
   SLOT_RETRY: 'PLAN.PLANNER.SLOT_RETRY',
+  /** Composition hebdomadaire du MOTEUR appliquée (autorité : approved | provisional). */
+  COMPOSITION_APPLIED: 'PLAN.PLANNER.COMPOSITION_APPLIED',
+  /** Composition demandée au moteur mais non gouvernée dans ce mode : aucune composition inventée. */
+  COMPOSITION_UNRESOLVED: 'RULE.PLANNER.COMPOSITION_UNRESOLVED',
+  /** Appel multisport d'un moteur sans provenance du planificateur global : refusé. */
+  PROVENANCE_REQUIRED: 'SCOPE.PLANNER.PROVENANCE_REQUIRED',
   /** Jour sans séance : indisponible (0 min) ou aucune demande restante. */
   DAY_EMPTY: 'PLAN.PLANNER.DAY_EMPTY',
 } as const;
@@ -53,6 +59,9 @@ export const GP_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: GP_CODES.NEIGHBOUR_CONTEXT, categories: ['information'], params: { requestId: S, known: S, neighbours: N, unknown: L }, audience: 'internal', severity: 'info' },
   { code: GP_CODES.DEMAND_PROFILE_NOT_APPROVED, categories: ['business_hard'], params: { sport: S, parameterId: S, mode: S }, audience: 'internal', severity: 'warning' },
   { code: GP_CODES.SLOT_RETRY, categories: ['information'], params: { sport: S, requestId: S, fromDate: S, fromMinutes: N, causes: L }, audience: 'internal', severity: 'info' },
+  { code: GP_CODES.COMPOSITION_APPLIED, categories: ['information'], params: { sport: S, authority: S, role: S, archetypeId: S }, audience: 'internal', severity: 'info' },
+  { code: GP_CODES.COMPOSITION_UNRESOLVED, categories: ['business_hard'], params: { sport: S, mode: S }, audience: 'user', severity: 'error' },
+  { code: GP_CODES.PROVENANCE_REQUIRED, categories: ['business_hard'], params: { engineId: S }, audience: 'internal', severity: 'error' },
   { code: GP_CODES.DAY_EMPTY, categories: ['information'], params: { date: S, cause: S }, audience: 'internal', severity: 'info' },
 ];
 

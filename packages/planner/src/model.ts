@@ -32,7 +32,13 @@ export const zSportIntent = z.object({
    * demandée par le programme. Le planificateur l'exécute telle quelle, sans l'interpréter.
    */
   overrides: z.array(z.object({ index: z.number().int().positive(), intent: z.object(Object.fromEntries(INTENT_FIELDS.map((k) => [k, z.string().min(1)])) as { [K in (typeof INTENT_FIELDS)[number]]: z.ZodString }).strict() }).strict()).default([]),
-}).strict();
+  /**
+   * `engine` : la composition hebdomadaire (archétype de chaque séance) appartient au MOTEUR du sport, appelé sur les
+   * jours placés ; l'intention déclarée n'en fournit que le cadre (stimulus, objectif, phase, tolérance). `declared` :
+   * intention exécutée telle quelle.
+   */
+  composition: z.enum(['declared', 'engine']).default('declared'),
+}).strict().refine((d) => d.composition !== 'engine' || d.intent.archetypeId === undefined, { message: 'composition par le moteur : archétype non déclaré par le programme', path: ['intent', 'archetypeId'] });
 export type SportIntent = z.input<typeof zSportIntent>;
 
 export const zPlannerInput = z.object({
@@ -83,7 +89,14 @@ export type DayResult =
   | { readonly date: string; readonly availableMinutes: number; readonly status: 'planned'; readonly sport: PlannerSport; readonly requestId: string }
   | { readonly date: string; readonly availableMinutes: number; readonly status: 'empty'; readonly reason: ReasonCode };
 
-interface RequestBase { readonly requestId: string; readonly sport: PlannerSport; readonly category: RequestCategory; readonly reasons: readonly ReasonCode[] }
+/** Composition appliquée à une séance : autorité de la règle du moteur et rôle dans la semaine. */
+export interface AppliedComposition { readonly authority: 'approved' | 'provisional'; readonly role: string }
+interface RequestBase {
+  readonly requestId: string; readonly sport: PlannerSport; readonly category: RequestCategory; readonly reasons: readonly ReasonCode[];
+  /** Intention RÉELLEMENT utilisée (déclarée, surchargée ou composée par le moteur). */
+  readonly intent?: DeclaredIntent;
+  readonly composition?: AppliedComposition;
+}
 export type RequestResult =
   | (RequestBase & {
     readonly status: 'planned'; readonly date: string; readonly session: SessionDraft; readonly fingerprint?: SessionFingerprint;

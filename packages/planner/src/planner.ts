@@ -24,8 +24,8 @@ import type { LoadedRuleset } from '@hybridsport/engine';
 import { GP_CODES, gpReasons } from './codes.js';
 import { readPlannerParam } from './governance.js';
 import { INTENT_FIELDS, zPlannerInput } from './model.js';
-import type { DayResult, DeclaredIntent, DemandOutcome, NeighbourContext, PlannedWeek, PlannerClock, PlannerInput, PlannerSport, RequestCategory, RequestResult } from './model.js';
-import type { PortOutcome, SportPort, StructuresResult } from './ports.js';
+import type { AppliedComposition, DayResult, DeclaredIntent, DemandOutcome, NeighbourContext, PlannedWeek, PlannerClock, PlannerInput, PlannerSport, RequestCategory, RequestResult } from './model.js';
+import type { CompositionBase, PortOutcome, SportPort, StructuresResult } from './ports.js';
 import { classifyRefusal } from './refusal.js';
 import type { RefusalClass } from './refusal.js';
 
@@ -93,18 +93,36 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     return { known: neighbours.length === others.length, neighbours };
   };
 
+  // Composition par le MOTEUR (G0') : vérifiée AVANT placement (aucun jour réservé pour une composition non gouvernée).
+  const compositionBlocked = new Map<PlannerSport, readonly ReasonCode[]>();
+  for (const d of input.demands) {
+    if (d.composition !== 'engine') continue;
+    const comp = ports[d.sport]?.composition;
+    if (!ports[d.sport]) continue;
+    if (!comp) { compositionBlocked.set(d.sport, [gpReasons.emit(GP_CODES.COMPOSITION_UNRESOLVED, { sport: d.sport, mode: input.mode })]); continue; }
+    const missing = INTENT_FIELDS.filter((f) => f !== 'archetypeId' && d.intent[f] === undefined);
+    if (missing.length > 0) continue;
+    const check = comp.compose({ days: [], base: d.intent as CompositionBase, hybrid, mode: input.mode });
+    if (check.status === 'unresolved') compositionBlocked.set(d.sport, check.reasons);
+  }
+
   // Demandes en tour de rôle selon l'ordre DÉCLARÉ ; intention de programme vérifiée (G0).
   const max = Math.max(0, ...input.demands.map((d) => d.sessions));
-  const requests: { requestId: string; sport: PlannerSport; intent?: DeclaredIntent; missing: string[]; station?: string }[] = [];
+  interface Request { requestId: string; sport: PlannerSport; intent?: DeclaredIntent; missing: string[]; station?: string; composed: boolean; final: boolean }
+  const requests: Request[] = [];
   for (let k = 1; k <= max; k++) {
     for (const d of input.demands) {
       if (k > d.sessions) continue;
       const override = d.overrides.find((o) => o.index === k)?.intent;
-      const missing = override ? [] : INTENT_FIELDS.filter((f) => d.intent[f] === undefined);
-      const intent = override ?? (missing.length === 0 ? (d.intent as DeclaredIntent) : undefined);
-      requests.push({ requestId: `${input.weekStart}.${d.sport}.${String(k)}`, sport: d.sport, missing, ...(intent ? { intent } : {}), ...(d.station === undefined ? {} : { station: d.station }) });
+      const composed = !override && d.composition === 'engine';
+      const missing = override ? [] : INTENT_FIELDS.filter((f) => !(composed && f === 'archetypeId') && d.intent[f] === undefined);
+      // Composition par le moteur : jour réservé avec l'archétype de placement DU MOTEUR, remplacé après composition.
+      const placement = ports[d.sport]?.composition?.placementArchetypeId;
+      const intent = override ?? (missing.length > 0 ? undefined : composed ? (placement === undefined ? undefined : { ...(d.intent as CompositionBase), archetypeId: placement }) : (d.intent as DeclaredIntent));
+      requests.push({ requestId: `${input.weekStart}.${d.sport}.${String(k)}`, sport: d.sport, missing, composed, final: !composed, ...(intent ? { intent } : {}), ...(d.station === undefined ? {} : { station: d.station }) });
     }
   }
+  const compositionOf = new Map<string, { applied: AppliedComposition; reasons: readonly ReasonCode[] }>();
 
   const results = new Map<string, RequestResult>();
   const conflicts: ReasonCode[] = [];
@@ -116,14 +134,19 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     const own = conflicts.filter((c) => c.params.sport === sport && tried.includes(String(c.params.date)));
     return own.length > 0 && own.every((c) => GOVERNANCE_RULE.test(String(c.params.rule))) ? 'governance_blocked' : 'interference_conflict';
   };
-  const plannedResult = (r: { requestId: string; sport: PlannerSport }, date: string, out: Extract<PortOutcome, { status: 'planned' }>, p: Placed, n?: NeighbourContext): RequestResult => ({
-    ...r, status: 'planned', category: 'planned', date, session: out.session, ...(out.fingerprint ? { fingerprint: out.fingerprint } : {}), record: out.record, demand: p.demand,
-    ...(n ? { neighbourContext: n } : {}),
-    reasons: [gpReasons.emit(GP_CODES.PLACED, { sport: r.sport, requestId: r.requestId, date }), ...(n ? [neighbourReason(r.requestId, n)] : []), ...out.reasons],
-  });
+  const plannedResult = (r: { requestId: string; sport: PlannerSport }, date: string, out: Extract<PortOutcome, { status: 'planned' }>, p: Placed, n?: NeighbourContext): RequestResult => {
+    const c = compositionOf.get(r.requestId);
+    return {
+      ...r, status: 'planned', category: 'planned', date, session: out.session, ...(out.fingerprint ? { fingerprint: out.fingerprint } : {}), record: out.record, demand: p.demand,
+      ...(n ? { neighbourContext: n } : {}), ...(c ? { composition: c.applied } : {}),
+      reasons: [gpReasons.emit(GP_CODES.PLACED, { sport: r.sport, requestId: r.requestId, date }), ...(c?.reasons ?? []), ...(n ? [neighbourReason(r.requestId, n)] : []), ...out.reasons],
+    };
+  };
 
   for (const r of requests) {
     const base = { requestId: r.requestId, sport: r.sport };
+    const blocked = r.composed ? compositionBlocked.get(r.sport) : undefined;
+    if (blocked) { results.set(r.requestId, { ...base, status: 'unplaced', category: 'governance_blocked', reasons: blocked }); continue; }
     if (!r.intent) { results.set(r.requestId, { ...base, status: 'unplaced', category: 'programme_intent_incomplete', reasons: [gpReasons.emit(GP_CODES.PROGRAMME_INTENT_INCOMPLETE, { sport: r.sport, missing: r.missing })] }); continue; }
     const port = ports[r.sport];
     if (!port) { results.set(r.requestId, { ...base, status: 'unplaced', category: 'engine_unavailable', reasons: [gpReasons.emit(GP_CODES.ENGINE_UNAVAILABLE, { sport: r.sport })] }); continue; }
@@ -173,6 +196,52 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     if (!done) results.set(r.requestId, { ...base, status: 'unplaced', category: conflictCategory(r.requestId, r.sport, tried), reasons: [gpReasons.emit(GP_CODES.INTERFERENCE_UNRESOLVED, { sport: r.sport, requestId: r.requestId, triedDates: tried })] });
   }
 
+  // Passe de composition : le MOTEUR choisit l'archétype de chaque jour réservé à son sport (sonde = génération
+  // réelle) ; une séance déclarée (surcharge du programme, ex. évaluation) est verrouillée, jamais doublée. Chaque
+  // séance composée est régénérée sur son jour (même graine) puis revérifiée (G4).
+  for (const d of input.demands) {
+    const port = ports[d.sport];
+    const comp = port?.composition;
+    if (d.composition !== 'engine' || !port || !comp || compositionBlocked.has(d.sport)) continue;
+    const own = requests.filter((r) => r.sport === d.sport && placed.has(r.requestId));
+    if (!own.some((r) => r.composed)) continue;
+    const days = own.map((r) => {
+      const p = placed.get(r.requestId) as Placed;
+      return { date: p.date, availableMinutes: minutes.get(p.date) ?? 0, requestId: r.requestId, ...(r.composed || !r.intent ? {} : { locked: r.intent }) };
+    }).sort((a, b) => (a.date < b.date ? -1 : 1));
+    const res = comp.compose({ days, base: d.intent as CompositionBase, hybrid, mode: input.mode });
+    for (const r of own.filter((x) => x.composed)) {
+      const p = placed.get(r.requestId) as Placed;
+      const base = { requestId: r.requestId, sport: r.sport };
+      const slot = res.status === 'composed' ? res.days.find((x) => x.date === p.date) : undefined;
+      if (res.status === 'unresolved' || !slot) {
+        placed.delete(r.requestId);
+        results.set(r.requestId, { ...base, status: 'unplaced', category: 'governance_blocked', reasons: [gpReasons.emit(GP_CODES.COMPOSITION_UNRESOLVED, { sport: r.sport, mode: input.mode }), ...res.reasons] });
+        continue;
+      }
+      r.intent = slot.intent;
+      r.final = true;
+      compositionOf.set(r.requestId, { applied: { authority: res.status === 'composed' ? res.authority : 'provisional', role: slot.role }, reasons: [gpReasons.emit(GP_CODES.COMPOSITION_APPLIED, { sport: r.sport, authority: res.authority, role: slot.role, archetypeId: slot.intent.archetypeId }), ...res.reasons] });
+      const out = port.generate({ requestId: r.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, seed: `planner:${r.requestId}:${p.date}`, intent: slot.intent, ...(r.station === undefined ? {} : { station: r.station }) });
+      if (out.status === 'refused') {
+        placed.delete(r.requestId);
+        results.set(r.requestId, { ...base, status: 'refused', category: refusedCategory(out.reasons), date: p.date, reasons: [gpReasons.emit(GP_CODES.ENGINE_REFUSED, { sport: r.sport, requestId: r.requestId, date: p.date }), ...out.reasons] });
+        continue;
+      }
+      const structures = port.structures(out.session);
+      const found = conflictsOf(r.sport, p.date, structures, r.requestId);
+      conflicts.push(...found);
+      if (found.length > 0) {
+        placed.delete(r.requestId);
+        results.set(r.requestId, { ...base, status: 'unplaced', category: conflictCategory(r.requestId, r.sport, [p.date]), reasons: [gpReasons.emit(GP_CODES.INTERFERENCE_UNRESOLVED, { sport: r.sport, requestId: r.requestId, triedDates: [p.date] })] });
+        continue;
+      }
+      const next: Placed = { ...p, stimulus: slot.intent.stimulus, session: out.session, structures, demand: port.demand(out.session, input.mode) };
+      placed.set(r.requestId, next);
+      results.set(r.requestId, plannedResult(base, p.date, out, next));
+    }
+  }
+
   // Seconde passe : contexte voisin pour les moteurs consommateurs (multisport seulement ; mono-sport inchangé).
   if (hybrid) {
     for (const r of requests) {
@@ -209,7 +278,8 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
   });
   return {
     weekStart: input.weekStart, mode: input.mode, hybrid, days,
-    requests: requests.flatMap((r) => { const x = results.get(r.requestId); return x ? [x] : []; }),
+    // Intention RÉELLEMENT utilisée : déclarée, surchargée ou composée (jamais l'archétype de simple réservation).
+    requests: requests.flatMap((r) => { const x = results.get(r.requestId); return x ? [r.final && r.intent ? { ...x, intent: r.intent } : x] : []; }),
     conflicts, governance: hybrid ? windows.reasons : [],
   };
 }

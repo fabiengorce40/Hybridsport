@@ -31,7 +31,7 @@ type Seen = { strength: unknown[]; running: unknown[]; crosstraining: { input: u
 function env(seen: Seen): ProgrammeEnvironment {
   const spy = <E extends { propose: (i: never) => unknown }>(e: E, f: (i: unknown, o: unknown) => void): E => ({ ...e, propose: (i: never) => { const o = e.propose(i); f(i, o); return o; } });
   return {
-    mode: 'CANDIDATE', governance: plannerGovernance(), programmeGovernance: programmeGovernance(),
+    mode: 'CANDIDATE', authority: 'test_only', governance: plannerGovernance(), programmeGovernance: programmeGovernance(),
     strength: { engine: spy(StrengthEngine, (i) => seen.strength.push(i)) as SportEngine<unknown>, content: withDemand(strengthContent()) },
     running: { engine: spy(createRunningEngine({ governance: runningGovernance(), simulation: true }), (i) => seen.running.push(i)) as SportEngine<unknown>, content: withDemand(runningContent()) },
     crosstraining: { engine: spy(createCrossTrainingEngine({ governance: ctGovernance(), simulation: true }), (i, o) => seen.crosstraining.push({ input: i, out: o })) as CrossTrainingEngine, content: withDemand({ ruleset: testRuleset(testRulesetDocumentWithDuplicate()), catalog: testCatalog() }) },

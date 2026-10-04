@@ -5,7 +5,7 @@
 import { asISODateTime } from '@hybridsport/domain';
 import type { FingerprintHistoryEntry } from '@hybridsport/domain';
 import { loadRuleset } from '@hybridsport/engine';
-import type { CoreProfile, LoadedCatalog, LoadedRuleset } from '@hybridsport/engine';
+import type { CoreProfile } from '@hybridsport/engine';
 import { StrengthEngine, findArchetype, readStrengthParams } from '@hybridsport/strength';
 import type { StrengthContextInput } from '@hybridsport/strength';
 import { CURRENT_RUNNING_GOVERNANCE, createRunningEngine, withProductDecisions } from '@hybridsport/running';
@@ -15,12 +15,14 @@ import type { CrossTrainingContextInput, CtGovernance, CtParameter } from '@hybr
 import { HR_H1_ARCHETYPE, createHyroxEngine } from '@hybridsport/hyrox';
 import type { HyroxContextInput } from '@hybridsport/hyrox';
 import { crossTrainingPort, hyroxPort, runningPort, strengthPort } from '../src/index.js';
+import { withDemand } from './simulation.js';
+export { STRUCTURE_IDS, TEST_DOSE_NORMALIZATION, TEST_WINDOW_H, plannerGovernance, withDemand } from './simulation.js';
 import type { DeclaredIntent, PlannerClock, PlannerInput, SportIntent, SportPort, SportPorts } from '../src/index.js';
 import { runningContent, strengthContent } from '../../app-core/src/provisional-content.js';
 import { STATE_FRESH } from '../../engine/tests/harness/requests.js';
 import { presetEquipment } from '../../engine/tests/fixtures/context.js';
 import { testCatalog, testRuleset } from '../../engine/tests/fixtures/load.js';
-import { param, testRulesetDocument } from '../../engine/tests/fixtures/ruleset.js';
+import { param } from '../../engine/tests/fixtures/ruleset.js';
 import { withCandidate, withParameter } from '../../crosstraining/tests/fixtures.js';
 import { approvedTestOnly, hyroxCatalog, hyroxRuleset } from '../../hyrox/tests/fixtures.js';
 import { STRENGTH_PRESETS } from '../../strength/tests/fixtures/catalog.js';
@@ -33,23 +35,6 @@ export const days = (minutes: readonly number[] = AVAILABILITY) => WEEK.map((dat
 
 /** Horloge injectée de test : séances à midi UTC (convention de l'application V0). */
 export const clock: PlannerClock = { instantOf: (d) => asISODateTime(`${d}T12:00:00Z`), timezone: 'Europe/Paris' };
-
-// technical-constant: TEST_ONLY — normalisation des doses (profil de demande standard) ; aucune valeur approuvée
-export const TEST_DOSE_NORMALIZATION = {
-  strength: { working_set: { perUnit: 2, intensityBand: 'high' }, second: { perUnit: 0.05, intensityBand: 'moderate' } },
-  running: { run_structure_work_second: { perUnit: 0.01, intensityBand: 'moderate' }, second: { perUnit: 0.01, intensityBand: 'moderate' }, meter: { perUnit: 0.004, intensityBand: 'moderate' } },
-  crosstraining: { second: { perUnit: 0.03, intensityBand: 'high' }, rep: { perUnit: 0.2, intensityBand: 'high' } },
-  hybrid_race: { meter: { perUnit: 0.03, intensityBand: 'high' }, rep: { perUnit: 0.5, intensityBand: 'high' }, second: { perUnit: 0.1, intensityBand: 'high' }, calorie: { perUnit: 0.5, intensityBand: 'high' } },
-} as const;
-
-/** Contenu + normalisation des doses TEST_ONLY (`null` ⇒ contenu inchangé : profil non dérivable). */
-export function withDemand(content: { ruleset: LoadedRuleset; catalog: LoadedCatalog }, normalization: unknown = TEST_DOSE_NORMALIZATION, extra: Record<string, unknown> = {}) {
-  if (normalization === null) return content;
-  const doc = content.ruleset.document;
-  const r = loadRuleset({ ...doc, parameters: [...doc.parameters.filter((p) => p.id !== 'demand.doseNormalization'), param('demand.doseNormalization', normalization as never, 'G2', extra)] } as never);
-  if (!r.ok) throw new Error(`ruleset de test invalide : ${JSON.stringify(r.issues)}`);
-  return { ruleset: r.ruleset, catalog: content.catalog };
-}
 
 const fullGym = STRENGTH_PRESETS.find((p) => p.id === 'preset.full_gym')?.equipment ?? [];
 export const PROFILE: CoreProfile = {
@@ -145,14 +130,7 @@ export function hyrox(o: { hybridAllowed?: boolean | null; profile?: CoreProfile
   return hyroxPort({ engine: createHyroxEngine({ simulation: true }), content: hyroxContent(o), profile: o.profile ?? PROFILE, state: STATE_FRESH, history: [], clock, baseContext });
 }
 
-// ——— Gouvernance du planificateur (TEST_ONLY)
-// technical-constant: TEST_ONLY — écart inter-disciplines de test par structure (heures)
-export const TEST_WINDOW_H = 24;
-export const STRUCTURE_IDS = ['lower_knee', 'lower_hip', 'upper_push', 'upper_pull', 'axial', 'locomotor_impact', 'high_intensity_systemic', 'grip'] as const;
-export function plannerGovernance(windows: Record<string, number> | null = Object.fromEntries(STRUCTURE_IDS.map((s) => [s, TEST_WINDOW_H])), extra: Record<string, unknown> = {}): LoadedRuleset {
-  const doc = testRulesetDocument();
-  return testRuleset({ ...doc, parameters: [...doc.parameters, ...(windows === null ? [] : [param('planner.interference.structureWindows', windows, 'G2', extra)])] });
-}
+// ——— Gouvernance du planificateur (TEST_ONLY) : voir simulation.ts (source unique, reprise par Beta 0)
 export { approvedTestOnly };
 
 export const ALL_PORTS = (): SportPorts => ({ strength: strength(), running: running(), crosstraining: crosstraining(), hyrox: hyrox() });

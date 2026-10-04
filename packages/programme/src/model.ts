@@ -40,6 +40,14 @@ type IntentShape<T> = { [K in (typeof INTENT_FIELDS)[number]]: T };
 export const zFullIntent = z.object(Object.fromEntries(INTENT_FIELDS.map((k) => [k, z.string().min(1)])) as IntentShape<z.ZodString>).strict();
 export const zPartialIntent = z.object(Object.fromEntries(INTENT_FIELDS.map((k) => [k, z.string().min(1).optional()])) as IntentShape<z.ZodOptional<z.ZodString>>).strict();
 export type FullIntent = z.infer<typeof zFullIntent>;
+/** Intention de programme d'un sport : complète (`declared`) ou sans archétype (`engine` : le moteur compose). */
+export type ProgrammeIntent = z.infer<typeof zPartialIntent>;
+/**
+ * Composition hebdomadaire : `declared` ⇒ intention exécutée telle quelle ; `engine` ⇒ le MOTEUR du sport choisit
+ * l'archétype de chaque séance (via le planificateur) ; le programme ne déclare que le cadre (stimulus, objectif,
+ * phase, tolérance) et le nombre de séances.
+ */
+export const COMPOSITIONS = ['declared', 'engine'] as const;
 
 export const DECISIONS = ['HOLD', 'PROGRESS', 'REGRESS', 'REASSESS', 'BLOCKED'] as const;
 export type ProgrammeDecisionKind = (typeof DECISIONS)[number];
@@ -48,7 +56,8 @@ export type ProgrammeDecisionKind = (typeof DECISIONS)[number];
 export const zSportPlan = z.object({
   sport,
   sessionsPerWeek: z.number().int().positive().max(DAYS_PER_WEEK),
-  intent: zFullIntent,
+  composition: z.enum(COMPOSITIONS).default('declared'),
+  intent: zPartialIntent,
   station: z.string().min(1).optional(),
   /** Déclarations propres au moteur (contrat de contexte), transmises telles quelles. */
   declarations: z.record(z.string(), z.unknown()).default({}),
@@ -56,7 +65,14 @@ export const zSportPlan = z.object({
   variants: z.object({ PROGRESS: zPartialIntent.optional(), REGRESS: zPartialIntent.optional() }).strict().default({}),
   /** Évaluation déclarée pour ce sport (intention de séance du moteur) ; absente ⇒ contenu d'évaluation indisponible. */
   assessment: z.object({ kind: z.string().min(1), intent: zFullIntent }).strict().optional(),
-}).strict();
+}).strict().superRefine((p, ctx) => {
+  for (const f of INTENT_FIELDS) {
+    const engineOwned = p.composition === 'engine' && f === 'archetypeId';
+    if (engineOwned && p.intent[f] !== undefined) ctx.addIssue({ code: 'custom', path: ['intent', f], message: 'composition par le moteur : archétype non déclaré' });
+    if (!engineOwned && p.intent[f] === undefined) ctx.addIssue({ code: 'custom', path: ['intent', f], message: 'champ d’intention requis' });
+    if (engineOwned && (p.variants.PROGRESS?.[f] !== undefined || p.variants.REGRESS?.[f] !== undefined)) ctx.addIssue({ code: 'custom', path: ['variants'], message: 'composition par le moteur : variante sans archétype' });
+  }
+});
 export type SportPlan = z.infer<typeof zSportPlan>;
 
 export const zProgrammeDefinition = z.object({
@@ -158,7 +174,8 @@ export type ProgrammeDecision = z.infer<typeof zDecision>;
 
 /** Intention de semaine transmise au planificateur (forme de ses demandes). */
 export const zWeekDemand = z.object({
-  sport, sessions: z.number().int().positive(), intent: zFullIntent, station: z.string().optional(),
+  sport, sessions: z.number().int().positive(), intent: zPartialIntent, station: z.string().optional(),
+  composition: z.enum(COMPOSITIONS).default('declared'),
   overrides: z.array(z.object({ index: z.number().int().positive(), intent: zFullIntent }).strict()).default([]),
 }).strict();
 export const zProgrammeWeekIntent = z.object({
@@ -179,7 +196,13 @@ export const zProgrammeWeek = z.object({
   /** Référence de la semaine planifiée persistée par l'application (clé), jamais recopiée. */
   plannerRef: date,
   /** Résumé minimal nécessaire à l'adhérence (statut et catégorie de chaque demande). */
-  requests: z.array(z.object({ requestId: z.string(), sport, status: z.enum(['planned', 'refused', 'unplaced']), category: z.enum(REQUEST_CATEGORIES), date: date.optional() }).strict()),
+  requests: z.array(z.object({
+    requestId: z.string(), sport, status: z.enum(['planned', 'refused', 'unplaced']), category: z.enum(REQUEST_CATEGORIES), date: date.optional(),
+    /** Intention RÉELLEMENT utilisée par le planificateur (déclarée, surchargée ou composée par le moteur). */
+    intent: zFullIntent.optional(),
+    /** Composition du moteur appliquée : autorité de sa règle et rôle de la séance. */
+    composition: z.object({ authority: z.enum(['approved', 'provisional']), role: z.string().min(1) }).strict().optional(),
+  }).strict()),
   closedAt: instant.optional(),
   adherence: z.object({ total: zAdherence, bySport: z.record(z.string(), zAdherence) }).strict().optional(),
 }).strict();
@@ -190,7 +213,7 @@ export const zProgrammeState = z.object({
   definition: zProgrammeDefinition,
   createdAt: instant,
   /** Intention COURANTE par sport (départ : intention déclarée ; modifiée seulement par une variante déclarée). */
-  current: z.array(z.object({ sport, intent: zFullIntent }).strict()),
+  current: z.array(z.object({ sport, intent: zPartialIntent }).strict()),
   weeks: z.array(zProgrammeWeek),
   results: z.array(zProgrammeResult),
   assessments: z.array(zAssessment),

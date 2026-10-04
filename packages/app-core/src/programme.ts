@@ -14,7 +14,7 @@ import { assertPlanningAllowed, writePlannedWeek } from './weeks.js';
 import type { Clock } from './app.js';
 import { addDays, normalizeInstant } from './dates.js';
 import type { AppState, Feedback, ProgrammeIntent, SessionLog, SetLog } from './model.js';
-import { appPlannerEnvironment, buildPorts, clockOf, persistWeek, recentOf } from './planning.js';
+import { appPlannerEnvironment, assertEnvironment, buildPorts, clockOf, persistWeek, recentOf } from './planning.js';
 import type { EngineGoals, PlannerEnvironment } from './planning.js';
 import { applyStrengthExecution, realizedRunFrom, testReferenceFrom } from './progression.js';
 import { realizeCrossTrainingC2, realizeHyroxStation } from '@hybridsport/planner';
@@ -48,7 +48,7 @@ function portInputs(ps: ProgrammeState): { intent: ProgrammeIntent; goals: Engin
     origin: d.origin,
     sports: d.priorities.flatMap((sp) => {
       const plan = d.sports.find((x) => x.sport === sp);
-      return plan ? [{ sport: sp, sessions: plan.sessionsPerWeek, intent: { ...plan.intent }, declarations: { ...plan.declarations }, ...(plan.station === undefined ? {} : { station: plan.station }) }] : [];
+      return plan ? [{ sport: sp, sessions: plan.sessionsPerWeek, intent: { ...plan.intent }, ...(plan.composition === 'engine' ? { composition: 'engine' as const } : {}), declarations: { ...plan.declarations }, ...(plan.station === undefined ? {} : { station: plan.station }) }] : [];
     }),
   };
   const goals: { -readonly [K in keyof EngineGoals]: EngineGoals[K] } = {};
@@ -65,6 +65,7 @@ export function planProgrammeCurrentWeek(state: AppState, clock: Clock, env: Pro
   const p = state.profile;
   if (!p) throw new AppError('PROFILE_MISSING');
   const ps = requireProgramme(state);
+  assertEnvironment(env);
   // Douleur active : garde COMMUNE à tous les chemins de planification (weeks.ts).
   assertPlanningAllowed(state);
   const i = weekIndex ?? weekIndexOf(ps, clock.today);
@@ -77,7 +78,7 @@ export function planProgrammeCurrentWeek(state: AppState, clock: Clock, env: Pro
   });
   if (!r.ok) throw new ProgrammeError('PROGRAMME_WEEK_NOT_PLANNABLE', r.reasons);
   // Écriture par la passerelle unique : jamais de remplacement d'une semaine commencée ou clôturée (refus, état inchangé).
-  const written = writePlannedWeek(state, persistWeek(r.value.week, normalizeInstant(clock.now), ps.definition.origin), 'programme');
+  const written = writePlannedWeek(state, persistWeek(r.value.week, normalizeInstant(clock.now), ps.definition.origin, env), 'programme');
   return { ...written, programmeState: r.value.state };
 }
 

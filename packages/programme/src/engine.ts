@@ -12,7 +12,7 @@
  */
 import type { ReasonCode } from '@hybridsport/domain';
 import type { LoadedRuleset } from '@hybridsport/engine';
-import { planMultisportWeek } from '@hybridsport/planner';
+import { INTENT_FIELDS, planMultisportWeek } from '@hybridsport/planner';
 import type { PlannedWeek, PlannerClock, PlannerInput, PlannerMode, SportPorts } from '@hybridsport/planner';
 import { adherenceOf } from './adherence.js';
 import { PG_CODES, pgReasons } from './codes.js';
@@ -84,7 +84,7 @@ export function weekIntent(s: ProgrammeState, i: number): ProgrammeWeekIntent {
     const intent = s.current.find((x) => x.sport === sp)?.intent;
     if (!plan || !intent) return [];
     const assess = scheduled.find((a) => a.sport === sp);
-    return [{ sport: sp, sessions: plan.sessionsPerWeek, intent, ...(plan.station === undefined ? {} : { station: plan.station }), overrides: assess && plan.assessment ? [{ index: 1, intent: plan.assessment.intent }] : [] }];
+    return [{ sport: sp, sessions: plan.sessionsPerWeek, composition: plan.composition, intent, ...(plan.station === undefined ? {} : { station: plan.station }), overrides: assess && plan.assessment ? [{ index: 1, intent: plan.assessment.intent }] : [] }];
   });
   const phase = d.phases.find((p) => p.fromWeek <= i && i <= p.toWeek)?.label ?? null;
   return { weekIndex: i, weekStart: weekStartAt(s, i), phase, demands, assessments: scheduled.map((a) => a.assessmentId) };
@@ -115,7 +115,10 @@ export function planProgrammeWeek(s: ProgrammeState, i: number, deps: PlanWeekDe
   if (status !== 'plannable' && !replannable) return fail(pgReasons.emit(PG_CODES.WEEK_NOT_PLANNABLE, { weekIndex: i, status }), ...(status === 'projected' ? ahead.reasons : []));
   const intent = weekIntent(s, i);
   const week = planMultisportWeek({ weekStart: intent.weekStart, days: deps.days, demands: intent.demands, mode: deps.mode, recent: deps.recent ?? [] }, deps.ports, deps.plannerGovernance, deps.clock);
-  const requests = week.requests.map((r) => ({ requestId: r.requestId, sport: r.sport, status: r.status, category: r.category, ...(r.status === 'unplaced' ? {} : { date: r.date }) }));
+  const requests = week.requests.map((r) => ({
+    requestId: r.requestId, sport: r.sport, status: r.status, category: r.category, ...(r.status === 'unplaced' ? {} : { date: r.date }),
+    ...(r.intent ? { intent: r.intent } : {}), ...(r.composition ? { composition: r.composition } : {}),
+  }));
   const entry: ProgrammeWeek = { weekIndex: i, weekStart: intent.weekStart, intent, plannedAt: deps.at, plannerRef: intent.weekStart, requests };
   // Évaluations de la semaine : la PREMIÈRE séance du sport porte l'intention d'évaluation (surcharge).
   const assessments = s.assessments.map((a): Assessment => {
@@ -207,9 +210,11 @@ export function requestIntent(s: ProgrammeState, requestId: string): FullIntent 
   const w = s.weeks.find((x) => x.requests.some((r) => r.requestId === requestId));
   const req = w?.requests.find((r) => r.requestId === requestId);
   if (!w || !req) return undefined;
+  if (req.intent) return req.intent;
   const k = Number(requestId.slice(requestId.lastIndexOf('.') + 1));
   const demand = w.intent.demands.find((d) => d.sport === req.sport);
-  return demand?.overrides.find((o) => o.index === k)?.intent ?? demand?.intent;
+  const declared = demand?.overrides.find((o) => o.index === k)?.intent ?? demand?.intent;
+  return declared && INTENT_FIELDS.every((f) => declared[f] !== undefined) ? declared as FullIntent : undefined;
 }
 
 function definedOnly(p: Partial<FullIntent>): Partial<FullIntent> {

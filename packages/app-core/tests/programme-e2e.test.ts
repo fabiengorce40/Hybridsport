@@ -31,7 +31,7 @@ const spied = <E extends { propose: (i: never) => unknown }>(name: string, e: E)
 /** Environnement TEST_ONLY : moteurs réels, gouvernances simulées (planificateur, programme, moteurs). */
 function env(o: { programme?: ProgrammeEnvironment['programmeGovernance'] | null; hyrox?: boolean } = {}): ProgrammeEnvironment {
   return {
-    mode: 'CANDIDATE', governance: plannerGovernance(),
+    mode: 'CANDIDATE', authority: 'test_only', governance: plannerGovernance(),
     ...(o.programme === null ? {} : { programmeGovernance: o.programme ?? programmeGovernance() }),
     strength: { engine: spied('strength', StrengthEngine) as SportEngine<unknown>, content: withDemand(strengthContent()) },
     running: { engine: spied('running', createRunningEngine({ governance: runningGovernance(), simulation: true })) as SportEngine<unknown>, content: withDemand(runningContent()) },

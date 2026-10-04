@@ -14,7 +14,8 @@ import type { CrossTrainingEngine, HyroxEngine, PlannedWeek, PlannerClock, Plann
 import type { LoadedRuleset, SportEngine } from '@hybridsport/engine';
 import { addDays, normalizeInstant, sessionInstant, weekStartOf } from './dates.js';
 import { coreProfile, RUNNING_CAPABILITY_REQUESTS, runningContext, simulatedRunning, strengthContextAt } from './generate.js';
-import type { AppState, PersistedWeek, Profile, ProgrammeIntent, ProgrammeIntentInput, Reason, Sport } from './model.js';
+import type { AppState, EnvironmentAuthority, PersistedWeek, Profile, ProgrammeIntent, ProgrammeIntentInput, Reason, Sport } from './model.js';
+import type { RunningParameter } from '@hybridsport/running';
 import { zProgrammeIntent } from './model.js';
 import { RUNNING_ARCHETYPE, STIMULUS_BY_GOAL, STRENGTH_ARCHETYPE } from './planner.js';
 import { runningContent, strengthContent } from './provisional-content.js';
@@ -27,10 +28,14 @@ type Content = Pick<ContentSource, 'ruleset' | 'catalog'>;
 /** Environnement d'orchestration : moteurs, contenus, gouvernance du planificateur et mode. Injecté (tests : TEST_ONLY). */
 export interface PlannerEnvironment {
   readonly mode: PlannerMode;
+  /** Autorité EXPLICITE de l'environnement, vérifiée avant toute planification (`assertEnvironment`). */
+  readonly authority: EnvironmentAuthority;
+  /** Identifiants des valeurs SIMULATION_ONLY injectées (tracés dans la semaine persistée) ; interdits en production. */
+  readonly simulation?: readonly string[];
   /** Ruleset de gouvernance du planificateur ; absent ⇒ décisions d'interférence fail-closed. */
   readonly governance?: LoadedRuleset;
   readonly strength?: { readonly engine: SportEngine<unknown>; readonly content: Content };
-  readonly running?: { readonly engine: SportEngine<unknown>; readonly content: Content };
+  readonly running?: { readonly engine: SportEngine<unknown>; readonly content: Content; readonly composition?: { readonly parameters: readonly RunningParameter[] } };
   readonly crosstraining?: { readonly engine: CrossTrainingEngine; readonly content: Content };
   readonly hyrox?: { readonly engine: HyroxEngine; readonly content: Content };
 }
@@ -41,7 +46,17 @@ export interface PlannerEnvironment {
  * gouvernance du planificateur ⇒ interférence multisport fail-closed.
  */
 export function appPlannerEnvironment(): PlannerEnvironment {
-  return { mode: 'CANDIDATE', strength: { engine: StrengthEngine as SportEngine<unknown>, content: strengthContent() }, running: { engine: simulatedRunning as SportEngine<unknown>, content: runningContent() } };
+  return { mode: 'CANDIDATE', authority: 'beta0_experimental', strength: { engine: StrengthEngine as SportEngine<unknown>, content: strengthContent() }, running: { engine: simulatedRunning as SportEngine<unknown>, content: runningContent() } };
+}
+
+/**
+ * Cohérence de l'autorité (avant toute planification) : `production` ⇔ mode PRODUCTION et AUCUNE valeur
+ * SIMULATION_ONLY ; `beta0_experimental` ⇒ mode CANDIDATE. Toute incohérence est refusée (aucun repli).
+ */
+export function assertEnvironment(env: Pick<PlannerEnvironment, 'mode' | 'authority' | 'simulation'>): void {
+  if (env.authority === 'production' && (env.simulation ?? []).length > 0) throw new AppError('ENVIRONMENT_SIMULATION_IN_PRODUCTION');
+  if (env.authority === 'production' && env.mode !== 'PRODUCTION') throw new AppError('ENVIRONMENT_AUTHORITY_MISMATCH');
+  if (env.authority === 'beta0_experimental' && env.mode !== 'CANDIDATE') throw new AppError('ENVIRONMENT_AUTHORITY_MISMATCH');
 }
 
 /** Capacités Cross-training DEMANDÉES par l'application (le moteur décide de leur activation selon sa gouvernance). */
@@ -96,6 +111,7 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
   if (env.running) {
     ports.running = runningPort({
       engine: env.running.engine, content: env.running.content, profile, state: state0, history: state.fingerprints.running, clock,
+      ...(env.running.composition ? { composition: env.running.composition } : {}),
       baseContext: (slot) => ({
         ...runningContext(state, p, slot), capabilityRequests: [...RUNNING_CAPABILITY_REQUESTS, 'hybridPlanning'],
         ...(goals.running ? { goal: { type: goals.running.type, ...(goals.running.targetDate ? { targetDate: sessionInstant(goals.running.targetDate) } : {}) } } : {}),
@@ -115,13 +131,14 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
 const reason = (r: ReasonCode): Reason => ({ code: r.code, params: { ...r.params } });
 
 /** Forme persistée (sans perte d'audit) d'une semaine planifiée. */
-export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOrigin: string): Omit<PersistedWeek, 'owner'> {
+export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOrigin: string, env: Pick<PlannerEnvironment, 'authority' | 'simulation'>): Omit<PersistedWeek, 'owner'> {
   return {
-    weekStart: w.weekStart, plannedAt, mode: w.mode, hybrid: w.hybrid, programmeOrigin,
+    weekStart: w.weekStart, authority: env.authority, simulation: [...(env.simulation ?? [])], plannedAt, mode: w.mode, hybrid: w.hybrid, programmeOrigin,
     days: w.days.map((d) => (d.status === 'planned' ? { date: d.date, availableMinutes: d.availableMinutes, status: 'planned', sport: d.sport, requestId: d.requestId } : { date: d.date, availableMinutes: d.availableMinutes, status: 'empty', reason: reason(d.reason) })),
     requests: w.requests.map((r) => ({
       requestId: r.requestId, sport: r.sport, status: r.status, category: r.category, reasons: r.reasons.map(reason),
       ...(r.status === 'unplaced' ? {} : { date: r.date }),
+      ...(r.intent ? { intent: { ...r.intent } } : {}), ...(r.composition ? { composition: { ...r.composition } } : {}),
       ...(r.status === 'planned' ? {
         record: toEnvelope('session_record', r.record),
         demand: r.demand.status === 'derived' ? { status: 'derived' as const, levels: { ...r.demand.levels } } : { status: 'unavailable' as const, reasons: r.demand.reasons.map(reason) },
@@ -148,6 +165,7 @@ export function recentOf(state: AppState, p: Profile, weekStart: string): { date
 export function planProgrammeWeek(state: AppState, clock: Clock, env: PlannerEnvironment = appPlannerEnvironment(), weekStart = weekStartOf(clock.today)): AppState {
   const p = state.profile;
   if (!p) throw new AppError('PROFILE_MISSING');
+  assertEnvironment(env);
   assertPlanningAllowed(state);
   const programme = state.programme;
   if (!programme) throw new AppError('PROGRAMME_INTENT_MISSING');
@@ -157,5 +175,5 @@ export function planProgrammeWeek(state: AppState, clock: Clock, env: PlannerEnv
     demands: programme.sports.map((s) => ({ sport: s.sport, sessions: s.sessions, intent: { ...s.intent }, ...(s.station === undefined ? {} : { station: s.station }) })),
   }, buildPorts(state, p, programme, env), env.governance, clockOf());
   const plannedAt = normalizeInstant(clock.now);
-  return writePlannedWeek(state, persistWeek(week, plannedAt, programme.origin), 'multisport');
+  return writePlannedWeek(state, persistWeek(week, plannedAt, programme.origin, env), 'multisport');
 }

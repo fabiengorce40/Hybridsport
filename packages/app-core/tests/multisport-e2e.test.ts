@@ -32,7 +32,7 @@ function spied<E extends { propose: (i: never) => unknown }>(name: string, e: E)
 /** Environnement TEST_ONLY : moteurs réels, gouvernances et normalisations simulées (aucune signature réelle). */
 function testEnv(o: { governance?: PlannerEnvironment['governance'] | null } = {}): PlannerEnvironment {
   return {
-    mode: 'CANDIDATE',
+    mode: 'CANDIDATE', authority: 'test_only',
     ...(o.governance === null ? {} : { governance: o.governance ?? plannerGovernance() }),
     strength: { engine: spied('strength', StrengthEngine) as SportEngine<unknown>, content: withDemand(strengthContent()) },
     running: { engine: spied('running', createRunningEngine({ governance: runningGovernance(), simulation: true })) as SportEngine<unknown>, content: withDemand(runningContent()) },

@@ -12,3 +12,4 @@ export type { SessionDraft, SessionItem, SetPrescription } from '@hybridsport/do
 export * from './planning.js';
 export * from './programme.js';
 export * from './weeks.js';
+export * from './beta0.js';

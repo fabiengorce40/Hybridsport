@@ -30,7 +30,7 @@ const AVAIL = [90, 90, 90, 90, 90, 90, 90];
 
 /** Environnement HYBRIDE TEST_ONLY (Strength + Running) : intégration planificateur et fenêtres d'interférence de test. */
 const hybridEnv = (): ProgrammeEnvironment => ({
-  mode: 'CANDIDATE', governance: plannerGovernance(),
+  mode: 'CANDIDATE', authority: 'test_only', governance: plannerGovernance(),
   strength: { engine: StrengthEngine as SportEngine<unknown>, content: withDemand(strengthContent()) },
   running: { engine: createRunningEngine({ governance: runningGovernance(), simulation: true }) as SportEngine<unknown>, content: withDemand(runningContent()) },
 });

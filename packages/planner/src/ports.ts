@@ -15,10 +15,12 @@ import { runCrossTrainingC2 } from '@hybridsport/crosstraining';
 import type { CrossTrainingContextInput, CrossTrainingEngine } from '@hybridsport/crosstraining';
 import { runHyroxH1 } from '@hybridsport/hyrox';
 import type { HyroxContextInput, HyroxEngine } from '@hybridsport/hyrox';
-import type { RunningContextInput } from '@hybridsport/running';
+import { ARCHETYPE_INTENT_IDS, archetypeFromIntentId, composeRunningWeek, isV1Archetype, parseRunningContext, resolveParameter } from '@hybridsport/running';
+import type { RunningContextInput, RunningParameter } from '@hybridsport/running';
 import type { StrengthContextInput } from '@hybridsport/strength';
 import { GP_CODES, gpReasons } from './codes.js';
 import type { DeclaredIntent, DemandOutcome, NeighbourContext, PlannerClock, PlannerMode, PlannerSport } from './model.js';
+import type { NoValidProposalInput } from '@hybridsport/domain';
 
 export type { CrossTrainingContextInput, CrossTrainingEngine, HyroxContextInput, HyroxEngine, RunningContextInput, StrengthContextInput };
 
@@ -46,8 +48,27 @@ export type PortOutcome =
 
 export type StructuresResult = { readonly ok: true; readonly structures: readonly string[] } | { readonly ok: false; readonly reasons: readonly ReasonCode[] };
 
+/** Jour attribué au sport pour la composition ; `locked` : intention imposée (ex. évaluation demandée par le programme). */
+export interface CompositionDay { readonly date: string; readonly availableMinutes: number; readonly requestId: string; readonly locked?: DeclaredIntent }
+export type CompositionResult =
+  | { readonly status: 'composed'; readonly authority: 'approved' | 'provisional'; readonly days: readonly { readonly date: string; readonly intent: DeclaredIntent; readonly role: string }[]; readonly reasons: readonly ReasonCode[] }
+  | { readonly status: 'unresolved'; readonly reasons: readonly ReasonCode[] };
+
+/** Base d'intention d'une composition par le moteur : cadre déclaré par le programme, SANS archétype. */
+export type CompositionBase = Omit<DeclaredIntent, 'archetypeId'>;
+export interface SportComposition {
+  /**
+   * Archétype du moteur utilisé pour RÉSERVER les jours (première passe, interférence) avant la composition ; c'est
+   * l'archétype de complément de la règle du moteur. La séance définitive est régénérée après composition.
+   */
+  readonly placementArchetypeId: string;
+  compose(input: { readonly days: readonly CompositionDay[]; readonly base: CompositionBase; readonly hybrid: boolean; readonly mode: PlannerMode }): CompositionResult;
+}
+
 export interface SportPort {
   readonly sport: PlannerSport;
+  /** Composition hebdomadaire PROPRE AU MOTEUR (archétype de chaque jour), si le moteur la possède. */
+  readonly composition?: SportComposition;
   readonly discipline: Discipline;
   /** Le moteur consomme-t-il un contexte voisin (seconde passe) ? */
   readonly consumesNeighbours: boolean;
@@ -74,6 +95,8 @@ export interface EnginePortDefinition<C> {
   readonly context: (slot: SlotRequest) => unknown;
   /** Exécution : pipeline du CORE (par défaut) ou variante stricte du moteur. */
   readonly run?: (engine: SportEngine<C>, request: SportSessionRequest, ctx: EngineContext<LoadedRuleset, LoadedCatalog>) => CorePipelineOutcome;
+  /** Notes du planificateur transmises dans l'intention (ex. provenance). */
+  readonly plannerNotes?: readonly string[];
 }
 
 /** Blocs d'entraînement (hors échauffement et retour au calme) : ceux qui portent la sollicitation de la séance. */
@@ -131,7 +154,7 @@ export function createEnginePort<C>(def: EnginePortDefinition<C>): SportPort {
       const request: SportSessionRequest = {
         intent: {
           id: `plan.${slot.requestId}`, discipline: def.discipline, archetypeId: i.archetypeId, stimulus: i.stimulus, objective: i.objective, priority: 'standard', phase: i.phase,
-          availableTimeS, targetDurationS: targetFromAvailable(availableTimeS, readToleranceProfile(def.content.ruleset, i.toleranceProfile)), repetitionIntents: [], plannerNotes: [],
+          availableTimeS, targetDurationS: targetFromAvailable(availableTimeS, readToleranceProfile(def.content.ruleset, i.toleranceProfile)), repetitionIntents: [], plannerNotes: [...(def.plannerNotes ?? [])],
         },
         profile: def.profile, state: def.state,
         history: def.history.filter((h) => h.at < now),
@@ -145,7 +168,30 @@ export function createEnginePort<C>(def: EnginePortDefinition<C>): SportPort {
   };
 }
 
-type Base<C> = Omit<EnginePortDefinition<C>, 'sport' | 'discipline' | 'context' | 'run' | 'engine' | 'consumesNeighbours'>;
+type Base<C> = Omit<EnginePortDefinition<C>, 'sport' | 'discipline' | 'context' | 'run' | 'engine' | 'consumesNeighbours' | 'plannerNotes'>;
+
+/**
+ * Provenance du planificateur global : note portée par l'intention de toute séance demandée PAR LE PLANIFICATEUR
+ * (port Running). Un moteur protégé par `requirePlannerProvenance` refuse tout appel MULTISPORT qui ne la porte pas :
+ * l'intégration « planificateur ↔ Running » ne peut pas être contournée par un autre chemin applicatif.
+ */
+export const PLANNER_PROVENANCE_NOTE = 'kairo.global_planner.v2';
+
+export function requirePlannerProvenance<C>(engine: SportEngine<C>): SportEngine<C> {
+  return {
+    ...engine,
+    propose: (input) => {
+      const hybrid = (input.discipline as { population?: { hybrid?: unknown } } | undefined)?.population?.hybrid === true;
+      if (!hybrid || input.intent.plannerNotes.includes(PLANNER_PROVENANCE_NOTE)) return engine.propose(input);
+      const r = gpReasons.emit(GP_CODES.PROVENANCE_REQUIRED, { engineId: engine.id });
+      const refusal: NoValidProposalInput = {
+        status: 'no_valid_proposal', reasons: [{ ...r, params: { ...r.params } as Record<string, string>, ruleRefs: [...r.ruleRefs] }], blockingNeeds: [], missingData: [],
+        provenance: { engineId: engine.id, engineVersion: engine.version, rulesetVersion: input.ruleset.version, catalogVersion: input.catalog.version, seed: input.context.seed },
+      };
+      return refusal;
+    },
+  };
+}
 type Ctx<T> = T | ((slot: SlotRequest) => T);
 const resolve = <T>(c: Ctx<T>, slot: SlotRequest): T => (typeof c === 'function' ? (c as (s: SlotRequest) => T)(slot) : c);
 
@@ -174,8 +220,57 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
   });
 }
 
-export function runningPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<RunningContextInput> }): SportPort {
-  return createEnginePort({ ...def, sport: 'running', discipline: 'running', context: (slot) => { const b = resolve(def.baseContext, slot); return { ...b, population: { ...b.population, hybrid: slot.hybrid } }; } });
+/**
+ * Running : `population.hybrid` transmis tel quel, provenance du planificateur portée par l'intention. Composition
+ * hebdomadaire : celle du MOTEUR Running (`composeRunningWeek`, §R), sur les jours placés, sonde = génération réelle ;
+ * autorité lue dans la résolution de ses règles (V26, V10, V11) : approuvées ⇒ approved ; candidates ⇒ provisional ;
+ * non résolues ⇒ unresolved (aucune composition inventée, aucun repli « maintien » présenté comme une règle).
+ */
+const RUNNING_COMPOSITION_RULES = ['running.frequency.minimumPlannerRunningFrequency', 'running.hi.densityPolicy', 'running.placement.strongDefaultSeparation'] as const;
+
+export function runningPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<RunningContextInput>; readonly composition?: { readonly parameters: readonly RunningParameter[] } }): SportPort {
+  const context = (slot: SlotRequest) => { const b = resolve(def.baseContext, slot); return { ...b, population: { ...b.population, hybrid: slot.hybrid } }; };
+  const port = createEnginePort({ ...def, sport: 'running', discipline: 'running', plannerNotes: [PLANNER_PROVENANCE_NOTE], context });
+  const comp = def.composition;
+  if (!comp) return port;
+  return {
+    ...port,
+    composition: {
+    // §R étape 5 (Running) : tout jour non attribué à KEY / LONG / TEST reçoit EASY, l'archétype de complément.
+    placementArchetypeId: ARCHETYPE_INTENT_IDS.EASY,
+    compose({ days, base: frame, hybrid, mode }) {
+      const base: DeclaredIntent = { ...frame, archetypeId: ARCHETYPE_INTENT_IDS.EASY };
+      const resolutions = RUNNING_COMPOSITION_RULES.map((id) => resolveParameter(comp.parameters, id, mode));
+      const trace = resolutions.flatMap((r) => r.reasons);
+      if (resolutions.some((r) => r.status !== 'resolved')) return { status: 'unresolved', reasons: [gpReasons.emit(GP_CODES.COMPOSITION_UNRESOLVED, { sport: 'running', mode }), ...trace] };
+      const authority = resolutions.some((r) => r.status === 'resolved' && r.candidate) ? 'provisional' : 'approved';
+      const last = [...days].sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+      if (!last) return { status: 'composed', authority, days: [], reasons: trace };
+      const ctxSlot: SlotRequest = { requestId: last.requestId, date: last.date, availableMinutes: last.availableMinutes, hybrid, seed: `planner:${last.requestId}:${last.date}`, intent: base };
+      const parsed = parseRunningContext(context(ctxSlot));
+      if (!parsed.ok) return { status: 'unresolved', reasons: [gpReasons.emit(GP_CODES.COMPOSITION_UNRESOLVED, { sport: 'running', mode }), ...parsed.reasons] };
+      const byDate = new Map(days.map((d) => [d.date, d]));
+      const c = composeRunningWeek({
+        ctx: parsed.context, parameters: comp.parameters, mode, weeklySessions: days.length,
+        days: days.map((d) => {
+          const a = d.locked ? archetypeFromIntentId(d.locked.archetypeId) : undefined;
+          return { date: d.date, availableS: d.availableMinutes * S_PER_MIN, ...(a !== undefined && isV1Archetype(a) ? { locked: a } : {}) };
+        }),
+        probe: (a, date) => {
+          const d = byDate.get(date);
+          if (!d) return { ok: false, reasons: [] };
+          const out = port.generate({ requestId: d.requestId, date, availableMinutes: d.availableMinutes, hybrid, seed: `planner:${d.requestId}:${date}`, intent: { ...base, archetypeId: ARCHETYPE_INTENT_IDS[a] } });
+          return out.status === 'planned' ? { ok: true, reasons: [] } : { ok: false, reasons: out.reasons.map((r) => ({ code: r.code, params: r.params })) };
+        },
+      });
+      return {
+        // Trace de résolution du port + raisons de la composition du moteur, sans doublon (mêmes lectures de règles).
+        status: 'composed', authority, reasons: [...new Map([...trace, ...c.reasons].map((r) => [`${r.code}|${JSON.stringify(r.params)}`, r])).values()],
+        days: c.slots.map((sl) => ({ date: sl.date, role: sl.role, intent: sl.role === 'LOCKED' ? (byDate.get(sl.date)?.locked ?? base) : { ...base, archetypeId: ARCHETYPE_INTENT_IDS[sl.archetype] } })),
+      };
+    },
+    },
+  };
 }
 
 export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossTrainingEngine; readonly baseContext: Ctx<CrossTrainingContextInput> }): SportPort {
