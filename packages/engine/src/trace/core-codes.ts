@@ -75,10 +75,12 @@ export const CORE_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'REPAIR.REST_RECOMMENDED', categories: ['adaptation'], params: { cause: S }, audience: 'user', severity: 'notice' },
   { code: 'REPAIR.EXHAUSTED', categories: ['adaptation'], params: { attempts: N }, audience: 'internal', severity: 'error' },
   { code: 'REPAIR.LOAD_TRANSFER_REFUSED', categories: ['safety', 'adaptation'], params: { itemId: S, exerciseId: S, substituteId: S }, audience: 'internal', severity: 'error' },
+  { code: 'REPAIR.PACE_TRANSFER_REFUSED', categories: ['safety', 'adaptation'], params: { itemId: S, exerciseId: S, substituteId: S }, audience: 'internal', severity: 'error' },
   // Périmètre et données
   { code: 'SCOPE.OUT_OF_SCOPE', categories: ['safety'], params: { eligibility: S }, audience: 'user', severity: 'error' },
   { code: 'SCOPE.DECLARATION_REQUIRED', categories: ['safety'], params: { declarationKind: S }, audience: 'user', severity: 'error' },
   { code: 'DATA.READINESS_UNKNOWN', categories: ['information'], params: {}, audience: 'internal', severity: 'info' },
+  { code: 'DATA.DEMAND_PROFILE_UNAVAILABLE', categories: ['information'], params: { sessionId: S, cause: S, detail: S }, audience: 'internal', severity: 'warning' },
   { code: 'DATA.HEALTH_HISTORY_UNAVAILABLE', categories: ['information'], params: {}, audience: 'internal', severity: 'info' },
   { code: 'DATA.NOT_PERSISTED_NO_CONSENT', categories: ['information'], params: {}, audience: 'internal', severity: 'info' },
   { code: 'DATA.PERFORMANCE_EXCLUDED', categories: ['information'], params: { reason: S }, audience: 'internal', severity: 'info' },

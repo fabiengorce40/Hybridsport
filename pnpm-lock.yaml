@@ -81,6 +81,9 @@ importers:
       '@hybridsport/engine':
         specifier: workspace:*
         version: link:../engine
+      '@hybridsport/planner':
+        specifier: workspace:*
+        version: link:../planner
       '@hybridsport/running':
         specifier: workspace:*
         version: link:../running

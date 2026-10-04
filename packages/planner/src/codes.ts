@@ -27,6 +27,12 @@ export const GP_CODES = {
   INTERFERENCE_UNRESOLVED: 'PLAN.PLANNER.INTERFERENCE_UNRESOLVED',
   /** Séance placée. */
   PLACED: 'PLAN.PLANNER.PLACED',
+  /** Intention de programme incomplète pour ce sport (champs manquants) : le planificateur n'en invente aucun. */
+  PROGRAMME_INTENT_INCOMPLETE: 'PLAN.PLANNER.PROGRAMME_INTENT_INCOMPLETE',
+  /** Contexte voisin transmis au moteur (profils de demande des séances voisines d'autres disciplines). */
+  NEIGHBOUR_CONTEXT: 'PLAN.PLANNER.NEIGHBOUR_CONTEXT',
+  /** Profil de demande non utilisable dans ce mode (normalisation des doses non approuvée en production). */
+  DEMAND_PROFILE_NOT_APPROVED: 'RULE.PLANNER.DEMAND_PROFILE_NOT_APPROVED',
   /** Jour sans séance : indisponible (0 min) ou aucune demande restante. */
   DAY_EMPTY: 'PLAN.PLANNER.DAY_EMPTY',
 } as const;
@@ -41,6 +47,9 @@ export const GP_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: GP_CODES.INTERFERENCE_CONFLICT, categories: ['business_hard'], params: { sport: S, date: S, withSport: S, withDate: S, structure: S, gapHours: N, rule: S }, audience: 'user', severity: 'warning' },
   { code: GP_CODES.INTERFERENCE_UNRESOLVED, categories: ['feasibility'], params: { sport: S, requestId: S, triedDates: L }, audience: 'user', severity: 'error' },
   { code: GP_CODES.PLACED, categories: ['information'], params: { sport: S, requestId: S, date: S }, audience: 'internal', severity: 'info' },
+  { code: GP_CODES.PROGRAMME_INTENT_INCOMPLETE, categories: ['feasibility'], params: { sport: S, missing: L }, audience: 'user', severity: 'error' },
+  { code: GP_CODES.NEIGHBOUR_CONTEXT, categories: ['information'], params: { requestId: S, known: S, neighbours: N, unknown: L }, audience: 'internal', severity: 'info' },
+  { code: GP_CODES.DEMAND_PROFILE_NOT_APPROVED, categories: ['business_hard'], params: { sport: S, parameterId: S, mode: S }, audience: 'internal', severity: 'warning' },
   { code: GP_CODES.DAY_EMPTY, categories: ['information'], params: { date: S, cause: S }, audience: 'internal', severity: 'info' },
 ];
 

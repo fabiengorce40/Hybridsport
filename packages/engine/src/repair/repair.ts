@@ -52,13 +52,36 @@ export function carriesMovementLoad(p: Prescription): boolean {
   }
 }
 
+/** Recherche structurelle d'une cible d'allure (`pace`) dans une séance structurée (cibles et récupérations). */
+function hasPaceTarget(v: unknown): boolean {
+  if (Array.isArray(v)) return v.some(hasPaceTarget);
+  if (v === null || typeof v !== 'object') return false;
+  return Object.entries(v).some(([k, x]) => (k === 'pace' && x !== undefined) || hasPaceTarget(x));
+}
+
+/**
+ * Une prescription porte-t-elle une ALLURE propre à son mouvement ? `paceSecPerKm` (distance, intervalles) ou une
+ * cible `pace` d'une séance structurée. Une allure ne vaut que pour le mouvement pour lequel elle a été prescrite.
+ */
+export function carriesMovementPace(p: Prescription): boolean {
+  switch (p.type) {
+    case 'distance': case 'intervals':
+      return p.paceSecPerKm !== undefined;
+    case 'run_structure':
+      return hasPaceTarget(p);
+    default:
+      return false;
+  }
+}
+
 interface Applied { readonly session: SessionDraft; readonly refused: readonly ReasonCode[] }
 
 /**
  * Applique des actions de réparation. Ne touche JAMAIS au temps disponible, au matériel, aux restrictions ni au ruleset.
- * Frontière de sécurité : une charge prescrite pour un mouvement n'est JAMAIS transférée à un autre mouvement. Aucune
- * règle gouvernée de conversion n'existe : la substitution d'un item chargé est refusée (sans effet, tracée), la
- * violation subsiste et l'issue est un refus explicite — jamais un substitut portant la charge d'origine.
+ * Frontière de sécurité : une charge ou une allure prescrite pour un mouvement n'est JAMAIS transférée à un autre
+ * mouvement. Aucune règle gouvernée de conversion n'existe : la substitution d'un item chargé ou avec allure est
+ * refusée (sans effet, tracée), la violation subsiste et l'issue est un refus explicite — jamais un substitut portant
+ * la charge ou l'allure d'origine.
  */
 function applyActions(s: SessionDraft, actions: readonly RepairAction[], deps: ValidatorDeps): Applied {
   let current = s;
@@ -71,6 +94,11 @@ function applyActions(s: SessionDraft, actions: readonly RepairAction[], deps: V
         const item = current.blocks.flatMap((b) => b.items).find((i) => i.id === a.itemId);
         if (item && carriesMovementLoad(item.prescription)) {
           refused.push(reasons.emit('REPAIR.LOAD_TRANSFER_REFUSED', { itemId: item.id, exerciseId: item.exerciseId, substituteId: next }));
+          break;
+        }
+        // Même frontière pour l'allure : aucune règle gouvernée de compatibilité ⇒ aucune allure transférée.
+        if (item && carriesMovementPace(item.prescription)) {
+          refused.push(reasons.emit('REPAIR.PACE_TRANSFER_REFUSED', { itemId: item.id, exerciseId: item.exerciseId, substituteId: next }));
           break;
         }
         current = { ...current, blocks: current.blocks.map((b) => ({ ...b, items: b.items.map((i) => (i.id === a.itemId ? { ...i, exerciseId: next } : i)) })) };

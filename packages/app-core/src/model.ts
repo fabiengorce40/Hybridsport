@@ -6,7 +6,8 @@
  * sont RÉUTILISÉS tels quels : l'application ne redéfinit aucune donnée sportive.
  */
 import { z } from 'zod';
-import { isISODateTime, LEVELS, zFingerprintHistoryEntry, zSessionDraft } from '@hybridsport/domain';
+import { isISODateTime, LEVELS, zFingerprintHistoryEntry, zSerializedEnvelope, zSessionDraft } from '@hybridsport/domain';
+import { INTENT_FIELDS, PLANNER_MODES, REQUEST_CATEGORIES } from '@hybridsport/planner';
 import { zExerciseExposure, zStrengthTrack } from '@hybridsport/strength';
 import { RETURN_STATES, RUNNING_GOALS, RUNNING_LEVELS, zRealizedSession, zRunningReference } from '@hybridsport/running';
 
@@ -158,6 +159,54 @@ export const zSessionLog = z.object({
 }).strict();
 export type SessionLog = z.infer<typeof zSessionLog>;
 
+/**
+ * Intention de PROGRAMME (multisport) : composition hebdomadaire DÉCLARÉE, dans l'ordre de priorité, avec l'intention
+ * de séance de chaque moteur, la station HYROX (propriété du programme) et les déclarations propres au sport
+ * (contrat du moteur : niveau, objectif, état de reprise…). Aucune valeur par défaut : l'application n'invente rien.
+ */
+export const zProgrammeSport = z.object({
+  sport: z.enum(SPORTS),
+  sessions: z.number().int().positive().max(DAYS_PER_WEEK),
+  intent: z.object(Object.fromEntries(INTENT_FIELDS.map((k) => [k, z.string().min(1).optional()])) as { [K in (typeof INTENT_FIELDS)[number]]: z.ZodOptional<z.ZodString> }).strict(),
+  station: z.string().min(1).optional(),
+  /** Déclarations de l'utilisateur propres au moteur (contrat de contexte du moteur), validées par le moteur. */
+  declarations: z.record(z.string(), z.unknown()).default({}),
+}).strict();
+export const zProgrammeIntent = z.object({
+  sports: z.array(zProgrammeSport).refine((xs) => new Set(xs.map((x) => x.sport)).size === xs.length, 'un sport au plus une fois'),
+  /** Origine de l'intention (programme, utilisateur, données de démonstration TEST_ONLY). */
+  origin: z.string().min(1),
+}).strict();
+export type ProgrammeIntent = z.infer<typeof zProgrammeIntent>;
+export type ProgrammeIntentInput = z.input<typeof zProgrammeIntent>;
+
+const zDemandOutcome = z.discriminatedUnion('status', [
+  z.object({ status: z.literal('derived'), levels: z.record(z.string(), z.enum(['none', 'low', 'moderate', 'high'])) }).strict(),
+  z.object({ status: z.literal('unavailable'), reasons: z.array(zReason) }).strict(),
+]);
+
+/** Semaine planifiée par le planificateur global, PERSISTÉE : séances en session_record (enveloppe versionnée). */
+export const zPersistedWeek = z.object({
+  weekStart: date,
+  plannedAt: instant,
+  mode: z.enum(PLANNER_MODES),
+  hybrid: z.boolean(),
+  programmeOrigin: z.string().min(1),
+  days: z.array(z.object({ date, availableMinutes: z.number().int().nonnegative(), status: z.enum(['planned', 'empty']), sport: z.enum(SPORTS).optional(), requestId: z.string().optional(), reason: zReason.optional() }).strict()),
+  requests: z.array(z.object({
+    requestId: z.string().min(1), sport: z.enum(SPORTS), status: z.enum(['planned', 'refused', 'unplaced']), category: z.enum(REQUEST_CATEGORIES),
+    date: date.optional(),
+    /** Séance planifiée : session_record courant (relu par la migration du CORE). */
+    record: zSerializedEnvelope.optional(),
+    demand: zDemandOutcome.optional(),
+    neighbourContext: z.object({ known: z.boolean(), neighbours: z.array(z.object({ sport: z.enum(SPORTS), discipline: z.string(), stimulus: z.string(), hoursFromThisSession: z.number(), demand: z.record(z.string(), z.string()) }).strict()) }).strict().optional(),
+    reasons: z.array(zReason),
+  }).strict()),
+  conflicts: z.array(zReason),
+  governance: z.array(zReason),
+}).strict();
+export type PersistedWeek = z.infer<typeof zPersistedWeek>;
+
 export const zAppState = z.object({
   schemaVersion: z.literal(1),
   profile: zProfile.nullable(),
@@ -178,6 +227,10 @@ export const zAppState = z.object({
   crosstraining: z.object({ realized: z.array(z.record(z.string(), z.unknown())) }).strict().default({ realized: [] }),
   fingerprints: z.object({ strength: z.array(zFingerprintHistoryEntry), running: z.array(zFingerprintHistoryEntry), crosstraining: z.array(zFingerprintHistoryEntry).default([]) }).strict(),
   safety: z.object({ activePain: z.object({ reportedAt: instant, areas: z.array(z.string()), sessionKey: z.string().optional() }).strict().nullable() }).strict(),
+  /** Intention de programme multisport (absente d'un état antérieur ⇒ null : champ additif). */
+  programme: zProgrammeIntent.nullable().default(null),
+  /** Semaines planifiées par le planificateur global (absent d'un état antérieur ⇒ vide : champ additif). */
+  planner: z.object({ weeks: z.record(date, zPersistedWeek) }).strict().default({ weeks: {} }),
   /** Incrémentée à chaque séance terminée ou course enregistrée (l'historique a changé). */
   revision: z.number().int().nonnegative(),
 }).strict();
@@ -189,6 +242,6 @@ export function emptyState(): AppState {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION, profile: null, plans: {}, sessions: {}, logs: {},
     strength: { tracks: [], exposures: [], accessoryCounts: {} }, running: { realized: [], references: [] }, crosstraining: { realized: [] },
-    fingerprints: { strength: [], running: [], crosstraining: [] }, safety: { activePain: null }, revision: 0,
+    fingerprints: { strength: [], running: [], crosstraining: [] }, safety: { activePain: null }, programme: null, planner: { weeks: {} }, revision: 0,
   };
 }

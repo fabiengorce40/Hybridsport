@@ -14,7 +14,7 @@ Baseline : `080ae34`.
   - aucun coefficient ni table d'équivalence ;
   - substitution historique inchangée pour les items non chargés ;
   - instantané applicatif Strength/Running identique avant/après.
-- **Limite connue** : la réparation transfère toujours une allure (`paceSecPerKm`) vers un substitut. Ce n'est pas une charge et le cas n'est pas traité dans ce lot.
+- **Allure** : traitée depuis (voir `GLOBAL-PLANNER-V2.md` §A) : `REPAIR.PACE_TRANSFER_REFUSED`.
 
 ## B. Global Planner V1 (`@hybridsport/planner`)
 

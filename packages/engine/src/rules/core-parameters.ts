@@ -38,6 +38,9 @@ export const CORE_PARAMETERS: readonly CoreParameterSpec[] = [
   { id: 'demand.levelThresholds', type: 'table', governance: 'G2', usedBy: 'catalog/structures' },
   { id: 'demand.intensityMultipliers', type: 'number-record', governance: 'G2', usedBy: 'catalog/structures' },
   { id: 'demand.eccentricLevelBump', type: 'number', governance: 'G2', usedBy: 'catalog/structures' },
+  // Normalisation des doses d'une séance générée (profil de demande générique) : facultative ; absente ⇒ profil non
+  // dérivable (DATA.DEMAND_PROFILE_UNAVAILABLE), jamais une valeur par défaut.
+  { id: 'demand.doseNormalization', type: 'table', governance: 'G2', usedBy: 'catalog/session-demand', optional: true },
   { id: 'coverage.cc1.minCandidates', type: 'number', governance: 'G5', usedBy: 'catalog/coverage', optional: true },
   { id: 'coverage.cc2.patternClasses', type: 'table', governance: 'G5', usedBy: 'catalog/coverage', optional: true },
   { id: 'coverage.cc5.unilateralPatterns', type: 'string[]', governance: 'G5', usedBy: 'catalog/coverage', optional: true },

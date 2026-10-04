@@ -12,7 +12,7 @@ import { GP_CODES, planMultisportWeek } from '../../src/index.js';
 import type { PlannedWeek, PlannerInput, RequestResult, SportPorts } from '../../src/index.js';
 import {
   ALL_PORTS, PROFILE, STRUCTURE_IDS, WEEK, approvedTestOnly, clock, crosstraining, ctGovernance, days, hyrox, input, plannerGovernance, running, runningGovernance,
-  strength, strengthBase,
+  strength, strengthBase, want,
 } from '../fixtures.js';
 import { strengthContent } from '../../../app-core/src/provisional-content.js';
 import { STATE_FRESH } from '../../../engine/tests/harness/requests.js';
@@ -115,7 +115,8 @@ describe('capacités multisport gouvernées par chaque moteur ⇒ résultat part
     const absent = two(hyrox({ hybridAllowed: null }));
     expect(absent?.status === 'refused' && absent.reasons[1]).toMatchObject({ code: HR_CODES.HYBRID_PLANNER_UNAVAILABLE, params: { cause: 'GLOBAL_PLANNER_REQUIRED' } });
     expect(two(hyrox({ hybridAllowed: false }))?.reasons[1]).toMatchObject({ code: HR_CODES.HYBRID_PLANNER_UNAVAILABLE, params: { cause: 'POLICY_DISALLOWS' } });
-    expect(codes(two(hyrox({ station: null })))).toEqual([GP_CODES.ENGINE_REFUSED, HR_CODES.STATION_NOT_REQUESTED]);
+    const noStation = req(plan([want('strength', 1), want('hyrox', 1, { station: undefined })], { strength: strength(), hyrox: hyrox() }), 'hyrox.1');
+    expect(codes(noStation)).toEqual([GP_CODES.ENGINE_REFUSED, HR_CODES.STATION_NOT_REQUESTED]);
   });
 
   it('matériel absent (aucun SkiErg) ⇒ HYROX refusé par son moteur (aucune substitution), les autres sports planifiés', () => {
@@ -232,13 +233,15 @@ describe('déterminisme et frontières adverses', () => {
     const base = strength();
     const spy = { ...base, generate: (slot: Parameters<typeof base.generate>[0]) => { seen.push(slot); return base.generate(slot); } };
     const w = plan([{ sport: 'strength', sessions: 1 }, { sport: 'running', sessions: 1 }], { ...ALL_PORTS(), strength: spy });
-    expect(Object.keys(seen[0] as object).sort()).toEqual(['availableMinutes', 'date', 'hybrid', 'requestId', 'seed']);
+    expect(Object.keys(seen[0] as object).sort()).toEqual(['availableMinutes', 'date', 'hybrid', 'intent', 'requestId', 'seed']);
+    // Seconde passe (multisport) : même créneau + contexte voisin, rien d'autre.
+    expect(Object.keys(seen.at(-1) as object).sort()).toEqual(['availableMinutes', 'date', 'hybrid', 'intent', 'neighbours', 'requestId', 'seed']);
     const r = req(w, 'strength.1');
-    expect(r?.status === 'planned' && r.session).toEqual((() => { const o = base.generate(seen[0] as never); return o.status === 'planned' ? o.session : null; })());
+    expect(r?.status === 'planned' && r.session).toEqual((() => { const o = base.generate(seen.at(-1) as never); return o.status === 'planned' ? o.session : null; })());
   });
 
   it('un refus du moteur n’est jamais remplacé par un autre sport ni une autre dose sur ce créneau', () => {
-    const w = plan([{ sport: 'hyrox', sessions: 1 }, { sport: 'strength', sessions: 1 }], { strength: strength(), hyrox: hyrox({ station: 'row' }) });
+    const w = plan([want('hyrox', 1, { station: 'row' }), want('strength', 1)], { strength: strength(), hyrox: hyrox() });
     const r = req(w, 'hyrox.1');
     expect(r?.status).toBe('refused');
     expect(codes(r)).toEqual([GP_CODES.ENGINE_REFUSED, HR_CODES.STATION_DOSE_UNAVAILABLE]);

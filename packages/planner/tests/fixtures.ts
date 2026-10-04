@@ -5,7 +5,7 @@
 import { asISODateTime } from '@hybridsport/domain';
 import type { FingerprintHistoryEntry } from '@hybridsport/domain';
 import { loadRuleset } from '@hybridsport/engine';
-import type { CoreProfile, LoadedRuleset } from '@hybridsport/engine';
+import type { CoreProfile, LoadedCatalog, LoadedRuleset } from '@hybridsport/engine';
 import { StrengthEngine, findArchetype, readStrengthParams } from '@hybridsport/strength';
 import type { StrengthContextInput } from '@hybridsport/strength';
 import { CURRENT_RUNNING_GOVERNANCE, createRunningEngine, withProductDecisions } from '@hybridsport/running';
@@ -15,7 +15,7 @@ import type { CrossTrainingContextInput, CtGovernance, CtParameter } from '@hybr
 import { HR_H1_ARCHETYPE, createHyroxEngine } from '@hybridsport/hyrox';
 import type { HyroxContextInput } from '@hybridsport/hyrox';
 import { crossTrainingPort, hyroxPort, runningPort, strengthPort } from '../src/index.js';
-import type { PlannerClock, PlannerInput, SportPort, SportPorts } from '../src/index.js';
+import type { DeclaredIntent, PlannerClock, PlannerInput, SportIntent, SportPort, SportPorts } from '../src/index.js';
 import { runningContent, strengthContent } from '../../app-core/src/provisional-content.js';
 import { STATE_FRESH } from '../../engine/tests/harness/requests.js';
 import { presetEquipment } from '../../engine/tests/fixtures/context.js';
@@ -34,6 +34,23 @@ export const days = (minutes: readonly number[] = AVAILABILITY) => WEEK.map((dat
 /** Horloge injectée de test : séances à midi UTC (convention de l'application V0). */
 export const clock: PlannerClock = { instantOf: (d) => asISODateTime(`${d}T12:00:00Z`), timezone: 'Europe/Paris' };
 
+// technical-constant: TEST_ONLY — normalisation des doses (profil de demande standard) ; aucune valeur approuvée
+export const TEST_DOSE_NORMALIZATION = {
+  strength: { working_set: { perUnit: 2, intensityBand: 'high' }, second: { perUnit: 0.05, intensityBand: 'moderate' } },
+  running: { run_structure_work_second: { perUnit: 0.01, intensityBand: 'moderate' }, second: { perUnit: 0.01, intensityBand: 'moderate' }, meter: { perUnit: 0.004, intensityBand: 'moderate' } },
+  crosstraining: { second: { perUnit: 0.03, intensityBand: 'high' }, rep: { perUnit: 0.2, intensityBand: 'high' } },
+  hybrid_race: { meter: { perUnit: 0.03, intensityBand: 'high' }, rep: { perUnit: 0.5, intensityBand: 'high' }, second: { perUnit: 0.1, intensityBand: 'high' }, calorie: { perUnit: 0.5, intensityBand: 'high' } },
+} as const;
+
+/** Contenu + normalisation des doses TEST_ONLY (`null` ⇒ contenu inchangé : profil non dérivable). */
+export function withDemand(content: { ruleset: LoadedRuleset; catalog: LoadedCatalog }, normalization: unknown = TEST_DOSE_NORMALIZATION, extra: Record<string, unknown> = {}) {
+  if (normalization === null) return content;
+  const doc = content.ruleset.document;
+  const r = loadRuleset({ ...doc, parameters: [...doc.parameters.filter((p) => p.id !== 'demand.doseNormalization'), param('demand.doseNormalization', normalization as never, 'G2', extra)] } as never);
+  if (!r.ok) throw new Error(`ruleset de test invalide : ${JSON.stringify(r.issues)}`);
+  return { ruleset: r.ruleset, catalog: content.catalog };
+}
+
 const fullGym = STRENGTH_PRESETS.find((p) => p.id === 'preset.full_gym')?.equipment ?? [];
 export const PROFILE: CoreProfile = {
   athleteLevel: 'intermediate', eligibility: 'eligible', declarations: [], healthDataConsent: true, restrictions: [], excludedExercises: [],
@@ -48,14 +65,13 @@ export function strengthBase(): StrengthContextInput {
     week: { otherStrengthSessions: [], neighbors: [], known: true }, preferences: { liked: [], disliked: [] },
   };
 }
-export function strength(profile: CoreProfile = PROFILE, history: FingerprintHistoryEntry[] = []): SportPort {
-  const content = strengthContent();
-  const a = findArchetype(readStrengthParams(content.ruleset).values, 'str_full_body');
+export const STRENGTH_INTENT: DeclaredIntent = (() => {
+  const a = findArchetype(readStrengthParams(strengthContent().ruleset).values, 'str_full_body');
   if (!a) throw new Error('archétype de test absent');
-  return strengthPort({
-    engine: StrengthEngine as never, content, profile, state: STATE_FRESH, history, clock, baseContext: strengthBase(),
-    intent: { archetypeId: 'str_full_body', stimulus: 'strength_heavy', objective: 'objective.strength_heavy', phase: 'phase.accumulation', toleranceProfile: a.toleranceProfile },
-  });
+  return { archetypeId: 'str_full_body', stimulus: 'strength_heavy', objective: 'objective.strength_heavy', phase: 'phase.accumulation', toleranceProfile: a.toleranceProfile };
+})();
+export function strength(o: { profile?: CoreProfile; history?: FingerprintHistoryEntry[]; normalization?: unknown } = {}): SportPort {
+  return strengthPort({ engine: StrengthEngine as never, content: withDemand(strengthContent(), o.normalization), profile: o.profile ?? PROFILE, state: STATE_FRESH, history: o.history ?? [], clock, baseContext: strengthBase() });
 }
 
 // ——— Running (gouvernance candidate + décisions produit ; GLOBAL_PLANNER_INTEGRATION SATISFAIT : TEST_ONLY)
@@ -76,11 +92,11 @@ export function runningBase(): RunningContextInput {
     capabilityRequests: ['progressionBeyondHistory', 'longRunProgression', 'paceTargets', 'hybridPlanning'],
   };
 }
-export function running(o: { governance?: RunningGovernance; profile?: CoreProfile } = {}): SportPort {
+export const RUNNING_INTENT: DeclaredIntent = { archetypeId: 'running.easy', stimulus: 'stim.running.aerobic', objective: 'objective.running.base', phase: 'phase.running.base', toleranceProfile: 'fixed_time' };
+export function running(o: { governance?: RunningGovernance; profile?: CoreProfile; normalization?: unknown } = {}): SportPort {
   return runningPort({
-    engine: createRunningEngine({ governance: o.governance ?? runningGovernance(), simulation: true }) as never, content: runningContent(),
+    engine: createRunningEngine({ governance: o.governance ?? runningGovernance(), simulation: true }) as never, content: withDemand(runningContent(), o.normalization),
     profile: o.profile ?? PROFILE, state: STATE_FRESH, history: [], clock, baseContext: runningBase(),
-    intent: { archetypeId: 'running.easy', stimulus: 'stim.running.aerobic', objective: 'objective.running.base', phase: 'phase.running.base', toleranceProfile: 'fixed_time' },
   });
 }
 
@@ -105,29 +121,26 @@ export function ctBase(): CrossTrainingContextInput {
     sessionHistory: [], benchmarks: [], mode: 'CANDIDATE', capabilityRequests: ['ctBootstrapExposure', 'ctReplayHold', 'ctHybridPlanning'],
   };
 }
-export function crosstraining(o: { governance?: CtGovernance; profile?: CoreProfile } = {}): SportPort {
+export const CT_INTENT: DeclaredIntent = { archetypeId: CT_C2_ARCHETYPE, stimulus: 'stim.crosstraining.metcon', objective: 'objective.crosstraining.general', phase: 'phase.crosstraining.base', toleranceProfile: 'fixed_time' };
+export function crosstraining(o: { governance?: CtGovernance; profile?: CoreProfile; normalization?: unknown } = {}): SportPort {
   return crossTrainingPort({
-    engine: createCrossTrainingEngine({ governance: o.governance ?? ctGovernance(), simulation: true }), content: { ruleset: testRuleset(), catalog: testCatalog() },
+    engine: createCrossTrainingEngine({ governance: o.governance ?? ctGovernance(), simulation: true }), content: withDemand({ ruleset: testRuleset(), catalog: testCatalog() }, o.normalization),
     profile: o.profile ?? PROFILE, state: STATE_FRESH, history: [], clock, baseContext: ctBase(),
-    intent: { archetypeId: CT_C2_ARCHETYPE, stimulus: 'stim.crosstraining.metcon', objective: 'objective.crosstraining.general', phase: 'phase.crosstraining.base', toleranceProfile: 'fixed_time' },
   });
 }
 
 // ——— HYROX H1 (paramètres TEST_ONLY du lot H1 + multisport admis par paramètre G1 de test)
-export function hyroxContent(o: { hybridAllowed?: boolean | null } = {}) {
-  const base = hyroxRuleset();
-  const doc = base.document;
+export function hyroxContent(o: { hybridAllowed?: boolean | null; normalization?: unknown } = {}) {
+  const doc = hyroxRuleset().document;
   const extra = o.hybridAllowed === null ? [] : [param('hybrid_race.h1.hybridPlanning', o.hybridAllowed ?? true, 'G1')];
   const r = loadRuleset({ ...doc, parameters: [...doc.parameters, ...extra] } as never);
   if (!r.ok) throw new Error('ruleset HYROX de test invalide');
-  return { ruleset: r.ruleset, catalog: hyroxCatalog() };
+  return withDemand({ ruleset: r.ruleset, catalog: hyroxCatalog() }, o.normalization);
 }
-export function hyrox(o: { hybridAllowed?: boolean | null; station?: string | null; profile?: CoreProfile } = {}): SportPort {
-  const baseContext: HyroxContextInput = { population: { level: 'intermediate', hybrid: false }, mode: 'CANDIDATE', returnState: { state: 'NONE' }, ...(o.station === null ? {} : { requestedStation: o.station ?? 'skierg' }) };
-  return hyroxPort({
-    engine: createHyroxEngine({ simulation: true }), content: hyroxContent(o), profile: o.profile ?? PROFILE, state: STATE_FRESH, history: [], clock, baseContext,
-    intent: { archetypeId: HR_H1_ARCHETYPE, stimulus: 'stim.hybrid_race.station', objective: 'objective.hybrid_race.station', phase: 'phase.hybrid_race.base', toleranceProfile: 'mixed' },
-  });
+export const HYROX_INTENT: DeclaredIntent = { archetypeId: HR_H1_ARCHETYPE, stimulus: 'stim.hybrid_race.station', objective: 'objective.hybrid_race.station', phase: 'phase.hybrid_race.base', toleranceProfile: 'mixed' };
+export function hyrox(o: { hybridAllowed?: boolean | null; profile?: CoreProfile; normalization?: unknown } = {}): SportPort {
+  const baseContext: Omit<HyroxContextInput, 'requestedStation'> = { population: { level: 'intermediate', hybrid: false }, mode: 'CANDIDATE', returnState: { state: 'NONE' } };
+  return hyroxPort({ engine: createHyroxEngine({ simulation: true }), content: hyroxContent(o), profile: o.profile ?? PROFILE, state: STATE_FRESH, history: [], clock, baseContext });
 }
 
 // ——— Gouvernance du planificateur (TEST_ONLY)
@@ -142,6 +155,15 @@ export { approvedTestOnly };
 
 export const ALL_PORTS = (): SportPorts => ({ strength: strength(), running: running(), crosstraining: crosstraining(), hyrox: hyrox() });
 
-export function input(demands: PlannerInput['demands'], o: Partial<PlannerInput> = {}): PlannerInput {
-  return { weekStart: WEEK[0], days: days(), demands, mode: 'CANDIDATE', recent: [], ...o };
+export const INTENTS: Readonly<Record<SportIntent['sport'], DeclaredIntent>> = { strength: STRENGTH_INTENT, running: RUNNING_INTENT, crosstraining: CT_INTENT, hyrox: HYROX_INTENT };
+/** Station HYROX demandée par le PROGRAMME de test (TEST_ONLY). */
+export const TEST_STATION = 'skierg';
+
+/** Demande de programme TEST_ONLY : intention de séance complète (et station HYROX) sauf surcharge. */
+export const want = (sport: SportIntent['sport'], sessions: number, o: Partial<SportIntent> = {}): SportIntent =>
+  ({ sport, sessions, intent: { ...INTENTS[sport] }, ...(sport === 'hyrox' ? { station: TEST_STATION } : {}), ...o });
+
+/** Accepte des demandes courtes `{ sport, sessions }` (complétées par `want`) ou complètes. */
+export function input(demands: readonly (SportIntent | { sport: SportIntent['sport']; sessions: number })[], o: Partial<PlannerInput> = {}): PlannerInput {
+  return { weekStart: WEEK[0], days: days(), demands: demands.map((d) => ('intent' in d ? d : want(d.sport, d.sessions))), mode: 'CANDIDATE', recent: [], ...o };
 }

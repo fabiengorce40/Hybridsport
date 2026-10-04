@@ -24,7 +24,8 @@ aa803f0dd3a5dfce  engine/src/api/pipeline.ts
 2aaec1e18ecf8183  engine/src/catalog/archetype.ts
 07e659dd609ba79a  engine/src/catalog/catalog.ts
 71201aa46e6b9c43  engine/src/catalog/coverage.ts
-13a9a761e24173a8  engine/src/catalog/index.ts
+2a6bf154973d41ac  engine/src/catalog/index.ts
+957290fc7b5a203d  engine/src/catalog/session-demand.ts
 6d6cafd628cba7c9  engine/src/catalog/structures.ts
 2513a154f42a3f50  engine/src/contracts/core-types.ts
 61041c6103ec3d54  engine/src/contracts/index.ts
@@ -51,8 +52,8 @@ c230a7c29d30e156  engine/src/duration/levers.ts
 9a6e6a8f4c3858a9  engine/src/migration/index.ts
 23311d2d0904a68d  engine/src/migration/migrations.ts
 a27b18edba4a8b14  engine/src/repair/index.ts
-43dc6d3d64840ac6  engine/src/repair/repair.ts
-fab90a78fd63e072  engine/src/rules/core-parameters.ts
+9ff658d57229a5ea  engine/src/repair/repair.ts
+91bc0b93b4cb0f54  engine/src/rules/core-parameters.ts
 336bcbedc33eefeb  engine/src/rules/enforcement.ts
 c99bd31c8a07b742  engine/src/rules/errors.ts
 9d64eddf0b89db37  engine/src/rules/governance.ts
@@ -63,7 +64,7 @@ b65d5f00f63fea71  engine/src/rules/index.ts
 f63bb0e39a77719d  engine/src/safety/eligibility.ts
 d7adb0d41a2f0473  engine/src/safety/index.ts
 90ef1d947f70a86d  engine/src/safety/pain.ts
-7888068625855562  engine/src/trace/core-codes.ts
+91bdeafdd66a389c  engine/src/trace/core-codes.ts
 b29f72f90a83f5ad  engine/src/trace/index.ts
 e0208d08acf1950e  engine/src/trace/registry.ts
 d1b1a668ef13568e  engine/src/trace/schema-issue.ts

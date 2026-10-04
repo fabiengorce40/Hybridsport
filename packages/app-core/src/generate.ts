@@ -29,7 +29,7 @@ const D7 = 7;
 
 const FRESH_STATE: CoreState = { readiness: 'normal', activePain: [], painHistory: 'available', dayAvailable: true };
 
-function coreProfile(p: Profile) {
+export function coreProfile(p: Profile) {
   return {
     athleteLevel: p.level, eligibility: 'eligible' as const, declarations: [], healthDataConsent: true,
     restrictions: [], excludedExercises: [...p.excludedExercises], availableEquipment: [...p.equipment.items],
@@ -66,9 +66,6 @@ function workingSetsOfSession(s: SessionDraft): { exerciseId: string; workingSet
 }
 
 function strengthContext(state: AppState, p: Profile, entry: PlanEntry, content: ContentSource): StrengthContextInput {
-  const now = sessionInstant(entry.date);
-  const exposures = state.strength.exposures.filter((x) => x.at < now);
-  const recentDone = exposures.filter((x) => daysBetween(dateOf(x.at), entry.date) < D7);
   const week = state.plans[weekStartOf(entry.date)];
   const others = (week?.entries ?? []).filter((e) => e.sport === 'strength' && e.key !== entry.key).map((e) => {
     const g = state.sessions[e.key];
@@ -79,6 +76,18 @@ function strengthContext(state: AppState, p: Profile, entry: PlanEntry, content:
   // Semaine « connue » seulement si aucune séance d'une autre discipline n'y figure : les voisines d'autres
   // disciplines exigent un profil de demande que V0 ne sait pas fournir (hypothèse prudente du moteur sinon).
   const otherDiscipline = (week?.entries ?? []).some((e) => e.sport !== 'strength');
+  return strengthContextAt(state, p, entry.date, content, others, !otherDiscipline);
+}
+
+/**
+ * Contexte Strength à une date : historique réalisé, tracks, E1 sur 7 jours (fonctions du moteur). Les autres séances
+ * Strength de la semaine et le caractère « connu » de la semaine sont fournis par l'appelant (V0 ou planificateur
+ * global, qui y ajoute les voisines d'autres disciplines avec leur profil de demande dérivé).
+ */
+export function strengthContextAt(state: AppState, p: Profile, date: string, content: ContentSource, others: StrengthContextInput['week']['otherStrengthSessions'] = [], known = true): StrengthContextInput {
+  const now = sessionInstant(date);
+  const exposures = state.strength.exposures.filter((x) => x.at < now);
+  const recentDone = exposures.filter((x) => daysBetween(dateOf(x.at), date) < D7);
   return {
     goal: { primary: { goal: p.strength.goal } },
     // Périodisation non gouvernée : phase fixe, aucune rampe de volume ni décharge planifiée.
@@ -87,7 +96,7 @@ function strengthContext(state: AppState, p: Profile, entry: PlanEntry, content:
     tracks: state.strength.tracks.filter((t) => t.status !== 'closed'),
     recentExposures: exposures,
     hardSets: { d7: hardSetsByGroup(recentDone.map((x) => ({ exerciseId: x.exerciseId, workingSets: x.sets.length })), content) },
-    week: { otherStrengthSessions: others, neighbors: [], known: !otherDiscipline },
+    week: { otherStrengthSessions: others, neighbors: [], known },
     preferences: { liked: [], disliked: [] },
   };
 }

@@ -9,6 +9,7 @@
   "dependencies": {
     "@hybridsport/domain": "workspace:*",
     "@hybridsport/engine": "workspace:*",
+    "@hybridsport/planner": "workspace:*",
     "@hybridsport/running": "workspace:*",
     "@hybridsport/strength": "workspace:*",
     "zod": "^4.6.5"

@@ -32,6 +32,12 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/engine/src/repair/repair.ts',
   'packages/engine/src/trace/core-codes.ts',
   'packages/engine/tests/unit/repair-load-transfer.test.ts',
+  // Frontière d'allure (réparation) et profil de demande standard (normalisation gouvernée facultative).
+  'packages/engine/tests/unit/repair-pace-transfer.test.ts',
+  'packages/engine/src/catalog/index.ts',
+  'packages/engine/src/catalog/session-demand.ts',
+  'packages/engine/src/rules/core-parameters.ts',
+  'packages/engine/tests/unit/session-demand.test.ts',
   'packages/engine/tests/unit/core-ext-r1.test.ts',
   'packages/engine/tests/unit/duplicate.test.ts',
   'packages/engine/tests/unit/fingerprint-explicit.test.ts',
