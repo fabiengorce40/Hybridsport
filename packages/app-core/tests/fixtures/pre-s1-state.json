@@ -1,0 +1,3350 @@
+{
+  "schemaVersion": 2,
+  "profile": {
+    "displayName": "",
+    "level": "intermediate",
+    "priorities": [
+      "strength",
+      "running"
+    ],
+    "strength": {
+      "enabled": true,
+      "goal": "hypertrophy",
+      "sessionsPerWeek": 4
+    },
+    "running": {
+      "enabled": true,
+      "population": "P_R1",
+      "goal": "GENERAL_RUNNING",
+      "wearable": false,
+      "sessionsPerWeek": 2,
+      "returnState": "NONE",
+      "hills": false
+    },
+    "crosstraining": {
+      "enabled": false
+    },
+    "hyrox": {
+      "enabled": false
+    },
+    "equipment": {
+      "presetId": "preset.full_gym",
+      "items": [
+        "barbell",
+        "plates",
+        "rack",
+        "bench",
+        "dumbbells",
+        "kettlebells",
+        "cable",
+        "leg_press",
+        "chest_press_machine",
+        "leg_curl_machine",
+        "row_machine",
+        "pullup_bar",
+        "bands",
+        "box",
+        "rower",
+        "assault_bike",
+        "treadmill",
+        "wall_ball",
+        "hack_squat",
+        "leg_extension_machine",
+        "calf_machine",
+        "hip_thrust_machine",
+        "shoulder_press_machine",
+        "pec_deck",
+        "lateral_raise_machine"
+      ]
+    },
+    "availability": [
+      60,
+      60,
+      60,
+      60,
+      60,
+      0,
+      60
+    ],
+    "excludedExercises": [],
+    "acceptedProvisionalAt": "2026-10-04T10:00:00Z"
+  },
+  "plans": {},
+  "sessions": {},
+  "logs": {},
+  "strength": {
+    "tracks": [],
+    "exposures": [],
+    "accessoryCounts": {}
+  },
+  "running": {
+    "realized": [
+      {
+        "sessionId": "free:2026-10-05T07:30:00Z",
+        "archetype": "EASY",
+        "structureFamily": "CONTINUOUS",
+        "completedAt": "2026-10-05T07:30:00Z",
+        "realizedDurationS": 1800,
+        "completion": "COMPLETED",
+        "unexpectedDifficulty": "AS_EXPECTED",
+        "intoleranceOrPainSignal": false,
+        "readinessOrToleranceDegraded": false,
+        "distanceM": 5000
+      }
+    ],
+    "references": []
+  },
+  "crosstraining": {
+    "realized": []
+  },
+  "hyrox": {
+    "realized": []
+  },
+  "fingerprints": {
+    "strength": [],
+    "running": [],
+    "crosstraining": []
+  },
+  "safety": {
+    "activePain": null
+  },
+  "programme": null,
+  "programmeState": {
+    "schemaVersion": 1,
+    "definition": {
+      "programmeId": "beta0.2026-10-05T07:30:00Z",
+      "origin": "profile",
+      "startWeek": "2026-10-05",
+      "goals": [
+        {
+          "goalId": "goal.strength",
+          "sport": "strength",
+          "goal": "hypertrophy"
+        },
+        {
+          "goalId": "goal.running",
+          "sport": "running",
+          "goal": "GENERAL_RUNNING"
+        }
+      ],
+      "priorities": [
+        "strength",
+        "running"
+      ],
+      "sports": [
+        {
+          "sport": "strength",
+          "sessionsPerWeek": 4,
+          "composition": "declared",
+          "intent": {
+            "archetypeId": "str_full_body",
+            "stimulus": "strength_volume",
+            "objective": "objective.strength_volume",
+            "phase": "phase.accumulation",
+            "toleranceProfile": "strength_sets"
+          },
+          "declarations": {},
+          "variants": {}
+        },
+        {
+          "sport": "running",
+          "sessionsPerWeek": 2,
+          "composition": "engine",
+          "intent": {
+            "stimulus": "stim.running.aerobic",
+            "objective": "objective.running.base",
+            "phase": "phase.running.base",
+            "toleranceProfile": "fixed_time"
+          },
+          "declarations": {},
+          "variants": {},
+          "assessment": {
+            "kind": "running.test",
+            "intent": {
+              "archetypeId": "running.test",
+              "stimulus": "stim.running.aerobic",
+              "objective": "objective.running.base",
+              "phase": "phase.running.base",
+              "toleranceProfile": "fixed_time"
+            }
+          }
+        }
+      ],
+      "phases": []
+    },
+    "createdAt": "2026-10-05T07:30:00Z",
+    "current": [
+      {
+        "sport": "strength",
+        "intent": {
+          "archetypeId": "str_full_body",
+          "stimulus": "strength_volume",
+          "objective": "objective.strength_volume",
+          "phase": "phase.accumulation",
+          "toleranceProfile": "strength_sets"
+        }
+      },
+      {
+        "sport": "running",
+        "intent": {
+          "stimulus": "stim.running.aerobic",
+          "objective": "objective.running.base",
+          "phase": "phase.running.base",
+          "toleranceProfile": "fixed_time"
+        }
+      }
+    ],
+    "weeks": [
+      {
+        "weekIndex": 0,
+        "weekStart": "2026-10-05",
+        "intent": {
+          "weekIndex": 0,
+          "weekStart": "2026-10-05",
+          "phase": null,
+          "demands": [
+            {
+              "sport": "strength",
+              "sessions": 4,
+              "composition": "declared",
+              "intent": {
+                "archetypeId": "str_full_body",
+                "stimulus": "strength_volume",
+                "objective": "objective.strength_volume",
+                "phase": "phase.accumulation",
+                "toleranceProfile": "strength_sets"
+              },
+              "overrides": []
+            },
+            {
+              "sport": "running",
+              "sessions": 2,
+              "composition": "engine",
+              "intent": {
+                "stimulus": "stim.running.aerobic",
+                "objective": "objective.running.base",
+                "phase": "phase.running.base",
+                "toleranceProfile": "fixed_time"
+              },
+              "overrides": []
+            }
+          ],
+          "assessments": []
+        },
+        "plannedAt": "2026-10-05T07:30:00Z",
+        "plannerRef": "2026-10-05",
+        "requests": [
+          {
+            "requestId": "2026-10-05.strength.1",
+            "sport": "strength",
+            "status": "planned",
+            "category": "planned",
+            "date": "2026-10-05",
+            "intent": {
+              "archetypeId": "str_full_body",
+              "stimulus": "strength_volume",
+              "objective": "objective.strength_volume",
+              "phase": "phase.accumulation",
+              "toleranceProfile": "strength_sets"
+            }
+          },
+          {
+            "requestId": "2026-10-05.running.1",
+            "sport": "running",
+            "status": "planned",
+            "category": "planned",
+            "date": "2026-10-11",
+            "intent": {
+              "stimulus": "stim.running.aerobic",
+              "objective": "objective.running.base",
+              "phase": "phase.running.base",
+              "toleranceProfile": "fixed_time",
+              "archetypeId": "running.easy"
+            },
+            "composition": {
+              "authority": "provisional",
+              "role": "EASY"
+            }
+          },
+          {
+            "requestId": "2026-10-05.strength.2",
+            "sport": "strength",
+            "status": "planned",
+            "category": "planned",
+            "date": "2026-10-08",
+            "intent": {
+              "archetypeId": "str_full_body",
+              "stimulus": "strength_volume",
+              "objective": "objective.strength_volume",
+              "phase": "phase.accumulation",
+              "toleranceProfile": "strength_sets"
+            }
+          },
+          {
+            "requestId": "2026-10-05.running.2",
+            "sport": "running",
+            "status": "planned",
+            "category": "planned",
+            "date": "2026-10-06",
+            "intent": {
+              "stimulus": "stim.running.aerobic",
+              "objective": "objective.running.base",
+              "phase": "phase.running.base",
+              "toleranceProfile": "fixed_time",
+              "archetypeId": "running.easy"
+            },
+            "composition": {
+              "authority": "provisional",
+              "role": "KEY"
+            }
+          },
+          {
+            "requestId": "2026-10-05.strength.3",
+            "sport": "strength",
+            "status": "planned",
+            "category": "planned",
+            "date": "2026-10-07",
+            "intent": {
+              "archetypeId": "str_full_body",
+              "stimulus": "strength_volume",
+              "objective": "objective.strength_volume",
+              "phase": "phase.accumulation",
+              "toleranceProfile": "strength_sets"
+            }
+          },
+          {
+            "requestId": "2026-10-05.strength.4",
+            "sport": "strength",
+            "status": "planned",
+            "category": "planned",
+            "date": "2026-10-09",
+            "intent": {
+              "archetypeId": "str_full_body",
+              "stimulus": "strength_volume",
+              "objective": "objective.strength_volume",
+              "phase": "phase.accumulation",
+              "toleranceProfile": "strength_sets"
+            }
+          }
+        ]
+      }
+    ],
+    "results": [],
+    "assessments": [],
+    "decisions": [],
+    "audit": [
+      {
+        "at": "2026-10-05T07:30:00Z",
+        "weekIndex": 0,
+        "reason": {
+          "code": "PLAN.PROGRAMME.WEEK_PLANNED",
+          "params": {
+            "weekIndex": 0,
+            "weekStart": "2026-10-05",
+            "planned": 6,
+            "requested": 6
+          }
+        }
+      }
+    ]
+  },
+  "programmeLogs": {},
+  "planner": {
+    "weeks": {
+      "2026-10-05": {
+        "weekStart": "2026-10-05",
+        "authority": "beta0_experimental",
+        "simulation": [
+          "planner.interference.structureWindows",
+          "demand.doseNormalization",
+          "running.technical.GLOBAL_PLANNER_INTEGRATION",
+          "running.engine.simulation"
+        ],
+        "plannedAt": "2026-10-05T07:30:00Z",
+        "mode": "CANDIDATE",
+        "hybrid": true,
+        "programmeOrigin": "profile",
+        "days": [
+          {
+            "date": "2026-10-05",
+            "availableMinutes": 60,
+            "status": "planned",
+            "sport": "strength",
+            "requestId": "2026-10-05.strength.1"
+          },
+          {
+            "date": "2026-10-06",
+            "availableMinutes": 60,
+            "status": "planned",
+            "sport": "running",
+            "requestId": "2026-10-05.running.2"
+          },
+          {
+            "date": "2026-10-07",
+            "availableMinutes": 60,
+            "status": "planned",
+            "sport": "strength",
+            "requestId": "2026-10-05.strength.3"
+          },
+          {
+            "date": "2026-10-08",
+            "availableMinutes": 60,
+            "status": "planned",
+            "sport": "strength",
+            "requestId": "2026-10-05.strength.2"
+          },
+          {
+            "date": "2026-10-09",
+            "availableMinutes": 60,
+            "status": "planned",
+            "sport": "strength",
+            "requestId": "2026-10-05.strength.4"
+          },
+          {
+            "date": "2026-10-10",
+            "availableMinutes": 0,
+            "status": "empty",
+            "reason": {
+              "code": "PLAN.PLANNER.DAY_EMPTY",
+              "params": {
+                "date": "2026-10-10",
+                "cause": "UNAVAILABLE"
+              }
+            }
+          },
+          {
+            "date": "2026-10-11",
+            "availableMinutes": 60,
+            "status": "planned",
+            "sport": "running",
+            "requestId": "2026-10-05.running.1"
+          }
+        ],
+        "requests": [
+          {
+            "requestId": "2026-10-05.strength.1",
+            "sport": "strength",
+            "status": "planned",
+            "category": "planned",
+            "reasons": [
+              {
+                "code": "PLAN.PLANNER.PLACED",
+                "params": {
+                  "sport": "strength",
+                  "requestId": "2026-10-05.strength.1",
+                  "date": "2026-10-05"
+                }
+              },
+              {
+                "code": "PLAN.PLANNER.NEIGHBOUR_CONTEXT",
+                "params": {
+                  "requestId": "2026-10-05.strength.1",
+                  "known": "true",
+                  "neighbours": 2,
+                  "unknown": []
+                }
+              }
+            ],
+            "date": "2026-10-05",
+            "intent": {
+              "archetypeId": "str_full_body",
+              "stimulus": "strength_volume",
+              "objective": "objective.strength_volume",
+              "phase": "phase.accumulation",
+              "toleranceProfile": "strength_sets"
+            },
+            "record": {
+              "kind": "session_record",
+              "schemaVersion": 6,
+              "data": {
+                "session": {
+                  "id": "plan.2026-10-05.strength.1.s0",
+                  "discipline": "strength",
+                  "athleteLevel": "intermediate",
+                  "availableTimeS": 3600,
+                  "targetDurationS": 3240,
+                  "toleranceProfile": "strength_sets",
+                  "blocks": [
+                    {
+                      "id": "b.warmup",
+                      "kind": "warmup",
+                      "role": "support",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "i.warmup",
+                          "exerciseId": "ex.lower_mobility_flow",
+                          "prescription": {
+                            "type": "mobility",
+                            "seconds": 180,
+                            "sides": 1
+                          }
+                        }
+                      ],
+                      "levers": [],
+                      "format": "continuous"
+                    },
+                    {
+                      "id": "b.main",
+                      "kind": "strength",
+                      "role": "primary",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "fb.main_knee.1",
+                          "exerciseId": "ex.back_squat",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "rampup",
+                                "reps": 8,
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rpe": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "rampup",
+                                "reps": 5,
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rpe": 5
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "rampup",
+                                "reps": 3,
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rpe": 7
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": 6,
+                                "restAfterS": 150,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 5
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": 6,
+                                "restAfterS": 150,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 5
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": 6,
+                                "restAfterS": 150,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 4
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.main_knee",
+                            "anchor": "candidate",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.hack_squat",
+                            "ex.leg_press",
+                            "ex.goblet_squat"
+                          ]
+                        }
+                      ],
+                      "levers": [
+                        {
+                          "kind": "reduce_main_volume",
+                          "min": 2
+                        }
+                      ],
+                      "format": "sets",
+                      "grouping": "straight"
+                    },
+                    {
+                      "id": "b.secondary",
+                      "kind": "strength",
+                      "role": "secondary",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "fb.push_h.1",
+                          "exerciseId": "ex.machine_chest_press",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 2
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 2
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.push_h",
+                            "anchor": "candidate",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.bench_press",
+                            "ex.db_bench_press",
+                            "ex.incline_push_up"
+                          ]
+                        },
+                        {
+                          "id": "fb.pull_v.1",
+                          "exerciseId": "ex.pull_up",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "bodyweight",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "bodyweight",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "bodyweight",
+                                  "effort": {
+                                    "rir": 2
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.pull_v",
+                            "anchor": "candidate",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.lat_pulldown",
+                            "ex.band_assisted_pull_up"
+                          ]
+                        }
+                      ],
+                      "levers": [
+                        {
+                          "kind": "reduce_sets",
+                          "min": 2
+                        }
+                      ],
+                      "format": "sets",
+                      "grouping": "straight"
+                    },
+                    {
+                      "id": "b.accessory",
+                      "kind": "accessory",
+                      "role": "support",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "fb.iso_upper.1",
+                          "exerciseId": "ex.pec_deck",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 1
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 1
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.iso_upper",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.machine_lateral_raise",
+                            "ex.cable_triceps_pushdown",
+                            "ex.cable_lateral_raise"
+                          ]
+                        },
+                        {
+                          "id": "fb.iso_upper.2",
+                          "exerciseId": "ex.machine_lateral_raise",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 1
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 1
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.iso_upper",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.cable_triceps_pushdown",
+                            "ex.cable_lateral_raise",
+                            "ex.cable_curl"
+                          ]
+                        }
+                      ],
+                      "levers": [
+                        {
+                          "kind": "superset_accessories"
+                        },
+                        {
+                          "kind": "reduce_sets",
+                          "min": 1
+                        },
+                        {
+                          "kind": "drop_accessory",
+                          "keepAtLeast": 1
+                        }
+                      ],
+                      "format": "sets",
+                      "grouping": "straight"
+                    }
+                  ]
+                },
+                "provenance": {
+                  "engineVersion": "0.1.0",
+                  "rulesetVersion": "0.4.0-strength-science-lock",
+                  "catalogVersion": "0.2.0-strength-test",
+                  "seed": "planner:2026-10-05.strength.1:2026-10-05",
+                  "traceId": "tc8d33b20c2c859d1"
+                },
+                "fingerprint": {
+                  "status": "available",
+                  "value": {
+                    "sessionId": "plan.2026-10-05.strength.1.s0",
+                    "discipline": "strength",
+                    "archetypeId": "str_full_body",
+                    "stimulus": "strength_volume",
+                    "exercises": [
+                      "ex.back_squat",
+                      "ex.lower_mobility_flow",
+                      "ex.machine_chest_press",
+                      "ex.machine_lateral_raise",
+                      "ex.pec_deck",
+                      "ex.pull_up"
+                    ],
+                    "families": [
+                      "fam.chest_press_machine",
+                      "fam.fly_machine",
+                      "fam.lateral_raise_machine",
+                      "fam.mobility_lower",
+                      "fam.pull_up",
+                      "fam.squat_bilateral"
+                    ],
+                    "equivalences": [
+                      "eq.chest_press_machine",
+                      "eq.lateral_raise_machine",
+                      "eq.mobility_lower",
+                      "eq.pec_deck",
+                      "eq.pull_up",
+                      "eq.squat_barbell"
+                    ],
+                    "patterns": {
+                      "isolation_upper": 0.4444444444444444,
+                      "mobility": 0,
+                      "pull_vertical": 0.16666666666666666,
+                      "push_horizontal": 0.2222222222222222,
+                      "squat": 0.16666666666666666
+                    },
+                    "muscles": {
+                      "biceps": 0.10714285714285714,
+                      "chest": 0.2857142857142857,
+                      "glutes": 0.10714285714285714,
+                      "hip_flexors": 0,
+                      "lats": 0.10714285714285714,
+                      "quadriceps": 0.10714285714285714,
+                      "side_delts": 0.14285714285714285,
+                      "triceps": 0.14285714285714285
+                    },
+                    "structure": [
+                      {
+                        "kind": "warmup",
+                        "format": "continuous",
+                        "durationS": 195
+                      },
+                      {
+                        "kind": "strength",
+                        "format": "sets",
+                        "durationS": 765
+                      },
+                      {
+                        "kind": "strength",
+                        "format": "sets",
+                        "durationS": 892.5000000000001
+                      },
+                      {
+                        "kind": "accessory",
+                        "format": "sets",
+                        "durationS": 900
+                      }
+                    ],
+                    "energy": {
+                      "low": 0.2,
+                      "moderate": 0.6,
+                      "high": 0.2
+                    },
+                    "format": "straight_sets",
+                    "prescriptionMarkers": {}
+                  }
+                },
+                "durationEstimate": {
+                  "availability": "AVAILABLE",
+                  "method": "core.duration_engine",
+                  "unit": "s",
+                  "p10": 2594.6864267073233,
+                  "p50": 2932.5,
+                  "p90": 3503.19163812036
+                }
+              }
+            },
+            "demand": {
+              "status": "derived",
+              "levels": {
+                "lower_knee": "high",
+                "lower_hip": "moderate",
+                "upper_push": "high",
+                "upper_pull": "high",
+                "axial": "high",
+                "locomotor_impact": "none",
+                "high_intensity_systemic": "high",
+                "grip": "high"
+              }
+            },
+            "neighbourContext": {
+              "known": true,
+              "neighbours": [
+                {
+                  "sport": "running",
+                  "discipline": "running",
+                  "stimulus": "stim.running.aerobic",
+                  "hoursFromThisSession": 144,
+                  "demand": {
+                    "lower_knee": "high",
+                    "lower_hip": "high",
+                    "upper_push": "none",
+                    "upper_pull": "none",
+                    "axial": "none",
+                    "locomotor_impact": "high",
+                    "high_intensity_systemic": "high",
+                    "grip": "none"
+                  }
+                },
+                {
+                  "sport": "running",
+                  "discipline": "running",
+                  "stimulus": "stim.running.aerobic",
+                  "hoursFromThisSession": 24,
+                  "demand": {
+                    "lower_knee": "high",
+                    "lower_hip": "high",
+                    "upper_push": "none",
+                    "upper_pull": "none",
+                    "axial": "none",
+                    "locomotor_impact": "high",
+                    "high_intensity_systemic": "high",
+                    "grip": "none"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "requestId": "2026-10-05.running.1",
+            "sport": "running",
+            "status": "planned",
+            "category": "planned",
+            "reasons": [
+              {
+                "code": "PLAN.PLANNER.PLACED",
+                "params": {
+                  "sport": "running",
+                  "requestId": "2026-10-05.running.1",
+                  "date": "2026-10-11"
+                }
+              },
+              {
+                "code": "PLAN.PLANNER.COMPOSITION_APPLIED",
+                "params": {
+                  "sport": "running",
+                  "authority": "provisional",
+                  "role": "EASY",
+                  "archetypeId": "running.easy"
+                }
+              },
+              {
+                "code": "RULE.RUNNING.CANDIDATE_VALUE_USED",
+                "params": {
+                  "parameterId": "running.frequency.minimumPlannerRunningFrequency",
+                  "maturity": "EXPERT_PROPOSED"
+                }
+              },
+              {
+                "code": "RULE.RUNNING.CANDIDATE_VALUE_USED",
+                "params": {
+                  "parameterId": "running.hi.densityPolicy",
+                  "maturity": "EXPERT_PROPOSED"
+                }
+              },
+              {
+                "code": "RULE.RUNNING.CANDIDATE_VALUE_USED",
+                "params": {
+                  "parameterId": "running.placement.strongDefaultSeparation",
+                  "maturity": "EXPERT_PROPOSED"
+                }
+              },
+              {
+                "code": "PLAN.RUNNING.WEEK_SLOT_SELECTED",
+                "params": {
+                  "archetype": "EASY",
+                  "role": "KEY",
+                  "date": "2026-10-06"
+                }
+              }
+            ],
+            "date": "2026-10-11",
+            "intent": {
+              "stimulus": "stim.running.aerobic",
+              "objective": "objective.running.base",
+              "phase": "phase.running.base",
+              "toleranceProfile": "fixed_time",
+              "archetypeId": "running.easy"
+            },
+            "composition": {
+              "authority": "provisional",
+              "role": "EASY"
+            },
+            "record": {
+              "kind": "session_record",
+              "schemaVersion": 6,
+              "data": {
+                "session": {
+                  "id": "plan.2026-10-05.running.1.session",
+                  "discipline": "running",
+                  "athleteLevel": "intermediate",
+                  "availableTimeS": 3600,
+                  "targetDurationS": 3450,
+                  "toleranceProfile": "fixed_time",
+                  "blocks": [
+                    {
+                      "id": "plan.2026-10-05.running.1.block",
+                      "kind": "running",
+                      "role": "primary",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "plan.2026-10-05.running.1.run",
+                          "exerciseId": "ex.easy_run",
+                          "prescription": {
+                            "type": "run_structure",
+                            "segments": [
+                              {
+                                "kind": "steady",
+                                "id": "steady",
+                                "dose": {
+                                  "durationS": 1800
+                                },
+                                "target": {
+                                  "domain": "easy_low",
+                                  "effort": {
+                                    "rpe": {
+                                      "min": 3,
+                                      "max": 3
+                                    }
+                                  },
+                                  "priority": "effort",
+                                  "noWearable": true
+                                }
+                              }
+                            ],
+                            "estimate": {
+                              "method": "core.run_structure.pace_bounds",
+                              "methodVersion": 1,
+                              "unit": "s",
+                              "workS": {
+                                "min": 1800,
+                                "max": 1800
+                              },
+                              "totalS": {
+                                "min": 1800,
+                                "max": 1800
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "levers": [],
+                      "format": "continuous"
+                    }
+                  ]
+                },
+                "provenance": {
+                  "engineVersion": "0.1.0",
+                  "rulesetVersion": "0.1.0-test",
+                  "catalogVersion": "0.1.0-test",
+                  "seed": "planner:2026-10-05.running.1:2026-10-11",
+                  "traceId": "t73dc46f8c0d3bc89"
+                },
+                "fingerprint": {
+                  "status": "available",
+                  "value": {
+                    "sessionId": "plan.2026-10-05.running.1.session",
+                    "discipline": "running",
+                    "archetypeId": "running.easy",
+                    "stimulus": "stim.running.aerobic",
+                    "exercises": [
+                      "ex.easy_run"
+                    ],
+                    "families": [
+                      "fam.run"
+                    ],
+                    "equivalences": [
+                      "eq.run"
+                    ],
+                    "patterns": {
+                      "running": 1
+                    },
+                    "muscles": {
+                      "calves": 0.5,
+                      "quadriceps": 0.5
+                    },
+                    "structure": [
+                      {
+                        "kind": "running",
+                        "format": "continuous",
+                        "durationS": 1815
+                      }
+                    ],
+                    "energy": {
+                      "low": 1,
+                      "moderate": 0,
+                      "high": 0
+                    },
+                    "format": "continuous",
+                    "prescriptionMarkers": {
+                      "EASY.doseS": 1800
+                    }
+                  }
+                },
+                "durationEstimate": {
+                  "availability": "AVAILABLE",
+                  "method": "core.duration_engine",
+                  "unit": "s",
+                  "p10": 1815,
+                  "p50": 1815,
+                  "p90": 1815
+                }
+              }
+            },
+            "demand": {
+              "status": "derived",
+              "levels": {
+                "lower_knee": "high",
+                "lower_hip": "high",
+                "upper_push": "none",
+                "upper_pull": "none",
+                "axial": "none",
+                "locomotor_impact": "high",
+                "high_intensity_systemic": "high",
+                "grip": "none"
+              }
+            }
+          },
+          {
+            "requestId": "2026-10-05.strength.2",
+            "sport": "strength",
+            "status": "planned",
+            "category": "planned",
+            "reasons": [
+              {
+                "code": "PLAN.PLANNER.PLACED",
+                "params": {
+                  "sport": "strength",
+                  "requestId": "2026-10-05.strength.2",
+                  "date": "2026-10-08"
+                }
+              },
+              {
+                "code": "PLAN.PLANNER.NEIGHBOUR_CONTEXT",
+                "params": {
+                  "requestId": "2026-10-05.strength.2",
+                  "known": "true",
+                  "neighbours": 2,
+                  "unknown": []
+                }
+              }
+            ],
+            "date": "2026-10-08",
+            "intent": {
+              "archetypeId": "str_full_body",
+              "stimulus": "strength_volume",
+              "objective": "objective.strength_volume",
+              "phase": "phase.accumulation",
+              "toleranceProfile": "strength_sets"
+            },
+            "record": {
+              "kind": "session_record",
+              "schemaVersion": 6,
+              "data": {
+                "session": {
+                  "id": "plan.2026-10-05.strength.2.s0",
+                  "discipline": "strength",
+                  "athleteLevel": "intermediate",
+                  "availableTimeS": 3600,
+                  "targetDurationS": 3240,
+                  "toleranceProfile": "strength_sets",
+                  "blocks": [
+                    {
+                      "id": "b.warmup",
+                      "kind": "warmup",
+                      "role": "support",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "i.warmup",
+                          "exerciseId": "ex.lower_mobility_flow",
+                          "prescription": {
+                            "type": "mobility",
+                            "seconds": 300,
+                            "sides": 1
+                          }
+                        }
+                      ],
+                      "levers": [],
+                      "format": "continuous"
+                    },
+                    {
+                      "id": "b.main",
+                      "kind": "strength",
+                      "role": "primary",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "fb.main_knee.1",
+                          "exerciseId": "ex.back_squat",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "rampup",
+                                "reps": 8,
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rpe": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "rampup",
+                                "reps": 5,
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rpe": 5
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "rampup",
+                                "reps": 3,
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rpe": 7
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": 6,
+                                "restAfterS": 150,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 5
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": 6,
+                                "restAfterS": 150,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 5
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": 6,
+                                "restAfterS": 150,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 4
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": 6,
+                                "restAfterS": 150,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 4
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.main_knee",
+                            "anchor": "candidate",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.hack_squat",
+                            "ex.leg_press",
+                            "ex.goblet_squat"
+                          ]
+                        }
+                      ],
+                      "levers": [
+                        {
+                          "kind": "reduce_main_volume",
+                          "min": 2
+                        }
+                      ],
+                      "format": "sets",
+                      "grouping": "straight"
+                    },
+                    {
+                      "id": "b.secondary",
+                      "kind": "strength",
+                      "role": "secondary",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "fb.push_h.1",
+                          "exerciseId": "ex.machine_chest_press",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 2
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 2
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.push_h",
+                            "anchor": "candidate",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.bench_press",
+                            "ex.db_bench_press",
+                            "ex.incline_push_up"
+                          ]
+                        },
+                        {
+                          "id": "fb.pull_v.1",
+                          "exerciseId": "ex.pull_up",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "bodyweight",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "bodyweight",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "bodyweight",
+                                  "effort": {
+                                    "rir": 2
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.pull_v",
+                            "anchor": "candidate",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.lat_pulldown",
+                            "ex.band_assisted_pull_up"
+                          ]
+                        }
+                      ],
+                      "levers": [
+                        {
+                          "kind": "reduce_sets",
+                          "min": 2
+                        }
+                      ],
+                      "format": "sets",
+                      "grouping": "straight"
+                    },
+                    {
+                      "id": "b.accessory",
+                      "kind": "accessory",
+                      "role": "support",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "fb.iso_upper.1",
+                          "exerciseId": "ex.machine_lateral_raise",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 1
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 1
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.iso_upper",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.pec_deck",
+                            "ex.cable_triceps_pushdown",
+                            "ex.cable_lateral_raise"
+                          ]
+                        },
+                        {
+                          "id": "fb.single_leg.1",
+                          "exerciseId": "ex.bulgarian_split_squat",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 90,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 5
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 90,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 5
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.single_leg",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.walking_lunge_db",
+                            "ex.sandbag_lunge",
+                            "ex.reverse_lunge_bw"
+                          ]
+                        }
+                      ],
+                      "levers": [
+                        {
+                          "kind": "superset_accessories"
+                        },
+                        {
+                          "kind": "reduce_sets",
+                          "min": 1
+                        },
+                        {
+                          "kind": "drop_accessory",
+                          "keepAtLeast": 1
+                        }
+                      ],
+                      "format": "sets",
+                      "grouping": "straight"
+                    }
+                  ]
+                },
+                "provenance": {
+                  "engineVersion": "0.1.0",
+                  "rulesetVersion": "0.4.0-strength-science-lock",
+                  "catalogVersion": "0.2.0-strength-test",
+                  "seed": "planner:2026-10-05.strength.2:2026-10-08",
+                  "traceId": "t44a129b711124d4a"
+                },
+                "fingerprint": {
+                  "status": "available",
+                  "value": {
+                    "sessionId": "plan.2026-10-05.strength.2.s0",
+                    "discipline": "strength",
+                    "archetypeId": "str_full_body",
+                    "stimulus": "strength_volume",
+                    "exercises": [
+                      "ex.back_squat",
+                      "ex.bulgarian_split_squat",
+                      "ex.lower_mobility_flow",
+                      "ex.machine_chest_press",
+                      "ex.machine_lateral_raise",
+                      "ex.pull_up"
+                    ],
+                    "families": [
+                      "fam.chest_press_machine",
+                      "fam.lateral_raise_machine",
+                      "fam.mobility_lower",
+                      "fam.pull_up",
+                      "fam.split_squat",
+                      "fam.squat_bilateral"
+                    ],
+                    "equivalences": [
+                      "eq.chest_press_machine",
+                      "eq.lateral_raise_machine",
+                      "eq.mobility_lower",
+                      "eq.pull_up",
+                      "eq.split_squat_loaded",
+                      "eq.squat_barbell"
+                    ],
+                    "patterns": {
+                      "isolation_upper": 0.23529411764705882,
+                      "lunge": 0.11764705882352941,
+                      "mobility": 0,
+                      "pull_vertical": 0.17647058823529413,
+                      "push_horizontal": 0.23529411764705882,
+                      "squat": 0.23529411764705882
+                    },
+                    "muscles": {
+                      "biceps": 0.1,
+                      "chest": 0.13333333333333333,
+                      "glutes": 0.2,
+                      "hip_flexors": 0,
+                      "lats": 0.1,
+                      "quadriceps": 0.2,
+                      "side_delts": 0.13333333333333333,
+                      "triceps": 0.13333333333333333
+                    },
+                    "structure": [
+                      {
+                        "kind": "warmup",
+                        "format": "continuous",
+                        "durationS": 315
+                      },
+                      {
+                        "kind": "strength",
+                        "format": "sets",
+                        "durationS": 948
+                      },
+                      {
+                        "kind": "strength",
+                        "format": "sets",
+                        "durationS": 892.5000000000001
+                      },
+                      {
+                        "kind": "accessory",
+                        "format": "sets",
+                        "durationS": 714
+                      }
+                    ],
+                    "energy": {
+                      "low": 0.2,
+                      "moderate": 0.6,
+                      "high": 0.2
+                    },
+                    "format": "straight_sets",
+                    "prescriptionMarkers": {}
+                  }
+                },
+                "durationEstimate": {
+                  "availability": "AVAILABLE",
+                  "method": "core.duration_engine",
+                  "unit": "s",
+                  "p10": 2762.410679077052,
+                  "p50": 3049.5,
+                  "p90": 3559.178893530369
+                }
+              }
+            },
+            "demand": {
+              "status": "derived",
+              "levels": {
+                "lower_knee": "high",
+                "lower_hip": "high",
+                "upper_push": "high",
+                "upper_pull": "high",
+                "axial": "high",
+                "locomotor_impact": "none",
+                "high_intensity_systemic": "high",
+                "grip": "high"
+              }
+            },
+            "neighbourContext": {
+              "known": true,
+              "neighbours": [
+                {
+                  "sport": "running",
+                  "discipline": "running",
+                  "stimulus": "stim.running.aerobic",
+                  "hoursFromThisSession": 72,
+                  "demand": {
+                    "lower_knee": "high",
+                    "lower_hip": "high",
+                    "upper_push": "none",
+                    "upper_pull": "none",
+                    "axial": "none",
+                    "locomotor_impact": "high",
+                    "high_intensity_systemic": "high",
+                    "grip": "none"
+                  }
+                },
+                {
+                  "sport": "running",
+                  "discipline": "running",
+                  "stimulus": "stim.running.aerobic",
+                  "hoursFromThisSession": -48,
+                  "demand": {
+                    "lower_knee": "high",
+                    "lower_hip": "high",
+                    "upper_push": "none",
+                    "upper_pull": "none",
+                    "axial": "none",
+                    "locomotor_impact": "high",
+                    "high_intensity_systemic": "high",
+                    "grip": "none"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "requestId": "2026-10-05.running.2",
+            "sport": "running",
+            "status": "planned",
+            "category": "planned",
+            "reasons": [
+              {
+                "code": "PLAN.PLANNER.PLACED",
+                "params": {
+                  "sport": "running",
+                  "requestId": "2026-10-05.running.2",
+                  "date": "2026-10-06"
+                }
+              },
+              {
+                "code": "PLAN.PLANNER.COMPOSITION_APPLIED",
+                "params": {
+                  "sport": "running",
+                  "authority": "provisional",
+                  "role": "KEY",
+                  "archetypeId": "running.easy"
+                }
+              },
+              {
+                "code": "RULE.RUNNING.CANDIDATE_VALUE_USED",
+                "params": {
+                  "parameterId": "running.frequency.minimumPlannerRunningFrequency",
+                  "maturity": "EXPERT_PROPOSED"
+                }
+              },
+              {
+                "code": "RULE.RUNNING.CANDIDATE_VALUE_USED",
+                "params": {
+                  "parameterId": "running.hi.densityPolicy",
+                  "maturity": "EXPERT_PROPOSED"
+                }
+              },
+              {
+                "code": "RULE.RUNNING.CANDIDATE_VALUE_USED",
+                "params": {
+                  "parameterId": "running.placement.strongDefaultSeparation",
+                  "maturity": "EXPERT_PROPOSED"
+                }
+              },
+              {
+                "code": "PLAN.RUNNING.WEEK_SLOT_SELECTED",
+                "params": {
+                  "archetype": "EASY",
+                  "role": "KEY",
+                  "date": "2026-10-06"
+                }
+              }
+            ],
+            "date": "2026-10-06",
+            "intent": {
+              "stimulus": "stim.running.aerobic",
+              "objective": "objective.running.base",
+              "phase": "phase.running.base",
+              "toleranceProfile": "fixed_time",
+              "archetypeId": "running.easy"
+            },
+            "composition": {
+              "authority": "provisional",
+              "role": "KEY"
+            },
+            "record": {
+              "kind": "session_record",
+              "schemaVersion": 6,
+              "data": {
+                "session": {
+                  "id": "plan.2026-10-05.running.2.session",
+                  "discipline": "running",
+                  "athleteLevel": "intermediate",
+                  "availableTimeS": 3600,
+                  "targetDurationS": 3450,
+                  "toleranceProfile": "fixed_time",
+                  "blocks": [
+                    {
+                      "id": "plan.2026-10-05.running.2.block",
+                      "kind": "running",
+                      "role": "primary",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "plan.2026-10-05.running.2.run",
+                          "exerciseId": "ex.easy_run",
+                          "prescription": {
+                            "type": "run_structure",
+                            "segments": [
+                              {
+                                "kind": "steady",
+                                "id": "steady",
+                                "dose": {
+                                  "durationS": 1800
+                                },
+                                "target": {
+                                  "domain": "easy_low",
+                                  "effort": {
+                                    "rpe": {
+                                      "min": 3,
+                                      "max": 3
+                                    }
+                                  },
+                                  "priority": "effort",
+                                  "noWearable": true
+                                }
+                              }
+                            ],
+                            "estimate": {
+                              "method": "core.run_structure.pace_bounds",
+                              "methodVersion": 1,
+                              "unit": "s",
+                              "workS": {
+                                "min": 1800,
+                                "max": 1800
+                              },
+                              "totalS": {
+                                "min": 1800,
+                                "max": 1800
+                              }
+                            }
+                          }
+                        }
+                      ],
+                      "levers": [],
+                      "format": "continuous"
+                    }
+                  ]
+                },
+                "provenance": {
+                  "engineVersion": "0.1.0",
+                  "rulesetVersion": "0.1.0-test",
+                  "catalogVersion": "0.1.0-test",
+                  "seed": "planner:2026-10-05.running.2:2026-10-06",
+                  "traceId": "tb6b5ceaeee1a9b1f"
+                },
+                "fingerprint": {
+                  "status": "available",
+                  "value": {
+                    "sessionId": "plan.2026-10-05.running.2.session",
+                    "discipline": "running",
+                    "archetypeId": "running.easy",
+                    "stimulus": "stim.running.aerobic",
+                    "exercises": [
+                      "ex.easy_run"
+                    ],
+                    "families": [
+                      "fam.run"
+                    ],
+                    "equivalences": [
+                      "eq.run"
+                    ],
+                    "patterns": {
+                      "running": 1
+                    },
+                    "muscles": {
+                      "calves": 0.5,
+                      "quadriceps": 0.5
+                    },
+                    "structure": [
+                      {
+                        "kind": "running",
+                        "format": "continuous",
+                        "durationS": 1815
+                      }
+                    ],
+                    "energy": {
+                      "low": 1,
+                      "moderate": 0,
+                      "high": 0
+                    },
+                    "format": "continuous",
+                    "prescriptionMarkers": {
+                      "EASY.doseS": 1800
+                    }
+                  }
+                },
+                "durationEstimate": {
+                  "availability": "AVAILABLE",
+                  "method": "core.duration_engine",
+                  "unit": "s",
+                  "p10": 1815,
+                  "p50": 1815,
+                  "p90": 1815
+                }
+              }
+            },
+            "demand": {
+              "status": "derived",
+              "levels": {
+                "lower_knee": "high",
+                "lower_hip": "high",
+                "upper_push": "none",
+                "upper_pull": "none",
+                "axial": "none",
+                "locomotor_impact": "high",
+                "high_intensity_systemic": "high",
+                "grip": "none"
+              }
+            }
+          },
+          {
+            "requestId": "2026-10-05.strength.3",
+            "sport": "strength",
+            "status": "planned",
+            "category": "planned",
+            "reasons": [
+              {
+                "code": "PLAN.PLANNER.PLACED",
+                "params": {
+                  "sport": "strength",
+                  "requestId": "2026-10-05.strength.3",
+                  "date": "2026-10-07"
+                }
+              },
+              {
+                "code": "PLAN.PLANNER.NEIGHBOUR_CONTEXT",
+                "params": {
+                  "requestId": "2026-10-05.strength.3",
+                  "known": "true",
+                  "neighbours": 2,
+                  "unknown": []
+                }
+              }
+            ],
+            "date": "2026-10-07",
+            "intent": {
+              "archetypeId": "str_full_body",
+              "stimulus": "strength_volume",
+              "objective": "objective.strength_volume",
+              "phase": "phase.accumulation",
+              "toleranceProfile": "strength_sets"
+            },
+            "record": {
+              "kind": "session_record",
+              "schemaVersion": 6,
+              "data": {
+                "session": {
+                  "id": "plan.2026-10-05.strength.3.s1",
+                  "discipline": "strength",
+                  "athleteLevel": "intermediate",
+                  "availableTimeS": 3600,
+                  "targetDurationS": 3240,
+                  "toleranceProfile": "strength_sets",
+                  "blocks": [
+                    {
+                      "id": "b.warmup",
+                      "kind": "warmup",
+                      "role": "support",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "i.warmup",
+                          "exerciseId": "ex.lower_mobility_flow",
+                          "prescription": {
+                            "type": "mobility",
+                            "seconds": 180,
+                            "sides": 1
+                          }
+                        }
+                      ],
+                      "levers": [],
+                      "format": "continuous"
+                    },
+                    {
+                      "id": "b.main",
+                      "kind": "strength",
+                      "role": "primary",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "fb.main_knee.1",
+                          "exerciseId": "ex.back_squat",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "rampup",
+                                "reps": 8,
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rpe": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "rampup",
+                                "reps": 5,
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rpe": 5
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "rampup",
+                                "reps": 3,
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rpe": 7
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": 6,
+                                "restAfterS": 150,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 5
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": 6,
+                                "restAfterS": 150,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 5
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": 6,
+                                "restAfterS": 150,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 4
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.main_knee",
+                            "anchor": "candidate",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.hack_squat",
+                            "ex.leg_press",
+                            "ex.goblet_squat"
+                          ]
+                        }
+                      ],
+                      "levers": [
+                        {
+                          "kind": "reduce_main_volume",
+                          "min": 2
+                        }
+                      ],
+                      "format": "sets",
+                      "grouping": "straight"
+                    },
+                    {
+                      "id": "b.secondary",
+                      "kind": "strength",
+                      "role": "secondary",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "fb.push_h.1",
+                          "exerciseId": "ex.machine_chest_press",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 2
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 2
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.push_h",
+                            "anchor": "candidate",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.bench_press",
+                            "ex.db_bench_press",
+                            "ex.incline_push_up"
+                          ]
+                        },
+                        {
+                          "id": "fb.pull_v.1",
+                          "exerciseId": "ex.pull_up",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "bodyweight",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "bodyweight",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "bodyweight",
+                                  "effort": {
+                                    "rir": 2
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.pull_v",
+                            "anchor": "candidate",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.lat_pulldown",
+                            "ex.band_assisted_pull_up"
+                          ]
+                        }
+                      ],
+                      "levers": [
+                        {
+                          "kind": "reduce_sets",
+                          "min": 2
+                        }
+                      ],
+                      "format": "sets",
+                      "grouping": "straight"
+                    },
+                    {
+                      "id": "b.accessory",
+                      "kind": "accessory",
+                      "role": "support",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "fb.iso_upper.1",
+                          "exerciseId": "ex.machine_lateral_raise",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 1
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 1
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.iso_upper",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.pec_deck",
+                            "ex.cable_triceps_pushdown",
+                            "ex.cable_lateral_raise"
+                          ]
+                        },
+                        {
+                          "id": "fb.iso_upper.2",
+                          "exerciseId": "ex.pec_deck",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 1
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 1
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.iso_upper",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.cable_triceps_pushdown",
+                            "ex.cable_lateral_raise",
+                            "ex.cable_curl"
+                          ]
+                        }
+                      ],
+                      "levers": [
+                        {
+                          "kind": "superset_accessories"
+                        },
+                        {
+                          "kind": "reduce_sets",
+                          "min": 1
+                        },
+                        {
+                          "kind": "drop_accessory",
+                          "keepAtLeast": 1
+                        }
+                      ],
+                      "format": "sets",
+                      "grouping": "straight"
+                    }
+                  ]
+                },
+                "provenance": {
+                  "engineVersion": "0.1.0",
+                  "rulesetVersion": "0.4.0-strength-science-lock",
+                  "catalogVersion": "0.2.0-strength-test",
+                  "seed": "planner:2026-10-05.strength.3:2026-10-07",
+                  "traceId": "ta32b7613c1867606"
+                },
+                "fingerprint": {
+                  "status": "available",
+                  "value": {
+                    "sessionId": "plan.2026-10-05.strength.3.s1",
+                    "discipline": "strength",
+                    "archetypeId": "str_full_body",
+                    "stimulus": "strength_volume",
+                    "exercises": [
+                      "ex.back_squat",
+                      "ex.lower_mobility_flow",
+                      "ex.machine_chest_press",
+                      "ex.machine_lateral_raise",
+                      "ex.pec_deck",
+                      "ex.pull_up"
+                    ],
+                    "families": [
+                      "fam.chest_press_machine",
+                      "fam.fly_machine",
+                      "fam.lateral_raise_machine",
+                      "fam.mobility_lower",
+                      "fam.pull_up",
+                      "fam.squat_bilateral"
+                    ],
+                    "equivalences": [
+                      "eq.chest_press_machine",
+                      "eq.lateral_raise_machine",
+                      "eq.mobility_lower",
+                      "eq.pec_deck",
+                      "eq.pull_up",
+                      "eq.squat_barbell"
+                    ],
+                    "patterns": {
+                      "isolation_upper": 0.4444444444444444,
+                      "mobility": 0,
+                      "pull_vertical": 0.16666666666666666,
+                      "push_horizontal": 0.2222222222222222,
+                      "squat": 0.16666666666666666
+                    },
+                    "muscles": {
+                      "biceps": 0.10714285714285714,
+                      "chest": 0.2857142857142857,
+                      "glutes": 0.10714285714285714,
+                      "hip_flexors": 0,
+                      "lats": 0.10714285714285714,
+                      "quadriceps": 0.10714285714285714,
+                      "side_delts": 0.14285714285714285,
+                      "triceps": 0.14285714285714285
+                    },
+                    "structure": [
+                      {
+                        "kind": "warmup",
+                        "format": "continuous",
+                        "durationS": 195
+                      },
+                      {
+                        "kind": "strength",
+                        "format": "sets",
+                        "durationS": 765
+                      },
+                      {
+                        "kind": "strength",
+                        "format": "sets",
+                        "durationS": 892.5000000000001
+                      },
+                      {
+                        "kind": "accessory",
+                        "format": "sets",
+                        "durationS": 900
+                      }
+                    ],
+                    "energy": {
+                      "low": 0.2,
+                      "moderate": 0.6,
+                      "high": 0.2
+                    },
+                    "format": "straight_sets",
+                    "prescriptionMarkers": {}
+                  }
+                },
+                "durationEstimate": {
+                  "availability": "AVAILABLE",
+                  "method": "core.duration_engine",
+                  "unit": "s",
+                  "p10": 2594.6864267073233,
+                  "p50": 2932.5,
+                  "p90": 3503.19163812036
+                }
+              }
+            },
+            "demand": {
+              "status": "derived",
+              "levels": {
+                "lower_knee": "high",
+                "lower_hip": "moderate",
+                "upper_push": "high",
+                "upper_pull": "high",
+                "axial": "high",
+                "locomotor_impact": "none",
+                "high_intensity_systemic": "high",
+                "grip": "high"
+              }
+            },
+            "neighbourContext": {
+              "known": true,
+              "neighbours": [
+                {
+                  "sport": "running",
+                  "discipline": "running",
+                  "stimulus": "stim.running.aerobic",
+                  "hoursFromThisSession": 96,
+                  "demand": {
+                    "lower_knee": "high",
+                    "lower_hip": "high",
+                    "upper_push": "none",
+                    "upper_pull": "none",
+                    "axial": "none",
+                    "locomotor_impact": "high",
+                    "high_intensity_systemic": "high",
+                    "grip": "none"
+                  }
+                },
+                {
+                  "sport": "running",
+                  "discipline": "running",
+                  "stimulus": "stim.running.aerobic",
+                  "hoursFromThisSession": -24,
+                  "demand": {
+                    "lower_knee": "high",
+                    "lower_hip": "high",
+                    "upper_push": "none",
+                    "upper_pull": "none",
+                    "axial": "none",
+                    "locomotor_impact": "high",
+                    "high_intensity_systemic": "high",
+                    "grip": "none"
+                  }
+                }
+              ]
+            }
+          },
+          {
+            "requestId": "2026-10-05.strength.4",
+            "sport": "strength",
+            "status": "planned",
+            "category": "planned",
+            "reasons": [
+              {
+                "code": "PLAN.PLANNER.PLACED",
+                "params": {
+                  "sport": "strength",
+                  "requestId": "2026-10-05.strength.4",
+                  "date": "2026-10-09"
+                }
+              },
+              {
+                "code": "PLAN.PLANNER.NEIGHBOUR_CONTEXT",
+                "params": {
+                  "requestId": "2026-10-05.strength.4",
+                  "known": "true",
+                  "neighbours": 2,
+                  "unknown": []
+                }
+              }
+            ],
+            "date": "2026-10-09",
+            "intent": {
+              "archetypeId": "str_full_body",
+              "stimulus": "strength_volume",
+              "objective": "objective.strength_volume",
+              "phase": "phase.accumulation",
+              "toleranceProfile": "strength_sets"
+            },
+            "record": {
+              "kind": "session_record",
+              "schemaVersion": 6,
+              "data": {
+                "session": {
+                  "id": "plan.2026-10-05.strength.4.s0",
+                  "discipline": "strength",
+                  "athleteLevel": "intermediate",
+                  "availableTimeS": 3600,
+                  "targetDurationS": 3240,
+                  "toleranceProfile": "strength_sets",
+                  "blocks": [
+                    {
+                      "id": "b.warmup",
+                      "kind": "warmup",
+                      "role": "support",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "i.warmup",
+                          "exerciseId": "ex.lower_mobility_flow",
+                          "prescription": {
+                            "type": "mobility",
+                            "seconds": 300,
+                            "sides": 1
+                          }
+                        }
+                      ],
+                      "levers": [],
+                      "format": "continuous"
+                    },
+                    {
+                      "id": "b.main",
+                      "kind": "strength",
+                      "role": "primary",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "fb.main_knee.1",
+                          "exerciseId": "ex.back_squat",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "rampup",
+                                "reps": 8,
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rpe": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "rampup",
+                                "reps": 5,
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rpe": 5
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "rampup",
+                                "reps": 3,
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rpe": 7
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": 6,
+                                "restAfterS": 150,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 5
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": 6,
+                                "restAfterS": 150,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 5
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": 6,
+                                "restAfterS": 150,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 4
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": 6,
+                                "restAfterS": 150,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 4
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.main_knee",
+                            "anchor": "candidate",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.hack_squat",
+                            "ex.leg_press",
+                            "ex.goblet_squat"
+                          ]
+                        }
+                      ],
+                      "levers": [
+                        {
+                          "kind": "reduce_main_volume",
+                          "min": 2
+                        }
+                      ],
+                      "format": "sets",
+                      "grouping": "straight"
+                    },
+                    {
+                      "id": "b.secondary",
+                      "kind": "strength",
+                      "role": "secondary",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "fb.push_h.1",
+                          "exerciseId": "ex.machine_chest_press",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 2
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 2
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.push_h",
+                            "anchor": "candidate",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.bench_press",
+                            "ex.db_bench_press",
+                            "ex.incline_push_up"
+                          ]
+                        },
+                        {
+                          "id": "fb.pull_v.1",
+                          "exerciseId": "ex.pull_up",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "bodyweight",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "bodyweight",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 105,
+                                "intensity": {
+                                  "mode": "bodyweight",
+                                  "effort": {
+                                    "rir": 2
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.pull_v",
+                            "anchor": "candidate",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.lat_pulldown",
+                            "ex.band_assisted_pull_up"
+                          ]
+                        }
+                      ],
+                      "levers": [
+                        {
+                          "kind": "reduce_sets",
+                          "min": 2
+                        }
+                      ],
+                      "format": "sets",
+                      "grouping": "straight"
+                    },
+                    {
+                      "id": "b.accessory",
+                      "kind": "accessory",
+                      "role": "support",
+                      "optional": false,
+                      "items": [
+                        {
+                          "id": "fb.iso_upper.1",
+                          "exerciseId": "ex.machine_lateral_raise",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 3
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 1
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 12,
+                                  "max": 20
+                                },
+                                "restAfterS": 60,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 1
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.iso_upper",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.pec_deck",
+                            "ex.cable_triceps_pushdown",
+                            "ex.cable_lateral_raise"
+                          ]
+                        },
+                        {
+                          "id": "fb.single_leg.1",
+                          "exerciseId": "ex.bulgarian_split_squat",
+                          "prescription": {
+                            "type": "sets",
+                            "sets": [
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 90,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 5
+                                  }
+                                }
+                              },
+                              {
+                                "kind": "working",
+                                "reps": {
+                                  "min": 8,
+                                  "max": 12
+                                },
+                                "restAfterS": 90,
+                                "intensity": {
+                                  "mode": "effort",
+                                  "effort": {
+                                    "rir": 5
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          "refs": {
+                            "slotId": "fb.single_leg",
+                            "prescriptionSource": "calibration"
+                          },
+                          "alternatives": [
+                            "ex.walking_lunge_db",
+                            "ex.sandbag_lunge",
+                            "ex.reverse_lunge_bw"
+                          ]
+                        }
+                      ],
+                      "levers": [
+                        {
+                          "kind": "superset_accessories"
+                        },
+                        {
+                          "kind": "reduce_sets",
+                          "min": 1
+                        },
+                        {
+                          "kind": "drop_accessory",
+                          "keepAtLeast": 1
+                        }
+                      ],
+                      "format": "sets",
+                      "grouping": "straight"
+                    }
+                  ]
+                },
+                "provenance": {
+                  "engineVersion": "0.1.0",
+                  "rulesetVersion": "0.4.0-strength-science-lock",
+                  "catalogVersion": "0.2.0-strength-test",
+                  "seed": "planner:2026-10-05.strength.4:2026-10-09",
+                  "traceId": "t5feb333097f4eac1"
+                },
+                "fingerprint": {
+                  "status": "available",
+                  "value": {
+                    "sessionId": "plan.2026-10-05.strength.4.s0",
+                    "discipline": "strength",
+                    "archetypeId": "str_full_body",
+                    "stimulus": "strength_volume",
+                    "exercises": [
+                      "ex.back_squat",
+                      "ex.bulgarian_split_squat",
+                      "ex.lower_mobility_flow",
+                      "ex.machine_chest_press",
+                      "ex.machine_lateral_raise",
+                      "ex.pull_up"
+                    ],
+                    "families": [
+                      "fam.chest_press_machine",
+                      "fam.lateral_raise_machine",
+                      "fam.mobility_lower",
+                      "fam.pull_up",
+                      "fam.split_squat",
+                      "fam.squat_bilateral"
+                    ],
+                    "equivalences": [
+                      "eq.chest_press_machine",
+                      "eq.lateral_raise_machine",
+                      "eq.mobility_lower",
+                      "eq.pull_up",
+                      "eq.split_squat_loaded",
+                      "eq.squat_barbell"
+                    ],
+                    "patterns": {
+                      "isolation_upper": 0.23529411764705882,
+                      "lunge": 0.11764705882352941,
+                      "mobility": 0,
+                      "pull_vertical": 0.17647058823529413,
+                      "push_horizontal": 0.23529411764705882,
+                      "squat": 0.23529411764705882
+                    },
+                    "muscles": {
+                      "biceps": 0.1,
+                      "chest": 0.13333333333333333,
+                      "glutes": 0.2,
+                      "hip_flexors": 0,
+                      "lats": 0.1,
+                      "quadriceps": 0.2,
+                      "side_delts": 0.13333333333333333,
+                      "triceps": 0.13333333333333333
+                    },
+                    "structure": [
+                      {
+                        "kind": "warmup",
+                        "format": "continuous",
+                        "durationS": 315
+                      },
+                      {
+                        "kind": "strength",
+                        "format": "sets",
+                        "durationS": 948
+                      },
+                      {
+                        "kind": "strength",
+                        "format": "sets",
+                        "durationS": 892.5000000000001
+                      },
+                      {
+                        "kind": "accessory",
+                        "format": "sets",
+                        "durationS": 714
+                      }
+                    ],
+                    "energy": {
+                      "low": 0.2,
+                      "moderate": 0.6,
+                      "high": 0.2
+                    },
+                    "format": "straight_sets",
+                    "prescriptionMarkers": {}
+                  }
+                },
+                "durationEstimate": {
+                  "availability": "AVAILABLE",
+                  "method": "core.duration_engine",
+                  "unit": "s",
+                  "p10": 2762.410679077052,
+                  "p50": 3049.5,
+                  "p90": 3559.178893530369
+                }
+              }
+            },
+            "demand": {
+              "status": "derived",
+              "levels": {
+                "lower_knee": "high",
+                "lower_hip": "high",
+                "upper_push": "high",
+                "upper_pull": "high",
+                "axial": "high",
+                "locomotor_impact": "none",
+                "high_intensity_systemic": "high",
+                "grip": "high"
+              }
+            },
+            "neighbourContext": {
+              "known": true,
+              "neighbours": [
+                {
+                  "sport": "running",
+                  "discipline": "running",
+                  "stimulus": "stim.running.aerobic",
+                  "hoursFromThisSession": 48,
+                  "demand": {
+                    "lower_knee": "high",
+                    "lower_hip": "high",
+                    "upper_push": "none",
+                    "upper_pull": "none",
+                    "axial": "none",
+                    "locomotor_impact": "high",
+                    "high_intensity_systemic": "high",
+                    "grip": "none"
+                  }
+                },
+                {
+                  "sport": "running",
+                  "discipline": "running",
+                  "stimulus": "stim.running.aerobic",
+                  "hoursFromThisSession": -72,
+                  "demand": {
+                    "lower_knee": "high",
+                    "lower_hip": "high",
+                    "upper_push": "none",
+                    "upper_pull": "none",
+                    "axial": "none",
+                    "locomotor_impact": "high",
+                    "high_intensity_systemic": "high",
+                    "grip": "none"
+                  }
+                }
+              ]
+            }
+          }
+        ],
+        "conflicts": [],
+        "governance": [
+          {
+            "code": "DATA.PLANNER.CANDIDATE_VALUE_USED",
+            "params": {
+              "parameterId": "planner.interference.structureWindows",
+              "status": "draft"
+            }
+          }
+        ],
+        "owner": "programme"
+      }
+    }
+  },
+  "revision": 1
+}

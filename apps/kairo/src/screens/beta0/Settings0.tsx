@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { BUILD_ID } from '../../version.js';
 import { clearPain, decodeState, emptyState, exportState } from '@hybridsport/app-core';
 import { openWeek, useStore } from '../../store.js';
 import { download } from '../Profile.js';
@@ -98,6 +99,7 @@ export function Settings0() {
         <span><b>Beta expérimentale</b> : les séances viennent des moteurs Musculation et Course ; certaines valeurs et règles de planification sont encore en cours de validation.</span>
         <span>Une séance par jour au plus ; aucune règle de récupération universelle n’est appliquée.</span>
         <span>KAIRO ne remplace pas un avis médical.</span>
+        <span aria-label="Version de l’application">Version : <span className="num">{BUILD_ID}</span></span>
       </div>
     </div>
   );

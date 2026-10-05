@@ -33,6 +33,8 @@ export interface PlannerEnvironment {
   readonly authority: EnvironmentAuthority;
   /** Identifiants des valeurs SIMULATION_ONLY injectées (tracés dans la semaine persistée) ; interdits en production. */
   readonly simulation?: readonly string[];
+  /** Version du chemin de planification (compositeurs), écrite dans chaque semaine persistée (`planningVersion`). */
+  readonly planningVersion?: string;
   /** Ruleset de gouvernance du planificateur ; absent ⇒ décisions d'interférence fail-closed. */
   readonly governance?: LoadedRuleset;
   /**
@@ -136,9 +138,10 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
 const reason = (r: ReasonCode): Reason => ({ code: r.code, params: { ...r.params } });
 
 /** Forme persistée (sans perte d'audit) d'une semaine planifiée. */
-export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOrigin: string, env: Pick<PlannerEnvironment, 'authority' | 'simulation'>): Omit<PersistedWeek, 'owner'> {
+export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOrigin: string, env: Pick<PlannerEnvironment, 'authority' | 'simulation' | 'planningVersion'>): Omit<PersistedWeek, 'owner'> {
   return {
     weekStart: w.weekStart, authority: env.authority, simulation: [...(env.simulation ?? [])], plannedAt, mode: w.mode, hybrid: w.hybrid, programmeOrigin,
+    ...(env.planningVersion ? { planningVersion: env.planningVersion } : {}),
     days: w.days.map((d) => (d.status === 'planned' ? { date: d.date, availableMinutes: d.availableMinutes, status: 'planned', sport: d.sport, requestId: d.requestId } : { date: d.date, availableMinutes: d.availableMinutes, status: 'empty', reason: reason(d.reason) })),
     requests: w.requests.map((r) => ({
       requestId: r.requestId, sport: r.sport, status: r.status, category: r.category, reasons: r.reasons.map(reason),

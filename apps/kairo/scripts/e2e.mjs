@@ -7,6 +7,7 @@
  * libre (le temps s'écoule normalement).
  * Usage : node scripts/e2e.mjs [dossier de captures] — le serveur doit tourner sur E2E_URL.
  */
+import { readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 
 const URL_ = process.env.E2E_URL ?? 'http://localhost:4173/';
@@ -131,5 +132,59 @@ check(st.programmeState?.results?.length === 2, 'état : deux réalisations enre
 check(st.safety?.activePain === null, 'état : pause douleur levée');
 
 check(errors.length === 0, `aucune erreur console (${errors.join(' | ')})`);
+
+// ——— Strength S1 dans le navigateur, jusqu'au DOM (horloge fixée au lundi 2026-10-05).
+async function freshPage(initState) {
+  const c = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+  const p = await c.newPage();
+  await p.clock.install({ time: new Date('2026-10-05T07:30:00+02:00') });
+  await p.clock.resume();
+  if (initState) await p.addInitScript((s) => { if (!localStorage.getItem('kairo.state')) localStorage.setItem('kairo.state', s); }, initState);
+  await p.goto(URL_);
+  return { c, p };
+}
+const strengthTitles = (p) => p.getByRole('button', { name: /^Musculation : / }).evaluateAll((bs) => bs.map((b) => (b.getAttribute('aria-label') ?? '').replace(/^Musculation : /, '').replace(/, [^,]+$/, '')));
+
+// A — programme NEUF après S1, 4 séances de musculation créées depuis l'onboarding.
+{
+  const { c, p } = await freshPage();
+  await p.getByLabel(/J’ai compris/).check();
+  await p.getByRole('button', { name: 'Commencer' }).click();
+  await p.getByRole('radio', { name: /^Musculation Séances/ }).click();
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  await p.locator('.card', { has: p.getByRole('heading', { name: 'Musculation' }) }).getByLabel('Séances par semaine').selectOption('4');
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  await p.getByRole('button', { name: 'Créer mon programme' }).click();
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  const titles = await strengthTitles(p);
+  check(titles.length === 4 && titles.every((x, i) => (x === 'Haut du corps' || x === 'Bas du corps') && (i === 0 || x !== titles[i - 1])), `S1 programme neuf : 4 séances Haut / Bas en alternance dans le DOM (${titles.join(', ')})`);
+  await c.close();
+}
+
+// B — programme créé AVANT S1 (AppState réel pré-S1) ouvert un lundi : semaine non commencée régénérée.
+{
+  const pre = readFileSync(new URL('../../../packages/app-core/tests/fixtures/pre-s1-state.json', import.meta.url), 'utf8');
+  const { c, p } = await freshPage(pre);
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  const titles = await strengthTitles(p);
+  check(titles.join(',') === 'Haut du corps,Bas du corps,Haut du corps,Bas du corps', `S1 programme pré-S1 : semaine régénérée dans le DOM (${titles.join(', ')})`);
+  check((await p.locator('body').innerText()).includes('replanifiée avec la nouvelle version de KAIRO'), 'S1 programme pré-S1 : avis de replanification visible');
+  const st = await p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+  check(st.planner?.weeks?.['2026-10-05']?.planningVersion === 'beta0-s1', 'S1 programme pré-S1 : semaine persistée à la version courante');
+  await c.close();
+}
+
+// Version réellement servie : identifiant de build affiché dans Réglages = version.json publié (site déployé seulement).
+{
+  const { c, p } = await freshPage(readFileSync(new URL('../../../packages/app-core/tests/fixtures/pre-s1-state.json', import.meta.url), 'utf8'));
+  const published = await p.evaluate(async () => { try { const r = await fetch('./version.json', { cache: 'no-store' }); return r.ok ? (await r.json()).commit : null; } catch { return null; } });
+  await p.getByRole('button', { name: 'Réglages', exact: true }).click();
+  const shown = await p.getByLabel('Version de l’application').innerText();
+  if (published) check(shown === `Version : ${published.slice(0, 7)}`, `version affichée = version publiée (${shown} / ${published.slice(0, 7)})`);
+  else console.log(`--  version.json absent (build locale) : ${shown}`);
+  await c.close();
+}
+
 await browser.close();
 console.log('E2E OK');

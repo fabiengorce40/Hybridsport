@@ -1,7 +1,7 @@
 import { weekdayIndex } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate, Notice, weekdayShort } from '../../ui.js';
-import { ExperimentalBadge, SessionCard0, weekOf } from './common.js';
+import { ExperimentalBadge, SessionCard0, weekOf, WeekPlanningNotice } from './common.js';
 import { NoWeek, PainPause } from './Home0.js';
 
 export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo: (t: 'settings') => void }) {
@@ -16,6 +16,7 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
       {state.safety.activePain && <PainPause onGo={() => onGo('settings')} />}
       {!week || week.items.length === 0 ? <NoWeek today={today} /> : (
         <>
+          <WeekPlanningNotice planning={week.planning} />
           <p className="small muted">Semaine {week.weekIndex + 1}{week.programme.targetDate ? ` · objectif le ${formatDate(week.programme.targetDate)}` : ''} · du {Number(week.weekStart.slice(8))}/{week.weekStart.slice(5, 7)}. Une séance par jour au plus.</p>
           <div className="week">
             {week.days.map(({ date: d, sessions: s }) => {

@@ -7,11 +7,12 @@
  */
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
-import { requestAssessment, weekIndexOf, withinProgramme } from '@hybridsport/programme';
+import { requestAssessment, weekIndexOf, withinProgramme, zProgrammeState } from '@hybridsport/programme';
 import type { ProgrammeResult } from '@hybridsport/programme';
 import { logFreeRun } from './app.js';
 import type { Clock } from './app.js';
-import { beta0Environment, programmeDefinitionFromProfile } from './beta0.js';
+import { beta0Environment, legacyBeta0StrengthIntent, prescribedArchetype, LEGACY_BETA0_STRENGTH_ARCHETYPE, programmeDefinitionFromProfile, weekPlanning } from './beta0.js';
+import { STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } from '@hybridsport/strength';
 import { addDays, dateOf, normalizeInstant, weekStartOf } from './dates.js';
 import { AppError } from './errors.js';
 import { zProfile } from './model.js';
@@ -90,9 +91,30 @@ export function recreateBeta0Programme(state: AppState, input: ProfileInput, clo
 }
 
 /**
+ * Mise à niveau EXPLICITE d'un programme Beta 0 antérieur à S1 : l'intention Strength TEMPORAIRE (`str_full_body`
+ * déclaré par l'application faute de composition) devient le cadre SANS archétype composé par le moteur Strength, comme
+ * pour un programme neuf. Seule l'intention héritée EXACTE est concernée (`legacyBeta0StrengthIntent`) : une intention
+ * explicite n'est jamais transformée. Idempotente ; tracée dans l'audit du programme. Les semaines déjà planifiées ne
+ * sont pas touchées ici (voir la politique de semaine obsolète dans `ensureBeta0Week`).
+ */
+export function upgradeLegacyBeta0Programme(state: AppState, clock: Clock): AppState {
+  const ps = state.programmeState;
+  const legacy = ps ? legacyBeta0StrengthIntent(ps) : null;
+  if (!ps || !legacy) return state;
+  const sports = ps.definition.sports.map((x) => (x.sport === 'strength' ? { ...x, composition: 'engine' as const, intent: { ...legacy.frame } } : x));
+  const current = ps.current.map((x) => (x.sport === 'strength' ? { ...x, intent: { ...legacy.frame } } : x));
+  const reason = { code: 'KAIRO.PROGRAMME_STRENGTH_INTENT_UPGRADED', params: { from: `declared:${LEGACY_BETA0_STRENGTH_ARCHETYPE}`, to: 'engine', rule: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE.id, version: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE.version } };
+  const next = zProgrammeState.parse({ ...ps, definition: { ...ps.definition, sports }, current, audit: [...ps.audit, { at: normalizeInstant(clock.now), weekIndex: null, reason }] });
+  return { ...state, programmeState: next };
+}
+
+/**
  * Ouverture de l'application : semaines passées du programme clôturées (séances non saisies ⇒ manquées, dérivé),
- * séances en cours d'une semaine clôturée abandonnées, puis semaine courante planifiée si elle ne l'est pas — sauf
- * pause douleur active (garde commune) ou semaine hors horizon. Erreur de planification ⇒ AppError propagée.
+ * séances en cours d'une semaine clôturée abandonnées, programme antérieur à S1 mis à niveau, puis semaine courante :
+ * planifiée si elle ne l'est pas ; RÉGÉNÉRÉE si elle a été planifiée par une version antérieure du chemin ET n'est pas
+ * commencée (`weekPlanning` : aucun résultat, aucune séance en cours, aucune séance à une date passée) ; conservée
+ * telle quelle sinon (jamais de remplacement silencieux d'une semaine commencée). Sauf pause douleur active (garde
+ * commune) ou semaine hors horizon. Erreur de planification ⇒ AppError propagée.
  */
 export function ensureBeta0Week(state: AppState, clock: Clock, env: ProgrammeEnvironment = beta0Environment()): AppState {
   const ps0 = state.programmeState;
@@ -102,10 +124,18 @@ export function ensureBeta0Week(state: AppState, clock: Clock, env: ProgrammeEnv
   for (const w of ps0.weeks) if (!w.closedAt && w.weekIndex < cur) s = closeProgrammeWeekInApp(s, clock, env, w.weekIndex);
   const results = s.programmeState?.results ?? [];
   const programmeLogs = Object.fromEntries(Object.entries(s.programmeLogs).filter(([id, l]) => l.finishedAt !== undefined || !results.some((r) => r.requestId === id)));
-  s = { ...s, programmeLogs };
+  s = upgradeLegacyBeta0Programme({ ...s, programmeLogs }, clock);
   const ps = s.programmeState;
-  if (!ps || !withinProgramme(ps, cur) || ps.weeks.some((w) => w.weekIndex === cur) || activePainPause(s)) return s;
-  return planProgrammeCurrentWeek(s, clock, env, cur, { pastDaysUnavailable: true });
+  if (!ps || !withinProgramme(ps, cur) || activePainPause(s)) return s;
+  const existing = ps.weeks.find((w) => w.weekIndex === cur);
+  if (!existing) return planProgrammeCurrentWeek(s, clock, env, cur, { pastDaysUnavailable: true });
+  const planning = env.planningVersion ? weekPlanning(s, existing.plannerRef, clock.today, env.planningVersion) : null;
+  if (planning?.status !== 'stale_replaceable') return s;
+  const replanned = planProgrammeCurrentWeek(s, clock, env, cur, { pastDaysUnavailable: true });
+  const rps = replanned.programmeState;
+  if (!rps) return replanned;
+  const reason = { code: 'KAIRO.WEEK_REPLANNED_STALE', params: { weekStart: existing.plannerRef, fromVersion: planning.version ?? 'unversioned', toVersion: env.planningVersion ?? '' } };
+  return { ...replanned, programmeState: { ...rps, audit: [...rps.audit, { at: normalizeInstant(clock.now), weekIndex: cur, reason }] } };
 }
 
 // ——— Séance du programme
@@ -133,6 +163,8 @@ export interface ProgrammeSessionView {
   readonly date: string;
   readonly session: SessionDraft;
   readonly archetypeId: string | null;
+  /** Erreur de données sur l'archétype prescrit (jamais masquée). */
+  readonly dataError: 'ARCHETYPE_MISSING' | 'ARCHETYPE_MISMATCH' | null;
   readonly role: string | null;
   /** Durée estimée par le CORE (p50, s) si disponible. */
   readonly estimatedDurationS: number | null;
@@ -150,7 +182,7 @@ export function selectProgrammeSession(state: AppState, requestId: string): Prog
   if (!r?.date || !record || !session || (r.sport !== 'strength' && r.sport !== 'running')) return null;
   const week = Object.values(state.planner.weeks).find((w) => w.requests.includes(r));
   return {
-    requestId, sport: r.sport, date: r.date, session, archetypeId: r.intent?.archetypeId ?? null, role: r.composition?.role ?? null,
+    requestId, sport: r.sport, date: r.date, session, ...prescribedArchetype(r), role: r.composition?.role ?? null,
     estimatedDurationS: record.durationEstimate.availability === 'AVAILABLE' ? record.durationEstimate.p50 : null,
     log: state.programmeLogs[requestId] ?? null, result: state.programmeState?.results.find((x) => x.requestId === requestId) ?? null,
     experimental: week?.authority !== 'production',
@@ -271,7 +303,7 @@ export function selectHistory(state: AppState): readonly HistoryEntry[] {
     if (!l.finishedAt || !l.outcome || (l.sport !== 'strength' && l.sport !== 'running')) return [];
     const r = requestOf(state, l.requestId);
     return [{
-      requestId: l.requestId, sport: l.sport, date: r?.date ?? dateOf(l.startedAt), archetypeId: r?.intent?.archetypeId ?? null, role: r?.composition?.role ?? null,
+      requestId: l.requestId, sport: l.sport, date: r?.date ?? dateOf(l.startedAt), archetypeId: r ? prescribedArchetype(r).archetypeId : null, role: r?.composition?.role ?? null,
       completion: l.outcome.completion, pain: l.outcome.pain, sets: l.sets.filter((x) => x.done), run: l.outcome.run ?? null,
       testReference: state.running.references.some((x) => x.referenceId === `test:${l.requestId}`),
     }];
@@ -279,7 +311,7 @@ export function selectHistory(state: AppState): readonly HistoryEntry[] {
   const missed = (state.programmeState?.results ?? []).flatMap((x): HistoryEntry[] => {
     if (x.completion !== 'missed' || fromLogs.some((e) => e.requestId === x.requestId) || (x.sport !== 'strength' && x.sport !== 'running')) return [];
     const r = requestOf(state, x.requestId);
-    return [{ requestId: x.requestId, sport: x.sport, date: x.date, archetypeId: r?.intent?.archetypeId ?? null, role: r?.composition?.role ?? null, completion: 'missed', pain: false, sets: [], run: null, testReference: false }];
+    return [{ requestId: x.requestId, sport: x.sport, date: x.date, archetypeId: r ? prescribedArchetype(r).archetypeId : null, role: r?.composition?.role ?? null, completion: 'missed', pain: false, sets: [], run: null, testReference: false }];
   });
   return [...fromLogs, ...missed].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.requestId.localeCompare(a.requestId)));
 }

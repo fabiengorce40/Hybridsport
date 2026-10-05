@@ -21,7 +21,7 @@ import { requirePlannerProvenance } from '@hybridsport/planner';
 import { StrengthEngine, STRENGTH_WEEKLY_COMPOSITION_CANDIDATE, goalKey, readStrengthParams } from '@hybridsport/strength';
 import type { SportEngine } from '@hybridsport/engine';
 import { adherenceOf, weekIndexOf, weekStartAt, weekStatus, withinProgramme } from '@hybridsport/programme';
-import type { Adherence, ProgrammeDefinition, ProgrammeDefinitionInput, ProgrammeResult, WeekStatus } from '@hybridsport/programme';
+import type { Adherence, ProgrammeDefinition, ProgrammeDefinitionInput, ProgrammeResult, ProgrammeState, WeekStatus } from '@hybridsport/programme';
 import { plannerGovernance, withDemand } from '../../planner/tests/simulation.js';
 import { AppError } from './errors.js';
 import { addDays, daysBetween, weekStartOf } from './dates.js';
@@ -61,6 +61,14 @@ export function beta0RunningGovernance(): RunningGovernance {
 const simulationMark = { justification: SIMULATION_ONLY };
 
 /**
+ * Version du chemin de planification Beta 0, écrite dans chaque semaine persistée. À INCRÉMENTER à chaque changement
+ * d'un compositeur (Running, Strength) ou de l'intention dérivée du profil : une semaine NON COMMENCÉE d'une version
+ * antérieure est alors régénérée de façon sûre ; une semaine commencée est conservée telle quelle (beta0-app.ts).
+ * `beta0-s1` : composition hebdomadaire Strength par le moteur (S1). Absente : antérieure à S1.
+ */
+export const BETA0_PLANNING_VERSION = 'beta0-s1';
+
+/**
  * Environnement Beta 0 EXPÉRIMENTAL : Strength et Running seulement (CT / HYROX non raccordés), mode CANDIDATE.
  * Running n'accepte un athlète multisport QUE par le planificateur global (provenance obligatoire) : tout autre
  * chemin reste refusé. Aucune politique d'adaptation (décisions BLOCKED) ni horizon d'avance : aucune valeur inventée.
@@ -68,7 +76,7 @@ const simulationMark = { justification: SIMULATION_ONLY };
 export function beta0Environment(): ProgrammeEnvironment {
   const g = beta0RunningGovernance();
   return {
-    mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: [...BETA0_SIMULATION],
+    mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: [...BETA0_SIMULATION], planningVersion: BETA0_PLANNING_VERSION,
     governance: plannerGovernance(undefined, simulationMark),
     strength: { engine: StrengthEngine as SportEngine<unknown>, content: withDemand(strengthContent(), undefined, simulationMark), composition: { rule: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } },
     running: {
@@ -110,9 +118,7 @@ export function programmeDefinitionFromProfile(p: Profile, o: ProgrammeFromProfi
     if (s === 'strength') {
       // Profil de tolérance du cadre : celui, UNIQUE, des archétypes Strength admis pour l'objectif (donnée du ruleset) ;
       // chaque séance composée porte ensuite celui de son archétype. Aucun archétype choisi ici.
-      const gk = goalKey({ goal: p.strength.goal });
-      const tolerances = [...new Set(readStrengthParams(strengthContent().ruleset).values['strength.archetypes'].filter((a) => a.goals.includes(gk)).map((a) => a.toleranceProfile))];
-      const toleranceProfile = tolerances.length === 1 ? tolerances[0] : undefined;
+      const toleranceProfile = strengthFrameTolerance(p.strength.goal);
       if (toleranceProfile === undefined) throw new AppError('BETA0_STRENGTH_ARCHETYPE_MISSING');
       const stimulus = STIMULUS_BY_GOAL[p.strength.goal];
       return { sport: s, sessionsPerWeek: p.strength.sessionsPerWeek, composition: 'engine' as const, intent: { stimulus, objective: `objective.${stimulus}`, phase: 'phase.accumulation', toleranceProfile } };
@@ -129,6 +135,71 @@ export function programmeDefinitionFromProfile(p: Profile, o: ProgrammeFromProfi
 
 // technical-constant: jours par semaine (calendrier)
 const DAYS_PER_WEEK = 7;
+
+// ——— Programmes et semaines antérieurs à Strength S1 (politique de mise à niveau)
+
+/** Archétype de l'intention Strength TEMPORAIRE de la Beta 0 antérieure à S1 (jamais un choix de l'utilisateur). */
+export const LEGACY_BETA0_STRENGTH_ARCHETYPE = 'str_full_body';
+
+/** Profil de tolérance du cadre Strength : celui, UNIQUE, des archétypes admis pour l'objectif (donnée du ruleset). */
+function strengthFrameTolerance(goal: Profile['strength']['goal']): string | undefined {
+  const gk = goalKey({ goal });
+  const tolerances = [...new Set(readStrengthParams(strengthContent().ruleset).values['strength.archetypes'].filter((a) => a.goals.includes(gk)).map((a) => a.toleranceProfile))];
+  return tolerances.length === 1 ? tolerances[0] : undefined;
+}
+
+const sameIntent = (a: Readonly<Record<string, unknown>> | undefined, b: Readonly<Record<string, unknown>>): boolean =>
+  a !== undefined && Object.keys(a).length === Object.keys(b).length && Object.entries(b).every(([k, v]) => a[k] === v);
+
+/**
+ * Intention Strength HÉRITÉE de la Beta 0 antérieure à S1 : définition DÉRIVÉE DU PROFIL (`origin: profile`), plan
+ * Strength `declared` portant EXACTEMENT l'intention temporaire que `programmeDefinitionFromProfile` écrivait alors
+ * (`str_full_body`, stimulus de l'objectif, `phase.accumulation`, tolérance du ruleset), sans variante, déclaration,
+ * évaluation ni station, et intention courante identique. Tout autre cas (intention explicite, variante appliquée…)
+ * n'est JAMAIS considéré comme hérité.
+ */
+export function legacyBeta0StrengthIntent(ps: ProgrammeState): { readonly sessionsPerWeek: number; readonly frame: Readonly<Record<string, string>> } | null {
+  const d = ps.definition;
+  const plan = d.sports.find((x) => x.sport === 'strength');
+  const goal = d.goals.find((g) => g.sport === 'strength');
+  if (d.origin !== 'profile' || !plan || plan.composition !== 'declared' || !goal || !('goal' in goal)) return null;
+  const g = goal.goal as Profile['strength']['goal'];
+  const stimulus = STIMULUS_BY_GOAL[g] as string | undefined;
+  const toleranceProfile = strengthFrameTolerance(g);
+  if (!stimulus || !toleranceProfile) return null;
+  const frame = { stimulus, objective: `objective.${stimulus}`, phase: 'phase.accumulation', toleranceProfile };
+  const legacy = { archetypeId: LEGACY_BETA0_STRENGTH_ARCHETYPE, ...frame };
+  const pristine = plan.station === undefined && plan.assessment === undefined && Object.keys(plan.declarations).length === 0 && plan.variants.PROGRESS === undefined && plan.variants.REGRESS === undefined;
+  const current = ps.current.find((x) => x.sport === 'strength')?.intent;
+  return pristine && sameIntent(plan.intent, legacy) && sameIntent(current, legacy) ? { sessionsPerWeek: plan.sessionsPerWeek, frame } : null;
+}
+
+/**
+ * Statut de planification d'une semaine persistée du programme, au regard de la version COURANTE du chemin :
+ * - `current` : planifiée par cette version ;
+ * - `stale_replaceable` : version antérieure (ou absente) ET semaine non commencée — aucun résultat, aucune séance en
+ *   cours, aucune séance planifiée à une date déjà passée, semaine non clôturée : régénération SÛRE ;
+ * - `stale_kept` : version antérieure mais semaine commencée : JAMAIS remplacée (cause donnée), affichée comme telle.
+ */
+export type WeekPlanningCause = 'closed' | 'results' | 'session_in_progress' | 'past_sessions';
+export interface WeekPlanning {
+  readonly version: string | null;
+  readonly status: 'current' | 'stale_replaceable' | 'stale_kept';
+  readonly cause: WeekPlanningCause | null;
+}
+export function weekPlanning(state: AppState, weekStart: string, today: string, currentVersion: string = BETA0_PLANNING_VERSION): WeekPlanning | null {
+  const w = state.planner.weeks[weekStart];
+  if (!w || w.owner !== 'programme') return null;
+  const version = w.planningVersion ?? null;
+  if (version === currentVersion) return { version, status: 'current', cause: null };
+  const kept = (cause: WeekPlanningCause): WeekPlanning => ({ version, status: 'stale_kept', cause });
+  if (state.programmeState?.weeks.find((x) => x.plannerRef === weekStart)?.closedAt) return kept('closed');
+  const ids = new Set(w.requests.map((r) => r.requestId));
+  if ((state.programmeState?.results ?? []).some((r) => ids.has(r.requestId))) return kept('results');
+  if (Object.keys(state.programmeLogs).some((id) => ids.has(id))) return kept('session_in_progress');
+  if (w.requests.some((r) => r.status === 'planned' && r.date !== undefined && r.date < today)) return kept('past_sessions');
+  return { version, status: 'stale_replaceable', cause: null };
+}
 /** Nombre de semaines du lundi `startWeek` jusqu'à la semaine contenant `date` incluse (calendrier seulement). */
 function weeksThrough(startWeek: string, date: string): number {
   return Math.max(1, Math.floor(daysBetween(startWeek, weekStartOf(date)) / DAYS_PER_WEEK) + 1);
@@ -146,10 +217,17 @@ export interface SessionView {
   readonly targetDurationS: number | null;
   /** Durée ESTIMÉE de la séance par le CORE (p50, s), si l'enregistrement la porte ; sinon null. */
   readonly estimatedDurationS: number | null;
-  /** Archétype réellement utilisé (le libellé reste à l'interface) et rôle de composition éventuel. */
+  /**
+   * Archétype réellement PRESCRIT : celui du session_record canonique (empreinte de la séance générée), sinon celui de
+   * l'intention utilisée. Aucune valeur par défaut : absent ou incohérent ⇒ null et `dataError` renseigné.
+   */
   readonly archetypeId: string | null;
+  /** Erreur de données sur l'archétype (jamais masquée) : absent du record et de l'intention, ou record ≠ intention. */
+  readonly dataError: 'ARCHETYPE_MISSING' | 'ARCHETYPE_MISMATCH' | null;
   readonly role: string | null;
   readonly compositionAuthority: 'approved' | 'provisional' | null;
+  /** Règle de composition du moteur qui a choisi l'archétype (`identifiant@version`), si tracée. */
+  readonly compositionRule: string | null;
   /**
    * Séance non planifiée : catégorie, raison principale (codes) et jour ESSAYÉ (information seulement : la séance
    * n'est placée sur aucun jour, `date` est null).
@@ -173,6 +251,11 @@ export interface Beta0WeekView {
    * leur état : prévue, réalisée, adaptée, arrêtée, manquée). Source unique des vues jour par jour (accueil, planning).
    */
   readonly days: readonly { readonly date: string; readonly sessions: readonly SessionView[] }[];
+  /**
+   * Planification de la semaine au regard de la version courante (null : semaine non planifiée). `replannedAt` : la
+   * semaine, obsolète et non commencée, a été régénérée par la version courante (trace d'audit du programme).
+   */
+  readonly planning: (WeekPlanning & { readonly replannedAt: string | null }) | null;
   /** Adhérence DESCRIPTIVE (comptes, aucun seuil) ; null si la semaine n'est pas planifiée. */
   readonly adherence: Adherence | null;
 }
@@ -180,8 +263,23 @@ export interface Beta0WeekView {
 const INFORMATIVE = /^PLAN\.PLANNER\./;
 const mainReason = (rs: readonly Reason[]): Reason | null => rs.find((r) => !INFORMATIVE.test(r.code)) ?? rs[0] ?? null;
 
+/**
+ * Archétype réellement PRESCRIT d'une demande persistée : celui du session_record canonique (empreinte de la séance
+ * générée), contrôlé contre l'intention utilisée. Aucune valeur par défaut : incohérence ou absence ⇒ null + erreur.
+ */
+export function prescribedArchetype(r: PersistedWeek['requests'][number]): { readonly archetypeId: string | null; readonly dataError: SessionView['dataError'] } {
+  const data = r.record?.data as { fingerprint?: { status?: unknown; value?: { archetypeId?: unknown } } } | undefined;
+  const recorded = data?.fingerprint?.status === 'available' && typeof data.fingerprint.value?.archetypeId === 'string' ? data.fingerprint.value.archetypeId : null;
+  const declared = r.intent?.archetypeId ?? null;
+  if (r.status !== 'planned') return { archetypeId: declared, dataError: null };
+  if (recorded !== null && declared !== null && recorded !== declared) return { archetypeId: null, dataError: 'ARCHETYPE_MISMATCH' };
+  const archetypeId = recorded ?? declared;
+  return { archetypeId, dataError: archetypeId === null ? 'ARCHETYPE_MISSING' : null };
+}
+
 function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResult | undefined): SessionView {
   const data = r.record?.data as { session?: { targetDurationS?: unknown }; durationEstimate?: { availability?: unknown; p50?: unknown } } | undefined;
+  const composition = r.reasons.find((x) => x.code === 'PLAN.WEEK_COMPOSITION')?.params;
   const session = data?.session;
   const estimate = data?.durationEstimate?.availability === 'AVAILABLE' && typeof data.durationEstimate.p50 === 'number' ? data.durationEstimate.p50 : null;
   const planned = r.status === 'planned';
@@ -191,7 +289,9 @@ function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResu
     status: planned ? (result?.completion ?? 'planned') : 'not_planned',
     targetDurationS: planned && typeof session?.targetDurationS === 'number' ? session.targetDurationS : null,
     estimatedDurationS: planned ? estimate : null,
-    archetypeId: r.intent?.archetypeId ?? null, role: r.composition?.role ?? null, compositionAuthority: r.composition?.authority ?? null,
+    ...prescribedArchetype(r),
+    role: r.composition?.role ?? null, compositionAuthority: r.composition?.authority ?? null,
+    compositionRule: typeof composition?.rule === 'string' ? `${composition.rule}${typeof composition.version === 'string' ? `@${composition.version}` : ''}` : null,
     notPlanned: planned ? null : { category: r.category, reason: mainReason(r.reasons), triedDate: r.date ?? null },
     pain: result?.pain ?? false,
   };
@@ -225,5 +325,13 @@ export function selectBeta0Week(state: AppState, today: string, weekIndex?: numb
     weekIndex: i, weekStart: weekStartAt(ps, i), weekStatus: weekStatus(ps, i, today, undefined),
     authority, experimental: week ? isExperimental(authority) : true, simulation: [...(week?.simulation ?? [])],
     sessions, days, adherence: pw ? (pw.adherence?.total ?? adherenceOf(pw.requests, ps.results)) : null,
+    planning: planningOf(state, start, today),
   };
+}
+
+function planningOf(state: AppState, weekStart: string, today: string): Beta0WeekView['planning'] {
+  const p = weekPlanning(state, weekStart, today);
+  if (!p) return null;
+  const replanned = (state.programmeState?.audit ?? []).filter((a) => a.reason.code === 'KAIRO.WEEK_REPLANNED_STALE' && a.reason.params.weekStart === weekStart).at(-1);
+  return { ...p, replannedAt: replanned?.at ?? null };
 }

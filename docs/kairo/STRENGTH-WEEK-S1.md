@@ -178,3 +178,76 @@ Semaine observée après correction (4 séances, hypertrophie) :
 **Non-régression** : suites Running, Cross-training, HYROX, V0, CORE et les goldens Strength inchangées.
 
 La garde d'architecture Cross-training « Strength `src` inchangé depuis la baseline » liste désormais explicitement les 4 fichiers du lot S1 (liste fermée).
+
+## 8. Bug post-S1 — l'application déployée affichait toujours 4 × Full body
+
+### Cause exacte
+
+Ce n'était pas le moteur, ni le bundle, ni le service worker.
+
+La build servie par GitHub Pages contenait bien S1 :
+- `version.json` = `f837b9a` ;
+- l'asset servi (`index-BcqEkJJK.js`) contient `strength.rules.weeklyComposition` et « Haut du corps ».
+
+Le problème venait de l'**état persisté**. Le code pré-S1 (`ec84c88`) produit EXACTEMENT la semaine observée : fixture `packages/app-core/tests/fixtures/pre-s1-state.json`. Deux niveaux en cause :
+
+1. **Semaine courante.** `planner.weeks['2026-10-05']` a été planifiée avant S1. Elle contient 4 `session_record` dont l'empreinte porte `archetypeId: str_full_body`, sans composition. `ensureBeta0Week` ne planifiait que si la semaine n'existait pas : elle n'était donc jamais régénérée.
+2. **Toutes les semaines suivantes.** Le `ProgrammeState` pré-S1 conserve `sports.strength = { composition: 'declared', intent: { archetypeId: 'str_full_body', … } }`. Le Programme Engine rejoue cette intention à chaque semaine : sans correction, un programme pré-S1 restait en Full body **indéfiniment**.
+
+`selectBeta0Week` et React affichaient fidèlement ce qui était stocké.
+
+### Politique de mise à niveau
+
+**Intention héritée** (`upgradeLegacyBeta0Programme`).
+- Seule l'intention Strength TEMPORAIRE exacte de la Beta 0 pré-S1 est convertie :
+  - définition `origin: profile` ;
+  - plan `declared` ;
+  - `str_full_body` avec le stimulus de l'objectif, `phase.accumulation` et la tolérance du ruleset ;
+  - aucune variante, déclaration, évaluation ni station ;
+  - intention courante identique.
+- Elle devient le cadre sans archétype composé par le moteur Strength.
+- Une intention explicite n'est jamais transformée.
+- La mise à niveau est idempotente, tracée dans l'audit du programme (`KAIRO.PROGRAMME_STRENGTH_INTENT_UPGRADED`), et ne modifie aucune semaine.
+
+**Semaine obsolète** (`weekPlanning`, `BETA0_PLANNING_VERSION = 'beta0-s1'`). Chaque semaine persistée porte désormais `planningVersion`. Une semaine d'une version antérieure (ou non versionnée) est :
+- **régénérée** si elle n'est pas commencée : aucun résultat, aucune séance en cours, aucune séance planifiée à une date déjà passée, non clôturée. Audit `KAIRO.WEEK_REPLANNED_STALE` ; avis « replanifiée avec la nouvelle version » ;
+- **conservée telle quelle** sinon (`stale_kept` + cause). Avis expliquant pourquoi ; la semaine suivante utilise la nouvelle composition.
+
+`WEEK_NOT_REPLACEABLE` n'est jamais contourné. Aucune donnée n'est supprimée.
+
+À incrémenter à chaque changement d'un compositeur ou de l'intention dérivée du profil.
+
+### Affichage
+
+- L'archétype affiché vient du `session_record` canonique (empreinte), contrôlé contre l'intention (`prescribedArchetype`).
+- Absent ou incohérent : erreur de données visible.
+- Un archétype inconnu s'affiche « Erreur de données : archétype inconnu (…) » ; aucun repli vers Full body ni « Musculation ».
+
+### Version et mise à jour
+
+- **Identifiant de build** (commit) injecté à la compilation. Il est affiché dans Réglages (« Version : abc1234 ») et comparé à `version.json`, toujours relu sans cache.
+- **Bannière** « Nouvelle version de KAIRO disponible — Mettre à jour » si les deux diffèrent. Elle déclenche la mise à jour du service worker puis un rechargement.
+- **Service worker** (`kairo-beta0-2`) :
+  - navigations revalidées auprès du serveur (`cache: 'no-cache'`, plus le cache HTTP de 10 min de l'hébergeur) ;
+  - enregistrement `updateViaCache: 'none'` ;
+  - activation immédiate ;
+  - anciens caches supprimés.
+- **E2E du site déployé** : il vérifie que la version affichée est égale à la version publiée.
+
+### Tests discriminants
+
+- **`packages/app-core/tests/beta0-legacy-upgrade.test.ts`** :
+  - contenu de l'état pré-S1 ;
+  - mise à niveau, intentions explicites intactes ;
+  - lundi : régénération ;
+  - mercredi : conservation, puis S1 la semaine suivante ;
+  - séance en cours et séance enregistrée : conservation ;
+  - export / import ;
+  - programme neuf ;
+  - erreurs de données.
+- **`apps/kairo/tests/strength-week-dom.test.tsx`** (jsdom, application réelle) :
+  - A, programme neuf : onboarding avec 4 séances, DOM Haut / Bas en alternance égal à la composition renvoyée ;
+  - B, état pré-S1 : lundi, DOM Haut / Bas / Haut / Bas avec avis ; mercredi, DOM Full body ×4 avec avis ; lundi suivant, Haut / Bas.
+- **`apps/kairo/scripts/e2e.mjs`** (Chromium, build de production, aussi exécuté contre le site déployé) :
+  - scénarios A et B jusqu'au DOM ;
+  - version affichée égale à la version publiée.

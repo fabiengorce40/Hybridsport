@@ -1,7 +1,8 @@
 /** Lectures et composants communs Beta 0 (présentation uniquement : projection de `selectBeta0Week`). */
 import { approxMinutes, selectBeta0Week } from '@hybridsport/app-core';
 import type { AppState, Beta0WeekView, SessionView } from '@hybridsport/app-core';
-import { isTest, notPlannedText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS } from '../../present.js';
+import { isTest, notPlannedText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, weekPlanningText } from '../../present.js';
+import { Notice } from '../../ui.js';
 import type { DisplayStatus } from '../../present.js';
 
 export interface SessionItemView extends SessionView { readonly display: DisplayStatus }
@@ -32,12 +33,18 @@ export function StatusPill({ status }: { status: DisplayStatus }) {
   return <span className={`badge st-${status}`}><span aria-hidden="true">{STATUS_ICONS[status]} </span>{STATUS_LABELS[status]}</span>;
 }
 
+/** Semaine planifiée par une version précédente (conservée) ou replanifiée par la version courante. */
+export function WeekPlanningNotice({ planning }: { planning: Beta0WeekView['planning'] }) {
+  const text = weekPlanningText(planning);
+  return text ? <Notice tone="sim"><span role="status">{text}</span></Notice> : null;
+}
+
 export function ExperimentalBadge() {
   return <span className="badge sim" title="Certaines règles de planification sont encore en cours de validation.">Beta expérimentale</span>;
 }
 
 export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemView; onOpen: (id: string) => void; highlight?: boolean }) {
-  const name = sessionName(v.sport, v.archetypeId);
+  const name = sessionName(v.sport, v.archetypeId, v.dataError);
   const role = roleName(v.role);
   if (v.display === 'not_planned') {
     return (

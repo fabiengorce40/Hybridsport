@@ -16,6 +16,7 @@ import { Course } from './screens/Course.js';
 import { History } from './screens/History.js';
 import { download, Profile } from './screens/Profile.js';
 import { emptyState, isBeta0 } from '@hybridsport/app-core';
+import { UpdateBanner } from './version.js';
 
 function LoadProblem() {
   const store = useStore();
@@ -101,6 +102,7 @@ export function App() {
   return (
     <>
       <AuthorityBanner beta0={beta0 || !store.state.profile || setup} />
+      <UpdateBanner />
       {store.saveError && <div className="notice danger" role="alert" style={{ margin: 12 }}>Enregistrement impossible : {store.saveError}. Exportez vos données depuis le profil.</div>}
       {!store.persistent && <div className="notice warn" role="alert" style={{ margin: 12 }}>Stockage du navigateur indisponible : vos données ne seront pas conservées après fermeture.</div>}
       {store.toast && <div className="toast" role="alert" onClick={store.dismissToast}>{store.toast}</div>}

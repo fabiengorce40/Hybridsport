@@ -215,6 +215,11 @@ export const zPersistedWeek = z.object({
   mode: z.enum(PLANNER_MODES),
   hybrid: z.boolean(),
   programmeOrigin: z.string().min(1),
+  /**
+   * Version du chemin de planification qui a produit la semaine (compositeurs des moteurs). Absente : semaine planifiée
+   * avant le versionnement (Beta 0 antérieure à Strength S1). Sert à identifier une semaine OBSOLÈTE (beta0-app.ts).
+   */
+  planningVersion: z.string().min(1).optional(),
   days: z.array(z.object({ date, availableMinutes: z.number().int().nonnegative(), status: z.enum(['planned', 'empty']), sport: z.enum(SPORTS).optional(), requestId: z.string().optional(), reason: zReason.optional() }).strict()),
   requests: z.array(z.object({
     requestId: z.string().min(1), sport: z.enum(SPORTS), status: z.enum(['planned', 'refused', 'unplaced']), category: z.enum(REQUEST_CATEGORIES),

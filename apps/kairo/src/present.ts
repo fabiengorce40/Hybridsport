@@ -3,17 +3,36 @@
  * Aucun code interne n'est affiché tel quel ; aucune décision sportive ici.
  */
 import { RUNNING_ARCHETYPE_LABELS, RUNNING_ROLE_LABELS, SPORT_LABELS } from '@hybridsport/app-core';
-import type { SessionView, SessionViewStatus } from '@hybridsport/app-core';
+import type { Beta0WeekView, SessionView, SessionViewStatus } from '@hybridsport/app-core';
 
 const STRENGTH_TITLES: Readonly<Record<string, string>> = { str_full_body: 'Full body', str_upper: 'Haut du corps', str_lower: 'Bas du corps', str_support: 'Renforcement' };
 
 export const SPORT_SHORT: Readonly<Record<string, string>> = { strength: 'Musculation', running: 'Course' };
 export const sportName = (s: string): string => SPORT_SHORT[s] ?? SPORT_LABELS[s as 'strength'] ?? 'Séance';
 
-/** Titre d'une séance (type de séance), sans identifiant technique. */
-export function sessionName(sport: string, archetypeId: string | null): string {
-  if (sport === 'running') return (archetypeId ? RUNNING_ARCHETYPE_LABELS[archetypeId] : undefined) ?? 'Course';
-  return (archetypeId ? STRENGTH_TITLES[archetypeId] : undefined) ?? 'Musculation';
+/**
+ * Titre d'une séance : libellé de l'archétype RÉELLEMENT prescrit (projection de selectBeta0Week). Aucun repli : un
+ * archétype absent, incohérent ou inconnu est affiché comme une ERREUR DE DONNÉES, jamais comme un autre archétype.
+ */
+export function sessionName(sport: string, archetypeId: string | null, dataError: SessionView['dataError'] = null): string {
+  if (dataError === 'ARCHETYPE_MISMATCH') return 'Erreur de données : archétype incohérent';
+  if (archetypeId === null) return 'Erreur de données : archétype absent';
+  const label = sport === 'running' ? RUNNING_ARCHETYPE_LABELS[archetypeId] : STRENGTH_TITLES[archetypeId];
+  return label ?? `Erreur de données : archétype inconnu (${archetypeId})`;
+}
+
+/** Semaine planifiée par une version précédente de KAIRO : explication (aucune décision ici). */
+const KEPT_CAUSES: Readonly<Record<string, string>> = {
+  past_sessions: 'des séances prévues sont déjà passées',
+  results: 'des séances ont déjà été enregistrées',
+  session_in_progress: 'une séance est en cours',
+  closed: 'elle est clôturée',
+};
+export function weekPlanningText(p: Beta0WeekView['planning']): string | null {
+  if (!p) return null;
+  if (p.status === 'stale_kept') return `Cette semaine a été planifiée par une version précédente de KAIRO. Elle est conservée telle quelle car ${KEPT_CAUSES[p.cause ?? ''] ?? 'elle est commencée'} : la semaine prochaine utilisera la nouvelle composition.`;
+  if (p.replannedAt) return 'Cette semaine a été replanifiée avec la nouvelle version de KAIRO : aucune séance n’avait commencé.';
+  return null;
 }
 
 /** Rôle de la séance dans la semaine Running (composition du moteur), libellé lisible. */

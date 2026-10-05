@@ -97,7 +97,7 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
   }, [running]);
   if (!v) return <><Topbar title="Séance" onBack={onBack} /><div className="empty">Séance introuvable.</div></>;
   const { session, log, result } = v;
-  const name = sessionName(v.sport, v.archetypeId);
+  const name = sessionName(v.sport, v.archetypeId, v.dataError);
   const role = roleName(v.role);
   const test = isTest(v.archetypeId);
   const started = log !== null;

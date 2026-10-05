@@ -2,7 +2,7 @@ import { programmeStatusAt, weekdayIndex } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate, Notice, weekdayShort } from '../../ui.js';
 import { isDone, sportName, STATUS_LABELS } from '../../present.js';
-import { nextOf, placedOf, SessionCard0, weekOf } from './common.js';
+import { nextOf, placedOf, SessionCard0, weekOf, WeekPlanningNotice } from './common.js';
 import type { DayItemView } from './common.js';
 
 export function PainPause({ onGo }: { onGo: () => void }) {
@@ -60,6 +60,7 @@ export function Home0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo: (t
       </div>
 
       {state.safety.activePain && <PainPause onGo={() => onGo('settings')} />}
+      {week && <WeekPlanningNotice planning={week.planning} />}
 
       {week && planned.length > 0 && (
         <div className="card" aria-label="Progression de la semaine">
