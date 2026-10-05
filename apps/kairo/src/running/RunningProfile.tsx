@@ -3,11 +3,12 @@
  * Tout ce qui est affiché vient de `selectRunningProfile` (app-core → moteur) ; aucune métrique calculée ici.
  */
 import { useState } from 'react';
-import { declareRunningPerformance, durationLabel, paceLabel, RUNNING_GOAL_LABELS, requestRunningTest, selectRunningProfile } from '@hybridsport/app-core';
+import { declareRunningPerformance, paceLabel, RUNNING_GOAL_LABELS, requestRunningTest, selectRunningProfile } from '@hybridsport/app-core';
 import type { DeclaredPerformance, KeySessionAccess, ReferenceView, RunningProfileView } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
 import { formatDate, Notice } from '../ui.js';
 import { PerformanceForm } from './PerformanceForm.js';
+import { formatChrono } from './duration.js';
 
 const TYPE_LABELS: Readonly<Record<string, string>> = {
   RACE_RESULT: 'Course officielle', TIME_TRIAL: 'Chrono', CRITICAL_SPEED_TEST: 'Critical Speed', LAB_THRESHOLD: 'Seuil (laboratoire)', FIELD_THRESHOLD: 'Seuil (terrain)',
@@ -32,21 +33,28 @@ const TEST_STATUS: Readonly<Record<string, string>> = {
   requested: 'demandé', scheduled: 'programmé', not_planned: 'non planifié (créneau trop court ou course récente avec distance manquante)', content_unavailable: 'indisponible', completed: 'réalisé', result_missing: 'non réalisé',
 };
 
+/** Résumé d'une performance saisie (affichage). */
+export function performanceText(x: DeclaredPerformance): string {
+  return x.kind === 'CRITICAL_SPEED_TEST'
+    ? `Critical Speed ${formatChrono(x.paceSecPerKm)} /km`
+    : `${x.kind === 'RACE_RESULT' ? 'course' : 'chrono'} ${km(x.distanceM)} en ${formatChrono(x.durationS)}`;
+}
+
 const km = (m: number): string => (m === 21097.5 ? 'Semi' : m === 42195 ? 'Marathon' : `${String(Math.round(m) / 1000).replace('.', ',')} km`);
 const recency = (r: ReferenceView, w: RunningProfileView['recencyWeeks']): string => ({
   RECENT: `récente${w ? ` (≤ ${String(w.recent)} sem.)` : ''}`, AGING: `vieillissante${w ? ` (≤ ${String(w.aging)} sem.)` : ''}`, STALE: 'ancienne', FUTURE: 'date future', UNKNOWN: 'fraîcheur inconnue',
 }[r.recency]);
 const keyText = (k: KeySessionAccess): string => (k.status === 'available' ? 'disponibles' : k.status === 'test_required' ? 'un test récent est nécessaire' : 'non disponibles');
 
-function ReferenceRow({ r, w }: { r: ReferenceView; w: RunningProfileView['recencyWeeks'] }) {
+function ReferenceRow({ r, w, fresh = false }: { r: ReferenceView; w: RunningProfileView['recencyWeeks']; fresh?: boolean }) {
   return (
-    <div className="card" style={{ gap: 4 }} aria-label={`${TYPE_LABELS[r.type] ?? r.type} du ${formatDate(r.date.slice(0, 10))}`}>
+    <div className={`card ${fresh ? 'accent' : ''}`} style={{ gap: 4 }} aria-label={`${TYPE_LABELS[r.type] ?? r.type} du ${formatDate(r.date.slice(0, 10))}`}>
       <div className="row between">
         <strong>{TYPE_LABELS[r.type] ?? r.type}{r.distanceM !== null ? ` · ${km(r.distanceM)}` : ''}</strong>
         <span className={`badge ${r.recency === 'RECENT' ? 'done' : 'neutral'}`}>{recency(r, w)}</span>
       </div>
       <div className="small num">
-        {r.durationS !== null ? durationLabel(r.durationS) : null}
+        {r.durationS !== null ? formatChrono(r.durationS) : null}
         {r.paceSecPerKm !== null ? `${r.durationS !== null ? ' · ' : ''}${paceLabel(r.paceSecPerKm)} /km` : null}
         {r.trials !== null ? ` · ${String(r.trials)} essais` : ''}
       </div>
@@ -100,11 +108,21 @@ export function RunningProfileScreen({ onBack }: { onBack?: () => void }) {
   const store = useStore();
   const today = store.clock().today;
   const [adding, setAdding] = useState(false);
+  const [added, setAdded] = useState<{ text: string; id: string } | null>(null);
   const v = selectRunningProfile(store.state, today);
   const p = store.state.profile;
   const goal = store.state.programmeState?.definition.goals.find((g) => g.sport === 'running');
   if (!v || !p) return <div className="screen"><h1 className="screen-title">Profil Course</h1><div className="empty">La course n’est pas activée.</div></div>;
-  const add = (x: DeclaredPerformance) => { if (store.apply((s, c) => declareRunningPerformance(s, c, x))) setAdding(false); };
+  const add = (x: DeclaredPerformance) => {
+    const before = new Set(store.state.running.references.map((r) => r.referenceId));
+    let id = '';
+    const ok = store.apply((s, c) => {
+      const next = declareRunningPerformance(s, c, x);
+      id = next.running.references.find((r) => !before.has(r.referenceId))?.referenceId ?? '';
+      return next;
+    });
+    if (ok) { setAdding(false); setAdded({ text: performanceText(x), id }); }
+  };
   const testOpen = v.test?.status === 'requested' || v.test?.status === 'scheduled';
   return (
     <div className="screen">
@@ -112,7 +130,8 @@ export function RunningProfileScreen({ onBack }: { onBack?: () => void }) {
 
       <div className="section-title">Niveau actuel</div>
       {v.references.length === 0 && <div className="empty small">Aucune performance enregistrée.</div>}
-      {v.references.map((r) => <ReferenceRow key={r.referenceId} r={r} w={v.recencyWeeks} />)}
+      {added && <Notice><span role="status">Performance ajoutée : {added.text}.</span></Notice>}
+      {v.references.map((r) => <ReferenceRow key={r.referenceId} r={r} w={v.recencyWeeks} fresh={r.referenceId === added?.id} />)}
       {adding ? <PerformanceForm today={today} onAdd={add} onCancel={() => setAdding(false)} /> : <button className="btn secondary" onClick={() => setAdding(true)}>Ajouter une performance</button>}
       {store.state.programmeState && (
         testOpen

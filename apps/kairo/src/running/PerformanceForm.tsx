@@ -1,9 +1,13 @@
 /**
  * Saisie d'une OBSERVATION Course (performance réalisée ou Critical Speed mesurée ailleurs), au format du contrat
- * Running (`DeclaredPerformance`). Aucun calcul : seule la lecture d'un chrono ou d'une allure tapés au clavier.
+ * Running (`DeclaredPerformance`). Aucun calcul sportif : chrono et allure sont saisis par composants (h, min, s) au
+ * clavier numérique puis assemblés en secondes ; toute saisie refusée est expliquée.
  */
 import { useState } from 'react';
 import type { DeclaredPerformance } from '@hybridsport/app-core';
+import { DurationInput } from './DurationInput.js';
+import { durationFromParts, EMPTY_DURATION } from './duration.js';
+import type { DurationParts } from './duration.js';
 
 type Kind = DeclaredPerformance['kind'];
 const KINDS: readonly { id: Kind; label: string; detail: string }[] = [
@@ -16,42 +20,41 @@ const DISTANCES: readonly { m: number; label: string }[] = [
   { m: 3000, label: '3 km' }, { m: 5000, label: '5 km' }, { m: 10000, label: '10 km' }, { m: 21097.5, label: 'Semi' }, { m: 42195, label: 'Marathon' },
 ];
 
-/** « 45:00 » ou « 1:35:20 » → secondes ; null si illisible. */
-export function parseChrono(text: string): number | null {
-  const parts = text.trim().split(':');
-  if (parts.length < 2 || parts.length > 3 || parts.some((p) => !/^\d+$/.test(p))) return null;
-  const n = parts.map(Number);
-  const [h, m, s] = n.length === 3 ? n as [number, number, number] : [0, n[0] ?? 0, n[1] ?? 0];
-  if (m >= 60 && n.length === 3) return null;
-  if (s >= 60) return null;
-  const total = h * 3600 + m * 60 + s;
-  return total > 0 ? total : null;
-}
-
 export function PerformanceForm({ today, onAdd, onCancel }: { today: string; onAdd: (p: DeclaredPerformance) => void; onCancel?: () => void }) {
   const [kind, setKind] = useState<Kind>('TIME_TRIAL');
   const [distance, setDistance] = useState<number | 'other'>(5000);
   const [otherKm, setOtherKm] = useState('');
-  const [chrono, setChrono] = useState('');
+  const [chrono, setChrono] = useState<DurationParts>(EMPTY_DURATION);
   const [date, setDate] = useState('');
   const [measured, setMeasured] = useState(true);
   const [conditions, setConditions] = useState<'NORMAL' | 'ATYPICAL' | 'UNKNOWN'>('NORMAL');
   const [interruption, setInterruption] = useState<'NONE' | 'YES' | 'UNKNOWN'>('NONE');
-  const [pace, setPace] = useState('');
+  const [pace, setPace] = useState<DurationParts>(EMPTY_DURATION);
+  const [tried, setTried] = useState(false);
   const [trials, setTrials] = useState('');
   const [model, setModel] = useState('HYPERBOLIC_2_PARAMETERS');
   const cs = kind === 'CRITICAL_SPEED_TEST';
   const distanceM = distance === 'other' ? (otherKm === '' ? null : Number(otherKm) * 1000) : distance;
-  const durationS = parseChrono(chrono);
-  const paceS = parseChrono(pace);
-  const dateOk = /^\d{4}-\d{2}-\d{2}$/.test(date) && date <= today;
-  const ok = dateOk && (cs ? paceS !== null && Number(trials) >= 1 && Number.isInteger(Number(trials)) : distanceM !== null && Number.isFinite(distanceM) && distanceM > 0 && durationS !== null);
+  // Heures proposées dès 10 km (ou distance libre) : la performance peut dépasser une heure.
+  const withHours = distance === 'other' || (typeof distance === 'number' && distance >= 10000);
+  const duration = durationFromParts(chrono, withHours, 'le chrono');
+  const paceR = durationFromParts(pace, false, 'l’allure');
+  const errors: Record<string, string> = {};
+  if (!cs && (distanceM === null || !Number.isFinite(distanceM) || distanceM <= 0)) errors.distance = 'Indiquez une distance supérieure à zéro.';
+  if (!cs && !duration.ok) errors.chrono = duration.error;
+  if (cs && !paceR.ok) errors.pace = paceR.error;
+  if (cs && !(Number(trials) >= 1 && Number.isInteger(Number(trials)))) errors.trials = 'Indiquez le nombre d’essais (au moins 1).';
+  if (date === '') errors.date = 'Indiquez la date de réalisation.';
+  else if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) errors.date = 'Date illisible.';
+  else if (date > today) errors.date = 'La date ne peut pas être dans le futur.';
+  const show = (k: string) => (tried ? errors[k] ?? null : null);
   const submit = () => {
-    if (!ok) return;
+    setTried(true);
+    if (Object.keys(errors).length > 0) return;
     const common = { date, conditions, interruptionSince: interruption };
     onAdd(cs
-      ? { kind, ...common, paceSecPerKm: paceS ?? 0, trials: Number(trials), model }
-      : { kind, ...common, distanceM: distanceM ?? 0, durationS: durationS ?? 0, measuredCourse: measured });
+      ? { kind, ...common, paceSecPerKm: paceR.ok ? paceR.seconds : 0, trials: Number(trials), model }
+      : { kind, ...common, distanceM: distanceM ?? 0, durationS: duration.ok ? duration.seconds : 0, measuredCourse: measured });
   };
   return (
     <div className="card perf-form" aria-label="Ajouter une performance">
@@ -69,13 +72,15 @@ export function PerformanceForm({ today, onAdd, onCancel }: { today: string; onA
             <button type="button" role="radio" aria-checked={distance === 'other'} className={`chip ${distance === 'other' ? 'on' : ''}`} onClick={() => setDistance('other')}>Autre</button>
           </div>
           {distance === 'other' && <label className="field">Distance (km)<input inputMode="decimal" value={otherKm} onChange={(e) => setOtherKm(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))} placeholder="ex. 8" /></label>}
-          <label className="field">Chrono (min:s ou h:min:s)<input inputMode="numeric" value={chrono} onChange={(e) => setChrono(e.target.value.replace(/[^0-9:]/g, ''))} placeholder="45:00" /></label>
+          {show('distance') && <div className="k-dur-error" role="alert">{show('distance')}</div>}
+          <DurationInput label="Chrono" value={chrono} onChange={setChrono} withHours={withHours} error={show('chrono')} />
           <label className="check"><input type="checkbox" checked={measured} onChange={(e) => setMeasured(e.target.checked)} />Distance mesurée (piste, course officielle, parcours étalonné)</label>
         </>
       ) : (
         <>
-          <label className="field">Allure à la Critical Speed (min:s par km)<input inputMode="numeric" value={pace} onChange={(e) => setPace(e.target.value.replace(/[^0-9:]/g, ''))} placeholder="4:30" /></label>
-          <label className="field">Nombre d’essais du test<input inputMode="numeric" value={trials} onChange={(e) => setTrials(e.target.value.replace(/[^0-9]/g, ''))} placeholder="3" /></label>
+          <DurationInput label="Allure à la Critical Speed (par km)" value={pace} onChange={setPace} withHours={false} error={show('pace')} />
+          <label className="field">Nombre d’essais du test<input type="text" inputMode="numeric" pattern="[0-9]*" value={trials} onChange={(e) => setTrials(e.target.value.replace(/[^0-9]/g, ''))} placeholder="3" /></label>
+          {show('trials') && <div className="k-dur-error" role="alert">{show('trials')}</div>}
           <label className="field">Modèle utilisé
             <select value={model} onChange={(e) => setModel(e.target.value)}>
               <option value="HYPERBOLIC_2_PARAMETERS">Modèle à 2 paramètres (hyperbolique)</option>
@@ -84,7 +89,8 @@ export function PerformanceForm({ today, onAdd, onCancel }: { today: string; onA
           </label>
         </>
       )}
-      <label className="field">Date de réalisation<input type="date" max={today} value={date} onChange={(e) => setDate(e.target.value)} /></label>
+      <label className="field">Date de réalisation<input type="date" max={today} value={date} aria-invalid={show('date') ? true : undefined} onChange={(e) => setDate(e.target.value)} /></label>
+      {show('date') && <div className="k-dur-error" role="alert">{show('date')}</div>}
       <label className="field">Conditions
         <select value={conditions} onChange={(e) => setConditions(e.target.value as typeof conditions)}>
           <option value="NORMAL">Normales</option>
@@ -101,7 +107,7 @@ export function PerformanceForm({ today, onAdd, onCancel }: { today: string; onA
       </label>
       <div className="row">
         {onCancel && <button type="button" className="btn secondary" onClick={onCancel}>Annuler</button>}
-        <button type="button" className="btn primary block" disabled={!ok} onClick={submit}>Ajouter cette performance</button>
+        <button type="button" className="btn primary block" onClick={submit}>Ajouter cette performance</button>
       </div>
     </div>
   );

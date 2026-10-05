@@ -104,7 +104,7 @@ export function GoalsSection({ p, set, beta0 = false }: { p: ProfileInput; set: 
           </label>
           {p.running.returnState !== 'NONE' && (
             <label className="field">Date de reprise
-              <input type="text" inputMode="numeric" placeholder="AAAA-MM-JJ" value={p.running.returnStartedAt ?? ''}
+              <input type="date" value={p.running.returnStartedAt ?? ''}
                 onChange={(e) => set((x) => { const v = e.target.value.trim(); const { returnStartedAt: _, ...rest } = x.running; return { ...x, running: v ? { ...rest, returnStartedAt: v } : rest }; })} />
             </label>
           )}

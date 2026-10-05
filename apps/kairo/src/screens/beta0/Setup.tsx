@@ -7,14 +7,8 @@ import { useState } from 'react';
 import { createBeta0Programme, DIFFICULTY_LABELS, normalizeInstant, recreateBeta0Programme, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
 import type { Beta0ProgrammeOptions, DeclaredPerformance, Feedback, ProfileInput } from '@hybridsport/app-core';
 import { PerformanceForm } from '../../running/PerformanceForm.js';
+import { performanceText } from '../../running/RunningProfile.js';
 
-/** Résumé d'une performance saisie (affichage seulement). */
-function perfSummary(x: DeclaredPerformance): string {
-  const t = (s: number) => `${String(Math.floor(s / 60))}:${String(s % 60).padStart(2, '0')}`;
-  return x.kind === 'CRITICAL_SPEED_TEST'
-    ? `Critical Speed ${t(x.paceSecPerKm)} /km · ${x.date}`
-    : `${x.kind === 'RACE_RESULT' ? 'Course' : 'Chrono'} ${String(x.distanceM / 1000).replace('.', ',')} km en ${t(x.durationS)} · ${x.date}`;
-}
 import { useStore } from '../../store.js';
 import { AvailabilitySection, defaultProfile, EquipmentSection, GoalsSection } from '../../ProfileForm.js';
 import { formatDate, Notice } from '../../ui.js';
@@ -130,8 +124,8 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
               {perfs.length === 0 && !addingPerf && <p className="tiny" style={{ margin: 0 }}>Un chrono récent (course officielle ou chrono personnel) permet de débloquer les séances clés et des cibles d’allure.</p>}
               {perfs.map((x, i) => (
                 <div key={`${x.kind}${String(i)}`} className="row between small">
-                  <span>{perfSummary(x)}</span>
-                  <button type="button" className="btn ghost" aria-label={`Retirer ${perfSummary(x)}`} onClick={() => setPerfs(perfs.filter((_, j) => j !== i))}>Retirer</button>
+                  <span>{performanceText(x)}</span>
+                  <button type="button" className="btn ghost" aria-label={`Retirer ${performanceText(x)}`} onClick={() => setPerfs(perfs.filter((_, j) => j !== i))}>Retirer</button>
                 </div>
               ))}
               {addingPerf

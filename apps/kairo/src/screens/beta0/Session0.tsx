@@ -15,6 +15,9 @@ import { isTest, roleName, sessionName, sportName, STATUS_LABELS } from '../../p
 import { BLOCK_LABELS, RunStructureView, SetRow } from '../Session.js';
 import { StrengthWorkout } from '../../workout/StrengthWorkout.js';
 import { ExperimentalBadge } from './common.js';
+import { DurationInput } from '../../running/DurationInput.js';
+import { durationFromParts, EMPTY_DURATION } from '../../running/duration.js';
+import type { DurationParts } from '../../running/duration.js';
 
 type Completion = FinishInput['completion'];
 const COMPLETIONS: readonly { id: Completion; label: string }[] = [
@@ -30,12 +33,20 @@ function FinishSheet({ v, onCancel, onSubmit }: { v: ProgrammeSessionView; onCan
   const [pain, setPain] = useState(false);
   const [minutes, setMinutes] = useState('');
   const [km, setKm] = useState('');
-  const [testMin, setTestMin] = useState('');
-  const [testSec, setTestSec] = useState('');
+  const [testTime, setTestTime] = useState<DurationParts>(EMPTY_DURATION);
+  const [tried, setTried] = useState(false);
   const distanceM = km === '' ? undefined : Number(km) * 1000;
-  const testTimeS = testMin === '' && testSec === '' ? undefined : Number(testMin || '0') * 60 + Number(testSec || '0');
-  const testOk = !test || completion !== 'completed_as_prescribed' || (testTimeS !== undefined && testTimeS > 0 && Number(testSec || '0') < 60);
-  const runOk = !run || (Number(minutes) > 0 && (distanceM === undefined || (Number.isFinite(distanceM) && distanceM > 0)) && testOk);
+  // Temps du TEST : exigé si la séance s'est passée comme prévu, facultatif sinon (validé dès qu'il est saisi).
+  const testEntered = testTime.h !== '' || testTime.m !== '' || testTime.s !== '';
+  const testR = durationFromParts(testTime, true, 'le temps du test');
+  const testTimeS = test && testR.ok ? testR.seconds : undefined;
+  const errors: Record<string, string> = {};
+  if (!completion) errors.completion = 'Indiquez comment s’est passée la séance.';
+  if (run && !(Number(minutes) > 0)) errors.minutes = 'Indiquez la durée réellement courue, en minutes.';
+  if (run && distanceM !== undefined && !(Number.isFinite(distanceM) && distanceM > 0)) errors.km = 'Distance illisible.';
+  if (run && test && !testR.ok && (testEntered || completion === 'completed_as_prescribed')) errors.test = testR.error;
+  const show = (k: string) => (tried ? errors[k] ?? null : null);
+  const Err = ({ k }: { k: string }) => (show(k) ? <div className="k-dur-error" role="alert">{show(k)}</div> : null);
   return (
     <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-label="Fin de séance">
       <div className="sheet">
@@ -43,17 +54,17 @@ function FinishSheet({ v, onCancel, onSubmit }: { v: ProgrammeSessionView; onCan
         <div className="stack" role="radiogroup" aria-label="Déroulement">
           {COMPLETIONS.map((c) => <button key={c.id} type="button" role="radio" aria-checked={completion === c.id} className={`option ${completion === c.id ? 'on' : ''}`} onClick={() => setCompletion(c.id)}><span className="t">{c.label}</span></button>)}
         </div>
+        <Err k="completion" />
         {run && (
           <div className="stack-3">
-            <label className="field">Durée totale courue (minutes)<input inputMode="numeric" value={minutes} onChange={(e) => setMinutes(e.target.value.replace(/[^0-9]/g, ''))} placeholder="ex. 35" /></label>
+            <label className="field">Durée totale courue (minutes)<input type="text" inputMode="numeric" pattern="[0-9]*" value={minutes} onChange={(e) => setMinutes(e.target.value.replace(/[^0-9]/g, ''))} placeholder="ex. 35" /></label>
+            <Err k="minutes" />
             <label className="field">Distance (km, facultatif)<input inputMode="decimal" value={km} onChange={(e) => setKm(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))} placeholder="ex. 5.2" /></label>
+            <Err k="km" />
             {test && (
               <div className="stack">
-                <div className="small muted">Temps du test seul (sans échauffement ni retour au calme){completion === 'completed_as_prescribed' ? '' : ', facultatif'}</div>
-                <div className="row">
-                  <label className="field">min<input aria-label="Minutes du test" inputMode="numeric" value={testMin} onChange={(e) => setTestMin(e.target.value.replace(/[^0-9]/g, ''))} placeholder="25" /></label>
-                  <label className="field">s<input aria-label="Secondes du test" inputMode="numeric" value={testSec} onChange={(e) => setTestSec(e.target.value.replace(/[^0-9]/g, ''))} placeholder="00" /></label>
-                </div>
+                <DurationInput label="Temps du test seul" value={testTime} onChange={setTestTime} withHours error={show('test')} />
+                <div className="tiny">Sans échauffement ni retour au calme{completion === 'completed_as_prescribed' ? '' : ' · facultatif'}.</div>
               </div>
             )}
           </div>
@@ -62,10 +73,10 @@ function FinishSheet({ v, onCancel, onSubmit }: { v: ProgrammeSessionView; onCan
         {pain && <Notice tone="danger">Signaler une douleur suspend la planification automatique jusqu’à ce que vous la déclariez disparue. Consultez un professionnel de santé si elle persiste.</Notice>}
         <div className="row">
           <button className="btn secondary" onClick={onCancel}>Annuler</button>
-          <button className="btn primary block" disabled={!completion || !runOk} onClick={() => completion && onSubmit({
+          <button className="btn primary block" onClick={() => { setTried(true); if (Object.keys(errors).length === 0 && completion) onSubmit({
             completion, pain,
-            ...(run ? { run: { realizedDurationS: Number(minutes) * 60, ...(distanceM !== undefined ? { distanceM } : {}), ...(test && testTimeS !== undefined && testTimeS > 0 ? { testTimeS } : {}) } } : {}),
-          })}>Enregistrer</button>
+            ...(run ? { run: { realizedDurationS: Number(minutes) * 60, ...(distanceM !== undefined ? { distanceM } : {}), ...(testTimeS !== undefined ? { testTimeS } : {}) } } : {}),
+          }); }}>Enregistrer</button>
         </div>
       </div>
     </div>

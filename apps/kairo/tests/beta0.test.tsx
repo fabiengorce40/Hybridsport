@@ -161,25 +161,27 @@ describe('Profil Course : niveau actuel, objectif, TEST', () => {
     click('Continuer'); click('Continuer');
     click('Créer mon programme');
   }
-  const addPerformance = (o: { kind: RegExp; distance: string; chrono: string; date: string }) => {
+  const addPerformance = (o: { kind: RegExp; distance: string; chrono: { h?: string; m: string; s: string }; date: string }) => {
     click('Ajouter une performance');
     const form = within(screen.getByLabelText('Ajouter une performance'));
     fireEvent.click(form.getByRole('radio', { name: o.kind }));
     fireEvent.click(form.getByRole('radio', { name: o.distance }));
-    fireEvent.change(form.getByLabelText(/Chrono \(min:s/), { target: { value: o.chrono } });
+    if (o.chrono.h !== undefined) fireEvent.change(form.getByLabelText('Chrono : heures'), { target: { value: o.chrono.h } });
+    fireEvent.change(form.getByLabelText('Chrono : minutes'), { target: { value: o.chrono.m } });
+    fireEvent.change(form.getByLabelText('Chrono : secondes'), { target: { value: o.chrono.s } });
     fireEvent.change(form.getByLabelText('Date de réalisation'), { target: { value: o.date } });
     fireEvent.click(form.getByRole('button', { name: 'Ajouter cette performance' }));
   };
 
   it('performance actuelle (10 km en 45:00) distincte de l’objectif (10 km le 16/03/2027) ; profil calculé par le moteur affiché', () => {
     const storage = new MemoryStorage();
-    onboardCourse(storage, () => addPerformance({ kind: /^Chrono personnel/, distance: '10 km', chrono: '45:00', date: '2026-09-27' }));
+    onboardCourse(storage, () => addPerformance({ kind: /^Chrono personnel/, distance: '10 km', chrono: { m: '45', s: '00' }, date: '2026-09-27' }));
     const st = saved(storage);
     expect(st.running.references).toEqual([expect.objectContaining({ type: 'TIME_TRIAL', values: { distanceM: 10000, durationS: 2700 }, provenance: { source: 'USER_DECLARED' } })]);
     expect(st.programmeState?.definition.goals).toEqual([expect.objectContaining({ goal: 'TEN_K', targetDate: '2027-03-16' })]);
     click('Réglages');
     click(/^Profil Course/);
-    expect(screen.getByLabelText(/^Chrono du/).textContent).toMatch(/10 km.*45 min.*4:30 \/km/);
+    expect(screen.getByLabelText(/^Chrono du/).textContent).toMatch(/10 km.*45:00.*4:30 \/km/);
     expect(screen.getByText(/^récente/)).toBeTruthy();
     // Séances clés débloquées par un 10 km récent ; allure VO₂ : ancre 3–5 km absente et pas de montre ⇒ effort, causes affichées.
     expect(screen.getByText('Seuil : disponibles')).toBeTruthy();
@@ -198,8 +200,8 @@ describe('Profil Course : niveau actuel, objectif, TEST', () => {
     click('Réglages');
     click(/^Profil Course/);
     expect(screen.getByText(/Test chronométré programmé/)).toBeTruthy();
-    addPerformance({ kind: /^Course officielle/, distance: '5 km', chrono: '22:30', date: '2026-10-04' });
-    addPerformance({ kind: /^Chrono personnel/, distance: '3 km', chrono: '12:40', date: '2026-10-05' });
+    addPerformance({ kind: /^Course officielle/, distance: '5 km', chrono: { m: '22', s: '30' }, date: '2026-10-04' });
+    addPerformance({ kind: /^Chrono personnel/, distance: '3 km', chrono: { m: '12', s: '40' }, date: '2026-10-05' });
     expect(saved(storage).running.references.map((r) => [r.type, r.values.distanceM])).toEqual([['RACE_RESULT', 5000], ['TIME_TRIAL', 3000]]);
     expect(screen.getAllByLabelText(/(Course officielle|Chrono) du/)).toHaveLength(2);
   });
@@ -291,7 +293,9 @@ describe('séance Strength', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Cocher la série' })[0]!);
     click('Terminer la séance');
     const sheet = within(screen.getByRole('dialog', { name: 'Fin de séance' }));
-    expect((sheet.getByRole('button', { name: 'Enregistrer' }) as HTMLButtonElement).disabled).toBe(true);
+    // Sans choix du déroulement : refus EXPLIQUÉ (jamais un bouton qui ne fait rien).
+    fireEvent.click(sheet.getByRole('button', { name: 'Enregistrer' }));
+    expect(sheet.getByText('Indiquez comment s’est passée la séance.')).toBeTruthy();
     // « Comme prévu » sans toutes les séries : refus explicite, rien d'enregistré.
     fireEvent.click(sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }));
     fireEvent.click(sheet.getByRole('button', { name: 'Enregistrer' }));
@@ -323,7 +327,9 @@ describe('séance Course', () => {
     click('Terminer la séance');
     const sheet = within(screen.getByRole('dialog', { name: 'Fin de séance' }));
     fireEvent.click(sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }));
-    expect((sheet.getByRole('button', { name: 'Enregistrer' }) as HTMLButtonElement).disabled).toBe(true);
+    fireEvent.click(sheet.getByRole('button', { name: 'Enregistrer' }));
+    expect(sheet.getByText('Indiquez la durée réellement courue, en minutes.')).toBeTruthy();
+    expect(saved(storage).programmeState?.results).toEqual([]);
     fireEvent.change(sheet.getByLabelText(/Durée totale courue/), { target: { value: '32' } });
     fireEvent.change(sheet.getByLabelText(/Distance/), { target: { value: '5.4' } });
     fireEvent.click(sheet.getByRole('button', { name: 'Enregistrer' }));
@@ -350,8 +356,13 @@ describe('séance Course', () => {
     const sheet = within(screen.getByRole('dialog', { name: 'Fin de séance' }));
     fireEvent.click(sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }));
     fireEvent.change(sheet.getByLabelText(/Durée totale courue/), { target: { value: '60' } });
-    expect((sheet.getByRole('button', { name: 'Enregistrer' }) as HTMLButtonElement).disabled).toBe(true);
-    fireEvent.change(sheet.getByLabelText('Minutes du test'), { target: { value: '25' } });
+    fireEvent.click(sheet.getByRole('button', { name: 'Enregistrer' }));
+    expect(sheet.getByText('Indiquez le temps du test.')).toBeTruthy();
+    fireEvent.change(sheet.getByLabelText('Temps du test seul : secondes'), { target: { value: '60' } });
+    fireEvent.change(sheet.getByLabelText('Temps du test seul : minutes'), { target: { value: '25' } });
+    expect(sheet.getByText('Les secondes vont de 0 à 59.')).toBeTruthy();
+    expect(saved(storage).running.references).toEqual([]);
+    fireEvent.change(sheet.getByLabelText('Temps du test seul : secondes'), { target: { value: '00' } });
     fireEvent.click(sheet.getByRole('button', { name: 'Enregistrer' }));
     expect(saved(storage).running.references).toEqual([expect.objectContaining({ type: 'TIME_TRIAL', values: expect.objectContaining({ durationS: 1500 }) })]);
   });
