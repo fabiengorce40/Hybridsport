@@ -90,4 +90,7 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   BETA0_SPORT_UNSUPPORTED: 'Seules la musculation et la course sont disponibles.',
   RUN_DURATION_REQUIRED: 'Indiquez la durée réellement courue.',
   DUPLICATE_RUN: 'Cette course est déjà enregistrée.',
+  BETA_RESET_NOT_CONFIRMED: 'Recréation annulée : confirmation absente. Rien n’a été modifié.',
+  BETA_RESET_NOT_ALLOWED: 'Cet outil de test n’est disponible que dans la Beta expérimentale. Rien n’a été modifié.',
+  PROGRAMME_MISSING: 'Aucun programme à recréer.',
 };

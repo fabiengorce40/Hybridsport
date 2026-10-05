@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
 import { BUILD_ID } from '../../version.js';
-import { clearPain, decodeState, emptyState, exportState } from '@hybridsport/app-core';
+import { BETA0_RESET_CONFIRMATION, clearPain, decodeState, emptyState, exportState, isBeta0, resetBeta0Data } from '@hybridsport/app-core';
 import { openWeek, useStore } from '../../store.js';
 import { download } from '../Profile.js';
 import { Notice } from '../../ui.js';
@@ -55,6 +55,40 @@ export function DataSection() {
   );
 }
 
+/**
+ * Outil de TEST Beta 0 : recréer le programme depuis le profil actuel avec le moteur courant. Destructeur, explicite,
+ * confirmé ; la règle (ce qui est effacé / conservé) est dans app-core (`resetBeta0Data`), jamais ici.
+ */
+export function BetaResetSection() {
+  const store = useStore();
+  const [open, setOpen] = useState(false);
+  const [understood, setUnderstood] = useState(false);
+  const [done, setDone] = useState(false);
+  if (!isBeta0(store.state)) return null;
+  const close = () => { setOpen(false); setUnderstood(false); };
+  return (
+    <>
+      <div className="section-title">Outils de test Beta</div>
+      {done && <Notice><span role="status">Programme de test recréé avec la version actuelle de KAIRO.</span></Notice>}
+      {!open
+        ? <button className="btn secondary" onClick={() => { setOpen(true); setDone(false); }}>Recréer mon programme de test</button>
+        : (
+          <div className="card" aria-label="Recréer mon programme de test">
+            <strong>Recréer le programme de test ?</strong>
+            <span className="small">Seront <b>effacés</b> : le programme, toutes les semaines planifiées (y compris commencées), les séances en cours, l’historique des séances réalisées et les références issues des TEST.</span>
+            <span className="small">Seront <b>conservés</b> : votre profil, vos courses libres et performances déclarées, et une éventuelle pause douleur.</span>
+            <span className="small">Un nouveau programme est ensuite créé et la semaine en cours planifiée avec la version actuelle du moteur. Action irréversible : exportez d’abord vos données si besoin.</span>
+            <label className="check"><input type="checkbox" checked={understood} onChange={(e) => setUnderstood(e.target.checked)} />Je comprends que ces données seront définitivement effacées</label>
+            <div className="row">
+              <button className="btn ghost" onClick={close}>Annuler</button>
+              <button className="btn danger" disabled={!understood} onClick={() => { if (store.apply((s, c) => resetBeta0Data(s, c, BETA0_RESET_CONFIRMATION))) { close(); setDone(true); } }}>Effacer et recréer</button>
+            </div>
+          </div>
+        )}
+    </>
+  );
+}
+
 export function PainCard() {
   const store = useStore();
   const [confirm, setConfirm] = useState(false);
@@ -94,6 +128,7 @@ export function Settings0() {
         </button>
       )}
       <DataSection />
+      <BetaResetSection />
       <div className="section-title">À propos de la Beta</div>
       <div className="card small muted" style={{ gap: 6 }}>
         <span><b>Beta expérimentale</b> : les séances viennent des moteurs Musculation et Course ; certaines valeurs et règles de planification sont encore en cours de validation.</span>

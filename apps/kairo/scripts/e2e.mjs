@@ -134,10 +134,10 @@ check(st.safety?.activePain === null, 'état : pause douleur levée');
 check(errors.length === 0, `aucune erreur console (${errors.join(' | ')})`);
 
 // ——— Strength S1 dans le navigateur, jusqu'au DOM (horloge fixée au lundi 2026-10-05).
-async function freshPage(initState) {
+async function freshPage(initState, time = '2026-10-05T07:30:00+02:00') {
   const c = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
   const p = await c.newPage();
-  await p.clock.install({ time: new Date('2026-10-05T07:30:00+02:00') });
+  await p.clock.install({ time: new Date(time) });
   await p.clock.resume();
   if (initState) await p.addInitScript((s) => { if (!localStorage.getItem('kairo.state')) localStorage.setItem('kairo.state', s); }, initState);
   await p.goto(URL_);
@@ -172,6 +172,29 @@ const strengthTitles = (p) => p.getByRole('button', { name: /^Musculation : / })
   check((await p.locator('body').innerText()).includes('replanifiée avec la nouvelle version de KAIRO'), 'S1 programme pré-S1 : avis de replanification visible');
   const st = await p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
   check(st.planner?.weeks?.['2026-10-05']?.planningVersion === 'beta0-s1', 'S1 programme pré-S1 : semaine persistée à la version courante');
+  await c.close();
+}
+
+// C — outil de test Beta : programme pré-S1 ouvert un mercredi (séance de lundi passée : semaine conservée), reset confirmé,
+// nouveau programme composé par S1 ; lecture de l'AppState puis du DOM ; dates uniques.
+{
+  const pre = readFileSync(new URL('../../../packages/app-core/tests/fixtures/pre-s1-state.json', import.meta.url), 'utf8');
+  const { c, p } = await freshPage(pre, '2026-10-07T09:00:00+02:00');
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  const before = await strengthTitles(p);
+  check(before.join(',') === 'Full body,Full body,Full body,Full body' && (await p.locator('body').innerText()).includes('version précédente de KAIRO'), `reset Beta : avant, semaine pré-S1 conservée et signalée (${before.join(', ')})`);
+  await p.getByRole('button', { name: 'Réglages', exact: true }).click();
+  await p.getByRole('button', { name: 'Recréer mon programme de test' }).click();
+  check(await p.getByRole('button', { name: 'Effacer et recréer' }).isDisabled(), 'reset Beta : impossible sans confirmation explicite');
+  await p.getByLabel(/Je comprends que ces données seront définitivement effacées/).check();
+  await p.getByRole('button', { name: 'Effacer et recréer' }).click();
+  const st = await p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+  const reqs = (st.planner?.weeks?.['2026-10-05']?.requests ?? []).filter((r) => r.sport === 'strength' && r.status === 'planned');
+  check(st.planner?.weeks?.['2026-10-05']?.planningVersion === 'beta0-s1' && reqs.every((r) => r.composition?.authority === 'provisional' && r.reasons.some((x) => x.code === 'PLAN.WEEK_COMPOSITION')), `reset Beta : AppState recomposé par S1 (${reqs.map((r) => `${r.date} ${r.intent?.archetypeId}`).join(', ')})`);
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  const after = await strengthTitles(p);
+  const days = await p.locator('.week .day .n').allInnerTexts();
+  check(after.join(',') === 'Haut du corps,Bas du corps' && new Set(days).size === days.length && days.length === 7, `reset Beta : DOM recomposé, aucune date dupliquée (${after.join(', ')} ; ${days.join(' ')})`);
   await c.close();
 }
 

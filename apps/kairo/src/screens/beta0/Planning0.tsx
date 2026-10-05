@@ -1,4 +1,4 @@
-import { weekdayIndex } from '@hybridsport/app-core';
+import { beta0Integrity, weekdayIndex } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate, Notice, weekdayShort } from '../../ui.js';
 import { ExperimentalBadge, SessionCard0, weekOf, WeekPlanningNotice } from './common.js';
@@ -14,6 +14,7 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
     <div className="screen">
       <div className="row between"><h1 className="screen-title">Planning</h1>{week?.experimental && <ExperimentalBadge />}</div>
       {state.safety.activePain && <PainPause onGo={() => onGo('settings')} />}
+      <IntegrityNotice issues={beta0Integrity(state)} />
       {!week || week.items.length === 0 ? <NoWeek today={today} /> : (
         <>
           <WeekPlanningNotice planning={week.planning} />
@@ -41,5 +42,16 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
         </>
       )}
     </div>
+  );
+}
+
+/** Incohérence des données persistées : affichée telle quelle (jamais masquée ni corrigée dans l'interface). */
+function IntegrityNotice({ issues }: { issues: ReturnType<typeof beta0Integrity> }) {
+  if (issues.length === 0) return null;
+  return (
+    <Notice tone="danger">
+      <span>Incohérence de données détectée dans le planning. Exportez vos données (Réglages) et transmettez le fichier pour diagnostic.</span>
+      <details className="tiny"><summary>Détail technique</summary>{issues.map((i) => JSON.stringify(i)).join(' ; ')}</details>
+    </Notice>
   );
 }

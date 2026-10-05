@@ -15,7 +15,7 @@ import { beta0Environment, legacyBeta0StrengthIntent, prescribedArchetype, LEGAC
 import { STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } from '@hybridsport/strength';
 import { addDays, dateOf, normalizeInstant, weekStartOf } from './dates.js';
 import { AppError } from './errors.js';
-import { zProfile } from './model.js';
+import { emptyState, zProfile } from './model.js';
 import type { AppState, Feedback, PersistedWeek, ProfileInput, ProgrammeLog, Rest, SetLog } from './model.js';
 import { closeProgrammeWeekInApp, planProgrammeCurrentWeek, ProgrammeError, recordSessionExecution, startProgramme } from './programme.js';
 import { declareRunningPerformance } from './running-profile.js';
@@ -88,6 +88,53 @@ export function recreateBeta0Programme(state: AppState, input: ProfileInput, clo
   let s: AppState = { ...state, profile, programmeLogs };
   if (profile.running.enabled) for (const x of o.performances ?? []) s = declareRunningPerformance(s, clock, x);
   return startFromProfile(s, clock, o, started ? addDays(thisWeek, DAYS_PER_WEEK) : thisWeek, env);
+}
+
+/** Jeton de confirmation EXPLICITE exigé par `resetBeta0Data` (aucun appel implicite ou accidentel possible). */
+export const BETA0_RESET_CONFIRMATION = 'EFFACER_LE_PROGRAMME_BETA';
+
+/**
+ * Outil de TEST Beta 0 (jamais en production) : efface de façon COHÉRENTE tout ce qui dépend du programme, puis recrée
+ * un programme neuf depuis le profil ACTUEL avec le moteur courant et planifie la semaine courante.
+ *
+ * Effacé (produits du programme et de ses exécutions) : programme, semaines planifiées, séances en cours, réalisations
+ * Strength (expositions, tracks), empreintes, courses réalisées dans le programme, références issues des TEST KAIRO,
+ * anciennes séances V0. Conservé (déclarations de l'utilisateur) : profil, courses libres déclarées, références de
+ * performance déclarées, et la pause douleur active (une remise à zéro de test ne lève jamais une protection).
+ *
+ * Ce n'est PAS une replanification : aucune semaine n'est modifiée partiellement ; l'invariant WEEK_NOT_REPLACEABLE reste
+ * entier pour tous les autres chemins. Refusé hors environnement `beta0_experimental`, sans le jeton de confirmation,
+ * ou sans programme Beta 0. Tracé dans l'audit du nouveau programme.
+ */
+export function resetBeta0Data(state: AppState, clock: Clock, confirmation: string, env: ProgrammeEnvironment = beta0Environment()): AppState {
+  if (confirmation !== BETA0_RESET_CONFIRMATION) throw new AppError('BETA_RESET_NOT_CONFIRMED');
+  if (env.authority !== 'beta0_experimental' || env.mode === 'PRODUCTION') throw new AppError('BETA_RESET_NOT_ALLOWED');
+  const ps = state.programmeState;
+  const profile = state.profile;
+  if (!ps || !profile) throw new AppError('PROGRAMME_MISSING');
+  const targetDate = ps.definition.goals.flatMap((g) => (g.sport === 'running' && 'targetDate' in g && g.targetDate ? [g.targetDate] : []))[0];
+  const kept = {
+    freeRuns: state.running.realized.filter((r) => r.sessionId.startsWith('free:')),
+    references: state.running.references.filter((r) => r.provenance.source === 'USER_DECLARED'),
+  };
+  const erased = {
+    programmeId: ps.definition.programmeId,
+    weeks: Object.keys(state.planner.weeks).length,
+    results: ps.results.length,
+    sessionsInProgress: Object.keys(state.programmeLogs).length,
+    strengthExposures: state.strength.exposures.length,
+    programmeRuns: state.running.realized.length - kept.freeRuns.length,
+    testReferences: state.running.references.length - kept.references.length,
+  };
+  const clean: AppState = {
+    ...emptyState(), profile, safety: state.safety, crosstraining: state.crosstraining, hyrox: state.hyrox,
+    running: { realized: kept.freeRuns, references: kept.references }, revision: state.revision + 1,
+  };
+  const next = startFromProfile(clean, clock, targetDate ? { runningTargetDate: targetDate } : {}, weekStartOf(clock.today), env);
+  const nps = next.programmeState;
+  if (!nps) return next;
+  const reason = { code: 'KAIRO.BETA_DATA_RESET', params: { ...erased, keptFreeRuns: kept.freeRuns.length, keptReferences: kept.references.length, planningVersion: env.planningVersion ?? '' } };
+  return { ...next, programmeState: { ...nps, audit: [...nps.audit, { at: normalizeInstant(clock.now), weekIndex: null, reason }] } };
 }
 
 /**

@@ -1,6 +1,7 @@
 /** Composants communs (présentation uniquement). */
 import type { ReactNode } from 'react';
-import { AUTHORITY_LABELS, RUNNING_ARCHETYPE_LABELS, SPORT_LABELS } from '@hybridsport/app-core';
+import { sessionName } from './present.js';
+import { AUTHORITY_LABELS, SPORT_LABELS } from '@hybridsport/app-core';
 import type { Authority, GeneratedSession, Sport } from '@hybridsport/app-core';
 
 export type Tab = 'home' | 'plan' | 'run' | 'history' | 'profile' | 'programme' | 'settings';
@@ -59,9 +60,9 @@ export function Notice({ tone = 'info', children }: { tone?: 'info' | 'warn' | '
 
 export const sportLabel = (s: Sport): string => SPORT_LABELS[s];
 
+/** Titre d'une séance V0 : libellé de son archétype réel (aucun « Full body » supposé ; inconnu ⇒ erreur de données). */
 export function sessionTitle(g: GeneratedSession): string {
-  if (g.sport === 'running') return RUNNING_ARCHETYPE_LABELS[g.archetypeId] ?? 'Course';
-  return 'Full body';
+  return sessionName(g.sport, g.archetypeId);
 }
 
 const WEEKDAYS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];

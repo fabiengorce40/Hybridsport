@@ -307,6 +307,38 @@ export function programmeTargetDate(d: ProgrammeDefinition): string | null {
   return dates[0] ?? null;
 }
 
+/**
+ * Contrôle d'INTÉGRITÉ des semaines persistées du programme (lecture seule, jamais réparé ni masqué) : une incohérence
+ * est rendue visible avec sa nature exacte pour être diagnostiquée sur les données réelles.
+ */
+export type Beta0IntegrityIssue =
+  | { readonly code: 'WEEK_KEY_MISMATCH'; readonly key: string; readonly weekStart: string }
+  | { readonly code: 'DUPLICATE_DAY'; readonly weekStart: string; readonly date: string }
+  | { readonly code: 'DATE_OUTSIDE_WEEK'; readonly weekStart: string; readonly requestId: string; readonly date: string }
+  | { readonly code: 'SEVERAL_SESSIONS_SAME_DAY'; readonly date: string; readonly requestIds: readonly string[] }
+  | { readonly code: 'REQUEST_IN_SEVERAL_WEEKS'; readonly requestId: string; readonly weeks: readonly string[] };
+export function beta0Integrity(state: AppState): Beta0IntegrityIssue[] {
+  const out: Beta0IntegrityIssue[] = [];
+  const weeks = Object.entries(state.planner.weeks).filter(([, w]) => w.owner === 'programme').sort(([a], [b]) => (a < b ? -1 : 1));
+  const byDate = new Map<string, string[]>();
+  const byRequest = new Map<string, string[]>();
+  for (const [key, w] of weeks) {
+    if (key !== w.weekStart) out.push({ code: 'WEEK_KEY_MISMATCH', key, weekStart: w.weekStart });
+    const seen = new Set<string>();
+    for (const d of w.days) { if (seen.has(d.date)) out.push({ code: 'DUPLICATE_DAY', weekStart: w.weekStart, date: d.date }); seen.add(d.date); }
+    const end = addDays(w.weekStart, DAYS_PER_WEEK - 1);
+    for (const r of w.requests) {
+      byRequest.set(r.requestId, [...(byRequest.get(r.requestId) ?? []), key]);
+      if (r.status !== 'planned' || !r.date) continue;
+      if (r.date < w.weekStart || r.date > end) out.push({ code: 'DATE_OUTSIDE_WEEK', weekStart: w.weekStart, requestId: r.requestId, date: r.date });
+      byDate.set(r.date, [...(byDate.get(r.date) ?? []), r.requestId]);
+    }
+  }
+  for (const [date, ids] of [...byDate].sort(([a], [b]) => (a < b ? -1 : 1))) if (ids.length > 1) out.push({ code: 'SEVERAL_SESSIONS_SAME_DAY', date, requestIds: ids });
+  for (const [requestId, ws] of [...byRequest].sort(([a], [b]) => (a < b ? -1 : 1))) if (ws.length > 1) out.push({ code: 'REQUEST_IN_SEVERAL_WEEKS', requestId, weeks: ws });
+  return out;
+}
+
 export function selectBeta0Week(state: AppState, today: string, weekIndex?: number): Beta0WeekView | null {
   const ps = state.programmeState;
   if (!ps) return null;
