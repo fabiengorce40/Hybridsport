@@ -7,7 +7,7 @@
  */
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
-import { weekIndexOf } from '@hybridsport/programme';
+import { weekIndexOf, withinProgramme } from '@hybridsport/programme';
 import type { ProgrammeResult } from '@hybridsport/programme';
 import { logFreeRun } from './app.js';
 import type { Clock } from './app.js';
@@ -28,8 +28,10 @@ export const REST_EXTENSION_S = 15;
 const DAYS_PER_WEEK = 7;
 
 export interface Beta0ProgrammeOptions {
-  /** Durée DÉCLARÉE du programme (semaines) : trajectoire choisie par l'utilisateur, aucune périodisation déduite. */
-  readonly horizonWeeks: number;
+  /**
+   * Date de l'objectif Running DÉCLARÉE (contrat `goal.targetDate`) : le programme va jusqu'à cette semaine. Sans date :
+   * programme continu. Dans les deux cas, seule la semaine courante est construite (horizon glissant).
+   */
   readonly runningTargetDate?: string;
   /** Dernière course réelle déclarée (base de la dose Running : aucune dose de départ n'est validée). */
   readonly lastRun?: { readonly realizedDurationS: number; readonly distanceM?: number; readonly difficulty: Feedback['difficulty'] };
@@ -38,7 +40,7 @@ export interface Beta0ProgrammeOptions {
 function startFromProfile(state: AppState, clock: Clock, o: Beta0ProgrammeOptions, startWeek: string, env: ProgrammeEnvironment): AppState {
   const p = state.profile;
   if (!p) throw new AppError('PROFILE_MISSING');
-  const def = programmeDefinitionFromProfile(p, { programmeId: `beta0.${normalizeInstant(clock.now)}`, startWeek, horizonWeeks: o.horizonWeeks, origin: 'profile', ...(o.runningTargetDate ? { runningTargetDate: o.runningTargetDate } : {}) });
+  const def = programmeDefinitionFromProfile(p, { programmeId: `beta0.${normalizeInstant(clock.now)}`, startWeek, origin: 'profile', ...(o.runningTargetDate ? { runningTargetDate: o.runningTargetDate } : {}) });
   return ensureBeta0Week(startProgramme(state, def, clock), clock, env);
 }
 
@@ -88,7 +90,7 @@ export function ensureBeta0Week(state: AppState, clock: Clock, env: ProgrammeEnv
   const programmeLogs = Object.fromEntries(Object.entries(s.programmeLogs).filter(([id, l]) => l.finishedAt !== undefined || !results.some((r) => r.requestId === id)));
   s = { ...s, programmeLogs };
   const ps = s.programmeState;
-  if (!ps || cur < 0 || cur >= ps.definition.horizonWeeks || ps.weeks.some((w) => w.weekIndex === cur) || activePainPause(s)) return s;
+  if (!ps || !withinProgramme(ps, cur) || ps.weeks.some((w) => w.weekIndex === cur) || activePainPause(s)) return s;
   return planProgrammeCurrentWeek(s, clock, env, cur, { pastDaysUnavailable: true });
 }
 

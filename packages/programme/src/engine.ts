@@ -66,11 +66,18 @@ export function weekStatus(s: ProgrammeState, i: number, today: string, aheadWee
   return 'projected';
 }
 
-/** Vue longitudinale : statut de chaque semaine de l'horizon déclaré. */
+/** La semaine i appartient-elle au programme (fin déclarée ; programme continu ⇒ toute semaine ≥ 0) ? */
+export const withinProgramme = (s: ProgrammeState, i: number): boolean => i >= 0 && (s.definition.horizonWeeks === undefined || i < s.definition.horizonWeeks);
+
+/**
+ * Vue longitudinale : statut de chaque semaine du programme. Fin déclarée ⇒ toutes ses semaines ; programme continu ⇒
+ * semaines déjà connues (planifiées), semaine courante et avance gouvernée seulement (aucune semaine inventée au-delà).
+ */
 export function programmeOutlook(s: ProgrammeState, today: string, ruleset: LoadedRuleset | undefined, mode: PlannerMode): { readonly weeks: readonly { weekIndex: number; weekStart: string; status: WeekStatus }[]; readonly reasons: readonly ReasonCode[] } {
   const ahead = readProgrammeParam(ruleset, 'programme.planning.horizonWeeks', mode);
+  const known = Math.max(weekIndexOf(s, today) + (ahead.ok ? ahead.value : 0), ...s.weeks.map((w) => w.weekIndex)) + 1;
   return {
-    weeks: Array.from({ length: s.definition.horizonWeeks }, (_, i) => ({ weekIndex: i, weekStart: weekStartAt(s, i), status: weekStatus(s, i, today, ahead.ok ? ahead.value : undefined) })),
+    weeks: Array.from({ length: s.definition.horizonWeeks ?? Math.max(0, known) }, (_, i) => ({ weekIndex: i, weekStart: weekStartAt(s, i), status: weekStatus(s, i, today, ahead.ok ? ahead.value : undefined) })),
     reasons: ahead.reasons,
   };
 }
@@ -108,7 +115,7 @@ export interface PlanWeekDeps {
  * n'est enregistré pour la semaine (horizon glissant).
  */
 export function planProgrammeWeek(s: ProgrammeState, i: number, deps: PlanWeekDeps): Outcome<{ state: ProgrammeState; intent: ProgrammeWeekIntent; week: PlannedWeek }> {
-  if (i < 0 || i >= s.definition.horizonWeeks) return fail(pgReasons.emit(PG_CODES.WEEK_OUT_OF_HORIZON, { weekIndex: i, horizonWeeks: s.definition.horizonWeeks }));
+  if (!withinProgramme(s, i)) return fail(pgReasons.emit(PG_CODES.WEEK_OUT_OF_HORIZON, { weekIndex: i, horizonWeeks: s.definition.horizonWeeks ?? -1 }));
   const ahead = readProgrammeParam(deps.programmeGovernance, 'programme.planning.horizonWeeks', deps.mode);
   const status = weekStatus(s, i, deps.today, ahead.ok ? ahead.value : undefined);
   const replannable = status === 'planned' && !s.results.some((r) => r.weekIndex === i);
@@ -192,7 +199,7 @@ export function closeProgrammeWeek(s: ProgrammeState, i: number, deps: CloseWeek
       const r = content ? pgReasons.emit(PG_CODES.ASSESSMENT_REQUESTED, { sport: sp, assessmentId, weekIndex: i + 1 }) : pgReasons.emit(PG_CODES.ASSESSMENT_CONTENT_UNAVAILABLE, { sport: sp, assessmentId });
       effects.push(r);
       if (!assessments.some((a) => a.assessmentId === assessmentId)) {
-        assessments = [...assessments, { assessmentId, sport: sp, kind: plan?.assessment?.kind ?? 'undeclared', requestedAtWeek: i, ...(content && i + 1 < s.definition.horizonWeeks ? { scheduledWeek: i + 1 } : {}), status: content ? 'requested' : 'content_unavailable', reasons: [toReason(r)] }];
+        assessments = [...assessments, { assessmentId, sport: sp, kind: plan?.assessment?.kind ?? 'undeclared', requestedAtWeek: i, ...(content && withinProgramme(s, i + 1) ? { scheduledWeek: i + 1 } : {}), status: content ? 'requested' : 'content_unavailable', reasons: [toReason(r)] }];
       }
     }
     decisions.push({

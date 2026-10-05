@@ -96,6 +96,40 @@ describe('onboarding Beta 0 et programme', () => {
   });
 });
 
+describe('durée du programme', () => {
+  it('aucun choix 4 / 8 / 12 semaines ; objectif daté ⇒ date affichée et programme jusqu’à l’objectif', () => {
+    const storage = new MemoryStorage();
+    mount(storage);
+    fireEvent.click(screen.getByLabelText(/J’ai compris/));
+    click('Commencer');
+    fireEvent.click(screen.getByRole('radio', { name: CHOICE_NAMES.Course }));
+    click('Continuer');
+    fireEvent.change(screen.getByLabelText('Objectif'), { target: { value: 'TEN_K' } });
+    fireEvent.change(screen.getByLabelText(/Date de l’objectif/), { target: { value: '2027-03-14' } });
+    fireEvent.change(screen.getByLabelText('Durée (min)'), { target: { value: '30' } });
+    click('Continuer');
+    click('Continuer');
+    expect(screen.queryByText(/semaines$/)).toBeNull();
+    expect(screen.queryByRole('radiogroup', { name: 'Durée du programme' })).toBeNull();
+    expect(screen.getByText('Votre programme évolue semaine après semaine jusqu’à votre objectif.', { exact: false })).toBeTruthy();
+    expect(screen.getByText(/Objectif 10 km le dimanche 14 mars/)).toBeTruthy();
+    click('Créer mon programme');
+    const d = saved(storage).programmeState?.definition;
+    expect(d?.goals).toEqual([expect.objectContaining({ goal: 'TEN_K', targetDate: '2027-03-14' })]);
+    expect(d?.horizonWeeks).toBe(23);
+    click('Programme');
+    expect(screen.getByText(/Objectif le dimanche 14 mars/)).toBeTruthy();
+  });
+
+  it('sans objectif daté : programme continu, sans date de fin', () => {
+    const storage = new MemoryStorage();
+    onboard(storage, 'Musculation');
+    expect(saved(storage).programmeState?.definition.horizonWeeks).toBeUndefined();
+    click('Programme');
+    expect(screen.getByText('Votre programme évolue semaine après semaine, sans date de fin.')).toBeTruthy();
+  });
+});
+
 describe('séance Strength', () => {
   it('validation d’une série : valeurs réelles enregistrées, chrono démarré automatiquement (pause, +15 s, passer)', () => {
     const storage = new MemoryStorage();
@@ -194,7 +228,7 @@ describe('séance Course', () => {
 
   it('TEST chronométré identifiable ; temps du test exigé ; référence TIME_TRIAL enregistrée', () => {
     const storage = new MemoryStorage();
-    const s0 = createBeta0Programme(emptyState(), profileInput(), at(MONDAY)(), { horizonWeeks: 4, lastRun: { realizedDurationS: 1800, distanceM: 5000, difficulty: 'AS_EXPECTED' } });
+    const s0 = createBeta0Programme(emptyState(), profileInput(), at(MONDAY)(), { lastRun: { realizedDurationS: 1800, distanceM: 5000, difficulty: 'AS_EXPECTED' } });
     expect(saveState(storage, s0).ok).toBe(true);
     mount(storage, at('2026-10-11'));
     click('Planning');
@@ -241,7 +275,7 @@ describe('douleur, persistance, import', () => {
     const json = exportState(saved(source) as never);
     cleanup();
     const target = new MemoryStorage();
-    const s1 = createBeta0Programme(emptyState(), profileInput({ priorities: ['strength'], strength: { enabled: true, goal: 'strength', sessionsPerWeek: 1 }, running: { ...profileInput().running, enabled: false } }), at(MONDAY)(), { horizonWeeks: 4 });
+    const s1 = createBeta0Programme(emptyState(), profileInput({ priorities: ['strength'], strength: { enabled: true, goal: 'strength', sessionsPerWeek: 1 }, running: { ...profileInput().running, enabled: false } }), at(MONDAY)(), {});
     saveState(target, s1);
     mount(target);
     click('Réglages');

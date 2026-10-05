@@ -39,7 +39,7 @@ Le chemin V0 reste dans le code. Il ne sert plus qu'à un profil antérieur **sa
 
 | Écran | Contenu |
 |---|---|
-| Onboarding | Avertissement « Beta expérimentale » à accepter ; sports : Musculation, Course, Musculation + Course (CT et HYROX invisibles) ; objectifs et fréquences supportés par les moteurs ; date cible Running (contrat `goal.targetDate`) ; dernière course réelle (base de la dose) ; disponibilités par jour ; priorité (hybride) ; matériel ; durée du programme (4, 8 ou 12 semaines) |
+| Onboarding | Avertissement « Beta expérimentale » à accepter ; sports : Musculation, Course, Musculation + Course (CT et HYROX invisibles) ; objectifs et fréquences supportés par les moteurs ; date cible Running (contrat `goal.targetDate`) ; dernière course réelle (base de la dose) ; disponibilités par jour ; priorité (hybride) ; matériel. **Aucune durée à choisir** : objectif daté ⇒ programme jusqu'à cette date (affichée) ; sinon programme continu, sans fin. Message : « Votre programme évolue semaine après semaine jusqu'à votre objectif. » |
 | Accueil | Date, prochaine séance (sport, type, rôle, durée estimée, statut), « Commencer la séance » ou « Reprendre la séance », progression de la semaine |
 | Planning | Lundi → dimanche via `selectBeta0Week`. États : prévue, en cours, terminée, adaptée, arrêtée, manquée, non planifiée. Chaque état a une icône **et** un texte. Une séance non planifiée affiche une explication ; le détail technique reste replié |
 | Séance Musculation | Voir ci-dessous |

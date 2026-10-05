@@ -8,7 +8,7 @@ import { createBeta0Programme, DIFFICULTY_LABELS, normalizeInstant, recreateBeta
 import type { Beta0ProgrammeOptions, Feedback, ProfileInput } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { AvailabilitySection, defaultProfile, EquipmentSection, GoalsSection } from '../../ProfileForm.js';
-import { Notice } from '../../ui.js';
+import { formatDate, Notice } from '../../ui.js';
 
 type Choice = 'strength' | 'running' | 'hybrid';
 const CHOICES: readonly { id: Choice; title: string; detail: string }[] = [
@@ -16,8 +16,6 @@ const CHOICES: readonly { id: Choice; title: string; detail: string }[] = [
   { id: 'running', title: 'Course', detail: 'Footing, séances clés, tests chronométrés' },
   { id: 'hybrid', title: 'Musculation + Course', detail: 'Les deux, répartis dans votre semaine' },
 ];
-/** Durées de programme proposées (choix de saisie, aucune périodisation associée). */
-const HORIZONS = [4, 8, 12];
 const STEPS = ['Bienvenue', 'Sports', 'Objectifs', 'Disponibilités', 'Programme'];
 
 const choiceOf = (p: ProfileInput): Choice | null => (p.strength.enabled && p.running.enabled ? 'hybrid' : p.strength.enabled ? 'strength' : p.running.enabled ? 'running' : null);
@@ -34,7 +32,6 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const [step, setStep] = useState(existing ? 1 : 0);
   const [accepted, setAccepted] = useState(existing);
   const [p, setP] = useState<ProfileInput>(() => initial ? withChoice(initial, choiceOf(initial) ?? 'strength', initial.priorities[0] === 'running' ? 'running' : 'strength') : defaultProfile(normalizeInstant(store.clock().now)));
-  const [horizon, setHorizon] = useState(HORIZONS[1] ?? 8);
   const [targetDate, setTargetDate] = useState('');
   const [runMin, setRunMin] = useState('');
   const [runKm, setRunKm] = useState('');
@@ -44,12 +41,12 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const first = p.priorities[0] === 'running' ? 'running' : 'strength';
   const km = runKm === '' ? undefined : Number(runKm);
   const lastRunOk = runMin === '' ? runKm === '' : Number(runMin) > 0 && (km === undefined || (Number.isFinite(km) && km > 0));
-  const dateOk = targetDate === '' || /^\d{4}-\d{2}-\d{2}$/.test(targetDate);
+  const dateOk = targetDate === '' || (/^\d{4}-\d{2}-\d{2}$/.test(targetDate) && targetDate >= store.clock().today);
+  const dated = p.running.enabled && p.running.goal !== 'GENERAL_RUNNING' && targetDate !== '' && dateOk;
   const canNext = step === 0 ? accepted : step === 1 ? choice !== null : step === 2 ? lastRunOk && dateOk : step === 3 ? p.availability.some((m) => m > 0) : true;
 
   const create = () => {
     const o: Beta0ProgrammeOptions = {
-      horizonWeeks: horizon,
       ...(p.running.enabled && targetDate && p.running.goal !== 'GENERAL_RUNNING' ? { runningTargetDate: targetDate } : {}),
       ...(p.running.enabled && runMin !== '' ? { lastRun: { realizedDurationS: Number(runMin) * 60, ...(km !== undefined ? { distanceM: km * 1000 } : {}), difficulty: runFeel } } : {}),
     };
@@ -106,7 +103,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
             <div className="card">
               {p.running.goal !== 'GENERAL_RUNNING' && (
                 <label className="field">Date de l’objectif {RUNNING_GOAL_LABELS[p.running.goal]} (facultatif)
-                  <input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
+                  <input type="date" min={store.clock().today} value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
                 </label>
               )}
               <h3>Votre dernière course</h3>
@@ -147,16 +144,14 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
             </div>
           )}
           {p.strength.enabled && <><div className="section-title">Matériel</div><EquipmentSection p={p} set={set} /></>}
-          <div className="section-title">Durée du programme</div>
-          <div className="row wrap" role="radiogroup" aria-label="Durée du programme">
-            {HORIZONS.map((h) => <button key={h} type="button" role="radio" aria-checked={horizon === h} className={`chip ${horizon === h ? 'on' : ''}`} onClick={() => setHorizon(h)}>{h} semaines</button>)}
-          </div>
           <div className="card">
             <h3>Récapitulatif</h3>
             <div className="small muted">
               {[p.strength.enabled && `Musculation · ${STRENGTH_GOAL_LABELS[p.strength.goal] ?? ''} · ${String(p.strength.sessionsPerWeek)}/sem.`, p.running.enabled && `Course · ${RUNNING_GOAL_LABELS[p.running.goal] ?? ''} · ${String(p.running.sessionsPerWeek)}/sem.`].filter(Boolean).join(' — ')}
             </div>
-            <div className="small muted">{String(p.availability.filter((m) => m > 0).length)} jours disponibles · {String(horizon)} semaines</div>
+            <div className="small muted">{String(p.availability.filter((m) => m > 0).length)} jours disponibles par semaine</div>
+            {dated ? <div className="small"><b>Objectif {RUNNING_GOAL_LABELS[p.running.goal]} le {formatDate(targetDate)}</b></div> : null}
+            <p className="small" style={{ margin: 0 }}>{dated ? 'Votre programme évolue semaine après semaine jusqu’à votre objectif.' : 'Votre programme évolue semaine après semaine, sans date de fin.'} Chaque semaine est construite à partir de ce que vous avez réellement fait.</p>
           </div>
           {mode === 'recreate' && <Notice tone="warn">Le programme actuel est remplacé. Une semaine déjà commencée n’est jamais modifiée : le nouveau programme démarre alors lundi prochain. L’historique est conservé.</Notice>}
         </>

@@ -21,9 +21,10 @@ export function NoWeek({ today }: { today: string }) {
   const { state } = useStore();
   const ps = state.programmeState;
   if (!ps) return null;
-  const end = addDays(ps.definition.startWeek, ps.definition.horizonWeeks * 7);
+  const h = ps.definition.horizonWeeks;
+  const ended = h !== undefined && today >= addDays(ps.definition.startWeek, h * 7);
   const text = today < ps.definition.startWeek ? `Votre programme commence le ${formatDate(ps.definition.startWeek)}.`
-    : today >= end ? 'Votre programme est terminé. Vous pouvez en créer un nouveau depuis l’onglet Programme.'
+    : ended ? 'Votre objectif est atteint : le programme est terminé. Vous pouvez en créer un nouveau depuis l’onglet Programme.'
       : state.safety.activePain ? 'Aucune séance n’est planifiée cette semaine tant que la pause douleur est active.'
         : 'Aucune séance n’a pu être planifiée cette semaine.';
   return <div className="card"><h3>Pas de séance cette semaine</h3><p className="small muted" style={{ margin: 0 }}>{text}</p></div>;

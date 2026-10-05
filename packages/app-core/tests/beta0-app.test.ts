@@ -9,15 +9,15 @@ import {
   recreateBeta0Programme, restRemainingS, selectBeta0Week, selectHistory, selectProgrammeSession, startProgrammeSession, toggleProgrammePainItem,
 } from '../src/index.js';
 import type { AppState, ProfileInput } from '../src/index.js';
+import { addDays } from '../src/dates.js';
 import { clock, profile } from './fixtures.js';
 
 const W1 = '2026-10-05';
 const W2 = '2026-10-12';
 const fullGym = EQUIPMENT_PRESETS.find((p) => p.id === 'preset.full_gym')?.equipment ?? [];
-// technical-constant: TEST_ONLY — minutes disponibles par jour, dernière course déclarée (s, m), horizon déclaré (semaines)
+// technical-constant: TEST_ONLY — minutes disponibles par jour, dernière course déclarée (s, m)
 const AVAIL = [60, 45, 60, 0, 60, 90, 75];
 const LAST_RUN = { realizedDurationS: 1800, distanceM: 5000, difficulty: 'AS_EXPECTED' as const };
-const HORIZON = 4;
 
 const input = (sports: 'strength' | 'running' | 'hybrid'): ProfileInput => profile({
   priorities: sports === 'running' ? ['running'] : sports === 'strength' ? ['strength'] : ['strength', 'running'],
@@ -25,7 +25,7 @@ const input = (sports: 'strength' | 'running' | 'hybrid'): ProfileInput => profi
   running: { enabled: sports !== 'strength', population: 'P_R2', goal: 'GENERAL_RUNNING', wearable: false, sessionsPerWeek: 2, returnState: 'NONE' },
   equipment: { presetId: 'preset.full_gym', items: [...fullGym] }, availability: AVAIL,
 });
-const create = (sports: 'strength' | 'running' | 'hybrid' = 'hybrid'): AppState => createBeta0Programme(emptyState(), input(sports), clock(W1), { horizonWeeks: HORIZON, lastRun: LAST_RUN });
+const create = (sports: 'strength' | 'running' | 'hybrid' = 'hybrid'): AppState => createBeta0Programme(emptyState(), input(sports), clock(W1), { lastRun: LAST_RUN });
 const reload = (s: AppState): AppState => { const d = decodeState(exportState(s)); if (!d.ok) throw new Error(d.problem); return d.state; };
 const first = (s: AppState, sport: 'strength' | 'running') => {
   const x = selectBeta0Week(s, W1)?.sessions.find((v) => v.sport === sport && v.status === 'planned');
@@ -48,15 +48,39 @@ describe('création du programme Beta 0', () => {
   });
 
   it('programme créé en milieu de semaine : aucune séance placée sur un jour déjà passé', () => {
-    const s = createBeta0Programme(emptyState(), input('strength'), clock('2026-10-07'), { horizonWeeks: HORIZON });
+    const s = createBeta0Programme(emptyState(), input('strength'), clock('2026-10-07'), {});
     const dates = selectBeta0Week(s, '2026-10-07')?.sessions.flatMap((x) => (x.date ? [x.date] : [])) ?? [];
     expect(dates.length).toBeGreaterThan(0);
     expect(dates.every((d) => d >= '2026-10-07')).toBe(true);
   });
 
   it('CT / HYROX refusés ; aucun sport ⇒ refus', () => {
-    expect(() => createBeta0Programme(emptyState(), { ...input('strength'), hyrox: { enabled: true } }, clock(W1), { horizonWeeks: HORIZON })).toThrow('BETA0_SPORT_UNSUPPORTED');
-    expect(() => createBeta0Programme(emptyState(), { ...input('strength'), strength: { enabled: false, goal: 'strength', sessionsPerWeek: 2 } }, clock(W1), { horizonWeeks: HORIZON })).toThrow('NO_SPORT_SELECTED');
+    expect(() => createBeta0Programme(emptyState(), { ...input('strength'), hyrox: { enabled: true } }, clock(W1), {})).toThrow('BETA0_SPORT_UNSUPPORTED');
+    expect(() => createBeta0Programme(emptyState(), { ...input('strength'), strength: { enabled: false, goal: 'strength', sessionsPerWeek: 2 } }, clock(W1), {})).toThrow('NO_SPORT_SELECTED');
+  });
+});
+
+describe('durée du programme : objectif daté ou programme continu, horizon glissant', () => {
+  it('objectif daté : le programme va jusqu’à la semaine de la date d’objectif (calendrier), sans durée par défaut', () => {
+    const p = { ...input('running'), running: { ...input('running').running, goal: 'HALF_MARATHON' as const } };
+    // TEST_ONLY : course le samedi 2027-04-17 ⇒ semaine du lundi 2027-04-12, 28 semaines depuis le 2026-10-05.
+    const s = createBeta0Programme(emptyState(), p, clock(W1), { runningTargetDate: '2027-04-17', lastRun: LAST_RUN });
+    expect(s.programmeState?.definition.horizonWeeks).toBe(28);
+    expect(s.programmeState?.definition.goals).toEqual([expect.objectContaining({ sport: 'running', targetDate: '2027-04-17' })]);
+    expect(selectBeta0Week(s, W1)?.programme).toMatchObject({ horizonWeeks: 28, targetDate: '2027-04-17' });
+    // Horizon glissant : seule la semaine courante est construite.
+    expect(s.programmeState?.weeks.map((w) => w.weekIndex)).toEqual([0]);
+  });
+
+  it('sans objectif daté : programme continu, sans fin ; à la semaine 30, seule cette semaine est construite', () => {
+    const s0 = create('strength');
+    expect(s0.programmeState?.definition.horizonWeeks).toBeUndefined();
+    expect(selectBeta0Week(s0, W1)?.programme).toMatchObject({ horizonWeeks: null, targetDate: null });
+    // technical-constant: TEST_ONLY — 30 semaines après le début
+    const later = addDays(W1, 30 * 7);
+    const s = ensureBeta0Week(s0, clock(later));
+    expect(s.programmeState?.weeks.map((w) => [w.weekIndex, w.closedAt !== undefined])).toEqual([[0, true], [30, false]]);
+    expect(selectBeta0Week(s, later)?.sessions.length).toBe(2);
   });
 });
 
@@ -147,11 +171,11 @@ describe('semaines suivantes et recréation', () => {
     let s = create();
     const { id, date } = first(s, 'running');
     s = finishProgrammeSession(s, at(date, '19:00:00'), { requestId: id, completion: 'completed_as_prescribed', pain: false, run: { realizedDurationS: 1800 } });
-    const r = recreateBeta0Programme(s, { ...input('strength') }, at(date, '20:00:00'), { horizonWeeks: HORIZON });
+    const r = recreateBeta0Programme(s, { ...input('strength') }, at(date, '20:00:00'), {});
     expect(r.programmeState?.definition.startWeek).toBe(W2);
     expect(selectHistory(r).map((h) => h.requestId)).toContain(id);
     // Semaine sans réalisation ⇒ recréé dès cette semaine.
-    const fresh = recreateBeta0Programme(create(), input('running'), clock(W1, '09:00:00'), { horizonWeeks: HORIZON });
+    const fresh = recreateBeta0Programme(create(), input('running'), clock(W1, '09:00:00'), {});
     expect(fresh.programmeState?.definition.startWeek).toBe(W1);
     expect(selectBeta0Week(fresh, W1)?.sessions.every((x) => x.sport === 'running')).toBe(true);
   });

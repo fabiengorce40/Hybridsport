@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { programmeWeekIndex, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
+import { programmeTargetDate, programmeWeekIndex, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import { sportName } from '../../present.js';
@@ -15,14 +15,17 @@ export function Programme0() {
   if (editing) return <Setup initial={p} mode="recreate" onDone={() => setEditing(false)} onCancel={() => setEditing(false)} />;
   const d = ps.definition;
   const i = programmeWeekIndex(state, clock().today) ?? -1;
+  const target = programmeTargetDate(d);
   const goalText = (g: (typeof d.goals)[number]): string => (g.sport === 'strength' ? STRENGTH_GOAL_LABELS[g.goal] : g.sport === 'running' ? RUNNING_GOAL_LABELS[g.goal] : undefined) ?? '';
   return (
     <div className="screen">
       <div className="row between"><h1 className="screen-title">Programme</h1><ExperimentalBadge /></div>
       <Notice tone="sim">Certaines règles de planification sont encore en cours de validation. Les séances ne sont pas des recommandations établies.</Notice>
       <div className="card">
-        <div className="row between"><strong>Semaine actuelle</strong><span className="num">{i >= 0 && i < d.horizonWeeks ? `${String(i + 1)} / ${String(d.horizonWeeks)}` : '—'}</span></div>
-        <div className="small muted">Début : {formatDate(d.startWeek)} · {String(d.horizonWeeks)} semaines</div>
+        <div className="row between"><strong>Semaine actuelle</strong><span className="num">{i >= 0 && (d.horizonWeeks === undefined || i < d.horizonWeeks) ? String(i + 1) : '—'}</span></div>
+        <div className="small muted">Début : {formatDate(d.startWeek)}</div>
+        {target ? <div className="small"><b>Objectif le {formatDate(target)}</b></div> : null}
+        <p className="small" style={{ margin: 0 }}>{target ? 'Votre programme évolue semaine après semaine jusqu’à votre objectif.' : 'Votre programme évolue semaine après semaine, sans date de fin.'}</p>
       </div>
       {d.priorities.map((sp, k) => {
         const plan = d.sports.find((x) => x.sport === sp);

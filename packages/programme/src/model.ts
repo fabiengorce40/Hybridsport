@@ -80,8 +80,12 @@ export const zProgrammeDefinition = z.object({
   origin: z.string().min(1),
   /** Lundi de la semaine 1. */
   startWeek: date,
-  /** Horizon DÉCLARÉ (semaines) : la trajectoire longue ; les séances concrètes restent glissantes. */
-  horizonWeeks: z.number().int().positive(),
+  /**
+   * Fin DÉCLARÉE du programme (semaines depuis `startWeek`), facultative : typiquement la semaine d'un objectif daté.
+   * Absente ⇒ programme CONTINU, sans date de fin. Dans les deux cas les séances restent glissantes : seule la semaine
+   * courante (ou l'avance gouvernée `programme.planning.horizonWeeks`) est planifiable, jamais l'horizon entier.
+   */
+  horizonWeeks: z.number().int().positive().optional(),
   goals: z.array(zProgrammeGoal).min(1),
   /** Priorité EXPLICITE des sports (ordre), transmise au planificateur. Aucun score. */
   priorities: z.array(sport),
@@ -99,7 +103,7 @@ export const zProgrammeDefinition = z.object({
     if ('targetDate' in g && g.targetDate !== undefined && g.targetDate < d.startWeek) issue(['goals', i, 'targetDate'], 'date cible antérieure au début du programme');
   });
   d.phases.forEach((p, i) => {
-    if (p.fromWeek > p.toWeek || p.toWeek >= d.horizonWeeks) issue(['phases', i], 'phase hors horizon ou inversée');
+    if (p.fromWeek > p.toWeek || (d.horizonWeeks !== undefined && p.toWeek >= d.horizonWeeks)) issue(['phases', i], 'phase hors horizon ou inversée');
     if (d.phases.some((q, j) => j !== i && q.fromWeek <= p.toWeek && p.fromWeek <= q.toWeek)) issue(['phases', i], 'phases chevauchantes');
   });
 });

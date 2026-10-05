@@ -18,10 +18,11 @@ import type { RunningGovernance } from '@hybridsport/running';
 import { requirePlannerProvenance } from '@hybridsport/planner';
 import { StrengthEngine, findArchetype, readStrengthParams } from '@hybridsport/strength';
 import type { SportEngine } from '@hybridsport/engine';
-import { adherenceOf, weekIndexOf, weekStartAt, weekStatus } from '@hybridsport/programme';
-import type { Adherence, ProgrammeDefinitionInput, ProgrammeResult, WeekStatus } from '@hybridsport/programme';
+import { adherenceOf, weekIndexOf, weekStartAt, weekStatus, withinProgramme } from '@hybridsport/programme';
+import type { Adherence, ProgrammeDefinition, ProgrammeDefinitionInput, ProgrammeResult, WeekStatus } from '@hybridsport/programme';
 import { plannerGovernance, withDemand } from '../../planner/tests/simulation.js';
 import { AppError } from './errors.js';
+import { daysBetween, weekStartOf } from './dates.js';
 import type { AppState, EnvironmentAuthority, PersistedWeek, Profile, Reason, Sport } from './model.js';
 import { STIMULUS_BY_GOAL, STRENGTH_ARCHETYPE } from './planner.js';
 import type { ProgrammeEnvironment } from './programme.js';
@@ -81,7 +82,11 @@ export interface ProgrammeFromProfileOptions {
   readonly programmeId: string;
   /** Lundi de la semaine 1. */
   readonly startWeek: string;
-  readonly horizonWeeks: number;
+  /**
+   * Fin explicite du programme (semaines), facultative. Absente : semaine de la date d'objectif Running si elle est
+   * déclarée, sinon programme CONTINU (aucune fin). Jamais une durée par défaut.
+   */
+  readonly horizonWeeks?: number;
   readonly origin: string;
   /** Date cible DÉCLARÉE de l'objectif Running (contrat Running `goal.targetDate`), facultative. */
   readonly runningTargetDate?: string;
@@ -110,7 +115,15 @@ export function programmeDefinitionFromProfile(p: Profile, o: ProgrammeFromProfi
     };
   });
   const goals = enabled.map((s) => (s === 'strength' ? { goalId: 'goal.strength', sport: s, goal: p.strength.goal } : { goalId: 'goal.running', sport: s, goal: p.running.goal, ...(o.runningTargetDate ? { targetDate: o.runningTargetDate } : {}) }));
-  return { programmeId: o.programmeId, origin: o.origin, startWeek: o.startWeek, horizonWeeks: o.horizonWeeks, goals, priorities: enabled, sports };
+  const end = o.horizonWeeks ?? (o.runningTargetDate && enabled.includes('running') ? weeksThrough(o.startWeek, o.runningTargetDate) : undefined);
+  return { programmeId: o.programmeId, origin: o.origin, startWeek: o.startWeek, ...(end !== undefined ? { horizonWeeks: end } : {}), goals, priorities: enabled, sports };
+}
+
+// technical-constant: jours par semaine (calendrier)
+const DAYS_PER_WEEK = 7;
+/** Nombre de semaines du lundi `startWeek` jusqu'à la semaine contenant `date` incluse (calendrier seulement). */
+function weeksThrough(startWeek: string, date: string): number {
+  return Math.max(1, Math.floor(daysBetween(startWeek, weekStartOf(date)) / DAYS_PER_WEEK) + 1);
 }
 
 // ——— Contrat de lecture pour l'interface (aucune logique sportive : projection de l'état persisté)
@@ -134,7 +147,8 @@ export interface SessionView {
   readonly pain: boolean;
 }
 export interface Beta0WeekView {
-  readonly programme: { readonly programmeId: string; readonly origin: string; readonly horizonWeeks: number };
+  /** `horizonWeeks` null : programme continu ; `targetDate` : date d'objectif déclarée (la plus proche), sinon null. */
+  readonly programme: { readonly programmeId: string; readonly origin: string; readonly horizonWeeks: number | null; readonly targetDate: string | null };
   readonly weekIndex: number;
   readonly weekStart: string;
   readonly weekStatus: WeekStatus;
@@ -170,11 +184,17 @@ function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResu
  * Vue de la semaine du programme (par défaut celle de `today`) : lecture seule de l'état persisté (programme,
  * semaine planifiée, réalisations). Aucune décision, aucun calcul sportif.
  */
+/** Date d'objectif déclarée la plus proche du programme (objectifs datés), sinon null. */
+export function programmeTargetDate(d: ProgrammeDefinition): string | null {
+  const dates = d.goals.flatMap((g) => ('targetDate' in g && g.targetDate ? [g.targetDate] : [])).sort();
+  return dates[0] ?? null;
+}
+
 export function selectBeta0Week(state: AppState, today: string, weekIndex?: number): Beta0WeekView | null {
   const ps = state.programmeState;
   if (!ps) return null;
   const i = weekIndex ?? weekIndexOf(ps, today);
-  if (i < 0 || i >= ps.definition.horizonWeeks) return null;
+  if (!withinProgramme(ps, i)) return null;
   const pw = ps.weeks.find((w) => w.weekIndex === i);
   const week = pw ? state.planner.weeks[pw.plannerRef] : undefined;
   const resultOf = (id: string) => ps.results.find((x) => x.requestId === id);
@@ -182,7 +202,7 @@ export function selectBeta0Week(state: AppState, today: string, weekIndex?: numb
     .sort((a, b) => (a.date === null ? 1 : 0) - (b.date === null ? 1 : 0) || (a.date ?? '').localeCompare(b.date ?? '') || a.requestId.localeCompare(b.requestId));
   const authority = week?.authority ?? 'unknown';
   return {
-    programme: { programmeId: ps.definition.programmeId, origin: ps.definition.origin, horizonWeeks: ps.definition.horizonWeeks },
+    programme: { programmeId: ps.definition.programmeId, origin: ps.definition.origin, horizonWeeks: ps.definition.horizonWeeks ?? null, targetDate: programmeTargetDate(ps.definition) },
     weekIndex: i, weekStart: weekStartAt(ps, i), weekStatus: weekStatus(ps, i, today, undefined),
     authority, experimental: week ? isExperimental(authority) : true, simulation: [...(week?.simulation ?? [])],
     sessions, adherence: pw ? (pw.adherence?.total ?? adherenceOf(pw.requests, ps.results)) : null,

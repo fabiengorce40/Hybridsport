@@ -85,6 +85,31 @@ describe('horizon glissant', () => {
   });
 });
 
+describe('programme continu (sans fin déclarée)', () => {
+  const continuous = (): ProgrammeState => {
+    const { horizonWeeks: _h, ...d } = definition();
+    const r = createProgramme(d, `${START}T06:00:00Z`);
+    if (!r.ok) throw new Error('définition invalide');
+    return r.value;
+  };
+  it('aucune fin : une semaine lointaine est planifiable quand elle devient courante ; jamais d’avance sans politique', () => {
+    const s = continuous();
+    expect(s.definition.horizonWeeks).toBeUndefined();
+    // technical-constant: TEST_ONLY — semaine lointaine (un an après le début)
+    const far = 52;
+    const today = addDays(START, far * 7);
+    expect(weekStatus(s, far, today, undefined)).toBe('plannable');
+    expect(weekStatus(s, far + 1, today, undefined)).toBe('projected');
+    expect(planProgrammeWeek(s, -1, deps()).ok).toBe(false);
+  });
+  it('vue longitudinale BORNÉE : semaine courante seulement (aucune semaine future générée d’avance)', () => {
+    const s = continuous();
+    expect(programmeOutlook(s, START, undefined, 'CANDIDATE').weeks.map((w) => w.status)).toEqual(['plannable']);
+    const later = programmeOutlook(s, addDays(START, 21), undefined, 'CANDIDATE').weeks;
+    expect(later.map((w) => w.status)).toEqual(['past_unplanned', 'past_unplanned', 'past_unplanned', 'plannable']);
+  });
+});
+
 describe('semaine 1 multisport : intention → planificateur → moteurs', () => {
   it('priorité explicite transmise telle quelle ; moteurs réels ; résumé référencé (aucune séance recopiée)', () => {
     const r = plan(make(FOUR_SPORTS), 0);

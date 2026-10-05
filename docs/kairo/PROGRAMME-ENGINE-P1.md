@@ -25,7 +25,7 @@ app-core → planner (V2), strength/running (V0)
 
 ## Contrats
 
-- **ProgrammeDefinition** : objectifs, horizon déclaré, priorité explicite, composition, intention par sport, station HYROX, déclarations, variantes PROGRESS/REGRESS déclarées, évaluation déclarée, phases déclarées. Aucune valeur par défaut. Une définition invalide donne `DEFINITION_INVALID` avec le chemin en cause.
+- **ProgrammeDefinition** : objectifs, fin déclarée **facultative** (`horizonWeeks`, voir « Durée du programme »), priorité explicite, composition, intention par sport, station HYROX, déclarations, variantes PROGRESS/REGRESS déclarées, évaluation déclarée, phases déclarées. Aucune valeur par défaut. Une définition invalide donne `DEFINITION_INVALID` avec le chemin en cause.
 - **Objectifs** : vocabulaires des moteurs (Running, CT via le planificateur, Strength `goal.primary`) ; HYROX : minimal (`RACE_PREPARATION`, `GENERAL`). Un objectif est transmis au contrat du moteur et n'entraîne aucune progression numérique.
 - **ProgrammeState** (v1, dans `AppState.programmeState`, champ additif) :
   - intention courante par sport ;
@@ -47,6 +47,21 @@ app-core → planner (V2), strength/running (V0)
 
 - Une semaine sans résultat enregistré peut être replanifiée.
 - Aucune durée d'horizon en production : sans paramètre, seule la semaine courante est planifiable.
+
+### Durée du programme et horizon glissant
+
+Ce sont deux notions distinctes.
+
+- **Durée jusqu'à l'objectif** (`horizonWeeks`).
+  - **Avant la correction UX Beta 0** : champ **obligatoire**, de durée finie. C'était la seule limite backend. L'UI proposait 4, 8 ou 12 semaines. Il n'existait aucune limite de 12 semaines dans le backend.
+  - **Depuis** : champ **facultatif**.
+    - Objectif daté : app-core fixe la fin à la semaine de la `targetDate` (calcul de calendrier seulement).
+    - Sans date : le champ est absent et le programme est **continu**, sans fin.
+  - La garde commune est `withinProgramme`.
+- **Horizon glissant de planification** : inchangé.
+  - Seule la semaine courante est planifiable, plus l'avance gouvernée `programme.planning.horizonWeeks` si elle existe.
+  - Une semaine suit la précédente après clôture, à partir des résultats réellement enregistrés.
+  - Pour un programme continu, la vue longitudinale s'arrête aux semaines connues, à la semaine courante et à l'avance gouvernée. Elle ne génère jamais 52 semaines d'avance.
 
 ## Retour d'expérience
 
