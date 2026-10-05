@@ -30,6 +30,7 @@ const STRENGTH_S1_CHANGES = [
   'packages/strength/src/codes.ts',
   'packages/strength/src/engine.ts',
   'packages/strength/src/index.ts',
+  'packages/strength/tests/unit/composition.test.ts',
 ];
 const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/domain/src/duplicate.ts',
