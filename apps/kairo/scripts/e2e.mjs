@@ -81,9 +81,9 @@ await page.mouse.wheel(0, 2000);
 check(await timer.isVisible(), 'chrono toujours visible après défilement');
 await shot('07-serie-chrono');
 await page.getByRole('button', { name: 'Mettre le repos en pause' }).click();
-const paused = await timer.locator('.time').innerText();
+const paused = await timer.locator('.k-rest-time').innerText();
 await page.waitForTimeout(1500);
-check(await timer.locator('.time').innerText() === paused, 'pause : le temps restant ne bouge plus');
+check(await timer.locator('.k-rest-time').innerText() === paused, 'pause : le temps restant ne bouge plus');
 await page.getByRole('button', { name: 'Ajouter 15 secondes' }).click();
 await page.getByRole('button', { name: 'Reprendre le repos' }).click();
 // Rechargement en pleine séance : série validée et chrono conservés.

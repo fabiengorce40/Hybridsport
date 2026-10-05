@@ -65,6 +65,35 @@ Le chemin V0 reste dans le code. Il ne sert plus qu'à un profil antérieur **sa
 - Progression des séries affichée.
 - Bouton « Douleur » par exercice.
 
+### KAIRO Design System (v1 : écran séance Musculation)
+
+Refonte de **présentation uniquement**. Prescriptions, séries, RIR, charges, repos, chrono et `recordSessionExecution` sont inchangés. Mêmes transitions app-core.
+
+**Fichiers** :
+- `apps/kairo/src/design/kairo-ds.css` : jetons et composants `k-*` ;
+- `apps/kairo/src/workout/StrengthWorkout.tsx` : composants.
+
+**Direction artistique** :
+- noir profond et anthracite ;
+- blanc cassé pour l'essentiel, gris pour le secondaire ;
+- orange KAIRO réservé à l'action et à la progression ;
+- surfaces plutôt que bordures ;
+- gros chiffres en chiffres tabulaires.
+
+**Composants** :
+
+| Composant | Contenu |
+|---|---|
+| En-tête | Nom de séance dominant, « ≈ 51 min · 8/25 séries », barre de progression, badge Beta discret |
+| Navigation rapide | « 1 / 7 » et pastilles numérotées : raccourci de défilement, jamais un carrousel. Exercice en cours souligné, exercices terminés cochés |
+| Carte exercice | « 01 SQUAT BARRE », « Force · 3 séries · repos 2:00 ». Consignes dépliables : intensité (RIR), séries de montée, première exposition, alternatives. « Signaler une douleur » en lien secondaire |
+| Ligne de série | « SÉRIE 1 · obj. 6 », champs REPS et KG grands et intégrés (sans aspect formulaire), contrôle circulaire. Terminée : check orange, ligne apaisée, valeurs réelles lisibles. Séries de montée plus légères |
+| Échauffement, retour au calme | Lignes compactes |
+| Chrono flottant | Anneau de progression, « REPOS 01:42 », « +15 s », « Pause », « Passer » |
+| Dock bas | « Commencer la séance » tant que la séance n'a pas commencé |
+
+**Vérifié** à 360 et 412 px : aucun défilement horizontal, zones tactiles ≥ 44 px.
+
 ### Chrono de repos
 
 - L'échéance est horodatée et persistée dans `AppState.programmeLogs`.

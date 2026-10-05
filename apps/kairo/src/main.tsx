@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { App } from './App.js';
 import { StoreProvider } from './store.js';
 import './styles.css';
+import './design/kairo-ds.css';
 
 const root = document.getElementById('root');
 if (root) {

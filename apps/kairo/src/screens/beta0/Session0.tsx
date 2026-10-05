@@ -13,6 +13,7 @@ import { RestTimer0 } from '../../RestTimer0.js';
 import { formatDate, Notice, Topbar } from '../../ui.js';
 import { isTest, roleName, sessionName, sportName, STATUS_LABELS } from '../../present.js';
 import { BLOCK_LABELS, RunStructureView, SetRow } from '../Session.js';
+import { StrengthWorkout } from '../../workout/StrengthWorkout.js';
 import { ExperimentalBadge } from './common.js';
 
 type Completion = FinishInput['completion'];
@@ -92,11 +93,36 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
   const finished = result !== null;
   const editable = started && !finished && log.finishedAt === undefined;
   const now = () => store.clock().now;
-  const work = session.blocks.flatMap((b) => b.items).flatMap((it) => (it.prescription.type === 'sets' ? it.prescription.sets.map((_, i) => `${it.id}#${String(i)}`) : []));
-  const doneCount = log?.sets.filter((x) => x.done).length ?? 0;
   const elapsed = log && !finished ? Math.max(0, Math.floor((Date.parse(now()) - Date.parse(log.startedAt)) / 1000)) : 0;
-  const record = (item: SessionItem, _set: SetPrescription, index: number, x: { done: boolean; reps?: number; loadKg?: number }) =>
+  const record = (item: SessionItem, _set: SetPrescription | undefined, index: number, x: { done: boolean; reps?: number; loadKg?: number }) =>
     store.apply((s, c) => recordProgrammeSet(s, c, requestId, { itemId: item.id, setIndex: index, ...x }));
+
+  const finishSheet = finishing && (
+    <FinishSheet v={v} onCancel={() => setFinishing(false)} onSubmit={(f) => {
+      if (store.apply((s, c) => finishProgrammeSession(s, c, { requestId, ...f }))) setFinishing(false);
+    }} />
+  );
+  const timer = editable && <RestTimer0 rest={log.rest} now={now} onAction={(a) => store.apply((s, c) => controlRest(s, c, requestId, a))} />;
+
+  if (v.sport === 'strength') {
+    return (
+      <>
+        <Topbar title="" onBack={onBack} right={v.experimental ? <span className="k-pill" title="Certaines règles de planification sont encore en cours de validation.">Beta</span> : undefined} />
+        <div className={`k-workout ${editable && log.rest ? 'with-timer' : ''} ${!started && !finished ? 'with-dock' : ''}`}>
+          <StrengthWorkout
+            v={v} title={name} eyebrow={`${sportName(v.sport)} · ${formatDate(v.date)}${editable ? ` · ${String(Math.floor(elapsed / 60))}:${String(elapsed % 60).padStart(2, '0')}` : ''}`} editable={editable}
+            onRecord={(item, index, x) => record(item, undefined, index, x)}
+            onTogglePain={(itemId) => store.apply((s) => toggleProgrammePainItem(s, requestId, itemId))}
+          />
+          {finished && <div className="k-light"><span className="k-pill done">✓ {STATUS_LABELS[result.completion]}</span><span className="k-light-name">Séance terminée</span></div>}
+          {!started && !finished && <div className="k-dock"><button className="k-cta" onClick={() => store.apply((s, c) => startProgrammeSession(s, c, requestId))}>Commencer la séance</button></div>}
+          {editable && <button className="k-cta ghost" onClick={() => setFinishing(true)}>Terminer la séance</button>}
+        </div>
+        {timer}
+        {finishSheet}
+      </>
+    );
+  }
 
   return (
     <>
@@ -112,12 +138,8 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
           </div>
           <div className="row wrap small muted num">
             <span>≈ {approxMinutes(v.estimatedDurationS ?? session.targetDurationS)}</span>
-            {v.sport === 'strength' && work.length > 0 && <span>· {String(doneCount)}/{String(work.length)} séries</span>}
             {editable && <span>· {durationLabel(elapsed)} écoulées</span>}
           </div>
-          {v.sport === 'strength' && work.length > 0 && (
-            <div className="bar" role="progressbar" aria-label="Séries validées" aria-valuemin={0} aria-valuemax={work.length} aria-valuenow={doneCount}><div style={{ width: `${String(Math.round((doneCount / work.length) * 100))}%` }} /></div>
-          )}
           {finished && <Notice><span>Séance terminée{log?.outcome?.run ? ` · ${durationLabel(log.outcome.run.realizedDurationS)}` : ''}.</span></Notice>}
         </div>
 
@@ -153,12 +175,8 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
         {!started && !finished && <button className="btn primary block" onClick={() => store.apply((s, c) => startProgrammeSession(s, c, requestId))}>Commencer la séance</button>}
         {editable && <button className="btn primary block" onClick={() => setFinishing(true)}>Terminer la séance</button>}
       </div>
-      {editable && <RestTimer0 rest={log.rest} now={now} onAction={(a) => store.apply((s, c) => controlRest(s, c, requestId, a))} />}
-      {finishing && (
-        <FinishSheet v={v} onCancel={() => setFinishing(false)} onSubmit={(f) => {
-          if (store.apply((s, c) => finishProgrammeSession(s, c, { requestId, ...f }))) setFinishing(false);
-        }} />
-      )}
+      {timer}
+      {finishSheet}
     </>
   );
 }
