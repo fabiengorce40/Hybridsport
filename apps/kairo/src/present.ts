@@ -93,4 +93,5 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   BETA_RESET_NOT_CONFIRMED: 'Recréation annulée : confirmation absente. Rien n’a été modifié.',
   BETA_RESET_NOT_ALLOWED: 'Cet outil de test n’est disponible que dans la Beta expérimentale. Rien n’a été modifié.',
   PROGRAMME_MISSING: 'Aucun programme à recréer.',
+  PROGRAMME_SESSION_IN_PROGRESS: 'Une séance est en cours : terminez-la avant de modifier le programme. Rien n’a été modifié.',
 };

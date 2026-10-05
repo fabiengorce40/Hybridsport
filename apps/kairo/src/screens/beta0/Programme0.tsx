@@ -1,18 +1,18 @@
-import { useState } from 'react';
 import { programmeStatusAt, programmeTargetDate, programmeWeekIndex, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import { sportName } from '../../present.js';
 import { ExperimentalBadge } from './common.js';
-import { Setup } from './Setup.js';
 
-export function Programme0() {
+/**
+ * Programme. « Modifier » ouvre l'assistant en PLEIN ÉCRAN (géré par l'App, sans barre de navigation) : il n'est jamais
+ * rendu à l'intérieur de l'onglet, où la navigation fixe recouvrait ses actions (Retour / Continuer).
+ */
+export function Programme0({ onEdit }: { onEdit: () => void }) {
   const { state, clock } = useStore();
-  const [editing, setEditing] = useState(false);
   const ps = state.programmeState;
   const p = state.profile;
   if (!ps || !p) return null;
-  if (editing) return <Setup initial={p} mode="recreate" onDone={() => setEditing(false)} onCancel={() => setEditing(false)} />;
   const d = ps.definition;
   const i = programmeWeekIndex(state, clock().today) ?? -1;
   const target = programmeTargetDate(d);
@@ -40,7 +40,7 @@ export function Programme0() {
       })}
       <div className="section-title">Modifier</div>
       <p className="small muted" style={{ margin: 0 }}>Changer de sports, d’objectifs, de fréquence ou de disponibilités recrée le programme. Votre historique est conservé.</p>
-      <button className="btn secondary" onClick={() => setEditing(true)}>Modifier et recréer le programme</button>
+      <button className="btn secondary" onClick={onEdit}>Modifier et recréer le programme</button>
     </div>
   );
 }

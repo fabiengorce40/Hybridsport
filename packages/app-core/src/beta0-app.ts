@@ -8,7 +8,7 @@
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
 import { requestAssessment, weekIndexOf, withinProgramme, zProgrammeState } from '@hybridsport/programme';
-import type { ProgrammeResult } from '@hybridsport/programme';
+import type { ProgrammeResult, ProgrammeState } from '@hybridsport/programme';
 import { logFreeRun } from './app.js';
 import type { Clock } from './app.js';
 import { beta0Environment, legacyBeta0StrengthIntent, prescribedArchetype, LEGACY_BETA0_STRENGTH_ARCHETYPE, programmeDefinitionFromProfile, weekPlanning } from './beta0.js';
@@ -44,16 +44,29 @@ export interface Beta0ProgrammeOptions {
   readonly requestTest?: boolean;
 }
 
-function startFromProfile(state: AppState, clock: Clock, o: Beta0ProgrammeOptions, startWeek: string, env: ProgrammeEnvironment): AppState {
+function startFromProfile(state: AppState, clock: Clock, o: Beta0ProgrammeOptions, startWeek: string, env: ProgrammeEnvironment, carried: CarriedWeek | null = null): AppState {
   if (o.requestTest && !state.profile?.running.enabled) throw new AppError('RUNNING_NOT_ENABLED');
   const p = state.profile;
   if (!p) throw new AppError('PROFILE_MISSING');
   const def = programmeDefinitionFromProfile(p, { programmeId: `beta0.${normalizeInstant(clock.now)}`, startWeek, origin: 'profile', ...(o.runningTargetDate ? { runningTargetDate: o.runningTargetDate } : {}) });
-  const started = startProgramme(state, def, clock);
+  const fresh = startProgramme(state, def, clock);
+  // Semaine commencée REPRISE telle quelle (semaine 0 du nouveau programme) AVANT toute planification : jamais remplacée.
+  const started = carried && fresh.programmeState ? { ...fresh, programmeState: carryWeek(fresh.programmeState, carried) } : fresh;
   if (!o.requestTest || !started.programmeState) return ensureBeta0Week(started, clock, env);
-  const r = requestAssessment(started.programmeState, 'running', Math.max(0, weekIndexOf(started.programmeState, clock.today)), normalizeInstant(clock.now));
+  const cur = Math.max(0, weekIndexOf(started.programmeState, clock.today));
+  const r = requestAssessment(started.programmeState, 'running', carried ? cur + 1 : cur, normalizeInstant(clock.now));
   if (!r.ok) throw new ProgrammeError('RUNNING_TEST_REFUSED', r.reasons);
   return ensureBeta0Week({ ...started, programmeState: r.value }, clock, env);
+}
+
+/** Semaine commencée du programme précédent : son entrée et ses résultats, repris à l'identique. */
+interface CarriedWeek { readonly week: ProgrammeState['weeks'][number]; readonly results: ProgrammeState['results'] }
+function carryWeek(ps: ProgrammeState, c: CarriedWeek): ProgrammeState {
+  return zProgrammeState.parse({
+    ...ps,
+    weeks: [{ ...c.week, weekIndex: 0, intent: { ...c.week.intent, weekIndex: 0 } }],
+    results: c.results.map((r) => ({ ...r, weekIndex: 0 })),
+  });
 }
 
 /**
@@ -73,21 +86,61 @@ export function createBeta0Programme(state: AppState, input: ProfileInput, clock
 }
 
 /**
- * Recréation EXPLICITE du programme (profil modifié) : jamais de mutation du programme en cours. Démarre cette
- * semaine si elle n'a encore aucune réalisation, sinon lundi prochain (une semaine commencée n'est jamais
- * remplacée). Les séances non terminées sont abandonnées ; l'historique (réalisations, moteurs) est conservé.
+ * Aperçu de « Modifier le programme » (lecture seule, affiché AVANT validation) : à partir de quand les nouvelles
+ * intentions s'appliquent et ce qu'il advient de la semaine en cours.
+ *   - semaine en cours COMMENCÉE (au moins une séance enregistrée) : jamais remplacée (`WEEK_NOT_REPLACEABLE`) ; elle est
+ *     REPRISE telle quelle par le nouveau programme (séances restantes toujours réalisables) et les nouvelles intentions
+ *     s'appliquent à partir de lundi prochain ;
+ *   - séance EN COURS (commencée, non terminée) : modification refusée tant qu'elle n'est pas terminée ;
+ *   - sinon : la semaine en cours est replanifiée dès aujourd'hui avec le nouveau programme ; les séances prévues à une
+ *     date déjà passée et non réalisées en sont retirées (comptées, annoncées), jamais déclarées faites ni manquées.
+ */
+export interface RecreationPreview {
+  /** Lundi de la première semaine construite avec les nouvelles intentions. */
+  readonly appliesFrom: string;
+  readonly currentWeek: 'replanned' | 'kept';
+  readonly sessionInProgress: string | null;
+  readonly pastSessionsDropped: number;
+  /** Date d'objectif Course du programme actuel (préremplie, jamais perdue en silence). */
+  readonly runningTargetDate: string | null;
+}
+export function previewBeta0Recreation(state: AppState, today: string): RecreationPreview {
+  const thisWeek = weekStartOf(today);
+  const ps = state.programmeState;
+  const week = state.planner.weeks[thisWeek];
+  const ids = new Set((week?.requests ?? []).map((r) => r.requestId));
+  const started = ps !== null && ps.results.some((r) => ids.has(r.requestId) && r.provenance === 'declared');
+  const inProgress = Object.values(state.programmeLogs).find((l) => l.finishedAt === undefined && ids.has(l.requestId))?.requestId ?? null;
+  const past = started ? 0 : (week?.requests ?? []).filter((r) => r.status === 'planned' && r.date !== undefined && r.date < today).length;
+  const target = ps?.definition.goals.flatMap((g) => (g.sport === 'running' && 'targetDate' in g && g.targetDate ? [g.targetDate] : []))[0] ?? null;
+  return { appliesFrom: started ? addDays(thisWeek, DAYS_PER_WEEK) : thisWeek, currentWeek: started ? 'kept' : 'replanned', sessionInProgress: inProgress, pastSessionsDropped: past, runningTargetDate: target };
+}
+
+/**
+ * Recréation EXPLICITE du programme (« Modifier le programme ») : jamais de mutation du programme en cours ; un nouveau
+ * programme est créé depuis le profil modifié et démarre cette semaine. Semaine commencée : reprise à l'identique (semaine
+ * 0, résultats compris), nouvelles intentions dès lundi prochain. Refusée si une séance est en cours (jamais de brouillon
+ * supprimé en silence). Historique conservé : profil, réalisations des moteurs (Strength, Course), séances terminées,
+ * références. Tracée dans l'audit du nouveau programme.
  */
 export function recreateBeta0Programme(state: AppState, input: ProfileInput, clock: Clock, o: Beta0ProgrammeOptions, env: ProgrammeEnvironment = beta0Environment()): AppState {
   const profile = zProfile.parse(input);
   if (profile.crosstraining.enabled || profile.hyrox.enabled) throw new AppError('BETA0_SPORT_UNSUPPORTED');
   if (!profile.strength.enabled && !profile.running.enabled) throw new AppError('NO_SPORT_SELECTED');
+  const preview = previewBeta0Recreation(state, clock.today);
+  if (preview.sessionInProgress) throw new AppError('PROGRAMME_SESSION_IN_PROGRESS');
   const thisWeek = weekStartOf(clock.today);
-  const ps = state.programmeState;
-  const started = ps !== null && ps.results.some((r) => weekStartOf(r.date) === thisWeek && r.provenance === 'declared');
+  const old = state.programmeState;
+  const oldWeek = old?.weeks.find((w) => w.plannerRef === thisWeek);
+  const carried = preview.currentWeek === 'kept' && old && oldWeek ? { week: oldWeek, results: old.results.filter((r) => r.weekIndex === oldWeek.weekIndex) } : null;
   const programmeLogs = Object.fromEntries(Object.entries(state.programmeLogs).filter(([, l]) => l.finishedAt !== undefined));
   let s: AppState = { ...state, profile, programmeLogs };
   if (profile.running.enabled) for (const x of o.performances ?? []) s = declareRunningPerformance(s, clock, x);
-  return startFromProfile(s, clock, o, started ? addDays(thisWeek, DAYS_PER_WEEK) : thisWeek, env);
+  const next = startFromProfile(s, clock, o, thisWeek, env, carried);
+  const nps = next.programmeState;
+  if (!nps) return next;
+  const reason = { code: 'KAIRO.PROGRAMME_RECREATED', params: { previousProgrammeId: old?.definition.programmeId ?? '', appliesFrom: preview.appliesFrom, currentWeek: preview.currentWeek, pastSessionsDropped: preview.pastSessionsDropped } };
+  return { ...next, programmeState: { ...nps, audit: [...nps.audit, { at: normalizeInstant(clock.now), weekIndex: null, reason }] } };
 }
 
 /** Jeton de confirmation EXPLICITE exigé par `resetBeta0Data` (aucun appel implicite ou accidentel possible). */

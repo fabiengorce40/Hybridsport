@@ -8,7 +8,7 @@
  * Usage : node scripts/e2e.mjs [dossier de captures] — le serveur doit tourner sur E2E_URL.
  */
 import { readFileSync } from 'node:fs';
-import { chromium } from 'playwright';
+import { chromium, devices } from 'playwright';
 
 const URL_ = process.env.E2E_URL ?? 'http://localhost:4173/';
 const shots = process.argv[2];
@@ -196,6 +196,70 @@ const strengthTitles = (p) => p.getByRole('button', { name: /^Musculation : / })
   const days = await p.locator('.week .day .n').allInnerTexts();
   check(after.join(',') === 'Haut du corps,Bas du corps' && new Set(days).size === days.length && days.length === 7, `reset Beta : DOM recomposé, aucune date dupliquée (${after.join(', ')} ; ${days.join(' ')})`);
   await c.close();
+}
+
+// D — « Modifier le programme » sur smartphone Android (petit écran Galaxy S9+, puis Pixel 7) : programme pré-S1 dont la
+// semaine est COMMENCÉE (séance de lundi terminée), ouvert le mercredi. Actions de l'assistant toujours visibles et
+// cliquables (Playwright refuse un clic sur un élément recouvert), retour sans perte, validation, rechargement, semaine
+// commencée protégée, première nouvelle semaine composée par Strength S1.
+for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
+  const started = readFileSync(new URL('../../../packages/app-core/tests/fixtures/pre-s1-started-state.json', import.meta.url), 'utf8');
+  const c = await browser.newContext({ ...devices[deviceName], locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+  const p = await c.newPage();
+  await p.clock.install({ time: new Date('2026-10-07T09:00:00+02:00') });
+  await p.clock.resume();
+  await p.addInitScript((s) => { if (!localStorage.getItem('kairo.state')) localStorage.setItem('kairo.state', s); }, started);
+  await p.goto(URL_);
+  const tag = `[${deviceName}]`;
+  const vh = p.viewportSize()?.height ?? 0;
+  const actionsVisible = async (name) => {
+    const b = p.getByRole('group', { name: 'Navigation de l’assistant' }).getByRole('button', { name });
+    const box = await b.boundingBox();
+    return box !== null && box.y >= 0 && box.y + box.height <= vh && await b.isVisible() && await b.isEnabled();
+  };
+  await p.getByRole('button', { name: 'Programme', exact: true }).click();
+  await p.getByRole('button', { name: 'Modifier et recréer le programme' }).click();
+  check(await p.getByRole('navigation', { name: 'Navigation principale' }).count() === 0, `${tag} modifier : assistant plein écran, sans barre de navigation`);
+  await p.getByRole('radio', { name: /^Musculation \+ Course/ }).click();
+  check(await p.getByRole('radio', { name: /^Musculation \+ Course/ }).getAttribute('aria-checked') === 'true', `${tag} sports : Musculation + Course sélectionné`);
+  check(await actionsVisible('Continuer'), `${tag} sports : Continuer visible dans l’écran et cliquable`);
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  await p.getByLabel('Prénom (facultatif)').fill('Fabien');
+  await p.mouse.wheel(0, 4000);
+  check(await actionsVisible('Continuer') && await actionsVisible('Retour'), `${tag} objectifs (défilé) : Retour et Continuer toujours visibles`);
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  check(await actionsVisible('Continuer'), `${tag} disponibilités : Continuer visible`);
+  await p.getByRole('button', { name: 'Retour' }).click();
+  check(await p.getByLabel('Prénom (facultatif)').inputValue() === 'Fabien', `${tag} retour arrière : valeurs conservées`);
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  const recap = await p.locator('body').innerText();
+  check(recap.includes('Cette semaine est commencée') && recap.includes('lundi 12 octobre'), `${tag} récapitulatif : semaine commencée conservée, nouveau programme dès le 12 octobre`);
+  check(await actionsVisible('Recréer mon programme'), `${tag} dernière étape : validation visible et cliquable`);
+  await p.getByRole('button', { name: 'Recréer mon programme' }).click();
+  await p.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+  await p.reload();
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  const titles = await strengthTitles(p);
+  const st = await p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+  const week = st.planner?.weeks?.['2026-10-05'];
+  check(st.profile?.displayName === 'Fabien' && st.programmeState?.audit?.some((a) => a.reason.code === 'KAIRO.PROGRAMME_RECREATED'), `${tag} rechargement : programme modifié persisté`);
+  check(titles.length === 4 && titles.every((x) => x === 'Full body') && week?.requests?.find((r) => r.requestId === '2026-10-05.strength.1') && st.programmeState?.results?.some((r) => r.requestId === '2026-10-05.strength.1'), `${tag} semaine commencée protégée : reprise telle quelle, séance réalisée conservée (${titles.join(', ')})`);
+  const saved = JSON.stringify(st);
+  await c.close();
+  // Semaine suivante (lundi 12) : même stockage, nouvelle ouverture.
+  const c2 = await browser.newContext({ ...devices[deviceName], locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+  const p2 = await c2.newPage();
+  await p2.clock.install({ time: new Date('2026-10-12T08:00:00+02:00') });
+  await p2.clock.resume();
+  await p2.addInitScript((s) => { if (!localStorage.getItem('kairo.state')) localStorage.setItem('kairo.state', s); }, saved);
+  await p2.goto(URL_);
+  await p2.getByRole('button', { name: 'Planning', exact: true }).click();
+  const next = await strengthTitles(p2);
+  const st2 = await p2.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+  const reqs = (st2.planner?.weeks?.['2026-10-12']?.requests ?? []).filter((r) => r.sport === 'strength');
+  check(next.join(',') === 'Haut du corps,Bas du corps,Haut du corps,Bas du corps' && reqs.every((r) => r.reasons.some((x) => x.code === 'PLAN.WEEK_COMPOSITION')), `${tag} semaine suivante : composée par Strength S1 (${next.join(', ')})`);
+  await c2.close();
 }
 
 // Version réellement servie : identifiant de build affiché dans Réglages = version.json publié (site déployé seulement).

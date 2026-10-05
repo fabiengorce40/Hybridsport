@@ -16,3 +16,7 @@ git archive ec84c88 | tar -x -C /tmp/pre && cd /tmp/pre && pnpm install --offlin
 ```
 
 Ne jamais régénérer ce fichier avec le code courant : il doit rester un état ANTÉRIEUR à S1.
+
+`pre-s1-started-state.json` : même état, puis séance de lundi (`2026-10-05.strength.1`, Full body) COMMENCÉE, une série
+saisie et TERMINÉE (« adaptée ») par le parcours de l'application, avec le même code pré-S1 (`ec84c88` :
+`startProgrammeSession` → `recordProgrammeSet` → `finishProgrammeSession`). Représente une semaine pré-S1 COMMENCÉE.

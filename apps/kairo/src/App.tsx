@@ -47,10 +47,13 @@ export function App() {
   }, [store.toast, store.dismissToast]);
 
   const [setup, setSetup] = useState(false);
+  const [editing, setEditing] = useState(false);
   const beta0 = isBeta0(store.state);
   let body;
   if (store.load === 'unreadable' || store.load === 'newer_version') body = <LoadProblem />;
   else if (!store.state.profile) body = <Setup />;
+  // Modification du programme : assistant en plein écran, SANS barre de navigation (ses actions restent accessibles).
+  else if (beta0 && editing) body = <Setup initial={store.state.profile} mode="recreate" onDone={() => { setEditing(false); setTab('plan'); }} onCancel={() => setEditing(false)} />;
   else if (setup && !beta0) body = <Setup initial={store.state.profile} onDone={() => { setSetup(false); setTab('home'); }} onCancel={() => setSetup(false)} />;
   else if (beta0) body = (
     <div className="app">
@@ -58,7 +61,7 @@ export function App() {
         {tab === 'home' && <Home0 onOpen={setOpen} onGo={setTab} />}
         {tab === 'plan' && <Planning0 onOpen={setOpen} onGo={setTab} />}
         {tab === 'history' && <History0 onOpen={setOpen} />}
-        {tab === 'programme' && <Programme0 />}
+        {tab === 'programme' && <Programme0 onEdit={() => setEditing(true)} />}
         {(tab === 'settings' || tab === 'profile' || tab === 'run') && <Settings0 />}
         <TabBar tabs={BETA0_TABS} tab={tab} onChange={(t) => { setOpen(null); setTab(t); }} />
       </div>

@@ -197,13 +197,16 @@ describe('semaines suivantes et recréation', () => {
     expect(ensureBeta0Week(s, clock(W2))).toEqual(s);
   });
 
-  it('recréation explicite : semaine commencée ⇒ nouveau programme lundi prochain ; historique conservé', () => {
+  it('recréation explicite : semaine commencée REPRISE telle quelle, nouvelles intentions dès lundi prochain ; historique conservé', () => {
     let s = create();
     const { id, date } = first(s, 'running');
     s = finishProgrammeSession(s, at(date, '19:00:00'), { requestId: id, completion: 'completed_as_prescribed', pain: false, run: { realizedDurationS: 1800 } });
     const r = recreateBeta0Programme(s, { ...input('strength') }, at(date, '20:00:00'), {});
-    expect(r.programmeState?.definition.startWeek).toBe(W2);
+    expect(r.programmeState?.definition.startWeek).toBe(W1);
+    expect(r.planner.weeks[W1]).toEqual(s.planner.weeks[W1]);
+    expect(r.programmeState?.results.map((x) => x.requestId)).toEqual([id]);
     expect(selectHistory(r).map((h) => h.requestId)).toContain(id);
+    expect(selectBeta0Week(ensureBeta0Week(r, clock(W2, '09:00:00')), W2)?.sessions.every((x) => x.sport === 'strength')).toBe(true);
     // Semaine sans réalisation ⇒ recréé dès cette semaine.
     const fresh = recreateBeta0Programme(create(), input('running'), clock(W1, '09:00:00'), {});
     expect(fresh.programmeState?.definition.startWeek).toBe(W1);

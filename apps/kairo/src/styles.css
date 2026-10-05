@@ -149,6 +149,10 @@ textarea { min-height: 80px; resize: vertical; }
 .rest-timer .bar > div { height: 100%; background: var(--accent); transition: width 250ms linear; }
 
 /* Barre d'onglets */
+/* Assistant (onboarding, modification du programme) : écran plein SANS barre de navigation ; actions fixes en bas,
+   au-dessus de toute barre (défense en profondeur), safe area incluse ; le contenu défile au-dessus d'elles. */
+.wizard { padding-bottom: calc(112px + env(safe-area-inset-bottom)); }
+.wizard-actions { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: min(520px, 100%); z-index: 50; display: flex; align-items: center; gap: var(--space-2); padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); background: rgba(11, 11, 13, 0.96); border-top: 1px solid var(--border); }
 .tabbar { position: fixed; bottom: 0; left: 50%; transform: translateX(-50%); width: min(520px, 100%); z-index: 40; display: grid; grid-template-columns: repeat(5, 1fr); background: rgba(11, 11, 13, 0.94); backdrop-filter: blur(14px); border-top: 1px solid var(--border); padding: 6px 4px calc(6px + env(safe-area-inset-bottom)); }
 .tabbar button { background: none; border: 0; min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; color: var(--text-3); font-size: 11px; font-weight: 600; }
 .tabbar button.on { color: var(--accent); }

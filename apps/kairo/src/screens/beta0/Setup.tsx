@@ -3,8 +3,8 @@
  * priorité, matériel, durée du programme → création du programme réel (app-core `createBeta0Programme`).
  * Aussi utilisé pour créer un programme depuis un profil V0 existant, ou le recréer (workflow explicite).
  */
-import { useState } from 'react';
-import { createBeta0Programme, DIFFICULTY_LABELS, normalizeInstant, recreateBeta0Programme, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
+import { useEffect, useState } from 'react';
+import { createBeta0Programme, DIFFICULTY_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
 import type { Beta0ProgrammeOptions, DeclaredPerformance, Feedback, ProfileInput } from '@hybridsport/app-core';
 import { PerformanceForm } from '../../running/PerformanceForm.js';
 import { performanceText } from '../../running/RunningProfile.js';
@@ -35,7 +35,10 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const [step, setStep] = useState(existing ? 1 : 0);
   const [accepted, setAccepted] = useState(existing);
   const [p, setP] = useState<ProfileInput>(() => initial ? withChoice(initial, choiceOf(initial) ?? 'strength', initial.priorities[0] === 'running' ? 'running' : 'strength') : defaultProfile(normalizeInstant(store.clock().now)));
-  const [targetDate, setTargetDate] = useState('');
+  // Modification : conséquences calculées par app-core (jamais ici) ; date d'objectif actuelle préremplie.
+  const preview = mode === 'recreate' ? previewBeta0Recreation(store.state, store.clock().today) : null;
+  const [targetDate, setTargetDate] = useState(preview?.runningTargetDate ?? '');
+  useEffect(() => { window.scrollTo(0, 0); }, [step]);
   const [runMin, setRunMin] = useState('');
   const [runKm, setRunKm] = useState('');
   const [runFeel, setRunFeel] = useState<Feedback['difficulty']>('AS_EXPECTED');
@@ -65,7 +68,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   };
 
   return (
-    <div className="screen" style={{ paddingBottom: 120 }}>
+    <div className="screen wizard">
       {step === 0 ? (
         <div className="hero" style={{ minHeight: 280 }}>
           <div className="hero-brand">KAI<span>RO</span></div>
@@ -121,6 +124,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
             <div className="card">
               <h3>Niveau actuel</h3>
               <div className="section-title" style={{ marginTop: 0 }}>Performances récentes</div>
+              {mode === 'recreate' && store.state.running.references.length > 0 && <p className="tiny" style={{ margin: 0 }}>Vos {String(store.state.running.references.length)} performance{store.state.running.references.length > 1 ? 's' : ''} déjà enregistrée{store.state.running.references.length > 1 ? 's sont conservées' : ' est conservée'} (Réglages → Profil Course). Ajoutez seulement les nouvelles.</p>}
               {perfs.length === 0 && !addingPerf && <p className="tiny" style={{ margin: 0 }}>Un chrono récent (course officielle ou chrono personnel) permet de débloquer les séances clés et des cibles d’allure.</p>}
               {perfs.map((x, i) => (
                 <div key={`${x.kind}${String(i)}`} className="row between small">
@@ -181,17 +185,33 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
             {dated ? <div className="small"><b>Objectif {RUNNING_GOAL_LABELS[p.running.goal]} le {formatDate(targetDate)}</b></div> : null}
             <p className="small" style={{ margin: 0 }}>{dated ? 'Votre programme évolue semaine après semaine jusqu’à votre objectif.' : 'Votre programme évolue semaine après semaine, sans date de fin.'} Chaque semaine est construite à partir de ce que vous avez réellement fait.</p>
           </div>
-          {mode === 'recreate' && <Notice tone="warn">Le programme actuel est remplacé. Une semaine déjà commencée n’est jamais modifiée : le nouveau programme démarre alors lundi prochain. L’historique est conservé.</Notice>}
+          {preview && <RecreationNotice preview={preview} />}
         </>
       )}
 
-      <div className="row" style={{ position: 'fixed', bottom: 0, left: '50%', transform: 'translateX(-50%)', width: 'min(520px, 100%)', padding: '12px 16px calc(12px + env(safe-area-inset-bottom))', background: 'rgba(11,11,13,0.95)', borderTop: '1px solid var(--border)', zIndex: 5 }}>
+      <div className="wizard-actions" role="group" aria-label="Navigation de l’assistant">
         {(step > (existing ? 1 : 0)) && <button className="btn secondary" onClick={() => setStep(step - 1)}>Retour</button>}
         {step === (existing ? 1 : 0) && onCancel && <button className="btn secondary" onClick={onCancel}>Annuler</button>}
         {step < STEPS.length - 1
           ? <button className="btn primary block" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 0 ? 'Commencer' : 'Continuer'}</button>
-          : <button className="btn primary block" onClick={create}>{mode === 'recreate' ? 'Recréer mon programme' : 'Créer mon programme'}</button>}
+          : <button className="btn primary block" disabled={preview?.sessionInProgress != null} onClick={create}>{mode === 'recreate' ? 'Recréer mon programme' : 'Créer mon programme'}</button>}
       </div>
     </div>
+  );
+}
+
+/** Conséquences EXACTES de la modification (aperçu app-core), affichées avant validation. */
+function RecreationNotice({ preview }: { preview: ReturnType<typeof previewBeta0Recreation> }) {
+  if (preview.sessionInProgress) return <Notice tone="danger"><span>Une séance est en cours : terminez-la avant de modifier le programme. Rien ne sera modifié.</span></Notice>;
+  return (
+    <Notice tone="warn">
+      <div className="stack">
+        <strong>Ce qui va se passer</strong>
+        {preview.currentWeek === 'kept'
+          ? <span>Cette semaine est commencée : elle est conservée telle quelle et ses séances restantes restent disponibles. Le nouveau programme s’applique à partir du lundi {formatDate(preview.appliesFrom).split(' ').slice(1).join(' ')}.</span>
+          : <span>Aucune séance n’a encore été enregistrée cette semaine : elle est replanifiée dès aujourd’hui avec le nouveau programme.{preview.pastSessionsDropped > 0 ? ` ${String(preview.pastSessionsDropped)} séance${preview.pastSessionsDropped > 1 ? 's' : ''} prévue${preview.pastSessionsDropped > 1 ? 's' : ''} à une date déjà passée et non réalisée${preview.pastSessionsDropped > 1 ? 's' : ''} ${preview.pastSessionsDropped > 1 ? 'sont retirées' : 'est retirée'} (ni faite${preview.pastSessionsDropped > 1 ? 's' : ''}, ni manquée${preview.pastSessionsDropped > 1 ? 's' : ''}).` : ''}</span>}
+        <span>Conservés : séances déjà réalisées, historique, performances déclarées et courses libres.</span>
+      </div>
+    </Notice>
   );
 }
