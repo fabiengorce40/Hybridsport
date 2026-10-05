@@ -57,6 +57,8 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'PLAN.INTERFERENCE_SIGNAL', categories: ['business_soft'], params: { structure: S, level: S, source: S, overlap: S }, audience: 'internal', severity: 'warning' },
   { code: 'PROGRESSION.REVIEW_DUE', categories: ['information'], params: { trackId: S, weeks: N }, audience: 'internal', severity: 'notice' },
   { code: 'DATA.SCIENCE_REGISTRY', categories: ['information'], params: { version: S }, audience: 'internal', severity: 'info' },
+  { code: 'PLAN.WEEK_COMPOSITION', categories: ['information'], params: { rule: S, version: S, status: S, band: S, sessions: N, rotation: L, firstBy: S, swaps: L }, audience: 'internal', severity: 'info' },
+  { code: 'RULE.WEEK_COMPOSITION_UNGOVERNED', categories: ['business_hard'], params: { sessions: N, goal: S, cause: S }, audience: 'user', severity: 'error' },
   { code: 'STATE.REFERENCE_CONFLICT', categories: ['information'], params: { exerciseId: S }, audience: 'internal', severity: 'info' },
 ];
 

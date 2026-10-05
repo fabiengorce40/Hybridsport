@@ -17,9 +17,20 @@ const ACCEPTED_BASELINE = '1d37a50';
 /**
  * … SAUF la liste FERMÉE de l'évolution CORE autorisée pour C2 (empreinte à dimensions explicites, session_record v5)
  * et pour HYROX H1 (charge générique facultative hors séries, session_record v6),
- * ses tests, et l'empreinte de sources F20 de Strength qui la constate. Running et Strength `src` : aucun changement.
+ * ses tests, et l'empreinte de sources F20 de Strength qui la constate, plus le lot Strength S1 (composition hebdomadaire).
+ * Running `src` : aucun changement.
  * Toute autre modification de ces paquets échoue ici.
  */
+/**
+ * Lot Strength S1 (hors Cross-training, liste FERMÉE) : composition hebdomadaire PROPRE au moteur Strength, codes associés,
+ * et prise en compte des expositions PRÉVUES de la semaine (empreintes `planned`) dans l'alternance des groupes de choix.
+ */
+const STRENGTH_S1_CHANGES = [
+  'packages/strength/src/composition.ts',
+  'packages/strength/src/codes.ts',
+  'packages/strength/src/engine.ts',
+  'packages/strength/src/index.ts',
+];
 const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/domain/src/duplicate.ts',
   'packages/domain/src/serialization.ts',
@@ -44,6 +55,7 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/engine/tests/unit/item-load.test.ts',
   'packages/engine/tests/unit/migration.test.ts',
   'packages/strength/tests/architecture/__reports__/core-source-digest.txt',
+  ...STRENGTH_S1_CHANGES,
 ];
 
 describe('frontières', () => {
@@ -72,7 +84,7 @@ describe('frontières', () => {
     }
     const changed = diff.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
     expect(changed.filter((f) => !CT_C2_AUTHORIZED_CORE_CHANGES.includes(f))).toEqual([]);
-    expect(changed.filter((f) => f.startsWith('packages/running/') || f.startsWith('packages/strength/src/'))).toEqual([]);
+    expect(changed.filter((f) => f.startsWith('packages/running/') || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f)))).toEqual([]);
   });
 });
 

@@ -72,12 +72,12 @@ function threeWeeks(env: () => ProgrammeEnvironment = beta0Environment) {
 }
 
 describe('profil → définition de programme Beta 0', () => {
-  it('Strength : intention V0 déclarée ; Running : cadre SANS archétype, composition par le moteur ; CT / HYROX exclus', () => {
+  it('Strength et Running : cadre SANS archétype, composition par le moteur de chaque sport ; CT / HYROX exclus', () => {
     const s = athlete('hybrid');
     if (!s.profile) throw new Error('profil absent');
     const d = programmeDefinitionFromProfile({ ...s.profile, hyrox: { enabled: true }, priorities: ['hyrox', 'strength', 'running'] }, { programmeId: 'p', startWeek: W[0], horizonWeeks: 3, origin: 'profile' });
     expect(d.priorities).toEqual(['strength', 'running']);
-    expect(d.sports.map((x) => [x.sport, x.composition, x.intent.archetypeId])).toEqual([['strength', 'declared', 'str_full_body'], ['running', 'engine', undefined]]);
+    expect(d.sports.map((x) => [x.sport, x.composition, x.intent.archetypeId])).toEqual([['strength', 'engine', undefined], ['running', 'engine', undefined]]);
     expect(d.sports[1]?.sessionsPerWeek).toBe(3);
   });
 
@@ -109,14 +109,15 @@ describe('Beta 0 hybride — trois semaines glissantes (E2E)', () => {
     expect(w1.governance.map((x) => x.code)).toContain('DATA.PLANNER.CANDIDATE_VALUE_USED');
   });
 
-  it('composition Running AUTOMATIQUE : archétypes choisis par Running (autorité provisoire), Strength déclarée', () => {
+  it('composition AUTOMATIQUE : archétypes choisis par Running et par Strength (autorité provisoire)', () => {
     const w1 = week(run.s1, W[0]);
     const runs = w1.requests.filter((r) => r.sport === 'running');
     expect(runs.every((r) => r.composition?.authority === 'provisional' && r.intent?.archetypeId.startsWith('running.'))).toBe(true);
     // Première exposition à la séance clé du semi : le moteur exige un TEST récent ⇒ TEST à la place de la KEY.
     expect(runs.map((r) => r.composition?.role).sort()).toEqual(['EASY', 'EASY', 'TEST']);
     expect(runs.flatMap((r) => r.reasons.map((x) => x.code))).toContain('PLAN.RUNNING.WEEK_TEST_REPLACES_KEY');
-    expect(w1.requests.filter((r) => r.sport === 'strength').every((r) => r.intent?.archetypeId === 'str_full_body' && r.composition === undefined)).toBe(true);
+    // Strength 2 séances : bande « 1 à 3 » de la règle candidate du moteur Strength (spec 02 A1) ⇒ full body, autorité provisoire.
+    expect(w1.requests.filter((r) => r.sport === 'strength').map((r) => [r.intent?.archetypeId, r.composition?.authority])).toEqual([['str_full_body', 'provisional'], ['str_full_body', 'provisional']]);
   });
 
   it('réalisations semaine 1 : historiques Strength et Running alimentés ; TEST ⇒ référence TIME_TRIAL', () => {
@@ -186,9 +187,9 @@ describe('Beta 0 mono-sport', () => {
     expect(w.requests.map((r) => [r.status, r.composition?.authority])).toEqual([['planned', 'provisional'], ['planned', 'provisional'], ['planned', 'provisional']]);
   });
 
-  it('Strength seul : intention déclarée, aucune composition', () => {
+  it('Strength seul : composition par le moteur Strength (règle candidate, autorité provisoire)', () => {
     const s = planProgrammeCurrentWeek(started(athlete('strength')), clock(W[0]), beta0Environment());
-    expect(week(s, W[0]).requests.map((r) => [r.status, r.intent?.archetypeId, r.composition])).toEqual([['planned', 'str_full_body', undefined], ['planned', 'str_full_body', undefined]]);
+    expect(week(s, W[0]).requests.map((r) => [r.status, r.intent?.archetypeId, r.composition])).toEqual([['planned', 'str_full_body', { authority: 'provisional', role: 'ROTATION' }], ['planned', 'str_full_body', { authority: 'provisional', role: 'ROTATION' }]]);
   });
 });
 
@@ -206,6 +207,10 @@ describe('autorité de l’environnement : simulation ≠ production', () => {
     const runs = w.requests.filter((r) => r.sport === 'running');
     expect(runs.every((r) => r.status === 'unplaced' && r.category === 'governance_blocked')).toBe(true);
     expect(runs.flatMap((r) => r.reasons.map((x) => x.code))).toContain('RULE.PLANNER.COMPOSITION_UNRESOLVED');
+    // Strength : règle de composition CANDIDATE jamais résolue en PRODUCTION ⇒ refus gouvernance (aucun split inventé).
+    const strength = w.requests.filter((r) => r.sport === 'strength');
+    expect(strength.every((r) => r.status === 'unplaced' && r.category === 'governance_blocked')).toBe(true);
+    expect(strength.flatMap((r) => r.reasons.map((x) => [x.code, x.params.cause]))).toContainEqual(['RULE.WEEK_COMPOSITION_UNGOVERNED', 'rule_not_approved']);
     expect(w.requests.flatMap((r) => r.reasons.map((x) => x.code))).not.toContain('RULE.RUNNING.CANDIDATE_VALUE_USED');
     expect(w.governance.map((x) => x.code)).not.toContain('DATA.PLANNER.CANDIDATE_VALUE_USED');
     const view = selectBeta0Week(s, W[0]);

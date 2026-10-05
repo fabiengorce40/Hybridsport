@@ -6,7 +6,9 @@
  *     hebdomadaire est demandée au MOTEUR (`composition: 'engine'`) ;
  *   - le PLANIFICATEUR place les séances dans les disponibilités, vérifie l'interférence, appelle les moteurs ;
  *   - RUNNING compose sa semaine (§R : KEY / LONG / TEST / EASY) sur les jours placés ;
- *   - STRENGTH reste auteur de ses séances (archétype V0 déclaré : aucun choix de split gouverné n'existe).
+ *   - STRENGTH compose sa semaine (archétype de chaque séance, `composeStrengthWeek`) sur les jours placés, avec la règle
+ *     CANDIDATE tirée de la spec Strength 02 §5 (non approuvée : autorité `provisional`, refusée en PRODUCTION) ; chaque
+ *     séance connaît les séances Strength placées avant elle dans la semaine (expositions PRÉVUES).
  *
  * Environnement EXPÉRIMENTAL (autorité `beta0_experimental`, mode CANDIDATE) : les seules valeurs disponibles sont des
  * fixtures de test EXISTANTES, réutilisées sans modification et déclarées SIMULATION_ONLY (identifiants listés dans
@@ -16,7 +18,7 @@
 import { CURRENT_RUNNING_GOVERNANCE, ARCHETYPE_INTENT_IDS, createRunningEngine, withProductDecisions } from '@hybridsport/running';
 import type { RunningGovernance } from '@hybridsport/running';
 import { requirePlannerProvenance } from '@hybridsport/planner';
-import { StrengthEngine, findArchetype, readStrengthParams } from '@hybridsport/strength';
+import { StrengthEngine, STRENGTH_WEEKLY_COMPOSITION_CANDIDATE, goalKey, readStrengthParams } from '@hybridsport/strength';
 import type { SportEngine } from '@hybridsport/engine';
 import { adherenceOf, weekIndexOf, weekStartAt, weekStatus, withinProgramme } from '@hybridsport/programme';
 import type { Adherence, ProgrammeDefinition, ProgrammeDefinitionInput, ProgrammeResult, WeekStatus } from '@hybridsport/programme';
@@ -24,7 +26,7 @@ import { plannerGovernance, withDemand } from '../../planner/tests/simulation.js
 import { AppError } from './errors.js';
 import { addDays, daysBetween, weekStartOf } from './dates.js';
 import type { AppState, EnvironmentAuthority, PersistedWeek, Profile, Reason, Sport } from './model.js';
-import { STIMULUS_BY_GOAL, STRENGTH_ARCHETYPE } from './planner.js';
+import { STIMULUS_BY_GOAL } from './planner.js';
 import type { ProgrammeEnvironment } from './programme.js';
 import { runningContent, strengthContent } from './provisional-content.js';
 
@@ -42,7 +44,9 @@ export const SIMULATION_ONLY = 'SIMULATION_ONLY — Beta 0 expérimental : valeu
  *     par la provenance obligatoire du planificateur ;
  *   - moteur Running en simulation (comme V0).
  * Les règles de composition Running (V26, V10, V11) sont les valeurs CANDIDATES de la gouvernance Running existante
- * (non approuvées, tracées CANDIDATE_VALUE_USED, non résolues en PRODUCTION).
+ * (non approuvées, tracées CANDIDATE_VALUE_USED, non résolues en PRODUCTION). La règle de composition Strength est la
+ * règle CANDIDATE du moteur Strength (`STRENGTH_WEEKLY_COMPOSITION_CANDIDATE`, citation de la spec 02 §5 ; tracée
+ * PLAN.WEEK_COMPOSITION avec son statut, autorité `provisional`, non résolue en PRODUCTION).
  */
 export const BETA0_SIMULATION = [
   'planner.interference.structureWindows', 'demand.doseNormalization', 'running.technical.GLOBAL_PLANNER_INTEGRATION', 'running.engine.simulation',
@@ -66,7 +70,7 @@ export function beta0Environment(): ProgrammeEnvironment {
   return {
     mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: [...BETA0_SIMULATION],
     governance: plannerGovernance(undefined, simulationMark),
-    strength: { engine: StrengthEngine as SportEngine<unknown>, content: withDemand(strengthContent(), undefined, simulationMark) },
+    strength: { engine: StrengthEngine as SportEngine<unknown>, content: withDemand(strengthContent(), undefined, simulationMark), composition: { rule: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } },
     running: {
       engine: requirePlannerProvenance(createRunningEngine({ governance: g, simulation: true }) as SportEngine<unknown>),
       content: withDemand(runningContent(), undefined, simulationMark),
@@ -94,8 +98,8 @@ export interface ProgrammeFromProfileOptions {
 
 /**
  * Définition de programme Beta 0 issue des seules DÉCLARATIONS du profil (sports activés, ordre de priorité, objectif,
- * nombre de séances) : Strength = intention V0 déclarée (archétype `str_full_body`, stimulus par objectif) ; Running =
- * cadre d'intention V0 SANS archétype, composition par le moteur. Évaluation Running : la séance TEST du moteur
+ * nombre de séances) : Strength = cadre d'intention SANS archétype (stimulus par objectif), composition par le MOTEUR
+ * Strength ; Running = cadre d'intention V0 SANS archétype, composition par le moteur. Évaluation Running : la séance TEST du moteur
  * (demandée seulement par une décision gouvernée REASSESS). Aucun sport hors Beta 0, aucune phase inférée.
  */
 export function programmeDefinitionFromProfile(p: Profile, o: ProgrammeFromProfileOptions): ProgrammeDefinitionInput {
@@ -104,10 +108,14 @@ export function programmeDefinitionFromProfile(p: Profile, o: ProgrammeFromProfi
   const runningFrame = { stimulus: 'stim.running.aerobic', objective: 'objective.running.base', phase: 'phase.running.base', toleranceProfile: 'fixed_time' };
   const sports = enabled.map((s) => {
     if (s === 'strength') {
-      const a = findArchetype(readStrengthParams(strengthContent().ruleset).values, STRENGTH_ARCHETYPE);
-      if (!a) throw new AppError('BETA0_STRENGTH_ARCHETYPE_MISSING');
+      // Profil de tolérance du cadre : celui, UNIQUE, des archétypes Strength admis pour l'objectif (donnée du ruleset) ;
+      // chaque séance composée porte ensuite celui de son archétype. Aucun archétype choisi ici.
+      const gk = goalKey({ goal: p.strength.goal });
+      const tolerances = [...new Set(readStrengthParams(strengthContent().ruleset).values['strength.archetypes'].filter((a) => a.goals.includes(gk)).map((a) => a.toleranceProfile))];
+      const toleranceProfile = tolerances.length === 1 ? tolerances[0] : undefined;
+      if (toleranceProfile === undefined) throw new AppError('BETA0_STRENGTH_ARCHETYPE_MISSING');
       const stimulus = STIMULUS_BY_GOAL[p.strength.goal];
-      return { sport: s, sessionsPerWeek: p.strength.sessionsPerWeek, composition: 'declared' as const, intent: { archetypeId: STRENGTH_ARCHETYPE, stimulus, objective: `objective.${stimulus}`, phase: 'phase.accumulation', toleranceProfile: a.toleranceProfile } };
+      return { sport: s, sessionsPerWeek: p.strength.sessionsPerWeek, composition: 'engine' as const, intent: { stimulus, objective: `objective.${stimulus}`, phase: 'phase.accumulation', toleranceProfile } };
     }
     return {
       sport: s, sessionsPerWeek: p.running.sessionsPerWeek, composition: 'engine' as const, intent: runningFrame,

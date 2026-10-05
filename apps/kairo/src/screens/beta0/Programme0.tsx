@@ -34,7 +34,7 @@ export function Programme0() {
           <div key={sp} className="card">
             <div className="row between"><h3>{sportName(sp)}</h3>{d.priorities.length > 1 && <span className="badge neutral">Priorité {String(k + 1)}</span>}</div>
             <div className="small muted">Objectif : {goal ? goalText(goal) : '—'}{goal && 'targetDate' in goal && goal.targetDate ? ` · le ${formatDate(goal.targetDate)}` : ''}</div>
-            <div className="small muted">{String(plan?.sessionsPerWeek ?? 0)} séance{(plan?.sessionsPerWeek ?? 0) > 1 ? 's' : ''} par semaine{plan?.composition === 'engine' ? ' · composition de la semaine par le moteur Course' : ''}</div>
+            <div className="small muted">{String(plan?.sessionsPerWeek ?? 0)} séance{(plan?.sessionsPerWeek ?? 0) > 1 ? 's' : ''} par semaine{plan?.composition === 'engine' ? ` · composition de la semaine par le moteur ${sportName(sp)}` : ''}</div>
           </div>
         );
       })}

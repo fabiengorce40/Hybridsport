@@ -77,10 +77,10 @@ profil → programmeDefinitionFromProfile → Programme Engine → Global Planne
 
 | Acteur | Décide | Ne décide jamais |
 |---|---|---|
-| Programme | nombre de séances par sport, cadre d'intention (stimulus, objectif, phase, tolérance), priorité, évaluation déclarée | archétype Running (`composition: 'engine'`) |
+| Programme | nombre de séances par sport, cadre d'intention (stimulus, objectif, phase, tolérance), priorité, évaluation déclarée | archétype Running ou Strength (`composition: 'engine'`) |
 | Global Planner | jours, ordre, une séance par jour, interférence, moteur appelé, régénération après composition | rôle ou archétype d'une séance |
 | Running | composition hebdomadaire `composeRunningWeek` (§R : KEY / LONG / TEST / EASY), sonde = génération réelle, règles V26 / V10 / V11 | jours attribués |
-| Strength | contenu de ses séances | — (archétype V0 `str_full_body` déclaré : aucun choix de split gouverné n'existe) |
+| Strength | composition hebdomadaire `composeStrengthWeek` (archétype de chaque séance, règle CANDIDATE tirée de la spec 02 §5 : voir `STRENGTH-WEEK-S1.md`) et contenu de ses séances, en connaissant les séances Strength prévues plus tôt dans la semaine | jours attribués |
 
 ### Passe de composition (planificateur)
 
@@ -136,7 +136,7 @@ Le statut glissant y est calculé sans horizon d'avance gouverné : seule la sem
   - aucune double séance.
 - **Composition sur les jours réservés** : Running compose sur les jours que le planificateur lui a attribués. Si la séance clé exige un TEST trop long pour ces créneaux, Running se replie (traces `WEEK_KEY_FALLBACK`) ; le planificateur ne déplace pas les jours pour la composition.
 - **Adaptation** : aucune politique d'adaptation en Beta 0. Les décisions de clôture sont `BLOCKED` : ni progression ni réévaluation automatique, seulement la composition du moteur à partir de l'historique.
-- **Strength** : archétype `str_full_body` seulement.
+- **Strength** : composition par la règle CANDIDATE du moteur Strength (1–3 séances : full body ; 4 : haut / bas ×2 ; 5 et plus : non planifiée). Aucune règle de récupération same-discipline : deux séances Strength proches sont signalées, jamais espacées (`STRENGTH-WEEK-S1.md`).
 
 - L'UI est raccordée au chemin Beta 0 (voir `BETA-0-UI.md`) ; le chemin V0 ne sert plus qu'aux profils antérieurs sans programme.
 - Aucune correction d'exécution (refus explicite d'une seconde saisie).

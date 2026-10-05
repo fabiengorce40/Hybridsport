@@ -216,7 +216,15 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
     const req = params['strength.needs'][need]?.requirement;
     if (!req) return 0;
     const probe: SlotInstance = { def: { id: need, blockId: '', need, role: 'accessory', status: 'optional', count: { min: 1, max: 1 }, anchorable: false, trackable: false }, requirement: req };
-    const last = ctx.recentExposures.filter((x) => { const e = env.catalog.exercise(x.exerciseId); return e !== undefined && firstFailingFilter(e, probe, env, { technicalCount: 0 }) !== 'F2_slot'; }).map((x) => Date.parse(x.at));
+    const covers = (exerciseId: string): boolean => { const e = env.catalog.exercise(exerciseId); return e !== undefined && firstFailingFilter(e, probe, env, { technicalCount: 0 }) !== 'F2_slot'; };
+    // Exposition RÉALISÉE : séries exécutées (`recentExposures`, seule source du réalisé). Exposition PRÉVUE : séances
+    // de la semaine planifiées plus tôt (empreintes de statut `planned` transmises par le planificateur) : la séance
+    // suivante connaît l'accent des précédentes (alternance « d'une séance à l'autre », spec 02 A1), sans qu'une
+    // séance prévue soit jamais tenue pour réalisée.
+    const last = [
+      ...ctx.recentExposures.filter((x) => covers(x.exerciseId)).map((x) => Date.parse(x.at)),
+      ...input.history.filter((h) => h.status === 'planned' && h.fingerprint.exercises.some(covers)).map((h) => Date.parse(h.at)),
+    ];
     return last.length === 0 ? 0 : Math.max(...last);
   };
 

@@ -17,7 +17,8 @@ import { runHyroxH1 } from '@hybridsport/hyrox';
 import type { HyroxContextInput, HyroxEngine } from '@hybridsport/hyrox';
 import { ARCHETYPE_INTENT_IDS, archetypeFromIntentId, composeRunningWeek, isV1Archetype, parseRunningContext, resolveParameter } from '@hybridsport/running';
 import type { RunningContextInput, RunningParameter } from '@hybridsport/running';
-import type { StrengthContextInput } from '@hybridsport/strength';
+import { composeStrengthWeek, readStrengthParams, sessionPlannedHardSets } from '@hybridsport/strength';
+import type { StrengthCompositionRule, StrengthContextInput } from '@hybridsport/strength';
 import { GP_CODES, gpReasons } from './codes.js';
 import type { DeclaredIntent, DemandOutcome, NeighbourContext, PlannerClock, PlannerMode, PlannerSport } from './model.js';
 import type { NoValidProposalInput } from '@hybridsport/domain';
@@ -40,6 +41,20 @@ export interface SlotRequest {
   readonly station?: string;
   /** Contexte voisin (seconde passe), pour les moteurs qui le consomment. */
   readonly neighbours?: NeighbourContext;
+  /**
+   * Séances de la MÊME discipline déjà placées plus tôt dans la semaine (génération séquentielle, ordre des dates) :
+   * expositions PRÉVUES, jamais réalisées. Consommées par les moteurs qui le déclarent (`consumesWeekSessions`).
+   */
+  readonly weekSessions?: readonly WeekSession[];
+}
+
+/** Séance de la même discipline placée plus tôt dans la semaine (exposition PRÉVUE). */
+export interface WeekSession {
+  readonly requestId: string;
+  readonly date: string;
+  readonly archetypeId: string;
+  readonly session: SessionDraft;
+  readonly fingerprint?: SessionFingerprint;
 }
 
 export type PortOutcome =
@@ -59,10 +74,11 @@ export type CompositionBase = Omit<DeclaredIntent, 'archetypeId'>;
 export interface SportComposition {
   /**
    * Archétype du moteur utilisé pour RÉSERVER les jours (première passe, interférence) avant la composition ; c'est
-   * l'archétype de complément de la règle du moteur. La séance définitive est régénérée après composition.
+   * l'archétype de complément de la règle du moteur (ou, selon la fréquence déclarée, celui que la règle du moteur
+   * attribue en premier). La séance définitive est régénérée après composition.
    */
-  readonly placementArchetypeId: string;
-  compose(input: { readonly days: readonly CompositionDay[]; readonly base: CompositionBase; readonly hybrid: boolean; readonly mode: PlannerMode }): CompositionResult;
+  readonly placementArchetypeId: string | ((weeklySessions: number) => string | undefined);
+  compose(input: { readonly days: readonly CompositionDay[]; readonly base: CompositionBase; readonly hybrid: boolean; readonly mode: PlannerMode; readonly weeklySessions: number }): CompositionResult;
 }
 
 export interface SportPort {
@@ -72,6 +88,8 @@ export interface SportPort {
   readonly discipline: Discipline;
   /** Le moteur consomme-t-il un contexte voisin (seconde passe) ? */
   readonly consumesNeighbours: boolean;
+  /** Le moteur consomme-t-il les séances de sa discipline placées plus tôt dans la semaine (`SlotRequest.weekSessions`) ? */
+  readonly consumesWeekSessions?: boolean;
   generate(slot: SlotRequest): PortOutcome;
   /** Structures sollicitées (dérivées du catalogue par la table GOUVERNÉE du ruleset de la discipline). */
   structures(session: SessionDraft): StructuresResult;
@@ -97,6 +115,8 @@ export interface EnginePortDefinition<C> {
   readonly run?: (engine: SportEngine<C>, request: SportSessionRequest, ctx: EngineContext<LoadedRuleset, LoadedCatalog>) => CorePipelineOutcome;
   /** Notes du planificateur transmises dans l'intention (ex. provenance). */
   readonly plannerNotes?: readonly string[];
+  /** Entrées d'historique propres au créneau (ex. séances PRÉVUES plus tôt dans la semaine, statut `planned`). */
+  readonly extraHistory?: (slot: SlotRequest) => readonly FingerprintHistoryEntry[];
 }
 
 /** Blocs d'entraînement (hors échauffement et retour au calme) : ceux qui portent la sollicitation de la séance. */
@@ -157,7 +177,7 @@ export function createEnginePort<C>(def: EnginePortDefinition<C>): SportPort {
           availableTimeS, targetDurationS: targetFromAvailable(availableTimeS, readToleranceProfile(def.content.ruleset, i.toleranceProfile)), repetitionIntents: [], plannerNotes: [...(def.plannerNotes ?? [])],
         },
         profile: def.profile, state: def.state,
-        history: def.history.filter((h) => h.at < now),
+        history: [...def.history, ...(def.extraHistory?.(slot) ?? [])].filter((h) => h.at < now),
         disciplineContext: def.context(slot),
       };
       const ctx: EngineContext<LoadedRuleset, LoadedCatalog> = { now, timezone: def.clock.timezone, seed: slot.seed, engineVersion: ENGINE_VERSION, ruleset: def.content.ruleset, catalog: def.content.catalog };
@@ -168,7 +188,7 @@ export function createEnginePort<C>(def: EnginePortDefinition<C>): SportPort {
   };
 }
 
-type Base<C> = Omit<EnginePortDefinition<C>, 'sport' | 'discipline' | 'context' | 'run' | 'engine' | 'consumesNeighbours' | 'plannerNotes'>;
+type Base<C> = Omit<EnginePortDefinition<C>, 'sport' | 'discipline' | 'context' | 'run' | 'engine' | 'consumesNeighbours' | 'plannerNotes' | 'extraHistory'>;
 
 /**
  * Provenance du planificateur global : note portée par l'intention de toute séance demandée PAR LE PLANIFICATEUR
@@ -198,26 +218,64 @@ const resolve = <T>(c: Ctx<T>, slot: SlotRequest): T => (typeof c === 'function'
 /**
  * Plomberie de CONTRAT par discipline (champs définis par chaque moteur, aucune décision sportive) :
  * - Strength : voisines d'autres disciplines transmises avec leur profil DÉRIVÉ ; semaine connue si toutes les
- *   voisines sont connues (sinon hypothèse prudente du moteur, inchangée) ;
+ *   voisines sont connues (sinon hypothèse prudente du moteur, inchangée) ; séances Strength placées plus tôt dans la
+ *   semaine transmises comme expositions PRÉVUES (`week.otherStrengthSessions`, `done: false` ; empreintes de statut
+ *   `planned` dans l'historique) ; composition hebdomadaire : celle du MOTEUR Strength (`composeStrengthWeek`) ;
  * - Running, Cross-training, HYROX : `population.hybrid` transmis tel quel ; HYROX : station du programme.
  */
-export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput> }): SportPort {
-  return createEnginePort({
-    ...def, sport: 'strength', discipline: 'strength', consumesNeighbours: true,
-    context: (slot) => {
-      const base = resolve(def.baseContext, slot);
-      if (!slot.hybrid) return base;
-      const n = slot.neighbours;
-      return {
-        ...base,
-        week: {
-          ...base.week,
-          neighbors: [...base.week.neighbors, ...(n?.neighbours ?? []).map((x) => ({ discipline: x.discipline, stimulus: x.stimulus, priority: 'standard' as const, hoursFromThisSession: x.hoursFromThisSession, demand: { ...x.demand } }))],
-          known: base.week.known && n?.known === true,
-        },
-      };
-    },
+export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] } }): SportPort {
+  const params = () => readStrengthParams(def.content.ruleset).values;
+  const context = (slot: SlotRequest): StrengthContextInput => {
+    const base = resolve(def.baseContext, slot);
+    const earlier = slot.weekSessions ?? [];
+    const withWeek: StrengthContextInput = earlier.length === 0 ? base : {
+      ...base,
+      week: {
+        ...base.week,
+        otherStrengthSessions: [...base.week.otherStrengthSessions, ...earlier.map((w) => ({ intentId: `plan.${w.requestId}`, archetypeId: w.archetypeId, plannedHardSets: sessionPlannedHardSets(w.session, params(), def.content.catalog), done: false }))],
+      },
+    };
+    if (!slot.hybrid) return withWeek;
+    const n = slot.neighbours;
+    return {
+      ...withWeek,
+      week: {
+        ...withWeek.week,
+        neighbors: [...withWeek.week.neighbors, ...(n?.neighbours ?? []).map((x) => ({ discipline: x.discipline as StrengthContextInput['week']['neighbors'][number]['discipline'], stimulus: x.stimulus, priority: 'standard' as const, hoursFromThisSession: x.hoursFromThisSession, demand: { ...x.demand } }))],
+        known: withWeek.week.known && n?.known === true,
+      },
+    };
+  };
+  const port = createEnginePort({
+    ...def, sport: 'strength', discipline: 'strength', consumesNeighbours: true, context,
+    extraHistory: (slot) => (slot.weekSessions ?? []).flatMap((w) => (w.fingerprint ? [{ fingerprint: w.fingerprint, at: def.clock.instantOf(w.date), status: 'planned' as const, repetitionIntents: [] }] : [])),
   });
+  const comp = def.composition;
+  const withWeek = { ...port, consumesWeekSessions: true };
+  if (!comp) return withWeek;
+  // Objectif du PROGRAMME (contrat de contexte Strength `goal.primary`), niveau du profil CORE, fréquence déclarée.
+  const run = (days: readonly CompositionDay[], weeklySessions: number, mode: PlannerMode) => {
+    return composeStrengthWeek({
+      params: params(), rule: comp.rule, mode, goal: comp.goal, level: def.profile.athleteLevel, weeklySessions,
+      days: days.map((d) => ({ date: d.date, availableS: d.availableMinutes * S_PER_MIN, ...(d.locked ? { lockedArchetypeId: d.locked.archetypeId } : {}) })),
+    });
+  };
+  return {
+    ...withWeek,
+    composition: {
+      // Réservation des jours : archétype que la règle du moteur attribue en premier pour la fréquence déclarée.
+      placementArchetypeId: (weeklySessions) => { const r = run([], weeklySessions, 'CANDIDATE'); return r.status === 'composed' ? r.rotation[0] : undefined; },
+      compose({ days, base, mode, weeklySessions }) {
+        const r = run(days, weeklySessions, mode);
+        if (r.status === 'unresolved') return { status: 'unresolved', reasons: [gpReasons.emit(GP_CODES.COMPOSITION_UNRESOLVED, { sport: 'strength', mode }), ...r.reasons] };
+        const byDate = new Map(days.map((d) => [d.date, d]));
+        return {
+          status: 'composed', authority: r.authority, reasons: r.reasons,
+          days: r.slots.map((sl) => ({ date: sl.date, role: sl.role, intent: sl.role === 'LOCKED' ? (byDate.get(sl.date)?.locked ?? { ...base, archetypeId: sl.archetypeId }) : { ...base, archetypeId: sl.archetypeId, toleranceProfile: sl.toleranceProfile } })),
+        };
+      },
+    },
+  };
 }
 
 /**

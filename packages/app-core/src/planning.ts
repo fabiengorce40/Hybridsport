@@ -9,6 +9,7 @@
 import { toEnvelope } from '@hybridsport/engine';
 import type { ISODateTime, ReasonCode, SessionDraft } from '@hybridsport/domain';
 import { findArchetype, readStrengthParams, StrengthEngine } from '@hybridsport/strength';
+import type { StrengthCompositionRule } from '@hybridsport/strength';
 import { crossTrainingPort, hyroxPort, planMultisportWeek, runningPort, strengthPort } from '@hybridsport/planner';
 import type { CrossTrainingEngine, HyroxEngine, PlannedWeek, PlannerClock, PlannerMode, SportPorts } from '@hybridsport/planner';
 import type { LoadedRuleset, SportEngine } from '@hybridsport/engine';
@@ -34,7 +35,11 @@ export interface PlannerEnvironment {
   readonly simulation?: readonly string[];
   /** Ruleset de gouvernance du planificateur ; absent ⇒ décisions d'interférence fail-closed. */
   readonly governance?: LoadedRuleset;
-  readonly strength?: { readonly engine: SportEngine<unknown>; readonly content: Content };
+  /**
+   * `composition` : règle de composition hebdomadaire du MOTEUR Strength (archétype de chaque séance). Absente : intention
+   * déclarée exécutée telle quelle (chemin multisport existant).
+   */
+  readonly strength?: { readonly engine: SportEngine<unknown>; readonly content: Content; readonly composition?: { readonly rule: StrengthCompositionRule | undefined } };
   readonly running?: { readonly engine: SportEngine<unknown>; readonly content: Content; readonly composition?: { readonly parameters: readonly RunningParameter[] } };
   readonly crosstraining?: { readonly engine: CrossTrainingEngine; readonly content: Content };
   readonly hyrox?: { readonly engine: HyroxEngine; readonly content: Content };
@@ -106,7 +111,7 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
   const ports: { -readonly [K in keyof SportPorts]: SportPorts[K] } = {};
   if (env.strength) {
     const content = env.strength.content as ContentSource;
-    ports.strength = strengthPort({ engine: env.strength.engine, content, profile, state: state0, history: state.fingerprints.strength, clock, baseContext: (slot) => { const b = strengthContextAt(state, p, slot.date, content); return goals.strength ? { ...b, goal: { primary: { goal: goals.strength } } } : b; } });
+    ports.strength = strengthPort({ engine: env.strength.engine, content, profile, state: state0, history: state.fingerprints.strength, clock, ...(env.strength.composition ? { composition: { rule: env.strength.composition.rule, goal: { goal: goals.strength ?? p.strength.goal } } } : {}), baseContext: (slot) => { const b = strengthContextAt(state, p, slot.date, content); return goals.strength ? { ...b, goal: { primary: { goal: goals.strength } } } : b; } });
   }
   if (env.running) {
     ports.running = runningPort({

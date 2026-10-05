@@ -5,7 +5,7 @@
 import { RUNNING_ARCHETYPE_LABELS, RUNNING_ROLE_LABELS, SPORT_LABELS } from '@hybridsport/app-core';
 import type { SessionView, SessionViewStatus } from '@hybridsport/app-core';
 
-const STRENGTH_TITLES: Readonly<Record<string, string>> = { str_full_body: 'Full body' };
+const STRENGTH_TITLES: Readonly<Record<string, string>> = { str_full_body: 'Full body', str_upper: 'Haut du corps', str_lower: 'Bas du corps', str_support: 'Renforcement' };
 
 export const SPORT_SHORT: Readonly<Record<string, string>> = { strength: 'Musculation', running: 'Course' };
 export const sportName = (s: string): string => SPORT_SHORT[s] ?? SPORT_LABELS[s as 'strength'] ?? 'Séance';
@@ -46,10 +46,13 @@ export const NOT_PLANNED_MESSAGES: Readonly<Record<string, string>> = {
 const REASON_HINTS: Readonly<Record<string, string>> = {
   'DOSE.RUNNING.DOSE_ANCHOR_UNAVAILABLE': 'Enregistrez une course réalisée : la course reprend ce que vous avez réellement fait.',
   'SCOPE.RUNNING.NOVICE_ENTRY_UNRESOLVED': 'La séance de départ pour débutant en course n’est pas encore validée.',
+  // Composition Strength non gouvernée (Beta 0 : fréquence hors des bandes de la règle candidate du moteur Strength).
+  'strength:RULE.PLANNER.COMPOSITION_UNRESOLVED': 'Aucune règle validée ne répartit encore ce nombre de séances de musculation dans la semaine : réduisez la fréquence de musculation.',
 };
 export function notPlannedText(v: SessionView): string {
   const base = NOT_PLANNED_MESSAGES[v.notPlanned?.category ?? ''] ?? 'Cette séance n’a pas pu être planifiée.';
-  const hint = v.notPlanned?.reason ? REASON_HINTS[v.notPlanned.reason.code] : undefined;
+  const code = v.notPlanned?.reason?.code;
+  const hint = code ? REASON_HINTS[`${v.sport}:${code}`] ?? REASON_HINTS[code] : undefined;
   return hint ? `${base} ${hint}` : base;
 }
 

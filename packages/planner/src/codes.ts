@@ -43,6 +43,10 @@ export const GP_CODES = {
   PROVENANCE_REQUIRED: 'SCOPE.PLANNER.PROVENANCE_REQUIRED',
   /** Jour sans séance : indisponible (0 min) ou aucune demande restante. */
   DAY_EMPTY: 'PLAN.PLANNER.DAY_EMPTY',
+  /** Séances de la même discipline placées plus tôt dans la semaine, transmises au moteur (expositions PRÉVUES). */
+  WEEK_EXPOSURES: 'PLAN.PLANNER.WEEK_EXPOSURES',
+  /** Deux séances d'une même discipline sollicitent les mêmes structures : aucune règle same-discipline gouvernée (signalé, jamais bloqué). */
+  SAME_DISCIPLINE_UNGOVERNED: 'PLAN.PLANNER.SAME_DISCIPLINE_UNGOVERNED',
 } as const;
 
 export const GP_REASON_CODES: readonly ReasonCodeDefinition[] = [
@@ -62,6 +66,8 @@ export const GP_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: GP_CODES.COMPOSITION_APPLIED, categories: ['information'], params: { sport: S, authority: S, role: S, archetypeId: S }, audience: 'internal', severity: 'info' },
   { code: GP_CODES.COMPOSITION_UNRESOLVED, categories: ['business_hard'], params: { sport: S, mode: S }, audience: 'user', severity: 'error' },
   { code: GP_CODES.PROVENANCE_REQUIRED, categories: ['business_hard'], params: { engineId: S }, audience: 'internal', severity: 'error' },
+  { code: GP_CODES.WEEK_EXPOSURES, categories: ['information'], params: { sport: S, requestId: S, planned: N, sessions: L }, audience: 'internal', severity: 'info' },
+  { code: GP_CODES.SAME_DISCIPLINE_UNGOVERNED, categories: ['information'], params: { sport: S, requestId: S, date: S, withRequestId: S, withDate: S, gapHours: N, structures: L }, audience: 'internal', severity: 'notice' },
   { code: GP_CODES.DAY_EMPTY, categories: ['information'], params: { date: S, cause: S }, audience: 'internal', severity: 'info' },
 ];
 
