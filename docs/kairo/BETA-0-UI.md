@@ -29,7 +29,13 @@ UI → app-core Beta 0 (beta0-app.ts) → Programme Engine → Global Planner �
 - `finishProgrammeSession` (→ `recordSessionExecution`) ;
 - `recreateBeta0Programme`.
 
-**Lectures app-core** : `selectBeta0Week`, `selectProgrammeSession`, `selectHistory`, `programmeWeekIndex`.
+**Lectures app-core** : `selectBeta0Week`, `selectProgrammeSession`, `selectHistory`, `programmeWeekIndex`, `programmeStatusAt`.
+
+**Jours canoniques** : `selectBeta0Week(...).days` donne les 7 jours de la semaine. Chaque jour ne contient que les séances **réellement placées**, quel que soit leur état (prévue, réalisée, adaptée, arrêtée, manquée).
+
+- Une demande non planifiée a `date: null`. Le jour essayé est seulement une information : `notPlanned.triedDate`.
+- Le mini-calendrier de l'Accueil, la progression « x / n séances », la prochaine séance et le Planning dérivent tous de `days`. Aucun écran ne reconstruit les jours lui-même.
+- Le test de cohérence vérifie que les jours marqués sur l'Accueil sont exactement les jours avec séance de `selectBeta0Week`.
 
 ### Chemin V0
 

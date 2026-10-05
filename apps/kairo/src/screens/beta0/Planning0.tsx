@@ -1,4 +1,4 @@
-import { addDays, weekdayIndex } from '@hybridsport/app-core';
+import { weekdayIndex } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate, Notice, weekdayShort } from '../../ui.js';
 import { ExperimentalBadge, SessionCard0, weekOf } from './common.js';
@@ -18,8 +18,7 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
         <>
           <p className="small muted">Semaine {week.weekIndex + 1}{week.programme.targetDate ? ` · objectif le ${formatDate(week.programme.targetDate)}` : ''} · du {Number(week.weekStart.slice(8))}/{week.weekStart.slice(5, 7)}. Une séance par jour au plus.</p>
           <div className="week">
-            {Array.from({ length: 7 }, (_, i) => addDays(week.weekStart, i)).map((d) => {
-              const s = week.items.filter((x) => x.date === d && x.display !== 'not_planned');
+            {week.days.map(({ date: d, sessions: s }) => {
               const wd = weekdayIndex(d);
               return (
                 <div key={d} className={`day ${d === today ? 'today' : ''}`}>

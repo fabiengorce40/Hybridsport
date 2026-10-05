@@ -84,6 +84,36 @@ describe('durée du programme : objectif daté ou programme continu, horizon gli
   });
 });
 
+describe('jours canoniques de la semaine (selectBeta0Week.days)', () => {
+  // TEST_ONLY : mardi disponible 30 min ⇒ la 2e course y est essayée puis refusée (créneau trop court).
+  const weekWithRefusedTuesday = () => createBeta0Programme(emptyState(), { ...input('hybrid'), availability: [60, 30, 60, 0, 0, 90, 0] }, clock(W1), { lastRun: LAST_RUN });
+  const TUE = addDays(W1, 1);
+  const marked = (s: AppState, today: string, i?: number) => (selectBeta0Week(s, today, i)?.days ?? []).filter((d) => d.sessions.length > 0).map((d) => d.date);
+
+  it('seuls les jours portant une séance RÉELLEMENT placée ; une demande refusée n’occupe aucun jour (jour essayé = information)', () => {
+    const s = weekWithRefusedTuesday();
+    const v = selectBeta0Week(s, W1);
+    expect(v?.days.map((d) => d.date)).toEqual(Array.from({ length: 7 }, (_, k) => addDays(W1, k)));
+    expect(marked(s, W1)).toEqual([W1, addDays(W1, 2), addDays(W1, 5)]);
+    expect(v?.days.find((d) => d.date === TUE)?.sessions).toEqual([]);
+    const refused = v?.sessions.find((x) => x.status === 'not_planned');
+    expect(refused).toMatchObject({ sport: 'running', date: null, notPlanned: { category: 'slot_unavailable', triedDate: TUE } });
+  });
+
+  it('états réalisée, adaptée, manquée : la séance reste sur son jour avec son état', () => {
+    let s = weekWithRefusedTuesday();
+    const v = selectBeta0Week(s, W1);
+    const on = (date: string) => v?.days.find((d) => d.date === date)?.sessions[0]?.requestId ?? '';
+    s = finishProgrammeSession(s, at(W1, '19:00:00'), { requestId: on(W1), completion: 'modified', pain: false });
+    s = finishProgrammeSession(s, at(addDays(W1, 5), '19:00:00'), { requestId: on(addDays(W1, 5)), completion: 'completed_as_prescribed', pain: false, run: { realizedDurationS: 1800 } });
+    s = ensureBeta0Week(s, clock(W2));
+    const past = selectBeta0Week(s, W2, 0);
+    expect(past?.days.filter((d) => d.sessions.length > 0).map((d) => [d.date, d.sessions[0]?.status])).toEqual([
+      [W1, 'modified'], [addDays(W1, 2), 'missed'], [addDays(W1, 5), 'completed_as_prescribed'],
+    ]);
+  });
+});
+
 describe('séance Strength en cours', () => {
   it('séries réelles saisies, chrono démarré sur le repos prescrit ; reprise après rechargement ; aucune série supposée faite', () => {
     let s = create();

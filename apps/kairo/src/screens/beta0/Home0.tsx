@@ -1,8 +1,9 @@
-import { addDays, weekdayIndex } from '@hybridsport/app-core';
+import { programmeStatusAt, weekdayIndex } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate, Notice, weekdayShort } from '../../ui.js';
-import { isDone } from '../../present.js';
-import { nextOf, SessionCard0, weekOf } from './common.js';
+import { isDone, sportName, STATUS_LABELS } from '../../present.js';
+import { nextOf, placedOf, SessionCard0, weekOf } from './common.js';
+import type { DayItemView } from './common.js';
 
 export function PainPause({ onGo }: { onGo: () => void }) {
   return (
@@ -21,22 +22,27 @@ export function NoWeek({ today }: { today: string }) {
   const { state } = useStore();
   const ps = state.programmeState;
   if (!ps) return null;
-  const h = ps.definition.horizonWeeks;
-  const ended = h !== undefined && today >= addDays(ps.definition.startWeek, h * 7);
-  const text = today < ps.definition.startWeek ? `Votre programme commence le ${formatDate(ps.definition.startWeek)}.`
+  const situation = programmeStatusAt(state, today);
+  const ended = situation === 'ended';
+  const text = situation === 'not_started' ? `Votre programme commence le ${formatDate(ps.definition.startWeek)}.`
     : ended ? 'Votre objectif est atteint : le programme est terminé. Vous pouvez en créer un nouveau depuis l’onglet Programme.'
       : state.safety.activePain ? 'Aucune séance n’est planifiée cette semaine tant que la pause douleur est active.'
         : 'Aucune séance n’a pu être planifiée cette semaine.';
   return <div className="card"><h3>Pas de séance cette semaine</h3><p className="small muted" style={{ margin: 0 }}>{text}</p></div>;
 }
 
+/** Résumé textuel du mini-calendrier (les états ne sont jamais portés par la seule couleur). */
+const stripSummary = (days: readonly DayItemView[]): string => {
+  const marked = days.filter((d) => d.sessions.length > 0).map((d) => `${formatDate(d.date)} : ${d.sessions.map((x) => `${sportName(x.sport)}, ${STATUS_LABELS[x.display]}`).join(' ; ')}`);
+  return marked.length > 0 ? marked.join('. ') : 'Aucune séance cette semaine.';
+};
+
 export function Home0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo: (t: 'plan' | 'settings') => void }) {
   const { state, clock } = useStore();
   const today = clock().today;
   const week = weekOf(state, today);
-  const items = week?.items ?? [];
-  const next = nextOf(items, today);
-  const planned = items.filter((x) => x.display !== 'not_planned');
+  const planned = placedOf(week?.days ?? []);
+  const next = nextOf(planned, today);
   const done = planned.filter((x) => isDone(x.display)).length;
   const name = state.profile?.displayName;
   return (
@@ -59,17 +65,16 @@ export function Home0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo: (t
         <div className="card" aria-label="Progression de la semaine">
           <div className="row between"><strong>Cette semaine</strong><span className="num">{done} / {planned.length} séances</span></div>
           <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={planned.length} aria-valuenow={done} aria-label="Séances terminées"><div style={{ width: `${String(Math.round((done / planned.length) * 100))}%` }} /></div>
-          <button className="weekstrip" style={{ background: 'none', border: 0, padding: 0 }} onClick={() => onGo('plan')} aria-label="Ouvrir le planning">
-            {Array.from({ length: 7 }, (_, i) => addDays(week.weekStart, i)).map((d) => {
-              const s = items.filter((x) => x.date === d);
-              return (
-                <div key={d} className={`c ${s.length > 0 ? 'has' : ''} ${d === today ? 'today' : ''}`}>
-                  <div className="tiny">{weekdayShort(weekdayIndex(d))}</div>
-                  <div className="num" style={{ fontWeight: 800 }}>{Number(d.slice(8))}</div>
-                  <div className={`dot ${s.some((x) => isDone(x.display)) ? 'done' : s.length > 0 ? '' : 'off'}`} />
-                </div>
-              );
-            })}
+          <button className="weekstrip" style={{ background: 'none', border: 0, padding: 0 }} onClick={() => onGo('plan')} aria-label={`Ouvrir le planning. ${stripSummary(week.days)}`}>
+            {week.days.map(({ date: d, sessions: s }) => (
+              <div key={d} data-date={d} data-sessions={s.length} className={`c ${s.length > 0 ? 'has' : ''} ${d === today ? 'today' : ''}`} aria-hidden="true">
+                <div className="tiny">{weekdayShort(weekdayIndex(d))}</div>
+                <div className="num" style={{ fontWeight: 800 }}>{Number(d.slice(8))}</div>
+                {s.length > 0
+                  ? <div className="dots">{s.map((x) => <span key={x.requestId} className={`dot st-${x.display}`} title={STATUS_LABELS[x.display]} />)}</div>
+                  : <div className="dot off" />}
+              </div>
+            ))}
           </button>
         </div>
       )}

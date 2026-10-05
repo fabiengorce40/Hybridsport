@@ -191,3 +191,10 @@ details summary { cursor: pointer; min-height: 32px; display: flex; align-items:
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .rest-timer.rest0 { flex-direction: column; align-items: stretch; gap: var(--space-3); bottom: calc(16px + env(safe-area-inset-bottom)); }
 .overlay .screen.with-timer { padding-bottom: 200px; }
+/* Mini-calendrier Beta 0 : un marqueur par séance réellement placée ; forme distincte par état. */
+.weekstrip .dots { display: flex; justify-content: center; gap: 3px; margin-top: 4px; }
+.weekstrip .dots .dot { margin: 0; }
+.weekstrip .dot.st-completed_as_prescribed, .weekstrip .dot.st-modified { background: var(--success); }
+.weekstrip .dot.st-abandoned { background: var(--warning); border-radius: 1px; }
+.weekstrip .dot.st-missed { background: transparent; border: 1.5px solid var(--danger); width: 7px; height: 7px; }
+.weekstrip .dot.st-in_progress { background: var(--accent); box-shadow: 0 0 0 2px var(--accent-subtle); }

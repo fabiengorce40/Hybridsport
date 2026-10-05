@@ -6,7 +6,7 @@
  */
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
-import { createBeta0Programme, emptyState, EQUIPMENT_PRESETS, exportState, MemoryStorage, saveState, STORAGE_KEY } from '@hybridsport/app-core';
+import { createBeta0Programme, emptyState, EQUIPMENT_PRESETS, exportState, finishProgrammeSession, MemoryStorage, saveState, selectBeta0Week, STORAGE_KEY } from '@hybridsport/app-core';
 import type { AppState, Clock, ProfileInput } from '@hybridsport/app-core';
 import { App } from '../src/App.js';
 import { StoreProvider } from '../src/store.js';
@@ -93,6 +93,54 @@ describe('onboarding Beta 0 et programme', () => {
     expect(w?.authority).toBe('beta0_experimental');
     const dates = (w?.requests ?? []).filter((r) => r.status === 'planned').map((r) => r.date);
     expect(new Set(dates).size).toBe(dates.length);
+  });
+});
+
+describe('cohérence Accueil / Planning / selector', () => {
+  // Scénario réel : mardi disponible 30 min ⇒ 2e course essayée mardi puis refusée ; séances placées lundi, mercredi, samedi.
+  const seed = (storage: MemoryStorage): AppState => {
+    const s = createBeta0Programme(emptyState(), profileInput({
+      priorities: ['strength', 'running'], strength: { enabled: true, goal: 'strength', sessionsPerWeek: 2 },
+      running: { ...profileInput().running, goal: 'GENERAL_RUNNING', sessionsPerWeek: 2 }, availability: [60, 30, 60, 0, 0, 90, 0],
+    }), at(MONDAY)(), { lastRun: { realizedDurationS: 1800, distanceM: 5000, difficulty: 'AS_EXPECTED' } });
+    expect(saveState(storage, s).ok).toBe(true);
+    return s;
+  };
+  const stripMarked = (): string[] => [...document.querySelectorAll('.weekstrip .c')].filter((c) => Number(c.getAttribute('data-sessions')) > 0).map((c) => c.getAttribute('data-date') ?? '');
+
+  it('jours marqués sur l’Accueil === jours portant une séance planifiée dans selectBeta0Week (lundi, mercredi, samedi ; jamais mardi)', () => {
+    const storage = new MemoryStorage();
+    const s = seed(storage);
+    mount(storage);
+    const canonical = (selectBeta0Week(s, MONDAY)?.days ?? []).filter((d) => d.sessions.length > 0).map((d) => d.date);
+    expect(canonical).toEqual(['2026-10-05', '2026-10-07', '2026-10-10']);
+    expect(stripMarked()).toEqual(canonical);
+    expect(document.querySelectorAll('.weekstrip .dots .dot')).toHaveLength(3);
+    expect(document.querySelector('.weekstrip .c[data-date="2026-10-06"] .dot')?.className).toBe('dot off');
+    expect(screen.getByText('0 / 3 séances')).toBeTruthy();
+    expect(screen.getByRole('button', { name: /^Ouvrir le planning/ }).getAttribute('aria-label')).not.toMatch(/mardi/);
+    // Planning : mardi disponible sans séance ; la course refusée est listée à part, expliquée.
+    click('Planning');
+    const tuesday = [...document.querySelectorAll('.week .day')].find((d) => d.textContent?.includes('Mar'));
+    expect(tuesday?.textContent).toContain('Disponible, aucune séance');
+    expect(screen.getByText('Cette séance n’a pas pu être placée dans vos disponibilités.')).toBeTruthy();
+  });
+
+  it('états visuels : séance adaptée et course réalisée restent sur leur jour, avec leur état', () => {
+    const storage = new MemoryStorage();
+    let s = seed(storage);
+    const days = selectBeta0Week(s, MONDAY)?.days ?? [];
+    const on = (date: string) => days.find((d) => d.date === date)?.sessions[0]?.requestId ?? '';
+    s = finishProgrammeSession(s, at(MONDAY, '19:00:00')(), { requestId: on('2026-10-05'), completion: 'modified', pain: false });
+    s = finishProgrammeSession(s, at('2026-10-10', '19:00:00')(), { requestId: on('2026-10-10'), completion: 'completed_as_prescribed', pain: false, run: { realizedDurationS: 1800 } });
+    saveState(storage, s);
+    mount(storage, at('2026-10-10', '20:00:00'));
+    expect(stripMarked()).toEqual(['2026-10-05', '2026-10-07', '2026-10-10']);
+    const dot = (date: string) => document.querySelector(`.weekstrip .c[data-date="${date}"] .dots .dot`)?.className;
+    expect(dot('2026-10-05')).toBe('dot st-modified');
+    expect(dot('2026-10-07')).toBe('dot st-planned');
+    expect(dot('2026-10-10')).toBe('dot st-completed_as_prescribed');
+    expect(screen.getByText('2 / 3 séances')).toBeTruthy();
   });
 });
 

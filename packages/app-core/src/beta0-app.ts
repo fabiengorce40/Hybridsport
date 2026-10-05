@@ -275,3 +275,11 @@ export const isBeta0 = (state: AppState): boolean => state.programmeState !== nu
 
 /** Index de la semaine du programme contenant `today` (peut être hors horizon) ; null sans programme. */
 export const programmeWeekIndex = (state: AppState, today: string): number | null => (state.programmeState ? weekIndexOf(state.programmeState, today) : null);
+
+/** Situation du programme à `today` : pas encore commencé, en cours, terminé (fin déclarée dépassée) ; null sans programme. */
+export function programmeStatusAt(state: AppState, today: string): 'not_started' | 'active' | 'ended' | null {
+  const ps = state.programmeState;
+  if (!ps) return null;
+  const i = weekIndexOf(ps, today);
+  return i < 0 ? 'not_started' : withinProgramme(ps, i) ? 'active' : 'ended';
+}

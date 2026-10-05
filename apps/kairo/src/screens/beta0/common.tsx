@@ -6,13 +6,22 @@ import type { DisplayStatus } from '../../present.js';
 
 export interface SessionItemView extends SessionView { readonly display: DisplayStatus }
 
-/** Semaine du programme vue par l'interface : statut « en cours » ajouté si une séance a été commencée. */
-export function weekOf(state: AppState, today: string): (Beta0WeekView & { readonly items: readonly SessionItemView[] }) | null {
+export interface DayItemView { readonly date: string; readonly sessions: readonly SessionItemView[] }
+
+/**
+ * Semaine du programme vue par l'interface : projection de `selectBeta0Week` (source canonique), avec le seul statut
+ * d'interface « en cours » (séance commencée). Les jours (`days`) viennent du selector : une séance n'apparaît sur un
+ * jour que si elle y est réellement placée.
+ */
+export function weekOf(state: AppState, today: string): (Omit<Beta0WeekView, 'days'> & { readonly items: readonly SessionItemView[]; readonly days: readonly DayItemView[] }) | null {
   const v = selectBeta0Week(state, today);
   if (!v) return null;
-  const items = v.sessions.map((x): SessionItemView => ({ ...x, display: x.status === 'planned' && state.programmeLogs[x.requestId] ? 'in_progress' : x.status }));
-  return { ...v, items };
+  const display = (x: SessionView): SessionItemView => ({ ...x, display: x.status === 'planned' && state.programmeLogs[x.requestId] ? 'in_progress' : x.status });
+  return { ...v, items: v.sessions.map(display), days: v.days.map((d) => ({ date: d.date, sessions: d.sessions.map(display) })) };
 }
+
+/** Séances réellement placées dans la semaine (tous états), d'après les jours canoniques. */
+export const placedOf = (days: readonly DayItemView[]): readonly SessionItemView[] => days.flatMap((d) => d.sessions);
 
 /** Prochaine séance : en cours, sinon aujourd'hui ou la suivante non réalisée. */
 export function nextOf(items: readonly SessionItemView[], today: string): SessionItemView | undefined {

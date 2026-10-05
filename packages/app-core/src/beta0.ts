@@ -22,7 +22,7 @@ import { adherenceOf, weekIndexOf, weekStartAt, weekStatus, withinProgramme } fr
 import type { Adherence, ProgrammeDefinition, ProgrammeDefinitionInput, ProgrammeResult, WeekStatus } from '@hybridsport/programme';
 import { plannerGovernance, withDemand } from '../../planner/tests/simulation.js';
 import { AppError } from './errors.js';
-import { daysBetween, weekStartOf } from './dates.js';
+import { addDays, daysBetween, weekStartOf } from './dates.js';
 import type { AppState, EnvironmentAuthority, PersistedWeek, Profile, Reason, Sport } from './model.js';
 import { STIMULUS_BY_GOAL, STRENGTH_ARCHETYPE } from './planner.js';
 import type { ProgrammeEnvironment } from './programme.js';
@@ -142,8 +142,11 @@ export interface SessionView {
   readonly archetypeId: string | null;
   readonly role: string | null;
   readonly compositionAuthority: 'approved' | 'provisional' | null;
-  /** Séance non planifiée : catégorie et raison principale (codes). */
-  readonly notPlanned: { readonly category: string; readonly reason: Reason | null } | null;
+  /**
+   * Séance non planifiée : catégorie, raison principale (codes) et jour ESSAYÉ (information seulement : la séance
+   * n'est placée sur aucun jour, `date` est null).
+   */
+  readonly notPlanned: { readonly category: string; readonly reason: Reason | null; readonly triedDate: string | null } | null;
   readonly pain: boolean;
 }
 export interface Beta0WeekView {
@@ -157,6 +160,11 @@ export interface Beta0WeekView {
   readonly simulation: readonly string[];
   /** Séances ordonnées (date, puis identifiant) ; les non planifiées en fin de liste. */
   readonly sessions: readonly SessionView[];
+  /**
+   * Les 7 jours de la semaine (lundi → dimanche) et, pour chacun, les séances RÉELLEMENT placées ce jour (quel que soit
+   * leur état : prévue, réalisée, adaptée, arrêtée, manquée). Source unique des vues jour par jour (accueil, planning).
+   */
+  readonly days: readonly { readonly date: string; readonly sessions: readonly SessionView[] }[];
   /** Adhérence DESCRIPTIVE (comptes, aucun seuil) ; null si la semaine n'est pas planifiée. */
   readonly adherence: Adherence | null;
 }
@@ -170,12 +178,13 @@ function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResu
   const estimate = data?.durationEstimate?.availability === 'AVAILABLE' && typeof data.durationEstimate.p50 === 'number' ? data.durationEstimate.p50 : null;
   const planned = r.status === 'planned';
   return {
-    requestId: r.requestId, sport: r.sport, date: r.date ?? null,
+    // Date = jour où la séance est PLACÉE ; une demande non planifiée n'occupe aucun jour.
+    requestId: r.requestId, sport: r.sport, date: planned ? r.date ?? null : null,
     status: planned ? (result?.completion ?? 'planned') : 'not_planned',
     targetDurationS: planned && typeof session?.targetDurationS === 'number' ? session.targetDurationS : null,
     estimatedDurationS: planned ? estimate : null,
     archetypeId: r.intent?.archetypeId ?? null, role: r.composition?.role ?? null, compositionAuthority: r.composition?.authority ?? null,
-    notPlanned: planned ? null : { category: r.category, reason: mainReason(r.reasons) },
+    notPlanned: planned ? null : { category: r.category, reason: mainReason(r.reasons), triedDate: r.date ?? null },
     pain: result?.pain ?? false,
   };
 }
@@ -201,10 +210,12 @@ export function selectBeta0Week(state: AppState, today: string, weekIndex?: numb
   const sessions = (week?.requests ?? []).map((r) => sessionView(r, resultOf(r.requestId)))
     .sort((a, b) => (a.date === null ? 1 : 0) - (b.date === null ? 1 : 0) || (a.date ?? '').localeCompare(b.date ?? '') || a.requestId.localeCompare(b.requestId));
   const authority = week?.authority ?? 'unknown';
+  const start = weekStartAt(ps, i);
+  const days = Array.from({ length: DAYS_PER_WEEK }, (_, k) => addDays(start, k)).map((date) => ({ date, sessions: sessions.filter((x) => x.date === date) }));
   return {
     programme: { programmeId: ps.definition.programmeId, origin: ps.definition.origin, horizonWeeks: ps.definition.horizonWeeks ?? null, targetDate: programmeTargetDate(ps.definition) },
     weekIndex: i, weekStart: weekStartAt(ps, i), weekStatus: weekStatus(ps, i, today, undefined),
     authority, experimental: week ? isExperimental(authority) : true, simulation: [...(week?.simulation ?? [])],
-    sessions, adherence: pw ? (pw.adherence?.total ?? adherenceOf(pw.requests, ps.results)) : null,
+    sessions, days, adherence: pw ? (pw.adherence?.total ?? adherenceOf(pw.requests, ps.results)) : null,
   };
 }
