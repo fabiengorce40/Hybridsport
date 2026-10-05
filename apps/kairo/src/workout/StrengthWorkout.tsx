@@ -86,7 +86,8 @@ export function ExerciseCard({ number, item, block, log, editable, current, onRe
     effort ? `Intensité : ${effort}.` : '',
     warmups > 0 ? `${String(warmups)} série${warmups > 1 ? 's' : ''} de montée avant le travail.` : '',
     item.refs?.prescriptionSource === 'calibration' ? 'Première fois : choisissez une charge qui respecte l’intensité indiquée.' : '',
-    item.alternatives && item.alternatives.length > 0 ? `Alternatives prévues : ${item.alternatives.map(exerciseLabel).join(', ')}.` : '',
+    // Substituts DIRECTS validés par le moteur Strength (contrat de substitution) : affichés tels quels, jamais calculés ici.
+    alternativesText(item.alternatives ?? []),
   ].filter(Boolean);
   return (
     <section id={`ex-${item.id}`} className={`k-ex ${current ? 'current' : ''} ${complete ? 'complete' : ''}`} aria-label={`Exercice ${two(number)} : ${name}`}>
@@ -183,4 +184,11 @@ export function StrengthWorkout({ v, title, eyebrow, editable, onRecord, onToggl
       {session.blocks.filter((b) => b.kind === 'cooldown').map((b) => <LightBlock key={b.id} block={b} />)}
     </>
   );
+}
+
+/** Texte des alternatives reçues du moteur : aucune ⇒ rien ; une ⇒ au singulier ; plusieurs ⇒ « compatibles ». */
+export function alternativesText(ids: readonly string[]): string {
+  if (ids.length === 0) return '';
+  if (ids.length === 1) return `Alternative prévue : ${exerciseLabel(ids[0] ?? '')}.`;
+  return `Alternatives prévues (compatibles) : ${ids.map(exerciseLabel).join(', ')}.`;
 }

@@ -17,7 +17,7 @@ const ACCEPTED_BASELINE = '1d37a50';
 /**
  * … SAUF la liste FERMÉE de l'évolution CORE autorisée pour C2 (empreinte à dimensions explicites, session_record v5)
  * et pour HYROX H1 (charge générique facultative hors séries, session_record v6),
- * ses tests, et l'empreinte de sources F20 de Strength qui la constate, plus le lot Strength S1 (composition hebdomadaire).
+ * ses tests, et l'empreinte de sources F20 de Strength qui la constate, plus les lots Strength S1 (composition hebdomadaire) et S2 (contrat de substitution).
  * Running `src` : aucun changement.
  * Toute autre modification de ces paquets échoue ici.
  */
@@ -31,6 +31,20 @@ const STRENGTH_S1_CHANGES = [
   'packages/strength/src/engine.ts',
   'packages/strength/src/index.ts',
   'packages/strength/tests/unit/composition.test.ts',
+];
+/**
+ * Lot Strength S2 (hors Cross-training, liste FERMÉE) : contrat de substitution directe du moteur Strength, alternatives
+ * des séances issues de ce contrat (goldens : seul le champ `alternatives` change), audit du catalogue et garde.
+ */
+const GOLDEN_SETS = ['__goldens__', '__goldens_4f__', '__goldens_v1__'];
+// technical-constant: scénarios golden S1–S7 (identifiants de fichiers)
+const GOLDEN_IDS = [1, 2, 3, 4, 5, 6, 7];
+const STRENGTH_S2_CHANGES = [
+  'packages/strength/src/substitution.ts',
+  'packages/strength/tests/substitution/audit.ts',
+  'packages/strength/tests/unit/substitution-contract.test.ts',
+  'packages/strength/tests/architecture/__reports__/substitution-audit.md',
+  ...GOLDEN_SETS.flatMap((d) => GOLDEN_IDS.map((i) => `packages/strength/tests/golden/${d}/S${String(i)}.json`)),
 ];
 const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/domain/src/duplicate.ts',
@@ -57,6 +71,7 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/engine/tests/unit/migration.test.ts',
   'packages/strength/tests/architecture/__reports__/core-source-digest.txt',
   ...STRENGTH_S1_CHANGES,
+  ...STRENGTH_S2_CHANGES,
 ];
 
 describe('frontières', () => {
@@ -85,7 +100,7 @@ describe('frontières', () => {
     }
     const changed = diff.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
     expect(changed.filter((f) => !CT_C2_AUTHORIZED_CORE_CHANGES.includes(f))).toEqual([]);
-    expect(changed.filter((f) => f.startsWith('packages/running/') || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f)))).toEqual([]);
+    expect(changed.filter((f) => f.startsWith('packages/running/') || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f)))).toEqual([]);
   });
 });
 

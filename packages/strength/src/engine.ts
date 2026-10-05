@@ -33,6 +33,7 @@ import { strengthReasons } from './codes.js';
 import { STRENGTH_CHECKS } from './checks.js';
 import { validateStrengthIntent } from './intent-contract.js';
 import { roundDownToStep } from './util.js';
+import { directSubstitutes } from './substitution.js';
 
 export const STRENGTH_ENGINE_ID = 'engine.strength';
 /** Paramètres du CORE lus par le moteur (dérivation des structures, estimation de durée), déclarés dans chaque proposition. */
@@ -125,6 +126,23 @@ function pickForSlot(slot: SlotInstance, env: Env, soFar: SessionSoFar, usedFami
   reasons.push(strengthReasons.emit('SELECT.EXERCISE.CHOSEN', { exerciseId: chosen.exercise.id, slot: slot.def.id, decidingCriterion: override ? 'variant' : decidingCriterion(ordered, usedSlot, env) }));
   const track = anchor?.exerciseId === chosen.exercise.id ? anchor : tracked?.exerciseId === chosen.exercise.id ? tracked : undefined;
   return { slot: usedSlot, exercise: chosen.exercise, ranked: ordered, ...(track ? { track } : {}), ...(substitutedFrom ? { substitutedFrom } : {}) };
+}
+
+/**
+ * Alternatives prévues d'un exercice choisi (contrat de substitution S2) : substituts DIRECTS déclarés par le catalogue
+ * (`directSubstitutes`), puis admissibles dans CE contexte — mêmes filtres éliminatoires que la sélection de
+ * l'emplacement (matériel, restrictions, exclusions, niveau, contexte multisport) et, en plus, aucune zone sensible
+ * d'une restriction de douleur, quelle que soit son action (`reduce` compris : une alternative mécanique n'est pas
+ * une alternative sûre). Jamais les autres candidats de l'emplacement (exercices apparentés, pas substituts).
+ */
+function alternativesFor(pick: Pick, list: readonly Pick[], env: Env): string[] {
+  const tech = env.params['strength.novice.technicalUnderFatigue'];
+  const technicalCount = list.filter((x) => x !== pick && x.exercise.cost.technical >= tech.minTechnical).length;
+  const areas = env.input.constraints.areaRestrictions.map((r) => r.area);
+  return directSubstitutes(pick.exercise, env.catalog)
+    .filter((t) => firstFailingFilter(t, pick.slot, env, { technicalCount }) === undefined)
+    .filter((t) => !t.painSensitiveAreas.some((a) => areas.includes(a)))
+    .map((t) => t.id);
 }
 
 /** Prescription complète d'un exercice choisi (dose, charge, montée, série lourde). */
@@ -315,7 +333,7 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
         ...(p.substitutedFrom ? { substitutedFrom: p.substitutedFrom } : {}),
       };
       // technical-constant: au plus 3 alternatives prévalidées (contrat de schéma zItem)
-      const alternatives = p.ranked.slice(1).map((r) => r.exercise.id).slice(0, 3);
+      const alternatives = alternativesFor(p, list, env).slice(0, 3);
       const item: SessionItem = { id: itemId, exerciseId: p.exercise.id, prescription: rx.prescription, refs, ...(alternatives.length > 0 ? { alternatives } : {}) };
       itemsByBlock.set(p.slot.def.blockId, [...(itemsByBlock.get(p.slot.def.blockId) ?? []), item]);
       volumeByItem[itemId] = w;
