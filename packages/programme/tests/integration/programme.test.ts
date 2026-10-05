@@ -4,7 +4,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  PG_CODES, adherenceOf, closeProgrammeWeek, createProgramme, decide, planProgrammeWeek, programmeOutlook, readProgrammeParam, recordProgrammeResult, requestIntent,
+  PG_CODES, adherenceOf, closeProgrammeWeek, createProgramme, decide, planProgrammeWeek, programmeOutlook, readProgrammeParam, recordProgrammeResult, requestAssessment, requestIntent,
   weekIntent, weekStatus, zProgrammeState,
 } from '../../src/index.js';
 import type { ProgrammeDefinitionInput, ProgrammeState } from '../../src/index.js';
@@ -82,6 +82,28 @@ describe('horizon glissant', () => {
     const id = w1.week.requests.find((r) => r.status === 'planned')?.requestId ?? '';
     const withResult = record(w1.state, id, 'completed_as_prescribed');
     expect(planProgrammeWeek(withResult, 0, deps()).ok).toBe(false);
+  });
+});
+
+describe('évaluation demandée par l’utilisateur (même mécanisme, même contenu déclaré)', () => {
+  const withTest = () => make({ sports: [{ sport: 'strength', sessionsPerWeek: 2, intent: { ...definition().sports[0]!.intent } }, { sport: 'running', sessionsPerWeek: 2, intent: { ...RUNNING_INTENT }, assessment: { kind: 'TIME_TRIAL', intent: { ...RUNNING_INTENT, archetypeId: 'running.test' } } }] });
+  it('programmée pour la semaine demandée : la 1re séance du sport porte le contenu DÉCLARÉ (surcharge existante)', () => {
+    const r = requestAssessment(withTest(), 'running', 0, AT);
+    expect(r.ok && r.value.assessments).toEqual([expect.objectContaining({ sport: 'running', kind: 'TIME_TRIAL', status: 'requested', scheduledWeek: 0 })]);
+    if (!r.ok) throw new Error('refus');
+    expect(weekIntent(r.value, 0).demands.find((d) => d.sport === 'running')?.overrides).toEqual([{ index: 1, intent: { ...RUNNING_INTENT, archetypeId: 'running.test' } }]);
+    expect(r.value.audit.at(-1)?.reason.code).toBe(PG_CODES.ASSESSMENT_USER_REQUESTED);
+  });
+  it('refus explicites : contenu non déclaré, déjà ouverte, semaine commencée, hors programme', () => {
+    const cause = (r: ReturnType<typeof requestAssessment>) => (r.ok ? 'OK' : r.reasons[0]?.params.cause);
+    expect(cause(requestAssessment(make(), 'running', 0, AT))).toBe('CONTENT_NOT_DECLARED');
+    const once = requestAssessment(withTest(), 'running', 0, AT);
+    if (!once.ok) throw new Error('refus');
+    expect(cause(requestAssessment(once.value, 'running', 1, AT))).toBe('ASSESSMENT_ALREADY_OPEN');
+    expect(cause(requestAssessment(withTest(), 'running', 8, AT))).toBe('WEEK_OUT_OF_PROGRAMME');
+    const w = plan(withTest(), 0);
+    const id = w.week.requests.find((x) => x.status === 'planned')?.requestId ?? '';
+    expect(cause(requestAssessment(record(w.state, id, 'completed_as_prescribed'), 'running', 0, AT))).toBe('WEEK_ALREADY_STARTED');
   });
 });
 

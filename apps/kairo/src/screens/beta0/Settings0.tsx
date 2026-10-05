@@ -3,6 +3,7 @@ import { clearPain, decodeState, emptyState, exportState } from '@hybridsport/ap
 import { openWeek, useStore } from '../../store.js';
 import { download } from '../Profile.js';
 import { Notice } from '../../ui.js';
+import { RunningProfileScreen } from '../../running/RunningProfile.js';
 
 const readText = (f: Blob): Promise<string> => new Promise((resolve, reject) => {
   const r = new FileReader();
@@ -78,10 +79,19 @@ export function PainCard() {
 }
 
 export function Settings0() {
+  const store = useStore();
+  const [runningProfile, setRunningProfile] = useState(false);
+  if (runningProfile) return <RunningProfileScreen onBack={() => setRunningProfile(false)} />;
   return (
     <div className="screen">
       <h1 className="screen-title">Réglages</h1>
       <PainCard />
+      {store.state.profile?.running.enabled && (
+        <button className="card button-card" onClick={() => setRunningProfile(true)}>
+          <h3>Profil Course</h3>
+          <div className="small muted">Vos performances récentes et ce que KAIRO en déduit</div>
+        </button>
+      )}
       <DataSection />
       <div className="section-title">À propos de la Beta</div>
       <div className="card small muted" style={{ gap: 6 }}>

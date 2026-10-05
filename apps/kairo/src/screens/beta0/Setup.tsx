@@ -5,7 +5,16 @@
  */
 import { useState } from 'react';
 import { createBeta0Programme, DIFFICULTY_LABELS, normalizeInstant, recreateBeta0Programme, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
-import type { Beta0ProgrammeOptions, Feedback, ProfileInput } from '@hybridsport/app-core';
+import type { Beta0ProgrammeOptions, DeclaredPerformance, Feedback, ProfileInput } from '@hybridsport/app-core';
+import { PerformanceForm } from '../../running/PerformanceForm.js';
+
+/** Résumé d'une performance saisie (affichage seulement). */
+function perfSummary(x: DeclaredPerformance): string {
+  const t = (s: number) => `${String(Math.floor(s / 60))}:${String(s % 60).padStart(2, '0')}`;
+  return x.kind === 'CRITICAL_SPEED_TEST'
+    ? `Critical Speed ${t(x.paceSecPerKm)} /km · ${x.date}`
+    : `${x.kind === 'RACE_RESULT' ? 'Course' : 'Chrono'} ${String(x.distanceM / 1000).replace('.', ',')} km en ${t(x.durationS)} · ${x.date}`;
+}
 import { useStore } from '../../store.js';
 import { AvailabilitySection, defaultProfile, EquipmentSection, GoalsSection } from '../../ProfileForm.js';
 import { formatDate, Notice } from '../../ui.js';
@@ -36,6 +45,9 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const [runMin, setRunMin] = useState('');
   const [runKm, setRunKm] = useState('');
   const [runFeel, setRunFeel] = useState<Feedback['difficulty']>('AS_EXPECTED');
+  const [perfs, setPerfs] = useState<DeclaredPerformance[]>([]);
+  const [addingPerf, setAddingPerf] = useState(false);
+  const [noChrono, setNoChrono] = useState(false);
   const choice = choiceOf(p);
   const set = (f: (x: ProfileInput) => ProfileInput) => setP(f);
   const first = p.priorities[0] === 'running' ? 'running' : 'strength';
@@ -47,6 +59,8 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
 
   const create = () => {
     const o: Beta0ProgrammeOptions = {
+      ...(p.running.enabled && perfs.length > 0 ? { performances: perfs } : {}),
+      ...(p.running.enabled && perfs.length === 0 && noChrono ? { requestTest: true } : {}),
       ...(p.running.enabled && targetDate && p.running.goal !== 'GENERAL_RUNNING' ? { runningTargetDate: targetDate } : {}),
       ...(p.running.enabled && runMin !== '' ? { lastRun: { realizedDurationS: Number(runMin) * 60, ...(km !== undefined ? { distanceM: km * 1000 } : {}), difficulty: runFeel } } : {}),
     };
@@ -105,6 +119,26 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
                 <label className="field">Date de l’objectif {RUNNING_GOAL_LABELS[p.running.goal]} (facultatif)
                   <input type="date" min={store.clock().today} value={targetDate} onChange={(e) => setTargetDate(e.target.value)} />
                 </label>
+              )}
+              <p className="tiny" style={{ margin: 0 }}>L’objectif décrit ce que vous visez ; il n’est jamais utilisé comme un chrono déjà réalisé.</p>
+            </div>
+          )}
+          {p.running.enabled && (
+            <div className="card">
+              <h3>Niveau actuel</h3>
+              <div className="section-title" style={{ marginTop: 0 }}>Performances récentes</div>
+              {perfs.length === 0 && !addingPerf && <p className="tiny" style={{ margin: 0 }}>Un chrono récent (course officielle ou chrono personnel) permet de débloquer les séances clés et des cibles d’allure.</p>}
+              {perfs.map((x, i) => (
+                <div key={`${x.kind}${String(i)}`} className="row between small">
+                  <span>{perfSummary(x)}</span>
+                  <button type="button" className="btn ghost" aria-label={`Retirer ${perfSummary(x)}`} onClick={() => setPerfs(perfs.filter((_, j) => j !== i))}>Retirer</button>
+                </div>
+              ))}
+              {addingPerf
+                ? <PerformanceForm today={store.clock().today} onAdd={(x) => { setPerfs([...perfs, x]); setAddingPerf(false); setNoChrono(false); }} onCancel={() => setAddingPerf(false)} />
+                : <button type="button" className="btn secondary" onClick={() => setAddingPerf(true)}>Ajouter une performance</button>}
+              {perfs.length === 0 && (
+                <label className="check"><input type="checkbox" checked={noChrono} onChange={(e) => setNoChrono(e.target.checked)} />Je n’ai pas de chrono récent : programmer un test chronométré</label>
               )}
               <h3>Votre dernière course</h3>
               <p className="tiny" style={{ margin: 0 }}>Les séances de course reprennent ce que vous avez réellement couru. Sans course récente, elles ne pourront pas être proposées.</p>

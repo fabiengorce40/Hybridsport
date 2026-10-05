@@ -7,7 +7,7 @@
  */
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
-import { weekIndexOf, withinProgramme } from '@hybridsport/programme';
+import { requestAssessment, weekIndexOf, withinProgramme } from '@hybridsport/programme';
 import type { ProgrammeResult } from '@hybridsport/programme';
 import { logFreeRun } from './app.js';
 import type { Clock } from './app.js';
@@ -16,7 +16,9 @@ import { addDays, dateOf, normalizeInstant, weekStartOf } from './dates.js';
 import { AppError } from './errors.js';
 import { zProfile } from './model.js';
 import type { AppState, Feedback, PersistedWeek, ProfileInput, ProgrammeLog, Rest, SetLog } from './model.js';
-import { closeProgrammeWeekInApp, planProgrammeCurrentWeek, recordSessionExecution, startProgramme } from './programme.js';
+import { closeProgrammeWeekInApp, planProgrammeCurrentWeek, ProgrammeError, recordSessionExecution, startProgramme } from './programme.js';
+import { declareRunningPerformance } from './running-profile.js';
+import type { DeclaredPerformance } from './running-profile.js';
 import type { ProgrammeEnvironment } from './programme.js';
 import { activePainPause } from './weeks.js';
 
@@ -35,13 +37,22 @@ export interface Beta0ProgrammeOptions {
   readonly runningTargetDate?: string;
   /** Dernière course réelle déclarée (base de la dose Running : aucune dose de départ n'est validée). */
   readonly lastRun?: { readonly realizedDurationS: number; readonly distanceM?: number; readonly difficulty: Feedback['difficulty'] };
+  /** Performances récentes OBSERVÉES (profil Course) : références du moteur Running, jamais l'objectif. */
+  readonly performances?: readonly DeclaredPerformance[];
+  /** « Je n'ai pas de chrono récent » : TEST demandé au programme dès la première semaine (mécanisme d'évaluation). */
+  readonly requestTest?: boolean;
 }
 
 function startFromProfile(state: AppState, clock: Clock, o: Beta0ProgrammeOptions, startWeek: string, env: ProgrammeEnvironment): AppState {
+  if (o.requestTest && !state.profile?.running.enabled) throw new AppError('RUNNING_NOT_ENABLED');
   const p = state.profile;
   if (!p) throw new AppError('PROFILE_MISSING');
   const def = programmeDefinitionFromProfile(p, { programmeId: `beta0.${normalizeInstant(clock.now)}`, startWeek, origin: 'profile', ...(o.runningTargetDate ? { runningTargetDate: o.runningTargetDate } : {}) });
-  return ensureBeta0Week(startProgramme(state, def, clock), clock, env);
+  const started = startProgramme(state, def, clock);
+  if (!o.requestTest || !started.programmeState) return ensureBeta0Week(started, clock, env);
+  const r = requestAssessment(started.programmeState, 'running', Math.max(0, weekIndexOf(started.programmeState, clock.today)), normalizeInstant(clock.now));
+  if (!r.ok) throw new ProgrammeError('RUNNING_TEST_REFUSED', r.reasons);
+  return ensureBeta0Week({ ...started, programmeState: r.value }, clock, env);
 }
 
 /**
@@ -56,6 +67,7 @@ export function createBeta0Programme(state: AppState, input: ProfileInput, clock
   if (o.lastRun && profile.running.enabled) {
     s = logFreeRun(s, { realizedDurationS: o.lastRun.realizedDurationS, completion: 'COMPLETED', difficulty: o.lastRun.difficulty, pain: false, ...(o.lastRun.distanceM !== undefined ? { distanceM: o.lastRun.distanceM } : {}) }, clock);
   }
+  if (profile.running.enabled) for (const x of o.performances ?? []) s = declareRunningPerformance(s, clock, x);
   return startFromProfile(s, clock, o, weekStartOf(clock.today), env);
 }
 
@@ -72,7 +84,9 @@ export function recreateBeta0Programme(state: AppState, input: ProfileInput, clo
   const ps = state.programmeState;
   const started = ps !== null && ps.results.some((r) => weekStartOf(r.date) === thisWeek && r.provenance === 'declared');
   const programmeLogs = Object.fromEntries(Object.entries(state.programmeLogs).filter(([, l]) => l.finishedAt !== undefined));
-  return startFromProfile({ ...state, profile, programmeLogs }, clock, o, started ? addDays(thisWeek, DAYS_PER_WEEK) : thisWeek, env);
+  let s: AppState = { ...state, profile, programmeLogs };
+  if (profile.running.enabled) for (const x of o.performances ?? []) s = declareRunningPerformance(s, clock, x);
+  return startFromProfile(s, clock, o, started ? addDays(thisWeek, DAYS_PER_WEEK) : thisWeek, env);
 }
 
 /**

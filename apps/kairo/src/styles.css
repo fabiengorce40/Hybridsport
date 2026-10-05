@@ -198,3 +198,6 @@ details summary { cursor: pointer; min-height: 32px; display: flex; align-items:
 .weekstrip .dot.st-abandoned { background: var(--warning); border-radius: 1px; }
 .weekstrip .dot.st-missed { background: transparent; border: 1.5px solid var(--danger); width: 7px; height: 7px; }
 .weekstrip .dot.st-in_progress { background: var(--accent); box-shadow: 0 0 0 2px var(--accent-subtle); }
+/* Champs côte à côte : partage égal de la largeur, jamais de débordement. */
+.row > .field { flex: 1 1 0; min-width: 0; }
+.row > .field input { width: 100%; min-width: 0; }

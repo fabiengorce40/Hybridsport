@@ -24,6 +24,10 @@ export const PG_CODES = {
   DECISION_BLOCKED: 'ADAPT.PROGRAMME.DECISION_BLOCKED',
   NO_VARIANT_DECLARED: 'ADAPT.PROGRAMME.NO_VARIANT_DECLARED',
   ASSESSMENT_REQUESTED: 'PROGRESSION.PROGRAMME.ASSESSMENT_REQUESTED',
+  /** Évaluation demandée par l'UTILISATEUR (même contenu déclaré, même mécanisme). */
+  ASSESSMENT_USER_REQUESTED: 'PROGRESSION.PROGRAMME.ASSESSMENT_USER_REQUESTED',
+  /** Demande d'évaluation refusée (semaine non admissible, évaluation déjà ouverte, contenu non déclaré). */
+  ASSESSMENT_REQUEST_REFUSED: 'PROGRESSION.PROGRAMME.ASSESSMENT_REQUEST_REFUSED',
   ASSESSMENT_CONTENT_UNAVAILABLE: 'PROGRESSION.PROGRAMME.ASSESSMENT_CONTENT_UNAVAILABLE',
   ASSESSMENT_COMPLETED: 'PROGRESSION.PROGRAMME.ASSESSMENT_COMPLETED',
   ASSESSMENT_RESULT_MISSING: 'PROGRESSION.PROGRAMME.ASSESSMENT_RESULT_MISSING',
@@ -45,6 +49,8 @@ export const PG_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: PG_CODES.DECISION_BLOCKED, categories: ['adaptation'], params: { sport: S, cause: S }, audience: 'internal', severity: 'warning' },
   { code: PG_CODES.NO_VARIANT_DECLARED, categories: ['information'], params: { sport: S, decision: S }, audience: 'internal', severity: 'info' },
   { code: PG_CODES.ASSESSMENT_REQUESTED, categories: ['information'], params: { sport: S, assessmentId: S, weekIndex: N }, audience: 'user', severity: 'info' },
+  { code: PG_CODES.ASSESSMENT_USER_REQUESTED, categories: ['information'], params: { sport: S, assessmentId: S, weekIndex: N }, audience: 'user', severity: 'info' },
+  { code: PG_CODES.ASSESSMENT_REQUEST_REFUSED, categories: ['feasibility'], params: { sport: S, cause: S }, audience: 'user', severity: 'warning' },
   { code: PG_CODES.ASSESSMENT_CONTENT_UNAVAILABLE, categories: ['feasibility'], params: { sport: S, assessmentId: S }, audience: 'user', severity: 'warning' },
   { code: PG_CODES.ASSESSMENT_COMPLETED, categories: ['information'], params: { sport: S, assessmentId: S, requestId: S }, audience: 'user', severity: 'info' },
   { code: PG_CODES.ASSESSMENT_RESULT_MISSING, categories: ['information'], params: { sport: S, assessmentId: S }, audience: 'user', severity: 'warning' },

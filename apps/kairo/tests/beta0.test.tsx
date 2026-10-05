@@ -144,6 +144,67 @@ describe('cohérence Accueil / Planning / selector', () => {
   });
 });
 
+describe('Profil Course : niveau actuel, objectif, TEST', () => {
+  /** Onboarding Course jusqu'à l'étape « Objectifs » incluse (callback pour la saisie du niveau actuel). */
+  function onboardCourse(storage: MemoryStorage, level: () => void) {
+    mount(storage);
+    fireEvent.click(screen.getByLabelText(/J’ai compris/));
+    click('Commencer');
+    fireEvent.click(screen.getByRole('radio', { name: CHOICE_NAMES.Course }));
+    click('Continuer');
+    fireEvent.click(screen.getByRole('button', { name: /^Loisir entraîné/ }));
+    fireEvent.change(screen.getByLabelText('Objectif'), { target: { value: 'TEN_K' } });
+    fireEvent.change(screen.getByLabelText(/Date de l’objectif/), { target: { value: '2027-03-16' } });
+    fireEvent.change(screen.getByLabelText('Durée (min)'), { target: { value: '30' } });
+    fireEvent.change(screen.getByLabelText('Distance (km)'), { target: { value: '5' } });
+    level();
+    click('Continuer'); click('Continuer');
+    click('Créer mon programme');
+  }
+  const addPerformance = (o: { kind: RegExp; distance: string; chrono: string; date: string }) => {
+    click('Ajouter une performance');
+    const form = within(screen.getByLabelText('Ajouter une performance'));
+    fireEvent.click(form.getByRole('radio', { name: o.kind }));
+    fireEvent.click(form.getByRole('radio', { name: o.distance }));
+    fireEvent.change(form.getByLabelText(/Chrono \(min:s/), { target: { value: o.chrono } });
+    fireEvent.change(form.getByLabelText('Date de réalisation'), { target: { value: o.date } });
+    fireEvent.click(form.getByRole('button', { name: 'Ajouter cette performance' }));
+  };
+
+  it('performance actuelle (10 km en 45:00) distincte de l’objectif (10 km le 16/03/2027) ; profil calculé par le moteur affiché', () => {
+    const storage = new MemoryStorage();
+    onboardCourse(storage, () => addPerformance({ kind: /^Chrono personnel/, distance: '10 km', chrono: '45:00', date: '2026-09-27' }));
+    const st = saved(storage);
+    expect(st.running.references).toEqual([expect.objectContaining({ type: 'TIME_TRIAL', values: { distanceM: 10000, durationS: 2700 }, provenance: { source: 'USER_DECLARED' } })]);
+    expect(st.programmeState?.definition.goals).toEqual([expect.objectContaining({ goal: 'TEN_K', targetDate: '2027-03-16' })]);
+    click('Réglages');
+    click(/^Profil Course/);
+    expect(screen.getByLabelText(/^Chrono du/).textContent).toMatch(/10 km.*45 min.*4:30 \/km/);
+    expect(screen.getByText(/^récente/)).toBeTruthy();
+    // Séances clés débloquées par un 10 km récent ; allure VO₂ : ancre 3–5 km absente et pas de montre ⇒ effort, causes affichées.
+    expect(screen.getByText('Seuil : disponibles')).toBeTruthy();
+    expect(screen.getByText(/Non calculable : .*course ou un chrono récent de 3 à 5 km/)).toBeTruthy();
+    expect(screen.getByText(/KAIRO ne calcule pas de Critical Speed/)).toBeTruthy();
+    expect(screen.getByText(/Aucune zone d’allure/)).toBeTruthy();
+    expect(screen.getByText(/jamais utilisé comme une performance réalisée/)).toBeTruthy();
+  });
+
+  it('« je n’ai pas de chrono récent » : TEST programmé dès la semaine 1 et visible dans le planning ; mise à jour ultérieure depuis le profil sans effacer', () => {
+    const storage = new MemoryStorage();
+    onboardCourse(storage, () => fireEvent.click(screen.getByLabelText(/Je n’ai pas de chrono récent/)));
+    expect(saved(storage).programmeState?.assessments).toEqual([expect.objectContaining({ sport: 'running', status: 'scheduled' })]);
+    click('Planning');
+    expect(screen.getAllByText('TEST').length).toBe(1);
+    click('Réglages');
+    click(/^Profil Course/);
+    expect(screen.getByText(/Test chronométré programmé/)).toBeTruthy();
+    addPerformance({ kind: /^Course officielle/, distance: '5 km', chrono: '22:30', date: '2026-10-04' });
+    addPerformance({ kind: /^Chrono personnel/, distance: '3 km', chrono: '12:40', date: '2026-10-05' });
+    expect(saved(storage).running.references.map((r) => [r.type, r.values.distanceM])).toEqual([['RACE_RESULT', 5000], ['TIME_TRIAL', 3000]]);
+    expect(screen.getAllByLabelText(/(Course officielle|Chrono) du/)).toHaveLength(2);
+  });
+});
+
 describe('durée du programme', () => {
   it('aucun choix 4 / 8 / 12 semaines ; objectif daté ⇒ date affichée et programme jusqu’à l’objectif', () => {
     const storage = new MemoryStorage();

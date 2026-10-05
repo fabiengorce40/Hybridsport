@@ -158,6 +158,26 @@ export function recordProgrammeResult(s: ProgrammeState, raw: Omit<ProgrammeResu
   return { ok: true, value: { ...s, results: [...s.results, result], assessments, audit: audit(s, result.recordedAt, w.weekIndex, reasons) } };
 }
 
+/**
+ * Évaluation demandée par l'UTILISATEUR (ex. « je n'ai pas de chrono récent ») : même mécanisme que REASSESS et même
+ * contenu, celui DÉCLARÉ par le programme pour ce sport (aucun protocole nouveau). Programmée pour la semaine i : la
+ * première séance du sport y porte l'intention d'évaluation (surcharge existante). Refus explicite si la semaine est
+ * hors programme, déjà clôturée ou commencée, si une évaluation est déjà ouverte pour ce sport, ou sans contenu déclaré.
+ */
+export function requestAssessment(s: ProgrammeState, sport: ProgrammeSport, i: number, at: string): Outcome<ProgrammeState> {
+  const refuse = (cause: string) => fail<ProgrammeState>(pgReasons.emit(PG_CODES.ASSESSMENT_REQUEST_REFUSED, { sport, cause }));
+  const plan = s.definition.sports.find((x) => x.sport === sport);
+  if (!plan) return refuse('SPORT_NOT_IN_PROGRAMME');
+  if (!plan.assessment) return refuse('CONTENT_NOT_DECLARED');
+  if (!withinProgramme(s, i)) return refuse('WEEK_OUT_OF_PROGRAMME');
+  if (weekOf(s, i)?.closedAt || s.results.some((r) => r.weekIndex === i && r.provenance === 'declared')) return refuse('WEEK_ALREADY_STARTED');
+  if (s.assessments.some((a) => a.sport === sport && (a.status === 'requested' || a.status === 'scheduled'))) return refuse('ASSESSMENT_ALREADY_OPEN');
+  const assessmentId = `${s.definition.programmeId}.${sport}.user.w${String(i + 1)}.${String(s.assessments.length + 1)}`;
+  const r = pgReasons.emit(PG_CODES.ASSESSMENT_USER_REQUESTED, { sport, assessmentId, weekIndex: i });
+  const assessment: Assessment = { assessmentId, sport, kind: plan.assessment.kind, requestedAtWeek: i, scheduledWeek: i, status: 'requested', reasons: [toReason(r)] };
+  return { ok: true, value: { ...s, assessments: [...s.assessments, assessment], audit: audit(s, at, i, [r]) } };
+}
+
 export interface CloseWeekDeps { readonly today: string; readonly at: string; readonly mode: PlannerMode; readonly programmeGovernance: LoadedRuleset | undefined }
 
 /**

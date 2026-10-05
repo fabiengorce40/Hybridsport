@@ -49,7 +49,7 @@ export const BETA0_SIMULATION = [
 ] as const;
 
 /** Gouvernance Running Beta 0 : décisions produit existantes + intégration planificateur déclarée (SIMULATION_ONLY). */
-function beta0RunningGovernance(): RunningGovernance {
+export function beta0RunningGovernance(): RunningGovernance {
   const g = withProductDecisions(CURRENT_RUNNING_GOVERNANCE);
   return { ...g, technical: { ...g.technical, GLOBAL_PLANNER_INTEGRATION: 'SATISFIED' } };
 }
