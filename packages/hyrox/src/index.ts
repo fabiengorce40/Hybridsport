@@ -4,3 +4,6 @@ export * from './params.js';
 export * from './h1.js';
 export * from './engine.js';
 export * from './execution.js';
+export * from './h2/taxonomy.js';
+export * from './h2/compose.js';
+export * from './h2/presentation.js';

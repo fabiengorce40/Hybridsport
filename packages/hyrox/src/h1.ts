@@ -27,12 +27,13 @@ export function loadIssue(dose: StationDose, exercise: Exercise): string | undef
  * Causes d'inéligibilité du mouvement pour CET athlète (mêmes contrôles que le CORE, appliqués AVANT la proposition
  * pour refuser au lieu de laisser le CORE substituer ou retirer) et pour CETTE station.
  */
-export function movementIssues(stationId: string, exerciseId: string, exercise: Exercise | undefined, input: SportEngineInput<HyroxContext>): string[] {
+export function movementIssues(stationId: string | undefined, exerciseId: string, exercise: Exercise | undefined, input: SportEngineInput<HyroxContext>): string[] {
   if (!exercise) return ['UNKNOWN_MOVEMENT'];
   const c = input.constraints;
   const out: string[] = [];
   if (exercise.status !== 'active') out.push('INACTIVE');
-  if (exercise.hybridRaceStation !== stationId) out.push('NOT_THIS_STATION');
+  // `undefined` : composante non-station (segment couru H2) — aucun rattachement de station exigé.
+  if (stationId !== undefined && exercise.hybridRaceStation !== stationId) out.push('NOT_THIS_STATION');
   if (!input.catalog.isFeasibleWith(exercise, new Set(c.availableEquipment))) out.push('EQUIPMENT_MISSING');
   if (exercise.contraindicationTags.some((t) => c.restrictions.includes(t))) out.push('RESTRICTION');
   if (exercise.painSensitiveAreas.some((a) => c.areaRestrictions.some((r) => r.area === a))) out.push('PAIN_AREA');

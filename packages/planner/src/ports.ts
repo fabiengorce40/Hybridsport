@@ -13,7 +13,7 @@ import type { CoreProfile, CorePipelineOutcome, CoreState, EngineContext, Loaded
 import type { Discipline, FingerprintHistoryEntry, ReasonCode, RepetitionIntent, SessionDraft, SessionFingerprint, SessionRecord } from '@hybridsport/domain';
 import { ctPrescriptionOf, runCrossTrainingC2, stimulusFromArchetypeId } from '@hybridsport/crosstraining';
 import type { CrossTrainingContextInput, CrossTrainingEngine } from '@hybridsport/crosstraining';
-import { runHyroxH1 } from '@hybridsport/hyrox';
+import { h2ExposureOf, runHyroxH1 } from '@hybridsport/hyrox';
 import type { HyroxContextInput, HyroxEngine } from '@hybridsport/hyrox';
 import { ARCHETYPE_INTENT_IDS, archetypeFromIntentId, composeRunningWeek, isV1Archetype, parseRunningContext, resolveParameter } from '@hybridsport/running';
 import type { RunningContextInput, RunningParameter } from '@hybridsport/running';
@@ -431,13 +431,40 @@ export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossT
   return transport ? { ...port, consumesWeekSessions: true, weekSessionsScope: 'generated' } : port;
 }
 
-export function hyroxPort(def: Base<unknown> & { readonly engine: HyroxEngine; readonly baseContext: Ctx<Omit<HyroxContextInput, 'requestedStation'>> }): SportPort {
-  return createEnginePort<unknown>({
-    ...def, engine: def.engine as SportEngine<unknown>, sport: 'hyrox', discipline: 'hybrid_race',
+/**
+ * H2 — décisions de composition HYROX PERSISTÉES avec la séance : intention, objectif transporté, structure de séance,
+ * historique vu, voisines, structures écartées / choisie, stations et raisons, course (contexte, allure BLOCKED), dose,
+ * transitions (durée inconnue), durée, accumulation, provenance des valeurs candidates.
+ */
+const HR_PERSISTED_DECISIONS = /^(PLAN\.HYROX\.H2_(INTENT|GOAL_TRANSPORTED|SESSION_STRUCTURE|BLOCK_NOT_GENERATED|HISTORY|NEIGHBOURS|STRUCTURE_REJECTED|STRUCTURE_CHOSEN|STATION_SELECTED|RUN_COMPONENT|TRANSITIONS|DURATION|ACCUMULATION|REPEAT_UNAVOIDABLE|PROPOSED)|SAFETY\.HYROX\.H2_HISTORY_NEGATIVE|DOSE\.HYROX\.H2_DOSE|DATA\.HYROX\.CANDIDATE_VALUE_USED)$/;
+
+/**
+ * HYROX. H1 : station du programme transmise telle quelle. H2 (`transportNeighbours`) : voisines (seconde passe),
+ * priorité DÉCLARÉE et séances HYROX déjà générées de la semaine transportées SANS interprétation ; le port ne lit
+ * aucune station (l'exposition est relue par HYROX dans la séance générée).
+ */
+export function hyroxPort(def: Base<unknown> & { readonly engine: HyroxEngine; readonly baseContext: Ctx<Omit<HyroxContextInput, 'requestedStation'>>; readonly transportNeighbours?: boolean }): SportPort {
+  const transport = def.transportNeighbours === true;
+  const plannedOf = (slot: SlotRequest) => (slot.weekSessions ?? []).flatMap((w) => {
+    const x = h2ExposureOf(w.session, w.archetypeId, w.requestId, def.clock.instantOf(w.date));
+    return x ? [x] : [];
+  });
+  const port = createEnginePort<unknown>({
+    ...def, engine: def.engine as SportEngine<unknown>, sport: 'hyrox', discipline: 'hybrid_race', consumesNeighbours: transport,
     context: (slot) => {
       const b = resolve(def.baseContext, slot);
-      return { ...b, population: { ...b.population, hybrid: slot.hybrid }, ...(slot.station === undefined ? {} : { requestedStation: slot.station }) };
+      const n = slot.neighbours;
+      const order = (slot.sportPriority ?? []).map((x) => DISCIPLINE_OF[x]);
+      return {
+        ...b, population: { ...b.population, hybrid: slot.hybrid }, ...(slot.station === undefined ? {} : { requestedStation: slot.station }),
+        ...(transport && n ? { neighbours: { known: n.known, items: n.neighbours.map((x) => ({ discipline: x.discipline, hoursFromThisSession: x.hoursFromThisSession, demand: { ...x.demand } })) } } : {}),
+        ...(transport && order.length > 0 ? { sportPriority: { order } } : {}),
+        ...(transport && plannedOf(slot).length > 0 ? { plannedSessions: plannedOf(slot) } : {}),
+      };
     },
     run: (_e, r, c) => runHyroxH1(def.engine, r, c),
+    ...(transport ? { persistedDecisions: HR_PERSISTED_DECISIONS } : {}),
+    ...(transport ? { extraHistory: (slot: SlotRequest) => (slot.weekSessions ?? []).flatMap((w) => (w.fingerprint ? [{ fingerprint: w.fingerprint, at: def.clock.instantOf(w.date), status: 'planned' as const, repetitionIntents: [] }] : [])) } : {}),
   });
+  return transport ? { ...port, consumesWeekSessions: true, weekSessionsScope: 'generated' } : port;
 }
