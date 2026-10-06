@@ -9,8 +9,8 @@ import type { PainLevel, ReasonCode, SessionDraft } from '@hybridsport/domain';
 import { createCoreRegistry } from '@hybridsport/engine';
 import { CT_C2_ARCHETYPE, CT_STIMULI, ctPrescriptionOf, stimulusFromArchetypeId, zRealizedCtSession } from '@hybridsport/crosstraining';
 import type { RealizedCtSession } from '@hybridsport/crosstraining';
-import { h1PrescriptionOf, zHyroxStationExecution } from '@hybridsport/hyrox';
-import type { HyroxStationExecution } from '@hybridsport/hyrox';
+import { h1PrescriptionOf, h2ExecutionOf, h2RealizedOf, roleFromArchetype, zH2Execution, zHyroxStationExecution } from '@hybridsport/hyrox';
+import type { H2Execution, H2ExecutionInput, H2Realized, HyroxStationExecution } from '@hybridsport/hyrox';
 
 const core = createCoreRegistry();
 export type Realization<T> = { readonly ok: true; readonly value: T } | { readonly ok: false; readonly reasons: readonly ReasonCode[] };
@@ -112,4 +112,45 @@ export function realizeHyroxStation(session: SessionDraft, x: CommonExecution & 
   });
   if (!parsed.success) return { ok: false, reasons: parsed.error.issues.map((i) => core.emit('TECHNICAL.SCHEMA_INVALID', { path: `realized.${i.path.join('.')}`, problem: i.message })) };
   return { ok: true, value: parsed.data };
+}
+
+/**
+ * HYROX H2 (H2.5) : séance COMPOSÉE (archétype de rôle). Prescription lue dans la séance persistée, progression
+ * ENREGISTRÉE pendant la séance (étapes achevées, chrono, time cap constaté), charges réelles ; contrat strict du moteur.
+ * Douleur : `REPORTED` = signalée sans niveau (comme le Cross-training C3).
+ */
+export function realizeHyroxComposed(session: SessionDraft, x: Omit<CommonExecution, 'pain' | 'completedAt'> & {
+  readonly completedAt: string;
+  readonly archetypeId: string;
+  readonly pain?: 'NONE' | 'REPORTED' | PainLevel;
+  readonly progress: H2ExecutionInput['progress'];
+  readonly performedLoads?: H2ExecutionInput['performedLoads'];
+}): Realization<H2Execution> {
+  if (roleFromArchetype(x.archetypeId) === undefined) return invalid('archetypeId', `archétype HYROX H2 inconnu : ${x.archetypeId}`);
+  const r = h2ExecutionOf(session, {
+    sessionId: x.sessionId, at: x.completedAt, archetypeId: x.archetypeId, completion: ENGINE_COMPLETION[x.completion], progress: x.progress,
+    ...(x.pain !== undefined ? { pain: x.pain } : {}), ...(x.tolerance !== undefined ? { tolerance: x.tolerance } : {}),
+    ...(x.performedLoads ? { performedLoads: x.performedLoads } : {}),
+  });
+  if (!r.ok) return { ok: false, reasons: r.issues.map((i) => core.emit('TECHNICAL.SCHEMA_INVALID', { path: `realized.${i.path}`, problem: i.problem })) };
+  return { ok: true, value: r.value };
+}
+
+/** Archétype HYROX composé (H2) ? Routage de contrat seulement. */
+export const isHyroxComposed = (archetypeId: string): boolean => roleFromArchetype(archetypeId) !== undefined;
+
+/**
+ * Historiques HYROX transportés au moteur depuis les réalisations STOCKÉES (H1 : stations ; H2 : séances composées).
+ * Une réalisation H2 est réduite à sa mémoire (`compositionHistory` : exposition + statuts déclarés). Fail-closed : une
+ * entrée illisible est transmise telle quelle et le moteur la refuse à sa frontière (jamais ignorée en silence).
+ */
+export function hyroxHistoriesOf(records: readonly Readonly<Record<string, unknown>>[]): { readonly sessionHistory: readonly unknown[]; readonly compositionHistory: readonly (H2Realized | Readonly<Record<string, unknown>>)[] } {
+  const sessionHistory: unknown[] = [];
+  const compositionHistory: (H2Realized | Readonly<Record<string, unknown>>)[] = [];
+  for (const r of records) {
+    if (!('role' in r)) { sessionHistory.push(r); continue; }
+    const parsed = zH2Execution.safeParse(r);
+    compositionHistory.push(parsed.success ? h2RealizedOf(parsed.data) : r);
+  }
+  return { sessionHistory, compositionHistory };
 }

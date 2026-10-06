@@ -11,12 +11,14 @@ import { requestAssessment, weekIndexOf, withinProgramme, zProgrammeState } from
 import type { ProgrammeResult, ProgrammeState } from '@hybridsport/programme';
 import { logFreeRun } from './app.js';
 import type { Clock } from './app.js';
-import { beta0Environment, ctDeclarations, legacyBeta0StrengthIntent, prescribedArchetype, LEGACY_BETA0_STRENGTH_ARCHETYPE, programmeDefinitionFromProfile, weekPlanning } from './beta0.js';
+import { beta0Environment, ctDeclarations, hrDeclarations, legacyBeta0StrengthIntent, prescribedArchetype, LEGACY_BETA0_STRENGTH_ARCHETYPE, programmeDefinitionFromProfile, weekPlanning } from './beta0.js';
 import { STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } from '@hybridsport/strength';
 import { addDays, dateOf, normalizeInstant, weekStartOf } from './dates.js';
 import { AppError } from './errors.js';
 import { emptyState, zProfile } from './model.js';
-import type { AppState, CtRuntime, Feedback, PersistedWeek, ProfileInput, ProgrammeLog, Rest, SetLog } from './model.js';
+import type { AppState, CtRuntime, Feedback, HrRuntime, PersistedWeek, ProfileInput, ProgrammeLog, Rest, SetLog } from './model.js';
+import { hrStationsOf, hrWorkoutOf } from './hr-workout.js';
+import type { HrWorkout } from './hr-workout.js';
 import { closeProgrammeWeekInApp, planProgrammeCurrentWeek, ProgrammeError, recordSessionExecution, startProgramme } from './programme.js';
 import { strengthWeekBoundary } from './progression.js';
 import { compactHistory } from './history.js';
@@ -72,14 +74,14 @@ function carryWeek(ps: ProgrammeState, c: CarriedWeek): ProgrammeState {
 }
 
 /**
- * Profil Beta 0 validé : sports exposés (Strength, Running, Cross-training C3.5) ; HYROX refusé ; Cross-training activé ⇒
- * déclarations complètes exigées (fréquence, intention, coupure) — aucune valeur supposée.
+ * Profil Beta 0 validé : sports exposés (Strength, Running, Cross-training C3.5, HYROX H2.5) ; Cross-training ou HYROX
+ * activé ⇒ déclarations complètes exigées (fréquence, intention / rôle, objectif, coupure) — aucune valeur supposée.
  */
 function beta0Profile(input: ProfileInput): ProfileInput & ReturnType<typeof zProfile.parse> {
   const profile = zProfile.parse(input);
-  if (profile.hyrox.enabled) throw new AppError('BETA0_SPORT_UNSUPPORTED');
-  if (!profile.strength.enabled && !profile.running.enabled && !profile.crosstraining.enabled) throw new AppError('NO_SPORT_SELECTED');
+  if (!profile.strength.enabled && !profile.running.enabled && !profile.crosstraining.enabled && !profile.hyrox.enabled) throw new AppError('NO_SPORT_SELECTED');
   if (profile.crosstraining.enabled) ctDeclarations(profile);
+  if (profile.hyrox.enabled) hrDeclarations(profile);
   return profile;
 }
 
@@ -285,9 +287,11 @@ function recordOf(r: PlannedRequest | undefined): SessionRecord | undefined {
 
 export interface ProgrammeSessionView {
   readonly requestId: string;
-  readonly sport: 'strength' | 'running' | 'crosstraining';
+  readonly sport: 'strength' | 'running' | 'crosstraining' | 'hyrox';
   readonly date: string;
   readonly session: SessionDraft;
+  /** HYROX : stations des composantes (décisions H2 persistées avec la séance), sinon vide. */
+  readonly hrStations: Readonly<Record<string, string>>;
   readonly archetypeId: string | null;
   /** Erreur de données sur l'archétype prescrit (jamais masquée). */
   readonly dataError: 'ARCHETYPE_MISSING' | 'ARCHETYPE_MISMATCH' | null;
@@ -305,10 +309,10 @@ export function selectProgrammeSession(state: AppState, requestId: string): Prog
   const r = requestOf(state, requestId);
   const record = recordOf(r);
   const session = record?.session;
-  if (!r?.date || !record || !session || (r.sport !== 'strength' && r.sport !== 'running' && r.sport !== 'crosstraining')) return null;
+  if (!r?.date || !record || !session) return null;
   const week = Object.values(state.planner.weeks).find((w) => w.requests.includes(r));
   return {
-    requestId, sport: r.sport, date: r.date, session, ...prescribedArchetype(r), role: r.composition?.role ?? null,
+    requestId, sport: r.sport, date: r.date, session, hrStations: r.sport === 'hyrox' ? hrStationsOf(r.reasons) : {}, ...prescribedArchetype(r), role: r.composition?.role ?? null,
     estimatedDurationS: record.durationEstimate.availability === 'AVAILABLE' ? record.durationEstimate.p50 : null,
     log: state.programmeLogs[requestId] ?? null, result: state.programmeState?.results.find((x) => x.requestId === requestId) ?? null,
     experimental: week?.authority !== 'production',
@@ -332,7 +336,54 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   const now = normalizeInstant(clock.now);
   // Cross-training : « Commencer » démarre le chrono (horodaté) ; tours et répétitions à zéro (saisies de l'athlète).
   const ct = v.sport === 'crosstraining' ? { ct: { runningSince: now, accumulatedS: 0, rounds: 0, partialReps: 0 } } : {};
-  return withLog(state, { requestId, sport: v.sport, startedAt: now, sets: [], painItems: [], rest: null, ...ct });
+  // HYROX : séance H2 lisible exigée (jamais de démarrage sur une séance hors contrat) ; chrono démarré, position 0.
+  if (v.sport === 'hyrox' && !hrWorkoutOfView(v)) throw new AppError('HR_SESSION_UNREADABLE');
+  const hr = v.sport === 'hyrox' ? { hr: { runningSince: now, accumulatedS: 0, steps: 0, loads: [] } } : {};
+  return withLog(state, { requestId, sport: v.sport, startedAt: now, sets: [], painItems: [], rest: null, ...ct, ...hr });
+}
+
+// ——— HYROX (H2.5) : chrono horodaté, position dans la séquence, charges réelles — aucune écriture par seconde
+
+/** Projection d'exécution de la séance HYROX d'une vue (séance persistée + stations des décisions H2). */
+export function hrWorkoutOfView(v: ProgrammeSessionView): HrWorkout | null {
+  return v.sport === 'hyrox' && v.archetypeId ? hrWorkoutOf(v.session, v.archetypeId, v.hrStations) : null;
+}
+
+function openHr(state: AppState, requestId: string): { readonly log: ProgrammeLog & { readonly hr: HrRuntime }; readonly w: HrWorkout } {
+  const log = openLog(state, requestId);
+  const v = selectProgrammeSession(state, requestId);
+  const w = v ? hrWorkoutOfView(v) : null;
+  if (log.sport !== 'hyrox' || !log.hr || !w) throw new AppError('HR_RUNTIME_MISSING');
+  return { log: log as ProgrammeLog & { readonly hr: HrRuntime }, w };
+}
+
+/** Temps écoulé du chrono HYROX (même règle que Cross-training : cumul + segment en cours). */
+export const hrElapsedS = (rt: HrRuntime, nowIso: string): number => ctElapsedS({ runningSince: rt.runningSince, accumulatedS: rt.accumulatedS, rounds: 0, partialReps: 0 }, nowIso);
+
+/** Pause / reprise EXPLICITES du chrono HYROX. */
+export function controlHrTimer(state: AppState, clock: Clock, requestId: string, action: 'pause' | 'resume'): AppState {
+  const { log } = openHr(state, requestId);
+  const rt = log.hr;
+  if (action === 'pause' && rt.runningSince !== null) return withLog(state, { ...log, hr: { ...rt, runningSince: null, accumulatedS: hrElapsedS(rt, clock.now) } });
+  if (action === 'resume' && rt.runningSince === null) return withLog(state, { ...log, hr: { ...rt, runningSince: normalizeInstant(clock.now) } });
+  return state;
+}
+
+/** Position dans la séquence (étapes achevées, valeur absolue 0…total) : « Suivant » / « Retour ». */
+export function setHrSteps(state: AppState, requestId: string, steps: number): AppState {
+  const { log, w } = openHr(state, requestId);
+  if (!Number.isInteger(steps) || steps < 0 || steps > w.steps.length) throw new AppError('HR_PROGRESS_INVALID');
+  return withLog(state, { ...log, hr: { ...log.hr, steps } });
+}
+
+/** Charge RÉELLEMENT utilisée sur un item de station CHARGÉ (prescrit), ou effacement (`null`). */
+export function recordHrLoad(state: AppState, requestId: string, itemId: string, kg: number | null): AppState {
+  const { log, w } = openHr(state, requestId);
+  const c = w.components.find((x) => x.itemId === itemId);
+  if (!c || c.kind !== 'station' || c.loadKg === undefined) throw new AppError('HR_LOAD_NOT_PRESCRIBED');
+  if (kg !== null && !(Number.isFinite(kg) && kg > 0)) throw new AppError('HR_LOAD_INVALID');
+  const loads = [...log.hr.loads.filter((l) => l.itemId !== itemId), ...(kg === null ? [] : [{ itemId, kg }])];
+  return withLog(state, { ...log, hr: { ...log.hr, loads } });
 }
 
 // ——— Cross-training (C3.5) : chrono horodaté, compteurs saisis — aucune écriture par seconde
@@ -443,6 +494,8 @@ export interface FinishInput {
    * utilisées. Validé par le moteur ; un refus laisse l'état inchangé.
    */
   readonly ct?: { readonly result?: Readonly<Record<string, unknown>>; readonly performedLoads?: readonly { readonly exerciseId: string; readonly kg: number }[] };
+  /** HYROX : time cap atteint (constaté à l'écran) ; la progression et les charges viennent du runtime persisté. */
+  readonly hr?: { readonly timeCapReached: boolean };
 }
 
 /**
@@ -453,6 +506,18 @@ export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishI
   const s0 = state.programmeLogs[f.requestId] ? state : startProgrammeSession(state, clock, f.requestId);
   const log = openLog(s0, f.requestId);
   const pain = f.pain ? 'REPORTED' as const : 'NONE' as const;
+  if (log.sport === 'hyrox') {
+    const rt = log.hr ?? { runningSince: null, accumulatedS: 0, steps: 0, loads: [] };
+    const elapsedS = hrElapsedS(rt, clock.now);
+    const recorded = recordSessionExecution(s0, clock, {
+      requestId: f.requestId, sport: 'hyrox', completion: f.completion, pain,
+      progress: { stepsCompleted: rt.steps, elapsedS, timeCapReached: f.hr?.timeCapReached ?? false }, ...(rt.loads.length > 0 ? { performedLoads: rt.loads } : {}),
+    });
+    // Résultat STRUCTURÉ tel que validé par le moteur (copie de la réalisation enregistrée), chrono figé.
+    const realized = recorded.hyrox.realized.find((r) => r.sessionId === f.requestId);
+    const hr = { result: { ...((realized?.result as Record<string, unknown> | undefined) ?? {}) }, elapsedS, performedLoads: rt.loads.map((l) => ({ ...l })) };
+    return withLog(recorded, { ...log, hr: { ...rt, runningSince: null, accumulatedS: elapsedS }, rest: null, finishedAt: normalizeInstant(clock.now), outcome: { completion: f.completion, pain: f.pain, hr } });
+  }
   if (log.sport === 'crosstraining') {
     const rt = log.ct ?? { runningSince: null, accumulatedS: 0, rounds: 0, partialReps: 0 };
     const elapsedS = ctElapsedS(rt, clock.now);
@@ -476,7 +541,7 @@ export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishI
 
 export interface HistoryEntry {
   readonly requestId: string;
-  readonly sport: 'strength' | 'running' | 'crosstraining';
+  readonly sport: 'strength' | 'running' | 'crosstraining' | 'hyrox';
   readonly date: string;
   readonly archetypeId: string | null;
   readonly role: string | null;
@@ -489,6 +554,8 @@ export interface HistoryEntry {
   readonly testReference: boolean;
   /** Cross-training : format et mouvements PRESCRITS (séance persistée), résultat structuré saisi, temps chronométré. */
   readonly ct: { readonly format: string; readonly exercises: readonly string[]; readonly result: Readonly<Record<string, unknown>> | null; readonly elapsedS: number } | null;
+  /** HYROX : structure et stations PRESCRITES (séance persistée), résultat structuré validé, temps, charges réelles. */
+  readonly hr: { readonly structure: string; readonly rounds: number; readonly itemsPerRound: number; readonly stations: readonly string[]; readonly runSegments: number; readonly result: Readonly<Record<string, unknown>>; readonly elapsedS: number; readonly performedLoads: readonly { readonly itemId: string; readonly kg: number }[] } | null;
 }
 
 /** Format et mouvements de la séance Cross-training PERSISTÉE (lecture du session_record, jamais reconstruite). */
@@ -506,17 +573,22 @@ export function selectHistory(state: AppState): readonly HistoryEntry[] {
     if (!l.finishedAt || !l.outcome) return [];
     const r = requestOf(state, l.requestId);
     const summary = l.sport === 'crosstraining' ? ctSummary(state, l.requestId) : null;
+    const hv = l.sport === 'hyrox' ? selectProgrammeSession(state, l.requestId) : null;
+    const hw = hv ? hrWorkoutOfView(hv) : null;
     return [{
       requestId: l.requestId, sport: l.sport, date: r?.date ?? dateOf(l.startedAt), archetypeId: r ? prescribedArchetype(r).archetypeId : null, role: r?.composition?.role ?? null,
       completion: l.outcome.completion, pain: l.outcome.pain, sets: l.sets.filter((x) => x.done), run: l.outcome.run ?? null,
       testReference: state.running.references.some((x) => x.referenceId === `test:${l.requestId}`),
       ct: summary && l.outcome.ct ? { ...summary, result: l.outcome.ct.result, elapsedS: l.outcome.ct.elapsedS } : null,
+      hr: hw && l.outcome.hr ? {
+        structure: hw.structure, rounds: hw.rounds, itemsPerRound: hw.components.length,
+        stations: [...new Set(hw.components.filter((c) => c.kind === 'station').map((c) => c.exerciseId))], runSegments: hw.components.filter((c) => c.kind === 'run').length * hw.rounds, result: l.outcome.hr.result, elapsedS: l.outcome.hr.elapsedS, performedLoads: l.outcome.hr.performedLoads } : null,
     }];
   });
   const missed = (state.programmeState?.results ?? []).flatMap((x): HistoryEntry[] => {
-    if (x.completion !== 'missed' || fromLogs.some((e) => e.requestId === x.requestId) || (x.sport !== 'strength' && x.sport !== 'running' && x.sport !== 'crosstraining')) return [];
+    if (x.completion !== 'missed' || fromLogs.some((e) => e.requestId === x.requestId)) return [];
     const r = requestOf(state, x.requestId);
-    return [{ requestId: x.requestId, sport: x.sport, date: x.date, archetypeId: r ? prescribedArchetype(r).archetypeId : null, role: r?.composition?.role ?? null, completion: 'missed', pain: false, sets: [], run: null, testReference: false, ct: null }];
+    return [{ requestId: x.requestId, sport: x.sport, date: x.date, archetypeId: r ? prescribedArchetype(r).archetypeId : null, role: r?.composition?.role ?? null, completion: 'missed', pain: false, sets: [], run: null, testReference: false, ct: null, hr: null }];
   });
   return [...fromLogs, ...missed].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.requestId.localeCompare(a.requestId)));
 }

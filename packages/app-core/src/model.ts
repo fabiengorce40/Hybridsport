@@ -8,7 +8,7 @@
 import { z } from 'zod';
 import { isISODateTime, LEVELS, zFingerprintHistoryEntry, zSerializedEnvelope, zSessionDraft } from '@hybridsport/domain';
 import { INTENT_FIELDS, PLANNER_MODES, REQUEST_CATEGORIES } from '@hybridsport/planner';
-import { zProgrammeState } from '@hybridsport/programme';
+import { HYROX_PROGRAMME_GOALS, zProgrammeState } from '@hybridsport/programme';
 import { zExerciseExposure, zStrengthTrack } from '@hybridsport/strength';
 import { RETURN_STATES, RUNNING_GOALS, RUNNING_LEVELS, zRealizedSession, zRunningReference } from '@hybridsport/running';
 
@@ -57,7 +57,18 @@ export const zProfile = z.object({
     intent: z.string().min(1).optional(),
     returnState: z.enum(RETURN_STATES).optional(),
   }).strict(),
-  hyrox: z.object({ enabled: z.boolean() }).strict(),
+  /**
+   * HYROX (H2.5) : DÉCLARATIONS de l'utilisateur, exigées quand le sport est activé en Beta 0 — séances par semaine,
+   * rôle de séance (archétype H2 parmi `HR_ROLE_LABELS`), objectif (vocabulaire du programme), coupure récente.
+   * Champs additifs (un profil antérieur `{ enabled }` reste valide).
+   */
+  hyrox: z.object({
+    enabled: z.boolean(),
+    sessionsPerWeek: sessionsPerWeek.optional(),
+    role: z.string().min(1).optional(),
+    goal: z.enum(HYROX_PROGRAMME_GOALS).optional(),
+    returnState: z.enum(RETURN_STATES).optional(),
+  }).strict(),
   equipment: z.object({ presetId: z.string().min(1), items: z.array(z.string().min(1)) }).strict(),
   /** Minutes disponibles par jour, du lundi (0) au dimanche (6) ; 0 = indisponible. */
   // technical-constant: minutes dans une journée (borne de saisie)
@@ -272,16 +283,31 @@ export const zCtRuntime = z.object({
 }).strict();
 export type CtRuntime = z.infer<typeof zCtRuntime>;
 
+/**
+ * H2.5 — exécution HYROX EN COURS : chrono HORODATÉ (comme Cross-training) et position dans la SÉQUENCE prescrite
+ * (`steps` = items achevés depuis le début, tous tours confondus), charges RÉELLEMENT utilisées par item. Écrit
+ * seulement sur une commande (démarrer, pause, reprise, suivant, retour, charge) — jamais chaque seconde.
+ */
+export const zHrRuntime = z.object({
+  runningSince: instant.nullable(),
+  accumulatedS: z.number().nonnegative(),
+  steps: z.number().int().nonnegative(),
+  loads: z.array(z.object({ itemId: z.string().min(1), kg: z.number().positive().finite() }).strict()).default([]),
+}).strict();
+export type HrRuntime = z.infer<typeof zHrRuntime>;
+
 /** Séance du programme commencée dans l'application. */
 export const zProgrammeLog = z.object({
   requestId: z.string().min(1),
-  sport: z.enum([...ENGINE_SPORTS, 'crosstraining']),
+  sport: z.enum([...ENGINE_SPORTS, 'crosstraining', 'hyrox']),
   startedAt: instant,
   sets: z.array(zSetLog),
   painItems: z.array(z.string()).default([]),
   rest: zRest.nullable().default(null),
   /** Cross-training : chrono et compteurs (absent pour les autres sports). */
   ct: zCtRuntime.optional(),
+  /** HYROX : chrono, position dans la séquence, charges réelles (absent pour les autres sports). */
+  hr: zHrRuntime.optional(),
   finishedAt: instant.optional(),
   /** Issue enregistrée (copie de la saisie transmise à recordSessionExecution). */
   outcome: z.object({
@@ -290,6 +316,8 @@ export const zProgrammeLog = z.object({
     run: z.object({ realizedDurationS: z.number().positive().finite(), distanceM: z.number().positive().finite().optional(), testTimeS: z.number().positive().finite().optional() }).strict().optional(),
     /** Cross-training : résultat STRUCTURÉ transmis au moteur (contrat de résultat CT) et temps chronométré. */
     ct: z.object({ result: z.record(z.string(), z.unknown()).nullable(), elapsedS: z.number().nonnegative(), performedLoads: z.array(z.object({ exerciseId: z.string().min(1), kg: z.number().positive().finite() }).strict()).default([]) }).strict().optional(),
+    /** HYROX : résultat STRUCTURÉ validé par le moteur (completed / time_capped / abandoned), temps, charges réelles. */
+    hr: z.object({ result: z.record(z.string(), z.unknown()), elapsedS: z.number().nonnegative(), performedLoads: z.array(z.object({ itemId: z.string().min(1), kg: z.number().positive().finite() }).strict()).default([]) }).strict().optional(),
   }).strict().optional(),
 }).strict();
 export type ProgrammeLog = z.infer<typeof zProgrammeLog>;

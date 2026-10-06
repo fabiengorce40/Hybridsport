@@ -15,6 +15,7 @@ import { isTest, roleName, sessionName, sportName, STATUS_LABELS } from '../../p
 import { BLOCK_LABELS, RunStructureView, SetRow } from '../Session.js';
 import { StrengthWorkout } from '../../workout/StrengthWorkout.js';
 import { CrossTrainingWorkout } from '../../workout/CrossTrainingWorkout.js';
+import { HyroxWorkout } from '../../workout/HyroxWorkout.js';
 import { ExperimentalBadge } from './common.js';
 import { DurationInput } from '../../running/DurationInput.js';
 import { durationFromParts, EMPTY_DURATION } from '../../running/duration.js';
@@ -99,6 +100,8 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
   if (!v) return <><Topbar title="Séance" onBack={onBack} /><div className="empty">Séance introuvable.</div></>;
   // Cross-training : séance propre au format (prescription persistée lue, jamais de repli Strength ni legacy).
   if (v.sport === 'crosstraining') return <CrossTrainingWorkout v={v} onBack={onBack} />;
+  // HYROX : séance propre (enchaînement de la prescription persistée), jamais de repli Strength, Cross-training ou legacy.
+  if (v.sport === 'hyrox') return <HyroxWorkout v={v} onBack={onBack} />;
   const { session, log, result } = v;
   const name = sessionName(v.sport, v.archetypeId, v.dataError);
   const role = roleName(v.role);

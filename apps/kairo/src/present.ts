@@ -2,12 +2,12 @@
  * Mapping de PRÉSENTATION Beta 0 (UI uniquement) : identifiants et catégories du backend → libellés compréhensibles.
  * Aucun code interne n'est affiché tel quel ; aucune décision sportive ici.
  */
-import { CT_FORMAT_LABELS, CT_INTENT_LABELS, RUNNING_ARCHETYPE_LABELS, RUNNING_ROLE_LABELS, SPORT_LABELS } from '@hybridsport/app-core';
+import { CT_FORMAT_LABELS, CT_INTENT_LABELS, HR_ROLE_LABELS, RUNNING_ARCHETYPE_LABELS, RUNNING_ROLE_LABELS, SPORT_LABELS } from '@hybridsport/app-core';
 import type { Beta0WeekView, SessionView, SessionViewStatus } from '@hybridsport/app-core';
 
 const STRENGTH_TITLES: Readonly<Record<string, string>> = { str_full_body: 'Full body', str_upper: 'Haut du corps', str_lower: 'Bas du corps', str_support: 'Renforcement' };
 
-export const SPORT_SHORT: Readonly<Record<string, string>> = { strength: 'Musculation', running: 'Course', crosstraining: 'Cross-training' };
+export const SPORT_SHORT: Readonly<Record<string, string>> = { strength: 'Musculation', running: 'Course', crosstraining: 'Cross-training', hyrox: 'HYROX' };
 export const sportName = (s: string): string => SPORT_SHORT[s] ?? SPORT_LABELS[s as 'strength'] ?? 'Séance';
 
 /**
@@ -17,7 +17,7 @@ export const sportName = (s: string): string => SPORT_SHORT[s] ?? SPORT_LABELS[s
 export function sessionName(sport: string, archetypeId: string | null, dataError: SessionView['dataError'] = null): string {
   if (dataError === 'ARCHETYPE_MISMATCH') return 'Erreur de données : archétype incohérent';
   if (archetypeId === null) return 'Erreur de données : archétype absent';
-  const label = sport === 'running' ? RUNNING_ARCHETYPE_LABELS[archetypeId] : sport === 'crosstraining' ? CT_INTENT_LABELS[archetypeId]?.title : STRENGTH_TITLES[archetypeId];
+  const label = sport === 'running' ? RUNNING_ARCHETYPE_LABELS[archetypeId] : sport === 'crosstraining' ? CT_INTENT_LABELS[archetypeId]?.title : sport === 'hyrox' ? HR_ROLE_LABELS[archetypeId]?.title : STRENGTH_TITLES[archetypeId];
   return label ?? `Erreur de données : archétype inconnu (${archetypeId})`;
 }
 
@@ -94,6 +94,14 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   CT_DECLARATION_MISSING: 'Cross-training : choisissez une intention, un nombre de séances et indiquez une éventuelle coupure.',
   CT_INTENT_UNKNOWN: 'Cross-training : intention inconnue.',
   CT_PROGRESS_INVALID: 'Valeur de progression invalide.',
+  HR_DECLARATION_MISSING: 'HYROX : choisissez un type de séance, un objectif, un nombre de séances et indiquez une éventuelle coupure.',
+  HR_ROLE_UNKNOWN: 'HYROX : type de séance inconnu.',
+  HR_PROGRESS_INVALID: 'Étape hors de la séance prescrite.',
+  HR_RUNTIME_MISSING: 'Séance HYROX non démarrée.',
+  HR_SESSION_UNREADABLE: 'Séance HYROX illisible : elle n’est pas reconstruite.',
+  HR_LOAD_NOT_PRESCRIBED: 'Aucune charge n’est prescrite pour cette étape.',
+  HR_LOAD_INVALID: 'Charge illisible.',
+  EXECUTION_HR_PROGRESS_REQUIRED: 'Progression de la séance HYROX manquante.',
   EXECUTION_INVALID: 'Ce résultat ne correspond pas à la séance prévue : vérifiez-le (ou choisissez « J’ai adapté la séance »).',
   RUN_DURATION_REQUIRED: 'Indiquez la durée réellement courue.',
   DUPLICATE_RUN: 'Cette course est déjà enregistrée.',

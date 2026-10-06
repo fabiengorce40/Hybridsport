@@ -22,6 +22,7 @@ export const EXERCISE_LABELS: Readonly<Record<string, string>> = {
   'ex.machine_lateral_raise': 'Élévations latérales machine', 'ex.pec_deck': 'Pec deck', 'ex.cable_pallof_press': 'Pallof press', 'ex.dead_bug': 'Dead bug',
   'ex.db_rdl': 'Soulevé roumain haltères', 'ex.walking_lunge_db': 'Fentes marchées haltères', 'ex.shoulder_mobility_flow': 'Mobilité épaules',
   'ex.lower_mobility_flow': 'Mobilité bas du corps',
+  'ex.sled_pull': 'Tirage de traîneau', 'ex.burpee_broad_jump': 'Burpee broad jump',
 };
 
 export function exerciseLabel(id: string): string {
@@ -195,4 +196,22 @@ export const PAIN_AREAS: Readonly<Record<string, string>> = { knee: 'Genou', sho
 export const AUTHORITY_LABELS: Readonly<Record<string, { badge: string; detail: string }>> = {
   provisional: { badge: 'PROVISOIRE', detail: 'Valeurs provisoires non validées par un expert (ruleset de test verrouillé provisoirement).' },
   simulation: { badge: 'SIMULATION', detail: 'Moteur course en gouvernance simulée : valeurs candidates, non approuvées.' },
+};
+
+/**
+ * HYROX (H2.5) : rôles de séance que H2 sait composer (archétypes de rôle), libellés utilisateur. Aucune simulation
+ * complète (BLOCKED dans le moteur). Le libellé ne sert qu'à afficher : le contenu vient TOUJOURS de la séance persistée.
+ */
+export const HR_ROLE_LABELS: Readonly<Record<string, { title: string; detail: string }>> = {
+  'hybrid_race.h2.station_capacity': { title: 'Capacité stations', detail: 'Une station HYROX répétée, tour après tour' },
+  'hybrid_race.h2.strength_endurance': { title: 'Endurance de force', detail: 'Stations chargées enchaînées (traîneau, portés, fentes…)' },
+  'hybrid_race.h2.mixed_station_conditioning': { title: 'Conditionnement stations', detail: 'Plusieurs stations différentes, en circuit, sans course' },
+  'hybrid_race.h2.compromised_running': { title: 'Course compromise', detail: 'Station puis course, répétées : courir sous fatigue' },
+  'hybrid_race.h2.partial_simulation': { title: 'Simulation partielle', detail: 'Un segment de l’enchaînement course / stations' },
+};
+/** Objectifs HYROX (vocabulaire du programme). */
+export const HR_GOAL_LABELS: Readonly<Record<string, string>> = { GENERAL: 'Forme générale', RACE_PREPARATION: 'Préparer une course HYROX' };
+/** Structures de séance HYROX (lecture de la séance persistée). */
+export const HR_STRUCTURE_LABELS: Readonly<Record<string, string>> = {
+  station_repeats: 'Station répétée', station_circuit: 'Circuit de stations', run_station_alternation: 'Station → course', partial_sequence: 'Parcours',
 };

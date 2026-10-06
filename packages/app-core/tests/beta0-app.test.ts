@@ -54,8 +54,8 @@ describe('création du programme Beta 0', () => {
     expect(dates.every((d) => d >= '2026-10-07')).toBe(true);
   });
 
-  it('CT / HYROX refusés ; aucun sport ⇒ refus', () => {
-    expect(() => createBeta0Programme(emptyState(), { ...input('strength'), hyrox: { enabled: true } }, clock(W1), {})).toThrow('BETA0_SPORT_UNSUPPORTED');
+  it('HYROX (H2.5) sans déclarations ⇒ refus explicite (aucune valeur supposée) ; aucun sport ⇒ refus', () => {
+    expect(() => createBeta0Programme(emptyState(), { ...input('strength'), hyrox: { enabled: true } }, clock(W1), {})).toThrow('HR_DECLARATION_MISSING');
     expect(() => createBeta0Programme(emptyState(), { ...input('strength'), strength: { enabled: false, goal: 'strength', sessionsPerWeek: 2 } }, clock(W1), {})).toThrow('NO_SPORT_SELECTED');
   });
 });

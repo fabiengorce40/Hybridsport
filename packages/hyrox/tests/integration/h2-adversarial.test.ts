@@ -247,13 +247,13 @@ describe('H2 adversarial — priorité, objectif, simulation, état', () => {
     expect(issues.map((x: ReasonCode) => x.code)).toEqual([HR_CODES.ARCHETYPE_UNKNOWN]);
   });
 
-  it('33. export / import : aucun état applicatif H2 (HYROX hors Beta 0) ; le contexte H2 survit à JSON aller-retour', () => {
+  it('33. export / import : le contexte H2 survit à JSON aller-retour ; app-core ne dépend pas du moteur HYROX (façade du planificateur)', () => {
     const ctx = { population: { level: 'intermediate', hybrid: false }, mode: 'CANDIDATE', returnState: { state: 'NONE' }, goal: { type: 'RACE_PREPARATION', targetTimeS: 5400 },
       compositionHistory: [realized({ exercises: ['ex.skierg'] })], plannedSessions: [{ sessionId: 's', at: NOW, role: 'compromised_running', structure: 'run_station_alternation', exercises: ['ex.skierg', 'ex.easy_run'] }] };
     const parsed = parseHyroxContext(JSON.parse(JSON.stringify(ctx)));
     expect(parsed.ok).toBe(true);
-    const app = loadCoreSources(['packages/app-core/src']);
-    expect(app.some((f) => /compositionHistory|hybrid_race\.h2/.test(f.text))).toBe(false);
+    // H2.5 : l'état applicatif HYROX existe (réalisations H2) ; il transite par le planificateur, jamais par un import HYROX.
+    expect(collectImports(loadCoreSources(['packages/app-core/src'])).filter((x) => x.module.includes('hyrox'))).toEqual([]);
   });
 
   it('34. empreinte : stations différentes ⇒ empreintes différentes ; séance identique ⇒ empreinte identique ; résultat jamais inclus', () => {

@@ -63,7 +63,7 @@ export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemV
       </div>
       <h3>{name}</h3>
       <div className="small muted num">
-        {[role, ctFormatName(v.ctFormat), (v.estimatedDurationS ?? v.targetDurationS) !== null ? `≈ ${approxMinutes(v.estimatedDurationS ?? v.targetDurationS ?? 0)}` : null, v.pain ? 'douleur signalée' : null].filter(Boolean).join(' · ')}
+        {[role, ctFormatName(v.ctFormat), v.hrTimeCapS !== null ? `time cap ${approxMinutes(v.hrTimeCapS)}` : (v.estimatedDurationS ?? v.targetDurationS) !== null ? `≈ ${approxMinutes(v.estimatedDurationS ?? v.targetDurationS ?? 0)}` : null, v.pain ? 'douleur signalée' : null].filter(Boolean).join(' · ')}
       </div>
     </button>
   );

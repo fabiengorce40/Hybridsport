@@ -26,8 +26,8 @@ function onboard(storage: MemoryStorage, choice: Choice) {
   expect(screen.getByRole('button', { name: 'Commencer' })).toHaveProperty('disabled', true);
   fireEvent.click(screen.getByLabelText(/J’ai compris/));
   click('Commencer');
-  // HYROX absent de l'onboarding Beta 0 ; Cross-training proposé depuis C3.5.
-  expect(screen.queryByText(/HYROX/)).toBeNull();
+  // Cross-training proposé depuis C3.5 ; HYROX depuis H2.5.
+  expect(screen.getByRole('radio', { name: /^HYROX/ })).toBeTruthy();
   expect(screen.getByRole('radio', { name: /^Cross-training/ })).toBeTruthy();
   fireEvent.click(screen.getByRole('radio', { name: CHOICE_NAMES[choice] }));
   click('Continuer');

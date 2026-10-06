@@ -10,7 +10,7 @@ import { toEnvelope } from '@hybridsport/engine';
 import type { ISODateTime, ReasonCode, SessionDraft } from '@hybridsport/domain';
 import { findArchetype, readStrengthParams, StrengthEngine } from '@hybridsport/strength';
 import type { StrengthCompositionRule } from '@hybridsport/strength';
-import { crossTrainingPort, hyroxPort, planMultisportWeek, runningPort, strengthPort } from '@hybridsport/planner';
+import { crossTrainingPort, hyroxHistoriesOf, hyroxPort, planMultisportWeek, runningPort, strengthPort } from '@hybridsport/planner';
 import type { CrossTrainingEngine, HyroxEngine, PlannedWeek, PlannerClock, PlannerMode, SportPorts } from '@hybridsport/planner';
 import type { LoadedRuleset, SportEngine } from '@hybridsport/engine';
 import { addDays, normalizeInstant, sessionInstant, weekStartOf } from './dates.js';
@@ -48,7 +48,11 @@ export interface PlannerEnvironment {
    * identifiants SIMULATION_ONLY propres au Cross-training, tracés dans les seules semaines qui en contiennent.
    */
   readonly crosstraining?: { readonly engine: CrossTrainingEngine; readonly content: Content; readonly transportNeighbours?: boolean; readonly simulation?: readonly string[] };
-  readonly hyrox?: { readonly engine: HyroxEngine; readonly content: Content };
+  /**
+   * `transportNeighbours` (H2.5) : voisines, priorité et séances HYROX de la semaine transportées au contexte H2 ;
+   * `simulation` : identifiants SIMULATION_ONLY propres à HYROX, tracés dans les seules semaines qui en contiennent.
+   */
+  readonly hyrox?: { readonly engine: HyroxEngine; readonly content: Content; readonly transportNeighbours?: boolean; readonly simulation?: readonly string[] };
 }
 
 /**
@@ -107,6 +111,8 @@ export interface EngineGoals {
   readonly strength?: Profile['strength']['goal'];
   readonly running?: { readonly type: Profile['running']['goal']; readonly targetDate?: string };
   readonly crosstraining?: string;
+  /** HYROX : objectif du programme (`GENERAL` / `RACE_PREPARATION`), transmis au contrat H2 `goal.type`. */
+  readonly hyrox?: string;
 }
 
 export function buildPorts(state: AppState, p: Profile, programme: ProgrammeIntent, env: PlannerEnvironment, goals: EngineGoals = {}): SportPorts {
@@ -136,17 +142,27 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
       baseContext: (slot) => ({ ...decl('crosstraining'), ...(goals.crosstraining ? { goal: { type: goals.crosstraining } } : {}), sessionHistory: state.crosstraining.realized.filter((r) => typeof r.completedAt === 'string' && r.completedAt < sessionInstant(slot.date)), mode: env.mode, capabilityRequests: [...CT_CAPABILITY_REQUESTS] }) as never,
     });
   }
-  if (env.hyrox) ports.hyrox = hyroxPort({ engine: env.hyrox.engine, content: env.hyrox.content, profile, state: state0, history: [], clock, baseContext: (slot) => ({ ...decl('hyrox'), mode: env.mode, sessionHistory: state.hyrox.realized.filter((r) => typeof r.completedAt === 'string' && r.completedAt < sessionInstant(slot.date)) }) as never });
+  if (env.hyrox) {
+    // Réalisations HYROX ANTÉRIEURES au créneau : H1 (stations, `completedAt`) et H2 (séances composées, `at`), réduites
+    // par le planificateur à leurs contrats (`sessionHistory` / `compositionHistory`). Aucune lecture sportive ici.
+    const before = (slot: { date: string }) => state.hyrox.realized.filter((r) => { const t = r.at ?? r.completedAt; return typeof t === 'string' && t < sessionInstant(slot.date); });
+    ports.hyrox = hyroxPort({
+      engine: env.hyrox.engine, content: env.hyrox.content, profile, state: state0, history: [], clock,
+      ...(env.hyrox.transportNeighbours ? { transportNeighbours: true } : {}),
+      baseContext: (slot) => ({ ...decl('hyrox'), mode: env.mode, ...(goals.hyrox ? { goal: { type: goals.hyrox } } : {}), ...hyroxHistoriesOf(before(slot)) }) as never,
+    });
+  }
   return ports;
 }
 
 const reason = (r: ReasonCode): Reason => ({ code: r.code, params: { ...r.params } });
 
 /** Forme persistée (sans perte d'audit) d'une semaine planifiée. */
-export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOrigin: string, env: Pick<PlannerEnvironment, 'authority' | 'simulation' | 'planningVersion' | 'crosstraining'>): Omit<PersistedWeek, 'owner'> {
+export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOrigin: string, env: Pick<PlannerEnvironment, 'authority' | 'simulation' | 'planningVersion' | 'crosstraining' | 'hyrox'>): Omit<PersistedWeek, 'owner'> {
   const ct = w.requests.some((r) => r.sport === 'crosstraining') ? env.crosstraining?.simulation ?? [] : [];
+  const hr = w.requests.some((r) => r.sport === 'hyrox') ? env.hyrox?.simulation ?? [] : [];
   return {
-    weekStart: w.weekStart, authority: env.authority, simulation: [...(env.simulation ?? []), ...ct], plannedAt, mode: w.mode, hybrid: w.hybrid, programmeOrigin,
+    weekStart: w.weekStart, authority: env.authority, simulation: [...(env.simulation ?? []), ...ct, ...hr], plannedAt, mode: w.mode, hybrid: w.hybrid, programmeOrigin,
     ...(env.planningVersion ? { planningVersion: env.planningVersion } : {}),
     days: w.days.map((d) => (d.status === 'planned' ? { date: d.date, availableMinutes: d.availableMinutes, status: 'planned', sport: d.sport, requestId: d.requestId } : { date: d.date, availableMinutes: d.availableMinutes, status: 'empty', reason: reason(d.reason) })),
     requests: w.requests.map((r) => ({

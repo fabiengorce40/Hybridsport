@@ -17,7 +17,7 @@ import type { AppState, Feedback, ProgrammeIntent, SessionLog, SetLog } from './
 import { appPlannerEnvironment, assertEnvironment, buildPorts, clockOf, persistWeek, recentOf } from './planning.js';
 import type { EngineGoals, PlannerEnvironment } from './planning.js';
 import { applyStrengthExecutionTraced, realizedRunFrom, testReferenceFrom } from './progression.js';
-import { realizeCrossTrainingExecution, realizeHyroxStation } from '@hybridsport/planner';
+import { isHyroxComposed, realizeCrossTrainingExecution, realizeHyroxComposed, realizeHyroxStation } from '@hybridsport/planner';
 import { assessStrengthWeekVolume, readStrengthParams } from '@hybridsport/strength';
 import type { StrengthGoalRef, WeekVolumeAssessment } from '@hybridsport/strength';
 import { strengthContent } from './provisional-content.js';
@@ -59,6 +59,7 @@ function portInputs(ps: ProgrammeState): { intent: ProgrammeIntent; goals: Engin
     if (g.sport === 'strength' && goals.strength === undefined) goals.strength = g.goal;
     if (g.sport === 'running' && goals.running === undefined) goals.running = { type: g.goal, ...(g.targetDate ? { targetDate: g.targetDate } : {}) };
     if (g.sport === 'crosstraining' && goals.crosstraining === undefined) goals.crosstraining = g.goal;
+    if (g.sport === 'hyrox' && goals.hyrox === undefined) goals.hyrox = g.goal;
   }
   return { intent, goals };
 }
@@ -148,7 +149,15 @@ export type SessionExecutionInput = ExecutionCommon & (
     readonly performedLoads?: readonly { readonly exerciseId: string; readonly kg: number }[];
     readonly sessionRpe?: number;
   }
-  | { readonly sport: 'hyrox'; readonly result?: { readonly achieved?: number; readonly elapsedS?: number; readonly actualLoadKg?: number } }
+  | {
+    readonly sport: 'hyrox';
+    /** H1 (station unique) : quantité, temps, charge mesurés. */
+    readonly result?: { readonly achieved?: number; readonly elapsedS?: number; readonly actualLoadKg?: number };
+    /** H2 (séance composée) : progression ENREGISTRÉE (étapes achevées, chrono, time cap constaté). */
+    readonly progress?: { readonly stepsCompleted: number; readonly elapsedS: number; readonly timeCapReached: boolean };
+    /** H2 : charges RÉELLEMENT utilisées par item de station (observation). */
+    readonly performedLoads?: readonly { readonly itemId: string; readonly kg: number }[];
+  }
 );
 
 const RUN_COMPLETION: Readonly<Record<Exclude<Completion, 'missed'>, NonNullable<SessionLog['run']>['completion']>> = { completed_as_prescribed: 'COMPLETED', modified: 'PARTIAL', abandoned: 'PARTIAL' };
@@ -180,8 +189,11 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
   let evidence: { history: ProgrammeState['definition']['priorities'][number]; ref: string; measurement?: string } | undefined;
   let progressionTrace: readonly ReasonCode[] = [];
 
-  // HYROX exige un niveau ; Cross-training C3 accepte la présence seule (`REPORTED`) — les niveaux sont un contenu G1 indisponible.
-  if (x.pain === 'REPORTED' && x.sport === 'hyrox') return reject('EXECUTION_PAIN_LEVEL_REQUIRED');
+  // HYROX H1 exige un niveau ; Cross-training C3 et HYROX H2 acceptent la présence seule (`REPORTED`) — les niveaux sont
+  // un contenu G1 indisponible.
+  const hrIntent = x.sport === 'hyrox' ? requestIntent(ps, x.requestId) : undefined;
+  const hrComposed = hrIntent !== undefined && isHyroxComposed(hrIntent.archetypeId);
+  if (x.pain === 'REPORTED' && x.sport === 'hyrox' && !hrComposed) return reject('EXECUTION_PAIN_LEVEL_REQUIRED');
   if (x.completion !== 'missed') {
     const common = { sessionId: x.requestId, completedAt: at, completion: x.completion, ...(x.pain !== undefined && x.pain !== 'REPORTED' ? { pain: x.pain } : {}), ...(x.tolerance !== undefined ? { tolerance: x.tolerance } : {}) };
     switch (x.sport) {
@@ -231,6 +243,20 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
         break;
       }
       case 'hyrox': {
+        if (hrComposed && hrIntent) {
+          // H2.5 : séance COMPOSÉE — prescription lue dans la séance, progression enregistrée, contrat strict du moteur.
+          if (s.hyrox.realized.some((r) => r.sessionId === x.requestId)) return reject('EXECUTION_DUPLICATE');
+          if (!x.progress) return reject('EXECUTION_HR_PROGRESS_REQUIRED');
+          const r = realizeHyroxComposed(session, {
+            sessionId: x.requestId, completedAt: at, completion: x.completion, archetypeId: hrIntent.archetypeId, progress: x.progress,
+            ...(x.pain !== undefined ? { pain: x.pain } : {}), ...(x.tolerance !== undefined ? { tolerance: x.tolerance } : {}),
+            ...(x.performedLoads && x.performedLoads.length > 0 ? { performedLoads: x.performedLoads } : {}),
+          });
+          if (!r.ok) return reject('EXECUTION_INVALID', ...r.reasons);
+          s = { ...s, hyrox: { realized: [...s.hyrox.realized, { ...r.value }] } };
+          evidence = { history: 'hyrox', ref: x.requestId };
+          break;
+        }
         const station = week.intent.demands.find((d) => d.sport === 'hyrox')?.station;
         if (!station) return reject('EXECUTION_STATION_UNKNOWN');
         if (s.hyrox.realized.some((r) => r.sessionId === x.requestId)) return reject('EXECUTION_DUPLICATE');

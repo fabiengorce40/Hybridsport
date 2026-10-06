@@ -17,3 +17,4 @@ export * from './beta0-app.js';
 export * from './running-profile.js';
 export * from './history.js';
 export * from './ct-workout.js';
+export * from './hr-workout.js';

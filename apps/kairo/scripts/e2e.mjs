@@ -46,7 +46,7 @@ const start = page.getByRole('button', { name: 'Commencer' });
 check(await start.isDisabled(), 'impossible de continuer sans accepter l’avertissement');
 await page.getByLabel(/J’ai compris/).check();
 await start.click();
-check(!(await text()).includes('HYROX') && (await text()).includes('Cross-training'), 'HYROX absent, Cross-training proposé (C3.5)');
+check((await text()).includes('HYROX') && (await text()).includes('Cross-training'), 'HYROX (H2.5) et Cross-training (C3.5) proposés');
 await page.getByRole('radio', { name: /^Musculation \+ Course/ }).click();
 await shot('02-sports');
 await page.getByRole('button', { name: 'Continuer' }).click();
@@ -459,6 +459,214 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
   await p2.getByRole('button', { name: 'Planning', exact: true }).click();
   const p2t = await p2.locator('body').innerText();
   check(/non planifiée/i.test(p2t) && p2t.includes('par précaution'), `${tag} refus visible dans le planning (« non planifiée, par précaution »)`);
+  await c2.close();
+}
+
+// HYROX H2.5 — séances composées par H2, sur petits écrans Android (360 × 640, puis 412 × 915). Horloge Playwright
+// contrôlée. A : endurance de force (stations chargées, charge réelle, pause, rechargement, fin, historique) ;
+// B : course compromise (ordre station → course, étape active, course sans allure, transitions non chronométrées) ;
+// C : time cap atteint (progression partielle, jamais « comme prévu ») ; D : abandon + douleur, génération suivante.
+async function hrOnboard(p, role, sessions = '2') {
+  await p.getByLabel(/J’ai compris/).check();
+  await p.getByRole('button', { name: 'Commencer' }).click();
+  await p.getByRole('radio', { name: /^HYROX/ }).click();
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  const blocked = await p.getByRole('button', { name: 'Continuer' }).isDisabled();
+  await p.getByLabel('Niveau d’entraînement général').selectOption('intermediate');
+  await p.getByRole('radio', { name: new RegExp(`^${role}`) }).click();
+  await p.getByRole('radio', { name: /^Préparer une course HYROX/ }).click();
+  await p.getByLabel('Séances HYROX par semaine').selectOption(sessions);
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  await p.getByRole('button', { name: 'Créer mon programme' }).click();
+  await p.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+  return blocked;
+}
+const hrState = (p) => p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+const HR_INTERNAL = /hybrid_race|ex\.[a-z]|after_station|run_station|BLOCKED|station_capacity|compromised_running|strength_endurance|TEST_ONLY|H2_/;
+async function hrNoOverlap(p, tag) {
+  const r = await p.evaluate(() => {
+    const btns = [...document.querySelectorAll('.k-hr button, .k-dock button')].map((b) => b.getBoundingClientRect()).filter((b) => b.height > 0);
+    // Bouton principal réellement au premier plan (ni barre de navigation, ni autre élément par-dessus).
+    const dockUnderNav = [...document.querySelectorAll('.k-dock button')].filter((b) => { const r0 = b.getBoundingClientRect(); const el = document.elementFromPoint(r0.left + r0.width / 2, r0.top + r0.height / 2); return !(el && b.contains(el)) || r0.bottom > window.innerHeight; }).length;
+    return { scroll: document.documentElement.scrollWidth > window.innerWidth + 1, small: btns.filter((b) => b.height < 44).length, dockUnderNav };
+  });
+  check(!r.scroll && r.small === 0 && r.dockUnderNav === 0, `${tag} aucun défilement horizontal, contrôles ≥ 44 px, bouton principal au-dessus de la barre de navigation (${JSON.stringify(r)})`);
+}
+{
+  // ——— A : endurance de force (360 × 640)
+  const c = await browser.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+  const p = await c.newPage();
+  const perrors = [];
+  p.on('pageerror', (e) => perrors.push(e.message));
+  await p.clock.install({ time: new Date('2026-10-05T07:30:00+02:00') });
+  await p.clock.resume();
+  await p.goto(URL_);
+  const tag = '[HYROX A 360×640]';
+  check(await hrOnboard(p, 'Endurance de force'), `${tag} type de séance HYROX exigé (aucune valeur supposée)`);
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  const cards = p.getByRole('button', { name: /^HYROX : Endurance de force/ });
+  check(await cards.count() >= 1, `${tag} séances HYROX visibles dans le planning`);
+  const pt = await p.locator('body').innerText();
+  check(!HR_INTERNAL.test(pt), `${tag} aucun code interne affiché dans le planning`);
+  check(/time cap/i.test(pt), `${tag} carte : time cap affiché`);
+  const wk = Object.values((await hrState(p)).planner?.weeks ?? {})[0];
+  check((wk?.simulation ?? []).includes('hybrid_race.h2.testGovernance'), `${tag} provenance : semaine marquée SIMULATION_ONLY HYROX`);
+  if (shots) await p.screenshot({ path: `${shots}/hr-01-planning.png` });
+  await cards.first().click();
+  check(await p.getByRole('heading', { name: 'Endurance de force', level: 1 }).isVisible(), `${tag} HYROX Workout ouvert (rôle lisible)`);
+  check(await p.getByLabel('Répétitions réalisées').count() === 0 && await p.getByRole('group', { name: 'Tours complets' }).count() === 0, `${tag} aucun repli Strength ni Cross-training`);
+  check(await p.getByRole('list', { name: 'Parcours de la séance' }).isVisible(), `${tag} parcours prescrit visible avant départ`);
+  await hrNoOverlap(p, tag);
+  await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  const timer = p.getByRole('timer', { name: 'Chrono de la séance' });
+  check((await timer.innerText()).includes('plafond'), `${tag} time cap présenté comme un plafond, pas un objectif`);
+  const nowCard = p.getByLabel('Maintenant');
+  check(/station/i.test(await nowCard.innerText()) && /kg prévus/i.test(await nowCard.innerText()), `${tag} étape en cours : station chargée, charge prescrite`);
+  const load = p.getByLabel(/Charge réellement utilisée/);
+  const prescribed = Number(await load.getAttribute('placeholder'));
+  await load.fill(String(prescribed - 2));
+  await load.blur();
+  if (shots) await p.screenshot({ path: `${shots}/hr-02-station.png` });
+  await p.getByRole('button', { name: /Étape faite/ }).click();
+  await p.clock.fastForward('04:00');
+  await p.getByRole('button', { name: 'Pause' }).click();
+  const before = Object.values((await hrState(p)).programmeLogs ?? {})[0]?.hr;
+  check(before?.steps === 1 && before.runningSince === null && before.accumulatedS >= 240 && before.loads?.[0]?.kg === prescribed - 2, `${tag} pause : chrono figé, position et charge réelle persistées (${JSON.stringify(before)})`);
+  await p.clock.fastForward('10:00');
+  await p.reload();
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  await p.locator('.card', { hasText: 'En cours' }).first().click();
+  check((await timer.innerText()).includes('EN PAUSE'), `${tag} rechargement : chrono toujours en pause`);
+  check(/Étape 2 \//.test(await p.locator('body').innerText()), `${tag} rechargement : position conservée (étape 2)`);
+  await p.getByRole('button', { name: 'Reprendre' }).click();
+  for (let k = 0; k < 40 && await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).isEnabled(); k += 1) await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).click();
+  check(await p.getByText('Toutes les étapes sont validées').isVisible(), `${tag} toutes les étapes validées`);
+  await p.clock.fastForward('15:00');
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
+  await sheet.getByRole('radio', { name: /J’ai adapté la séance/ }).click();
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+  const doneA = (await hrState(p)).hyrox?.realized?.[0];
+  check(doneA?.result?.kind === 'completed' && doneA.completion === 'completed' && doneA.performedLoads?.[0]?.kg === prescribed - 2, `${tag} résultat structuré : terminée, charge réelle ≠ prescrite enregistrée`);
+  check((await p.locator('body').innerText()).includes('prévus →'), `${tag} prescrit vs réalisé affiché`);
+  await p.reload();
+  await p.getByRole('button', { name: 'Historique', exact: true }).click();
+  const hA = await p.locator('body').innerText();
+  check(hA.includes('Terminée en') && hA.includes('HYROX') && !HR_INTERNAL.test(hA), `${tag} historique après rechargement : HYROX, résultat, aucun code interne`);
+  if (shots) await p.screenshot({ path: `${shots}/hr-03-historique.png` });
+  check(perrors.length === 0, `${tag} aucune erreur de page (${perrors.join(' | ')})`);
+  await c.close();
+}
+{
+  // ——— B / C : course compromise puis time cap (412 × 915)
+  const c = await browser.newContext({ viewport: { width: 412, height: 915 }, deviceScaleFactor: 2.6, isMobile: true, hasTouch: true, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+  const p = await c.newPage();
+  const perrors = [];
+  p.on('pageerror', (e) => perrors.push(e.message));
+  await p.clock.install({ time: new Date('2026-10-05T07:30:00+02:00') });
+  await p.clock.resume();
+  await p.goto(URL_);
+  const tag = '[HYROX B 412×915]';
+  await hrOnboard(p, 'Course compromise');
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  await p.getByRole('button', { name: /^HYROX : Course compromise/ }).first().click();
+  const rail = await p.locator('.k-hr-step').evaluateAll((xs) => xs.map((x) => (x.classList.contains('run') ? 'run' : 'station')));
+  check(rail.length >= 4 && rail.every((k, i) => k === (i % 2 === 0 ? 'station' : 'run')), `${tag} ordre prescrit : station → course → station → course (${rail.join(',')})`);
+  await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  const timer = p.getByRole('timer', { name: 'Chrono de la séance' });
+  const nowCard = p.getByLabel('Maintenant');
+  check(/station/i.test(await nowCard.innerText()), `${tag} étape 1 : station`);
+  await p.getByRole('button', { name: /Étape faite/ }).click();
+  const runText = await nowCard.innerText();
+  check(/course/i.test(runText) && runText.includes('Allure libre') && !/\/km|min\/km/.test(runText), `${tag} étape 2 : course, distance seule, aucune allure inventée`);
+  check((await p.locator('body').innerText()).includes('Transitions non chronométrées'), `${tag} transitions : aucune durée affichée`);
+  if (shots) await p.screenshot({ path: `${shots}/hr-04-course.png` });
+  await p.clock.fastForward('06:00');
+  await p.reload();
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  await p.locator('.card', { hasText: 'En cours' }).first().click();
+  check(!(await timer.innerText()).includes('EN PAUSE') && /Étape 2 \//.test(await p.locator('body').innerText()), `${tag} rechargement chrono en marche : position et chrono conservés`);
+  for (let k = 0; k < 40 && await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).isEnabled(); k += 1) await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).click();
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
+  await sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }).click();
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+  const b = (await hrState(p)).hyrox?.realized?.[0];
+  check(b?.result?.kind === 'completed' && b.completion === 'completed_as_prescribed' && b.structure === 'run_station_alternation', `${tag} séance terminée comme prévu, enregistrée`);
+
+  // C — time cap atteint sur la seconde séance de la semaine.
+  const tagC = '[HYROX C time cap]';
+  await p.reload();
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  await p.locator('.card', { hasText: 'Prévue' }).filter({ hasText: 'Course compromise' }).first().click();
+  await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  await p.getByRole('button', { name: /Étape faite/ }).click();
+  await p.getByRole('button', { name: /Étape faite/ }).click();
+  await p.getByRole('button', { name: /Étape faite/ }).click();
+  const writes0 = JSON.stringify((await hrState(p)).programmeLogs);
+  // Au-delà de tout time cap possible du créneau (95 min) : aucune attente réelle.
+  await p.clock.fastForward(95 * 60 * 1000);
+  await p.waitForTimeout(1200);
+  check(JSON.stringify((await hrState(p)).programmeLogs) === writes0, `${tagC} 95 min de chrono : aucune écriture d’état (horodatage seul)`);
+  check((await timer.innerText()).includes('TIME CAP ATTEINT'), `${tagC} time cap atteint signalé (descriptif)`);
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  check(await sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }).count() === 0, `${tagC} séance incomplète : « comme prévu » non proposé`);
+  await sheet.getByRole('radio', { name: /Time cap atteint/ }).click();
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+  const capped = (await hrState(p)).hyrox?.realized?.[1];
+  check(capped?.result?.kind === 'time_capped' && capped.result.roundsCompleted === 0 && capped.result.itemsCompletedInRound === 3 && capped.completion === 'completed', `${tagC} résultat : time cap, 0 tour + 3 étapes (jamais un échec, jamais « comme prévu »)`);
+  await p.reload();
+  await p.getByRole('button', { name: 'Historique', exact: true }).click();
+  check((await p.locator('body').innerText()).includes('Time cap atteint · 0 tour complet + 3/4 étapes'), `${tagC} historique : time cap et progression lisibles`);
+  check(perrors.length === 0, `${tag} aucune erreur de page (${perrors.join(' | ')})`);
+  await c.close();
+}
+{
+  // ——— D : abandon + douleur (programme créé un mercredi), puis génération de la semaine suivante.
+  const c = await browser.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+  const p = await c.newPage();
+  await p.clock.install({ time: new Date('2026-10-07T09:00:00+02:00') });
+  await p.clock.resume();
+  await p.goto(URL_);
+  const tag = '[HYROX D abandon + douleur]';
+  await hrOnboard(p, 'Course compromise');
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  await p.getByRole('button', { name: /^HYROX : Course compromise/ }).first().click();
+  await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  await p.getByRole('button', { name: /Étape faite/ }).click();
+  await p.getByRole('button', { name: /Étape faite/ }).click();
+  await p.clock.fastForward('09:00');
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
+  await sheet.getByRole('radio', { name: 'J’ai arrêté la séance' }).click();
+  await sheet.getByLabel('J’ai ressenti une douleur').check();
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+  const d = await hrState(p);
+  const ab = d.hyrox?.realized?.[0];
+  check(ab?.completion === 'abandoned' && ab.result?.kind === 'abandoned' && ab.result.itemsCompletedInRound === 2 && ab.pain === 'REPORTED' && d.safety?.activePain !== null, `${tag} abandon persisté (progression conservée), douleur centrale`);
+  await p.reload();
+  await p.getByRole('button', { name: 'Historique', exact: true }).click();
+  const h = await p.locator('body').innerText();
+  check(h.includes('Arrêtée') && h.includes('Douleur signalée'), `${tag} historique : arrêtée, douleur signalée`);
+  const saved = await p.evaluate(() => localStorage.getItem('kairo.state'));
+  await c.close();
+  const c2 = await browser.newContext({ viewport: { width: 360, height: 640 }, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+  const p2 = await c2.newPage();
+  await p2.clock.install({ time: new Date('2026-10-12T07:30:00+02:00') });
+  await p2.clock.resume();
+  const lifted = JSON.parse(saved ?? '{}');
+  lifted.safety = { activePain: null };
+  await p2.addInitScript((x) => { if (!localStorage.getItem('kairo.state')) localStorage.setItem('kairo.state', x); }, JSON.stringify(lifted));
+  await p2.goto(URL_);
+  await p2.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+  const next = await hrState(p2);
+  const reqs = (next.planner?.weeks?.['2026-10-12']?.requests ?? []).filter((r) => r.sport === 'hyrox');
+  const neg = reqs.flatMap((r) => r.reasons).find((x) => x.code === 'SAFETY.HYROX.H2_HISTORY_NEGATIVE')?.params;
+  check(reqs.length > 0 && neg?.sessionId === ab?.sessionId && (neg.causes ?? []).includes('pain') && neg.action === 'refuse', `${tag} génération suivante : H2 lit la séance réellement exécutée (${JSON.stringify(neg)})`);
+  check(reqs.every((r) => r.status !== 'planned'), `${tag} semaine suivante : refus EXPLICITE (aucune séance inventée)`);
+  await p2.getByRole('button', { name: 'Planning', exact: true }).click();
+  check(/non planifiée/i.test(await p2.locator('body').innerText()), `${tag} refus visible dans le planning`);
   await c2.close();
 }
 

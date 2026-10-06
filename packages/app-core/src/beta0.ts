@@ -24,16 +24,17 @@ import { adherenceOf, weekIndexOf, weekStartAt, weekStatus, withinProgramme } fr
 import type { Adherence, ProgrammeDefinition, ProgrammeDefinitionInput, ProgrammeResult, ProgrammeState, WeekStatus } from '@hybridsport/programme';
 import { plannerGovernance, withDemand } from '../../planner/tests/simulation.js';
 import { ctBeta0 } from '../../planner/tests/ct-beta0.js';
+import { hrBeta0 } from '../../planner/tests/hr-beta0.js';
 import { AppError } from './errors.js';
 import { addDays, daysBetween, weekStartOf } from './dates.js';
 import type { AppState, EnvironmentAuthority, PersistedWeek, Profile, Reason, Sport } from './model.js';
 import { STIMULUS_BY_GOAL } from './planner.js';
-import { CT_INTENT_LABELS } from './labels.js';
+import { CT_INTENT_LABELS, HR_ROLE_LABELS } from './labels.js';
 import type { ProgrammeEnvironment } from './programme.js';
 import { runningContent, strengthContent } from './provisional-content.js';
 
-/** Sports exposés en Beta 0 (Cross-training : C3.5, composition C3 en environnement expérimental). */
-export const BETA0_SPORTS = ['strength', 'running', 'crosstraining'] as const;
+/** Sports exposés en Beta 0 (Cross-training : C3.5 ; HYROX : H2.5, composition H2 en environnement expérimental). */
+export const BETA0_SPORTS = ['strength', 'running', 'crosstraining', 'hyrox'] as const;
 
 /** Marqueur porté par chaque valeur SIMULATION_ONLY injectée (justification lisible dans le ruleset). */
 export const SIMULATION_ONLY = 'SIMULATION_ONLY — Beta 0 expérimental : valeur de test, non approuvée, jamais lue en production';
@@ -75,14 +76,18 @@ export const BETA0_PLANNING_VERSION = 'beta0-s4';
 // programmes créés ou recréés après C3.5 (aucune semaine existante à régénérer).
 
 /**
- * Environnement Beta 0 EXPÉRIMENTAL : Strength et Running seulement (CT / HYROX non raccordés), mode CANDIDATE.
+ * Environnement Beta 0 EXPÉRIMENTAL : Strength, Running, Cross-training (C3.5) et HYROX (H2.5), mode CANDIDATE.
  * Running n'accepte un athlète multisport QUE par le planificateur global (provenance obligatoire) : tout autre
  * chemin reste refusé. Aucune politique d'adaptation (décisions BLOCKED) ni horizon d'avance : aucune valeur inventée.
  */
 export function beta0Environment(): ProgrammeEnvironment {
   const g = beta0RunningGovernance();
   const ct = ctBeta0(simulationMark);
+  const hr = hrBeta0(simulationMark);
   return {
+    // H2.5 — HYROX : moteur H2 en simulation, gouvernance TEST_ONLY (draft, provisoire) ; marques SIMULATION_ONLY
+    // ajoutées aux seules semaines qui contiennent une séance HYROX. Jamais production-approved.
+    hyrox: { engine: hr.engine, content: hr.content, transportNeighbours: true, simulation: hr.simulation },
     // C3.5 — Cross-training : moteur C3 en simulation, gouvernance TEST_ONLY ; marques SIMULATION_ONLY ajoutées aux seules
     // semaines qui contiennent une séance Cross-training (provenance exacte, jamais confondue avec APPROVED).
     crosstraining: { engine: ct.engine, content: ct.content, transportNeighbours: true, simulation: ct.simulation },
@@ -125,6 +130,11 @@ export function programmeDefinitionFromProfile(p: Profile, o: ProgrammeFromProfi
   if (enabled.length === 0) throw new AppError('BETA0_NO_SPORT');
   const runningFrame = { stimulus: 'stim.running.aerobic', objective: 'objective.running.base', phase: 'phase.running.base', toleranceProfile: 'fixed_time' };
   const sports = enabled.map((s) => {
+    if (s === 'hyrox') {
+      const h = hrDeclarations(p);
+      // Rôle DÉCLARÉ (archétype de rôle H2) : le moteur HYROX compose structure, stations, doses ; aucune station ici.
+      return { sport: s, sessionsPerWeek: h.sessionsPerWeek, composition: 'declared' as const, intent: hrFrame(h.role), declarations: { population: { level: p.level, hybrid: false }, returnState: { state: h.returnState } } };
+    }
     if (s === 'crosstraining') {
       const c = ctDeclarations(p);
       // Intention DÉCLARÉE (archétype de stimulus C3 choisi par l'utilisateur) : le moteur compose chaque séance.
@@ -146,6 +156,7 @@ export function programmeDefinitionFromProfile(p: Profile, o: ProgrammeFromProfi
   // Cross-training : seul objectif exposé en Beta 0 = forme générale (la compétition est hors périmètre, aucun objectif inventé).
   const goals = enabled.map((s) => (s === 'strength' ? { goalId: 'goal.strength', sport: s, goal: p.strength.goal }
     : s === 'crosstraining' ? { goalId: 'goal.crosstraining', sport: s, goal: CT_BETA0_GOAL }
+      : s === 'hyrox' ? { goalId: 'goal.hyrox', sport: s, goal: hrDeclarations(p).goal }
       : { goalId: 'goal.running', sport: s, goal: p.running.goal, ...(o.runningTargetDate ? { targetDate: o.runningTargetDate } : {}) }));
   const end = o.horizonWeeks ?? (o.runningTargetDate && enabled.includes('running') ? weeksThrough(o.startWeek, o.runningTargetDate) : undefined);
   return { programmeId: o.programmeId, origin: o.origin, startWeek: o.startWeek, ...(end !== undefined ? { horizonWeeks: end } : {}), goals, priorities: enabled, sports };
@@ -164,6 +175,18 @@ export function ctDeclarations(p: Profile): { readonly sessionsPerWeek: number; 
   if (CT_INTENT_LABELS[c.intent] === undefined) throw new AppError('CT_INTENT_UNKNOWN');
   return { sessionsPerWeek: c.sessionsPerWeek, intent: c.intent, returnState: c.returnState };
 }
+
+/** Déclarations HYROX exigées (aucune valeur par défaut) : fréquence, rôle de séance H2, objectif, coupure récente. */
+export function hrDeclarations(p: Profile): { readonly sessionsPerWeek: number; readonly role: string; readonly goal: NonNullable<Profile['hyrox']['goal']>; readonly returnState: NonNullable<Profile['hyrox']['returnState']> } {
+  const h = p.hyrox;
+  if (h.sessionsPerWeek === undefined || h.role === undefined || h.goal === undefined || h.returnState === undefined) throw new AppError('HR_DECLARATION_MISSING');
+  if (HR_ROLE_LABELS[h.role] === undefined) throw new AppError('HR_ROLE_UNKNOWN');
+  return { sessionsPerWeek: h.sessionsPerWeek, role: h.role, goal: h.goal, returnState: h.returnState };
+}
+
+/** Cadre d'intention HYROX : archétype de rôle déclaré + identifiants techniques (aucune valeur sportive). */
+export const hrFrame = (archetypeId: string): Readonly<Record<'archetypeId' | 'stimulus' | 'objective' | 'phase' | 'toleranceProfile', string>> =>
+  ({ archetypeId, stimulus: `stim.${archetypeId}`, objective: 'objective.hybrid_race.h2', phase: 'phase.hybrid_race.base', toleranceProfile: 'for_time' });
 
 /** Cadre d'intention Cross-training : archétype déclaré + identifiants techniques (aucune valeur sportive). */
 export const ctFrame = (archetypeId: string): Readonly<Record<'archetypeId' | 'stimulus' | 'objective' | 'phase' | 'toleranceProfile', string>> =>
@@ -260,6 +283,8 @@ export interface SessionView {
   readonly role: string | null;
   /** Cross-training : format du bloc de conditioning PERSISTÉ (lecture du session_record), sinon null. */
   readonly ctFormat: string | null;
+  /** HYROX : time cap PRESCRIT du bloc (plafond, lecture du session_record), sinon null. */
+  readonly hrTimeCapS: number | null;
   readonly compositionAuthority: 'approved' | 'provisional' | null;
   /** Règle de composition du moteur qui a choisi l'archétype (`identifiant@version`), si tracée. */
   readonly compositionRule: string | null;
@@ -320,6 +345,12 @@ function ctFormatOf(blocks: readonly { kind?: unknown; format?: unknown; items?:
   return b.format === 'continuous' && p?.type === 'timed' && typeof p.rounds === 'number' && p.rounds > 1 ? 'intervals' : b.format;
 }
 
+/** Time cap du bloc HYROX persisté (`for_time`), sinon null. */
+function hrTimeCapOf(blocks: readonly { format?: unknown; timeCapS?: unknown }[] | undefined): number | null {
+  const b = blocks?.[0];
+  return blocks?.length === 1 && b?.format === 'for_time' && typeof b.timeCapS === 'number' ? b.timeCapS : null;
+}
+
 function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResult | undefined): SessionView {
   const data = r.record?.data as { session?: { targetDurationS?: unknown; blocks?: { kind?: unknown; format?: unknown; items?: { prescription?: { type?: unknown; rounds?: unknown } }[] }[] }; durationEstimate?: { availability?: unknown; p50?: unknown } } | undefined;
   const composition = r.reasons.find((x) => x.code === 'PLAN.WEEK_COMPOSITION')?.params;
@@ -333,7 +364,8 @@ function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResu
     targetDurationS: planned && typeof session?.targetDurationS === 'number' ? session.targetDurationS : null,
     estimatedDurationS: planned ? estimate : null,
     ...prescribedArchetype(r),
-    role: r.composition?.role ?? null, ctFormat: planned && r.sport === 'crosstraining' ? ctFormatOf(session?.blocks) : null, compositionAuthority: r.composition?.authority ?? null,
+    role: r.composition?.role ?? null, ctFormat: planned && r.sport === 'crosstraining' ? ctFormatOf(session?.blocks) : null,
+    hrTimeCapS: planned && r.sport === 'hyrox' ? hrTimeCapOf(session?.blocks) : null, compositionAuthority: r.composition?.authority ?? null,
     compositionRule: typeof composition?.rule === 'string' ? `${composition.rule}${typeof composition.version === 'string' ? `@${composition.version}` : ''}` : null,
     notPlanned: planned ? null : { category: r.category, reason: mainReason(r.reasons), triedDate: r.date ?? null },
     pain: result?.pain ?? false,

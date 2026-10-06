@@ -236,3 +236,31 @@ details summary { cursor: pointer; min-height: 32px; display: flex; align-items:
 .k-ct-step:disabled { opacity: 0.4; }
 .k-ct-step-value { text-align: center; font-size: 28px; font-weight: 900; }
 .k-ct .row .k-cta { flex: 1; }
+/* HYROX (H2.5) : enchaînement — étape en cours, suivante, parcours ; gros contrôles utilisables essoufflé. */
+.k-hr .row .k-cta { flex: 1; }
+/* Chrono compact : l'étape en cours et « Étape faite » restent atteignables sur 360 × 640. */
+.k-hr .k-ct-clock { padding: 10px 12px; }
+.k-hr .k-ct-clock-big { font-size: clamp(44px, 14vw, 64px); }
+.k-hr .row .k-hr-back { flex: 0 0 34%; }
+.k-hr-count { font-size: 14px; font-weight: 800; color: var(--k-text-2); letter-spacing: 0.02em; }
+.k-hr-now { display: flex; flex-direction: column; gap: 6px; padding: 18px 16px; border-radius: var(--k-radius-l); background: var(--k-surface-1); border: 2px solid var(--k-accent); box-shadow: 0 0 0 4px var(--k-accent-soft); }
+.k-hr-now.run { border-color: #4ea8ff; box-shadow: 0 0 0 4px rgba(78, 168, 255, 0.14); }
+.k-hr-now.done { border-color: var(--k-success); box-shadow: none; }
+.k-hr-now-kind { font-size: 12px; font-weight: 800; letter-spacing: 0.14em; text-transform: uppercase; color: var(--k-accent); }
+.k-hr-now.run .k-hr-now-kind { color: #4ea8ff; }
+.k-hr-now-name { font-size: clamp(26px, 8vw, 34px); font-weight: 900; line-height: 1.05; overflow-wrap: anywhere; }
+.k-hr-now-dose { font-size: 20px; font-weight: 800; color: var(--k-text); }
+.k-hr-now-note { font-size: 13px; color: var(--k-text-2); }
+.k-hr-load { display: flex; flex-direction: column; gap: 6px; font-size: 13px; color: var(--k-text-2); margin-top: 4px; }
+.k-hr-load input { min-height: 52px; border-radius: 14px; border: 1px solid var(--border); background: var(--k-surface-2); color: var(--k-text); font-size: 22px; font-weight: 800; padding: 0 14px; width: 100%; box-sizing: border-box; }
+.k-hr-rail { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.k-hr-step { display: grid; grid-template-columns: 28px 1fr auto; align-items: center; column-gap: 10px; padding: 10px 12px; border-radius: var(--k-radius-m); background: var(--k-surface-1); }
+.k-hr-step .k-hr-round { grid-column: 1 / -1; font-size: 11px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--k-text-3); margin-bottom: 4px; }
+.k-hr-dot { width: 28px; height: 28px; border-radius: 99px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 900; background: var(--k-surface-3); color: var(--k-text-2); }
+.k-hr-step.run .k-hr-dot { color: #4ea8ff; }
+.k-hr-step.done { opacity: 0.55; }
+.k-hr-step.done .k-hr-dot { background: rgba(62, 207, 142, 0.16); color: var(--k-success); }
+.k-hr-step.now { background: var(--k-accent-soft); outline: 1px solid var(--k-accent-line); }
+.k-hr-step.now .k-hr-dot { background: var(--k-accent); color: #1a0a00; }
+.k-hr-step-name { font-weight: 700; font-size: 15px; overflow-wrap: anywhere; }
+.k-hr-step-dose { font-size: 14px; color: var(--k-text-2); white-space: nowrap; }

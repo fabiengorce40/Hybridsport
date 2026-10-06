@@ -1,9 +1,10 @@
-import { durationLabel, exerciseLabel, selectHistory, selectProgrammeSession } from '@hybridsport/app-core';
+import { durationLabel, exerciseLabel, HR_STRUCTURE_LABELS, selectHistory, selectProgrammeSession } from '@hybridsport/app-core';
 import type { HistoryEntry } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate } from '../../ui.js';
 import { ctFormatName, isTest, sessionName, sportName } from '../../present.js';
 import { ctResultText } from '../../workout/CrossTrainingWorkout.js';
+import { hrResultText } from '../../workout/HyroxWorkout.js';
 import { StatusPill } from './common.js';
 
 /** Séries réellement saisies, regroupées par exercice (libellés du catalogue). */
@@ -45,6 +46,13 @@ export function History0({ onOpen }: { onOpen: (id: string) => void }) {
             <div className="small muted num">
               {ctFormatName(e.ct.format)} · {e.ct.exercises.map((x) => exerciseLabel(x)).join(' + ')}
               <div><b>{ctResultText(e.ct.result)}</b></div>
+            </div>
+          )}
+          {e.hr && (
+            <div className="small muted num">
+              {HR_STRUCTURE_LABELS[e.hr.structure] ?? 'HYROX'}{e.hr.rounds > 1 ? ` · ${String(e.hr.rounds)} tours` : ''} · {e.hr.stations.map((x) => exerciseLabel(x)).join(' + ')}{e.hr.runSegments > 0 ? ` + ${String(e.hr.runSegments)} course${e.hr.runSegments > 1 ? 's' : ''}` : ''}
+              <div><b>{hrResultText(e.hr.result, e.hr.itemsPerRound)}</b></div>
+              {e.hr.performedLoads.length > 0 && <div>Charges réelles saisies : {String(e.hr.performedLoads.length)}</div>}
             </div>
           )}
           {e.pain && <div className="small" style={{ color: 'var(--danger)' }}>⚠ Douleur signalée</div>}

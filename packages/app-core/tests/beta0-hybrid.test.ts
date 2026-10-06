@@ -72,10 +72,12 @@ function threeWeeks(env: () => ProgrammeEnvironment = beta0Environment) {
 }
 
 describe('profil → définition de programme Beta 0', () => {
-  it('Strength et Running : cadre SANS archétype, composition par le moteur de chaque sport ; CT / HYROX exclus', () => {
+  it('Strength et Running : cadre SANS archétype, composition par le moteur de chaque sport ; HYROX activé sans déclarations ⇒ refus', () => {
     const s = athlete('hybrid');
     if (!s.profile) throw new Error('profil absent');
-    const d = programmeDefinitionFromProfile({ ...s.profile, hyrox: { enabled: true }, priorities: ['hyrox', 'strength', 'running'] }, { programmeId: 'p', startWeek: W[0], horizonWeeks: 3, origin: 'profile' });
+    const prof = s.profile;
+    expect(() => programmeDefinitionFromProfile({ ...prof, hyrox: { enabled: true }, priorities: ['hyrox', 'strength', 'running'] }, { programmeId: 'p', startWeek: W[0], horizonWeeks: 3, origin: 'profile' })).toThrow('HR_DECLARATION_MISSING');
+    const d = programmeDefinitionFromProfile({ ...s.profile, hyrox: { enabled: false }, priorities: ['hyrox', 'strength', 'running'] }, { programmeId: 'p', startWeek: W[0], horizonWeeks: 3, origin: 'profile' });
     expect(d.priorities).toEqual(['strength', 'running']);
     expect(d.sports.map((x) => [x.sport, x.composition, x.intent.archetypeId])).toEqual([['strength', 'engine', undefined], ['running', 'engine', undefined]]);
     expect(d.sports[1]?.sessionsPerWeek).toBe(3);
