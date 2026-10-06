@@ -151,7 +151,7 @@ Les décisions H2 sont persistées avec la séance (liste fermée de codes). San
 
 ## 11. Problèmes découverts
 
-1. **Le profil de demande du CORE ignore les tours de bloc** (`for_time.rounds`, `emom.minutes`) : `nativeDose` compte une fois la dose de chaque item. 5 ou 3 tours donnent le même profil (test de caractérisation). Ce problème touche aussi C3. La correction relève du CORE (décision humaine) et modifierait les profils Cross-training.
+1. **Le profil de demande du CORE ignorait les tours de bloc** — **corrigé** par l'audit CORE « demand repetition » (`docs/kairo/CORE-DEMAND-REPETITION.md`) : la dose des items d'un bloc `for_time` est désormais multipliée par `rounds`. `emom` et `amrap` restent à un passage, signalé `DATA.DEMAND_REPETITION_UNRESOLVED`.
 2. **Le catalogue de test clone le traîneau** pour `sled_pull` et `burpee_broad_jump` (muscles, coûts) : leurs structures dérivées sont celles du sled push. C'est une question de contenu (G5).
 3. **Mémoire négative** : seule la dernière séance réalisée de la fenêtre est lue (même règle que C3). Un abandon suivi d'une séance réussie est donc oublié.
 4. **Repos entre tours** : il n'est pas représentable dans `for_time`. H2 n'en prescrit aucun.

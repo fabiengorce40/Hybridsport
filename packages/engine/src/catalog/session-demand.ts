@@ -10,7 +10,7 @@
  * Échauffement et retour au calme sont exclus (convention de l'application : seuls les blocs d'entraînement portent
  * la sollicitation). Le travail excentrique n'est pas déductible de la prescription : aucun modificateur appliqué.
  */
-import type { Prescription, ReasonCode, SessionDraft } from '@hybridsport/domain';
+import type { Prescription, ReasonCode, SessionBlock, SessionDraft } from '@hybridsport/domain';
 import type { LoadedRuleset } from '../rules/ruleset.js';
 import { createCoreRegistry } from '../trace/index.js';
 import type { LoadedCatalog } from './catalog.js';
@@ -53,6 +53,31 @@ export function nativeDose(p: Prescription): { readonly unit: DemandDoseUnit; re
   }
 }
 
+/**
+ * Répétition STRUCTURELLE d'un bloc, telle que le CONTRAT du format la définit — la même que celle du DurationEngine
+ * (`estimate.ts`) : la dose d'un item est multipliée par le nombre de passages que le format IMPOSE, et seulement lui.
+ * - `sets`, `continuous` : la prescription de l'item porte déjà toute sa dose (séries listées, durée, intervalles) ⇒ 1 ;
+ * - `for_time` : les items sont la dose d'UN tour, répété `rounds` fois (durée : travail d'un tour × rounds) ⇒ rounds ;
+ * - `amrap` : nombre de tours INCONNU (dépend de l'athlète) ⇒ UN passage prescrit, jamais un nombre de tours inventé ;
+ * - `emom` : le contrat ne dit pas si TOUS les items sont faits chaque minute ou s'ils alternent ⇒ UN passage prescrit.
+ * Les cas non résolus sont SIGNALÉS (DATA.DEMAND_REPETITION_UNRESOLVED) : le profil reste une base d'un passage.
+ * La répétition interne d'un item (`timed.rounds`, `intervals.reps`, séries) reste dans `nativeDose` : deux niveaux
+ * distincts, jamais multipliés deux fois.
+ */
+export type BlockRepetition =
+  | { readonly kind: 'resolved'; readonly factor: number }
+  | { readonly kind: 'unresolved'; readonly factor: 1; readonly cause: 'AMRAP_ROUNDS_UNKNOWN' | 'EMOM_ITEM_ROTATION_UNSPECIFIED' };
+
+export function blockRepetition(b: SessionBlock): BlockRepetition {
+  switch (b.format) {
+    case 'sets':
+    case 'continuous': return { kind: 'resolved', factor: 1 };
+    case 'for_time': return { kind: 'resolved', factor: b.rounds };
+    case 'amrap': return { kind: 'unresolved', factor: 1, cause: 'AMRAP_ROUNDS_UNKNOWN' };
+    case 'emom': return { kind: 'unresolved', factor: 1, cause: 'EMOM_ITEM_ROTATION_UNSPECIFIED' };
+  }
+}
+
 const TRAINING_EXCLUDED_KINDS: ReadonlySet<string> = new Set(['warmup', 'cooldown']);
 export const DEMAND_NORMALIZATION_PARAMETER = 'demand.doseNormalization';
 
@@ -73,16 +98,20 @@ export function deriveSessionDemand(session: SessionDraft, catalog: LoadedCatalo
   if (!byUnit) return fail('DISCIPLINE_NOT_NORMALIZED', session.discipline);
   const multipliers = ruleset.numberRecord('demand.intensityMultipliers');
   const items: DemandInputItem[] = [];
+  const unresolved: ReasonCode[] = [];
   for (const b of session.blocks) {
     if (TRAINING_EXCLUDED_KINDS.has(b.kind)) continue;
+    const repetition = blockRepetition(b);
+    if (repetition.kind === 'unresolved') unresolved.push(reasons.emit('DATA.DEMAND_REPETITION_UNRESOLVED', { sessionId: session.id, blockId: b.id, format: b.format, cause: repetition.cause }));
     for (const it of b.items) {
       if (!catalog.exercise(it.exerciseId)) return fail('UNKNOWN_EXERCISE', it.exerciseId);
       const dose = nativeDose(it.prescription);
       const entry = byUnit[dose.unit];
       if (!entry) return fail('UNIT_NOT_NORMALIZED', `${session.discipline}:${dose.unit}`);
       if (multipliers[entry.intensityBand] === undefined) return fail('INTENSITY_BAND_UNKNOWN', entry.intensityBand);
-      items.push({ exerciseId: it.exerciseId, doseUnits: dose.quantity * entry.perUnit, intensityBand: entry.intensityBand });
+      items.push({ exerciseId: it.exerciseId, doseUnits: dose.quantity * repetition.factor * entry.perUnit, intensityBand: entry.intensityBand });
     }
   }
-  return { ok: true, profile: deriveDemandProfile(items, catalog, ruleset), items };
+  const profile = deriveDemandProfile(items, catalog, ruleset);
+  return { ok: true, profile: { ...profile, reasons: [...profile.reasons, ...unresolved] }, items };
 }

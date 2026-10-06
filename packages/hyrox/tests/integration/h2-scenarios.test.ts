@@ -200,15 +200,17 @@ describe('Empreinte, présentation, exposition', () => {
     expect(h2PresentationOf({ ...r.session, blocks: [{ ...r.session.blocks[0], id: 'autre' } as never] }, h2ArchetypeOf('partial_simulation'))).toBeUndefined();
   });
 
-  it('PROBLÈME DÉCOUVERT (documenté, non corrigé en H2) : le profil de demande du CORE ignore les tours du bloc `for_time`', () => {
+  it('profil de demande CORE : les tours du bloc `for_time` sont comptés (correctif CORE « demand repetition »)', () => {
     const five = runH2('station_capacity', {}, T60);
     const three = runH2('station_capacity', {}, T30);
     expect([blockOf(five), blockOf(three)].map((b) => (b as { rounds: number } | undefined)?.rounds)).toEqual([5, 3]);
     expect(itemsOf(five).map((i) => i.exerciseId)).toEqual(itemsOf(three).map((i) => i.exerciseId));
     const d5 = demandOf(five);
     const d3 = demandOf(three);
-    // Même dose par item ⇒ même profil, alors que le volume réel diffère (5 vs 3 tours) : sous-estimation à corriger au CORE.
-    expect(d5?.ok && d3?.ok && d5.profile.scores).toEqual(d3?.ok ? d3.profile.scores : undefined);
+    if (!d5?.ok || !d3?.ok) throw new Error('profils attendus');
+    // Même dose par tour ⇒ scores proportionnels au nombre de tours (5/3), via la normalisation existante.
+    for (const [s, v] of Object.entries(d3.profile.scores)) expect(d5.profile.scores[s]).toBeCloseTo((v * 5) / 3, 9);
+    expect(d5.profile.reasons).toEqual([]);
   });
 
   it('écriture du rapport des scénarios', () => {

@@ -16,7 +16,7 @@ Programme : HYROX puis Running. La course HYROX reste une distance (allure BLOCK
 | 3 | station | ex.farmers_carry | 100 distance_m | 24 kg | — |
 | 4 | run | ex.easy_run | 800 distance_m | — | after_station, allure BLOCKED:RUNNING_ENGINE_DELEGATION |
 
-**Profil de demande CORE** : lower_knee=high, lower_hip=high, upper_push=high, upper_pull=high, axial=low, locomotor_impact=high, high_intensity_systemic=high, grip=high
+**Profil de demande CORE** : lower_knee=high, lower_hip=high, upper_push=high, upper_pull=high, axial=high, locomotor_impact=high, high_intensity_systemic=high, grip=high
 
 **Décisions**
 
@@ -41,7 +41,7 @@ Strength prioritaire. HYROX ne prescrit ni séries ni force maximale.
 | 1 | station | ex.farmers_carry | 100 distance_m | 24 kg | — |
 | 2 | station | ex.sandbag_lunge | 50 distance_m | 10 kg | — |
 
-**Profil de demande CORE** : lower_knee=low, lower_hip=low, upper_push=none, upper_pull=low, axial=moderate, locomotor_impact=none, high_intensity_systemic=moderate, grip=moderate
+**Profil de demande CORE** : lower_knee=high, lower_hip=high, upper_push=none, upper_pull=high, axial=high, locomotor_impact=none, high_intensity_systemic=high, grip=high
 
 **Décisions**
 
@@ -65,7 +65,7 @@ Deux sports à stations : aucune fusion, voisine transportée.
 | 1 | station | ex.skierg | 500 distance_m | — | — |
 | 2 | station | ex.burpee_broad_jump | 40 distance_m | — | — |
 
-**Profil de demande CORE** : lower_knee=low, lower_hip=low, upper_push=high, upper_pull=high, axial=low, locomotor_impact=low, high_intensity_systemic=high, grip=moderate
+**Profil de demande CORE** : lower_knee=moderate, lower_hip=moderate, upper_push=high, upper_pull=high, axial=low, locomotor_impact=low, high_intensity_systemic=high, grip=high
 
 **Décisions**
 
@@ -97,7 +97,7 @@ compromised_running (2 séances déclarées).
 | 3 | station | ex.farmers_carry | 100 distance_m | 24 kg | — |
 | 4 | run | ex.easy_run | 800 distance_m | — | after_station, allure BLOCKED:RUNNING_ENGINE_DELEGATION |
 
-**Profil de demande CORE** : lower_knee=high, lower_hip=high, upper_push=high, upper_pull=high, axial=low, locomotor_impact=high, high_intensity_systemic=high, grip=high
+**Profil de demande CORE** : lower_knee=high, lower_hip=high, upper_push=high, upper_pull=high, axial=high, locomotor_impact=high, high_intensity_systemic=high, grip=high
 
 **Décisions**
 
@@ -124,7 +124,7 @@ compromised_running (2 séances déclarées).
 | 3 | station | ex.sandbag_lunge | 50 distance_m | 10 kg | — |
 | 4 | run | ex.easy_run | 800 distance_m | — | after_station, allure BLOCKED:RUNNING_ENGINE_DELEGATION |
 
-**Profil de demande CORE** : lower_knee=high, lower_hip=high, upper_push=none, upper_pull=high, axial=low, locomotor_impact=high, high_intensity_systemic=high, grip=moderate
+**Profil de demande CORE** : lower_knee=high, lower_hip=high, upper_push=none, upper_pull=high, axial=moderate, locomotor_impact=high, high_intensity_systemic=high, grip=high
 
 **Décisions**
 

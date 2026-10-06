@@ -13,7 +13,7 @@ HYROX seul, intermédiaire, matériel complet, historique vide.
 |---|---|---|---|---|---|
 | 1 | station | ex.burpee_broad_jump | 40 distance_m | — | — |
 
-**Profil de demande CORE** : lower_knee=low, lower_hip=low, upper_push=none, upper_pull=none, axial=low, locomotor_impact=low, high_intensity_systemic=low, grip=low
+**Profil de demande CORE** : lower_knee=high, lower_hip=moderate, upper_push=none, upper_pull=none, axial=low, locomotor_impact=low, high_intensity_systemic=high, grip=low
 
 **Décisions**
 
@@ -35,7 +35,7 @@ HYROX seul, intermédiaire, matériel complet, historique vide.
 | 1 | station | ex.farmers_carry | 100 distance_m | 24 kg | — |
 | 2 | station | ex.sandbag_lunge | 50 distance_m | 10 kg | — |
 
-**Profil de demande CORE** : lower_knee=low, lower_hip=low, upper_push=none, upper_pull=low, axial=moderate, locomotor_impact=none, high_intensity_systemic=moderate, grip=moderate
+**Profil de demande CORE** : lower_knee=high, lower_hip=high, upper_push=none, upper_pull=high, axial=high, locomotor_impact=none, high_intensity_systemic=high, grip=high
 
 **Décisions**
 
@@ -61,7 +61,7 @@ HYROX seul, intermédiaire, matériel complet, historique vide.
 | 1 | station | ex.burpee_broad_jump | 40 distance_m | — | — |
 | 2 | station | ex.farmers_carry | 100 distance_m | 24 kg | — |
 
-**Profil de demande CORE** : lower_knee=low, lower_hip=low, upper_push=none, upper_pull=low, axial=low, locomotor_impact=low, high_intensity_systemic=moderate, grip=moderate
+**Profil de demande CORE** : lower_knee=moderate, lower_hip=high, upper_push=none, upper_pull=high, axial=high, locomotor_impact=low, high_intensity_systemic=high, grip=high
 
 **Décisions**
 
@@ -89,7 +89,7 @@ HYROX seul, intermédiaire, matériel complet, historique vide.
 | 3 | station | ex.farmers_carry | 100 distance_m | 24 kg | — |
 | 4 | run | ex.easy_run | 800 distance_m | — | after_station, allure BLOCKED:RUNNING_ENGINE_DELEGATION |
 
-**Profil de demande CORE** : lower_knee=high, lower_hip=high, upper_push=none, upper_pull=low, axial=low, locomotor_impact=high, high_intensity_systemic=high, grip=moderate
+**Profil de demande CORE** : lower_knee=high, lower_hip=high, upper_push=none, upper_pull=moderate, axial=moderate, locomotor_impact=high, high_intensity_systemic=high, grip=high
 
 **Décisions**
 
@@ -147,7 +147,7 @@ Rôle orienté station : une station, répétée (volume gouverné TEST_ONLY).
 |---|---|---|---|---|---|
 | 1 | station | ex.burpee_broad_jump | 40 distance_m | — | — |
 
-**Profil de demande CORE** : lower_knee=low, lower_hip=low, upper_push=none, upper_pull=none, axial=low, locomotor_impact=low, high_intensity_systemic=low, grip=low
+**Profil de demande CORE** : lower_knee=high, lower_hip=moderate, upper_push=none, upper_pull=none, axial=low, locomotor_impact=low, high_intensity_systemic=high, grip=low
 
 **Décisions**
 
@@ -169,7 +169,7 @@ Stations chargées enchaînées (endurance de force spécifique ; la force maxim
 | 1 | station | ex.farmers_carry | 100 distance_m | 24 kg | — |
 | 2 | station | ex.sandbag_lunge | 50 distance_m | 10 kg | — |
 
-**Profil de demande CORE** : lower_knee=low, lower_hip=low, upper_push=none, upper_pull=low, axial=moderate, locomotor_impact=none, high_intensity_systemic=moderate, grip=moderate
+**Profil de demande CORE** : lower_knee=high, lower_hip=high, upper_push=none, upper_pull=high, axial=high, locomotor_impact=none, high_intensity_systemic=high, grip=high
 
 **Décisions**
 
@@ -197,7 +197,7 @@ Course APRÈS station, répétée. Distance de course TEST_ONLY, aucune allure (
 | 3 | station | ex.farmers_carry | 100 distance_m | 24 kg | — |
 | 4 | run | ex.easy_run | 800 distance_m | — | after_station, allure BLOCKED:RUNNING_ENGINE_DELEGATION |
 
-**Profil de demande CORE** : lower_knee=high, lower_hip=high, upper_push=none, upper_pull=low, axial=low, locomotor_impact=high, high_intensity_systemic=high, grip=moderate
+**Profil de demande CORE** : lower_knee=high, lower_hip=high, upper_push=none, upper_pull=moderate, axial=moderate, locomotor_impact=high, high_intensity_systemic=high, grip=high
 
 **Décisions**
 
@@ -297,7 +297,7 @@ station_capacity, 60 min.
 |---|---|---|---|---|---|
 | 1 | station | ex.burpee_broad_jump | 40 distance_m | — | — |
 
-**Profil de demande CORE** : lower_knee=low, lower_hip=low, upper_push=none, upper_pull=none, axial=low, locomotor_impact=low, high_intensity_systemic=low, grip=low
+**Profil de demande CORE** : lower_knee=high, lower_hip=moderate, upper_push=none, upper_pull=none, axial=low, locomotor_impact=low, high_intensity_systemic=high, grip=low
 
 **Décisions**
 
@@ -319,7 +319,7 @@ Zones sensibles écartées par HYROX AVANT proposition (aucune substitution du C
 |---|---|---|---|---|---|
 | 1 | station | ex.farmers_carry | 100 distance_m | 24 kg | — |
 
-**Profil de demande CORE** : lower_knee=none, lower_hip=low, upper_push=none, upper_pull=low, axial=low, locomotor_impact=none, high_intensity_systemic=low, grip=moderate
+**Profil de demande CORE** : lower_knee=none, lower_hip=moderate, upper_push=none, upper_pull=high, axial=high, locomotor_impact=none, high_intensity_systemic=high, grip=high
 
 **Décisions**
 

@@ -25,7 +25,7 @@ aa803f0dd3a5dfce  engine/src/api/pipeline.ts
 07e659dd609ba79a  engine/src/catalog/catalog.ts
 71201aa46e6b9c43  engine/src/catalog/coverage.ts
 2a6bf154973d41ac  engine/src/catalog/index.ts
-957290fc7b5a203d  engine/src/catalog/session-demand.ts
+dbf18e83f4b1e96c  engine/src/catalog/session-demand.ts
 6d6cafd628cba7c9  engine/src/catalog/structures.ts
 2513a154f42a3f50  engine/src/contracts/core-types.ts
 61041c6103ec3d54  engine/src/contracts/index.ts
@@ -64,7 +64,7 @@ b65d5f00f63fea71  engine/src/rules/index.ts
 f63bb0e39a77719d  engine/src/safety/eligibility.ts
 d7adb0d41a2f0473  engine/src/safety/index.ts
 90ef1d947f70a86d  engine/src/safety/pain.ts
-91bdeafdd66a389c  engine/src/trace/core-codes.ts
+cbc6163148fa8958  engine/src/trace/core-codes.ts
 b29f72f90a83f5ad  engine/src/trace/index.ts
 e0208d08acf1950e  engine/src/trace/registry.ts
 d1b1a668ef13568e  engine/src/trace/schema-issue.ts

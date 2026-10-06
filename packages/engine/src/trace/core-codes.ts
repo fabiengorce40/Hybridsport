@@ -80,6 +80,7 @@ export const CORE_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'SCOPE.OUT_OF_SCOPE', categories: ['safety'], params: { eligibility: S }, audience: 'user', severity: 'error' },
   { code: 'SCOPE.DECLARATION_REQUIRED', categories: ['safety'], params: { declarationKind: S }, audience: 'user', severity: 'error' },
   { code: 'DATA.READINESS_UNKNOWN', categories: ['information'], params: {}, audience: 'internal', severity: 'info' },
+  { code: 'DATA.DEMAND_REPETITION_UNRESOLVED', categories: ['information'], params: { sessionId: S, blockId: S, format: S, cause: S }, audience: 'internal', severity: 'notice' },
   { code: 'DATA.DEMAND_PROFILE_UNAVAILABLE', categories: ['information'], params: { sessionId: S, cause: S, detail: S }, audience: 'internal', severity: 'warning' },
   { code: 'DATA.HEALTH_HISTORY_UNAVAILABLE', categories: ['information'], params: {}, audience: 'internal', severity: 'info' },
   { code: 'DATA.NOT_PERSISTED_NO_CONSENT', categories: ['information'], params: {}, audience: 'internal', severity: 'info' },
