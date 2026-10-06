@@ -11,12 +11,12 @@ import { requestAssessment, weekIndexOf, withinProgramme, zProgrammeState } from
 import type { ProgrammeResult, ProgrammeState } from '@hybridsport/programme';
 import { logFreeRun } from './app.js';
 import type { Clock } from './app.js';
-import { beta0Environment, legacyBeta0StrengthIntent, prescribedArchetype, LEGACY_BETA0_STRENGTH_ARCHETYPE, programmeDefinitionFromProfile, weekPlanning } from './beta0.js';
+import { beta0Environment, ctDeclarations, legacyBeta0StrengthIntent, prescribedArchetype, LEGACY_BETA0_STRENGTH_ARCHETYPE, programmeDefinitionFromProfile, weekPlanning } from './beta0.js';
 import { STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } from '@hybridsport/strength';
 import { addDays, dateOf, normalizeInstant, weekStartOf } from './dates.js';
 import { AppError } from './errors.js';
 import { emptyState, zProfile } from './model.js';
-import type { AppState, Feedback, PersistedWeek, ProfileInput, ProgrammeLog, Rest, SetLog } from './model.js';
+import type { AppState, CtRuntime, Feedback, PersistedWeek, ProfileInput, ProgrammeLog, Rest, SetLog } from './model.js';
 import { closeProgrammeWeekInApp, planProgrammeCurrentWeek, ProgrammeError, recordSessionExecution, startProgramme } from './programme.js';
 import { strengthWeekBoundary } from './progression.js';
 import { compactHistory } from './history.js';
@@ -72,13 +72,23 @@ function carryWeek(ps: ProgrammeState, c: CarriedWeek): ProgrammeState {
 }
 
 /**
+ * Profil Beta 0 validé : sports exposés (Strength, Running, Cross-training C3.5) ; HYROX refusé ; Cross-training activé ⇒
+ * déclarations complètes exigées (fréquence, intention, coupure) — aucune valeur supposée.
+ */
+function beta0Profile(input: ProfileInput): ProfileInput & ReturnType<typeof zProfile.parse> {
+  const profile = zProfile.parse(input);
+  if (profile.hyrox.enabled) throw new AppError('BETA0_SPORT_UNSUPPORTED');
+  if (!profile.strength.enabled && !profile.running.enabled && !profile.crosstraining.enabled) throw new AppError('NO_SPORT_SELECTED');
+  if (profile.crosstraining.enabled) ctDeclarations(profile);
+  return profile;
+}
+
+/**
  * Onboarding Beta 0 : profil validé (Strength et/ou Running seulement), dernière course déclarée éventuelle, puis
  * programme créé et semaine courante planifiée par le chemin Beta 0 (jamais par le planificateur V0).
  */
 export function createBeta0Programme(state: AppState, input: ProfileInput, clock: Clock, o: Beta0ProgrammeOptions, env: ProgrammeEnvironment = beta0Environment()): AppState {
-  const profile = zProfile.parse(input);
-  if (profile.crosstraining.enabled || profile.hyrox.enabled) throw new AppError('BETA0_SPORT_UNSUPPORTED');
-  if (!profile.strength.enabled && !profile.running.enabled) throw new AppError('NO_SPORT_SELECTED');
+  const profile = beta0Profile(input);
   let s: AppState = { ...state, profile };
   if (o.lastRun && profile.running.enabled) {
     s = logFreeRun(s, { realizedDurationS: o.lastRun.realizedDurationS, completion: 'COMPLETED', difficulty: o.lastRun.difficulty, pain: false, ...(o.lastRun.distanceM !== undefined ? { distanceM: o.lastRun.distanceM } : {}) }, clock);
@@ -126,9 +136,7 @@ export function previewBeta0Recreation(state: AppState, today: string): Recreati
  * références. Tracée dans l'audit du nouveau programme.
  */
 export function recreateBeta0Programme(state: AppState, input: ProfileInput, clock: Clock, o: Beta0ProgrammeOptions, env: ProgrammeEnvironment = beta0Environment()): AppState {
-  const profile = zProfile.parse(input);
-  if (profile.crosstraining.enabled || profile.hyrox.enabled) throw new AppError('BETA0_SPORT_UNSUPPORTED');
-  if (!profile.strength.enabled && !profile.running.enabled) throw new AppError('NO_SPORT_SELECTED');
+  const profile = beta0Profile(input);
   const preview = previewBeta0Recreation(state, clock.today);
   if (preview.sessionInProgress) throw new AppError('PROGRAMME_SESSION_IN_PROGRESS');
   const thisWeek = weekStartOf(clock.today);
@@ -277,7 +285,7 @@ function recordOf(r: PlannedRequest | undefined): SessionRecord | undefined {
 
 export interface ProgrammeSessionView {
   readonly requestId: string;
-  readonly sport: 'strength' | 'running';
+  readonly sport: 'strength' | 'running' | 'crosstraining';
   readonly date: string;
   readonly session: SessionDraft;
   readonly archetypeId: string | null;
@@ -297,7 +305,7 @@ export function selectProgrammeSession(state: AppState, requestId: string): Prog
   const r = requestOf(state, requestId);
   const record = recordOf(r);
   const session = record?.session;
-  if (!r?.date || !record || !session || (r.sport !== 'strength' && r.sport !== 'running')) return null;
+  if (!r?.date || !record || !session || (r.sport !== 'strength' && r.sport !== 'running' && r.sport !== 'crosstraining')) return null;
   const week = Object.values(state.planner.weeks).find((w) => w.requests.includes(r));
   return {
     requestId, sport: r.sport, date: r.date, session, ...prescribedArchetype(r), role: r.composition?.role ?? null,
@@ -321,7 +329,41 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   if (!v) throw new AppError('SESSION_UNAVAILABLE');
   if (v.result) throw new AppError('SESSION_FINISHED');
   if (v.log) return state;
-  return withLog(state, { requestId, sport: v.sport, startedAt: normalizeInstant(clock.now), sets: [], painItems: [], rest: null });
+  const now = normalizeInstant(clock.now);
+  // Cross-training : « Commencer » démarre le chrono (horodaté) ; tours et répétitions à zéro (saisies de l'athlète).
+  const ct = v.sport === 'crosstraining' ? { ct: { runningSince: now, accumulatedS: 0, rounds: 0, partialReps: 0 } } : {};
+  return withLog(state, { requestId, sport: v.sport, startedAt: now, sets: [], painItems: [], rest: null, ...ct });
+}
+
+// ——— Cross-training (C3.5) : chrono horodaté, compteurs saisis — aucune écriture par seconde
+
+function openCt(state: AppState, requestId: string): ProgrammeLog & { readonly ct: CtRuntime } {
+  const log = openLog(state, requestId);
+  if (log.sport !== 'crosstraining' || !log.ct) throw new AppError('CT_RUNTIME_MISSING');
+  return log as ProgrammeLog & { readonly ct: CtRuntime };
+}
+
+/** Temps écoulé du chrono à l'instant donné (s, entier inférieur) : cumul + segment en cours. */
+export function ctElapsedS(rt: CtRuntime, nowIso: string): number {
+  const running = rt.runningSince === null ? 0 : Math.max(0, (Date.parse(nowIso) - Date.parse(rt.runningSince)) / MS_PER_S);
+  return Math.floor(rt.accumulatedS + running);
+}
+
+/** Pause (cumul figé) ou reprise (nouveau segment) EXPLICITES ; une navigation ou un rechargement ne change rien. */
+export function controlCtTimer(state: AppState, clock: Clock, requestId: string, action: 'pause' | 'resume'): AppState {
+  const log = openCt(state, requestId);
+  const rt = log.ct;
+  if (action === 'pause' && rt.runningSince !== null) return withLog(state, { ...log, ct: { ...rt, runningSince: null, accumulatedS: ctElapsedS(rt, clock.now) } });
+  if (action === 'resume' && rt.runningSince === null) return withLog(state, { ...log, ct: { ...rt, runningSince: normalizeInstant(clock.now) } });
+  return state;
+}
+
+/** Compteurs SAISIS par l'athlète (valeurs absolues, entiers ≥ 0) : tours complétés, répétitions du tour en cours. */
+export function recordCtProgress(state: AppState, requestId: string, x: { readonly rounds?: number; readonly partialReps?: number }): AppState {
+  const log = openCt(state, requestId);
+  const ok = (n: number | undefined) => n === undefined || (Number.isInteger(n) && n >= 0);
+  if (!ok(x.rounds) || !ok(x.partialReps)) throw new AppError('CT_PROGRESS_INVALID');
+  return withLog(state, { ...log, ct: { ...log.ct, ...(x.rounds !== undefined ? { rounds: x.rounds } : {}), ...(x.partialReps !== undefined ? { partialReps: x.partialReps } : {}) } });
 }
 
 /**
@@ -396,6 +438,11 @@ export interface FinishInput {
   readonly pain: boolean;
   /** Course : saisies réelles (durée exigée ; distance facultative ; temps du TEST seul). */
   readonly run?: { readonly realizedDurationS: number; readonly distanceM?: number; readonly testTimeS?: number };
+  /**
+   * Cross-training : résultat STRUCTURÉ du format (contrat de résultat CT ; absent si abandon) et charges réellement
+   * utilisées. Validé par le moteur ; un refus laisse l'état inchangé.
+   */
+  readonly ct?: { readonly result?: Readonly<Record<string, unknown>>; readonly performedLoads?: readonly { readonly exerciseId: string; readonly kg: number }[] };
 }
 
 /**
@@ -406,6 +453,18 @@ export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishI
   const s0 = state.programmeLogs[f.requestId] ? state : startProgrammeSession(state, clock, f.requestId);
   const log = openLog(s0, f.requestId);
   const pain = f.pain ? 'REPORTED' as const : 'NONE' as const;
+  if (log.sport === 'crosstraining') {
+    const rt = log.ct ?? { runningSince: null, accumulatedS: 0, rounds: 0, partialReps: 0 };
+    const elapsedS = ctElapsedS(rt, clock.now);
+    const loads = f.ct?.performedLoads ?? [];
+    const recorded = recordSessionExecution(s0, clock, {
+      requestId: f.requestId, sport: 'crosstraining', completion: f.completion, pain,
+      ...(f.completion !== 'abandoned' && f.ct?.result ? { ctResult: f.ct.result } : {}), ...(loads.length > 0 ? { performedLoads: loads } : {}),
+    });
+    const ct = { result: f.completion === 'abandoned' ? null : { ...(f.ct?.result ?? {}) }, elapsedS, performedLoads: loads.map((l) => ({ ...l })) };
+    // Chrono figé à la fin (cumul), jamais relancé.
+    return withLog(recorded, { ...log, ct: { ...rt, runningSince: null, accumulatedS: elapsedS }, rest: null, finishedAt: normalizeInstant(clock.now), outcome: { completion: f.completion, pain: f.pain, ct } });
+  }
   const recorded = log.sport === 'strength'
     ? recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'strength', completion: f.completion, pain, sets: log.sets, painItems: log.painItems })
     : recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'running', completion: f.completion, pain, ...(f.run ? { run: f.run } : {}) });
@@ -417,7 +476,7 @@ export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishI
 
 export interface HistoryEntry {
   readonly requestId: string;
-  readonly sport: 'strength' | 'running';
+  readonly sport: 'strength' | 'running' | 'crosstraining';
   readonly date: string;
   readonly archetypeId: string | null;
   readonly role: string | null;
@@ -428,23 +487,36 @@ export interface HistoryEntry {
   readonly run: NonNullable<ProgrammeLog['outcome']>['run'] | null;
   /** TEST réalisé : référence TIME_TRIAL enregistrée. */
   readonly testReference: boolean;
+  /** Cross-training : format et mouvements PRESCRITS (séance persistée), résultat structuré saisi, temps chronométré. */
+  readonly ct: { readonly format: string; readonly exercises: readonly string[]; readonly result: Readonly<Record<string, unknown>> | null; readonly elapsedS: number } | null;
+}
+
+/** Format et mouvements de la séance Cross-training PERSISTÉE (lecture du session_record, jamais reconstruite). */
+function ctSummary(state: AppState, requestId: string): { readonly format: string; readonly exercises: readonly string[] } | null {
+  const b = selectProgrammeSession(state, requestId)?.session.blocks.find((x) => x.kind === 'conditioning');
+  if (!b) return null;
+  const first = b.items[0]?.prescription;
+  const format = b.format === 'continuous' && first?.type === 'timed' && first.rounds > 1 ? 'intervals' : b.format;
+  return { format, exercises: b.items.map((i) => i.exerciseId) };
 }
 
 /** Historique des séances du programme (terminées, ou manquées dérivées), plus récentes d'abord. */
 export function selectHistory(state: AppState): readonly HistoryEntry[] {
   const fromLogs = Object.values(state.programmeLogs).flatMap((l): HistoryEntry[] => {
-    if (!l.finishedAt || !l.outcome || (l.sport !== 'strength' && l.sport !== 'running')) return [];
+    if (!l.finishedAt || !l.outcome) return [];
     const r = requestOf(state, l.requestId);
+    const summary = l.sport === 'crosstraining' ? ctSummary(state, l.requestId) : null;
     return [{
       requestId: l.requestId, sport: l.sport, date: r?.date ?? dateOf(l.startedAt), archetypeId: r ? prescribedArchetype(r).archetypeId : null, role: r?.composition?.role ?? null,
       completion: l.outcome.completion, pain: l.outcome.pain, sets: l.sets.filter((x) => x.done), run: l.outcome.run ?? null,
       testReference: state.running.references.some((x) => x.referenceId === `test:${l.requestId}`),
+      ct: summary && l.outcome.ct ? { ...summary, result: l.outcome.ct.result, elapsedS: l.outcome.ct.elapsedS } : null,
     }];
   });
   const missed = (state.programmeState?.results ?? []).flatMap((x): HistoryEntry[] => {
-    if (x.completion !== 'missed' || fromLogs.some((e) => e.requestId === x.requestId) || (x.sport !== 'strength' && x.sport !== 'running')) return [];
+    if (x.completion !== 'missed' || fromLogs.some((e) => e.requestId === x.requestId) || (x.sport !== 'strength' && x.sport !== 'running' && x.sport !== 'crosstraining')) return [];
     const r = requestOf(state, x.requestId);
-    return [{ requestId: x.requestId, sport: x.sport, date: x.date, archetypeId: r ? prescribedArchetype(r).archetypeId : null, role: r?.composition?.role ?? null, completion: 'missed', pain: false, sets: [], run: null, testReference: false }];
+    return [{ requestId: x.requestId, sport: x.sport, date: x.date, archetypeId: r ? prescribedArchetype(r).archetypeId : null, role: r?.composition?.role ?? null, completion: 'missed', pain: false, sets: [], run: null, testReference: false, ct: null }];
   });
   return [...fromLogs, ...missed].sort((a, b) => (a.date < b.date ? 1 : a.date > b.date ? -1 : b.requestId.localeCompare(a.requestId)));
 }

@@ -47,7 +47,16 @@ export const zProfile = z.object({
     /** Côte praticable déclarée (§N : jamais de séance de côtes sans terrain déclaré). */
     hills: z.boolean().default(false),
   }).strict(),
-  crosstraining: z.object({ enabled: z.boolean() }).strict(),
+  /**
+   * Cross-training (C3.5) : DÉCLARATIONS de l'utilisateur, exigées quand le sport est activé en Beta 0 — séances par
+   * semaine, intention (archétype de stimulus C3 parmi `CT_INTENT_LABELS`), coupure récente déclarée. Champs additifs.
+   */
+  crosstraining: z.object({
+    enabled: z.boolean(),
+    sessionsPerWeek: sessionsPerWeek.optional(),
+    intent: z.string().min(1).optional(),
+    returnState: z.enum(RETURN_STATES).optional(),
+  }).strict(),
   hyrox: z.object({ enabled: z.boolean() }).strict(),
   equipment: z.object({ presetId: z.string().min(1), items: z.array(z.string().min(1)) }).strict(),
   /** Minutes disponibles par jour, du lundi (0) au dimanche (6) ; 0 = indisponible. */
@@ -250,20 +259,37 @@ export const zRest = z.object({
 }).strict();
 export type Rest = z.infer<typeof zRest>;
 
+/**
+ * C3.5 — exécution Cross-training EN COURS : chrono HORODATÉ (jamais un compteur écrit chaque seconde) et compteurs
+ * saisis par l'athlète (tours, répétitions du tour en cours). `runningSince` null = en pause ; temps écoulé =
+ * `accumulatedS` + (maintenant − `runningSince`). Écrit seulement sur une commande (pause, reprise, +1 tour…).
+ */
+export const zCtRuntime = z.object({
+  runningSince: instant.nullable(),
+  accumulatedS: z.number().nonnegative(),
+  rounds: z.number().int().nonnegative(),
+  partialReps: z.number().int().nonnegative(),
+}).strict();
+export type CtRuntime = z.infer<typeof zCtRuntime>;
+
 /** Séance du programme commencée dans l'application. */
 export const zProgrammeLog = z.object({
   requestId: z.string().min(1),
-  sport: z.enum(ENGINE_SPORTS),
+  sport: z.enum([...ENGINE_SPORTS, 'crosstraining']),
   startedAt: instant,
   sets: z.array(zSetLog),
   painItems: z.array(z.string()).default([]),
   rest: zRest.nullable().default(null),
+  /** Cross-training : chrono et compteurs (absent pour les autres sports). */
+  ct: zCtRuntime.optional(),
   finishedAt: instant.optional(),
   /** Issue enregistrée (copie de la saisie transmise à recordSessionExecution). */
   outcome: z.object({
     completion: z.enum(['completed_as_prescribed', 'modified', 'abandoned']),
     pain: z.boolean(),
     run: z.object({ realizedDurationS: z.number().positive().finite(), distanceM: z.number().positive().finite().optional(), testTimeS: z.number().positive().finite().optional() }).strict().optional(),
+    /** Cross-training : résultat STRUCTURÉ transmis au moteur (contrat de résultat CT) et temps chronométré. */
+    ct: z.object({ result: z.record(z.string(), z.unknown()).nullable(), elapsedS: z.number().nonnegative(), performedLoads: z.array(z.object({ exerciseId: z.string().min(1), kg: z.number().positive().finite() }).strict()).default([]) }).strict().optional(),
   }).strict().optional(),
 }).strict();
 export type ProgrammeLog = z.infer<typeof zProgrammeLog>;

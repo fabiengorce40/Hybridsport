@@ -11,7 +11,7 @@ import {
 } from '@hybridsport/engine';
 import type { CoreProfile, CorePipelineOutcome, CoreState, EngineContext, LoadedCatalog, LoadedRuleset, SportEngine, SportSessionRequest } from '@hybridsport/engine';
 import type { Discipline, FingerprintHistoryEntry, ReasonCode, RepetitionIntent, SessionDraft, SessionFingerprint, SessionRecord } from '@hybridsport/domain';
-import { runCrossTrainingC2 } from '@hybridsport/crosstraining';
+import { ctPrescriptionOf, runCrossTrainingC2, stimulusFromArchetypeId } from '@hybridsport/crosstraining';
 import type { CrossTrainingContextInput, CrossTrainingEngine } from '@hybridsport/crosstraining';
 import { runHyroxH1 } from '@hybridsport/hyrox';
 import type { HyroxContextInput, HyroxEngine } from '@hybridsport/hyrox';
@@ -94,6 +94,12 @@ export interface SportPort {
   readonly consumesNeighbours: boolean;
   /** Le moteur consomme-t-il les séances de sa discipline placées plus tôt dans la semaine (`SlotRequest.weekSessions`) ? */
   readonly consumesWeekSessions?: boolean;
+  /**
+   * C3.5 — portée des séances de la semaine transmises : `before` (défaut, ordre des dates : expositions antérieures,
+   * Strength) ou `generated` (toutes les séances de la discipline DÉJÀ générées, quelle que soit leur date : variété
+   * Cross-training, indépendante de l'ordre de génération du planificateur).
+   */
+  readonly weekSessionsScope?: 'before' | 'generated';
   generate(slot: SlotRequest): PortOutcome;
   /** Structures sollicitées (dérivées du catalogue par la table GOUVERNÉE du ruleset de la discipline). */
   structures(session: SessionDraft): StructuresResult;
@@ -382,6 +388,13 @@ export function runningPort(def: Base<unknown> & { readonly engine: SportEngine<
   };
 }
 
+/**
+ * C3.5 — décisions de composition Cross-training PERSISTÉES avec la séance (audit, preuve de la boucle moteur → terrain
+ * → moteur) : intention, structure, historique vu, voisines, formats écartés / choisi, mouvements et raisons, dose,
+ * durée, densité, provenance des valeurs candidates. Les listes de candidats écartés restent dans la trace du CORE.
+ */
+const CT_PERSISTED_DECISIONS = /^(PLAN\.CROSSTRAINING\.C3_(INTENT|STRUCTURE|BLOCK_NOT_GENERATED|HISTORY|NEIGHBOURS|FORMAT_REJECTED|FORMAT_CHOSEN|MOVEMENT_SELECTED|DURATION|DENSITY|REPEAT_UNAVOIDABLE|PROPOSED)|SAFETY\.CROSSTRAINING\.C3_HISTORY_NEGATIVE|DOSE\.CROSSTRAINING\.C3_DOSE|DATA\.CROSSTRAINING\.CANDIDATE_VALUE_USED)$/;
+
 /** Sport du planificateur → discipline du contrat de contexte (HYROX = `hybrid_race`). */
 const DISCIPLINE_OF: Readonly<Record<PlannerSport, 'strength' | 'running' | 'crosstraining' | 'hybrid_race'>> = { strength: 'strength', running: 'running', crosstraining: 'crosstraining', hyrox: 'hybrid_race' };
 
@@ -391,7 +404,13 @@ const DISCIPLINE_OF: Readonly<Record<PlannerSport, 'strength' | 'running' | 'cro
  */
 export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossTrainingEngine; readonly baseContext: Ctx<CrossTrainingContextInput>; readonly transportNeighbours?: boolean }): SportPort {
   const transport = def.transportNeighbours === true;
-  return createEnginePort<unknown>({
+  // C3.5 — séances CT PRÉVUES plus tôt dans la semaine (prescription lue dans la séance, stimulus de l'archétype).
+  const plannedOf = (slot: SlotRequest) => (slot.weekSessions ?? []).flatMap((w) => {
+    const prescription = ctPrescriptionOf(w.session);
+    const stimulus = stimulusFromArchetypeId(w.archetypeId);
+    return prescription && stimulus ? [{ sessionId: w.requestId, plannedAt: def.clock.instantOf(w.date), stimulus, prescription }] : [];
+  });
+  const port = createEnginePort<unknown>({
     ...def, engine: def.engine as SportEngine<unknown>, sport: 'crosstraining', discipline: 'crosstraining', consumesNeighbours: transport,
     context: (slot) => {
       const b = resolve(def.baseContext, slot);
@@ -401,10 +420,15 @@ export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossT
         ...b, population: { ...b.population, hybrid: slot.hybrid },
         ...(transport && n ? { neighbours: { known: n.known, items: n.neighbours.map((x) => ({ discipline: x.discipline, hoursFromThisSession: x.hoursFromThisSession, demand: { ...x.demand } })) } } : {}),
         ...(transport && order.length > 0 ? { sportPriority: { order } } : {}),
+        ...(transport && plannedOf(slot).length > 0 ? { plannedSessions: plannedOf(slot) } : {}),
       };
     },
     run: (_e, r, c) => runCrossTrainingC2(def.engine, r, c),
+    ...(transport ? { persistedDecisions: CT_PERSISTED_DECISIONS } : {}),
+    // Empreintes des séances prévues de la semaine : anti-doublon du CORE (statut `planned`), comme Strength.
+    ...(transport ? { extraHistory: (slot: SlotRequest) => (slot.weekSessions ?? []).flatMap((w) => (w.fingerprint ? [{ fingerprint: w.fingerprint, at: def.clock.instantOf(w.date), status: 'planned' as const, repetitionIntents: [] }] : [])) } : {}),
   });
+  return transport ? { ...port, consumesWeekSessions: true, weekSessionsScope: 'generated' } : port;
 }
 
 export function hyroxPort(def: Base<unknown> & { readonly engine: HyroxEngine; readonly baseContext: Ctx<Omit<HyroxContextInput, 'requestedStation'>> }): SportPort {

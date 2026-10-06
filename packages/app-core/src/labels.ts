@@ -177,6 +177,18 @@ export const RUNNING_LEVEL_LABELS: Readonly<Record<string, { title: string; deta
   P_R3: { title: 'Intermédiaire', detail: 'Pratique structurée, plusieurs distances courues' },
   P_R4: { title: 'Avancé non élite', detail: 'Volume élevé, compétitions régulières' },
 };
+/**
+ * Cross-training (C3.5) : intentions DÉCLARABLES en Beta 0 = archétypes de stimulus que C3 sait composer (identifiants
+ * techniques du moteur, aucun nouveau stimulus) ; libellés d'interface seulement.
+ */
+export const CT_INTENT_LABELS: Readonly<Record<string, { title: string; detail: string }>> = {
+  'crosstraining.mixed_modal_medium': { title: 'Mixte', detail: 'Plusieurs modalités enchaînées (ergomètre, poids du corps)' },
+  'crosstraining.aerobic_capacity': { title: 'Capacité aérobie', detail: 'Effort long et soutenable' },
+  'crosstraining.threshold': { title: 'Seuil', detail: 'Intervalles longs avec récupération' },
+  'crosstraining.anaerobic_intervals': { title: 'Intervalles intenses', detail: 'Efforts courts, récupérations plus longues' },
+  'crosstraining.muscular_endurance': { title: 'Endurance musculaire', detail: 'Répétitions au poids du corps, chaque minute' },
+};
+export const CT_FORMAT_LABELS: Readonly<Record<string, string>> = { continuous: 'Continu', intervals: 'Intervalles', emom: 'EMOM', amrap: 'AMRAP', for_time: 'For time' };
 export const RETURN_STATE_LABELS: Readonly<Record<string, string>> = { NONE: 'Pas de coupure', SHORT: 'Courte coupure', MODERATE: 'Coupure moyenne', LONG: 'Longue coupure', UNKNOWN: 'Je ne sais pas' };
 export const DIFFICULTY_LABELS: Readonly<Record<string, string>> = { EASIER: 'Plus facile que prévu', AS_EXPECTED: 'Comme prévu', HARDER: 'Plus dur', MUCH_HARDER: 'Beaucoup plus dur' };
 export const PAIN_AREAS: Readonly<Record<string, string>> = { knee: 'Genou', shoulder: 'Épaule', lower_back: 'Bas du dos', hip_groin: 'Hanche / aine', ankle_foot: 'Cheville / pied', elbow_wrist: 'Coude / poignet', other: 'Autre' };

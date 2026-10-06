@@ -79,7 +79,7 @@ export const CT_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: CT_CODES.C3_STRUCTURE, categories: ['information'], params: { stimulus: S, blocks: L }, audience: 'internal', severity: 'info' },
   { code: CT_CODES.C3_BLOCK_NOT_GENERATED, categories: ['information'], params: { kind: S, cause: S }, audience: 'internal', severity: 'notice' },
   { code: CT_CODES.C3_STRUCTURE_UNAVAILABLE, categories: ['feasibility'], params: { stimulus: S, kind: S, cause: S }, audience: 'user', severity: 'error' },
-  { code: CT_CODES.C3_HISTORY, categories: ['information'], params: { sameStimulus: N, recentMovements: L, lastFormat: S }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C3_HISTORY, categories: ['information'], params: { sameStimulus: N, planned: N, recentMovements: L, lastFormat: S }, audience: 'internal', severity: 'info' },
   { code: CT_CODES.C3_HISTORY_NEGATIVE, categories: ['safety'], params: { sessionId: S, causes: L, action: S }, audience: 'internal', severity: 'notice' },
   { code: CT_CODES.C3_NEIGHBOURS, categories: ['information'], params: { known: S, neighbours: L, policy: S, priorityPolicy: S }, audience: 'internal', severity: 'info' },
   { code: CT_CODES.C3_FORMAT_REJECTED, categories: ['information'], params: { format: S, causes: L }, audience: 'internal', severity: 'notice' },

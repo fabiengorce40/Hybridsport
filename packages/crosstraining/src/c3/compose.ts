@@ -140,12 +140,18 @@ export function composeC3(input: Input, stimulus: CtStimulus, governance: CtGove
   // ——— 3. HISTORIQUE (mémoire, jamais « refaire la dernière séance ») ———
   const now = input.context.now;
   const windowH = P['ct.history.recencyBand'] * HOURS_PER_DAY;
-  const inWindow = ctx.sessionHistory.filter((s) => { const h = hoursBetween(asISODateTime(s.completedAt), asISODateTime(now)); return h >= 0 && h <= windowH; });
+  const within = (at: string): boolean => { const h = hoursBetween(asISODateTime(at), asISODateTime(now)); return h >= 0 && h <= windowH; };
+  // Expositions de la fenêtre : séances RÉALISÉES + séances PRÉVUES plus tôt dans la semaine (variété seulement).
+  // Séances prévues de la semaine, AVANT ou APRÈS cette date (la variété ne dépend pas de l'ordre de génération).
+  const planned = (ctx.plannedSessions ?? []).filter((p) => Math.abs(hoursBetween(asISODateTime(p.plannedAt), asISODateTime(now))) <= windowH).map((p) => ({ completedAt: p.plannedAt, stimulus: p.stimulus, prescription: p.prescription }));
+  const inWindow: readonly Exposure[] = [...ctx.sessionHistory.filter((s) => within(s.completedAt)), ...planned];
   const sameStimulus = [...inWindow].filter((s) => s.stimulus === stimulus).sort((a, b) => (a.completedAt < b.completedAt ? 1 : -1));
   const recentMovements = new Set(inWindow.flatMap((s) => s.prescription.items.map((i) => i.exerciseId)));
   const last = sameStimulus[0];
-  trace.push(ctReasons.emit(CT_CODES.C3_HISTORY, { sameStimulus: sameStimulus.length, recentMovements: [...recentMovements].sort(), lastFormat: last?.prescription.format ?? 'none' }));
-  const negative = negativeOf(latestRealized(ctx.sessionHistory));
+  trace.push(ctReasons.emit(CT_CODES.C3_HISTORY, { sameStimulus: sameStimulus.length, planned: planned.length, recentMovements: [...recentMovements].sort(), lastFormat: last?.prescription.format ?? 'none' }));
+  // Retour négatif : dernière séance RÉALISÉE de la fenêtre de récence seulement (au-delà, plus aucun effet : sinon un
+  // abandon rendant toute composition impossible bloquerait le sport indéfiniment — aucune séance ne le remplacerait).
+  const negative = negativeOf(latestRealized(ctx.sessionHistory.filter((x) => within(x.completedAt))));
   let excludedByHistory: string[] = [];
   if (negative) {
     const actions = negative.causes.map((c) => P['ct.history.negativeResponse'][c]);
@@ -211,10 +217,15 @@ export function composeC3(input: Input, stimulus: CtStimulus, governance: CtGove
       ...(plan.identicalToLast.length === IDENTITY_LEVELS.length ? [ctReasons.emit(CT_CODES.C3_REPEAT_UNAVOIDABLE, { identicalLevels: [...plan.identicalToLast] })] : []),
       ctReasons.emit(CT_CODES.C3_PROPOSED, { stimulus, format, exercises: plan.items.map((i) => i.exerciseId) }),
     ];
-    return { ok: true, plan, proposal: proposalOf(input, plan, engine, reasons) };
+    // Raisons identiques (même code, mêmes paramètres : provenance relue à chaque tentative) conservées une seule fois.
+    const unique = [...new Map(reasons.map((r) => [JSON.stringify([r.code, r.params]), r])).values()];
+    return { ok: true, plan, proposal: proposalOf(input, plan, engine, unique) };
   }
   return fail([...rejectedReasons, ctReasons.emit(CT_CODES.C3_NO_FORMAT, { stimulus, tried: rejected.map((r) => `${r.format}:${r.causes.join('+')}`) })]);
 }
+
+/** Exposition lue pour la variété : séance réalisée ou prévue (format, mouvements, dose PRESCRITS). */
+type Exposure = Pick<RealizedCtSession, 'completedAt' | 'stimulus' | 'prescription'>;
 
 // ——— Historique négatif (aucun seuil : statuts DÉCLARÉS) ———
 
@@ -240,7 +251,7 @@ interface Env {
   readonly excludedByHistory: readonly string[];
   readonly avoided: ReadonlySet<string>;
   readonly table: DerivationTable | undefined;
-  readonly last: RealizedCtSession | undefined;
+  readonly last: Exposure | undefined;
 }
 type Culprit = { readonly id: string; readonly cause: string };
 type Attempt = { readonly ok: true; readonly plan: Omit<C3Plan, 'structure' | 'rejectedFormats' | 'excludedByHistory' | 'avoidedStructures'>; readonly trace: readonly ReasonCode[] } | { readonly ok: false; readonly causes: readonly string[]; readonly trace: readonly ReasonCode[]; readonly culprits?: readonly Culprit[] };
@@ -480,7 +491,7 @@ function volumeCauses(env: Env, format: CtFormat, dose: object, items: readonly 
 }
 
 /** Empreinte multi-niveaux contre la dernière séance du même stimulus : ÉGALITÉ exacte par niveau, aucun seuil. */
-function identity(last: RealizedCtSession, format: CtFormat, items: readonly C3Item[]): string[] {
+function identity(last: Exposure, format: CtFormat, items: readonly C3Item[]): string[] {
   const out: string[] = [];
   if (last.prescription.format !== format) return out;
   out.push('format');

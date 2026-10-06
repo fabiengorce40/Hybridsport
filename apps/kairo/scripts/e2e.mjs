@@ -46,7 +46,7 @@ const start = page.getByRole('button', { name: 'Commencer' });
 check(await start.isDisabled(), 'impossible de continuer sans accepter l’avertissement');
 await page.getByLabel(/J’ai compris/).check();
 await start.click();
-check(!(await text()).includes('HYROX') && !(await text()).includes('Cross-training'), 'Cross-training et HYROX absents');
+check(!(await text()).includes('HYROX') && (await text()).includes('Cross-training'), 'HYROX absent, Cross-training proposé (C3.5)');
 await page.getByRole('radio', { name: /^Musculation \+ Course/ }).click();
 await shot('02-sports');
 await page.getByRole('button', { name: 'Continuer' }).click();
@@ -318,6 +318,147 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
   const reqs = (next.planner?.weeks?.['2026-10-12']?.requests ?? []).filter((r) => r.sport === 'strength');
   check(reqs.some((r) => r.reasons.some((x) => x.code === 'PLAN.WEEK_PRESCRIPTION' && (x.params.anchors ?? []).includes(exposure?.exerciseId))), `${tag} semaine suivante : l’exercice observé est ancré et déclaré à Strength`);
   check(await p2.getByRole('button', { name: /^Musculation : / }).count() > 0, `${tag} semaine suivante affichée`);
+  await c2.close();
+}
+
+
+// F / G — Cross-training C3.5 sur PETIT écran Android (360 × 640) : onboarding Cross-training, séance C3 du planning,
+// AMRAP (chrono, tours, pause, rechargement, fin, historique) puis EMOM (minutes, pause, rechargement, abandon).
+// Horloge Playwright : avance contrôlée (aucune attente réelle de 12 minutes).
+{
+  const c = await browser.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+  const p = await c.newPage();
+  const perrors = [];
+  p.on('pageerror', (e) => perrors.push(e.message));
+  await p.clock.install({ time: new Date('2026-10-05T07:30:00+02:00') });
+  await p.clock.resume();
+  await p.goto(URL_);
+  const tag = '[CT 360×640]';
+  const st = () => p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+  await p.getByLabel(/J’ai compris/).check();
+  await p.getByRole('button', { name: 'Commencer' }).click();
+  await p.getByRole('radio', { name: /^Cross-training/ }).click();
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  check(await p.getByRole('button', { name: 'Continuer' }).isDisabled(), `${tag} intention Cross-training exigée (aucune valeur supposée)`);
+  await p.getByRole('radio', { name: /^Mixte/ }).click();
+  await p.getByLabel('Séances de Cross-training par semaine').selectOption('3');
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  await p.getByRole('button', { name: 'Créer mon programme' }).click();
+  await p.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  const cards = p.getByRole('button', { name: /^Cross-training : Mixte/ });
+  check(await cards.count() >= 2, `${tag} séances Cross-training C3 visibles dans le planning`);
+  const pt = await p.locator('body').innerText();
+  check(!/crosstraining\.|C3_|mixed_modal/.test(pt), `${tag} aucun code interne affiché`);
+  check(pt.includes('AMRAP') && pt.includes('EMOM') && pt.includes('For time'), `${tag} semaine variée composée par C3 : AMRAP, EMOM, For time`);
+  if (shots) await p.screenshot({ path: `${shots}/ct-01-planning.png` });
+
+  // F — AMRAP
+  await p.locator('.card', { hasText: 'AMRAP' }).first().click();
+  check(await p.getByRole('heading', { name: 'Mixte', level: 1 }).isVisible() && (await p.locator('body').innerText()).includes('max de tours'), `${tag} AMRAP ouvert : intention, format, durée`);
+  check(await p.getByLabel('Répétitions réalisées').count() === 0, `${tag} aucun repli Strength (pas de séries)`);
+  await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  const timer = p.getByRole('timer', { name: 'Chrono de la séance' });
+  check(await timer.isVisible(), `${tag} chrono démarré`);
+  await p.getByRole('button', { name: 'Tours complets : plus un' }).click();
+  await p.getByRole('button', { name: 'Tours complets : plus un' }).click();
+  for (let k = 0; k < 3; k += 1) await p.getByRole('button', { name: 'Répétitions du tour en cours : plus un' }).click();
+  await p.clock.fastForward('03:00');
+  await p.getByRole('button', { name: 'Pause' }).click();
+  if (shots) await p.screenshot({ path: `${shots}/ct-02-amrap-pause.png` });
+  const before = Object.values((await st()).programmeLogs ?? {})[0]?.ct;
+  check(before?.rounds === 2 && before.partialReps === 3 && before.runningSince === null && before.accumulatedS >= 180, `${tag} pause : cumul figé, tours et répétitions persistés (${JSON.stringify(before)})`);
+  await p.clock.fastForward('10:00');
+  await p.reload();
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  await p.locator('.card', { hasText: 'En cours' }).first().click();
+  check((await timer.innerText()).includes('EN PAUSE'), `${tag} rechargement : chrono toujours en pause, pas remis à zéro`);
+  check((await p.getByRole('group', { name: 'Tours complets' }).innerText()).includes('2'), `${tag} rechargement : score conservé`);
+  await p.getByRole('button', { name: 'Reprendre' }).click();
+  await p.clock.fastForward('09:00');
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
+  await sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }).click();
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+  const done = await st();
+  check(done.crosstraining?.realized?.[0]?.result?.kind === 'rounds_reps' && done.crosstraining.realized[0].result.rounds === 2 && done.crosstraining.realized[0].result.reps === 3, `${tag} résultat STRUCTURÉ enregistré dans l’historique du moteur`);
+  await p.reload();
+  await p.getByRole('button', { name: 'Historique', exact: true }).click();
+  const h = await p.locator('body').innerText();
+  check(h.includes('2 tours + 3 rép.') && h.includes('AMRAP'), `${tag} historique visible après rechargement`);
+  if (shots) await p.screenshot({ path: `${shots}/ct-03-historique.png` });
+
+  // G — EMOM : transition de minute, pause, rechargement, abandon.
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  await p.locator('.card', { hasText: 'EMOM' }).first().click();
+  await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  check((await timer.innerText()).includes('Minute 1'), `${tag} EMOM : minute 1`);
+  await p.clock.fastForward('01:05');
+  await p.waitForTimeout(1200);
+  check((await timer.innerText()).includes('Minute 2'), `${tag} EMOM : passage à la minute 2`);
+  if (shots) await p.screenshot({ path: `${shots}/ct-04-emom.png` });
+  await p.getByRole('button', { name: 'Pause' }).click();
+  await p.reload();
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  await p.locator('.card', { hasText: 'En cours' }).first().click();
+  const t2 = await timer.innerText();
+  check(t2.includes('EN PAUSE'), `${tag} EMOM : pause conservée après rechargement`);
+  await p.getByRole('button', { name: 'Reprendre' }).click();
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await sheet.getByRole('radio', { name: 'J’ai arrêté la séance' }).click();
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+  const after = await st();
+  check(after.crosstraining?.realized?.length === 2 && after.crosstraining.realized[1].completion === 'abandoned', `${tag} EMOM abandonné : persisté, distinct d’une séance terminée`);
+  await p.reload();
+  check(Object.values((await st()).programmeLogs ?? {}).every((l) => l.finishedAt), `${tag} rechargement après fin : aucune séance redevenue en cours`);
+  // H — For time : time cap atteint, progression partielle, douleur signalée (présence seule).
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  await p.locator('.card', { hasText: 'For time' }).first().click();
+  await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  check((await timer.innerText()).includes('Temps écoulé') && (await timer.innerText()).includes('Time cap'), `${tag} For time : chrono écoulé et time cap affichés`);
+  await p.getByRole('button', { name: 'Tours complets : plus un' }).click();
+  await p.getByRole('button', { name: 'Répétitions du tour en cours : plus un' }).click();
+  const writes0 = JSON.stringify((await st()).programmeLogs);
+  await p.clock.fastForward('30:00');
+  await p.waitForTimeout(1200);
+  check(JSON.stringify((await st()).programmeLogs) === writes0, `${tag} 30 min de chrono : aucune écriture d’état (horodatage seul)`);
+  check((await timer.innerText()).includes('TIME CAP ATTEINT'), `${tag} For time : time cap atteint signalé (descriptif)`);
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await sheet.getByRole('radio', { name: 'Time cap atteint' }).click();
+  await sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }).click();
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+  check(await sheet.getByRole('alert').isVisible(), `${tag} time cap déclaré « comme prévu » : incohérence signalée, rien d’enregistré`);
+  await sheet.getByRole('radio', { name: 'J’ai adapté la séance' }).click();
+  await sheet.getByLabel('J’ai ressenti une douleur').check();
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+  const ft = (await st()).crosstraining?.realized?.[2];
+  check(ft?.result?.kind === 'capped_rounds' && ft.result.roundsCompleted === 1 && ft.result.partialReps === 1 && ft.completion === 'completed', `${tag} time cap : progression en tours enregistrée, séance « adaptée » (jamais un échec)`);
+  check(ft?.pain === 'REPORTED' && (await st()).safety?.activePain !== null, `${tag} douleur signalée : transmise au moteur et pause douleur centrale`);
+  check(perrors.length === 0, `${tag} aucune erreur de page (${perrors.join(' | ')})`);
+  const savedCt = await p.evaluate(() => localStorage.getItem('kairo.state'));
+  await c.close();
+
+  // Boucle moteur → terrain → moteur : semaine suivante (douleur levée), la génération lit les séances réalisées.
+  const c2 = await browser.newContext({ viewport: { width: 360, height: 640 }, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+  const p2 = await c2.newPage();
+  await p2.clock.install({ time: new Date('2026-10-12T07:30:00+02:00') });
+  await p2.clock.resume();
+  const lifted = JSON.parse(savedCt ?? '{}');
+  lifted.safety = { activePain: null };
+  await p2.addInitScript((x) => { if (!localStorage.getItem('kairo.state')) localStorage.setItem('kairo.state', x); }, JSON.stringify(lifted));
+  await p2.goto(URL_);
+  await p2.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+  const next = await p2.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+  const ftId = ft?.sessionId;
+  const reqs = (next.planner?.weeks?.['2026-10-12']?.requests ?? []).filter((r) => r.sport === 'crosstraining');
+  const neg = reqs.flatMap((r) => r.reasons).find((x) => x.code === 'SAFETY.CROSSTRAINING.C3_HISTORY_NEGATIVE')?.params;
+  // Politique d'historique TEST_ONLY : douleur ⇒ refus. C3 a lu l'exécution RÉELLE (séance For time, douleur signalée).
+  check(reqs.length > 0 && neg?.sessionId === ftId && (neg.causes ?? []).includes('pain') && neg.action === 'refuse', `${tag} semaine suivante : C3 lit la séance réellement exécutée (${JSON.stringify(neg)})`);
+  check(reqs.every((r) => r.status !== 'planned'), `${tag} semaine suivante : refus EXPLICITE (aucune séance inventée)`);
+  await p2.getByRole('button', { name: 'Planning', exact: true }).click();
+  const p2t = await p2.locator('body').innerText();
+  check(/non planifiée/i.test(p2t) && p2t.includes('par précaution'), `${tag} refus visible dans le planning (« non planifiée, par précaution »)`);
   await c2.close();
 }
 

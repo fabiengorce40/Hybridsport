@@ -2,7 +2,7 @@
 /**
  * Interface Beta 0 (jsdom) : onboarding Musculation / Course / hybride → programme réel → semaine → séance Strength
  * (séries réelles, chrono persisté) → fin de séance → historique ; Course (saisie, TEST) ; douleur ; rechargement ;
- * import ; statut expérimental ; Cross-training et HYROX absents. Horloge injectée (lundi 2026-10-05).
+ * import ; statut expérimental ; HYROX absent, Cross-training proposé (C3.5). Horloge injectée (lundi 2026-10-05).
  */
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -26,8 +26,9 @@ function onboard(storage: MemoryStorage, choice: Choice) {
   expect(screen.getByRole('button', { name: 'Commencer' })).toHaveProperty('disabled', true);
   fireEvent.click(screen.getByLabelText(/J’ai compris/));
   click('Commencer');
-  // CT / HYROX absents de l'onboarding Beta 0.
-  expect(screen.queryByText(/HYROX|Cross-training/)).toBeNull();
+  // HYROX absent de l'onboarding Beta 0 ; Cross-training proposé depuis C3.5.
+  expect(screen.queryByText(/HYROX/)).toBeNull();
+  expect(screen.getByRole('radio', { name: /^Cross-training/ })).toBeTruthy();
   fireEvent.click(screen.getByRole('radio', { name: CHOICE_NAMES[choice] }));
   click('Continuer');
   if (choice !== 'Musculation') {

@@ -23,15 +23,17 @@ import type { SportEngine } from '@hybridsport/engine';
 import { adherenceOf, weekIndexOf, weekStartAt, weekStatus, withinProgramme } from '@hybridsport/programme';
 import type { Adherence, ProgrammeDefinition, ProgrammeDefinitionInput, ProgrammeResult, ProgrammeState, WeekStatus } from '@hybridsport/programme';
 import { plannerGovernance, withDemand } from '../../planner/tests/simulation.js';
+import { ctBeta0 } from '../../planner/tests/ct-beta0.js';
 import { AppError } from './errors.js';
 import { addDays, daysBetween, weekStartOf } from './dates.js';
 import type { AppState, EnvironmentAuthority, PersistedWeek, Profile, Reason, Sport } from './model.js';
 import { STIMULUS_BY_GOAL } from './planner.js';
+import { CT_INTENT_LABELS } from './labels.js';
 import type { ProgrammeEnvironment } from './programme.js';
 import { runningContent, strengthContent } from './provisional-content.js';
 
-/** Sports exposés en Beta 0. */
-export const BETA0_SPORTS = ['strength', 'running'] as const;
+/** Sports exposés en Beta 0 (Cross-training : C3.5, composition C3 en environnement expérimental). */
+export const BETA0_SPORTS = ['strength', 'running', 'crosstraining'] as const;
 
 /** Marqueur porté par chaque valeur SIMULATION_ONLY injectée (justification lisible dans le ruleset). */
 export const SIMULATION_ONLY = 'SIMULATION_ONLY — Beta 0 expérimental : valeur de test, non approuvée, jamais lue en production';
@@ -69,6 +71,8 @@ const simulationMark = { justification: SIMULATION_ONLY };
  * `beta0-s4` : continuité des exercices déclarée, priorité des sports transportée, bilan de volume, traces allégées.
  */
 export const BETA0_PLANNING_VERSION = 'beta0-s4';
+// C3.5 : la version n'est PAS incrémentée — Strength et Running sont inchangés ; Cross-training n'existe que dans les
+// programmes créés ou recréés après C3.5 (aucune semaine existante à régénérer).
 
 /**
  * Environnement Beta 0 EXPÉRIMENTAL : Strength et Running seulement (CT / HYROX non raccordés), mode CANDIDATE.
@@ -77,7 +81,11 @@ export const BETA0_PLANNING_VERSION = 'beta0-s4';
  */
 export function beta0Environment(): ProgrammeEnvironment {
   const g = beta0RunningGovernance();
+  const ct = ctBeta0(simulationMark);
   return {
+    // C3.5 — Cross-training : moteur C3 en simulation, gouvernance TEST_ONLY ; marques SIMULATION_ONLY ajoutées aux seules
+    // semaines qui contiennent une séance Cross-training (provenance exacte, jamais confondue avec APPROVED).
+    crosstraining: { engine: ct.engine, content: ct.content, transportNeighbours: true, simulation: ct.simulation },
     mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: [...BETA0_SIMULATION], planningVersion: BETA0_PLANNING_VERSION,
     governance: plannerGovernance(undefined, simulationMark),
     strength: { engine: StrengthEngine as SportEngine<unknown>, content: withDemand(strengthContent(), undefined, simulationMark), composition: { rule: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } },
@@ -117,6 +125,11 @@ export function programmeDefinitionFromProfile(p: Profile, o: ProgrammeFromProfi
   if (enabled.length === 0) throw new AppError('BETA0_NO_SPORT');
   const runningFrame = { stimulus: 'stim.running.aerobic', objective: 'objective.running.base', phase: 'phase.running.base', toleranceProfile: 'fixed_time' };
   const sports = enabled.map((s) => {
+    if (s === 'crosstraining') {
+      const c = ctDeclarations(p);
+      // Intention DÉCLARÉE (archétype de stimulus C3 choisi par l'utilisateur) : le moteur compose chaque séance.
+      return { sport: s, sessionsPerWeek: c.sessionsPerWeek, composition: 'declared' as const, intent: ctFrame(c.intent), declarations: { population: { level: p.level, hybrid: false }, returnState: { state: c.returnState }, declaredSkills: [], benchmarks: [] } };
+    }
     if (s === 'strength') {
       // Profil de tolérance du cadre : celui, UNIQUE, des archétypes Strength admis pour l'objectif (donnée du ruleset) ;
       // chaque séance composée porte ensuite celui de son archétype. Aucun archétype choisi ici.
@@ -130,13 +143,31 @@ export function programmeDefinitionFromProfile(p: Profile, o: ProgrammeFromProfi
       assessment: { kind: 'running.test', intent: { ...runningFrame, archetypeId: ARCHETYPE_INTENT_IDS.TEST } },
     };
   });
-  const goals = enabled.map((s) => (s === 'strength' ? { goalId: 'goal.strength', sport: s, goal: p.strength.goal } : { goalId: 'goal.running', sport: s, goal: p.running.goal, ...(o.runningTargetDate ? { targetDate: o.runningTargetDate } : {}) }));
+  // Cross-training : seul objectif exposé en Beta 0 = forme générale (la compétition est hors périmètre, aucun objectif inventé).
+  const goals = enabled.map((s) => (s === 'strength' ? { goalId: 'goal.strength', sport: s, goal: p.strength.goal }
+    : s === 'crosstraining' ? { goalId: 'goal.crosstraining', sport: s, goal: CT_BETA0_GOAL }
+      : { goalId: 'goal.running', sport: s, goal: p.running.goal, ...(o.runningTargetDate ? { targetDate: o.runningTargetDate } : {}) }));
   const end = o.horizonWeeks ?? (o.runningTargetDate && enabled.includes('running') ? weeksThrough(o.startWeek, o.runningTargetDate) : undefined);
   return { programmeId: o.programmeId, origin: o.origin, startWeek: o.startWeek, ...(end !== undefined ? { horizonWeeks: end } : {}), goals, priorities: enabled, sports };
 }
 
 // technical-constant: jours par semaine (calendrier)
 const DAYS_PER_WEEK = 7;
+
+/** Objectif Cross-training du contrat moteur exposé en Beta 0 (identifiant du moteur). */
+export const CT_BETA0_GOAL = 'GENERAL_FITNESS' as const;
+
+/** Déclarations Cross-training exigées (aucune valeur par défaut) : fréquence, intention C3, coupure récente. */
+export function ctDeclarations(p: Profile): { readonly sessionsPerWeek: number; readonly intent: string; readonly returnState: NonNullable<Profile['crosstraining']['returnState']> } {
+  const c = p.crosstraining;
+  if (c.sessionsPerWeek === undefined || c.intent === undefined || c.returnState === undefined) throw new AppError('CT_DECLARATION_MISSING');
+  if (CT_INTENT_LABELS[c.intent] === undefined) throw new AppError('CT_INTENT_UNKNOWN');
+  return { sessionsPerWeek: c.sessionsPerWeek, intent: c.intent, returnState: c.returnState };
+}
+
+/** Cadre d'intention Cross-training : archétype déclaré + identifiants techniques (aucune valeur sportive). */
+export const ctFrame = (archetypeId: string): Readonly<Record<'archetypeId' | 'stimulus' | 'objective' | 'phase' | 'toleranceProfile', string>> =>
+  ({ archetypeId, stimulus: `stim.${archetypeId}`, objective: 'objective.crosstraining.general', phase: 'phase.crosstraining.base', toleranceProfile: 'fixed_time' });
 
 // ——— Programmes et semaines antérieurs à Strength S1 (politique de mise à niveau)
 
@@ -227,6 +258,8 @@ export interface SessionView {
   /** Erreur de données sur l'archétype (jamais masquée) : absent du record et de l'intention, ou record ≠ intention. */
   readonly dataError: 'ARCHETYPE_MISSING' | 'ARCHETYPE_MISMATCH' | null;
   readonly role: string | null;
+  /** Cross-training : format du bloc de conditioning PERSISTÉ (lecture du session_record), sinon null. */
+  readonly ctFormat: string | null;
   readonly compositionAuthority: 'approved' | 'provisional' | null;
   /** Règle de composition du moteur qui a choisi l'archétype (`identifiant@version`), si tracée. */
   readonly compositionRule: string | null;
@@ -279,8 +312,16 @@ export function prescribedArchetype(r: PersistedWeek['requests'][number]): { rea
   return { archetypeId, dataError: archetypeId === null ? 'ARCHETYPE_MISSING' : null };
 }
 
+/** Format CT d'une séance persistée : format CORE du bloc de conditioning ; `timed` à plusieurs tours = intervalles. */
+function ctFormatOf(blocks: readonly { kind?: unknown; format?: unknown; items?: readonly { prescription?: { type?: unknown; rounds?: unknown } }[] }[] | undefined): string | null {
+  const b = blocks?.find((x) => x.kind === 'conditioning');
+  if (!b || typeof b.format !== 'string') return null;
+  const p = b.items?.[0]?.prescription;
+  return b.format === 'continuous' && p?.type === 'timed' && typeof p.rounds === 'number' && p.rounds > 1 ? 'intervals' : b.format;
+}
+
 function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResult | undefined): SessionView {
-  const data = r.record?.data as { session?: { targetDurationS?: unknown }; durationEstimate?: { availability?: unknown; p50?: unknown } } | undefined;
+  const data = r.record?.data as { session?: { targetDurationS?: unknown; blocks?: { kind?: unknown; format?: unknown; items?: { prescription?: { type?: unknown; rounds?: unknown } }[] }[] }; durationEstimate?: { availability?: unknown; p50?: unknown } } | undefined;
   const composition = r.reasons.find((x) => x.code === 'PLAN.WEEK_COMPOSITION')?.params;
   const session = data?.session;
   const estimate = data?.durationEstimate?.availability === 'AVAILABLE' && typeof data.durationEstimate.p50 === 'number' ? data.durationEstimate.p50 : null;
@@ -292,7 +333,7 @@ function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResu
     targetDurationS: planned && typeof session?.targetDurationS === 'number' ? session.targetDurationS : null,
     estimatedDurationS: planned ? estimate : null,
     ...prescribedArchetype(r),
-    role: r.composition?.role ?? null, compositionAuthority: r.composition?.authority ?? null,
+    role: r.composition?.role ?? null, ctFormat: planned && r.sport === 'crosstraining' ? ctFormatOf(session?.blocks) : null, compositionAuthority: r.composition?.authority ?? null,
     compositionRule: typeof composition?.rule === 'string' ? `${composition.rule}${typeof composition.version === 'string' ? `@${composition.version}` : ''}` : null,
     notPlanned: planned ? null : { category: r.category, reason: mainReason(r.reasons), triedDate: r.date ?? null },
     pain: result?.pain ?? false,

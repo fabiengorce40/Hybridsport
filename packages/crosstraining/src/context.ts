@@ -58,6 +58,8 @@ export type CtPrescription = z.infer<typeof zCtPrescription>;
 export const zCtResult = z.discriminatedUnion('kind', [
   z.object({ kind: z.literal('time'), completionS: positive }).strict(),
   z.object({ kind: z.literal('capped'), repsCompleted: count }).strict(),
+  /** C3.5 — time cap atteint : PROGRESSION en tours complets + répétitions du tour inachevé (descriptif, jamais un échec). */
+  z.object({ kind: z.literal('capped_rounds'), roundsCompleted: count, partialReps: count }).strict(),
   z.object({ kind: z.literal('rounds_reps'), rounds: count, reps: count }).strict(),
   z.object({ kind: z.literal('emom'), minutesCompleted: count }).strict(),
   z.object({ kind: z.literal('intervals'), intervalsCompleted: count }).strict(),
@@ -69,7 +71,7 @@ export type CtResult = z.infer<typeof zCtResult>;
 
 /** Types de résultat compatibles avec la définition de chaque format. */
 export const RESULT_KINDS_BY_FORMAT: Readonly<Record<CtFormat, readonly CtResult['kind'][]>> = {
-  for_time: ['time', 'capped', 'abandoned'],
+  for_time: ['time', 'capped', 'capped_rounds', 'abandoned'],
   amrap: ['rounds_reps', 'abandoned'],
   emom: ['emom', 'abandoned'],
   intervals: ['intervals', 'abandoned'],
@@ -82,6 +84,8 @@ export function resultIssues(p: CtPrescription, r: CtResult): string[] {
   if (!RESULT_KINDS_BY_FORMAT[p.format].includes(r.kind)) out.push(`résultat ${r.kind} incompatible avec le format ${p.format}`);
   if (p.format === 'for_time' && r.kind === 'time' && p.timeCapS !== undefined && r.completionS > p.timeCapS) out.push('temps supérieur au time cap : le résultat est « capped »');
   if (p.format === 'for_time' && r.kind === 'capped' && p.timeCapS === undefined) out.push('résultat « capped » sans time cap prescrit');
+  if (p.format === 'for_time' && r.kind === 'capped_rounds' && p.timeCapS === undefined) out.push('résultat « capped_rounds » sans time cap prescrit');
+  if (p.format === 'for_time' && r.kind === 'capped_rounds' && r.roundsCompleted >= p.rounds) out.push('tous les tours réalisés : le résultat est un temps, pas un time cap');
   if (p.format === 'emom' && r.kind === 'emom' && r.minutesCompleted > p.minutes) out.push('plus de minutes réalisées que prescrites');
   if (p.format === 'intervals' && r.kind === 'intervals' && r.intervalsCompleted > p.rounds) out.push('plus d’intervalles réalisés que prescrits');
   if (r.kind === 'total' && r.calories === undefined && r.distanceM === undefined && r.durationS === undefined) out.push('total sans mesure');
@@ -102,7 +106,7 @@ export function completionIssues(p: CtPrescription, r: CtResult, completion: CtC
   const out: string[] = [];
   if ((completion === 'abandoned') !== (r.kind === 'abandoned')) out.push('complétion « abandoned » ⇔ résultat « abandoned »');
   if (completion === 'completed_as_prescribed') {
-    if (r.kind === 'capped') out.push('résultat « capped » : la séance n’a pas été réalisée telle que prescrite');
+    if (r.kind === 'capped' || r.kind === 'capped_rounds') out.push('résultat au time cap : la séance n’a pas été réalisée telle que prescrite');
     if (p.format === 'emom' && r.kind === 'emom' && r.minutesCompleted < p.minutes) out.push('minutes réalisées inférieures aux minutes prescrites');
     if (p.format === 'intervals' && r.kind === 'intervals' && r.intervalsCompleted < p.rounds) out.push('intervalles réalisés inférieurs aux intervalles prescrits');
     if (p.format === 'continuous' && r.kind === 'total' && r.durationS !== undefined && r.durationS < p.durationS) out.push('durée réalisée inférieure à la durée prescrite');
@@ -121,13 +125,19 @@ export const zRealizedCtSession = z.object({
   completion: z.enum(CT_COMPLETIONS),
   /** Effort perçu de séance (CR10) DÉCLARÉ ; absent = inconnu, jamais une valeur par défaut. Aucun seuil sRPE en C2. */
   sessionRpe: z.number().min(0).max(CR10_MAX).optional(),
-  /** Douleur déclarée pendant ou après la séance ; absente = inconnue. */
-  pain: z.enum(['NONE', ...PAIN_LEVELS]).optional(),
+  /**
+   * Douleur déclarée pendant ou après la séance ; absente = inconnue. `REPORTED` (C3.5) = douleur SIGNALÉE sans niveau :
+   * les descriptions des niveaux P1–P4 sont un contenu G1 non disponible ; la présence reste un signal complet.
+   */
+  pain: z.enum(['NONE', 'REPORTED', ...PAIN_LEVELS]).optional(),
+  /** C3.5 — charges RÉELLEMENT utilisées (observation), distinctes de la charge prescrite ; absente = non saisie. */
+  performedLoads: z.array(z.object({ exerciseId, kg: positive }).strict()).optional(),
   /** Tolérance déclarée : `poorly_tolerated` = séance explicitement mal tolérée ; absente = non déclarée. */
   tolerance: z.enum(['tolerated', 'poorly_tolerated']).optional(),
 }).strict().superRefine((s, ctx) => {
   for (const problem of resultIssues(s.prescription, s.result)) ctx.addIssue({ code: 'custom', path: ['result'], message: problem });
   for (const problem of completionIssues(s.prescription, s.result, s.completion)) ctx.addIssue({ code: 'custom', path: ['completion'], message: problem });
+  for (const l of s.performedLoads ?? []) if (!s.prescription.items.some((i) => i.exerciseId === l.exerciseId)) ctx.addIssue({ code: 'custom', path: ['performedLoads'], message: `charge réalisée d’un mouvement non prescrit : ${l.exerciseId}` });
 });
 export type RealizedCtSession = z.infer<typeof zRealizedCtSession>;
 
@@ -153,6 +163,12 @@ export const zCrossTrainingContext = z.object({
     known: z.boolean(),
     items: z.array(z.object({ discipline: z.enum(DISCIPLINES), hoursFromThisSession: z.number(), demand: z.record(z.string(), z.enum(DEMAND_LEVELS)) }).strict()),
   }).strict().optional(),
+  /**
+   * C3.5 — séances Cross-training PRÉVUES plus tôt dans la même semaine (expositions planifiées, jamais réalisées),
+   * transportées par le planificateur : lues UNIQUEMENT pour l'ordre de variété (format, fraîcheur des mouvements),
+   * jamais comme un historique négatif ni comme une réalisation.
+   */
+  plannedSessions: z.array(z.object({ sessionId: z.string().min(1), plannedAt: instant, stimulus: z.enum(CT_STIMULI), prescription: zCtPrescription }).strict()).optional(),
   /** C3 — ordre de priorité DÉCLARÉ des sports du programme (transporté ; aucune politique d'interférence gouvernée). */
   sportPriority: z.object({ order: z.array(z.enum(DISCIPLINES)).min(1) }).strict().optional(),
 }).strict();

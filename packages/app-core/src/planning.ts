@@ -43,7 +43,11 @@ export interface PlannerEnvironment {
    */
   readonly strength?: { readonly engine: SportEngine<unknown>; readonly content: Content; readonly composition?: { readonly rule: StrengthCompositionRule | undefined } };
   readonly running?: { readonly engine: SportEngine<unknown>; readonly content: Content; readonly composition?: { readonly parameters: readonly RunningParameter[] } };
-  readonly crosstraining?: { readonly engine: CrossTrainingEngine; readonly content: Content };
+  /**
+   * `transportNeighbours` : voisines (seconde passe) et priorité transportées au contexte CT (C3) ; `simulation` :
+   * identifiants SIMULATION_ONLY propres au Cross-training, tracés dans les seules semaines qui en contiennent.
+   */
+  readonly crosstraining?: { readonly engine: CrossTrainingEngine; readonly content: Content; readonly transportNeighbours?: boolean; readonly simulation?: readonly string[] };
   readonly hyrox?: { readonly engine: HyroxEngine; readonly content: Content };
 }
 
@@ -67,7 +71,7 @@ export function assertEnvironment(env: Pick<PlannerEnvironment, 'mode' | 'author
 }
 
 /** Capacités Cross-training DEMANDÉES par l'application (le moteur décide de leur activation selon sa gouvernance). */
-export const CT_CAPABILITY_REQUESTS = ['ctBootstrapExposure', 'ctReplayHold', 'ctHybridPlanning'] as const;
+export const CT_CAPABILITY_REQUESTS = ['ctBootstrapExposure', 'ctReplayHold', 'ctHybridPlanning', 'ctSessionComposition'] as const;
 
 /**
  * Intention de programme Strength / Running issue des déclarations du PROFIL (nombre de séances déclaré par
@@ -128,6 +132,7 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
   if (env.crosstraining) {
     ports.crosstraining = crossTrainingPort({
       engine: env.crosstraining.engine, content: env.crosstraining.content, profile, state: state0, history: state.fingerprints.crosstraining, clock,
+      ...(env.crosstraining.transportNeighbours ? { transportNeighbours: true } : {}),
       baseContext: (slot) => ({ ...decl('crosstraining'), ...(goals.crosstraining ? { goal: { type: goals.crosstraining } } : {}), sessionHistory: state.crosstraining.realized.filter((r) => typeof r.completedAt === 'string' && r.completedAt < sessionInstant(slot.date)), mode: env.mode, capabilityRequests: [...CT_CAPABILITY_REQUESTS] }) as never,
     });
   }
@@ -138,9 +143,10 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
 const reason = (r: ReasonCode): Reason => ({ code: r.code, params: { ...r.params } });
 
 /** Forme persistée (sans perte d'audit) d'une semaine planifiée. */
-export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOrigin: string, env: Pick<PlannerEnvironment, 'authority' | 'simulation' | 'planningVersion'>): Omit<PersistedWeek, 'owner'> {
+export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOrigin: string, env: Pick<PlannerEnvironment, 'authority' | 'simulation' | 'planningVersion' | 'crosstraining'>): Omit<PersistedWeek, 'owner'> {
+  const ct = w.requests.some((r) => r.sport === 'crosstraining') ? env.crosstraining?.simulation ?? [] : [];
   return {
-    weekStart: w.weekStart, authority: env.authority, simulation: [...(env.simulation ?? [])], plannedAt, mode: w.mode, hybrid: w.hybrid, programmeOrigin,
+    weekStart: w.weekStart, authority: env.authority, simulation: [...(env.simulation ?? []), ...ct], plannedAt, mode: w.mode, hybrid: w.hybrid, programmeOrigin,
     ...(env.planningVersion ? { planningVersion: env.planningVersion } : {}),
     days: w.days.map((d) => (d.status === 'planned' ? { date: d.date, availableMinutes: d.availableMinutes, status: 'planned', sport: d.sport, requestId: d.requestId } : { date: d.date, availableMinutes: d.availableMinutes, status: 'empty', reason: reason(d.reason) })),
     requests: w.requests.map((r) => ({

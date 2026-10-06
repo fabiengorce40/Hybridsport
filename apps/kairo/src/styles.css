@@ -212,3 +212,27 @@ details summary { cursor: pointer; min-height: 32px; display: flex; align-items:
 .k-effort-label span { color: var(--text-2); font-size: 12px; }
 .k-effort-chips { display: flex; gap: 6px; }
 .k-effort-chips .chip { flex: 1 1 0; min-width: 0; max-width: 56px; min-height: 44px; padding: 0; font-variant-numeric: tabular-nums; }
+
+/* C3.5 — séance Cross-training (mobile d'abord : gros chrono, zones tactiles larges, aucun clavier pendant l'effort) */
+.k-ct-head { display: flex; flex-direction: column; gap: 8px; }
+.k-ct-eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--k-text-3); }
+.k-ct-title { margin: 0; font-size: 26px; line-height: 1.15; }
+.k-ct-headline { font-size: 14px; color: var(--k-text-2); }
+.k-ct-clock { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 16px 12px; border-radius: var(--k-radius-m); background: var(--k-surface-1); border: 2px solid var(--k-accent); }
+.k-ct-clock.rest { border-color: var(--k-success); }
+.k-ct-clock.over { border-color: var(--k-text-3); }
+.k-ct-clock-label { font-size: 13px; font-weight: 800; letter-spacing: 0.14em; color: var(--k-text-2); }
+.k-ct-clock-big { font-size: clamp(56px, 18vw, 84px); font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+.k-ct-clock-sub { font-size: 14px; color: var(--k-text-2); }
+.k-ct-moves-title { font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--k-text-3); margin-bottom: 6px; }
+.k-ct-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.k-ct-move { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 12px 14px; border-radius: var(--k-radius-m); background: var(--k-surface-1); }
+.k-ct-move-name { font-weight: 700; font-size: 16px; }
+.k-ct-move-dose { font-size: 15px; color: var(--k-text-2); white-space: nowrap; }
+.k-ct-stepper { display: grid; grid-template-columns: 1fr 56px 64px 56px; align-items: center; gap: 8px; }
+.k-ct-stepper-label { font-size: 14px; font-weight: 600; }
+.k-ct-step { min-height: 56px; border-radius: 16px; border: 1px solid var(--border); background: var(--k-surface-2); color: var(--k-text); font-size: 26px; font-weight: 800; }
+.k-ct-step.plus { background: var(--k-accent); color: #1a0a00; border-color: transparent; }
+.k-ct-step:disabled { opacity: 0.4; }
+.k-ct-step-value { text-align: center; font-size: 28px; font-weight: 900; }
+.k-ct .row .k-cta { flex: 1; }

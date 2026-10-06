@@ -17,7 +17,7 @@ import type { AppState, Feedback, ProgrammeIntent, SessionLog, SetLog } from './
 import { appPlannerEnvironment, assertEnvironment, buildPorts, clockOf, persistWeek, recentOf } from './planning.js';
 import type { EngineGoals, PlannerEnvironment } from './planning.js';
 import { applyStrengthExecutionTraced, realizedRunFrom, testReferenceFrom } from './progression.js';
-import { realizeCrossTrainingC2, realizeHyroxStation } from '@hybridsport/planner';
+import { realizeCrossTrainingExecution, realizeHyroxStation } from '@hybridsport/planner';
 import { assessStrengthWeekVolume, readStrengthParams } from '@hybridsport/strength';
 import type { StrengthGoalRef, WeekVolumeAssessment } from '@hybridsport/strength';
 import { strengthContent } from './provisional-content.js';
@@ -138,7 +138,16 @@ interface ExecutionCommon {
 export type SessionExecutionInput = ExecutionCommon & (
   | { readonly sport: 'strength'; readonly sets?: readonly SetLog[]; readonly painItems?: readonly string[] }
   | { readonly sport: 'running'; readonly run?: { readonly realizedDurationS: number; readonly distanceM?: number; readonly testTimeS?: number }; readonly difficulty?: Feedback['difficulty'] }
-  | { readonly sport: 'crosstraining'; readonly result?: { readonly durationS?: number; readonly calories?: number; readonly distanceM?: number }; readonly sessionRpe?: number }
+  | {
+    readonly sport: 'crosstraining';
+    /** Corridor C2 : résultat continu. */
+    readonly result?: { readonly durationS?: number; readonly calories?: number; readonly distanceM?: number };
+    /** C3 (C3.5) : résultat STRUCTURÉ du format (contrat de résultat CT, validé par le moteur). */
+    readonly ctResult?: Readonly<Record<string, unknown>>;
+    /** Charges RÉELLEMENT utilisées (observation), distinctes de la prescription. */
+    readonly performedLoads?: readonly { readonly exerciseId: string; readonly kg: number }[];
+    readonly sessionRpe?: number;
+  }
   | { readonly sport: 'hyrox'; readonly result?: { readonly achieved?: number; readonly elapsedS?: number; readonly actualLoadKg?: number } }
 );
 
@@ -171,7 +180,8 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
   let evidence: { history: ProgrammeState['definition']['priorities'][number]; ref: string; measurement?: string } | undefined;
   let progressionTrace: readonly ReasonCode[] = [];
 
-  if (x.pain === 'REPORTED' && (x.sport === 'crosstraining' || x.sport === 'hyrox')) return reject('EXECUTION_PAIN_LEVEL_REQUIRED');
+  // HYROX exige un niveau ; Cross-training C3 accepte la présence seule (`REPORTED`) — les niveaux sont un contenu G1 indisponible.
+  if (x.pain === 'REPORTED' && x.sport === 'hyrox') return reject('EXECUTION_PAIN_LEVEL_REQUIRED');
   if (x.completion !== 'missed') {
     const common = { sessionId: x.requestId, completedAt: at, completion: x.completion, ...(x.pain !== undefined && x.pain !== 'REPORTED' ? { pain: x.pain } : {}), ...(x.tolerance !== undefined ? { tolerance: x.tolerance } : {}) };
     switch (x.sport) {
@@ -210,7 +220,11 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
         const intent = requestIntent(ps, x.requestId);
         if (!intent) return reject('EXECUTION_INTENT_UNKNOWN');
         if (s.crosstraining.realized.some((r) => r.sessionId === x.requestId)) return reject('EXECUTION_DUPLICATE');
-        const r = realizeCrossTrainingC2(session, { ...common, stimulus: intent.stimulus, ...(x.result ? { result: x.result } : {}), ...(x.sessionRpe !== undefined ? { sessionRpe: x.sessionRpe } : {}) });
+        const ctCommon = { sessionId: x.requestId, completedAt: at, completion: x.completion, ...(x.pain !== undefined ? { pain: x.pain } : {}), ...(x.tolerance !== undefined ? { tolerance: x.tolerance } : {}) };
+        const r = realizeCrossTrainingExecution(session, {
+          ...ctCommon, archetypeId: intent.archetypeId, stimulus: intent.stimulus, ...(x.result ? { continuous: x.result } : {}), ...(x.ctResult ? { result: x.ctResult } : {}),
+          ...(x.sessionRpe !== undefined ? { sessionRpe: x.sessionRpe } : {}), ...(x.performedLoads ? { performedLoads: x.performedLoads } : {}),
+        });
         if (!r.ok) return reject('EXECUTION_INVALID', ...r.reasons);
         s = { ...s, crosstraining: { realized: [...s.crosstraining.realized, { ...r.value }] } };
         evidence = { history: 'crosstraining', ref: x.requestId };

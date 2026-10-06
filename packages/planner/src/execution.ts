@@ -7,7 +7,7 @@
  */
 import type { PainLevel, ReasonCode, SessionDraft } from '@hybridsport/domain';
 import { createCoreRegistry } from '@hybridsport/engine';
-import { CT_STIMULI, zRealizedCtSession } from '@hybridsport/crosstraining';
+import { CT_C2_ARCHETYPE, CT_STIMULI, ctPrescriptionOf, stimulusFromArchetypeId, zRealizedCtSession } from '@hybridsport/crosstraining';
 import type { RealizedCtSession } from '@hybridsport/crosstraining';
 import { h1PrescriptionOf, zHyroxStationExecution } from '@hybridsport/hyrox';
 import type { HyroxStationExecution } from '@hybridsport/hyrox';
@@ -51,6 +51,48 @@ export function realizeCrossTrainingC2(session: SessionDraft, x: CommonExecution
   });
   if (!parsed.success) return { ok: false, reasons: parsed.error.issues.map((i) => core.emit('TECHNICAL.SCHEMA_INVALID', { path: `realized.${i.path.join('.')}`, problem: i.message })) };
   return { ok: true, value: parsed.data };
+}
+
+/**
+ * Cross-training C3 (C3.5) : la PRESCRIPTION est LUE dans la séance générée (`ctPrescriptionOf`, sans perte ni
+ * réinterprétation) ; le stimulus vient de l'archétype PRESCRIT ; le RÉSULTAT est la saisie de l'athlète, validée par le
+ * contrat du moteur (type de résultat cohérent avec le format, complétion cohérente). Abandon ⇒ résultat `abandoned`.
+ * Douleur : `REPORTED` = signalée sans niveau (niveaux = contenu G1 indisponible).
+ */
+export function realizeCrossTraining(session: SessionDraft, x: Omit<CommonExecution, 'pain'> & {
+  readonly archetypeId: string;
+  readonly pain?: 'NONE' | 'REPORTED' | PainLevel;
+  readonly result?: unknown;
+  readonly sessionRpe?: number;
+  readonly performedLoads?: readonly { readonly exerciseId: string; readonly kg: number }[];
+}): Realization<RealizedCtSession> {
+  const stimulus = stimulusFromArchetypeId(x.archetypeId);
+  if (!stimulus) return invalid('archetypeId', `archétype Cross-training inconnu : ${x.archetypeId}`);
+  const prescription = ctPrescriptionOf(session);
+  if (!prescription) return invalid('session', 'séance hors contrat C3 (un bloc de conditioning, format connu)');
+  if (x.completion !== 'abandoned' && x.result === undefined) return invalid('result', 'résultat exigé pour une séance terminée');
+  const parsed = zRealizedCtSession.safeParse({
+    sessionId: x.sessionId, completedAt: x.completedAt, stimulus, prescription,
+    result: x.completion === 'abandoned' ? { kind: 'abandoned' } : x.result,
+    completion: ENGINE_COMPLETION[x.completion],
+    ...(x.sessionRpe !== undefined ? { sessionRpe: x.sessionRpe } : {}),
+    ...(x.pain !== undefined ? { pain: x.pain } : {}),
+    ...(x.tolerance !== undefined ? { tolerance: x.tolerance } : {}),
+    ...(x.performedLoads && x.performedLoads.length > 0 ? { performedLoads: x.performedLoads.map((l) => ({ ...l })) } : {}),
+  });
+  if (!parsed.success) return { ok: false, reasons: parsed.error.issues.map((i) => core.emit('TECHNICAL.SCHEMA_INVALID', { path: `realized.${i.path.join('.')}`, problem: i.message })) };
+  return { ok: true, value: parsed.data };
+}
+
+/**
+ * Routage par archétype PRESCRIT : corridor C2 (`crosstraining.c2` : résultat continu) ou composition C3 (résultat
+ * structuré du format). Aucune décision sportive : chaque chemin valide par le contrat du moteur.
+ */
+export function realizeCrossTrainingExecution(session: SessionDraft, x: Parameters<typeof realizeCrossTraining>[1] & { readonly stimulus: string; readonly continuous?: Parameters<typeof realizeCrossTrainingC2>[1]['result'] }): Realization<RealizedCtSession> {
+  if (x.archetypeId !== CT_C2_ARCHETYPE) return realizeCrossTraining(session, x);
+  if (x.pain === 'REPORTED') return invalid('pain', 'corridor C2 : niveau de douleur exigé');
+  const { archetypeId: _a, result: _r, performedLoads: _l, continuous, pain, ...rest } = x;
+  return realizeCrossTrainingC2(session, { ...rest, ...(pain !== undefined ? { pain } : {}), ...(continuous ? { result: continuous } : {}) });
 }
 
 /** HYROX H1 : station, mouvement, dose et charge LUS dans la séance générée ; résultat mesuré saisi. */

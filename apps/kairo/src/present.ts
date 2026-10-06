@@ -2,12 +2,12 @@
  * Mapping de PRÉSENTATION Beta 0 (UI uniquement) : identifiants et catégories du backend → libellés compréhensibles.
  * Aucun code interne n'est affiché tel quel ; aucune décision sportive ici.
  */
-import { RUNNING_ARCHETYPE_LABELS, RUNNING_ROLE_LABELS, SPORT_LABELS } from '@hybridsport/app-core';
+import { CT_FORMAT_LABELS, CT_INTENT_LABELS, RUNNING_ARCHETYPE_LABELS, RUNNING_ROLE_LABELS, SPORT_LABELS } from '@hybridsport/app-core';
 import type { Beta0WeekView, SessionView, SessionViewStatus } from '@hybridsport/app-core';
 
 const STRENGTH_TITLES: Readonly<Record<string, string>> = { str_full_body: 'Full body', str_upper: 'Haut du corps', str_lower: 'Bas du corps', str_support: 'Renforcement' };
 
-export const SPORT_SHORT: Readonly<Record<string, string>> = { strength: 'Musculation', running: 'Course' };
+export const SPORT_SHORT: Readonly<Record<string, string>> = { strength: 'Musculation', running: 'Course', crosstraining: 'Cross-training' };
 export const sportName = (s: string): string => SPORT_SHORT[s] ?? SPORT_LABELS[s as 'strength'] ?? 'Séance';
 
 /**
@@ -17,7 +17,7 @@ export const sportName = (s: string): string => SPORT_SHORT[s] ?? SPORT_LABELS[s
 export function sessionName(sport: string, archetypeId: string | null, dataError: SessionView['dataError'] = null): string {
   if (dataError === 'ARCHETYPE_MISMATCH') return 'Erreur de données : archétype incohérent';
   if (archetypeId === null) return 'Erreur de données : archétype absent';
-  const label = sport === 'running' ? RUNNING_ARCHETYPE_LABELS[archetypeId] : STRENGTH_TITLES[archetypeId];
+  const label = sport === 'running' ? RUNNING_ARCHETYPE_LABELS[archetypeId] : sport === 'crosstraining' ? CT_INTENT_LABELS[archetypeId]?.title : STRENGTH_TITLES[archetypeId];
   return label ?? `Erreur de données : archétype inconnu (${archetypeId})`;
 }
 
@@ -37,6 +37,9 @@ export function weekPlanningText(p: Beta0WeekView['planning']): string | null {
 
 /** Rôle de la séance dans la semaine Running (composition du moteur), libellé lisible. */
 export const roleName = (role: string | null): string | null => (role && role !== 'LOCKED' && role !== 'EASY' ? RUNNING_ROLE_LABELS[role] ?? null : null);
+
+/** Format Cross-training lisible (format persisté de la séance), sinon null. */
+export const ctFormatName = (f: string | null): string | null => (f ? CT_FORMAT_LABELS[f] ?? null : null);
 
 export const isTest = (archetypeId: string | null): boolean => archetypeId === 'running.test';
 
@@ -87,7 +90,11 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   EXECUTION_DUPLICATE: 'Cette séance est déjà enregistrée.',
   SAFETY_PAUSE_ACTIVE_PAIN: 'La planification est suspendue : une douleur a été signalée.',
   PROGRAMME_WEEK_NOT_PLANNABLE: 'Cette semaine ne peut pas être planifiée pour le moment.',
-  BETA0_SPORT_UNSUPPORTED: 'Seules la musculation et la course sont disponibles.',
+  BETA0_SPORT_UNSUPPORTED: 'Seuls la musculation, la course et le Cross-training sont disponibles.',
+  CT_DECLARATION_MISSING: 'Cross-training : choisissez une intention, un nombre de séances et indiquez une éventuelle coupure.',
+  CT_INTENT_UNKNOWN: 'Cross-training : intention inconnue.',
+  CT_PROGRESS_INVALID: 'Valeur de progression invalide.',
+  EXECUTION_INVALID: 'Ce résultat ne correspond pas à la séance prévue : vérifiez-le (ou choisissez « J’ai adapté la séance »).',
   RUN_DURATION_REQUIRED: 'Indiquez la durée réellement courue.',
   DUPLICATE_RUN: 'Cette course est déjà enregistrée.',
   BETA_RESET_NOT_CONFIRMED: 'Recréation annulée : confirmation absente. Rien n’a été modifié.',

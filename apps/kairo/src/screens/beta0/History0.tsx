@@ -2,7 +2,8 @@ import { durationLabel, exerciseLabel, selectHistory, selectProgrammeSession } f
 import type { HistoryEntry } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate } from '../../ui.js';
-import { isTest, sessionName, sportName } from '../../present.js';
+import { ctFormatName, isTest, sessionName, sportName } from '../../present.js';
+import { ctResultText } from '../../workout/CrossTrainingWorkout.js';
 import { StatusPill } from './common.js';
 
 /** Séries réellement saisies, regroupées par exercice (libellés du catalogue). */
@@ -38,6 +39,12 @@ export function History0({ onOpen }: { onOpen: (id: string) => void }) {
             <div className="small muted num">
               {durationLabel(e.run.realizedDurationS)}{e.run.distanceM !== undefined ? ` · ${(e.run.distanceM / 1000).toFixed(1)} km` : ''}
               {e.run.testTimeS !== undefined ? ` · test ${durationLabel(e.run.testTimeS)}${e.testReference ? ' (référence enregistrée)' : ''}` : ''}
+            </div>
+          )}
+          {e.ct && (
+            <div className="small muted num">
+              {ctFormatName(e.ct.format)} · {e.ct.exercises.map((x) => exerciseLabel(x)).join(' + ')}
+              <div><b>{ctResultText(e.ct.result)}</b></div>
             </div>
           )}
           {e.pain && <div className="small" style={{ color: 'var(--danger)' }}>⚠ Douleur signalée</div>}

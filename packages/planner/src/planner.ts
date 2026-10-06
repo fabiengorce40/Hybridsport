@@ -95,7 +95,7 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
 
   /** Séances de la MÊME discipline placées plus tôt dans la semaine (ordre des dates) : expositions prévues. */
   const weekOf = (sport: PlannerSport, date: string, requestId: string): WeekSession[] => [...placed.values()]
-    .filter((p) => p.sport === sport && p.requestId !== requestId && p.date < date)
+    .filter((p) => p.sport === sport && p.requestId !== requestId && (p.date < date || ports[sport]?.weekSessionsScope === 'generated'))
     .sort((a, b) => (a.date < b.date ? -1 : 1))
     .map((p) => ({ requestId: p.requestId, date: p.date, archetypeId: p.archetypeId ?? '', session: p.session, ...(p.fingerprint ? { fingerprint: p.fingerprint } : {}) }));
   const weekArg = (sport: PlannerSport, date: string, requestId: string): { weekSessions?: WeekSession[]; sportSessions?: number; sportPriority?: PlannerSport[] } => {

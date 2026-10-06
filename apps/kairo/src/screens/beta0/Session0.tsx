@@ -14,6 +14,7 @@ import { formatDate, Notice, Topbar } from '../../ui.js';
 import { isTest, roleName, sessionName, sportName, STATUS_LABELS } from '../../present.js';
 import { BLOCK_LABELS, RunStructureView, SetRow } from '../Session.js';
 import { StrengthWorkout } from '../../workout/StrengthWorkout.js';
+import { CrossTrainingWorkout } from '../../workout/CrossTrainingWorkout.js';
 import { ExperimentalBadge } from './common.js';
 import { DurationInput } from '../../running/DurationInput.js';
 import { durationFromParts, EMPTY_DURATION } from '../../running/duration.js';
@@ -96,6 +97,8 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
     return () => clearInterval(t);
   }, [running]);
   if (!v) return <><Topbar title="Séance" onBack={onBack} /><div className="empty">Séance introuvable.</div></>;
+  // Cross-training : séance propre au format (prescription persistée lue, jamais de repli Strength ni legacy).
+  if (v.sport === 'crosstraining') return <CrossTrainingWorkout v={v} onBack={onBack} />;
   const { session, log, result } = v;
   const name = sessionName(v.sport, v.archetypeId, v.dataError);
   const role = roleName(v.role);

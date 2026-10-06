@@ -4,7 +4,7 @@
  * Aussi utilisé pour créer un programme depuis un profil V0 existant, ou le recréer (workflow explicite).
  */
 import { useEffect, useState } from 'react';
-import { createBeta0Programme, DIFFICULTY_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
+import { createBeta0Programme, CT_INTENT_LABELS, DIFFICULTY_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
 import type { Beta0ProgrammeOptions, DeclaredPerformance, Feedback, ProfileInput } from '@hybridsport/app-core';
 import { PerformanceForm } from '../../running/PerformanceForm.js';
 import { performanceText } from '../../running/RunningProfile.js';
@@ -13,20 +13,60 @@ import { useStore } from '../../store.js';
 import { AvailabilitySection, defaultProfile, EquipmentSection, GoalsSection } from '../../ProfileForm.js';
 import { formatDate, Notice } from '../../ui.js';
 
-type Choice = 'strength' | 'running' | 'hybrid';
+type Choice = 'strength' | 'running' | 'hybrid' | 'crosstraining';
 const CHOICES: readonly { id: Choice; title: string; detail: string }[] = [
   { id: 'strength', title: 'Musculation', detail: 'Séances de force guidées, série par série' },
   { id: 'running', title: 'Course', detail: 'Footing, séances clés, tests chronométrés' },
   { id: 'hybrid', title: 'Musculation + Course', detail: 'Les deux, répartis dans votre semaine' },
+  { id: 'crosstraining', title: 'Cross-training', detail: 'AMRAP, EMOM, intervalles, for time — composés pour vous' },
 ];
+// Choix de saisie (comme les autres sports) : nombre de séances Cross-training par semaine.
+const CT_SESSION_CHOICES = [1, 2, 3, 4, 5, 6];
 const STEPS = ['Bienvenue', 'Sports', 'Objectifs', 'Disponibilités', 'Programme'];
 
-const choiceOf = (p: ProfileInput): Choice | null => (p.strength.enabled && p.running.enabled ? 'hybrid' : p.strength.enabled ? 'strength' : p.running.enabled ? 'running' : null);
-function withChoice(p: ProfileInput, c: Choice, first: 'strength' | 'running'): ProfileInput {
-  const strength = c !== 'running';
-  const running = c !== 'strength';
-  const priorities = c === 'hybrid' ? (first === 'strength' ? ['strength', 'running'] : ['running', 'strength']) as ProfileInput['priorities'] : [c];
-  return { ...p, strength: { ...p.strength, enabled: strength }, running: { ...p.running, enabled: running }, crosstraining: { enabled: false }, hyrox: { enabled: false }, priorities };
+const choiceOf = (p: ProfileInput): Choice | null => (p.strength.enabled && p.running.enabled ? 'hybrid' : p.strength.enabled ? 'strength' : p.running.enabled ? 'running' : p.crosstraining.enabled ? 'crosstraining' : null);
+/**
+ * Sports choisis. Cross-training : seul, ou AJOUTÉ aux autres (dernier dans l'ordre de priorité déclaré). Ses
+ * déclarations (intention, fréquence, coupure) sont conservées si on le désactive puis le réactive.
+ */
+function withChoice(p: ProfileInput, c: Choice, first: 'strength' | 'running', ct = p.crosstraining.enabled): ProfileInput {
+  const strength = c === 'strength' || c === 'hybrid';
+  const running = c === 'running' || c === 'hybrid';
+  const withCt = c === 'crosstraining' || ct;
+  const base = c === 'hybrid' ? (first === 'strength' ? ['strength', 'running'] : ['running', 'strength']) : c === 'crosstraining' ? [] : [c];
+  const priorities = [...base, ...(withCt ? ['crosstraining'] : [])] as ProfileInput['priorities'];
+  const declared = { sessionsPerWeek: p.crosstraining.sessionsPerWeek ?? 2, returnState: p.crosstraining.returnState ?? 'NONE', ...(p.crosstraining.intent ? { intent: p.crosstraining.intent } : {}) };
+  return { ...p, strength: { ...p.strength, enabled: strength }, running: { ...p.running, enabled: running }, crosstraining: { enabled: withCt, ...declared }, hyrox: { enabled: false }, priorities };
+}
+
+/** Déclarations Cross-training : intention (archétypes que C3 sait composer), fréquence, coupure récente. */
+function CtSection({ p, set }: { p: ProfileInput; set: (f: (x: ProfileInput) => ProfileInput) => void }) {
+  const ct = p.crosstraining;
+  const upd = (x: Partial<ProfileInput['crosstraining']>) => set((y) => ({ ...y, crosstraining: { ...y.crosstraining, ...x } }));
+  return (
+    <div className="card">
+      <h3>Cross-training</h3>
+      <div className="stack" role="radiogroup" aria-label="Intention Cross-training">
+        {Object.entries(CT_INTENT_LABELS).map(([k, v]) => (
+          <button key={k} type="button" role="radio" aria-checked={ct.intent === k} className={`option ${ct.intent === k ? 'on' : ''}`} onClick={() => upd({ intent: k })}>
+            <div><div className="t">{v.title}</div><div className="tiny">{v.detail}</div></div>
+          </button>
+        ))}
+      </div>
+      <label className="field">Séances de Cross-training par semaine
+        <select value={ct.sessionsPerWeek ?? ''} onChange={(e) => upd({ sessionsPerWeek: Number(e.target.value) })}>
+          {CT_SESSION_CHOICES.map((n) => <option key={n} value={n}>{n}</option>)}
+        </select>
+      </label>
+      <label className="field">Coupure récente du Cross-training
+        <select value={ct.returnState ?? ''} onChange={(e) => upd({ returnState: e.target.value as NonNullable<ProfileInput['crosstraining']['returnState']> })}>
+          {Object.entries(RETURN_STATE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+      </label>
+      {ct.returnState !== undefined && ct.returnState !== 'NONE' && <Notice tone="warn">Après une coupure, aucune règle de reprise Cross-training n’est encore validée : aucune séance ne sera proposée.</Notice>}
+      <p className="tiny" style={{ margin: 0 }}>Chaque séance (format, mouvements, doses) est composée par le moteur Cross-training à partir de cette intention, de votre matériel et de votre historique. Version expérimentale : valeurs de test.</p>
+    </div>
+  );
 }
 
 export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?: ProfileInput; mode?: 'create' | 'recreate'; onDone?: () => void; onCancel?: () => void }) {
@@ -52,7 +92,8 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const lastRunOk = runMin === '' ? runKm === '' : Number(runMin) > 0 && (km === undefined || (Number.isFinite(km) && km > 0));
   const dateOk = targetDate === '' || (/^\d{4}-\d{2}-\d{2}$/.test(targetDate) && targetDate >= store.clock().today);
   const dated = p.running.enabled && p.running.goal !== 'GENERAL_RUNNING' && targetDate !== '' && dateOk;
-  const canNext = step === 0 ? accepted : step === 1 ? choice !== null : step === 2 ? lastRunOk && dateOk : step === 3 ? p.availability.some((m) => m > 0) : true;
+  const ctOk = !p.crosstraining.enabled || (p.crosstraining.intent !== undefined && p.crosstraining.sessionsPerWeek !== undefined && p.crosstraining.returnState !== undefined);
+  const canNext = step === 0 ? accepted : step === 1 ? choice !== null : step === 2 ? lastRunOk && dateOk && ctOk : step === 3 ? p.availability.some((m) => m > 0) : true;
 
   const create = () => {
     const o: Beta0ProgrammeOptions = {
@@ -99,10 +140,13 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
       {step === 1 && (
         <div className="stack" role="radiogroup" aria-label="Sports">
           {CHOICES.map((c) => (
-            <button key={c.id} type="button" role="radio" aria-checked={choice === c.id} className={`option ${choice === c.id ? 'on' : ''}`} onClick={() => setP(withChoice(p, c.id, first))}>
+            <button key={c.id} type="button" role="radio" aria-checked={choice === c.id} className={`option ${choice === c.id ? 'on' : ''}`} onClick={() => setP(withChoice(p, c.id, first, c.id === 'crosstraining' ? true : p.crosstraining.enabled && choice !== 'crosstraining'))}>
               <div><div className="t">{c.title}</div><div className="tiny">{c.detail}</div></div>
             </button>
           ))}
+          {choice !== null && choice !== 'crosstraining' && (
+            <label className="check"><input type="checkbox" checked={p.crosstraining.enabled} onChange={(e) => setP(withChoice(p, choice, first, e.target.checked))} />Ajouter du Cross-training</label>
+          )}
         </div>
       )}
 
@@ -110,6 +154,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
         <>
           <label className="field">Prénom (facultatif)<input type="text" value={p.displayName} maxLength={40} onChange={(e) => setP({ ...p, displayName: e.target.value })} /></label>
           <GoalsSection p={p} set={set} beta0 />
+          {p.crosstraining.enabled && <CtSection p={p} set={set} />}
           {p.running.enabled && (
             <div className="card">
               {p.running.goal !== 'GENERAL_RUNNING' && (
@@ -175,11 +220,11 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
               ))}
             </div>
           )}
-          {p.strength.enabled && <><div className="section-title">Matériel</div><EquipmentSection p={p} set={set} /></>}
+          {(p.strength.enabled || p.crosstraining.enabled) && <><div className="section-title">Matériel</div><EquipmentSection p={p} set={set} /></>}
           <div className="card">
             <h3>Récapitulatif</h3>
             <div className="small muted">
-              {[p.strength.enabled && `Musculation · ${STRENGTH_GOAL_LABELS[p.strength.goal] ?? ''} · ${String(p.strength.sessionsPerWeek)}/sem.`, p.running.enabled && `Course · ${RUNNING_GOAL_LABELS[p.running.goal] ?? ''} · ${String(p.running.sessionsPerWeek)}/sem.`].filter(Boolean).join(' — ')}
+              {[p.strength.enabled && `Musculation · ${STRENGTH_GOAL_LABELS[p.strength.goal] ?? ''} · ${String(p.strength.sessionsPerWeek)}/sem.`, p.running.enabled && `Course · ${RUNNING_GOAL_LABELS[p.running.goal] ?? ''} · ${String(p.running.sessionsPerWeek)}/sem.`, p.crosstraining.enabled && `Cross-training · ${CT_INTENT_LABELS[p.crosstraining.intent ?? '']?.title ?? ''} · ${String(p.crosstraining.sessionsPerWeek ?? '')}/sem.`].filter(Boolean).join(' — ')}
             </div>
             <div className="small muted">{String(p.availability.filter((m) => m > 0).length)} jours disponibles par semaine</div>
             {dated ? <div className="small"><b>Objectif {RUNNING_GOAL_LABELS[p.running.goal]} le {formatDate(targetDate)}</b></div> : null}

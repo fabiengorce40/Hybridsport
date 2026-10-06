@@ -69,7 +69,7 @@ describe('contrat de présentation', () => {
     expect(emom.blocks[0]).toMatchObject({ formatKey: 'ct.format.emom', chrono: { kind: 'every_minute', minutes: 10 }, resultKinds: ['emom', 'abandoned'] });
     expect(emom.notGenerated).toEqual(['warmup']);
     const ft = presentC3({ ...base, format: 'for_time', durationKind: 'estimated', blockS: 900, rounds: 3, items: [item] } as C3Plan);
-    expect(ft.blocks[0]).toMatchObject({ rounds: 3, chrono: { kind: 'stopwatch_with_cap', capS: 900 }, resultKinds: ['time', 'capped', 'abandoned'] });
+    expect(ft.blocks[0]).toMatchObject({ rounds: 3, chrono: { kind: 'stopwatch_with_cap', capS: 900 }, resultKinds: ['time', 'capped', 'capped_rounds', 'abandoned'] });
     const iv = presentC3({ ...base, format: 'intervals', blockS: 900, items: [{ itemId: 'i', role: 'monostructural', exerciseId: 'ex.r', timed: { workS: 60, rounds: 5, restS: 30 }, criteria: ['x'] }] } as C3Plan);
     expect(iv.blocks[0]?.chrono).toEqual({ kind: 'intervals', workS: 60, restS: 30, rounds: 5 });
     expect(iv.blocks[0]?.movements[0]?.quantity).toEqual({ kind: 'duration_s', value: 60 });
