@@ -105,6 +105,8 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/engine/tests/unit/item-load.test.ts',
   'packages/engine/tests/unit/migration.test.ts',
   'packages/strength/tests/architecture/__reports__/core-source-digest.txt',
+  // CORE « demand repetition » (eab25cf) : tours `for_time` comptés dans le profil de demande — tests génériques.
+  'packages/engine/tests/unit/session-demand-repetition.test.ts',
   ...STRENGTH_S1_CHANGES,
   ...STRENGTH_S2_CHANGES,
   ...STRENGTH_S3_CHANGES,
