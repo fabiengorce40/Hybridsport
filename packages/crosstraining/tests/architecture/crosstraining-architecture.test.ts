@@ -152,10 +152,17 @@ describe('aucune valeur cachée', () => {
     expect(hits).toEqual([]);
   });
 
+  it('C3 : terme générique « Cross-training », aucun nom propriétaire ni benchmark nommé, aucun tirage aléatoire', () => {
+    const hits = ct.flatMap((f) => f.text.split('\n').flatMap((l, i) => (/crossfit|\bwod\b|\b(fran|murph|cindy|grace|helen|diane|karen|annie|jackie)\b/i.test(l) ? [`${f.path}:${String(i + 1)}`] : [])));
+    expect(hits).toEqual([]);
+    expect(ct.map((f) => f.text).join('\n')).not.toMatch(/Math\.random|shuffle|randomInt/);
+  });
+
   it('propositions : UNE seule source (le chemin C2) ; le moteur ne valide ni ne calcule jamais de durée', () => {
     const text = ct.map((f) => f.text).join('\n');
     const emitters = ct.filter((f) => /status:\s*'proposals'/.test(f.text)).map((f) => f.path);
     expect(emitters).toEqual(['packages/crosstraining/src/engine.ts']);
+    // C2 et C3 partagent l'unique émetteur (`accepted`) : une proposition au plus.
     expect(text.match(/status:\s*'proposals'/g)).toHaveLength(1);
     expect(text).not.toMatch(/validateSession|zSessionDraft|estimateDuration|DurationEngine/);
     expect(collectImports(ct).filter(({ module }) => module.includes('duration'))).toEqual([]);

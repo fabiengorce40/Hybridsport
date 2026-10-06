@@ -9,7 +9,7 @@ import type { CtParameter } from './parameters.js';
 
 export const CT_DECISIONS = [
   'CT-D1', 'CT-D2', 'CT-D3', 'CT-D4', 'CT-D5', 'CT-D6', 'CT-D7', 'CT-D8',
-  'CT-D9', 'CT-D10', 'CT-D11', 'CT-D12', 'CT-D13', 'CT-D14', 'CT-D15', 'CT-G1',
+  'CT-D9', 'CT-D10', 'CT-D11', 'CT-D12', 'CT-D13', 'CT-D14', 'CT-D15', 'CT-D16', 'CT-G1',
 ] as const;
 export type CtDecisionId = (typeof CT_DECISIONS)[number];
 export const DECISION_STATUSES = ['PENDING', 'APPROVED', 'REJECTED'] as const;

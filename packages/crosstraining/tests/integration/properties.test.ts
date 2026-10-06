@@ -37,13 +37,15 @@ const arbInput = fc.record({
   mode: fc.constantFrom('CANDIDATE' as const, 'PRODUCTION' as const),
   hybrid: fc.boolean(),
   level: fc.constantFrom('novice' as const, 'beginner' as const, 'intermediate' as const, 'advanced' as const),
-  requests: fc.subarray([...CT_CAPABILITY_IDS]),
+  // C1 : la composition C3 n'est pas demandée (propriété C3 ci-dessous).
+  requests: fc.subarray(CT_CAPABILITY_IDS.filter((c) => c !== 'ctSessionComposition')),
   simulation: fc.boolean(),
 });
 
 function input(stimulus: string, discipline: ReturnType<typeof ctx>) {
   return {
     intent: { archetypeId: archetypeIdOf(stimulus as (typeof CT_STIMULI)[number]) }, discipline,
+    constraints: { availableEquipment: [], restrictions: [], areaRestrictions: [], restrictedMovements: [], excludedExercises: [], suspendHighIntensity: false },
     ruleset: { version: '1.0.0' }, catalog: { version: '1.0.0' }, context: { seed: 'p', now: '2026-10-05T08:00:00Z', engineVersion: '0.1.0' },
   } as unknown as Parameters<ReturnType<typeof createCrossTrainingEngine>['propose']>[0];
 }
@@ -56,9 +58,18 @@ describe('propriétés C1', () => {
       expect(r.status).toBe('no_valid_proposal');
       if (r.status !== 'no_valid_proposal') return;
       expect(r.reasons.length).toBeGreaterThan(0);
-      expect(r.reasons.at(-1)).toMatchObject({ code: CT_CODES.PRESCRIPTION_NOT_IMPLEMENTED, params: { stimulus: i.stimulus, wave: 'C2' } });
+      expect(r.reasons.at(-1)).toMatchObject({ code: CT_CODES.PRESCRIPTION_NOT_IMPLEMENTED, params: { stimulus: i.stimulus, wave: 'C3' } });
       if (i.hybrid) expect(r.reasons[0]?.code).toBe(CT_CODES.HYBRID_PLANNER_UNAVAILABLE);
       if (i.mode === 'CANDIDATE' && !i.simulation) expect(r.reasons.map((x) => x.code)).toContain(CT_CODES.SIMULATION_REQUIRED);
+    }), { numRuns: 300 });
+  });
+
+  it('C3 demandé, valeurs injectées arbitraires (une même valeur pour tous les paramètres) ⇒ jamais de proposition', () => {
+    fc.assert(fc.property(arbGovernance, arbInput, (governance, i) => {
+      const engine = createCrossTrainingEngine({ governance, simulation: i.simulation });
+      const r = engine.propose(input(i.stimulus, ctx({ mode: i.mode, population: { level: i.level, hybrid: i.hybrid }, capabilityRequests: [...i.requests, 'ctSessionComposition'] })));
+      expect(r.status).toBe('no_valid_proposal');
+      if (r.status === 'no_valid_proposal') expect(r.reasons.length).toBeGreaterThan(0);
     }), { numRuns: 300 });
   });
 

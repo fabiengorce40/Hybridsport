@@ -20,7 +20,7 @@ export interface CapabilityDefinition {
 
 export const CT_CAPABILITY_IDS = [
   'ctReplayHold', 'ctBootstrapExposure', 'ctCalibratedDose', 'ctProgression', 'ctFirstExposure', 'ctLoadedMovements',
-  'ctTechnicalMovements', 'ctIntensityTargets', 'ctBenchmarks', 'ctWeeklyComposition', 'ctHybridPlanning',
+  'ctTechnicalMovements', 'ctIntensityTargets', 'ctBenchmarks', 'ctWeeklyComposition', 'ctHybridPlanning', 'ctSessionComposition',
 ] as const;
 export type CtCapabilityId = (typeof CT_CAPABILITY_IDS)[number];
 export const CT_FOUNDATION = 'ctFoundation';
@@ -83,6 +83,15 @@ export const CT_CAPABILITIES: Readonly<Record<CtCapabilityId, CapabilityDefiniti
   ctHybridPlanning: {
     parameters: ['ct.hybrid.policy'],
     decisions: ['CT-D11'], g1Policies: [], technical: ['GLOBAL_PLANNER'],
+  },
+  // C3 — composition d'une séance (intention → structure → format → rôles → mouvements → dose → validation). Paramètres
+  // COMMUNS à tous les formats ; chaque format exige en plus les siens (c3/formats.ts), vérifiés au moment du choix.
+  ctSessionComposition: {
+    parameters: [
+      'ct.stimulus.catalog', 'ct.stimulus.admissibleFormats', 'ct.stimulus.timeDomains', 'ct.composition.sessionStructure', 'ct.composition.movementPool',
+      'ct.composition.movementRoles', 'ct.dose.construction', 'ct.safety.technicalUnderFatigue', 'ct.history.recencyBand', 'ct.history.negativeResponse',
+    ],
+    decisions: ['CT-D1', 'CT-D2', 'CT-D7', 'CT-D15', 'CT-D16'], g1Policies: ['CT-G1-PAIN', 'CT-G1-NOVICE', 'CT-G1-EXERTIONAL'], technical: ['CT_CONTENT'],
   },
 };
 

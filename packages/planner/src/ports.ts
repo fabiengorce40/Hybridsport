@@ -382,10 +382,27 @@ export function runningPort(def: Base<unknown> & { readonly engine: SportEngine<
   };
 }
 
-export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossTrainingEngine; readonly baseContext: Ctx<CrossTrainingContextInput> }): SportPort {
+/** Sport du planificateur → discipline du contrat de contexte (HYROX = `hybrid_race`). */
+const DISCIPLINE_OF: Readonly<Record<PlannerSport, 'strength' | 'running' | 'crosstraining' | 'hybrid_race'>> = { strength: 'strength', running: 'running', crosstraining: 'crosstraining', hyrox: 'hybrid_race' };
+
+/**
+ * Cross-training. `transportNeighbours` (C3) : voisines (seconde passe) et ordre de priorité DÉCLARÉ transportés dans le
+ * contexte, sans interprétation ; absent ⇒ comportement C2 inchangé (aucune seconde passe).
+ */
+export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossTrainingEngine; readonly baseContext: Ctx<CrossTrainingContextInput>; readonly transportNeighbours?: boolean }): SportPort {
+  const transport = def.transportNeighbours === true;
   return createEnginePort<unknown>({
-    ...def, engine: def.engine as SportEngine<unknown>, sport: 'crosstraining', discipline: 'crosstraining',
-    context: (slot) => { const b = resolve(def.baseContext, slot); return { ...b, population: { ...b.population, hybrid: slot.hybrid } }; },
+    ...def, engine: def.engine as SportEngine<unknown>, sport: 'crosstraining', discipline: 'crosstraining', consumesNeighbours: transport,
+    context: (slot) => {
+      const b = resolve(def.baseContext, slot);
+      const n = slot.neighbours;
+      const order = (slot.sportPriority ?? []).map((x) => DISCIPLINE_OF[x]);
+      return {
+        ...b, population: { ...b.population, hybrid: slot.hybrid },
+        ...(transport && n ? { neighbours: { known: n.known, items: n.neighbours.map((x) => ({ discipline: x.discipline, hoursFromThisSession: x.hoursFromThisSession, demand: { ...x.demand } })) } } : {}),
+        ...(transport && order.length > 0 ? { sportPriority: { order } } : {}),
+      };
+    },
     run: (_e, r, c) => runCrossTrainingC2(def.engine, r, c),
   });
 }

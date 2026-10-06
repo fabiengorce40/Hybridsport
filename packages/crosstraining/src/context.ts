@@ -8,7 +8,7 @@
  * « for time » terminé en temps) : c'est une contrainte de cohérence, pas une valeur sportive.
  */
 import { z } from 'zod';
-import { LEVELS, PAIN_LEVELS, isISODateTime } from '@hybridsport/domain';
+import { DEMAND_LEVELS, DISCIPLINES, LEVELS, PAIN_LEVELS, isISODateTime } from '@hybridsport/domain';
 import { createCoreRegistry } from '@hybridsport/engine';
 import type { ContextParse } from '@hybridsport/engine';
 import { CT_GOALS, CT_MODES, CT_RETURN_STATES, CT_STIMULI } from './model.js';
@@ -145,6 +145,16 @@ export const zCrossTrainingContext = z.object({
   })),
   mode: z.enum(CT_MODES),
   capabilityRequests: z.array(z.enum(CT_CAPABILITY_IDS)),
+  /**
+   * C3 — séances voisines d'AUTRES disciplines TRANSPORTÉES par le planificateur (sa propre fenêtre, aucune fenêtre
+   * nouvelle) : profil de demande par structure. Absent = inconnu. Leur interprétation exige `ct.hybrid.policy`.
+   */
+  neighbours: z.object({
+    known: z.boolean(),
+    items: z.array(z.object({ discipline: z.enum(DISCIPLINES), hoursFromThisSession: z.number(), demand: z.record(z.string(), z.enum(DEMAND_LEVELS)) }).strict()),
+  }).strict().optional(),
+  /** C3 — ordre de priorité DÉCLARÉ des sports du programme (transporté ; aucune politique d'interférence gouvernée). */
+  sportPriority: z.object({ order: z.array(z.enum(DISCIPLINES)).min(1) }).strict().optional(),
 }).strict();
 export type CrossTrainingContext = z.infer<typeof zCrossTrainingContext>;
 export type CrossTrainingContextInput = z.input<typeof zCrossTrainingContext>;

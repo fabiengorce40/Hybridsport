@@ -44,7 +44,7 @@ describe('gouvernance non résolue ⇒ refus explicite pour CHAQUE stimulus', ()
       const cs = codes(e?.reasons);
       expect(cs).toEqual(expect.arrayContaining([CT_CODES.CAPABILITY_DISABLED, CT_CODES.UNRESOLVED_PARAMETER, CT_CODES.DOSE_SOURCE_UNAVAILABLE, CT_CODES.SIMULATION_REQUIRED, CT_CODES.PRESCRIPTION_NOT_IMPLEMENTED, CT_CODES.G1_POLICY_UNSIGNED]));
       expect(e?.reasons.find((r) => r.code === CT_CODES.DOSE_SOURCE_UNAVAILABLE)?.params).toEqual({ stimulus, capabilities: [...DOSE_SOURCE_CAPABILITIES] });
-      expect(e?.reasons.at(-1)).toMatchObject({ code: CT_CODES.PRESCRIPTION_NOT_IMPLEMENTED, params: { stimulus, wave: 'C2' } });
+      expect(e?.reasons.at(-1)).toMatchObject({ code: CT_CODES.PRESCRIPTION_NOT_IMPLEMENTED, params: { stimulus, wave: 'C3' } });
       expect(o.trace.entries.map((t) => t.step)).not.toContain('validate');
     });
   }
@@ -98,7 +98,7 @@ describe('valeurs injectées : C1 reste non générable', () => {
     for (const mode of ['CANDIDATE', 'PRODUCTION'] as const) {
       const e = errorOf(runSportSession(full, ctRequest(ctxInput({ mode })), coreContext(`ct-full-${mode}`)));
       expect(e?.code).toBe('NO_VALID_SOLUTION');
-      expect(e?.reasons).toEqual([expect.objectContaining({ code: CT_CODES.PRESCRIPTION_NOT_IMPLEMENTED, params: { stimulus: 'mixed_modal_medium', wave: 'C2' } })]);
+      expect(e?.reasons).toEqual([expect.objectContaining({ code: CT_CODES.PRESCRIPTION_NOT_IMPLEMENTED, params: { stimulus: 'mixed_modal_medium', wave: 'C3' } })]);
     }
   });
 

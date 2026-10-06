@@ -68,6 +68,10 @@ export const CT_PARAMETER_REGISTRY_C1: readonly CtParameter[] = [
   unresolved('ct.history.recencyBand', 'CT-D15', 'HISTORY', 'days', 'EXPERT', 'fenêtre de récence non décidée'),
   unresolved('ct.history.negativeResponse', 'CT-D15', 'HISTORY', 'rule', 'EXPERT', 'définition du retour négatif non décidée'),
   unresolved('ct.history.completionCriterion', 'CT-D15', 'RESULT', 'rule', 'PRODUCT_AND_EXPERT', 'critère « séance terminée comme prescrite » non décidé'),
+  // CT-D16 (C3) — composition d'une séance : structure de blocs, réservoir de mouvements relus, rôles par format
+  unresolved('ct.composition.sessionStructure', 'CT-D16', 'PLANNING', 'block-kinds-per-stimulus', 'EXPERT', 'structure de séance par stimulus non décidée'),
+  unresolved('ct.composition.movementPool', 'CT-D16', 'CLASSIFICATION', 'reviewed-movement-set', 'EXPERT', 'aucun mouvement relu pour la composition'),
+  unresolved('ct.composition.movementRoles', 'CT-D16', 'CLASSIFICATION', 'roles-per-stimulus-per-format', 'EXPERT', 'rôles de mouvement par stimulus et par format non décidés'),
   // CT-G1 — politiques de sécurité
   unresolved('ct.safety.novicePolicy', 'CT-G1', 'SAFETY', 'rule', 'G1_POLICY', 'exclusions novice non signées'),
   unresolved('ct.return.protocol', 'CT-G1', 'SAFETY', 'rule', 'G1_POLICY', 'protocole de reprise non signé'),

@@ -28,6 +28,7 @@ describe('dépendances déclarées par capacité (table relue)', () => {
       ctBenchmarks: { d: ['CT-D14'], g: [], t: ['CT_CONTENT'] },
       ctWeeklyComposition: { d: ['CT-D10'], g: [], t: ['CT_CONTENT'] },
       ctHybridPlanning: { d: ['CT-D11'], g: [], t: ['GLOBAL_PLANNER'] },
+      ctSessionComposition: { d: ['CT-D1', 'CT-D2', 'CT-D7', 'CT-D15', 'CT-D16'], g: ['CT-G1-PAIN', 'CT-G1-NOVICE', 'CT-G1-EXERTIONAL'], t: ['CT_CONTENT'] },
     });
     // Socle C2 : ni taxonomie (CT-D1) ni plafonds de volume (CT-D6) ; ils vivent dans les capacités qui en ont besoin.
     expect(CT_FOUNDATION_DEFINITION).toMatchObject({ parameters: ['ct.safety.novicePolicy', 'ct.return.protocol', 'ct.safety.novelEccentricVolume'], decisions: ['CT-G1'], g1Policies: ['CT-G1-PAIN', 'CT-G1-NOVICE', 'CT-G1-RETURN', 'CT-G1-EXERTIONAL'], technical: ['CT_CONTENT'] });
@@ -208,6 +209,25 @@ describe('codes et correspondance d’archétype', () => {
       [CT_CODES.VOLUME_GUARD_REQUIRED]: 'internal/error/safety',
       [CT_CODES.C2_PROPOSED]: 'internal/info/information',
       [CT_CODES.C2_MODIFIED_BY_CORE]: 'internal/error/business_hard',
+      [CT_CODES.C3_INTENT]: 'internal/info/information',
+      [CT_CODES.C3_STIMULUS_OUT_OF_SCOPE]: 'user/error/feasibility',
+      [CT_CODES.C3_PARAMETER_UNREADABLE]: 'internal/error/technical+business_hard',
+      [CT_CODES.C3_STRUCTURE]: 'internal/info/information',
+      [CT_CODES.C3_BLOCK_NOT_GENERATED]: 'internal/notice/information',
+      [CT_CODES.C3_STRUCTURE_UNAVAILABLE]: 'user/error/feasibility',
+      [CT_CODES.C3_HISTORY]: 'internal/info/information',
+      [CT_CODES.C3_HISTORY_NEGATIVE]: 'internal/notice/safety',
+      [CT_CODES.C3_NEIGHBOURS]: 'internal/info/information',
+      [CT_CODES.C3_FORMAT_REJECTED]: 'internal/notice/information',
+      [CT_CODES.C3_NO_FORMAT]: 'user/error/feasibility',
+      [CT_CODES.C3_FORMAT_CHOSEN]: 'internal/info/information',
+      [CT_CODES.C3_CANDIDATES_REJECTED]: 'internal/info/information',
+      [CT_CODES.C3_MOVEMENT_SELECTED]: 'internal/info/information',
+      [CT_CODES.C3_DOSE]: 'internal/info/information',
+      [CT_CODES.C3_DURATION]: 'internal/info/information',
+      [CT_CODES.C3_DENSITY]: 'internal/info/information',
+      [CT_CODES.C3_REPEAT_UNAVOIDABLE]: 'internal/notice/information',
+      [CT_CODES.C3_PROPOSED]: 'internal/info/information',
     });
   });
 });

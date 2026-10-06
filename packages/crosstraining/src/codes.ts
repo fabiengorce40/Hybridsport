@@ -7,6 +7,7 @@ import type { ReasonCodeDefinition } from '@hybridsport/engine';
 
 const S = 'string' as const;
 const L = 'string[]' as const;
+const N = 'number' as const;
 
 export const CT_CODES = {
   UNRESOLVED_PARAMETER: 'RULE.CROSSTRAINING.UNRESOLVED_PARAMETER',
@@ -29,6 +30,26 @@ export const CT_CODES = {
   VOLUME_GUARD_REQUIRED: 'SAFETY.CROSSTRAINING.VOLUME_GUARD_REQUIRED',
   C2_PROPOSED: 'PLAN.CROSSTRAINING.C2_PROPOSED',
   C2_MODIFIED_BY_CORE: 'RULE.CROSSTRAINING.C2_MODIFIED_BY_CORE',
+  // C3 — composition d'une séance
+  C3_INTENT: 'PLAN.CROSSTRAINING.C3_INTENT',
+  C3_STIMULUS_OUT_OF_SCOPE: 'SCOPE.CROSSTRAINING.C3_STIMULUS_OUT_OF_SCOPE',
+  C3_PARAMETER_UNREADABLE: 'RULE.CROSSTRAINING.C3_PARAMETER_UNREADABLE',
+  C3_STRUCTURE: 'PLAN.CROSSTRAINING.C3_STRUCTURE',
+  C3_BLOCK_NOT_GENERATED: 'PLAN.CROSSTRAINING.C3_BLOCK_NOT_GENERATED',
+  C3_STRUCTURE_UNAVAILABLE: 'SCOPE.CROSSTRAINING.C3_STRUCTURE_UNAVAILABLE',
+  C3_HISTORY: 'PLAN.CROSSTRAINING.C3_HISTORY',
+  C3_HISTORY_NEGATIVE: 'SAFETY.CROSSTRAINING.C3_HISTORY_NEGATIVE',
+  C3_NEIGHBOURS: 'PLAN.CROSSTRAINING.C3_NEIGHBOURS',
+  C3_FORMAT_REJECTED: 'PLAN.CROSSTRAINING.C3_FORMAT_REJECTED',
+  C3_NO_FORMAT: 'PLAN.CROSSTRAINING.C3_NO_FORMAT',
+  C3_FORMAT_CHOSEN: 'PLAN.CROSSTRAINING.C3_FORMAT_CHOSEN',
+  C3_CANDIDATES_REJECTED: 'PLAN.CROSSTRAINING.C3_CANDIDATES_REJECTED',
+  C3_MOVEMENT_SELECTED: 'PLAN.CROSSTRAINING.C3_MOVEMENT_SELECTED',
+  C3_DOSE: 'DOSE.CROSSTRAINING.C3_DOSE',
+  C3_DURATION: 'PLAN.CROSSTRAINING.C3_DURATION',
+  C3_DENSITY: 'PLAN.CROSSTRAINING.C3_DENSITY',
+  C3_REPEAT_UNAVOIDABLE: 'PLAN.CROSSTRAINING.C3_REPEAT_UNAVOIDABLE',
+  C3_PROPOSED: 'PLAN.CROSSTRAINING.C3_PROPOSED',
 } as const;
 export type CtCode = (typeof CT_CODES)[keyof typeof CT_CODES];
 
@@ -52,6 +73,25 @@ export const CT_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: CT_CODES.VOLUME_GUARD_REQUIRED, categories: ['safety'], params: { parameterId: S }, audience: 'internal', severity: 'error' },
   { code: CT_CODES.C2_PROPOSED, categories: ['information'], params: { source: S, exerciseId: S }, audience: 'internal', severity: 'info' },
   { code: CT_CODES.C2_MODIFIED_BY_CORE, categories: ['business_hard'], params: { sessionId: S }, audience: 'internal', severity: 'error' },
+  { code: CT_CODES.C3_INTENT, categories: ['information'], params: { stimulus: S, level: S, availableTimeS: N, sportPriority: L, rank: N, neighbours: N }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C3_STIMULUS_OUT_OF_SCOPE, categories: ['feasibility'], params: { stimulus: S, cause: S }, audience: 'user', severity: 'error' },
+  { code: CT_CODES.C3_PARAMETER_UNREADABLE, categories: ['technical', 'business_hard'], params: { parameterId: S, detail: S }, audience: 'internal', severity: 'error' },
+  { code: CT_CODES.C3_STRUCTURE, categories: ['information'], params: { stimulus: S, blocks: L }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C3_BLOCK_NOT_GENERATED, categories: ['information'], params: { kind: S, cause: S }, audience: 'internal', severity: 'notice' },
+  { code: CT_CODES.C3_STRUCTURE_UNAVAILABLE, categories: ['feasibility'], params: { stimulus: S, kind: S, cause: S }, audience: 'user', severity: 'error' },
+  { code: CT_CODES.C3_HISTORY, categories: ['information'], params: { sameStimulus: N, recentMovements: L, lastFormat: S }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C3_HISTORY_NEGATIVE, categories: ['safety'], params: { sessionId: S, causes: L, action: S }, audience: 'internal', severity: 'notice' },
+  { code: CT_CODES.C3_NEIGHBOURS, categories: ['information'], params: { known: S, neighbours: L, policy: S, priorityPolicy: S }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C3_FORMAT_REJECTED, categories: ['information'], params: { format: S, causes: L }, audience: 'internal', severity: 'notice' },
+  { code: CT_CODES.C3_NO_FORMAT, categories: ['feasibility'], params: { stimulus: S, tried: L }, audience: 'user', severity: 'error' },
+  { code: CT_CODES.C3_FORMAT_CHOSEN, categories: ['information'], params: { format: S, durationKind: S, criteria: L }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C3_CANDIDATES_REJECTED, categories: ['information'], params: { format: S, role: S, rejected: L }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C3_MOVEMENT_SELECTED, categories: ['information'], params: { format: S, role: S, exerciseId: S, criteria: L }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C3_DOSE, categories: ['information'], params: { exerciseId: S, quantity: S, load: S }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C3_DURATION, categories: ['information'], params: { format: S, kind: S, prescribedS: N, estimatedTypicalS: N, estimatedSlowS: N }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C3_DENSITY, categories: ['information'], params: { format: S, kind: S, detail: S }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C3_REPEAT_UNAVOIDABLE, categories: ['information'], params: { identicalLevels: L }, audience: 'internal', severity: 'notice' },
+  { code: CT_CODES.C3_PROPOSED, categories: ['information'], params: { stimulus: S, format: S, exercises: L }, audience: 'internal', severity: 'info' },
 ];
 
 export const ctReasons = createCoreRegistry(CT_REASON_CODES);

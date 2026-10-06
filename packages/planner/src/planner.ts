@@ -99,12 +99,13 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     .sort((a, b) => (a.date < b.date ? -1 : 1))
     .map((p) => ({ requestId: p.requestId, date: p.date, archetypeId: p.archetypeId ?? '', session: p.session, ...(p.fingerprint ? { fingerprint: p.fingerprint } : {}) }));
   const weekArg = (sport: PlannerSport, date: string, requestId: string): { weekSessions?: WeekSession[]; sportSessions?: number; sportPriority?: PlannerSport[] } => {
-    if (!ports[sport]?.consumesWeekSessions) return {};
+    // S4 — ORDRE DE PRIORITÉ déclaré (ordre des demandes du programme), transporté tel quel : aucune interprétation ici.
+    const sportPriority = input.demands.map((d) => d.sport);
+    // C3 — un port consommateur de voisines reçoit aussi l'ordre de priorité (transport seul).
+    if (!ports[sport]?.consumesWeekSessions) return ports[sport]?.consumesNeighbours ? { sportPriority } : {};
     const w = weekOf(sport, date, requestId);
     // Fréquence DÉCLARÉE par le programme pour ce sport (nombre de demandes), transmise pour la trace du moteur.
     const sportSessions = requests.filter((x) => x.sport === sport).length;
-    // S4 — ORDRE DE PRIORITÉ déclaré (ordre des demandes du programme), transporté tel quel : aucune interprétation ici.
-    const sportPriority = input.demands.map((d) => d.sport);
     return { ...(w.length > 0 ? { weekSessions: w } : {}), sportSessions, sportPriority };
   };
   const weekReason = (sport: PlannerSport, date: string, requestId: string): ReasonCode[] => {

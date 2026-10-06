@@ -21,13 +21,15 @@ import { CT_CODES, ctReasons } from './codes.js';
 import { parseCrossTrainingContext } from './context.js';
 import type { CrossTrainingContext } from './context.js';
 import { analyzeCrossTraining } from './analysis.js';
+import { composeC3 } from './c3/compose.js';
+import type { C3Outcome } from './c3/compose.js';
 import type { CtAnalysis } from './analysis.js';
 import { CURRENT_CT_GOVERNANCE, governanceIssues } from './governance/state.js';
 import type { CtGovernance } from './governance/state.js';
 
 export const CT_ENGINE_ID = 'engine.crosstraining';
-export const CT_ENGINE_VERSION = '0.2.0' as const satisfies SemVerString;
-export const CT_ENGINE_WAVE = 'C2';
+export const CT_ENGINE_VERSION = '0.3.0' as const satisfies SemVerString;
+export const CT_ENGINE_WAVE = 'C3';
 
 export interface CrossTrainingEngineOptions {
   /** État de gouvernance (par défaut : l'état réel C1, rien de décidé). */
@@ -39,6 +41,8 @@ export interface CrossTrainingEngineOptions {
 export type CrossTrainingEngine = SportEngine<CrossTrainingContext> & {
   /** Observabilité : l'analyse des blocages pour une entrée (sans effet de bord), ou undefined si l'archétype est inconnu. */
   analyze(input: SportEngineInput<CrossTrainingContext>): CtAnalysis | undefined;
+  /** Observabilité C3 : le plan de composition (ou le refus) pour un archétype de stimulus, sans effet de bord. */
+  compose(input: SportEngineInput<CrossTrainingContext>): C3Outcome | undefined;
   readonly governance: CtGovernance;
   readonly simulation: boolean;
 };
@@ -66,6 +70,12 @@ export function createCrossTrainingEngine(options: CrossTrainingEngineOptions = 
     return stimulus === undefined ? undefined : analyzeCrossTraining(stimulus, input.discipline, governance);
   };
 
+  const engineRef = { id: CT_ENGINE_ID, version: CT_ENGINE_VERSION };
+  const compose = (input: SportEngineInput<CrossTrainingContext>): C3Outcome | undefined => {
+    const stimulus = stimulusFromArchetypeId(input.intent.archetypeId);
+    return stimulus === undefined ? undefined : composeC3(input, stimulus, governance, simulation, engineRef);
+  };
+
   return {
     id: CT_ENGINE_ID,
     version: CT_ENGINE_VERSION,
@@ -78,8 +88,15 @@ export function createCrossTrainingEngine(options: CrossTrainingEngineOptions = 
       return known ? [] : [ctReasons.emit(CT_CODES.ARCHETYPE_UNKNOWN, { archetypeId: input.intent.archetypeId })];
     },
     analyze,
+    compose,
     propose(input: SportEngineInput<CrossTrainingContext>): ProposeResult {
       if (input.intent.archetypeId === CT_C2_ARCHETYPE) return proposeC2(input, governance, simulation);
+      // C3 : composition seulement si elle est DEMANDÉE (capacité gouvernée) ; sinon le refus C1 est inchangé.
+      if (input.discipline.capabilityRequests.includes('ctSessionComposition')) {
+        const out = compose(input);
+        if (out?.ok) return accepted(out.proposal);
+        if (out) return refuse(input, out.reasons);
+      }
       const analysis = analyze(input);
       const reasons: ReasonCode[] = [];
       if (analysis === undefined) {
@@ -92,6 +109,11 @@ export function createCrossTrainingEngine(options: CrossTrainingEngineOptions = 
       return refuse(input, reasons);
     },
   };
+}
+
+/** UNIQUE émetteur de propositions du moteur (C2 et C3) : une proposition au plus. */
+function accepted(proposal: SportEngineProposalInput): ProposeResult {
+  return { status: 'proposals', proposals: [proposal] };
 }
 
 function refuse(input: SportEngineInput<CrossTrainingContext>, reasons: readonly ReasonCode[]): NoValidProposalInput {
@@ -166,7 +188,7 @@ function proposeC2(input: SportEngineInput<CrossTrainingContext>, governance: Ct
   const guards = volumeGuardParameters(proposal.session as never, (id) => input.catalog.exercise(id));
   const missing = guards.filter((g) => resolveParameter(governance.parameters, g, mode).status !== 'resolved');
   if (missing.length > 0) return refuse(input, missing.map((g) => ctReasons.emit(CT_CODES.VOLUME_GUARD_REQUIRED, { parameterId: g })));
-  return { status: 'proposals', proposals: [proposal] };
+  return accepted(proposal);
 }
 
 /** Contenu prescriptif comparable d'une séance (blocs : format, items, prescriptions), hors défauts techniques. */
