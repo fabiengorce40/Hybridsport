@@ -171,7 +171,7 @@ const strengthTitles = (p) => p.getByRole('button', { name: /^Musculation : / })
   check(titles.join(',') === 'Haut du corps,Bas du corps,Haut du corps,Bas du corps', `S1 programme pré-S1 : semaine régénérée dans le DOM (${titles.join(', ')})`);
   check((await p.locator('body').innerText()).includes('replanifiée avec la nouvelle version de KAIRO'), 'S1 programme pré-S1 : avis de replanification visible');
   const st = await p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
-  check(st.planner?.weeks?.['2026-10-05']?.planningVersion === 'beta0-s3', 'S1 programme pré-S1 : semaine persistée à la version courante');
+  check(st.planner?.weeks?.['2026-10-05']?.planningVersion === 'beta0-s4', 'S1 programme pré-S1 : semaine persistée à la version courante');
   await c.close();
 }
 
@@ -190,7 +190,7 @@ const strengthTitles = (p) => p.getByRole('button', { name: /^Musculation : / })
   await p.getByRole('button', { name: 'Effacer et recréer' }).click();
   const st = await p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
   const reqs = (st.planner?.weeks?.['2026-10-05']?.requests ?? []).filter((r) => r.sport === 'strength' && r.status === 'planned');
-  check(st.planner?.weeks?.['2026-10-05']?.planningVersion === 'beta0-s3' && reqs.every((r) => r.composition?.authority === 'provisional' && r.reasons.some((x) => x.code === 'PLAN.WEEK_COMPOSITION')), `reset Beta : AppState recomposé par S1 (${reqs.map((r) => `${r.date} ${r.intent?.archetypeId}`).join(', ')})`);
+  check(st.planner?.weeks?.['2026-10-05']?.planningVersion === 'beta0-s4' && reqs.every((r) => r.composition?.authority === 'provisional' && r.reasons.some((x) => x.code === 'PLAN.WEEK_COMPOSITION')), `reset Beta : AppState recomposé par S1 (${reqs.map((r) => `${r.date} ${r.intent?.archetypeId}`).join(', ')})`);
   await p.getByRole('button', { name: 'Planning', exact: true }).click();
   const after = await strengthTitles(p);
   const days = await p.locator('.week .day .n').allInnerTexts();

@@ -99,8 +99,17 @@ export function strengthContextAt(state: AppState, p: Profile, date: string, con
     hardSets: { d7: hardSetsByGroup(recentDone.map((x) => ({ exerciseId: x.exerciseId, workingSets: x.sets.length })), content) },
     week: { otherStrengthSessions: others, neighbors: [], known },
     preferences: { liked: [], disliked: [] },
+    continuity: BETA0_STRENGTH_CONTINUITY,
   };
 }
+
+/**
+ * Strength S4 — DÉCISION PRODUIT (utilisateur, lot S4 : « continuité > variété artificielle ») : l'exercice en place
+ * d'un emplacement est conservé tant qu'il reste admissible ; un remplacement est tracé avec sa cause
+ * (`SELECT.CONTINUITY`). Les raisons de rotation du ruleset (non aimé, stagnation, note `planned_variation`) et
+ * l'alternance A/B des groupes de choix restent actives. Aucune valeur sportive.
+ */
+export const BETA0_STRENGTH_CONTINUITY = 'keep_incumbent' as const;
 
 /**
  * Capacités DEMANDÉES par l'application (décisions produit du 2026-09-28) : progression par pas minimal (D1),

@@ -128,6 +128,21 @@ export function decidingCriterion(ranked: readonly Ranked[], slot: SlotInstance,
  *   note du planificateur (variation planifiée) pour toute la séance. Matériel, douleur, tolérance et objectif
  *   agissent déjà par les filtres et les critères antérieurs. Jamais un verrou : les critères précédents priment.
  */
+/**
+ * S4 — raison EXPLICITE de rotation d'un exercice, lue dans `strength.selection.repetitionPolicy.rotationReasons`
+ * quel que soit le niveau (non aimé, stagnation, note `planned_variation` du planificateur) : c'est ce qui autorise le
+ * remplacement d'un exercice en place sous continuité déclarée. Sans politique : aucune raison.
+ */
+export function rotationReason(e: Exercise, env: Env): 'disliked' | 'stagnation' | 'planned_variation' | undefined {
+  const r = env.params['strength.selection.repetitionPolicy']?.rotationReasons;
+  if (!r) return undefined;
+  if (r.plannerNotes.some((n) => env.input.intent.plannerNotes.includes(n))) return 'planned_variation';
+  if (r.disliked && env.input.discipline.preferences.disliked.includes(e.id)) return 'disliked';
+  const holds = env.params['strength.progression'].stagnationHolds;
+  if (r.stagnation && env.input.discipline.tracks.some((t) => t.exerciseId === e.id && t.status === 'active' && t.consecutiveHolds >= holds)) return 'stagnation';
+  return undefined;
+}
+
 export function continuityMode(e: Exercise, env: Env): 'repeat' | 'avoid' | 'rotate' {
   const repeat = env.params['strength.selection.repetitionPolicy'];
   if (!repeat) return 'rotate';

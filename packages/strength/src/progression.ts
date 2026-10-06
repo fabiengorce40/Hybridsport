@@ -64,6 +64,48 @@ export function classifyExposure(x: ExecutedItem, params: StrengthParams): Expos
   return 'on_target';
 }
 
+/**
+ * Strength S4 — PREUVE d'une exposition (contrat, aucune règle de décision) : ce qui était prescrit face à ce qui a été
+ * réalisé. Distingue « prescription exactement réussie » (`exact`) de « prescription dépassée » (`exceeded`) et de
+ * « aucune preuve de capacité » (`none`), et dit si le RIR a été SAISI (sinon `not_collected` : aucune déduction).
+ * La politique qui transforme cette preuve en progression reste celle du modèle de la track (ruleset).
+ */
+export interface ExposureEvidence {
+  readonly exposure: ExposureClass;
+  readonly success: 'exact' | 'exceeded' | 'none';
+  readonly sets: { readonly prescribed: number; readonly performed: number };
+  /** Répétitions : écart entre le minimum réalisé et la cible (borne haute d'une plage), en répétitions. */
+  readonly repsDelta: number | null;
+  /** Charge : écart entre la charge minimale réalisée et la charge prescrite (kg) ; null sans charge prescrite. */
+  readonly loadDeltaKg: number | null;
+  /** RIR : écart entre le RIR saisi (dernière série) et le RIR visé ; null si non saisi ou non prescrit. */
+  readonly rirDelta: number | null;
+  readonly rir: 'reported' | 'not_collected';
+}
+
+export function exposureEvidence(x: ExecutedItem, cls: ExposureClass): ExposureEvidence {
+  const work = x.prescribed.filter((s) => s.kind !== 'rampup' && s.optional !== true);
+  const first = work[0];
+  const target = first ? (typeof first.reps === 'number' ? first.reps : first.reps.max) : undefined;
+  const repsMin = x.performed.length > 0 ? Math.min(...x.performed.map((s) => s.reps)) : undefined;
+  const kgOf = (s: SetPrescription): number | undefined => (s.intensity?.mode === 'load' ? s.intensity.kg : s.intensity?.mode === 'percent_of_reference' ? s.intensity.kgRounded : undefined);
+  const prescribedKg = first ? kgOf(first) : undefined;
+  const loads = x.performed.flatMap((s) => (s.loadKg !== undefined ? [s.loadKg] : []));
+  const loadMin = loads.length === x.performed.length && loads.length > 0 ? Math.min(...loads) : undefined;
+  const targetR = first ? targetRir(first) : undefined;
+  const lastRir = x.performed.at(-1)?.rir;
+  const repsDelta = target !== undefined && repsMin !== undefined ? repsMin - target : null;
+  const loadDeltaKg = prescribedKg !== undefined && loadMin !== undefined ? loadMin - prescribedKg : null;
+  const rirDelta = targetR !== undefined && lastRir !== undefined ? lastRir - targetR : null;
+  const met = cls === 'on_target' || cls === 'above';
+  const beyond = cls === 'above' || (repsDelta ?? 0) > 0 || (loadDeltaKg ?? 0) > 0 || (rirDelta ?? 0) > 0;
+  return {
+    exposure: cls, success: !met ? 'none' : beyond ? 'exceeded' : 'exact',
+    sets: { prescribed: work.length, performed: x.performed.length }, repsDelta, loadDeltaKg, rirDelta,
+    rir: x.performed.some((s) => s.rir !== undefined) ? 'reported' : 'not_collected',
+  };
+}
+
 export interface TrackUpdate {
   readonly track: StrengthTrack;
   readonly reasons: readonly ReasonCode[];
@@ -154,7 +196,13 @@ export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: Exposure
         if (e1rm !== undefined && pct !== undefined) kg = Math.max(next.loadKg, Math.min(next.loadKg + step, roundDownToStep(e1rm * pct, step)));
       }
       if (capped(kg)) return { track: base, reasons: [strengthReasons.emit('PROGRESSION.CAP_REACHED', { trackId: track.trackId })], rotate: false };
-      if (kg === next.loadKg) return { track: { ...base, ...(e1rm !== undefined ? { e1rmKg: e1rm } : {}) }, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: 'estimate' })], rotate: false };
+      if (kg === next.loadKg) {
+        // S4 — réussite EXACTE (aucune marge mesurée) : l'estimation reproduit la charge prescrite ; aucune règle
+        // gouvernée ne transforme une réussite exacte en hausse ⇒ décision tracée comme BLOQUÉE, jamais inventée.
+        const ev = exposureEvidence(x, cls);
+        const blocked = ev.success === 'exact' ? [strengthReasons.emit('PROGRESSION.DECISION_BLOCKED', { trackId: track.trackId, model: track.model, situation: 'exact_success', capability: 'exact_success_progression', rir: ev.rir })] : [];
+        return { track: { ...base, ...(e1rm !== undefined ? { e1rmKg: e1rm } : {}) }, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: 'estimate' }), ...blocked], rotate: false };
+      }
       return { track: { ...base, ...(e1rm !== undefined ? { e1rmKg: e1rm } : {}), nextPrescription: { ...next, loadKg: kg } }, reasons: [strengthReasons.emit('PROGRESSION.ADVANCED', { trackId: track.trackId, variable: 'load' })], rotate: false };
     }
     case 'double_progression': {
@@ -163,7 +211,15 @@ export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: Exposure
       if (current < range.max) {
         return { track: { ...base, nextPrescription: { ...next, reps: { min: current + 1, max: range.max } } }, reasons: [strengthReasons.emit('PROGRESSION.ADVANCED', { trackId: track.trackId, variable: 'reps' })], rotate: false };
       }
-      if (next.loadKg === undefined || step === undefined) return { track: base, reasons: [strengthReasons.emit('PROGRESSION.CAP_REACHED', { trackId: track.trackId })], rotate: false };
+      if (next.loadKg === undefined || step === undefined) {
+        // S4 — poids du corps en haut de plage : progression POSSIBLE mais méthode non gouvernée (lest, variante plus
+        // difficile, nouvelle plage, maintien). Les méthodes listées sont celles que le catalogue rend possibles.
+        if (next.loadKg === undefined && (e.loadModel === 'bodyweight_plus' || e.loadModel === undefined)) {
+          const methods = [...(e.loadModel === 'bodyweight_plus' ? ['added_load'] : []), ...(e.progressionFamily ? ['harder_variant'] : []), 'new_rep_range', 'hold'];
+          return { track: base, reasons: [strengthReasons.emit('PROGRESSION.METHOD_UNGOVERNED', { trackId: track.trackId, exerciseId: e.id, repsReached: range.max, methods, capability: 'bodyweight_overload_method' })], rotate: false };
+        }
+        return { track: base, reasons: [strengthReasons.emit('PROGRESSION.CAP_REACHED', { trackId: track.trackId })], rotate: false };
+      }
       const kg = next.loadKg + step;
       if (capped(kg)) return { track: base, reasons: [strengthReasons.emit('PROGRESSION.CAP_REACHED', { trackId: track.trackId })], rotate: false };
       // Granularité du matériel : un saut de charge que la séance MESURÉE classerait d'avance « en dessous »

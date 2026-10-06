@@ -10,6 +10,7 @@
  * lu dans le ruleset ou dans l'historique transmis ; ce qui n'est pas gouverné est listé dans `blocked`.
  */
 import type { Level, SessionDraft } from '@hybridsport/domain';
+import { sessionPlannedHardSets } from './composition.js';
 import type { LoadedCatalog } from '@hybridsport/engine';
 import type { ExerciseExposure, StrengthGoalRef, StrengthTrack } from './context.js';
 import type { StrengthParams } from './params.js';
@@ -27,6 +28,12 @@ export const STRENGTH_BLOCKED_CAPABILITIES = [
   'load_conversion_between_exercises',
   // Aucune rotation d'exercice planifiée gouvernée (seules les causes traçables : douleur, matériel, exclusion, stagnation).
   'planned_exercise_rotation',
+  // S4 — la priorité déclarée des sports est transportée, mais aucune politique ne l'interprète dans l'interférence.
+  'priority_interference_policy',
+  // S4 — réussite EXACTE d'une prescription sans marge mesurée : aucune règle d'augmentation gouvernée (modèle autorégulé).
+  'exact_success_progression',
+  // S4 — surcharge au poids du corps au-delà de la plage (lest, variante, nouvelle plage) : méthode non gouvernée.
+  'bodyweight_overload_method',
 ] as const;
 export type StrengthBlockedCapability = (typeof STRENGTH_BLOCKED_CAPABILITIES)[number];
 
@@ -139,4 +146,72 @@ export function weekPrescriptionSummary(p: StrengthWeekPrescription): { belowFlo
 export function exerciseStillAdmissible(exerciseId: string, catalog: LoadedCatalog, equipment: readonly string[], excluded: readonly string[]): boolean {
   const e = catalog.exercise(exerciseId);
   return e !== undefined && e.status === 'active' && !excluded.includes(e.id) && catalog.isFeasibleWith(e, new Set(equipment));
+}
+
+/**
+ * Strength S4 — BILAN DE VOLUME de la semaine planifiée, face à la cible du ruleset. Vocabulaire :
+ * - le plancher de `strength.volume.weeklyRange` est une CIBLE (L5 « plancher TARGET, haut SOFT », volume.ts), jamais
+ *   un minimum obligatoire : il n'est donc pas « violé », il est atteint ou non, et chaque écart est expliqué ;
+ * - groupe : `achieved` (prévu ≥ cible), `reduced_by_constraint` (sous la cible ET au moins une contrainte tracée dans
+ *   la semaine), `unmet` (sous la cible sans contrainte tracée), `no_target` (aucune cible gouvernée) ;
+ * - objectif : `satisfied` (toutes les cibles atteintes), `partially_satisfied`, `not_satisfied` (aucune), `blocked`
+ *   (séances demandées mais aucune planifiée). Aucun score : des comptes et des causes.
+ * Les contraintes sont relevées au niveau de la SEMAINE (raisons des séances) : l'attribution fine d'une série
+ * manquante à une contrainte précise n'est pas revendiquée.
+ */
+export type GroupVolumeStatus = 'achieved' | 'reduced_by_constraint' | 'unmet' | 'no_target';
+export type WeekGoalStatus = 'satisfied' | 'partially_satisfied' | 'not_satisfied' | 'blocked';
+
+export interface WeekVolumeConstraint { readonly cause: string; readonly detail: string }
+
+export interface WeekVolumeAssessment {
+  readonly status: WeekGoalStatus;
+  readonly requestedSessions: number;
+  readonly plannedSessions: number;
+  readonly groups: readonly { readonly group: string; readonly target: number | null; readonly high: number | null; readonly planned: number; readonly status: GroupVolumeStatus }[];
+  readonly constraints: readonly WeekVolumeConstraint[];
+}
+
+export interface WeekVolumeInput {
+  readonly params: StrengthParams;
+  readonly catalog: LoadedCatalog;
+  readonly goal: StrengthGoalRef;
+  readonly level: Level;
+  readonly requestedSessions: number;
+  readonly sessions: readonly { readonly session: SessionDraft; readonly reasons: readonly { readonly code: string; readonly params: Readonly<Record<string, unknown>> }[] }[];
+  /** Raisons des demandes Strength NON planifiées (refus, non placées) : contraintes de la semaine. */
+  readonly notPlanned: readonly { readonly category: string }[];
+}
+
+/** Contraintes tracées de la semaine, depuis les raisons des séances (aucune interprétation physiologique). */
+function constraintsOf(i: WeekVolumeInput): WeekVolumeConstraint[] {
+  const out = new Map<string, WeekVolumeConstraint>();
+  const add = (cause: string, detail: string) => out.set(`${cause}|${detail}`, { cause, detail });
+  for (const s of i.sessions) for (const r of s.reasons) {
+    if (r.code === 'PLAN.STRUCTURE_LOWERED') {
+      const c = String(r.params.cause ?? '');
+      add(c.startsWith('neighbor:') ? 'interference' : c.startsWith('note:') ? 'planner_note' : c === 'week_unknown' ? 'week_unknown' : c, `${String(r.params.structure)} (${c})`);
+    }
+    if (r.code === 'SELECT.SLOT_OMITTED') add(`slot_omitted:${String(r.params.cause)}`, String(r.params.slot));
+  }
+  if (i.sessions.length < i.requestedSessions) add('sessions_not_planned', `${String(i.requestedSessions - i.sessions.length)}/${String(i.requestedSessions)}${i.notPlanned.length > 0 ? ` (${[...new Set(i.notPlanned.map((n) => n.category))].sort().join(', ')})` : ''}`);
+  return [...out.values()].sort((a, b) => (a.cause === b.cause ? (a.detail < b.detail ? -1 : 1) : a.cause < b.cause ? -1 : 1));
+}
+
+export function assessStrengthWeekVolume(i: WeekVolumeInput): WeekVolumeAssessment {
+  const range = i.params['strength.volume'].weeklyRange[goalKey(i.goal)]?.[i.level] ?? {};
+  const planned: Record<string, number> = {};
+  for (const s of i.sessions) for (const [g, v] of Object.entries(sessionPlannedHardSets(s.session, i.params, i.catalog))) planned[g] = (planned[g] ?? 0) + v;
+  const constraints = constraintsOf(i);
+  const groups = Object.keys(i.params['strength.volume'].muscleGroups).sort().map((g) => {
+    const r = range[g];
+    const p = planned[g] ?? 0;
+    const status: GroupVolumeStatus = r === undefined ? 'no_target' : p >= r.floor ? 'achieved' : constraints.length > 0 ? 'reduced_by_constraint' : 'unmet';
+    return { group: g, target: r?.floor ?? null, high: r?.high ?? null, planned: p, status };
+  });
+  const targeted = groups.filter((g) => g.status !== 'no_target');
+  const achieved = targeted.filter((g) => g.status === 'achieved').length;
+  const status: WeekGoalStatus = i.requestedSessions > 0 && i.sessions.length === 0 ? 'blocked'
+    : achieved === targeted.length ? 'satisfied' : achieved === 0 ? 'not_satisfied' : 'partially_satisfied';
+  return { status, requestedSessions: i.requestedSessions, plannedSessions: i.sessions.length, groups, constraints };
 }

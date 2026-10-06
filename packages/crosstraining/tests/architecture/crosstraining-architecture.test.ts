@@ -58,6 +58,20 @@ const STRENGTH_S3_CHANGES = [
   'packages/strength/tests/unit/progression.test.ts',
   'packages/strength/tests/unit/s3-longitudinal.test.ts',
 ];
+/**
+ * Lot Strength S4 (hors Cross-training, liste FERMÉE) : continuité déclarée (context.ts, model.ts, engine.ts,
+ * selection.ts), alternatives par instance d'emplacement, priorité des sports tracée, preuve d'exposition et décisions
+ * bloquées (progression.ts), bilan de volume (week-prescription.ts) ; rapports de simulation P1 / P3 (écarts dus aux
+ * alternatives par instance).
+ */
+const STRENGTH_S4_CHANGES = [
+  'packages/strength/src/context.ts',
+  'packages/strength/src/model.ts',
+  'packages/strength/src/selection.ts',
+  'packages/strength/tests/unit/s4-continuity-evidence.test.ts',
+  'packages/strength/tests/longitudinal/__reports__/P1.md',
+  'packages/strength/tests/longitudinal/__reports__/P3.md',
+];
 const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/domain/src/duplicate.ts',
   'packages/domain/src/serialization.ts',
@@ -85,6 +99,7 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   ...STRENGTH_S1_CHANGES,
   ...STRENGTH_S2_CHANGES,
   ...STRENGTH_S3_CHANGES,
+  ...STRENGTH_S4_CHANGES,
 ];
 
 describe('frontières', () => {
@@ -113,7 +128,7 @@ describe('frontières', () => {
     }
     const changed = diff.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
     expect(changed.filter((f) => !CT_C2_AUTHORIZED_CORE_CHANGES.includes(f))).toEqual([]);
-    expect(changed.filter((f) => f.startsWith('packages/running/') || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f)))).toEqual([]);
+    expect(changed.filter((f) => f.startsWith('packages/running/') || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f)))).toEqual([]);
   });
 });
 

@@ -19,6 +19,7 @@ import { emptyState, zProfile } from './model.js';
 import type { AppState, Feedback, PersistedWeek, ProfileInput, ProgrammeLog, Rest, SetLog } from './model.js';
 import { closeProgrammeWeekInApp, planProgrammeCurrentWeek, ProgrammeError, recordSessionExecution, startProgramme } from './programme.js';
 import { strengthWeekBoundary } from './progression.js';
+import { compactHistory } from './history.js';
 import { declareRunningPerformance } from './running-profile.js';
 import type { DeclaredPerformance } from './running-profile.js';
 import type { ProgrammeEnvironment } from './programme.js';
@@ -237,6 +238,8 @@ export function ensureBeta0Week(state: AppState, clock: Clock, env: ProgrammeEnv
   const cur = weekIndexOf(ps0, clock.today);
   let s = state;
   for (const w of ps0.weeks) if (!w.closedAt && w.weekIndex < cur) s = closeProgrammeWeekInApp(s, clock, env, w.weekIndex);
+  // S4 — semaines anciennes : audit/debug compacté (déterministe, décisions conservées, perte explicite).
+  s = compactHistory(s);
   const results = s.programmeState?.results ?? [];
   const programmeLogs = Object.fromEntries(Object.entries(s.programmeLogs).filter(([id, l]) => l.finishedAt !== undefined || !results.some((r) => r.requestId === id)));
   s = upgradeLegacyBeta0Programme({ ...s, programmeLogs }, clock);

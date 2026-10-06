@@ -18,7 +18,7 @@ import { buildEnv } from './model.js';
 import type { Env } from './model.js';
 import { firstFailingFilter, maxEffortEligible, slotCandidatesFor } from './candidates.js';
 import type { FilterId } from './candidates.js';
-import { decidingCriterion, rankCandidates } from './selection.js';
+import { decidingCriterion, rankCandidates, rotationReason } from './selection.js';
 import type { Ranked, SessionSoFar } from './selection.js';
 import type { InterferenceAssessment } from './interference.js';
 import { findStimulusSwap, workingSetsOf } from './stimulus-preservation.js';
@@ -52,6 +52,10 @@ interface Pick {
   readonly ranked: readonly Ranked[];
   readonly track?: StrengthTrack;
   readonly substitutedFrom?: string;
+  /** S4 — exercice en place conservé (continuité déclarée) : jamais remplacé par une variante d'alternative. */
+  readonly kept?: boolean;
+  /** S4 — instance de l'emplacement (`slotId#k`) : un emplacement répété est varié instance par instance. */
+  readonly instance: string;
 }
 
 interface Built {
@@ -74,7 +78,7 @@ const workingOf = (sets: readonly SetPrescription[]): number => sets.filter((s) 
 const repsForLoad = (r: RepTarget): number => (typeof r === 'number' ? r : r.max);
 
 /** Sélectionne l'exercice d'un emplacement (ancre, substitution ponctuelle F1–F3, repli F4 encadré). */
-function pickForSlot(slot: SlotInstance, env: Env, soFar: SessionSoFar, usedFamilies: ReadonlySet<string>, technicalCount: number, reasons: ReasonCode[], override?: string): Pick | { blocked: 'context' | 'none' } {
+function pickForSlot(slot: SlotInstance, env: Env, soFar: SessionSoFar, usedFamilies: ReadonlySet<string>, technicalCount: number, reasons: ReasonCode[], override?: string, instance = 0): Pick | { blocked: 'context' | 'none' } {
   const tryNeed = (s: SlotInstance): { ranked: Ranked[]; rejected: Partial<Record<FilterId, number>> } => {
     const r = slotCandidatesFor(s, env, { technicalCount });
     const pool = r.candidates.filter((e) => !usedFamilies.has(e.family));
@@ -122,10 +126,30 @@ function pickForSlot(slot: SlotInstance, env: Env, soFar: SessionSoFar, usedFami
         : strengthReasons.emit('SELECT.SUBSTITUTION_LOW_FIDELITY', { from: anchor.exerciseId, to: best.exercise.id }));
     }
   }
+  // S4 — continuité déclarée : l'exercice en place est conservé s'il reste admissible, sans ancre ni accessoire suivi
+  // différent sur l'emplacement ; sinon le remplacement est tracé avec sa cause (premier filtre éliminatoire, etc.).
+  // Emplacement répété : chaque instance reprend un exercice en place ENCORE LIBRE dans la séance (l'accessoire suivi
+  // d'abord, puis l'ordre de la dernière séance) ; aucun index d'instance n'est imposé.
+  const placed = (id: string) => soFar.chosen.some((c) => c.exercise.id === id);
+  const free = (env.incumbentBySlot.get(slot.def.id) ?? []).filter((x) => !placed(x));
+  const incumbent = tracked && free.includes(tracked.exerciseId) ? tracked.exerciseId : free[0];
+  let kept = false;
+  if (incumbent !== undefined && !override) {
+    const inRanked = ranked.find((r) => r.exercise.id === incumbent);
+    const ie = env.catalog.exercise(incumbent);
+    let cause: string | undefined;
+    if (anchor && anchor.exerciseId !== incumbent && !placed(anchor.exerciseId)) cause = 'declared_anchor';
+    else if (tracked && tracked.exerciseId !== incumbent && !placed(tracked.exerciseId)) cause = 'tracked_exercise';
+    else if (!ie) cause = 'catalog_unknown';
+    else if (!inRanked) cause = usedFamilies.has(ie.family) ? 'family_in_session' : (firstFailingFilter(ie, usedSlot, env, { technicalCount }) ?? 'not_candidate');
+    else { const why = rotationReason(ie, env); if (why) cause = `rotation_reason:${why}`; }
+    if (cause === undefined && inRanked && (!anchor || placed(anchor.exerciseId))) { chosen = inRanked; substitutedFrom = undefined; kept = true; }
+    reasons.push(strengthReasons.emit('SELECT.CONTINUITY', { slot: slot.def.id, incumbent, chosen: chosen.exercise.id, outcome: chosen.exercise.id === incumbent ? 'kept' : 'replaced', cause: chosen.exercise.id === incumbent ? 'admissible' : (cause ?? 'outranked') }));
+  }
   const ordered = [chosen, ...ranked.filter((r) => r !== chosen)];
-  reasons.push(strengthReasons.emit('SELECT.EXERCISE.CHOSEN', { exerciseId: chosen.exercise.id, slot: slot.def.id, decidingCriterion: override ? 'variant' : decidingCriterion(ordered, usedSlot, env) }));
+  reasons.push(strengthReasons.emit('SELECT.EXERCISE.CHOSEN', { exerciseId: chosen.exercise.id, slot: slot.def.id, decidingCriterion: override ? 'variant' : kept && ranked[0] !== chosen ? 'continuity' : decidingCriterion(ordered, usedSlot, env) }));
   const track = anchor?.exerciseId === chosen.exercise.id ? anchor : tracked?.exerciseId === chosen.exercise.id ? tracked : undefined;
-  return { slot: usedSlot, exercise: chosen.exercise, ranked: ordered, ...(track ? { track } : {}), ...(substitutedFrom ? { substitutedFrom } : {}) };
+  return { slot: usedSlot, exercise: chosen.exercise, ranked: ordered, instance: `${slot.def.id}#${String(instance)}`, ...(track ? { track } : {}), ...(substitutedFrom ? { substitutedFrom } : {}), ...(kept ? { kept } : {}) };
 }
 
 /**
@@ -263,8 +287,11 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
   const soFar = (): SessionSoFar => ({ chosen: picks.map((p) => ({ exercise: p.exercise, slotId: p.slot.def.id, blockId: p.slot.def.blockId })) });
   const blocking: { slotId: string; need: string }[] = [];
   let contextBlocked = false;
+  const attempts = new Map<string, number>();
   const add = (slot: SlotInstance, required: boolean): boolean => {
-    const r = pickForSlot(slot, env, soFar(), families, techCount(), reasons, overrides.get(slot.def.id));
+    const k = attempts.get(slot.def.id) ?? 0;
+    attempts.set(slot.def.id, k + 1);
+    const r = pickForSlot(slot, env, soFar(), families, techCount(), reasons, overrides.get(`${slot.def.id}#${String(k)}`), k);
     if ('blocked' in r) {
       if (required) { blocking.push({ slotId: slot.def.id, need: slot.def.need }); contextBlocked ||= r.blocked === 'context'; }
       else reasons.push(strengthReasons.emit('SELECT.SLOT_OMITTED', { slot: slot.def.id, cause: r.blocked === 'context' ? 'context' : 'no_candidate' }));
@@ -446,7 +473,7 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
         picks.splice(picks.indexOf(v), 1);
         families.delete(v.exercise.family);
         local = [];
-        const r = pickForSlot(failed, env, soFar(), families, techCount(), local);
+        const r = pickForSlot(failed, env, soFar(), families, techCount(), local, undefined, picks.filter((x) => x.slot.def.id === failed.def.id).length);
         if ('blocked' in r) return 'blocked';
         picks.push(r);
         families.add(r.exercise.family);
@@ -494,7 +521,12 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
       if (t && total < t.floor && (planned[g] ?? 0) > 0) reasons.push(strengthReasons.emit('PLAN.VOLUME_IMBALANCE_WEEK', { group: g, planned: total, floor: t.floor }));
     }
   }
-  return { session: final.session, picks: final.picks, reasons: [...reasons, ...trace], p50: final.p50, markers: final.markers, volumeByItem: final.volumeByItem, anchorsUsed: final.anchorsUsed, slotIds: [...slots.required, ...slots.optional].map((s) => s.def.id) };
+  // S4 — continuité : chaque REMPLACEMENT garde sa raison (emplacement, cause) ; les exercices conservés des picks
+  // RETENUS sont résumés en une raison par séance (même information, sans recopie par emplacement).
+  const kept = final.picks.filter((p) => p.kept).map((p) => `${p.instance}=${p.exercise.id}`);
+  const decisions = reasons.filter((r) => !(r.code === 'SELECT.CONTINUITY' && r.params.outcome === 'kept'));
+  if (kept.length > 0) decisions.push(strengthReasons.emit('SELECT.CONTINUITY_KEPT', { exercises: kept }));
+  return { session: final.session, picks: final.picks, reasons: [...decisions, ...trace], p50: final.p50, markers: final.markers, volumeByItem: final.volumeByItem, anchorsUsed: final.anchorsUsed, slotIds: [...slots.required, ...slots.optional].map((s) => s.def.id) };
 }
 
 /**
@@ -534,7 +566,8 @@ function optimization(b: Built, env: Env, input: Input): SportEngineProposalInpu
   const liked = ex.filter((x) => prefs.liked.includes(x)).length;
   const disliked = ex.filter((x) => prefs.disliked.includes(x)).length;
   const lastFamilies = new Set(input.history.flatMap((h) => h.fingerprint.families));
-  const nonAnchor = b.picks.filter((p) => !p.track);
+  // S4 : la « variété » B6 ne porte que sur les exercices libres (ni suivis, ni conservés par continuité déclarée).
+  const nonAnchor = b.picks.filter((p) => !p.track && !p.kept);
   return {
     B1: needs.length === 0 ? 0 : needs.filter((n) => covered.has(n)).length / needs.length,
     B2: declaredAnchors === 0 ? 1 : b.anchorsUsed.length / declaredAnchors,
@@ -589,18 +622,27 @@ export function proposeStrength(input: Input): ProposeResult {
   const inter = loweredStructures(input, params);
   // Version du registre scientifique (provenance) : tracée dans chaque séance, avec la version du ruleset.
   const registry = params['strength.science.registryVersion'];
-  const lr = [...(registry !== undefined ? [strengthReasons.emit('DATA.SCIENCE_REGISTRY', { version: registry })] : []), ...inter.reasons];
+  // S4 — priorité déclarée des sports du programme : transportée et TRACÉE ; aucune politique d'interférence ne la lit
+  // (capacité `priority_interference_policy` BLOQUÉE) — la matrice d'interférence n'en dépend pas.
+  const sp = input.discipline.sportPriority;
+  const priority = sp ? [strengthReasons.emit('PLAN.SPORT_PRIORITY', {
+    order: [...sp.order], strengthRank: sp.order.indexOf('strength') + 1,
+    neighbours: [...new Set(input.discipline.week.neighbors.map((n) => n.discipline))].sort().map((d) => `${d}:${sp.order.indexOf(d) + 1}`),
+    policy: 'blocked:priority_interference_policy',
+  })] : [];
+  const lr = [...(registry !== undefined ? [strengthReasons.emit('DATA.SCIENCE_REGISTRY', { version: registry })] : []), ...priority, ...inter.reasons];
   const env = buildEnv(input, params, archetype, goal, gk, inter.lowered, SeededRng.fromSeed(input.context.seed), inter.rirOnly);
   try {
     const main = build(env, input, new Map());
     const out = [proposal({ ...main, reasons: [...lr, ...main.reasons, ...interferenceSignals(main, env, inter.signals)] }, env, input, loaded, 0)];
     // Alternatives : même séance, seul un emplacement NON ancré change d'exercice (sa première alternative).
-    const variable = main.picks.filter((p) => !p.track && p.slot.def.role === 'accessory' && p.ranked.length > 1);
+    // S4 : un exercice en place conservé (continuité déclarée) n'est jamais varié par une alternative.
+    const variable = main.picks.filter((p) => !p.track && !p.kept && p.slot.def.role === 'accessory' && p.ranked.length > 1);
     for (const p of variable.slice(0, params['strength.proposals.max'] - 1)) {
       const alt = p.ranked[1]?.exercise.id;
       if (!alt) continue;
       try {
-        const b = build(env, input, new Map([[p.slot.def.id, alt]]));
+        const b = build(env, input, new Map([[p.instance, alt]]));
         out.push(proposal({ ...b, reasons: [...lr, ...b.reasons, ...interferenceSignals(b, env, inter.signals)] }, env, input, loaded, out.length));
       } catch (e) {
         if (!(e instanceof NoProposal)) throw e; // une alternative infaisable est simplement omise

@@ -14,7 +14,7 @@
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord, SetPrescription } from '@hybridsport/domain';
 import { goalKey, readStrengthParams, sessionPlannedHardSets } from '@hybridsport/strength';
-import { closeProgrammeWeekInApp, ensureBeta0Week, exerciseLabel, recordSessionExecution, strengthContent } from '../../src/index.js';
+import { closeProgrammeWeekInApp, ensureBeta0Week, exerciseLabel, recordSessionExecution, strengthContent, strengthWeekVolume } from '../../src/index.js';
 import type { AppState, PersistedWeek, SessionExecutionInput, SetLog } from '../../src/index.js';
 import { clock } from '../fixtures.js';
 
@@ -153,13 +153,15 @@ function progressionCell(e: Executed | undefined, trackId: string | undefined, e
   const tid = trackId ?? (created?.params.trackId as string | undefined);
   const mine = e.audit.filter((a) => a.params.trackId === tid && tid !== undefined);
   const parts = mine.map((a) => {
-    if (a.code === 'PROGRESSION.EXPOSURE_CLASSIFIED') return `exposition ${a.params.exposure}`;
+    if (a.code === 'PROGRESSION.EXPOSURE_CLASSIFIED') return `exposition ${String(a.params.exposure)}${a.params.success === 'exact' ? ' (réussite exacte)' : a.params.success === 'exceeded' ? ' (dépassée)' : ''}`;
     if (a.code === 'PROGRESSION.ADVANCED') return `**progression ${a.params.variable === 'load' ? 'charge' : a.params.variable === 'reps' ? 'répétitions' : String(a.params.variable)}**`;
     if (a.code === 'PROGRESSION.HELD') return `maintien (${a.params.cause})`;
     if (a.code === 'PROGRESSION.REGRESSED') return '**régression**';
     if (a.code === 'PROGRESSION.SUSPENDED') return `suspendue (${a.params.cause})`;
     if (a.code === 'PROGRESSION.TRACK_CREATED') return `track ${a.params.tier === 'anchor' ? 'd’ancre' : 'suivie'} créée`;
     if (a.code === 'PROGRESSION.CAP_REACHED') return 'plafond atteint';
+    if (a.code === 'PROGRESSION.DECISION_BLOCKED') return 'réussite exacte : hausse non gouvernée (BLOCKED)';
+    if (a.code === 'PROGRESSION.METHOD_UNGOVERNED') return 'haut de plage au poids du corps : méthode non gouvernée (BLOCKED)';
     return a.code;
   });
   return parts.length > 0 ? parts.join(' ; ') : 'aucune track (accessoire non suivi)';
@@ -174,8 +176,9 @@ export function report(run: { final: AppState; weeks: WeekRun[] }, o: ReportOpti
   if (!prof) throw new Error('profil absent');
   const range = params['strength.volume'].weeklyRange[goalKey({ goal: prof.strength.goal } as never)]?.[prof.level] ?? {};
   const out: string[] = [`# ${o.title}`, '', ...o.intro, ''];
-  // Dernier exercice vu dans chaque emplacement de chaque archétype (séances antérieures, toutes semaines confondues).
-  const lastInSlot = new Map<string, string>();
+  // Exercices de chaque emplacement de chaque archétype lors de la DERNIÈRE séance de cet archétype (toutes semaines
+  // confondues) ; un emplacement répété est comparé comme un ensemble (l'ordre des instances n'est pas un changement).
+  const lastInSlot = new Map<string, readonly string[]>();
   for (const [w, wk] of run.weeks.entries()) {
     out.push(`## Semaine ${w + 1} — ${wk.weekStart}`, '');
     if (wk.boundary.length > 0) out.push(`Frontière de semaine (ProgressionEngine) : ${wk.boundary.map((b) => `${b.code}(${Object.values(b.params).join(', ')})`).join(' ; ')}`, '');
@@ -214,26 +217,59 @@ export function report(run: { final: AppState; weeks: WeekRun[] }, o: ReportOpti
         const slot = it.refs?.slotId ?? it.id;
         const chosen = reasonOf(r, 'SELECT.EXERCISE.CHOSEN', (x) => x.slot === slot)[0]?.params.decidingCriterion;
         const before = lastInSlot.get(`${arch}|${slot}`);
-        lastInSlot.set(`${arch}|${slot}`, it.exerciseId);
+        const nowIds = mainItems(rec.session).filter((x) => (x.refs?.slotId ?? x.id) === slot).map((x) => x.exerciseId);
+        const gone = (before ?? []).filter((x) => !nowIds.includes(x));
         const status = before === undefined ? 'première exposition de l’emplacement'
-          : before === it.exerciseId ? 'conservé'
-          : `**changé** (était ${exerciseLabel(before)} ; critère : ${String(chosen ?? '—')})`;
+          : before.includes(it.exerciseId) ? 'conservé'
+          : gone.length === 0 ? `ajouté (instance supplémentaire de l’emplacement ; critère : ${String(chosen ?? '—')})` : `**changé** (était ${gone.map((x) => exerciseLabel(x)).join(', ')} ; critère : ${String(chosen ?? '—')})`;
         const anchor = it.refs?.anchor === 'declared' ? ' ⚓' : '';
         const dose = it.prescription.type === 'sets' ? `${sets.length} × ${first ? fmtReps(first.reps) : '—'}` : it.prescription.type;
         out.push(`| ${r.date} | ${arch} #${n} | ${exerciseLabel(it.exerciseId)}${anchor} | ${dose} | ${first ? rirOf(first) ?? '—' : '—'} | ${fmtLoad(first)} | ${SOURCE[it.refs?.prescriptionSource ?? ''] ?? it.refs?.prescriptionSource ?? '—'} | ${status} | ${progressionCell(exec, it.refs?.progressionTrackId, it.exerciseId)} |`);
       }
+      for (const it of mainItems(rec.session)) {
+        const slot = it.refs?.slotId ?? it.id;
+        lastInSlot.set(`${arch}|${slot}`, mainItems(rec.session).filter((x) => (x.refs?.slotId ?? x.id) === slot).map((x) => x.exerciseId));
+      }
     }
     out.push('', 'Séances Strength :', '', ...notes, '');
     const groups = Object.keys(params['strength.volume'].muscleGroups).sort();
-    out.push('| Groupe | Plancher | Haut | Prévu (séries dures E1) | Réalisé |', '|---|---|---|---|---|');
+    // S4 — bilan de volume du moteur Strength (cible du ruleset, prévu, statut, contraintes de la semaine).
+    const vol = strengthWeekVolume(wk.before, wk.weekStart);
+    const statusOf = new Map((vol?.groups ?? []).map((g) => [g.group, g.status]));
+    out.push('| Groupe | Cible (plancher) | Haut | Prévu (séries dures E1) | Réalisé | Statut |', '|---|---|---|---|---|---|');
     for (const g of groups) {
       const pl = planned[g] ?? 0;
       const re = realized[g] ?? 0;
       if (pl === 0 && range[g] === undefined) continue;
-      out.push(`| ${g} | ${range[g]?.floor ?? '—'} | ${range[g]?.high ?? '—'} | ${round(pl)} | ${round(re)} |`);
+      out.push(`| ${g} | ${range[g]?.floor ?? '—'} | ${range[g]?.high ?? '—'} | ${round(pl)} | ${round(re)} | ${statusOf.get(g) ?? '—'} |`);
     }
+    if (vol) out.push('', `Objectif de volume de la semaine : **${vol.status}** (${String(vol.plannedSessions)}/${String(vol.requestedSessions)} séances). Contraintes tracées : ${vol.constraints.map((c) => `${c.cause} (${c.detail})`).join(' ; ') || 'aucune'}.`);
+    const prio = wk.week.requests.flatMap((r) => r.reasons).find((x) => x.code === 'PLAN.SPORT_PRIORITY')?.params;
+    if (prio) out.push('', `Priorité déclarée (programme) : ${(prio.order as string[]).join(' > ')} ; reçue par Strength : rang ${String(prio.strengthRank)} ; voisines : ${(prio.neighbours as string[]).join(', ') || 'aucune'} ; politique : ${String(prio.policy)}.`);
+    const blocked = wk.executed.flatMap((e) => e.audit).filter((a) => a.code === 'PROGRESSION.DECISION_BLOCKED' || a.code === 'PROGRESSION.METHOD_UNGOVERNED');
+    if (blocked.length > 0) out.push('', `Décisions bloquées (après réalisation) : ${[...new Map(blocked.map((b) => [`${b.code}|${String(b.params.trackId)}`, b])).values()].map((b) => `${b.code === 'PROGRESSION.METHOD_UNGOVERNED' ? `poids du corps en haut de plage (${exerciseLabel(String(b.params.exerciseId))}) : méthodes possibles ${(b.params.methods as string[]).join(', ')}, aucune gouvernée` : `réussite exacte sans marge (${String(b.params.model)}, RIR ${String(b.params.rir)}) : hausse non gouvernée`}`).join(' ; ')}.`);
     out.push('');
   }
+  out.push(...summary(run));
   return `${out.join('\n')}\n`;
+}
+
+/** S4 — récapitulatif chiffré (stabilité, progression, décisions bloquées, taille de l'état persisté). */
+function summary(run: { final: AppState; weeks: WeekRun[] }): string[] {
+  const audit = run.weeks.flatMap((w) => w.executed.flatMap((e) => e.audit));
+  const count = (code: string, pred: (p: Record<string, unknown>) => boolean = () => true) => audit.filter((a) => a.code === code && pred(a.params)).length;
+  const weekReasons = run.weeks.flatMap((w) => w.week.requests.flatMap((r) => r.reasons));
+  const keptN = weekReasons.filter((x) => x.code === 'SELECT.CONTINUITY_KEPT').reduce((a, x) => a + (x.params.exercises as string[]).length, 0);
+  const replaced = weekReasons.filter((x) => x.code === 'SELECT.CONTINUITY' && x.params.outcome === 'replaced');
+  const causes = [...replaced.reduce((m, x) => m.set(String(x.params.cause), (m.get(String(x.params.cause)) ?? 0) + 1), new Map<string, number>())].sort().map(([c, n]) => `${c} ×${String(n)}`);
+  return [
+    '## Récapitulatif', '',
+    `- Continuité : ${String(keptN)} exercices en place conservés par la continuité déclarée (hors ancres déclarées), ${String(replaced.length)} remplacés (${causes.join(', ') || '—'}).`,
+    `- Progression : répétitions ×${String(count('PROGRESSION.ADVANCED', (p) => p.variable === 'reps'))}, charge ×${String(count('PROGRESSION.ADVANCED', (p) => p.variable === 'load'))}, maintiens ×${String(count('PROGRESSION.HELD'))}, régressions ×${String(count('PROGRESSION.REGRESSED'))}.`,
+    `- Preuves : réussites exactes ×${String(count('PROGRESSION.EXPOSURE_CLASSIFIED', (p) => p.success === 'exact'))}, dépassements ×${String(count('PROGRESSION.EXPOSURE_CLASSIFIED', (p) => p.success === 'exceeded'))}, sans preuve ×${String(count('PROGRESSION.EXPOSURE_CLASSIFIED', (p) => p.success === 'none'))}.`,
+    `- Décisions bloquées : réussite exacte ×${String(count('PROGRESSION.DECISION_BLOCKED'))}, poids du corps ×${String(count('PROGRESSION.METHOD_UNGOVERNED'))}.`,
+    `- État persisté (JSON compact, saveState) après ${String(run.weeks.length)} semaines : ${String(Math.round(JSON.stringify(run.final).length / 1024))} Ko.`,
+    '',
+  ];
 }
 const round = (x: number): string => `${Math.round(x * 10) / 10}`;

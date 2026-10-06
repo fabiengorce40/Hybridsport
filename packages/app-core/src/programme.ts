@@ -18,6 +18,9 @@ import { appPlannerEnvironment, assertEnvironment, buildPorts, clockOf, persistW
 import type { EngineGoals, PlannerEnvironment } from './planning.js';
 import { applyStrengthExecutionTraced, realizedRunFrom, testReferenceFrom } from './progression.js';
 import { realizeCrossTrainingC2, realizeHyroxStation } from '@hybridsport/planner';
+import { assessStrengthWeekVolume, readStrengthParams } from '@hybridsport/strength';
+import type { StrengthGoalRef, WeekVolumeAssessment } from '@hybridsport/strength';
+import { strengthContent } from './provisional-content.js';
 
 /** Erreur applicative portant les raisons structurées (jamais « échec » sans cause). */
 export class ProgrammeError extends AppError {
@@ -81,7 +84,40 @@ export function planProgrammeCurrentWeek(state: AppState, clock: Clock, env: Pro
   if (!r.ok) throw new ProgrammeError('PROGRAMME_WEEK_NOT_PLANNABLE', r.reasons);
   // Écriture par la passerelle unique : jamais de remplacement d'une semaine commencée ou clôturée (refus, état inchangé).
   const written = writePlannedWeek(state, persistWeek(r.value.week, normalizeInstant(clock.now), ps.definition.origin, env), 'programme');
-  return { ...written, programmeState: r.value.state };
+  const planned: AppState = { ...written, programmeState: r.value.state };
+  // S4 — bilan de volume Strength de la semaine planifiée (cible / prévu / contraintes), audité une fois par semaine.
+  const v = strengthWeekVolume(planned, weekStart);
+  // technical-constant: affichage au dixième de série (E1 pondéré)
+  const TENTH = 10;
+  if (!v || !planned.programmeState) return planned;
+  const reason = { code: 'KAIRO.STRENGTH_WEEK_VOLUME', params: {
+    status: v.status, sessions: `${String(v.plannedSessions)}/${String(v.requestedSessions)}`,
+    belowTarget: v.groups.filter((g) => g.status === 'reduced_by_constraint' || g.status === 'unmet').map((g) => `${g.group}:${String(Math.round(g.planned * TENTH) / TENTH)}/${String(g.target)}:${g.status}`),
+    constraints: v.constraints.map((c) => `${c.cause}:${c.detail}`),
+  } };
+  return { ...planned, programmeState: { ...planned.programmeState, audit: [...planned.programmeState.audit, { at: normalizeInstant(clock.now), weekIndex: i, reason }] } };
+}
+
+/**
+ * S4 — Bilan de volume Strength d'une semaine PERSISTÉE (séances planifiées, raisons persistées, demandes non
+ * planifiées), par la fonction du moteur Strength. Null si la semaine ne demande pas de Strength.
+ */
+export function strengthWeekVolume(state: AppState, weekStart: string): WeekVolumeAssessment | null {
+  const w = state.planner.weeks[weekStart];
+  const p = state.profile;
+  if (!w || !p) return null;
+  const reqs = w.requests.filter((r) => r.sport === 'strength');
+  if (reqs.length === 0) return null;
+  const sessions = reqs.flatMap((r) => {
+    const d = r.status === 'planned' && r.record ? migrateToCurrent<SessionRecord>(r.record) : undefined;
+    return d?.ok ? [{ session: d.value.session, reasons: r.reasons }] : [];
+  });
+  const goal = state.programmeState?.definition.goals.find((g) => g.sport === 'strength')?.goal ?? p.strength.goal;
+  const content = strengthContent();
+  return assessStrengthWeekVolume({
+    params: readStrengthParams(content.ruleset).values, catalog: content.catalog, goal: { goal } as StrengthGoalRef, level: p.level,
+    requestedSessions: reqs.length, sessions, notPlanned: reqs.filter((r) => r.status !== 'planned').map((r) => ({ category: r.category })),
+  });
 }
 
 /**

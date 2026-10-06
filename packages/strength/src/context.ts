@@ -102,6 +102,19 @@ export const zStrengthContext = z.object({
   equipmentIncrements: z.record(id, z.object({ stepKg: z.number().positive(), maxKg: z.number().positive().optional() }).strict()).optional(),
   /** Salle / profil de matériel courant (D-S6) : une référence de machine n'est valable que dans son contexte. */
   currentContextKey: id.optional(),
+  /**
+   * Strength S4 — politique de CONTINUITÉ déclarée par le programme (décision produit, jamais une valeur sportive) :
+   * `keep_incumbent` ⇒ l'exercice EN PLACE d'un emplacement (dernière exposition réalisée de cet emplacement) est
+   * conservé tant qu'il reste admissible (filtres F1–F10), que l'emplacement n'a ni ancre déclarée ni accessoire suivi
+   * différent et qu'aucune raison de rotation du ruleset (non aimé, stagnation) ne s'applique. Absente : comportement
+   * antérieur (classement seul).
+   */
+  continuity: z.enum(['keep_incumbent']).optional(),
+  /**
+   * Strength S4 — priorité DÉCLARÉE des sports du programme (ordre), transportée par le planificateur sans
+   * interprétation. Tracée par le moteur ; aucune politique d'interférence ne la lit (capacité BLOQUÉE).
+   */
+  sportPriority: z.object({ order: z.array(z.enum(DISCIPLINES)).min(1) }).strict().optional(),
 }).strict();
 export type StrengthContext = z.infer<typeof zStrengthContext>;
 export type StrengthContextInput = z.input<typeof zStrengthContext>;

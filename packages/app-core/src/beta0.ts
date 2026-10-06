@@ -66,8 +66,9 @@ const simulationMark = { justification: SIMULATION_ONLY };
  * antérieure est alors régénérée de façon sûre ; une semaine commencée est conservée telle quelle (beta0-app.ts).
  * `beta0-s1` : composition hebdomadaire Strength par le moteur (S1). Absente : antérieure à S1.
  * `beta0-s3` : Strength longitudinal (S3) — graine Strength stable, ancres déclarées, prescription hebdomadaire tracée.
+ * `beta0-s4` : continuité des exercices déclarée, priorité des sports transportée, bilan de volume, traces allégées.
  */
-export const BETA0_PLANNING_VERSION = 'beta0-s3';
+export const BETA0_PLANNING_VERSION = 'beta0-s4';
 
 /**
  * Environnement Beta 0 EXPÉRIMENTAL : Strength et Running seulement (CT / HYROX non raccordés), mode CANDIDATE.

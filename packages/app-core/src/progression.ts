@@ -6,7 +6,7 @@
  * Running : la séance réalisée est ajoutée à l'historique déclaré ; l'ancre V19 du moteur en tient compte.
  */
 import type { FingerprintHistoryEntry, ISODateTime, ReasonCode, SessionDraft, SetPrescription } from '@hybridsport/domain';
-import { anchorReviewDue, classifyExposure, closeTrack, closureCause, createTrack, declarableAnchors, exerciseStillAdmissible, progressionModelFor, readStrengthParams, resumeTrack, strengthReasons, updateTrack } from '@hybridsport/strength';
+import { anchorReviewDue, classifyExposure, closeTrack, closureCause, createTrack, declarableAnchors, exerciseStillAdmissible, exposureEvidence, progressionModelFor, readStrengthParams, resumeTrack, strengthReasons, updateTrack } from '@hybridsport/strength';
 import type { ExecutedItem, PerformedSet, SlotRole, StrengthTrack } from '@hybridsport/strength';
 import { archetypeFromIntentId, isV1Archetype } from '@hybridsport/running';
 import type { RealizedSession, RealizedStructure, RunningReference, RunningSessionArchetype } from '@hybridsport/running';
@@ -96,7 +96,13 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
     const known = trackId ? tracks.get(trackId) : undefined;
     const update = (t: StrengthTrack, cls: ReturnType<typeof classifyExposure>) => {
       const u = updateTrack(t, exec, cls, e, params, 'accumulation');
-      reasons.push(strengthReasons.emit('PROGRESSION.EXPOSURE_CLASSIFIED', { trackId: t.trackId, exerciseId: e.id, exposure: cls }), ...u.reasons);
+      // S4 — preuve complète de l'exposition (prescrit / réalisé), indépendante de la décision du modèle.
+      const ev = exposureEvidence(exec, cls);
+      const signed = (v: number | null) => (v === null ? 'n/a' : v > 0 ? `+${String(v)}` : String(v));
+      reasons.push(strengthReasons.emit('PROGRESSION.EXPOSURE_CLASSIFIED', {
+        trackId: t.trackId, exerciseId: e.id, exposure: cls, success: ev.success, sets: `${String(ev.sets.performed)}/${String(ev.sets.prescribed)}`,
+        repsDelta: signed(ev.repsDelta), loadDeltaKg: signed(ev.loadDeltaKg), rirDelta: signed(ev.rirDelta), rir: ev.rir,
+      }), ...u.reasons);
       tracks.set(t.trackId, u.track);
     };
     if (known) {
@@ -151,7 +157,9 @@ export function strengthWeekBoundary(state: AppState, at: ISODateTime, o: { read
     const stagnant = t.consecutiveHolds >= params['strength.progression'].stagnationHolds;
     const cause = closureCause(t, { now: at, mesocycleEnded: false, stagnant, inadmissible, level: p.level }, params);
     if (cause) { const c = closeTrack(t, cause); reasons.push(...c.reasons); return c.track; }
-    if (t.tier === 'anchor') reasons.push(...anchorReviewDue(t, { now: at, level: p.level }, params).reasons);
+    // Revue d'ancre : signalée UNE fois par track (S4 — le même signal n'est pas recopié chaque semaine).
+    const signalled = (state.programmeState?.audit ?? []).some((a) => a.reason.code === 'PROGRESSION.REVIEW_DUE' && a.reason.params.trackId === t.trackId);
+    if (t.tier === 'anchor' && !signalled) reasons.push(...anchorReviewDue(t, { now: at, level: p.level }, params).reasons);
     return t;
   });
   return { strength: { ...state.strength, tracks }, reasons };

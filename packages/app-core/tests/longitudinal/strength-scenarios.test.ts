@@ -1,5 +1,5 @@
 /**
- * Strength S3 — scénarios longitudinaux de 4 semaines par le chemin réel de l'application (aucune séance injectée) :
+ * Strength — scénarios longitudinaux de 4 semaines par le chemin réel de l'application (aucune séance injectée) :
  * A. Strength seul : hypertrophie, 4 séances / semaine, intermédiaire, salle complète ;
  * B. Strength + Running, priorité explicite (Strength puis Running), planificateur et moteur Running réels.
  * Rapports coach régénérés dans `__reports__/` (toMatchFileSnapshot) ; saisies de réalisation TEST_ONLY (s3-scenario.ts).
@@ -68,7 +68,7 @@ function invariants(run: Run) {
   for (const [id, kgs] of loadsOf) if (!regressed.includes(id)) expect([id, kgs]).toEqual([id, [...kgs].sort((a, b) => a - b)]);
 }
 
-describe('Strength S3 — scénario A : Strength seul, 4 semaines', () => {
+describe('Strength — scénario A : Strength seul, 4 semaines', () => {
   const run = drive(strengthOnly(), W, (w, _r, k) => (w === 2 && k === 3 ? 'last_set_missed' : 'as_prescribed'));
 
   it('composition : 2 Haut du corps + 2 Bas du corps chaque semaine (règle candidate S1, inchangée)', () => {
@@ -94,18 +94,18 @@ describe('Strength S3 — scénario A : Strength seul, 4 semaines', () => {
 
   it('rapport coach (4 semaines)', async () => {
     await expect(report(run, {
-      title: 'Strength S3 — Scénario A : Strength seul, hypertrophie, 4 séances / semaine, intermédiaire, salle complète',
+      title: 'Strength (S4) — Scénario A : Strength seul, hypertrophie, 4 séances / semaine, intermédiaire, salle complète',
       intro: [
         'Chemin réel : createBeta0Programme → ensureBeta0Week → Global Planner → StrengthEngine → recordSessionExecution → closeProgrammeWeekInApp.',
         'Réalisations TEST_ONLY : comme prescrit (répétitions = borne haute, charge prescrite, RIR cible) ; charge de première exposition 40 kg (TEST_ONLY) ;',
         'semaine 3, 4e séance : dernière série du premier exercice non réalisée (séance « modifiée »). ⚓ = ancre déclarée (exercice maintenu, progression appliquée).',
         'Colonne « Exercice » : comparaison avec la dernière séance du même archétype ayant le même emplacement ; « critère » = critère décisif du moteur.',
       ],
-    })).toMatchFileSnapshot('__reports__/strength-s3-scenario-a.md');
+    })).toMatchFileSnapshot('__reports__/strength-scenario-a.md');
   });
 });
 
-describe('Strength S3 — scénario B : Strength + Running (priorité Strength puis Running), 4 semaines', () => {
+describe('Strength — scénario B : Strength + Running (priorité Strength puis Running), 4 semaines', () => {
   const run = drive(hybrid(), W);
 
   it('planificateur et moteurs réels : Strength et Running planifiés chaque semaine, aucune séance injectée', () => {
@@ -127,11 +127,11 @@ describe('Strength S3 — scénario B : Strength + Running (priorité Strength p
 
   it('rapport coach (4 semaines)', async () => {
     await expect(report(run, {
-      title: 'Strength S3 — Scénario B : Strength (3 / semaine, hypertrophie) + Running (3 / semaine, semi-marathon), priorité Strength',
+      title: 'Strength (S4) — Scénario B : Strength (3 / semaine, hypertrophie) + Running (3 / semaine, semi-marathon), priorité Strength',
       intro: [
         'Chemin réel : createBeta0Programme (dernière course déclarée TEST_ONLY) → ensureBeta0Week → Global Planner (deux passes, voisines) → StrengthEngine + RunningEngine.',
         'Réalisations TEST_ONLY : Strength comme prescrit ; Running durée prescrite, 6 000 m. ⚓ = ancre déclarée.',
       ],
-    })).toMatchFileSnapshot('__reports__/strength-s3-scenario-b.md');
+    })).toMatchFileSnapshot('__reports__/strength-scenario-b.md');
   });
 });

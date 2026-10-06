@@ -73,7 +73,8 @@ describe('semaine planifiée par une version antérieure', () => {
     const s = ensureBeta0Week(preS1(), clock(MON));
     expect(strengthDays(s, MON)).toEqual([['2026-10-05', 'str_upper'], ['2026-10-07', 'str_lower'], ['2026-10-08', 'str_upper'], ['2026-10-09', 'str_lower']]);
     expect(s.planner.weeks[MON]?.planningVersion).toBe(BETA0_PLANNING_VERSION);
-    expect(audit(s)).toEqual(['KAIRO.PROGRAMME_STRENGTH_INTENT_UPGRADED', 'KAIRO.WEEK_REPLANNED_STALE']);
+    // S4 : le bilan de volume Strength de la semaine replanifiée est audité (KAIRO.STRENGTH_WEEK_VOLUME).
+    expect(audit(s)).toEqual(['KAIRO.PROGRAMME_STRENGTH_INTENT_UPGRADED', 'KAIRO.STRENGTH_WEEK_VOLUME', 'KAIRO.WEEK_REPLANNED_STALE']);
     const v = selectBeta0Week(s, MON);
     expect(v?.planning).toMatchObject({ status: 'current', replannedAt: '2026-10-05T07:30:00Z' });
     expect(v?.sessions.filter((x) => x.sport === 'strength').every((x) => x.compositionAuthority === 'provisional' && x.compositionRule === 'strength.rules.weeklyComposition@0.1.0-candidate' && x.dataError === null)).toBe(true);

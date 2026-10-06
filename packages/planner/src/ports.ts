@@ -48,6 +48,8 @@ export interface SlotRequest {
   readonly weekSessions?: readonly WeekSession[];
   /** Nombre de séances de ce sport déclarées pour la semaine (intention du programme), pour la trace du moteur. */
   readonly sportSessions?: number;
+  /** S4 — ordre de priorité DÉCLARÉ des sports du programme (transporté, jamais interprété par le planificateur). */
+  readonly sportPriority?: readonly PlannerSport[];
 }
 
 /** Séance de la même discipline placée plus tôt dans la semaine (exposition PRÉVUE). */
@@ -237,13 +239,20 @@ const resolve = <T>(c: Ctx<T>, slot: SlotRequest): T => (typeof c === 'function'
  *   `planned` dans l'historique) ; composition hebdomadaire : celle du MOTEUR Strength (`composeStrengthWeek`) ;
  * - Running, Cross-training, HYROX : `population.hybrid` transmis tel quel ; HYROX : station du programme.
  */
-/** Décisions Strength persistées avec la séance (audit longitudinal) : choix d'exercices, progression, dose, plan. */
-const STRENGTH_PERSISTED_DECISIONS = /^(SELECT\.(EXERCISE\.CHOSEN|CHOICE_GROUP|SLOT_OMITTED|SUBSTITUTION|PATTERN_FALLBACK)|PROGRESSION\.|DOSE\.(VOLUME_ALLOCATED|LOAD\.)|PLAN\.(STRUCTURE_LOWERED|INTERFERENCE_ASSESSED|VOLUME_IMBALANCE_WEEK|ANCHOR))/;
+/**
+ * Décisions Strength persistées avec la séance (audit longitudinal) : choix d'exercices et continuité, progression,
+ * provenance de charge, interférence, priorité. S4 : rien de RECALCULABLE depuis la séance elle-même n'est recopié
+ * (`DOSE.VOLUME_ALLOCATED` = séries de l'item, `PROGRESSION.ANCHOR_APPLIED` = `refs.anchor` / `refs.progressionTrackId`).
+ */
+const STRENGTH_PERSISTED_DECISIONS = /^(SELECT\.(EXERCISE\.CHOSEN|CHOICE_GROUP|CONTINUITY|CONTINUITY_KEPT|SLOT_OMITTED|SUBSTITUTION|PATTERN_FALLBACK|STIMULUS_PRESERVED)|PROGRESSION\.(?!ANCHOR_APPLIED$)|DOSE\.LOAD\.|PLAN\.(STRUCTURE_LOWERED|INTERFERENCE_ASSESSED|VOLUME_IMBALANCE_WEEK|ANCHOR|SPORT_PRIORITY))/;
 
 export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] } }): SportPort {
   const params = () => readStrengthParams(def.content.ruleset).values;
   const context = (slot: SlotRequest): StrengthContextInput => {
-    const base = resolve(def.baseContext, slot);
+    const resolved = resolve(def.baseContext, slot);
+    // S4 — priorité déclarée des sports, au vocabulaire du contrat Strength (sports sans discipline Strength ignorés).
+    const order = (slot.sportPriority ?? []).filter((x): x is 'strength' | 'running' | 'crosstraining' => x === 'strength' || x === 'running' || x === 'crosstraining');
+    const base: StrengthContextInput = order.length > 0 ? { ...resolved, sportPriority: { order } } : resolved;
     const earlier = slot.weekSessions ?? [];
     const withWeek: StrengthContextInput = earlier.length === 0 ? base : {
       ...base,

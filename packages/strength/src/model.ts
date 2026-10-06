@@ -25,6 +25,11 @@ export interface Env {
   /** Tracks ACTIVES de cet archétype, par emplacement : ancres déclarées par l'intention, et accessoires suivis. */
   readonly anchorBySlot: ReadonlyMap<string, StrengthTrack>;
   readonly trackedBySlot: ReadonlyMap<string, StrengthTrack>;
+  /**
+   * S4 — exercices EN PLACE par emplacement (dernière séance réalisée de l'emplacement, une entrée par instance, dans
+   * l'ordre de la séance), si la continuité est déclarée.
+   */
+  readonly incumbentBySlot: ReadonlyMap<string, readonly string[]>;
   readonly rng: SeededRng;
   structuresOf(e: Exercise): Readonly<Record<string, number>>;
   /** Jours depuis la dernière exposition d'une famille (historique d'exécutions et d'empreintes). */
@@ -47,13 +52,23 @@ export function buildEnv(input: SportEngineInput<StrengthContext>, params: Stren
   const active = ctx.tracks.filter((t) => t.status === 'active' && t.archetypeId === archetype.id);
   const anchorBySlot = new Map(active.filter((t) => t.tier === 'anchor' && declaredAnchors.has(t.trackId)).map((t) => [t.slotId, t]));
   const trackedBySlot = new Map(active.filter((t) => t.tier === 'tracked').map((t) => [t.slotId, t]));
+  const incumbentBySlot = new Map<string, string[]>();
+  if (ctx.continuity === 'keep_incumbent') {
+    // Dernier instant d'exposition par emplacement, puis exercices de cet instant dans l'ordre de la séance.
+    const lastAt = new Map<string, string>();
+    for (const x of ctx.recentExposures) if (x.slotId !== undefined && (lastAt.get(x.slotId) ?? '') < x.at) lastAt.set(x.slotId, x.at);
+    for (const x of ctx.recentExposures) {
+      if (x.slotId === undefined || lastAt.get(x.slotId) !== x.at) continue;
+      incumbentBySlot.set(x.slotId, [...(incumbentBySlot.get(x.slotId) ?? []), x.exerciseId]);
+    }
+  }
   const lastSeen = new Map<string, string>();
   const note = (family: string, at: string) => { const cur = lastSeen.get(family); if (cur === undefined || at > cur) lastSeen.set(family, at); };
   for (const x of ctx.recentExposures) { const e = catalog.exercise(x.exerciseId); if (e) note(e.family, x.at); }
   for (const h of input.history) for (const f of h.fingerprint.families) note(f, h.at);
   return {
     input, params, catalog, level: input.profile.athleteLevel, goal, goalKey, stimulus: input.intent.stimulus, archetype,
-    equipment: new Set(input.constraints.availableEquipment), lowered, rirOnly, anchorBySlot, trackedBySlot, rng,
+    equipment: new Set(input.constraints.availableEquipment), lowered, rirOnly, anchorBySlot, trackedBySlot, incumbentBySlot, rng,
     structuresOf: (e) => { let v = cache.get(e.id); if (!v) { v = deriveExerciseStructures(e, table); cache.set(e.id, v); } return v; },
     familyDaysSince: (family) => { const at = lastSeen.get(family); return at === undefined ? undefined : daysBetween(at, input.context.now); },
   };
