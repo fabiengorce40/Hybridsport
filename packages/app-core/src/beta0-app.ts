@@ -18,6 +18,7 @@ import { AppError } from './errors.js';
 import { emptyState, zProfile } from './model.js';
 import type { AppState, Feedback, PersistedWeek, ProfileInput, ProgrammeLog, Rest, SetLog } from './model.js';
 import { closeProgrammeWeekInApp, planProgrammeCurrentWeek, ProgrammeError, recordSessionExecution, startProgramme } from './programme.js';
+import { strengthWeekBoundary } from './progression.js';
 import { declareRunningPerformance } from './running-profile.js';
 import type { DeclaredPerformance } from './running-profile.js';
 import type { ProgrammeEnvironment } from './programme.js';
@@ -216,6 +217,20 @@ export function upgradeLegacyBeta0Programme(state: AppState, clock: Clock): AppS
  * telle quelle sinon (jamais de remplacement silencieux d'une semaine commencée). Sauf pause douleur active (garde
  * commune) ou semaine hors horizon. Erreur de planification ⇒ AppError propagée.
  */
+/**
+ * S3 — frontière de semaine Strength (ProgressionEngine), juste avant de planifier une NOUVELLE semaine, hors pause
+ * douleur : reprise des tracks suspendues, clôtures traçables, revues d'ancre ; chaque décision est auditée.
+ */
+function strengthBoundary(state: AppState, clock: Clock, weekIndex: number): AppState {
+  const ps = state.programmeState;
+  if (!ps || state.strength.tracks.length === 0) return state;
+  const at = normalizeInstant(clock.now);
+  const b = strengthWeekBoundary(state, at, { painCleared: activePainPause(state) === null });
+  if (b.reasons.length === 0) return state;
+  const audited = b.reasons.map((r) => ({ at, weekIndex, reason: { code: r.code, params: { ...r.params } } }));
+  return { ...state, strength: b.strength, programmeState: { ...ps, audit: [...ps.audit, ...audited] } };
+}
+
 export function ensureBeta0Week(state: AppState, clock: Clock, env: ProgrammeEnvironment = beta0Environment()): AppState {
   const ps0 = state.programmeState;
   if (!ps0 || !state.profile) return state;
@@ -228,10 +243,10 @@ export function ensureBeta0Week(state: AppState, clock: Clock, env: ProgrammeEnv
   const ps = s.programmeState;
   if (!ps || !withinProgramme(ps, cur) || activePainPause(s)) return s;
   const existing = ps.weeks.find((w) => w.weekIndex === cur);
-  if (!existing) return planProgrammeCurrentWeek(s, clock, env, cur, { pastDaysUnavailable: true });
+  if (!existing) return planProgrammeCurrentWeek(strengthBoundary(s, clock, cur), clock, env, cur, { pastDaysUnavailable: true });
   const planning = env.planningVersion ? weekPlanning(s, existing.plannerRef, clock.today, env.planningVersion) : null;
   if (planning?.status !== 'stale_replaceable') return s;
-  const replanned = planProgrammeCurrentWeek(s, clock, env, cur, { pastDaysUnavailable: true });
+  const replanned = planProgrammeCurrentWeek(strengthBoundary(s, clock, cur), clock, env, cur, { pastDaysUnavailable: true });
   const rps = replanned.programmeState;
   if (!rps) return replanned;
   const reason = { code: 'KAIRO.WEEK_REPLANNED_STALE', params: { weekStart: existing.plannerRef, fromVersion: planning.version ?? 'unversioned', toVersion: env.planningVersion ?? '' } };

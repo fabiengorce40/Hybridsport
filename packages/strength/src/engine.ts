@@ -248,6 +248,8 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
 
   const feasible = (def: SlotInstance['def']): boolean => slotCandidatesFor({ def, requirement: params['strength.needs'][def.need]?.requirement ?? {} }, env, { technicalCount: 0 }).candidates.length > 0;
   const slots = resolveSlots(env.archetype, params, env.goalKey, env.stimulus, recentNeed, (id) => env.anchorBySlot.has(id), feasible);
+  // Explication (S3) : pourquoi ce besoin dans chaque groupe de choix (ancre, déjà présent, exposition, objectif).
+  for (const c of slots.choices) reasons.push(strengthReasons.emit('SELECT.CHOICE_GROUP', { group: c.group, need: c.need, cause: c.cause, others: [...c.others] }));
   const dropped = new Set([...env.lowered.keys()].flatMap((s) => params['strength.interference'].perStructure[s]?.dropOptionalNeeds ?? []));
   // Ancre déclarée dont l'emplacement n'est pas retenu (ex. deux ancres dans un même groupe de choix) :
   // jamais ignorée en silence (le planificateur ne devrait déclarer qu'une ancre par groupe et par séance).

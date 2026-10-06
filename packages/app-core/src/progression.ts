@@ -5,8 +5,8 @@
  *
  * Running : la séance réalisée est ajoutée à l'historique déclaré ; l'ancre V19 du moteur en tient compte.
  */
-import type { FingerprintHistoryEntry, ISODateTime, SessionDraft, SetPrescription } from '@hybridsport/domain';
-import { classifyExposure, createTrack, progressionModelFor, readStrengthParams, updateTrack } from '@hybridsport/strength';
+import type { FingerprintHistoryEntry, ISODateTime, ReasonCode, SessionDraft, SetPrescription } from '@hybridsport/domain';
+import { anchorReviewDue, classifyExposure, closeTrack, closureCause, createTrack, declarableAnchors, exerciseStillAdmissible, progressionModelFor, readStrengthParams, resumeTrack, strengthReasons, updateTrack } from '@hybridsport/strength';
 import type { ExecutedItem, PerformedSet, SlotRole, StrengthTrack } from '@hybridsport/strength';
 import { archetypeFromIntentId, isV1Archetype } from '@hybridsport/running';
 import type { RealizedSession, RealizedStructure, RunningReference, RunningSessionArchetype } from '@hybridsport/running';
@@ -39,6 +39,22 @@ export interface StrengthExecution {
   readonly session: SessionDraft;
   readonly sets: SessionLog['sets'];
   readonly painItems: SessionLog['painItems'];
+  /**
+   * S3 — séance menée à son terme (défaut : oui, chemin V0 inchangé). Abandonnée ⇒ `false` : une série manquante n'est
+   * alors jamais lue comme un échec (classe `interrupted` / `partial` du moteur), seulement comme une interruption.
+   */
+  readonly sessionCompleted?: boolean;
+  /**
+   * S3 — douleur déclarée pour la SÉANCE sans localisation par exercice : chaque exercice est classé `pain` (suspension
+   * de sa track, jamais une progression ni une régression lues sur une exécution douloureuse).
+   */
+  readonly sessionPain?: boolean;
+}
+
+/** Réalisation appliquée et décisions de progression du moteur Strength qui l'ont produite (trace d'audit). */
+export interface StrengthExecutionOutcome {
+  readonly strength: AppState['strength'];
+  readonly reasons: readonly ReasonCode[];
 }
 
 /**
@@ -46,7 +62,13 @@ export interface StrengthExecution {
  * Strength (classifyExposure, updateTrack, createTrack) : chemin V0 inchangé, entrée factorisée pour le programme.
  */
 export function applyStrengthExecution(state: AppState, x: StrengthExecution, at: ISODateTime): AppState['strength'] {
-  if (!state.profile) return state.strength;
+  return applyStrengthExecutionTraced(state, x, at).strength;
+}
+
+/** Même application, avec les raisons du moteur (classement de l'exposition, mise à jour / création de track). */
+export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecution, at: ISODateTime): StrengthExecutionOutcome {
+  if (!state.profile) return { strength: state.strength, reasons: [] };
+  const reasons: ReasonCode[] = [];
   const log = { sets: x.sets, painItems: x.painItems } as SessionLog;
   const p = state.profile;
   const params = readStrengthParams(strengthContent().ruleset).values;
@@ -65,23 +87,29 @@ export function applyStrengthExecution(state: AppState, x: StrengthExecution, at
     if (!e) continue;
     const prescribed = it.prescription.sets.filter(isWork);
     const performed = performedSets(it.id, it.prescription.sets, log);
-    const pain = log.painItems.includes(it.id);
-    const exec: ExecutedItem = { exerciseId: e.id, prescribed, performed, sessionCompleted: true, ...(pain ? { skipReason: 'pain' as const } : {}), ...(it.refs?.substitutedFrom ? { substitutedFrom: it.refs.substitutedFrom } : {}) };
+    const pain = x.sessionPain === true || log.painItems.includes(it.id);
+    const exec: ExecutedItem = { exerciseId: e.id, prescribed, performed, sessionCompleted: x.sessionCompleted ?? true, ...(pain ? { skipReason: 'pain' as const } : {}), ...(it.refs?.substitutedFrom ? { substitutedFrom: it.refs.substitutedFrom } : {}) };
     const slot = slots.find((z) => z.id === it.refs?.slotId);
     const role: SlotRole = slot?.role ?? 'accessory';
     const trackId = it.refs?.progressionTrackId;
     const anchorOfSlot = [...tracks.values()].find((t) => t.tier === 'anchor' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === it.refs?.slotId);
     const known = trackId ? tracks.get(trackId) : undefined;
+    const update = (t: StrengthTrack, cls: ReturnType<typeof classifyExposure>) => {
+      const u = updateTrack(t, exec, cls, e, params, 'accumulation');
+      reasons.push(strengthReasons.emit('PROGRESSION.EXPOSURE_CLASSIFIED', { trackId: t.trackId, exerciseId: e.id, exposure: cls }), ...u.reasons);
+      tracks.set(t.trackId, u.track);
+    };
     if (known) {
-      tracks.set(known.trackId, updateTrack(known, exec, classifyExposure(exec, params), e, params, 'accumulation').track);
+      update(known, classifyExposure(exec, params));
     } else if (it.refs?.anchor === 'candidate' && anchorOfSlot?.status === 'active' && anchorOfSlot.exerciseId === e.id) {
-      tracks.set(anchorOfSlot.trackId, updateTrack(anchorOfSlot, exec, classifyExposure(exec, params), e, params, 'accumulation').track);
+      update(anchorOfSlot, classifyExposure(exec, params));
     } else if (it.refs?.substitutedFrom && anchorOfSlot) {
-      tracks.set(anchorOfSlot.trackId, updateTrack(anchorOfSlot, exec, 'substituted', e, params, 'accumulation').track);
+      update(anchorOfSlot, 'substituted');
     } else if (it.refs?.anchor === 'candidate' && !anchorOfSlot && performed.length > 0 && slot && !pain) {
       const model = progressionModelFor(e, role, p.level, performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
       const c = createTrack({ tier: 'anchor', archetypeId, slotId: slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role }, params);
       tracks.set(c.track.trackId, c.track);
+      reasons.push(...c.reasons);
     } else if (role === 'accessory' && slot?.trackable && performed.length > 0 && !pain) {
       const k = `${archetypeId}/${slot.id}/${e.id}`;
       counts[k] = (counts[k] ?? 0) + 1;
@@ -90,11 +118,43 @@ export function applyStrengthExecution(state: AppState, x: StrengthExecution, at
         const model = progressionModelFor(e, role, p.level, performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
         const c = createTrack({ tier: 'tracked', archetypeId, slotId: slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role }, params);
         tracks.set(c.track.trackId, c.track);
+        reasons.push(...c.reasons);
       }
     }
     if (performed.length > 0) exposures.push({ exerciseId: e.id, at: now, ...(it.refs?.slotId ? { slotId: it.refs.slotId } : {}), sets: performed });
   }
-  return { tracks: [...tracks.values()].sort((a, b) => (a.trackId < b.trackId ? -1 : 1)), exposures, accessoryCounts: counts };
+  return { strength: { tracks: [...tracks.values()].sort((a, b) => (a.trackId < b.trackId ? -1 : 1)), exposures, accessoryCounts: counts }, reasons };
+}
+
+/**
+ * S3 — FRONTIÈRE DE SEMAINE du ProgressionEngine (avant de planifier une nouvelle semaine, hors pause douleur) : seules
+ * les fonctions du moteur Strength, avec les valeurs du ruleset, sur des causes TRAÇABLES :
+ * - reprise d'une track suspendue (`resumeTrack`) quand aucune douleur n'est active ;
+ * - clôture (`closureCause`) : exercice devenu inadmissible (matériel, exclusion), stagnation (le compteur de maintiens
+ *   du moteur a atteint son seuil `strength.progression.stagnationHolds`), horizon selon la politique du ruleset ;
+ *   fin de mésocycle : JAMAIS (périodisation non gouvernée, `mesocycleEnded: false`) ;
+ * - revue d'ancre due (`anchorReviewDue`) : signalée, sans changement.
+ * Aucune rotation planifiée, aucune décharge, aucune nouvelle valeur.
+ */
+export function strengthWeekBoundary(state: AppState, at: ISODateTime, o: { readonly painCleared: boolean }): StrengthExecutionOutcome {
+  const p = state.profile;
+  if (!p) return { strength: state.strength, reasons: [] };
+  const params = readStrengthParams(strengthContent().ruleset).values;
+  const catalog = strengthContent().catalog;
+  const reasons: ReasonCode[] = [];
+  const tracks = state.strength.tracks.map((t0) => {
+    if (t0.status === 'closed') return t0;
+    const r = resumeTrack(t0, o.painCleared);
+    reasons.push(...r.reasons);
+    const t = r.track;
+    const inadmissible = !exerciseStillAdmissible(t.exerciseId, catalog, p.equipment.items, p.excludedExercises);
+    const stagnant = t.consecutiveHolds >= params['strength.progression'].stagnationHolds;
+    const cause = closureCause(t, { now: at, mesocycleEnded: false, stagnant, inadmissible, level: p.level }, params);
+    if (cause) { const c = closeTrack(t, cause); reasons.push(...c.reasons); return c.track; }
+    if (t.tier === 'anchor') reasons.push(...anchorReviewDue(t, { now: at, level: p.level }, params).reasons);
+    return t;
+  });
+  return { strength: { ...state.strength, tracks }, reasons };
 }
 
 /** Structure PRESCRITE d'une séance de course (réalisée « comme prévu ») : lecture de la structure CORE, rien de calculé. */
@@ -202,19 +262,5 @@ export function applyCompletion(state: AppState, key: string, at: ISODateTime): 
 
 /** Déclarations d'ancres de l'intention : au plus une ancre active par groupe de choix, la moins récemment utilisée. */
 export function anchorsToDeclare(state: AppState, archetypeId: string): StrengthTrack[] {
-  const params = readStrengthParams(strengthContent().ruleset).values;
-  const slots = params['strength.archetypes'].find((a) => a.id === archetypeId)?.slots ?? [];
-  const lastUse = (t: StrengthTrack): string => state.strength.exposures.filter((x) => x.exerciseId === t.exerciseId).map((x) => x.at).sort().at(-1) ?? '';
-  const out: StrengthTrack[] = [];
-  const seen = new Set<string>();
-  const anchors = state.strength.tracks.filter((t) => t.tier === 'anchor' && t.status === 'active' && t.archetypeId === archetypeId)
-    .sort((a, b) => (lastUse(a) < lastUse(b) ? -1 : lastUse(a) > lastUse(b) ? 1 : a.trackId < b.trackId ? -1 : 1));
-  for (const t of anchors) {
-    const group = slots.find((z) => z.id === t.slotId)?.choiceGroup;
-    if (group === undefined) { out.push(t); continue; }
-    if (seen.has(group)) continue;
-    seen.add(group);
-    out.push(t);
-  }
-  return out;
+  return declarableAnchors(state.strength.tracks, state.strength.exposures, archetypeId, readStrengthParams(strengthContent().ruleset).values);
 }

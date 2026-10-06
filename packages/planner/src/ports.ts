@@ -10,14 +10,14 @@ import {
   readToleranceProfile, runSportSession, targetFromAvailable, toRecordedDurationEstimate,
 } from '@hybridsport/engine';
 import type { CoreProfile, CorePipelineOutcome, CoreState, EngineContext, LoadedCatalog, LoadedRuleset, SportEngine, SportSessionRequest } from '@hybridsport/engine';
-import type { Discipline, FingerprintHistoryEntry, ReasonCode, SessionDraft, SessionFingerprint, SessionRecord } from '@hybridsport/domain';
+import type { Discipline, FingerprintHistoryEntry, ReasonCode, RepetitionIntent, SessionDraft, SessionFingerprint, SessionRecord } from '@hybridsport/domain';
 import { runCrossTrainingC2 } from '@hybridsport/crosstraining';
 import type { CrossTrainingContextInput, CrossTrainingEngine } from '@hybridsport/crosstraining';
 import { runHyroxH1 } from '@hybridsport/hyrox';
 import type { HyroxContextInput, HyroxEngine } from '@hybridsport/hyrox';
 import { ARCHETYPE_INTENT_IDS, archetypeFromIntentId, composeRunningWeek, isV1Archetype, parseRunningContext, resolveParameter } from '@hybridsport/running';
 import type { RunningContextInput, RunningParameter } from '@hybridsport/running';
-import { composeStrengthWeek, readStrengthParams, sessionPlannedHardSets } from '@hybridsport/strength';
+import { composeStrengthWeek, declarableAnchors, plannedWeekExposures, readStrengthParams, sessionPlannedHardSets, strengthReasons, strengthWeekPrescription, weekPrescriptionSummary } from '@hybridsport/strength';
 import type { StrengthCompositionRule, StrengthContextInput } from '@hybridsport/strength';
 import { GP_CODES, gpReasons } from './codes.js';
 import type { DeclaredIntent, DemandOutcome, NeighbourContext, PlannerClock, PlannerMode, PlannerSport } from './model.js';
@@ -46,6 +46,8 @@ export interface SlotRequest {
    * expositions PRÉVUES, jamais réalisées. Consommées par les moteurs qui le déclarent (`consumesWeekSessions`).
    */
   readonly weekSessions?: readonly WeekSession[];
+  /** Nombre de séances de ce sport déclarées pour la semaine (intention du programme), pour la trace du moteur. */
+  readonly sportSessions?: number;
 }
 
 /** Séance de la même discipline placée plus tôt dans la semaine (exposition PRÉVUE). */
@@ -117,6 +119,14 @@ export interface EnginePortDefinition<C> {
   readonly plannerNotes?: readonly string[];
   /** Entrées d'historique propres au créneau (ex. séances PRÉVUES plus tôt dans la semaine, statut `planned`). */
   readonly extraHistory?: (slot: SlotRequest) => readonly FingerprintHistoryEntry[];
+  /** Graine effective (par défaut celle du créneau) : un moteur peut exiger une graine STABLE d'une semaine à l'autre. */
+  readonly seedOf?: (slot: SlotRequest) => string;
+  /** Intentions de répétition déclarées pour le créneau (ex. ancres de progression du moteur Strength). */
+  readonly repetitionIntents?: (slot: SlotRequest, context: unknown) => RepetitionIntent[];
+  /** Raisons de décision du moteur à PERSISTER avec la séance (proposition retenue), filtrées par code. */
+  readonly persistedDecisions?: RegExp;
+  /** Raisons propres au port à joindre à la séance (ex. prescription hebdomadaire du moteur). */
+  readonly extraReasons?: (slot: SlotRequest, context: unknown) => readonly ReasonCode[];
 }
 
 /** Blocs d'entraînement (hors échauffement et retour au calme) : ceux qui portent la sollicitation de la séance. */
@@ -147,7 +157,7 @@ export function demandOf(session: SessionDraft, content: Content, sport: Planner
   return d.ok ? { status: 'derived', levels: d.profile.levels } : { status: 'unavailable', reasons: d.reasons };
 }
 
-function outcomeOf(o: CorePipelineOutcome, content: Content, seed: string): PortOutcome {
+function outcomeOf(o: CorePipelineOutcome, content: Content, seed: string, persisted?: RegExp, extra: readonly ReasonCode[] = []): PortOutcome {
   if (o.result.status !== 'ok') return { status: 'refused', reasons: o.result.status === 'error' ? o.result.error.reasons : o.result.reasons };
   const session = o.result.value;
   // Estimation de durée du CORE (DurationEngine), stockée avec le record (aucun calcul de durée ici).
@@ -158,7 +168,9 @@ function outcomeOf(o: CorePipelineOutcome, content: Content, seed: string): Port
     fingerprint: o.fingerprint ? { status: 'available', value: o.fingerprint } : { status: 'unavailable', reason: 'duplicate_analysis_inactive' },
     durationEstimate: est.ok ? toRecordedDurationEstimate(est.estimate) : { availability: 'UNAVAILABLE_LEGACY' },
   };
-  return { status: 'planned', session, ...(o.fingerprint ? { fingerprint: o.fingerprint } : {}), record, reasons: o.result.warnings };
+  // Décisions du moteur pour la proposition RETENUE (trace du CORE), persistées pour l'audit si le port le demande.
+  const decisions = persisted ? o.trace.entries.filter((e) => e.step === 'proposal' && e.subject.id === session.id).flatMap((e) => e.reasons).filter((r) => persisted.test(r.code)) : [];
+  return { status: 'planned', session, ...(o.fingerprint ? { fingerprint: o.fingerprint } : {}), record, reasons: [...o.result.warnings, ...extra, ...decisions] };
 }
 
 export function createEnginePort<C>(def: EnginePortDefinition<C>): SportPort {
@@ -171,24 +183,26 @@ export function createEnginePort<C>(def: EnginePortDefinition<C>): SportPort {
       const now = def.clock.instantOf(slot.date);
       const availableTimeS = slot.availableMinutes * S_PER_MIN;
       const i = slot.intent;
+      const disciplineContext = def.context(slot);
+      const seed = def.seedOf?.(slot) ?? slot.seed;
       const request: SportSessionRequest = {
         intent: {
           id: `plan.${slot.requestId}`, discipline: def.discipline, archetypeId: i.archetypeId, stimulus: i.stimulus, objective: i.objective, priority: 'standard', phase: i.phase,
-          availableTimeS, targetDurationS: targetFromAvailable(availableTimeS, readToleranceProfile(def.content.ruleset, i.toleranceProfile)), repetitionIntents: [], plannerNotes: [...(def.plannerNotes ?? [])],
+          availableTimeS, targetDurationS: targetFromAvailable(availableTimeS, readToleranceProfile(def.content.ruleset, i.toleranceProfile)), repetitionIntents: def.repetitionIntents?.(slot, disciplineContext) ?? [], plannerNotes: [...(def.plannerNotes ?? [])],
         },
         profile: def.profile, state: def.state,
         history: [...def.history, ...(def.extraHistory?.(slot) ?? [])].filter((h) => h.at < now),
-        disciplineContext: def.context(slot),
+        disciplineContext,
       };
-      const ctx: EngineContext<LoadedRuleset, LoadedCatalog> = { now, timezone: def.clock.timezone, seed: slot.seed, engineVersion: ENGINE_VERSION, ruleset: def.content.ruleset, catalog: def.content.catalog };
-      return outcomeOf(run(def.engine, request, ctx), def.content, slot.seed);
+      const ctx: EngineContext<LoadedRuleset, LoadedCatalog> = { now, timezone: def.clock.timezone, seed, engineVersion: ENGINE_VERSION, ruleset: def.content.ruleset, catalog: def.content.catalog };
+      return outcomeOf(run(def.engine, request, ctx), def.content, seed, def.persistedDecisions, def.extraReasons?.(slot, disciplineContext) ?? []);
     },
     structures: (session) => structuresOf(session, def.content, def.sport),
     demand: (session, mode) => demandOf(session, def.content, def.sport, mode),
   };
 }
 
-type Base<C> = Omit<EnginePortDefinition<C>, 'sport' | 'discipline' | 'context' | 'run' | 'engine' | 'consumesNeighbours' | 'plannerNotes' | 'extraHistory'>;
+type Base<C> = Omit<EnginePortDefinition<C>, 'sport' | 'discipline' | 'context' | 'run' | 'engine' | 'consumesNeighbours' | 'plannerNotes' | 'extraHistory' | 'seedOf' | 'repetitionIntents' | 'persistedDecisions' | 'extraReasons'>;
 
 /**
  * Provenance du planificateur global : note portée par l'intention de toute séance demandée PAR LE PLANIFICATEUR
@@ -223,6 +237,9 @@ const resolve = <T>(c: Ctx<T>, slot: SlotRequest): T => (typeof c === 'function'
  *   `planned` dans l'historique) ; composition hebdomadaire : celle du MOTEUR Strength (`composeStrengthWeek`) ;
  * - Running, Cross-training, HYROX : `population.hybrid` transmis tel quel ; HYROX : station du programme.
  */
+/** Décisions Strength persistées avec la séance (audit longitudinal) : choix d'exercices, progression, dose, plan. */
+const STRENGTH_PERSISTED_DECISIONS = /^(SELECT\.(EXERCISE\.CHOSEN|CHOICE_GROUP|SLOT_OMITTED|SUBSTITUTION|PATTERN_FALLBACK)|PROGRESSION\.|DOSE\.(VOLUME_ALLOCATED|LOAD\.)|PLAN\.(STRUCTURE_LOWERED|INTERFERENCE_ASSESSED|VOLUME_IMBALANCE_WEEK|ANCHOR))/;
+
 export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] } }): SportPort {
   const params = () => readStrengthParams(def.content.ruleset).values;
   const context = (slot: SlotRequest): StrengthContextInput => {
@@ -246,8 +263,33 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
       },
     };
   };
+  // S3 — expositions RÉALISÉES + séances PRÉVUES plus tôt dans la semaine (même date d'instant que l'historique prévu) :
+  // l'alternance entre ancres d'un même groupe se lit sur l'usage le plus ancien, réalisé ou prévu.
+  const plannedExposures = (slot: SlotRequest) => plannedWeekExposures((slot.weekSessions ?? []).map((w) => ({ at: def.clock.instantOf(w.date), session: w.session })));
+  const anchorsOf = (slot: SlotRequest, c: StrengthContextInput) => declarableAnchors(c.tracks, [...c.recentExposures, ...plannedExposures(slot)], slot.intent.archetypeId, params());
   const port = createEnginePort({
     ...def, sport: 'strength', discipline: 'strength', consumesNeighbours: true, context,
+    // S3 — graine STABLE d'une semaine à l'autre (archétype, stimulus, rang de l'occurrence de cet archétype dans la
+    // semaine) : un départage par la graine ne peut plus changer un exercice d'une semaine à la suivante.
+    seedOf: (slot) => `strength:${slot.intent.archetypeId}:${slot.intent.stimulus}:${(slot.weekSessions ?? []).filter((w) => w.archetypeId === slot.intent.archetypeId).length + 1}`,
+    // S3 — ancres DÉCLARÉES (contrat CORE-EXT-4) : tracks d'ancre actives de l'archétype, une par groupe de choix.
+    repetitionIntents: (slot, c) => anchorsOf(slot, c as StrengthContextInput).map((t) => ({ kind: 'progression_anchor' as const, trackId: t.trackId })),
+    persistedDecisions: STRENGTH_PERSISTED_DECISIONS,
+    extraReasons: (slot, c) => {
+      const ctx = c as StrengthContextInput;
+      const p = strengthWeekPrescription({
+        params: params(), paramStatus: (id) => def.content.ruleset.parameter(id)?.status ?? 'missing', goal: ctx.goal.primary, level: def.profile.athleteLevel,
+        archetypeId: slot.intent.archetypeId, occurrence: (slot.weekSessions ?? []).length + 1, weeklySessions: slot.sportSessions ?? (slot.weekSessions ?? []).length + 1,
+        context: { tracks: ctx.tracks, recentExposures: [...ctx.recentExposures, ...plannedExposures(slot)], hardSets: ctx.hardSets, week: ctx.week },
+      });
+      const sum = weekPrescriptionSummary(p);
+      const status = (id: string) => p.provenance.find((x) => x.parameterId === id)?.status ?? 'missing';
+      return [strengthReasons.emit('PLAN.WEEK_PRESCRIPTION', {
+        archetype: p.archetypeId, occurrence: p.occurrence, weeklySessions: p.weeklySessions, plannedBefore: (slot.weekSessions ?? []).length,
+        belowFloor: sum.belowFloor, atOrAboveHigh: sum.atOrAboveHigh, noTarget: sum.noTarget, anchors: p.anchors.map((a) => a.exerciseId),
+        volumeRule: status('strength.volume'), progressionRule: status('strength.progression'), phase: 'placeholder', blocked: [...p.blocked],
+      })];
+    },
     extraHistory: (slot) => (slot.weekSessions ?? []).flatMap((w) => (w.fingerprint ? [{ fingerprint: w.fingerprint, at: def.clock.instantOf(w.date), status: 'planned' as const, repetitionIntents: [] }] : [])),
   });
   const comp = def.composition;

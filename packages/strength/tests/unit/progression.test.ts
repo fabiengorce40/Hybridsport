@@ -35,7 +35,8 @@ describe('classification des expositions', () => {
     expect(classifyExposure(item({ performed: sets(3, 2, 80, 0), skipReason: 'pain' }), P)).toBe('pain');
     expect(classifyExposure(item({ performed: [], skipReason: 'safety_pause' }), P)).toBe('safety_pause');
     expect(classifyExposure(item({ performed: sets(3, 8, 30, 2), substitutedFrom: 'ex.bench_press' }), P)).toBe('substituted');
-    expect(EXPOSURE_CLASSES).toHaveLength(9);
+    // S3 : + `load_deviation` (charge prescrite non portée), couvert par tests/unit/s3-longitudinal.test.ts.
+    expect(EXPOSURE_CLASSES).toHaveLength(10);
   });
 });
 

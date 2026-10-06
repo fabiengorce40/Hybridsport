@@ -46,6 +46,18 @@ const STRENGTH_S2_CHANGES = [
   'packages/strength/tests/architecture/__reports__/substitution-audit.md',
   ...GOLDEN_SETS.flatMap((d) => GOLDEN_IDS.map((i) => `packages/strength/tests/golden/${d}/S${String(i)}.json`)),
 ];
+/**
+ * Lot Strength S3 (hors Cross-training, liste FERMÉE) : programmation longitudinale — prescription hebdomadaire
+ * (week-prescription.ts), trace des groupes de choix (archetypes.ts, engine.ts, codes.ts), preuve de progression
+ * `load_deviation` (progression.ts) ; goldens : seule la raison `SELECT.CHOICE_GROUP` est ajoutée (listés en S2).
+ */
+const STRENGTH_S3_CHANGES = [
+  'packages/strength/src/week-prescription.ts',
+  'packages/strength/src/archetypes.ts',
+  'packages/strength/src/progression.ts',
+  'packages/strength/tests/unit/progression.test.ts',
+  'packages/strength/tests/unit/s3-longitudinal.test.ts',
+];
 const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/domain/src/duplicate.ts',
   'packages/domain/src/serialization.ts',
@@ -72,6 +84,7 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/strength/tests/architecture/__reports__/core-source-digest.txt',
   ...STRENGTH_S1_CHANGES,
   ...STRENGTH_S2_CHANGES,
+  ...STRENGTH_S3_CHANGES,
 ];
 
 describe('frontières', () => {
@@ -100,7 +113,7 @@ describe('frontières', () => {
     }
     const changed = diff.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
     expect(changed.filter((f) => !CT_C2_AUTHORIZED_CORE_CHANGES.includes(f))).toEqual([]);
-    expect(changed.filter((f) => f.startsWith('packages/running/') || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f)))).toEqual([]);
+    expect(changed.filter((f) => f.startsWith('packages/running/') || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f)))).toEqual([]);
   });
 });
 

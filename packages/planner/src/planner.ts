@@ -98,10 +98,12 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     .filter((p) => p.sport === sport && p.requestId !== requestId && p.date < date)
     .sort((a, b) => (a.date < b.date ? -1 : 1))
     .map((p) => ({ requestId: p.requestId, date: p.date, archetypeId: p.archetypeId ?? '', session: p.session, ...(p.fingerprint ? { fingerprint: p.fingerprint } : {}) }));
-  const weekArg = (sport: PlannerSport, date: string, requestId: string): { weekSessions?: WeekSession[] } => {
+  const weekArg = (sport: PlannerSport, date: string, requestId: string): { weekSessions?: WeekSession[]; sportSessions?: number } => {
     if (!ports[sport]?.consumesWeekSessions) return {};
     const w = weekOf(sport, date, requestId);
-    return w.length > 0 ? { weekSessions: w } : {};
+    // Fréquence DÉCLARÉE par le programme pour ce sport (nombre de demandes), transmise pour la trace du moteur.
+    const sportSessions = requests.filter((x) => x.sport === sport).length;
+    return { ...(w.length > 0 ? { weekSessions: w } : {}), sportSessions };
   };
   const weekReason = (sport: PlannerSport, date: string, requestId: string): ReasonCode[] => {
     if (!ports[sport]?.consumesWeekSessions) return [];

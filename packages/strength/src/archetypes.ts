@@ -22,7 +22,14 @@ export interface ResolvedSlots {
   readonly required: readonly SlotInstance[];
   /** Emplacements optionnels, dans l'ordre d'ajout (priorité du stimulus, puis de l'objectif). */
   readonly optional: readonly SlotInstance[];
+  /**
+   * Explication de chaque groupe de choix (S3) : besoin retenu, critère qui l'a départagé du suivant (`anchor`,
+   * `not_in_session`, `least_recent_exposure`, `goal_priority`, `identifier`, `only_member`), besoins écartés.
+   * Lecture seule : la décision elle-même est inchangée.
+   */
+  readonly choices: readonly { readonly group: string; readonly need: string; readonly cause: ChoiceCause; readonly others: readonly string[] }[];
 }
+export type ChoiceCause = 'anchor' | 'not_in_session' | 'least_recent_exposure' | 'goal_priority' | 'identifier' | 'only_member';
 
 export function findArchetype(params: StrengthParams, id: string): StrengthArchetype | undefined {
   return params['strength.archetypes'].find((a) => a.id === id);
@@ -59,6 +66,7 @@ export function resolveSlots(a: StrengthArchetype, params: StrengthParams, goal:
   // Besoins déjà couverts par la séance : un groupe de choix préfère un besoin encore absent (le
   // secondaire d'une séance bas du corps n'est pas une seconde charnière si le principal en est une).
   const used = new Set<string>();
+  const choices: { group: string; need: string; cause: ChoiceCause; others: string[] }[] = [];
   const pickFromGroups = (slots: readonly ArchetypeSlotDef[]): ArchetypeSlotDef[] => {
     const out: ArchetypeSlotDef[] = [];
     const groups = new Map<string, ArchetypeSlotDef[]>();
@@ -74,8 +82,18 @@ export function resolveSlots(a: StrengthArchetype, params: StrengthParams, goal:
       // de choix ne choisit jamais un membre impossible quand un autre membre est réalisable.
       const doable = scoped.filter(feasible);
       const pool = doable.length > 0 ? doable : scoped;
-      const chosen = [...pool].sort((x, y) => Number(anchored(y.id)) - Number(anchored(x.id)) || Number(used.has(x.need)) - Number(used.has(y.need)) || recentNeedExposure(x.need) - recentNeedExposure(y.need) || rank(priority, x.need) - rank(priority, y.need) || (x.id < y.id ? -1 : 1))[0];
-      if (chosen) { out.push(chosen); used.add(chosen.need); }
+      const ordered = [...pool].sort((x, y) => Number(anchored(y.id)) - Number(anchored(x.id)) || Number(used.has(x.need)) - Number(used.has(y.need)) || recentNeedExposure(x.need) - recentNeedExposure(y.need) || rank(priority, x.need) - rank(priority, y.need) || (x.id < y.id ? -1 : 1));
+      const chosen = ordered[0];
+      if (chosen) {
+        const next = ordered[1];
+        const cause: ChoiceCause = !next ? 'only_member'
+          : anchored(chosen.id) !== anchored(next.id) ? 'anchor'
+          : used.has(chosen.need) !== used.has(next.need) ? 'not_in_session'
+          : recentNeedExposure(chosen.need) !== recentNeedExposure(next.need) ? 'least_recent_exposure'
+          : rank(priority, chosen.need) !== rank(priority, next.need) ? 'goal_priority' : 'identifier';
+        choices.push({ group: chosen.choiceGroup ?? chosen.id, need: chosen.need, cause, others: members.filter((m) => m !== chosen).map((m) => m.need) });
+        out.push(chosen); used.add(chosen.need);
+      }
     }
     return out;
   };
@@ -86,7 +104,7 @@ export function resolveSlots(a: StrengthArchetype, params: StrengthParams, goal:
   // Un optionnel qui répète un besoin déjà requis passe après les autres (variété des besoins avant la répétition).
   const optional = pickFromGroups(a.slots.filter((s) => s.status === 'optional'))
     .sort((x, y) => Number(requiredNeeds.has(x.need)) - Number(requiredNeeds.has(y.need)) || rank(optionalOrder, x.need) - rank(optionalOrder, y.need) || rank(priority, x.need) - rank(priority, y.need) || (x.id < y.id ? -1 : 1));
-  return { required: required.map(inst), optional: optional.map(inst) };
+  return { required: required.map(inst), optional: optional.map(inst), choices };
 }
 
 /**

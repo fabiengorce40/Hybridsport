@@ -233,9 +233,10 @@ describe('déterminisme et frontières adverses', () => {
     const base = strength();
     const spy = { ...base, generate: (slot: Parameters<typeof base.generate>[0]) => { seen.push(slot); return base.generate(slot); } };
     const w = plan([{ sport: 'strength', sessions: 1 }, { sport: 'running', sessions: 1 }], { ...ALL_PORTS(), strength: spy });
-    expect(Object.keys(seen[0] as object).sort()).toEqual(['availableMinutes', 'date', 'hybrid', 'intent', 'requestId', 'seed']);
-    // Seconde passe (multisport) : même créneau + contexte voisin, rien d'autre.
-    expect(Object.keys(seen.at(-1) as object).sort()).toEqual(['availableMinutes', 'date', 'hybrid', 'intent', 'neighbours', 'requestId', 'seed']);
+    expect(Object.keys(seen[0] as object).sort()).toEqual(['availableMinutes', 'date', 'hybrid', 'intent', 'requestId', 'seed', 'sportSessions']);
+    // Seconde passe (multisport) : même créneau + contexte voisin, rien d'autre (S3 : fréquence déclarée du programme, pour la trace).
+    expect(Object.keys(seen.at(-1) as object).sort()).toEqual(['availableMinutes', 'date', 'hybrid', 'intent', 'neighbours', 'requestId', 'seed', 'sportSessions']);
+    expect((seen[0] as { sportSessions: number }).sportSessions).toBe(1);
     const r = req(w, 'strength.1');
     expect(r?.status === 'planned' && r.session).toEqual((() => { const o = base.generate(seen.at(-1) as never); return o.status === 'planned' ? o.session : null; })());
   });

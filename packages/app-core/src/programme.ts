@@ -16,7 +16,7 @@ import { addDays, normalizeInstant } from './dates.js';
 import type { AppState, Feedback, ProgrammeIntent, SessionLog, SetLog } from './model.js';
 import { appPlannerEnvironment, assertEnvironment, buildPorts, clockOf, persistWeek, recentOf } from './planning.js';
 import type { EngineGoals, PlannerEnvironment } from './planning.js';
-import { applyStrengthExecution, realizedRunFrom, testReferenceFrom } from './progression.js';
+import { applyStrengthExecutionTraced, realizedRunFrom, testReferenceFrom } from './progression.js';
 import { realizeCrossTrainingC2, realizeHyroxStation } from '@hybridsport/planner';
 
 /** Erreur applicative portant les raisons structurées (jamais « échec » sans cause). */
@@ -133,6 +133,7 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
   const pained = (x.pain !== undefined && x.pain !== 'NONE') || (x.sport === 'strength' && (x.painItems?.length ?? 0) > 0);
   let s: AppState = state;
   let evidence: { history: ProgrammeState['definition']['priorities'][number]; ref: string; measurement?: string } | undefined;
+  let progressionTrace: readonly ReasonCode[] = [];
 
   if (x.pain === 'REPORTED' && (x.sport === 'crosstraining' || x.sport === 'hyrox')) return reject('EXECUTION_PAIN_LEVEL_REQUIRED');
   if (x.completion !== 'missed') {
@@ -148,7 +149,13 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
         if (unknown.length > 0) return reject('EXECUTION_STRENGTH_SET_UNKNOWN');
         // « Telle que prescrite » n'est jamais supposé : chaque série de travail doit être saisie, faite, avec ses répétitions.
         if (x.completion === 'completed_as_prescribed' && !work.filter((w) => w.work).every((w) => sets.some((l) => l.itemId === w.itemId && l.setIndex === w.i && l.done && l.reps !== undefined))) return reject('EXECUTION_STRENGTH_INCOMPLETE');
-        s = { ...s, strength: applyStrengthExecution(s, { archetypeId: intent.archetypeId, session, sets: [...sets], painItems: [...(x.painItems ?? [])] }, at) };
+        // S3 — séance abandonnée ⇒ jamais lue comme « terminée » ; douleur de séance ⇒ chaque exercice classé `pain`.
+        const applied = applyStrengthExecutionTraced(s, {
+          archetypeId: intent.archetypeId, session, sets: [...sets], painItems: [...(x.painItems ?? [])],
+          sessionCompleted: x.completion !== 'abandoned', sessionPain: x.pain !== undefined && x.pain !== 'NONE',
+        }, at);
+        s = { ...s, strength: applied.strength };
+        progressionTrace = applied.reasons;
         evidence = { history: 'strength', ref: x.requestId };
         break;
       }
@@ -186,7 +193,9 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
   }
   const result = recordProgrammeResult(ps, { requestId: x.requestId, completion: x.completion, pain: pained, recordedAt: at, ...(evidence ? { evidence } : {}) });
   if (!result.ok) return reject('EXECUTION_REJECTED', ...result.reasons);
-  s = { ...s, programmeState: result.value, revision: s.revision + 1 };
+  // S3 — décisions de progression Strength de cette réalisation, auditées avec la semaine.
+  const audited = progressionTrace.map((r) => ({ at, weekIndex: week.weekIndex, reason: { code: r.code, params: { ...r.params } } }));
+  s = { ...s, programmeState: { ...result.value, audit: [...result.value.audit, ...audited] }, revision: s.revision + 1 };
   const fp = record.fingerprint.status === 'available' ? record.fingerprint.value : undefined;
   if (fp && x.completion !== 'missed' && x.sport !== 'hyrox') {
     s = { ...s, fingerprints: { ...s.fingerprints, [x.sport]: [...s.fingerprints[x.sport], { fingerprint: fp, at, status: 'completed', repetitionIntents: [] } as FingerprintHistoryEntry] } };

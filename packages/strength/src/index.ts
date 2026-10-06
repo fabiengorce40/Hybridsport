@@ -21,4 +21,5 @@ export * from './personal-load-model.js';
 export * from './stimulus-preservation.js';
 export * from './composition.js';
 export * from './substitution.js';
+export * from './week-prescription.js';
 export * from './science/index.js';

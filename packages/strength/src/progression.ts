@@ -15,7 +15,7 @@ import { exerciseClass } from './model.js';
 import { strengthReasons } from './codes.js';
 import { daysBetween, median, roundDownToStep } from './util.js';
 
-export const EXPOSURE_CLASSES = ['above', 'on_target', 'partial', 'below', 'no_data', 'interrupted', 'pain', 'safety_pause', 'substituted'] as const;
+export const EXPOSURE_CLASSES = ['above', 'on_target', 'partial', 'below', 'no_data', 'interrupted', 'pain', 'safety_pause', 'substituted', 'load_deviation'] as const;
 export type ExposureClass = (typeof EXPOSURE_CLASSES)[number];
 
 export interface PerformedSet { readonly reps: number; readonly loadKg?: number; readonly rir?: number }
@@ -44,6 +44,11 @@ export function classifyExposure(x: ExecutedItem, params: StrengthParams): Expos
   if (x.substitutedFrom !== undefined) return 'substituted';
   const work = x.prescribed.filter((s) => s.kind !== 'rampup' && s.optional !== true);
   if (x.performed.length === 0) return x.sessionCompleted ? 'no_data' : 'interrupted';
+  // S3 — une exposition n'est une PREUVE de la prescription que si la charge prescrite a été portée : charge réalisée
+  // inférieure à la charge prescrite, ou non saisie alors qu'une charge était prescrite ⇒ exposition non probante
+  // (`load_deviation` : maintien, aucun compteur modifié). Aucune valeur ajoutée : comparaison stricte à la prescription.
+  const prescribedKg = work.flatMap((s) => (s.intensity?.mode === 'load' ? [s.intensity.kg] : s.intensity?.mode === 'percent_of_reference' ? [s.intensity.kgRounded] : []));
+  if (prescribedKg.length > 0 && x.performed.some((s) => s.loadKg === undefined || s.loadKg < Math.min(...prescribedKg))) return 'load_deviation';
   const p = params['strength.progression'];
   const first = work[0];
   if (!first) return 'no_data';
@@ -105,7 +110,7 @@ export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: Exposure
     return { track: { ...track, status: 'suspended' }, reasons, rotate: false };
   }
   const resumed: StrengthTrack = track.status === 'suspended' ? { ...track, status: 'active' } : track;
-  if (cls === 'substituted' || cls === 'no_data' || cls === 'interrupted' || phaseKind === 'deload') {
+  if (cls === 'substituted' || cls === 'no_data' || cls === 'interrupted' || cls === 'load_deviation' || phaseKind === 'deload') {
     reasons.push(strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: phaseKind === 'deload' ? 'deload' : cls }));
     return { track: resumed, reasons, rotate: false };
   }
