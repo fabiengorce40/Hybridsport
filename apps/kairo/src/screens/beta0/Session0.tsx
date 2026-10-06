@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from 'react';
 import {
-  approxMinutes, controlRest, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, selectProgrammeSession, startProgrammeSession, toggleProgrammePainItem,
+  approxMinutes, controlRest, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, selectProgrammeSession, startProgrammeSession, toggleProgrammePainItem,
 } from '@hybridsport/app-core';
 import type { FinishInput, ProgrammeSessionView, SessionItem, SetPrescription } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
@@ -124,6 +124,7 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
             v={v} title={name} eyebrow={`${sportName(v.sport)} · ${formatDate(v.date)}${editable ? ` · ${String(Math.floor(elapsed / 60))}:${String(elapsed % 60).padStart(2, '0')}` : ''}`} editable={editable}
             onRecord={(item, index, x) => record(item, undefined, index, x)}
             onTogglePain={(itemId) => store.apply((s) => toggleProgrammePainItem(s, requestId, itemId))}
+            onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, requestId, itemId, setIndex, rir))}
           />
           {finished && <div className="k-light"><span className="k-pill done">✓ {STATUS_LABELS[result.completion]}</span><span className="k-light-name">Séance terminée</span></div>}
           {!started && !finished && <div className="k-dock"><button className="k-cta" onClick={() => store.apply((s, c) => startProgrammeSession(s, c, requestId))}>Commencer la séance</button></div>}

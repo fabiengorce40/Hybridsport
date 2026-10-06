@@ -8,11 +8,13 @@
  *   (cible d'un modèle à plage), charge = charge prescrite, RIR = RIR cible prescrit ;
  * - charge saisie quand la séance ne prescrit PAS de charge (première exposition, calibration à l'effort) :
  *   `TEST_ONLY_FIRST_LOAD_KG` ; aucune charge saisie pour un exercice au poids du corps ;
- * - RIR saisi quand la séance ne prescrit pas de RIR : `TEST_ONLY_DEFAULT_RIR`.
+ * - RIR saisi quand la séance ne prescrit pas de RIR : `TEST_ONLY_DEFAULT_RIR` ;
+ * - S5 : mode `effort: 'unknown'` ⇒ AUCUN RIR saisi (l'utilisateur ne renseigne pas l'effort) ; défaut `observed`.
  * Aucune séance n'est injectée : seules les séances planifiées par le planificateur sont réalisées.
  */
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord, SetPrescription } from '@hybridsport/domain';
+import type { StrengthTrack } from '@hybridsport/strength';
 import { goalKey, readStrengthParams, sessionPlannedHardSets } from '@hybridsport/strength';
 import { closeProgrammeWeekInApp, ensureBeta0Week, exerciseLabel, recordSessionExecution, strengthContent, strengthWeekVolume } from '../../src/index.js';
 import type { AppState, PersistedWeek, SessionExecutionInput, SetLog } from '../../src/index.js';
@@ -38,6 +40,8 @@ export interface Executed {
   /** Raisons d'audit produites par cette réalisation (ProgrammeEngine + ProgressionEngine Strength). */
   readonly audit: readonly { code: string; params: Record<string, unknown> }[];
   readonly sets: readonly SetLog[];
+  /** S5 — tracks touchées par cette réalisation, APRÈS mise à jour (prescription suivante, preuves, e1RM). */
+  readonly tracksAfter: readonly StrengthTrack[];
 }
 
 export interface WeekRun {
@@ -62,19 +66,21 @@ export const rirOf = (p: SetPrescription): number | undefined => {
   return e && 'rir' in e ? e.rir : p.rir;
 };
 
-/** Saisie TEST_ONLY « comme prescrit » de toutes les séries de travail de la séance. */
-export function asPrescribed(session: SessionDraft): SetLog[] {
+export type Effort = 'observed' | 'unknown';
+
+/** Saisie TEST_ONLY « comme prescrit » de toutes les séries de travail de la séance (RIR saisi ou non selon `effort`). */
+export function asPrescribed(session: SessionDraft, effort: Effort = 'observed'): SetLog[] {
   return mainItems(session).flatMap((it) => (it.prescription.type !== 'sets' ? [] : it.prescription.sets.flatMap((p, i) => {
     if (!work(p)) return [];
     const reps = typeof p.reps === 'number' ? p.reps : p.reps.max;
     const kg = p.intensity?.mode === 'load' ? p.intensity.kg : p.intensity?.mode === 'percent_of_reference' ? p.intensity.kgRounded
       : p.intensity?.mode === 'bodyweight' ? undefined : TEST_ONLY_FIRST_LOAD_KG;
-    return [{ itemId: it.id, setIndex: i, done: true, reps, ...(kg !== undefined ? { loadKg: kg } : {}), rir: rirOf(p) ?? TEST_ONLY_DEFAULT_RIR }];
+    return [{ itemId: it.id, setIndex: i, done: true, reps, ...(kg !== undefined ? { loadKg: kg } : {}), ...(effort === 'observed' ? { rir: rirOf(p) ?? TEST_ONLY_DEFAULT_RIR } : {}) }];
   })));
 }
 
-function strengthInput(session: SessionDraft, requestId: string, event: Event): SessionExecutionInput {
-  const all = asPrescribed(session);
+function strengthInput(session: SessionDraft, requestId: string, event: Event, effort: Effort): SessionExecutionInput {
+  const all = asPrescribed(session, effort);
   if (event === 'last_set_missed') {
     // Dernière série de travail du PREMIER exercice (exercice principal) non réalisée.
     const first = all[0]?.itemId;
@@ -96,7 +102,7 @@ function runInput(r: Request, session: SessionDraft): SessionExecutionInput {
  * chaque séance planifiée selon `events` (défaut : comme prescrit), clôture de la semaine. `events[requestId]` absent ⇒
  * comme prescrit. Une séance `missed` n'est pas saisie (manquée dérivée à la clôture).
  */
-export function drive(s0: AppState, weekStarts: readonly string[], events: (w: number, r: Request, k: number) => Event = () => 'as_prescribed'): { final: AppState; weeks: WeekRun[] } {
+export function drive(s0: AppState, weekStarts: readonly string[], events: (w: number, r: Request, k: number) => Event = () => 'as_prescribed', o: { readonly effort?: Effort } = {}): { final: AppState; weeks: WeekRun[] } {
   let s = s0;
   const weeks: WeekRun[] = [];
   for (const [w, start] of weekStarts.entries()) {
@@ -112,13 +118,15 @@ export function drive(s0: AppState, weekStarts: readonly string[], events: (w: n
       const rec = recordOf(r);
       if (!rec || !r.date) throw new Error(`séance illisible : ${r.requestId}`);
       const event = r.sport === 'strength' ? events(w, r, k) : 'as_prescribed';
-      if (event === 'missed') { executed.push({ requestId: r.requestId, sport: r.sport, date: r.date, event, audit: [], sets: [] }); continue; }
-      const input = r.sport === 'strength' ? strengthInput(rec.session, r.requestId, event) : runInput(r, rec.session);
+      if (event === 'missed') { executed.push({ requestId: r.requestId, sport: r.sport, date: r.date, event, audit: [], sets: [], tracksAfter: [] }); continue; }
+      const input = r.sport === 'strength' ? strengthInput(rec.session, r.requestId, event, o.effort ?? 'observed') : runInput(r, rec.session);
       const n = s.programmeState?.audit.length ?? 0;
       s = recordSessionExecution(s, clock(r.date, '18:00:00'), input);
       // Pause douleur : levée explicite par l'utilisateur avant la séance suivante (chemin de l'application, TEST_ONLY).
       if (event === 'pain') s = { ...s, safety: { activePain: null } };
-      executed.push({ requestId: r.requestId, sport: r.sport, date: r.date, event, audit: (s.programmeState?.audit ?? []).slice(n).map((a) => a.reason), sets: input.sport === 'strength' ? input.sets ?? [] : [] });
+      const audit = (s.programmeState?.audit ?? []).slice(n).map((a) => a.reason);
+      const touched = new Set(audit.map((a) => a.params.trackId).filter((x): x is string => typeof x === 'string'));
+      executed.push({ requestId: r.requestId, sport: r.sport, date: r.date, event, audit, sets: input.sport === 'strength' ? input.sets ?? [] : [], tracksAfter: s.strength.tracks.filter((t) => touched.has(t.trackId)) });
     }
     s = closeProgrammeWeekInApp(s, clock(weekStarts[w + 1] ?? nextMonday(start)));
     weeks.push({ weekStart: start, before, week, executed, boundary });
@@ -232,6 +240,7 @@ export function report(run: { final: AppState; weeks: WeekRun[] }, o: ReportOpti
       }
     }
     out.push('', 'Séances Strength :', '', ...notes, '');
+    out.push(...anchorsTable(wk));
     const groups = Object.keys(params['strength.volume'].muscleGroups).sort();
     // S4 — bilan de volume du moteur Strength (cible du ruleset, prévu, statut, contraintes de la semaine).
     const vol = strengthWeekVolume(wk.before, wk.weekStart);
@@ -254,6 +263,38 @@ export function report(run: { final: AppState; weeks: WeekRun[] }, o: ReportOpti
   return `${out.join('\n')}\n`;
 }
 
+const fmtNext = (t: StrengthTrack | undefined): string => {
+  const n = t?.nextPrescription;
+  if (!n) return '—';
+  const reps = typeof n.reps === 'number' ? String(n.reps) : n.reps.min === n.reps.max ? String(n.reps.min) : `${String(n.reps.min)}–${String(n.reps.max)}`;
+  return `${String(n.sets)} × ${reps}${n.loadKg !== undefined ? ` @ ${String(n.loadKg)} kg` : ''}${n.rir !== undefined ? ` · RIR ${String(n.rir)}` : ''}`;
+};
+
+/**
+ * S5 — exercices PRINCIPAUX (tracks d'ancre) : prescription, RIR cible et observé, verdict de preuve, réussites exactes
+ * consécutives, décision du modèle et prescription suivante (track après la réalisation).
+ */
+function anchorsTable(wk: WeekRun): string[] {
+  const rows: string[] = [];
+  for (const e of wk.executed) {
+    const req = wk.week.requests.find((r) => r.requestId === e.requestId);
+    const items = req ? mainItems(recordOf(req)?.session ?? { blocks: [] } as unknown as SessionDraft) : [];
+    for (const a of e.audit.filter((x) => x.code === 'PROGRESSION.EXPOSURE_CLASSIFIED')) {
+      const t = e.tracksAfter.find((x) => x.trackId === a.params.trackId);
+      if (t?.tier !== 'anchor') continue;
+      const it = items.find((i) => i.exerciseId === a.params.exerciseId);
+      const sets = it?.prescription.type === 'sets' ? it.prescription.sets.filter(work) : [];
+      const first = sets[0];
+      const kg = first?.intensity?.mode === 'load' ? `${String(first.intensity.kg)} kg` : first?.intensity?.mode === 'bodyweight' ? 'PDC' : '—';
+      const observed = e.sets.filter((x) => x.itemId === it?.id && x.done).at(-1)?.rir;
+      const decision = e.audit.filter((x) => x.params.trackId === a.params.trackId && x.code !== 'PROGRESSION.EXPOSURE_CLASSIFIED')
+        .map((x) => (x.code === 'PROGRESSION.HELD' ? `maintien (${String(x.params.cause)})` : x.code === 'PROGRESSION.ADVANCED' ? `**+${x.params.variable === 'load' ? 'charge' : 'reps'}**` : x.code === 'PROGRESSION.DECISION_BLOCKED' ? 'BLOCKED (réussite exacte)' : x.code === 'PROGRESSION.METHOD_UNGOVERNED' ? `BLOCKED (méthode PDC, effort ${String(x.params.effort)})` : x.code.replace('PROGRESSION.', ''))).join(' ; ');
+      rows.push(`| ${e.date} | ${exerciseLabel(String(a.params.exerciseId))} | ${String(sets.length)} × ${first ? fmtReps(first.reps) : '—'} @ ${kg} | ${first ? String(rirOf(first) ?? '—') : '—'} | ${observed !== undefined ? String(observed) : 'inconnu'} | ${String(a.params.kind)} | ${String(t.evidence?.exactStreak ?? 0)} | ${t.e1rmKg !== undefined ? `${String(Math.round(t.e1rmKg * 10) / 10)} (${t.evidence?.e1rmBasis ?? '—'})` : '—'} | ${decision || '—'} | ${fmtNext(t)} |`);
+    }
+  }
+  return rows.length === 0 ? [] : ['Exercices principaux (ancres) :', '', '| Jour | Exercice | Prescription | RIR cible | RIR observé | Preuve | Réussites exactes consécutives | e1RM (nature) | Décision | Prescription suivante |', '|---|---|---|---|---|---|---|---|---|---|', ...rows, ''];
+}
+
 /** S4 — récapitulatif chiffré (stabilité, progression, décisions bloquées, taille de l'état persisté). */
 function summary(run: { final: AppState; weeks: WeekRun[] }): string[] {
   const audit = run.weeks.flatMap((w) => w.executed.flatMap((e) => e.audit));
@@ -267,7 +308,8 @@ function summary(run: { final: AppState; weeks: WeekRun[] }): string[] {
     `- Continuité : ${String(keptN)} exercices en place conservés par la continuité déclarée (hors ancres déclarées), ${String(replaced.length)} remplacés (${causes.join(', ') || '—'}).`,
     `- Progression : répétitions ×${String(count('PROGRESSION.ADVANCED', (p) => p.variable === 'reps'))}, charge ×${String(count('PROGRESSION.ADVANCED', (p) => p.variable === 'load'))}, maintiens ×${String(count('PROGRESSION.HELD'))}, régressions ×${String(count('PROGRESSION.REGRESSED'))}.`,
     `- Preuves : réussites exactes ×${String(count('PROGRESSION.EXPOSURE_CLASSIFIED', (p) => p.success === 'exact'))}, dépassements ×${String(count('PROGRESSION.EXPOSURE_CLASSIFIED', (p) => p.success === 'exceeded'))}, sans preuve ×${String(count('PROGRESSION.EXPOSURE_CLASSIFIED', (p) => p.success === 'none'))}.`,
-    `- Décisions bloquées : réussite exacte ×${String(count('PROGRESSION.DECISION_BLOCKED'))}, poids du corps ×${String(count('PROGRESSION.METHOD_UNGOVERNED'))}.`,
+    `- Décisions bloquées : réussite exacte ×${String(count('PROGRESSION.DECISION_BLOCKED'))} (effort observé ×${String(count('PROGRESSION.DECISION_BLOCKED', (p) => p.situation === 'exact_success'))}, effort inconnu ×${String(count('PROGRESSION.DECISION_BLOCKED', (p) => p.situation === 'exact_success_effort_unknown'))}), poids du corps ×${String(count('PROGRESSION.METHOD_UNGOVERNED'))}.`,
+    `- Effort : expositions avec effort observé ×${String(count('PROGRESSION.EXPOSURE_CLASSIFIED', (p) => p.effort === 'observed'))}, effort inconnu ×${String(count('PROGRESSION.EXPOSURE_CLASSIFIED', (p) => p.effort === 'unknown'))}.`,
     `- État persisté (JSON compact, saveState) après ${String(run.weeks.length)} semaines : ${String(Math.round(JSON.stringify(run.final).length / 1024))} Ko.`,
     '',
   ];

@@ -29,6 +29,8 @@ export interface ExecutedItem {
   readonly sessionCompleted: boolean;
   readonly skipReason?: 'pain' | 'safety_pause' | 'other';
   readonly substitutedFrom?: string;
+  /** S5 — statut déclaré de la séance (exécution), pour la preuve : terminée, modifiée ou abandonnée. */
+  readonly sessionStatus?: 'completed' | 'modified' | 'abandoned';
 }
 
 const targetMin = (r: RepTarget): number => (typeof r === 'number' ? r : r.min);
@@ -65,21 +67,37 @@ export function classifyExposure(x: ExecutedItem, params: StrengthParams): Expos
 }
 
 /**
- * Strength S4 — PREUVE d'une exposition (contrat, aucune règle de décision) : ce qui était prescrit face à ce qui a été
- * réalisé. Distingue « prescription exactement réussie » (`exact`) de « prescription dépassée » (`exceeded`) et de
- * « aucune preuve de capacité » (`none`), et dit si le RIR a été SAISI (sinon `not_collected` : aucune déduction).
- * La politique qui transforme cette preuve en progression reste celle du modèle de la track (ruleset).
+ * Strength S4/S5 — PREUVE d'une exposition : ce qui était prescrit face à ce qui a été réalisé, classée en UN seul
+ * endroit (aucune condition dispersée). Contrat, aucune règle de décision : la politique qui transforme la preuve en
+ * progression reste celle du modèle de la track (ruleset).
+ *
+ * Invariant S5 : l'EFFORT est `observed` (RIR réellement saisi, 0 compris) ou `unknown` (aucun RIR saisi) — une
+ * absence n'est JAMAIS lue comme RIR 0.
  */
+export const EVIDENCE_KINDS = [
+  'pain', 'session_abandoned', 'substituted', 'insufficient_data', 'load_lower', 'partial_sets', 'reps_lower', 'effort_harder',
+  'load_higher', 'exceeded_reps', 'better_rir', 'exact_effort_known', 'exact_effort_unknown',
+] as const;
+export type EvidenceKind = (typeof EVIDENCE_KINDS)[number];
+
 export interface ExposureEvidence {
   readonly exposure: ExposureClass;
+  /** Verdict principal (le plus restrictif d'abord) et tous les signaux observés. */
+  readonly kind: EvidenceKind;
+  readonly signals: readonly string[];
+  /** L'exposition prouve-t-elle que la prescription a été au moins réussie ? (sinon `why`). */
+  readonly probative: boolean;
+  readonly why: string;
   readonly success: 'exact' | 'exceeded' | 'none';
   readonly sets: { readonly prescribed: number; readonly performed: number };
   /** Répétitions : écart entre le minimum réalisé et la cible (borne haute d'une plage), en répétitions. */
   readonly repsDelta: number | null;
   /** Charge : écart entre la charge minimale réalisée et la charge prescrite (kg) ; null sans charge prescrite. */
   readonly loadDeltaKg: number | null;
-  /** RIR : écart entre le RIR saisi (dernière série) et le RIR visé ; null si non saisi ou non prescrit. */
+  /** RIR : écart entre le RIR SAISI (dernière série) et le RIR visé ; null si non saisi ou non prescrit. */
   readonly rirDelta: number | null;
+  readonly effort: 'observed' | 'unknown';
+  /** Forme historique S4 de `effort` (`reported` = observé). */
   readonly rir: 'reported' | 'not_collected';
 }
 
@@ -97,13 +115,68 @@ export function exposureEvidence(x: ExecutedItem, cls: ExposureClass): ExposureE
   const repsDelta = target !== undefined && repsMin !== undefined ? repsMin - target : null;
   const loadDeltaKg = prescribedKg !== undefined && loadMin !== undefined ? loadMin - prescribedKg : null;
   const rirDelta = targetR !== undefined && lastRir !== undefined ? lastRir - targetR : null;
+  const effort = x.performed.some((s) => s.rir !== undefined) ? 'observed' as const : 'unknown' as const;
+  const signals = [
+    ...(x.sessionStatus === 'modified' ? ['session_modified'] : []), ...(x.sessionStatus === 'abandoned' ? ['session_abandoned'] : []),
+    ...(x.performed.length > 0 && x.performed.length < work.length ? ['partial_sets'] : []),
+    ...((repsDelta ?? 0) < 0 ? ['reps_lower'] : []), ...((repsDelta ?? 0) > 0 ? ['reps_higher'] : []),
+    ...((loadDeltaKg ?? 0) < 0 ? ['load_lower'] : []), ...((loadDeltaKg ?? 0) > 0 ? ['load_higher'] : []),
+    ...((rirDelta ?? 0) < 0 ? ['rir_lower'] : []), ...((rirDelta ?? 0) > 0 ? ['rir_higher'] : []),
+    `effort_${effort}`,
+  ];
   const met = cls === 'on_target' || cls === 'above';
-  const beyond = cls === 'above' || (repsDelta ?? 0) > 0 || (loadDeltaKg ?? 0) > 0 || (rirDelta ?? 0) > 0;
+  // Verdict principal : le motif le plus RESTRICTIF l'emporte (douleur, interruption, données, charge, séries…).
+  const kind: EvidenceKind = cls === 'pain' || cls === 'safety_pause' ? 'pain'
+    : cls === 'interrupted' || x.sessionStatus === 'abandoned' ? 'session_abandoned'
+    : cls === 'substituted' ? 'substituted'
+    : cls === 'no_data' ? 'insufficient_data'
+    : cls === 'load_deviation' ? 'load_lower'
+    : cls === 'partial' && x.performed.length < work.length ? 'partial_sets'
+    : !met && (repsDelta ?? 0) < 0 ? 'reps_lower'
+    : !met ? 'effort_harder'
+    : (loadDeltaKg ?? 0) > 0 ? 'load_higher'
+    : (repsDelta ?? 0) > 0 ? 'exceeded_reps'
+    : (rirDelta ?? 0) > 0 ? 'better_rir'
+    : effort === 'observed' ? 'exact_effort_known' : 'exact_effort_unknown';
+  const success = !met ? 'none' as const : kind === 'exact_effort_known' || kind === 'exact_effort_unknown' ? 'exact' as const : 'exceeded' as const;
+  const why = met ? (effort === 'unknown' ? 'prescription réussie, effort inconnu' : 'prescription réussie, effort observé') : `non probante : ${kind}`;
   return {
-    exposure: cls, success: !met ? 'none' : beyond ? 'exceeded' : 'exact',
+    exposure: cls, kind, signals, probative: met, why, success,
     sets: { prescribed: work.length, performed: x.performed.length }, repsDelta, loadDeltaKg, rirDelta,
-    rir: x.performed.some((s) => s.rir !== undefined) ? 'reported' : 'not_collected',
+    effort, rir: effort === 'observed' ? 'reported' : 'not_collected',
   };
+}
+
+/**
+ * S5 — estimation d'effort d'une exposition SANS RIR inventé :
+ * - `observed` : e1RM (médiane) des séries dont le RIR a été SAISI ;
+ * - `lowerBound` : borne INFÉRIEURE de l'e1RM des séries sans RIR (RIR ≥ 0 ⇒ e1RM ≥ charge × (1 + reps / diviseur)).
+ * La borne n'est jamais une estimation ponctuelle : elle peut seulement relever une estimation qu'elle contredit.
+ */
+export function effortEstimate(sets: readonly PerformedSet[], params: StrengthParams): { observed?: number; lowerBound?: number } {
+  const l = params['strength.load'];
+  const valid = (rtf: number) => rtf >= l.validRepRange.min && rtf <= l.validRepRange.max;
+  const observed = sets.flatMap((s) => (s.rir !== undefined && s.loadKg !== undefined && s.loadKg > 0 && valid(s.reps + s.rir) ? [s.loadKg * (1 + (s.reps + s.rir) / l.e1rmDivisor)] : []));
+  const bounds = sets.flatMap((s) => (s.rir === undefined && s.loadKg !== undefined && s.loadKg > 0 && valid(s.reps) ? [s.loadKg * (1 + s.reps / l.e1rmDivisor)] : []));
+  const o = median(observed);
+  return { ...(o !== undefined ? { observed: o } : {}), ...(bounds.length > 0 ? { lowerBound: Math.max(...bounds) } : {}) };
+}
+
+/**
+ * S5 — HISTORIQUE LONGITUDINAL des preuves d'une track : réussites EXACTES consécutives à la même prescription,
+ * réparties selon l'effort (observé / inconnu), et nature de l'estimation e1RM. Contrat seulement : aucune politique
+ * ne transforme encore une série de réussites exactes en hausse (capacité `exact_success_progression` BLOQUÉE).
+ */
+export function nextEvidence(before: StrengthTrack, after: StrengthTrack, ev: ExposureEvidence, basis: 'observed' | 'lower_bound' | undefined): StrengthTrack['evidence'] {
+  const prev = before.evidence;
+  const same = before.nextPrescription?.loadKg === after.nextPrescription?.loadKg && JSON.stringify(before.nextPrescription?.reps) === JSON.stringify(after.nextPrescription?.reps);
+  const e1rmBasis = basis ?? prev?.e1rmBasis;
+  const base = { ...(e1rmBasis ? { e1rmBasis } : {}) };
+  if (ev.success === 'exact' && same) {
+    return { ...base, exactStreak: (prev?.exactStreak ?? 0) + 1, effortKnown: (prev?.effortKnown ?? 0) + (ev.effort === 'observed' ? 1 : 0), effortUnknown: (prev?.effortUnknown ?? 0) + (ev.effort === 'unknown' ? 1 : 0) };
+  }
+  if (!prev && !basis) return undefined;
+  return { ...base, exactStreak: 0, effortKnown: 0, effortUnknown: 0 };
 }
 
 export interface TrackUpdate {
@@ -119,14 +192,6 @@ function stepFor(e: Exercise, params: StrengthParams, declaredStepKg?: number): 
   return inc === undefined ? undefined : inc * params['strength.progression'].loadStepIncrements;
 }
 
-function e1rmOf(sets: readonly PerformedSet[], params: StrengthParams): number | undefined {
-  const l = params['strength.load'];
-  const vals = sets.flatMap((s) => {
-    const rtf = s.reps + (s.rir ?? l.assumedRirWhenUnknown);
-    return s.loadKg !== undefined && s.loadKg > 0 && rtf >= l.validRepRange.min && rtf <= l.validRepRange.max ? [s.loadKg * (1 + rtf / l.e1rmDivisor)] : [];
-  });
-  return median(vals);
-}
 
 /**
  * RIR prévisible pour `reps` répétitions à une charge, d'après la meilleure série MESURÉE de la séance
@@ -144,6 +209,23 @@ function predictedRirAt(sets: readonly PerformedSet[], kg: number, reps: number,
  * `phaseKind = deload` : aucune hausse. Douleur / pause : track suspendue, rien ne baisse.
  */
 export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number): TrackUpdate {
+  const u = updateTrackModel(track, x, cls, e, params, phaseKind, declaredStepKg);
+  // S5 — historique longitudinal des preuves (douleur / pause : inchangé, ce n'est ni une réussite ni un échec).
+  if (cls === 'pain' || cls === 'safety_pause') return u;
+  const basis = track.model === 'autoregulated' ? autoregulatedBasis(x.performed, params, track.e1rmKg, u.track.e1rmKg) : undefined;
+  const evidence = nextEvidence(track, u.track, exposureEvidence(x, cls), basis);
+  if (evidence === undefined) return u;
+  return { ...u, track: { ...u.track, evidence } };
+}
+
+/** Nature de l'estimation après mise à jour : observée si un RIR a été saisi ; borne seulement si la borne l'a RELEVÉE. */
+const autoregulatedBasis = (sets: readonly PerformedSet[], params: StrengthParams, before: number | undefined, after: number | undefined): 'observed' | 'lower_bound' | undefined => {
+  const est = effortEstimate(sets, params);
+  if (est.observed !== undefined) return 'observed';
+  return est.lowerBound !== undefined && after === est.lowerBound && (before === undefined || est.lowerBound > before) ? 'lower_bound' : undefined;
+};
+
+function updateTrackModel(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number): TrackUpdate {
   const p = params['strength.progression'];
   const reasons: ReasonCode[] = [];
   const next = track.nextPrescription;
@@ -188,8 +270,12 @@ export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: Exposure
       let kg = next.loadKg + step;
       let e1rm = track.e1rmKg;
       if (track.model === 'autoregulated') {
-        const measured = e1rmOf(x.performed, params);
-        e1rm = measured === undefined ? track.e1rmKg : track.e1rmKg === undefined ? measured : median([track.e1rmKg, measured]);
+        // S5 — effort OBSERVÉ (RIR saisi) : estimation lissée (médiane avec l'estimation de la track, ruleset).
+        // Effort INCONNU : seule une borne inférieure est connue ; elle relève l'estimation qu'elle contredit et ne
+        // l'abaisse jamais (avant S5 : RIR 0 supposé, médiane ⇒ l'estimation était tirée vers le bas).
+        const est = effortEstimate(x.performed, params);
+        if (est.observed !== undefined) e1rm = e1rm === undefined ? est.observed : median([e1rm, est.observed]);
+        if (est.lowerBound !== undefined && (e1rm === undefined || est.lowerBound > e1rm)) e1rm = est.lowerBound;
         const reps = targetMin(next.reps);
         const rtf = String(Math.round(reps + (next.rir ?? 0)));
         const pct = params['strength.load'].pctByRepsToFailure[rtf];
@@ -200,7 +286,8 @@ export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: Exposure
         // S4 — réussite EXACTE (aucune marge mesurée) : l'estimation reproduit la charge prescrite ; aucune règle
         // gouvernée ne transforme une réussite exacte en hausse ⇒ décision tracée comme BLOQUÉE, jamais inventée.
         const ev = exposureEvidence(x, cls);
-        const blocked = ev.success === 'exact' ? [strengthReasons.emit('PROGRESSION.DECISION_BLOCKED', { trackId: track.trackId, model: track.model, situation: 'exact_success', capability: 'exact_success_progression', rir: ev.rir })] : [];
+        const streak = (track.evidence?.exactStreak ?? 0) + 1;
+        const blocked = ev.success === 'exact' ? [strengthReasons.emit('PROGRESSION.DECISION_BLOCKED', { trackId: track.trackId, model: track.model, situation: ev.effort === 'observed' ? 'exact_success' : 'exact_success_effort_unknown', capability: 'exact_success_progression', rir: ev.rir, exactStreak: streak })] : [];
         return { track: { ...base, ...(e1rm !== undefined ? { e1rmKg: e1rm } : {}) }, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: 'estimate' }), ...blocked], rotate: false };
       }
       return { track: { ...base, ...(e1rm !== undefined ? { e1rmKg: e1rm } : {}), nextPrescription: { ...next, loadKg: kg } }, reasons: [strengthReasons.emit('PROGRESSION.ADVANCED', { trackId: track.trackId, variable: 'load' })], rotate: false };
@@ -216,7 +303,10 @@ export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: Exposure
         // difficile, nouvelle plage, maintien). Les méthodes listées sont celles que le catalogue rend possibles.
         if (next.loadKg === undefined && (e.loadModel === 'bodyweight_plus' || e.loadModel === undefined)) {
           const methods = [...(e.loadModel === 'bodyweight_plus' ? ['added_load'] : []), ...(e.progressionFamily ? ['harder_variant'] : []), 'new_rep_range', 'hold'];
-          return { track: base, reasons: [strengthReasons.emit('PROGRESSION.METHOD_UNGOVERNED', { trackId: track.trackId, exerciseId: e.id, repsReached: range.max, methods, capability: 'bodyweight_overload_method' })], rotate: false };
+          // S5 — l'effort observé distingue « haut de plage avec réserve » de « haut de plage à la cible » ; inconnu sinon.
+          const ev = exposureEvidence(x, cls);
+          const effort = ev.effort === 'unknown' ? 'unknown' : (ev.rirDelta ?? 0) > 0 ? 'reserve_above_target' : 'at_target';
+          return { track: base, reasons: [strengthReasons.emit('PROGRESSION.METHOD_UNGOVERNED', { trackId: track.trackId, exerciseId: e.id, repsReached: range.max, methods, capability: 'bodyweight_overload_method', effort })], rotate: false };
         }
         return { track: base, reasons: [strengthReasons.emit('PROGRESSION.CAP_REACHED', { trackId: track.trackId })], rotate: false };
       }
@@ -228,7 +318,9 @@ export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: Exposure
       const predictedRir = predictedRirAt(x.performed, kg, range.min, params);
       if (predictedRir !== undefined && predictedRir <= (next.rir ?? 0) - p.belowRirMargin) {
         const holds = resumed.consecutiveHolds + 1;
-        return { track: { ...resumed, consecutiveSuccess: 0, consecutiveBelow: 0, consecutiveHolds: holds }, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: 'granularity' })], rotate: holds >= p.stagnationHolds };
+        // S5 — sans RIR saisi, la prédiction n'est qu'une BORNE (prudence inchangée), et la cause le dit.
+        const cause = x.performed.some((z) => z.rir !== undefined) ? 'granularity' : 'granularity_effort_unknown';
+        return { track: { ...resumed, consecutiveSuccess: 0, consecutiveBelow: 0, consecutiveHolds: holds }, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause })], rotate: holds >= p.stagnationHolds };
       }
       return { track: { ...base, nextPrescription: { ...next, loadKg: kg, reps: { min: range.min, max: range.max } } }, reasons: [strengthReasons.emit('PROGRESSION.ADVANCED', { trackId: track.trackId, variable: 'load' })], rotate: false };
     }
@@ -249,7 +341,10 @@ export function createTrack(input: {
   const first = work[0];
   const reps: RepTarget = first?.reps ?? 1;
   const lastLoad = [...input.performed].reverse().find((s) => s.loadKg !== undefined && s.loadKg > 0)?.loadKg;
-  const e1rm = e1rmOf(input.performed, params);
+  // S5 — e1RM initial : observé (RIR saisi) sinon borne inférieure (sans RIR) ; sa nature est mémorisée.
+  const est = effortEstimate(input.performed, params);
+  const e1rm = est.observed ?? est.lowerBound;
+  const basis = est.observed !== undefined ? 'observed' as const : est.lowerBound !== undefined ? 'lower_bound' as const : undefined;
   // RIR de référence = profil de base (jamais le RIR de calibration ni un RIR modifié par le niveau / la phase).
   const profile = params['strength.stimuli'][input.stimulus]?.doseProfile;
   const cell = profile === undefined ? undefined : params['strength.dose.base'][profile]?.[input.role]?.[exerciseClass(input.exercise, params)];
@@ -266,6 +361,7 @@ export function createTrack(input: {
     ...(lastLoad !== undefined ? { cycleStartLoadKg: lastLoad } : {}),
     ...(e1rm !== undefined ? { e1rmKg: e1rm } : {}),
     nextPrescription: { sets: Math.max(1, work.length), reps: dpRange ?? reps, ...(lastLoad !== undefined ? { loadKg: lastLoad } : {}), ...(rir !== undefined ? { rir } : {}) },
+    ...(basis ? { evidence: { exactStreak: 0, effortKnown: 0, effortUnknown: 0, e1rmBasis: basis } } : {}),
   };
   return { track, reasons: [strengthReasons.emit('PROGRESSION.TRACK_CREATED', { trackId, tier: input.tier, exerciseId: input.exercise.id })] };
 }

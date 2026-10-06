@@ -1,4 +1,4 @@
-# Strength (S4) — Scénario B : Strength (3 / semaine, hypertrophie) + Running (3 / semaine, semi-marathon), priorité Strength
+# Strength (S5) — Scénario B : Strength (3 / semaine, hypertrophie) + Running (3 / semaine, semi-marathon), priorité Strength
 
 Chemin réel : createBeta0Programme (dernière course déclarée TEST_ONLY) → ensureBeta0Week → Global Planner (deux passes, voisines) → StrengthEngine + RunningEngine.
 Réalisations TEST_ONLY : Strength comme prescrit ; Running durée prescrite, 6 000 m. ⚓ = ancre déclarée.
@@ -30,6 +30,12 @@ Séances Strength :
 - 2026-10-05 str_full_body #1 — graine `strength:str_full_body:strength_volume:1` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : arms, back, calves, chest, core, glutes, hamstrings, quads, shoulders ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (stimulus_preservation), i.warmup_extra (duration), i.cooldown (duration)
 - 2026-10-07 str_full_body #2 — graine `strength:str_full_body:strength_volume:2` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, core, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.iso_upper (volume)
 - 2026-10-08 str_full_body #3 — graine `strength:str_full_body:strength_volume:3` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : back, calves, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (duration), fb.iso_upper (volume), i.cooldown (duration)
+
+Exercices principaux (ancres) :
+
+| Jour | Exercice | Prescription | RIR cible | RIR observé | Preuve | Réussites exactes consécutives | e1RM (nature) | Décision | Prescription suivante |
+|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-08 | Squat barre | 2 × 6 @ — | 5 | 5 | exact_effort_known | 1 | 54.7 (observed) | maintien (evidence) | 3 × 6 @ 40 kg · RIR 2 |
 
 | Groupe | Cible (plancher) | Haut | Prévu (séries dures E1) | Réalisé | Statut |
 |---|---|---|---|---|---|
@@ -76,6 +82,20 @@ Séances Strength :
 - 2026-10-13 str_full_body #2 — graine `strength:str_full_body:strength_volume:2` ; ancres déclarées : Tirage horizontal poulie, Développé épaules haltères, Squat barre ; sous le plancher (prévu + réalisé avant la séance) : back, calves, hamstrings, quads ; au haut ou au-delà : arms ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (volume), fb.iso_upper (volume), i.cooldown (duration)
 - 2026-10-15 str_full_body #3 — graine `strength:str_full_body:strength_volume:3` ; ancres déclarées : Soulevé de terre roumain, Tractions, Presse pectoraux machine ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.iso_upper (volume), i.warmup_extra (duration), i.cooldown (duration)
 
+Exercices principaux (ancres) :
+
+| Jour | Exercice | Prescription | RIR cible | RIR observé | Preuve | Réussites exactes consécutives | e1RM (nature) | Décision | Prescription suivante |
+|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-12 | Soulevé de terre roumain | 2 × 6 @ 40 kg | 4 | 4 | exact_effort_known | 1 | 54.7 (observed) | maintien (evidence) | 2 × 6 @ 40 kg · RIR 2 |
+| 2026-10-12 | Presse pectoraux machine | 3 × 8–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 4 × 9–12 @ 40 kg · RIR 2 |
+| 2026-10-12 | Tractions | 3 × 8–12 @ PDC | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 9–12 · RIR 2 |
+| 2026-10-13 | Squat barre | 2 × 6 @ 40 kg | 4 | 4 | exact_effort_known | 0 | 54 (observed) | **+charge** | 3 × 6 @ 42.5 kg · RIR 2 |
+| 2026-10-13 | Tirage horizontal poulie | 3 × 8–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 9–12 @ 40 kg · RIR 2 |
+| 2026-10-13 | Développé épaules haltères | 3 × 8–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 9–12 @ 40 kg · RIR 2 |
+| 2026-10-15 | Soulevé de terre roumain | 2 × 6 @ 40 kg | 4 | 4 | exact_effort_known | 0 | 54 (observed) | **+charge** | 2 × 6 @ 42.5 kg · RIR 2 |
+| 2026-10-15 | Presse pectoraux machine | 3 × 8–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 4 × 10–12 @ 40 kg · RIR 2 |
+| 2026-10-15 | Tractions | 3 × 8–12 @ PDC | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 10–12 · RIR 2 |
+
 | Groupe | Cible (plancher) | Haut | Prévu (séries dures E1) | Réalisé | Statut |
 |---|---|---|---|---|---|
 | arms | 6 | 14 | 16.5 | 16.5 | achieved |
@@ -118,6 +138,20 @@ Séances Strength :
 - 2026-10-19 str_full_body #1 — graine `strength:str_full_body:strength_volume:1` ; ancres déclarées : Squat barre, Tirage horizontal poulie, Développé épaules haltères ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_knee (neighbor:running:history) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.iso_upper (volume)
 - 2026-10-20 str_full_body #2 — graine `strength:str_full_body:strength_volume:2` ; ancres déclarées : Soulevé de terre roumain, Tractions, Presse pectoraux machine ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (volume), fb.iso_upper (duration), i.cooldown (duration)
 - 2026-10-22 str_full_body #3 — graine `strength:str_full_body:strength_volume:3` ; ancres déclarées : Squat barre, Tirage horizontal poulie, Développé épaules haltères ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (duration), fb.iso_upper (volume), i.cooldown (duration)
+
+Exercices principaux (ancres) :
+
+| Jour | Exercice | Prescription | RIR cible | RIR observé | Preuve | Réussites exactes consécutives | e1RM (nature) | Décision | Prescription suivante |
+|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-19 | Squat barre | 2 × 6 @ 42.5 kg | 4 | 4 | exact_effort_known | 1 | 54 (observed) | maintien (evidence) | 3 × 6 @ 42.5 kg · RIR 2 |
+| 2026-10-19 | Tirage horizontal poulie | 4 × 9–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 10–12 @ 40 kg · RIR 2 |
+| 2026-10-19 | Développé épaules haltères | 3 × 9–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 10–12 @ 40 kg · RIR 2 |
+| 2026-10-20 | Soulevé de terre roumain | 2 × 6 @ 42.5 kg | 4 | 4 | exact_effort_known | 1 | 54 (observed) | maintien (evidence) | 2 × 6 @ 42.5 kg · RIR 2 |
+| 2026-10-20 | Presse pectoraux machine | 3 × 10–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 4 × 11–12 @ 40 kg · RIR 2 |
+| 2026-10-20 | Tractions | 3 × 10–12 @ PDC | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 11–12 · RIR 2 |
+| 2026-10-22 | Squat barre | 2 × 6 @ 42.5 kg | 4 | 4 | exact_effort_known | 2 | 55.3 (observed) | maintien (estimate) ; BLOCKED (réussite exacte) | 3 × 6 @ 42.5 kg · RIR 2 |
+| 2026-10-22 | Tirage horizontal poulie | 3 × 9–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 11–12 @ 40 kg · RIR 2 |
+| 2026-10-22 | Développé épaules haltères | 3 × 9–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 11–12 @ 40 kg · RIR 2 |
 
 | Groupe | Cible (plancher) | Haut | Prévu (séries dures E1) | Réalisé | Statut |
 |---|---|---|---|---|---|
@@ -164,6 +198,20 @@ Séances Strength :
 - 2026-10-27 str_full_body #2 — graine `strength:str_full_body:strength_volume:2` ; ancres déclarées : Squat barre, Tirage horizontal poulie, Développé épaules haltères ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (duration), fb.iso_upper (volume), i.cooldown (duration)
 - 2026-10-29 str_full_body #3 — graine `strength:str_full_body:strength_volume:3` ; ancres déclarées : Soulevé de terre roumain, Tractions, Presse pectoraux machine ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (duration), fb.iso_upper (duration), i.cooldown (duration)
 
+Exercices principaux (ancres) :
+
+| Jour | Exercice | Prescription | RIR cible | RIR observé | Preuve | Réussites exactes consécutives | e1RM (nature) | Décision | Prescription suivante |
+|---|---|---|---|---|---|---|---|---|---|
+| 2026-10-26 | Soulevé de terre roumain | 3 × 6 @ 42.5 kg | 4 | 4 | exact_effort_known | 2 | 55.3 (observed) | maintien (estimate) ; BLOCKED (réussite exacte) | 2 × 6 @ 42.5 kg · RIR 2 |
+| 2026-10-26 | Presse pectoraux machine | 3 × 11–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 4 × 12 @ 40 kg · RIR 2 |
+| 2026-10-26 | Tractions | 3 × 11–12 @ PDC | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 12 · RIR 2 |
+| 2026-10-27 | Squat barre | 2 × 6 @ 42.5 kg | 4 | 4 | exact_effort_known | 3 | 55.3 (observed) | maintien (evidence) | 3 × 6 @ 42.5 kg · RIR 2 |
+| 2026-10-27 | Tirage horizontal poulie | 3 × 11–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 12 @ 40 kg · RIR 2 |
+| 2026-10-27 | Développé épaules haltères | 3 × 11–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 12 @ 40 kg · RIR 2 |
+| 2026-10-29 | Soulevé de terre roumain | 2 × 6 @ 42.5 kg | 4 | 4 | exact_effort_known | 3 | 55.3 (observed) | maintien (evidence) | 2 × 6 @ 42.5 kg · RIR 2 |
+| 2026-10-29 | Presse pectoraux machine | 3 × 11–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+charge** | 4 × 8–12 @ 45 kg · RIR 2 |
+| 2026-10-29 | Tractions | 3 × 11–12 @ PDC | 2 | 2 | exact_effort_known | 1 | — | BLOCKED (méthode PDC, effort at_target) | 3 × 12 · RIR 2 |
+
 | Groupe | Cible (plancher) | Haut | Prévu (séries dures E1) | Réalisé | Statut |
 |---|---|---|---|---|---|
 | arms | 6 | 14 | 16.5 | 16.5 | achieved |
@@ -187,6 +235,7 @@ Décisions bloquées (après réalisation) : réussite exacte sans marge (autore
 - Continuité : 13 exercices en place conservés par la continuité déclarée (hors ancres déclarées), 4 remplacés (declared_anchor ×4).
 - Progression : répétitions ×24, charge ×4, maintiens ×8, régressions ×0.
 - Preuves : réussites exactes ×37, dépassements ×0, sans preuve ×0.
-- Décisions bloquées : réussite exacte ×2, poids du corps ×1.
-- État persisté (JSON compact, saveState) après 4 semaines : 295 Ko.
+- Décisions bloquées : réussite exacte ×2 (effort observé ×2, effort inconnu ×0), poids du corps ×1.
+- Effort : expositions avec effort observé ×37, effort inconnu ×0.
+- État persisté (JSON compact, saveState) après 4 semaines : 297 Ko.
 

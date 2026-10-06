@@ -262,6 +262,65 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
   await c2.close();
 }
 
+// E — Strength S5 : EFFORT observé (répétitions en réserve) sur petit écran Android (Galaxy S9+). Séance Musculation,
+// première série de travail validée, RIR choisi puis modifié sans perturber le chrono, rechargement, fin de séance,
+// semaine suivante générée : l'observation parvient à Strength (track à e1RM observé). Aucun RIR ⇒ jamais 0.
+{
+  const pre = readFileSync(new URL('../../../packages/app-core/tests/fixtures/pre-s1-state.json', import.meta.url), 'utf8');
+  const c = await browser.newContext({ ...devices['Galaxy S9+'], locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+  const p = await c.newPage();
+  await p.clock.install({ time: new Date('2026-10-05T07:30:00+02:00') });
+  await p.clock.resume();
+  await p.addInitScript((x) => { if (!localStorage.getItem('kairo.state')) localStorage.setItem('kairo.state', x); }, pre);
+  await p.goto(URL_);
+  const tag = '[S5 effort, Galaxy S9+]';
+  const st = () => p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+  await p.getByRole('button', { name: /^Musculation : Haut du corps/ }).first().click();
+  await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  const ex = p.locator('section.k-ex').first();
+  const line = ex.locator('.k-set:not(.warm)').first();
+  await line.getByLabel('Répétitions réalisées').fill('6');
+  if ((await line.getByLabel('Charge (kg)').inputValue()) === '') await line.getByLabel('Charge (kg)').fill('40');
+  check(await ex.getByRole('group', { name: /Répétitions en réserve/ }).count() === 0, `${tag} aucune saisie d’effort avant une série de travail validée`);
+  await line.getByRole('button', { name: 'Cocher la série' }).click();
+  const timer = p.getByRole('timer', { name: 'Chrono de repos' });
+  check(await timer.isVisible(), `${tag} chrono de repos démarré par la validation de la série`);
+  const restBefore = Object.values((await st()).programmeLogs ?? {})[0]?.rest;
+  const effort = ex.getByRole('group', { name: /Répétitions en réserve/ });
+  check(await effort.isVisible(), `${tag} pastilles « reps en réserve » sous la série validée`);
+  // Playwright refuse un clic sur un élément recouvert (barre de navigation, chrono) : le clic prouve l'accessibilité.
+  await effort.getByRole('button', { name: '2 répétitions en réserve' }).click();
+  await effort.getByRole('button', { name: '3 répétitions en réserve' }).click();
+  if (shots) { await effort.scrollIntoViewIfNeeded(); await p.screenshot({ path: `${shots}/s5-effort-galaxy.png` }); }
+  const log1 = Object.values((await st()).programmeLogs ?? {})[0];
+  check(log1?.sets?.some((x) => x.done && x.rir === 3), `${tag} RIR saisi puis modifié : 3 enregistré`);
+  check(JSON.stringify(log1?.rest) === JSON.stringify(restBefore) && await timer.isVisible(), `${tag} chrono inchangé par la saisie d’effort`);
+  await p.reload();
+  await p.getByRole('button', { name: 'Reprendre la séance' }).click();
+  check(await p.locator('section.k-ex').first().getByRole('button', { name: '3 répétitions en réserve' }).getAttribute('aria-pressed') === 'true', `${tag} rechargement : RIR observé conservé et réaffiché`);
+  const nav = p.getByRole('navigation', { name: 'Navigation principale' });
+  check(await nav.count() === 0 || !(await nav.isVisible()), `${tag} séance plein écran : aucune barre de navigation par-dessus les pastilles`);
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await p.getByRole('radio', { name: 'J’ai adapté la séance' }).click();
+  await p.getByRole('button', { name: 'Enregistrer' }).click();
+  await p.getByText('Séance terminée').first().waitFor();
+  const done = await st();
+  const exposure = (done.strength?.exposures ?? []).find((x) => x.sets.some((z) => z.rir === 3));
+  check(Boolean(exposure), `${tag} exposition enregistrée avec l’effort observé (RIR 3), aucun RIR inventé pour les autres séries`);
+  check((done.strength?.exposures ?? []).every((x) => x.sets.every((z) => z.rir === undefined || z.rir === 3)), `${tag} séries sans saisie : effort inconnu (aucun RIR 0 écrit)`);
+  const track = (done.strength?.tracks ?? []).find((t) => t.exerciseId === exposure?.exerciseId);
+  check(track?.evidence?.e1rmBasis === 'observed', `${tag} track créée avec un e1RM OBSERVÉ (effort connu)`);
+  const saved = JSON.stringify(done);
+  await c.close();
+  // Semaine suivante (lundi 12) : Strength reçoit l'observation (ancre déclarée, prescription issue de la track).
+  const { c: c2, p: p2 } = await freshPage(saved, '2026-10-12T07:30:00+02:00');
+  const next = await p2.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+  const reqs = (next.planner?.weeks?.['2026-10-12']?.requests ?? []).filter((r) => r.sport === 'strength');
+  check(reqs.some((r) => r.reasons.some((x) => x.code === 'PLAN.WEEK_PRESCRIPTION' && (x.params.anchors ?? []).includes(exposure?.exerciseId))), `${tag} semaine suivante : l’exercice observé est ancré et déclaré à Strength`);
+  check(await p2.getByRole('button', { name: /^Musculation : / }).count() > 0, `${tag} semaine suivante affichée`);
+  await c2.close();
+}
+
 // Version réellement servie : identifiant de build affiché dans Réglages = version.json publié (site déployé seulement).
 {
   const { c, p } = await freshPage(readFileSync(new URL('../../../packages/app-core/tests/fixtures/pre-s1-state.json', import.meta.url), 'utf8'));

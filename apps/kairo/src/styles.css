@@ -205,3 +205,10 @@ details summary { cursor: pointer; min-height: 32px; display: flex; align-items:
 /* Champs côte à côte : partage égal de la largeur, jamais de débordement. */
 .row > .field { flex: 1 1 0; min-width: 0; }
 .row > .field input { width: 100%; min-width: 0; }
+
+/* S5 — effort observé (répétitions en réserve) : libellé puis une rangée de pastilles, facultative, sur une ligne. */
+.k-effort { display: flex; flex-direction: column; gap: var(--space-2); margin-top: var(--space-2); padding: var(--space-2) 0; border-top: 1px dashed var(--border); }
+.k-effort-label { display: flex; flex-direction: column; min-width: 0; font-size: 13px; }
+.k-effort-label span { color: var(--text-2); font-size: 12px; }
+.k-effort-chips { display: flex; gap: 6px; }
+.k-effort-chips .chip { flex: 1 1 0; min-width: 0; max-width: 56px; min-height: 44px; padding: 0; font-variant-numeric: tabular-nums; }

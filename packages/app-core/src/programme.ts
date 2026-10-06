@@ -189,6 +189,7 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
         const applied = applyStrengthExecutionTraced(s, {
           archetypeId: intent.archetypeId, session, sets: [...sets], painItems: [...(x.painItems ?? [])],
           sessionCompleted: x.completion !== 'abandoned', sessionPain: x.pain !== undefined && x.pain !== 'NONE',
+          sessionStatus: x.completion === 'abandoned' ? 'abandoned' : x.completion === 'modified' ? 'modified' : 'completed',
         }, at);
         s = { ...s, strength: applied.strength };
         progressionTrace = applied.reasons;

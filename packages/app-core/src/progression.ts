@@ -49,6 +49,8 @@ export interface StrengthExecution {
    * de sa track, jamais une progression ni une régression lues sur une exécution douloureuse).
    */
   readonly sessionPain?: boolean;
+  /** S5 — statut déclaré de la séance (preuve : séance modifiée / abandonnée). */
+  readonly sessionStatus?: 'completed' | 'modified' | 'abandoned';
 }
 
 /** Réalisation appliquée et décisions de progression du moteur Strength qui l'ont produite (trace d'audit). */
@@ -88,7 +90,7 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
     const prescribed = it.prescription.sets.filter(isWork);
     const performed = performedSets(it.id, it.prescription.sets, log);
     const pain = x.sessionPain === true || log.painItems.includes(it.id);
-    const exec: ExecutedItem = { exerciseId: e.id, prescribed, performed, sessionCompleted: x.sessionCompleted ?? true, ...(pain ? { skipReason: 'pain' as const } : {}), ...(it.refs?.substitutedFrom ? { substitutedFrom: it.refs.substitutedFrom } : {}) };
+    const exec: ExecutedItem = { exerciseId: e.id, prescribed, performed, sessionCompleted: x.sessionCompleted ?? true, ...(x.sessionStatus ? { sessionStatus: x.sessionStatus } : {}), ...(pain ? { skipReason: 'pain' as const } : {}), ...(it.refs?.substitutedFrom ? { substitutedFrom: it.refs.substitutedFrom } : {}) };
     const slot = slots.find((z) => z.id === it.refs?.slotId);
     const role: SlotRole = slot?.role ?? 'accessory';
     const trackId = it.refs?.progressionTrackId;
@@ -102,6 +104,7 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
       reasons.push(strengthReasons.emit('PROGRESSION.EXPOSURE_CLASSIFIED', {
         trackId: t.trackId, exerciseId: e.id, exposure: cls, success: ev.success, sets: `${String(ev.sets.performed)}/${String(ev.sets.prescribed)}`,
         repsDelta: signed(ev.repsDelta), loadDeltaKg: signed(ev.loadDeltaKg), rirDelta: signed(ev.rirDelta), rir: ev.rir,
+        kind: ev.kind, effort: ev.effort,
       }), ...u.reasons);
       tracks.set(t.trackId, u.track);
     };

@@ -345,6 +345,21 @@ export function recordProgrammeSet(state: AppState, clock: Clock, requestId: str
   return withLog(state, { ...log, sets, rest });
 }
 
+/**
+ * S5 — EFFORT OBSERVÉ d'une série DÉJÀ VALIDÉE (répétitions en réserve, RIR) : `rir` = valeur saisie, `null` = effacer
+ * (effort inconnu). Ne touche ni aux répétitions, ni à la charge, ni au chrono de repos en cours. Une absence reste
+ * une absence : jamais RIR 0.
+ */
+export function recordProgrammeSetEffort(state: AppState, requestId: string, itemId: string, setIndex: number, rir: number | null): AppState {
+  const log = openLog(state, requestId);
+  const cur = log.sets.find((x) => x.itemId === itemId && x.setIndex === setIndex);
+  if (!cur?.done) throw new AppError('SET_NOT_DONE');
+  if (rir !== null && !(Number.isInteger(rir) && rir >= 0)) throw new AppError('RIR_INVALID');
+  const { rir: _previous, ...rest } = cur;
+  const next: SetLog = rir === null ? rest : { ...rest, rir };
+  return withLog(state, { ...log, sets: log.sets.map((x) => (x === cur ? next : x)) });
+}
+
 export function toggleProgrammePainItem(state: AppState, requestId: string, itemId: string): AppState {
   const log = openLog(state, requestId);
   const painItems = log.painItems.includes(itemId) ? log.painItems.filter((x) => x !== itemId) : [...log.painItems, itemId].sort();

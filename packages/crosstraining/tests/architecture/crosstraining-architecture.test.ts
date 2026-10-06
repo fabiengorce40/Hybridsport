@@ -72,6 +72,15 @@ const STRENGTH_S4_CHANGES = [
   'packages/strength/tests/longitudinal/__reports__/P1.md',
   'packages/strength/tests/longitudinal/__reports__/P3.md',
 ];
+/**
+ * Lot Strength S5 (hors Cross-training, liste FERMÉE) : effort observé / inconnu (jamais RIR 0 supposé dans la
+ * progression), preuve centralisée, historique longitudinal des preuves dans la track ; scénario C (preuves sur
+ * plusieurs expositions) et son rapport.
+ */
+const STRENGTH_S5_CHANGES = [
+  'packages/strength/tests/longitudinal/evidence-longitudinal.test.ts',
+  'packages/strength/tests/longitudinal/__reports__/evidence-longitudinal.md',
+];
 const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/domain/src/duplicate.ts',
   'packages/domain/src/serialization.ts',
@@ -100,6 +109,7 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   ...STRENGTH_S2_CHANGES,
   ...STRENGTH_S3_CHANGES,
   ...STRENGTH_S4_CHANGES,
+  ...STRENGTH_S5_CHANGES,
 ];
 
 describe('frontières', () => {
@@ -128,7 +138,7 @@ describe('frontières', () => {
     }
     const changed = diff.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
     expect(changed.filter((f) => !CT_C2_AUTHORIZED_CORE_CHANGES.includes(f))).toEqual([]);
-    expect(changed.filter((f) => f.startsWith('packages/running/') || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f)))).toEqual([]);
+    expect(changed.filter((f) => f.startsWith('packages/running/') || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f)))).toEqual([]);
   });
 });
 

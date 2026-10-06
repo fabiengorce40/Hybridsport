@@ -66,6 +66,15 @@ export const zStrengthTrack = z.object({
   consecutiveBelow: z.number().int().nonnegative(),
   consecutiveHolds: z.number().int().nonnegative(),
   nextPrescription: zNextPrescription.optional(),
+  /**
+   * S5 — historique longitudinal des preuves (contrat, aucune politique) : réussites EXACTES consécutives à la même
+   * prescription, selon l'effort observé / inconnu ; nature de l'e1RM (`observed` : RIR saisi ; `lower_bound` :
+   * borne inférieure sans RIR). Absent : track antérieure à S5 (aucune donnée inventée).
+   */
+  evidence: z.object({
+    exactStreak: z.number().int().nonnegative(), effortKnown: z.number().int().nonnegative(), effortUnknown: z.number().int().nonnegative(),
+    e1rmBasis: z.enum(['observed', 'lower_bound']).optional(),
+  }).strict().optional(),
 }).strict();
 export type StrengthTrack = z.infer<typeof zStrengthTrack>;
 

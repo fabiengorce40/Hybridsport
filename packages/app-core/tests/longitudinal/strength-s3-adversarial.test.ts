@@ -90,7 +90,11 @@ describe('Strength S3 — cas adverses (réalisation)', () => {
   it('5. charge inférieure à la prescription : exposition NON probante (load_deviation), prescription inchangée', () => {
     const { s, rs } = exec(W2, withAnchor((x) => ({ ...x, loadKg: (x.loadKg ?? 0) - 10 })));
     expect(of(rs)).toEqual(['exposure:load_deviation', 'held:load_deviation']);
-    expect(track(s)).toEqual(track(W2));
+    // S5 : seule la série de réussites exactes (historique longitudinal) est interrompue ; prescription et compteurs inchangés.
+    const { evidence: after, ...restAfter } = track(s) ?? {};
+    const { evidence: _before, ...restBefore } = track(W2) ?? {};
+    expect(restAfter).toEqual(restBefore);
+    expect(after?.exactStreak).toBe(0);
   });
 
   it('6. RIR saisi bien plus bas que la cible : échec classé, aucune progression', () => {

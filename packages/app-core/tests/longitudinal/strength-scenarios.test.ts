@@ -1,6 +1,7 @@
 /**
  * Strength — scénarios longitudinaux de 4 semaines par le chemin réel de l'application (aucune séance injectée) :
  * A. Strength seul : hypertrophie, 4 séances / semaine, intermédiaire, salle complète ;
+ * A sans RIR (S5) : MÊME programme, MÊMES réalisations, aucun RIR saisi — l'absence n'est jamais lue comme RIR 0 ;
  * B. Strength + Running, priorité explicite (Strength puis Running), planificateur et moteur Running réels.
  * Rapports coach régénérés dans `__reports__/` (toMatchFileSnapshot) ; saisies de réalisation TEST_ONLY (s3-scenario.ts).
  */
@@ -94,14 +95,51 @@ describe('Strength — scénario A : Strength seul, 4 semaines', () => {
 
   it('rapport coach (4 semaines)', async () => {
     await expect(report(run, {
-      title: 'Strength (S4) — Scénario A : Strength seul, hypertrophie, 4 séances / semaine, intermédiaire, salle complète',
+      title: 'Strength (S5) — Scénario A : Strength seul, hypertrophie, 4 séances / semaine, intermédiaire, salle complète',
       intro: [
         'Chemin réel : createBeta0Programme → ensureBeta0Week → Global Planner → StrengthEngine → recordSessionExecution → closeProgrammeWeekInApp.',
-        'Réalisations TEST_ONLY : comme prescrit (répétitions = borne haute, charge prescrite, RIR cible) ; charge de première exposition 40 kg (TEST_ONLY) ;',
+        'Réalisations TEST_ONLY : comme prescrit (répétitions = borne haute, charge prescrite, RIR OBSERVÉ = RIR cible) ; charge de première exposition 40 kg (TEST_ONLY) ;',
         'semaine 3, 4e séance : dernière série du premier exercice non réalisée (séance « modifiée »). ⚓ = ancre déclarée (exercice maintenu, progression appliquée).',
         'Colonne « Exercice » : comparaison avec la dernière séance du même archétype ayant le même emplacement ; « critère » = critère décisif du moteur.',
       ],
     })).toMatchFileSnapshot('__reports__/strength-scenario-a.md');
+  });
+});
+
+describe('Strength — scénario A SANS RIR (S5) : même programme, aucun effort saisi', () => {
+  const run = drive(strengthOnly(), W, (w, _r, k) => (w === 2 && k === 3 ? 'last_set_missed' : 'as_prescribed'), { effort: 'unknown' });
+  const withRir = drive(strengthOnly(), W, (w, _r, k) => (w === 2 && k === 3 ? 'last_set_missed' : 'as_prescribed'));
+
+  it('aucune valeur d’effort inventée : expositions, preuves et tracks disent « inconnu » / « borne inférieure »', () => {
+    expect(run.final.strength.exposures.every((x) => x.sets.every((z) => z.rir === undefined))).toBe(true);
+    const ev = audit(run).filter((r) => r.code === 'PROGRESSION.EXPOSURE_CLASSIFIED');
+    expect(ev.length).toBeGreaterThan(0);
+    expect(ev.every((r) => r.params.effort === 'unknown' && r.params.rirDelta === 'n/a')).toBe(true);
+    expect(ev.some((r) => r.params.kind === 'exact_effort_unknown')).toBe(true);
+    for (const t of run.final.strength.tracks.filter((x) => x.model === 'autoregulated')) expect(t.evidence?.e1rmBasis).toBe('lower_bound');
+    expect(audit(run).some((r) => r.code === 'PROGRESSION.DECISION_BLOCKED' && r.params.situation === 'exact_success_effort_unknown')).toBe(true);
+  });
+
+  it('borne inférieure : l’estimation d’une track autorégulée ne baisse jamais faute de RIR (avant S5 : RIR 0 ⇒ tirée vers le bas)', () => {
+    for (const t of run.final.strength.tracks.filter((x) => x.model === 'autoregulated')) {
+      const series = run.weeks.flatMap((w) => w.executed.flatMap((e) => e.tracksAfter.filter((x) => x.trackId === t.trackId).map((x) => x.e1rmKg ?? 0)));
+      expect([t.trackId, series]).toEqual([t.trackId, [...series].sort((a, b) => a - b)]);
+    }
+  });
+
+  it('même composition et mêmes exercices qu’avec RIR (l’effort ne change pas la continuité S4)', () => {
+    const ex = (r: Run) => r.weeks.map((w) => strengthItems(w).map(({ rec }) => (rec?.session.blocks ?? []).flatMap((b) => b.items.map((i) => i.exerciseId)).join(',')));
+    expect(ex(run)).toEqual(ex(withRir));
+  });
+
+  it('rapport coach (4 semaines, sans RIR)', async () => {
+    await expect(report(run, {
+      title: 'Strength (S5) — Scénario A SANS RIR : même programme, même réalisation, aucun effort saisi',
+      intro: [
+        'Identique au scénario A, mais l’utilisateur ne renseigne AUCUN RIR (cas réel de Beta 0 avant S5).',
+        'Invariant S5 : effort inconnu ≠ RIR 0 — la preuve dit « effort inconnu », l’e1RM est une borne inférieure, aucune hausse inventée.',
+      ],
+    })).toMatchFileSnapshot('__reports__/strength-scenario-a-sans-rir.md');
   });
 });
 
@@ -127,7 +165,7 @@ describe('Strength — scénario B : Strength + Running (priorité Strength puis
 
   it('rapport coach (4 semaines)', async () => {
     await expect(report(run, {
-      title: 'Strength (S4) — Scénario B : Strength (3 / semaine, hypertrophie) + Running (3 / semaine, semi-marathon), priorité Strength',
+      title: 'Strength (S5) — Scénario B : Strength (3 / semaine, hypertrophie) + Running (3 / semaine, semi-marathon), priorité Strength',
       intro: [
         'Chemin réel : createBeta0Programme (dernière course déclarée TEST_ONLY) → ensureBeta0Week → Global Planner (deux passes, voisines) → StrengthEngine + RunningEngine.',
         'Réalisations TEST_ONLY : Strength comme prescrit ; Running durée prescrite, 6 000 m. ⚓ = ancre déclarée.',
