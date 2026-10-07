@@ -237,5 +237,5 @@ Décisions bloquées (après réalisation) : réussite exacte sans marge (autore
 - Preuves : réussites exactes ×37, dépassements ×0, sans preuve ×0.
 - Décisions bloquées : réussite exacte ×2 (effort observé ×2, effort inconnu ×0), poids du corps ×1.
 - Effort : expositions avec effort observé ×37, effort inconnu ×0.
-- État persisté (JSON compact, saveState) après 4 semaines : 295 Ko.
+- État persisté (JSON compact, saveState) après 4 semaines : 299 Ko.
 

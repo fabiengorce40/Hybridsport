@@ -2,7 +2,7 @@
 import { approxMinutes, selectBeta0Week } from '@hybridsport/app-core';
 import type { AppState, Beta0WeekView, SessionView } from '@hybridsport/app-core';
 import { startProgrammeSession } from '@hybridsport/app-core';
-import { arbitrationText, ctFormatName, isTest, notPlannedText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
+import { arbitrationText, ctFormatName, isTest, notPlannedText, qualityText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import type { DisplayStatus } from '../../present.js';
@@ -71,6 +71,7 @@ export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemV
         {[role, ctFormatName(v.ctFormat), v.hrTimeCapS !== null ? `time cap ${approxMinutes(v.hrTimeCapS)}` : (v.estimatedDurationS ?? v.targetDurationS) !== null ? `≈ ${approxMinutes(v.estimatedDurationS ?? v.targetDurationS ?? 0)}` : null, v.pain ? 'douleur signalée' : null].filter(Boolean).join(' · ')}
       </div>
       {v.arbitration && <div className="tiny muted" data-m3={v.arbitration.kind}>{arbitrationText(v, formatDate)}</div>}
+      {qualityText(v) && <div className="tiny muted" data-quality={v.quality?.verdict}>{qualityText(v)}</div>}
     </button>
   );
 }
@@ -89,9 +90,11 @@ function UnplacedCard({ v, onOpen }: { v: SessionItemView; onOpen: (id: string) 
       <h3>{name}</h3>
       {meta && <div className="small muted num">{meta}</div>}
       <div className="small">{unplacedText(v)}</div>
+      {qualityText(v) && <div className="tiny muted" data-quality={v.quality?.verdict}>{qualityText(v)}</div>}
       <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
         <button className="btn" onClick={() => onOpen(v.requestId)}>Voir la séance</button>
-        <button className="btn primary" onClick={() => { store.apply((s, c) => startProgrammeSession(s, c, v.requestId)); onOpen(v.requestId); }}>Faire maintenant</button>
+        {/* Q1 — « Faire maintenant » ne contourne jamais une qualité BLOQUÉE. */}
+        {v.quality?.verdict !== 'BLOCKED' && <button className="btn primary" onClick={() => { store.apply((s, c) => startProgrammeSession(s, c, v.requestId)); onOpen(v.requestId); }}>Faire maintenant</button>}
       </div>
     </div>
   );

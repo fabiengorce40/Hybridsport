@@ -9,7 +9,7 @@
  * L'application n'importe jamais le paquet Cross-training : elle passe par ce module du planificateur.
  */
 import { createCrossTrainingEngine } from '@hybridsport/crosstraining';
-import type { CrossTrainingEngine } from '@hybridsport/crosstraining';
+import type { CrossTrainingEngine, CtGovernance } from '@hybridsport/crosstraining';
 import type { LoadedCatalog, LoadedRuleset } from '@hybridsport/engine';
 import { testCatalog, testRuleset } from '../../engine/tests/fixtures/load.js';
 import { testRulesetDocumentWithDuplicate } from '../../engine/tests/fixtures/ruleset.js';
@@ -26,12 +26,16 @@ export interface CtBeta0 {
   readonly engine: CrossTrainingEngine;
   readonly content: { readonly ruleset: LoadedRuleset; readonly catalog: LoadedCatalog };
   readonly simulation: readonly string[];
+  /** Q1 — gouvernance lue par le diagnostic de qualité (base des valeurs). */
+  readonly governance: CtGovernance;
 }
 
 /** Moteur + contenu Cross-training de la Beta 0 expérimentale (marque SIMULATION_ONLY portée par la normalisation). */
 export function ctBeta0(mark: Record<string, unknown> = {}): CtBeta0 {
+  const governance = c3Governance({ hybrid: true });
   return {
-    engine: createCrossTrainingEngine({ governance: c3Governance({ hybrid: true }), simulation: true }),
+    governance,
+    engine: createCrossTrainingEngine({ governance, simulation: true }),
     content: withDemand({ ruleset: testRuleset(testRulesetDocumentWithDuplicate()), catalog: testCatalog() }, CT_DOSE_NORMALIZATION, mark),
     simulation: [...CT_BETA0_SIMULATION],
   };

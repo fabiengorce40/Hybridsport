@@ -82,6 +82,18 @@ export function arbitrationText(v: SessionView, dayLabel: (date: string) => stri
   if (a.kind === 'recomposed') return `Adaptée par son moteur à cause d’${other} proche.`;
   return `Proche d’${other} qui sollicite les mêmes zones du corps : aucun autre jour disponible ne convenait.`;
 }
+/**
+ * Q1 — qualité expérimentale (aucun code, aucun score) : le diagnostic montre seulement si la cohérence est vérifiée
+ * et si des points ne sont pas validés. Null : rien à signaler (aucun diagnostic).
+ */
+export function qualityText(v: SessionView): string | null {
+  const q = v.quality;
+  if (!q) return null;
+  if (q.verdict === 'BLOCKED') return 'Qualité : prescription incohérente, séance non réalisable.';
+  if (q.verdict === 'UNRESOLVED') return 'Qualité expérimentale : cohérence vérifiée, doses non validées.';
+  if (q.verdict === 'ACCEPTABLE_WITH_WARNINGS') return 'Qualité : cohérence vérifiée, point à surveiller.';
+  return null;
+}
 /** M3.1 — séance COMPOSÉE MAIS NON PLACÉE : cause lisible (jamais un code). */
 export function unplacedText(v: SessionView): string {
   const cause = v.unplacedCause === 'week_full'
@@ -100,6 +112,7 @@ export function notPlannedText(v: SessionView): string {
 export const ERROR_TEXT: Readonly<Record<string, string>> = {
   NO_SPORT_SELECTED: 'Choisissez au moins un sport.',
   SESSION_UNAVAILABLE: 'Cette séance n’est pas disponible.',
+  QUALITY_BLOCKED: 'Cette séance n’est pas réalisable : sa prescription est incohérente.',
   SESSION_FINISHED: 'Cette séance est déjà terminée.',
   SESSION_NOT_STARTED: 'Démarrez la séance d’abord.',
   SET_REPS_REQUIRED: 'Indiquez les répétitions réalisées.',

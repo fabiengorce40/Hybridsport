@@ -98,7 +98,7 @@ export function beta0Environment(): ProgrammeEnvironment {
     hyrox: { engine: hr.engine, content: hr.content, transportNeighbours: true, simulation: [...hr.simulation, ...ROTATION_SIMULATION_IDS] },
     // C3.5 — Cross-training : moteur C3 en simulation, gouvernance TEST_ONLY ; marques SIMULATION_ONLY ajoutées aux seules
     // semaines qui contiennent une séance Cross-training (provenance exacte, jamais confondue avec APPROVED).
-    crosstraining: { engine: ct.engine, content: ct.content, transportNeighbours: true, simulation: ct.simulation },
+    crosstraining: { engine: ct.engine, content: ct.content, transportNeighbours: true, simulation: ct.simulation, governance: ct.governance },
     mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: [...BETA0_SIMULATION], planningVersion: BETA0_PLANNING_VERSION,
     governance: m3Governance({ extra: simulationMark }),
     programmeGovernance: rotationGovernance(simulationMark),
@@ -330,6 +330,18 @@ export interface SessionView {
   readonly unplacedCause: 'week_full' | 'no_admissible_day' | null;
   /** Séance non placée réalisée manuellement (provenance `manual_from_unplaced`) : `date` est le jour RÉEL. */
   readonly manual: boolean;
+  /**
+   * Q1 — diagnostic de qualité persisté (lecture seule) : verdict et nombre de critères non démontrés / en
+   * avertissement / bloquants. Null : aucune prescription ou semaine antérieure à Q1.
+   */
+  readonly quality: QualityView | null;
+}
+export interface QualityView { readonly verdict: 'ACCEPTABLE' | 'ACCEPTABLE_WITH_WARNINGS' | 'BLOCKED' | 'UNRESOLVED'; readonly unproven: number; readonly warnings: number; readonly blocked: number }
+/** Lecture d'un diagnostic compact persisté (`critère|statut|base`). */
+export function qualityViewOf(q: PersistedWeek['requests'][number]['quality']): QualityView | null {
+  if (!q) return null;
+  const st = q.criteria.map((c) => c.split('|')[1]);
+  return { verdict: q.verdict, unproven: st.filter((x) => x === 'UNRESOLVED').length, warnings: st.filter((x) => x === 'WARNING').length, blocked: st.filter((x) => x === 'BLOCKED').length };
 }
 export interface Beta0WeekView {
   /** `horizonWeeks` null : programme continu ; `targetDate` : date d'objectif déclarée (la plus proche), sinon null. */
@@ -424,6 +436,7 @@ function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResu
     placement: planned ? 'planned' : composed ? 'composed_unplaced' : 'blocked',
     unplacedCause: composed ? (r.reasons.some((x) => x.code === 'PLAN.PLANNER.NOT_ENOUGH_DAYS') ? 'week_full' : 'no_admissible_day') : null,
     manual,
+    quality: prescribed ? qualityViewOf(r.quality) : null,
   };
 }
 

@@ -3,6 +3,7 @@
  * disponibilité, compatibilité structurelle inter-disciplines, moteur à appeler, contexte voisin. Le contenu
  * (exercices, allures, mouvements, prescription d'une station, charges, doses, progression) reste aux moteurs.
  */
+import type { QualityAssessment } from '@hybridsport/engine';
 import { z } from 'zod';
 import type { DemandLevel, ISODateTime, ReasonCode, SessionDraft, SessionFingerprint, SessionRecord } from '@hybridsport/domain';
 
@@ -111,6 +112,8 @@ export type RequestResult =
     readonly status: 'planned'; readonly date: string; readonly session: SessionDraft; readonly fingerprint?: SessionFingerprint;
     /** Record persistable (session_record courant) : séance, provenance, empreinte, estimation de durée du CORE. */
     readonly record: SessionRecord; readonly demand: DemandOutcome; readonly neighbourContext?: NeighbourContext;
+    /** Q1 — diagnostic de qualité de la prescription (calculé AVANT M3, jamais modifié par M3). */
+    readonly quality?: QualityAssessment;
   })
   | (RequestBase & { readonly status: 'refused'; readonly date: string })
   | (RequestBase & {
@@ -131,6 +134,8 @@ export interface UnplacedComposition {
   readonly fingerprint?: SessionFingerprint;
   readonly record: SessionRecord;
   readonly demand: DemandOutcome;
+  /** Q1 — même diagnostic qu'une séance placée (même prescription ⇒ même diagnostic). */
+  readonly quality?: QualityAssessment;
 }
 
 /**

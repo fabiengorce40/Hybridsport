@@ -11,7 +11,8 @@ import type { ISODateTime, ReasonCode, SessionDraft } from '@hybridsport/domain'
 import { findArchetype, readStrengthParams, StrengthEngine } from '@hybridsport/strength';
 import type { StrengthCompositionRule } from '@hybridsport/strength';
 import { crossTrainingPort, hyroxHistoriesOf, hyroxPort, planMultisportWeek, runningPort, strengthPort } from '@hybridsport/planner';
-import type { CrossTrainingEngine, HyroxEngine, PlannedWeek, PlannerClock, PlannerMode, SportPorts } from '@hybridsport/planner';
+import type { QualityAssessment } from '@hybridsport/engine';
+import type { CrossTrainingEngine, CtGovernance, HyroxEngine, PlannedWeek, PlannerClock, PlannerMode, SportPorts } from '@hybridsport/planner';
 import type { LoadedRuleset, SportEngine } from '@hybridsport/engine';
 import { addDays, normalizeInstant, sessionInstant, weekStartOf } from './dates.js';
 import { coreProfile, RUNNING_CAPABILITY_REQUESTS, runningContext, simulatedRunning, strengthContextAt } from './generate.js';
@@ -47,7 +48,7 @@ export interface PlannerEnvironment {
    * `transportNeighbours` : voisines (seconde passe) et priorité transportées au contexte CT (C3) ; `simulation` :
    * identifiants SIMULATION_ONLY propres au Cross-training, tracés dans les seules semaines qui en contiennent.
    */
-  readonly crosstraining?: { readonly engine: CrossTrainingEngine; readonly content: Content; readonly transportNeighbours?: boolean; readonly simulation?: readonly string[] };
+  readonly crosstraining?: { readonly engine: CrossTrainingEngine; readonly content: Content; readonly transportNeighbours?: boolean; readonly simulation?: readonly string[]; readonly governance?: CtGovernance };
   /**
    * `transportNeighbours` (H2.5) : voisines, priorité et séances HYROX de la semaine transportées au contexte H2 ;
    * `simulation` : identifiants SIMULATION_ONLY propres à HYROX, tracés dans les seules semaines qui en contiennent.
@@ -121,13 +122,16 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
   const state0 = { readiness: 'normal' as const, activePain: [], painHistory: 'available' as const, dayAvailable: true };
   const decl = (s: Sport): Record<string, unknown> => programme.sports.find((x) => x.sport === s)?.declarations ?? {};
   const ports: { -readonly [K in keyof SportPorts]: SportPorts[K] } = {};
+  // Q1 — environnement des valeurs non approuvées pour le diagnostic de qualité (déclaré par l'autorité, jamais deviné).
+  const qualityEnv = env.authority === 'beta0_experimental' ? 'SIMULATION_ONLY' as const : env.authority === 'test_only' ? 'TEST_ONLY' as const : undefined;
+  const q = qualityEnv ? { qualityEnv } : {};
   if (env.strength) {
     const content = env.strength.content as ContentSource;
-    ports.strength = strengthPort({ engine: env.strength.engine, content, profile, state: state0, history: state.fingerprints.strength, clock, ...(env.strength.composition ? { composition: { rule: env.strength.composition.rule, goal: { goal: goals.strength ?? p.strength.goal } } } : {}), baseContext: (slot) => { const b = strengthContextAt(state, p, slot.date, content); return goals.strength ? { ...b, goal: { primary: { goal: goals.strength } } } : b; } });
+    ports.strength = strengthPort({ ...q, engine: env.strength.engine, content, profile, state: state0, history: state.fingerprints.strength, clock, ...(env.strength.composition ? { composition: { rule: env.strength.composition.rule, goal: { goal: goals.strength ?? p.strength.goal } } } : {}), baseContext: (slot) => { const b = strengthContextAt(state, p, slot.date, content); return goals.strength ? { ...b, goal: { primary: { goal: goals.strength } } } : b; } });
   }
   if (env.running) {
     ports.running = runningPort({
-      engine: env.running.engine, content: env.running.content, profile, state: state0, history: state.fingerprints.running, clock,
+      ...q, engine: env.running.engine, content: env.running.content, profile, state: state0, history: state.fingerprints.running, clock,
       ...(env.running.composition ? { composition: env.running.composition } : {}),
       baseContext: (slot) => ({
         ...runningContext(state, p, slot), capabilityRequests: [...RUNNING_CAPABILITY_REQUESTS, 'hybridPlanning'],
@@ -137,7 +141,7 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
   }
   if (env.crosstraining) {
     ports.crosstraining = crossTrainingPort({
-      engine: env.crosstraining.engine, content: env.crosstraining.content, profile, state: state0, history: state.fingerprints.crosstraining, clock,
+      ...q, ...(env.crosstraining.governance ? { qualityGovernance: env.crosstraining.governance } : {}), engine: env.crosstraining.engine, content: env.crosstraining.content, profile, state: state0, history: state.fingerprints.crosstraining, clock,
       ...(env.crosstraining.transportNeighbours ? { transportNeighbours: true } : {}),
       baseContext: (slot) => ({ ...decl('crosstraining'), ...(goals.crosstraining ? { goal: { type: goals.crosstraining } } : {}), sessionHistory: state.crosstraining.realized.filter((r) => typeof r.completedAt === 'string' && r.completedAt < sessionInstant(slot.date)), mode: env.mode, capabilityRequests: [...CT_CAPABILITY_REQUESTS] }) as never,
     });
@@ -147,7 +151,7 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
     // par le planificateur à leurs contrats (`sessionHistory` / `compositionHistory`). Aucune lecture sportive ici.
     const before = (slot: { date: string }) => state.hyrox.realized.filter((r) => { const t = r.at ?? r.completedAt; return typeof t === 'string' && t < sessionInstant(slot.date); });
     ports.hyrox = hyroxPort({
-      engine: env.hyrox.engine, content: env.hyrox.content, profile, state: state0, history: [], clock,
+      ...q, engine: env.hyrox.engine, content: env.hyrox.content, profile, state: state0, history: [], clock,
       ...(env.hyrox.transportNeighbours ? { transportNeighbours: true } : {}),
       baseContext: (slot) => ({ ...decl('hyrox'), mode: env.mode, ...(goals.hyrox ? { goal: { type: goals.hyrox } } : {}), ...hyroxHistoriesOf(before(slot)) }) as never,
     });
@@ -156,6 +160,9 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
 }
 
 const reason = (r: ReasonCode): Reason => ({ code: r.code, params: { ...r.params } });
+
+/** Q1 — diagnostic compact : verdict et `critère|statut|base` (ordre stable du diagnostic). */
+export const compactQuality = (q: QualityAssessment): { verdict: QualityAssessment['verdict']; criteria: string[] } => ({ verdict: q.verdict, criteria: q.criteria.map((c) => `${c.id}|${c.status}|${c.basis}`) });
 
 /** Forme persistée (sans perte d'audit) d'une semaine planifiée. */
 export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOrigin: string, env: Pick<PlannerEnvironment, 'authority' | 'simulation' | 'planningVersion' | 'crosstraining' | 'hyrox'>): Omit<PersistedWeek, 'owner'> {
@@ -172,11 +179,13 @@ export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOri
       ...(r.status === 'planned' ? {
         record: toEnvelope('session_record', r.record),
         demand: r.demand.status === 'derived' ? { status: 'derived' as const, levels: { ...r.demand.levels } } : { status: 'unavailable' as const, reasons: r.demand.reasons.map(reason) },
+        ...(r.quality ? { quality: compactQuality(r.quality) } : {}),
         ...(r.neighbourContext ? { neighbourContext: { known: r.neighbourContext.known, neighbours: r.neighbourContext.neighbours.map((n) => ({ ...n, demand: { ...n.demand } })) } } : {}),
       } : {}),
       // M3.1 — composée mais non placée : la prescription du moteur est persistée telle quelle (réalisable, jamais recomposée).
       ...(r.status === 'unplaced' && r.composed ? {
         record: toEnvelope('session_record', r.composed.record), composedFor: { referenceDate: r.composed.referenceDate, availableMinutes: r.composed.availableMinutes },
+        ...(r.composed.quality ? { quality: compactQuality(r.composed.quality) } : {}),
         demand: r.composed.demand.status === 'derived' ? { status: 'derived' as const, levels: { ...r.composed.demand.levels } } : { status: 'unavailable' as const, reasons: r.composed.demand.reasons.map(reason) },
       } : {}),
     })),

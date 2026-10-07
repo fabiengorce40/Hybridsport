@@ -15,3 +15,4 @@ export * from './safety/index.js';
 export * from './migration/index.js';
 export * from './contracts/index.js';
 export * from './api/index.js';
+export * from './quality/index.js';

@@ -296,6 +296,8 @@ export interface ProgrammeSessionView {
   readonly date: string;
   /** M3.1 — `composed_unplaced` : prescription valide sans jour attribué (aperçu et « Faire maintenant » admis). */
   readonly placement: 'planned' | 'composed_unplaced';
+  /** Q1 — verdict de qualité persisté (null : antérieur à Q1). BLOCKED ⇒ jamais démarrable (placée ou non). */
+  readonly quality: 'ACCEPTABLE' | 'ACCEPTABLE_WITH_WARNINGS' | 'BLOCKED' | 'UNRESOLVED' | null;
   readonly session: SessionDraft;
   /** HYROX : stations des composantes (décisions H2 persistées avec la séance), sinon vide. */
   readonly hrStations: Readonly<Record<string, string>>;
@@ -321,7 +323,7 @@ export function selectProgrammeSession(state: AppState, requestId: string): Prog
   if (!r || !date || !record || !session) return null;
   const week = Object.values(state.planner.weeks).find((w) => w.requests.includes(r));
   return {
-    requestId, sport: r.sport, date, placement: r.status === 'planned' ? 'planned' : 'composed_unplaced', session, hrStations: r.sport === 'hyrox' ? hrStationsOf(r.reasons) : {}, ...prescribedArchetype(r), role: r.composition?.role ?? null,
+    requestId, sport: r.sport, date, placement: r.status === 'planned' ? 'planned' : 'composed_unplaced', quality: r.quality?.verdict ?? null, session, hrStations: r.sport === 'hyrox' ? hrStationsOf(r.reasons) : {}, ...prescribedArchetype(r), role: r.composition?.role ?? null,
     estimatedDurationS: record.durationEstimate.availability === 'AVAILABLE' ? record.durationEstimate.p50 : null,
     log: state.programmeLogs[requestId] ?? null, result: state.programmeState?.results.find((x) => x.requestId === requestId) ?? null,
     experimental: week?.authority !== 'production',
@@ -341,6 +343,9 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   const v = selectProgrammeSession(state, requestId);
   if (!v) throw new AppError('SESSION_UNAVAILABLE');
   if (v.result) throw new AppError('SESSION_FINISHED');
+  // Q1 — une prescription de qualité BLOQUÉE n'est jamais exécutable (« Faire maintenant » compris). UNRESOLVED reste
+  // exécutable selon la règle produit EXISTANTE de la Beta 0 (séances provisoires acceptées explicitement au profil).
+  if (v.quality === 'BLOCKED') throw new AppError('QUALITY_BLOCKED');
   if (v.log) return state;
   const now = normalizeInstant(clock.now);
   // Cross-training : « Commencer » démarre le chrono (horodaté) ; tours et répétitions à zéro (saisies de l'athlète).

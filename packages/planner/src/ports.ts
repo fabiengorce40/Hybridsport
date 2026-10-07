@@ -7,7 +7,7 @@
  */
 import {
   ENGINE_VERSION, DEMAND_NORMALIZATION_PARAMETER, deriveExerciseStructures, deriveSessionDemand, estimateDuration, isDerivationTable, readDurationParams,
-  readToleranceProfile, runSportSession, targetFromAvailable, toRecordedDurationEstimate,
+  readToleranceProfile, runSportSession, targetFromAvailable, toRecordedDurationEstimate, assessment, genericCriteria,
 } from '@hybridsport/engine';
 import type { CoreProfile, CorePipelineOutcome, CoreState, EngineContext, LoadedCatalog, LoadedRuleset, SportEngine, SportSessionRequest } from '@hybridsport/engine';
 import type { Discipline, FingerprintHistoryEntry, ReasonCode, RepetitionIntent, SessionDraft, SessionFingerprint, SessionRecord } from '@hybridsport/domain';
@@ -20,10 +20,15 @@ import type { RunningContextInput, RunningParameter } from '@hybridsport/running
 import { composeStrengthWeek, declarableAnchors, plannedWeekExposures, readStrengthParams, sessionPlannedHardSets, strengthReasons, strengthWeekPrescription, weekPrescriptionSummary } from '@hybridsport/strength';
 import type { StrengthCompositionRule, StrengthContextInput } from '@hybridsport/strength';
 import { GP_CODES, gpReasons } from './codes.js';
+import { assessC3Quality } from '@hybridsport/crosstraining';
+import type { CtGovernance } from '@hybridsport/crosstraining';
+import { assessH2Quality, roleFromArchetype } from '@hybridsport/hyrox';
+import { basisOfParameter, governedCriterion } from '@hybridsport/engine';
+import type { QualityAssessment, QualityBasis, QualityCriterion, QualityEnvironment } from '@hybridsport/engine';
 import type { DeclaredIntent, DemandOutcome, NeighbourContext, PlannerClock, PlannerMode, PlannerSport } from './model.js';
 import type { NoValidProposalInput } from '@hybridsport/domain';
 
-export type { CrossTrainingContextInput, CrossTrainingEngine, HyroxContextInput, HyroxEngine, RunningContextInput, StrengthContextInput };
+export type { CrossTrainingContextInput, CrossTrainingEngine, CtGovernance, HyroxContextInput, HyroxEngine, RunningContextInput, StrengthContextInput };
 
 // technical-constant: conversion minutes → secondes
 const S_PER_MIN = 60;
@@ -105,6 +110,8 @@ export interface SportPort {
   structures(session: SessionDraft): StructuresResult;
   /** Profil de demande standard (CORE, normalisation gouvernée) ; en PRODUCTION, normalisation approuvée exigée. */
   demand(session: SessionDraft, mode: PlannerMode): DemandOutcome;
+  /** Q1 — diagnostic de qualité de la prescription générée (lecture seule ; aucune modification de séance). */
+  readonly quality?: QualityOf;
 }
 
 type Content = { readonly ruleset: LoadedRuleset; readonly catalog: LoadedCatalog };
@@ -135,6 +142,13 @@ export interface EnginePortDefinition<C> {
   readonly persistedDecisions?: RegExp;
   /** Raisons propres au port à joindre à la séance (ex. prescription hebdomadaire du moteur). */
   readonly extraReasons?: (slot: SlotRequest, context: unknown) => readonly ReasonCode[];
+  /**
+   * Q1 — environnement DÉCLARÉ des valeurs non approuvées pour le diagnostic de qualité (TEST_ONLY, SIMULATION_ONLY) ;
+   * absent ⇒ base lue dans les seuls champs des paramètres (PROVISIONAL / EXPERT).
+   */
+  readonly qualityEnv?: QualityEnvironment;
+  /** Q1 — diagnostic propre à la discipline (défaut : critères génériques du CORE). */
+  readonly quality?: QualityOf;
 }
 
 /** Blocs d'entraînement (hors échauffement et retour au calme) : ceux qui portent la sollicitation de la séance. */
@@ -207,6 +221,7 @@ export function createEnginePort<C>(def: EnginePortDefinition<C>): SportPort {
     },
     structures: (session) => structuresOf(session, def.content, def.sport),
     demand: (session, mode) => demandOf(session, def.content, def.sport, mode),
+    quality: def.quality ?? (({ session, record }) => assessment(genericCriteria(session, record.durationEstimate))),
   };
 }
 
@@ -283,7 +298,7 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
   const plannedExposures = (slot: SlotRequest) => plannedWeekExposures((slot.weekSessions ?? []).map((w) => ({ at: def.clock.instantOf(w.date), session: w.session })));
   const anchorsOf = (slot: SlotRequest, c: StrengthContextInput) => declarableAnchors(c.tracks, [...c.recentExposures, ...plannedExposures(slot)], slot.intent.archetypeId, params());
   const port = createEnginePort({
-    ...def, sport: 'strength', discipline: 'strength', consumesNeighbours: true, context,
+    ...def, sport: 'strength', discipline: 'strength', consumesNeighbours: true, context, quality: strengthQuality(def.content.ruleset, def.qualityEnv),
     // S3 — graine STABLE d'une semaine à l'autre (archétype, stimulus, rang de l'occurrence de cet archétype dans la
     // semaine) : un départage par la graine ne peut plus changer un exercice d'une semaine à la suivante.
     seedOf: (slot) => `strength:${slot.intent.archetypeId}:${slot.intent.stimulus}:${(slot.weekSessions ?? []).filter((w) => w.archetypeId === slot.intent.archetypeId).length + 1}`,
@@ -345,7 +360,7 @@ const RUNNING_COMPOSITION_RULES = ['running.frequency.minimumPlannerRunningFrequ
 
 export function runningPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<RunningContextInput>; readonly composition?: { readonly parameters: readonly RunningParameter[] } }): SportPort {
   const context = (slot: SlotRequest) => { const b = resolve(def.baseContext, slot); return { ...b, population: { ...b.population, hybrid: slot.hybrid } }; };
-  const port = createEnginePort({ ...def, sport: 'running', discipline: 'running', plannerNotes: [PLANNER_PROVENANCE_NOTE], context });
+  const port = createEnginePort({ ...def, sport: 'running', discipline: 'running', plannerNotes: [PLANNER_PROVENANCE_NOTE], context, quality: runningQuality(def.qualityEnv) });
   const comp = def.composition;
   if (!comp) return port;
   return {
@@ -402,7 +417,7 @@ const DISCIPLINE_OF: Readonly<Record<PlannerSport, 'strength' | 'running' | 'cro
  * Cross-training. `transportNeighbours` (C3) : voisines (seconde passe) et ordre de priorité DÉCLARÉ transportés dans le
  * contexte, sans interprétation ; absent ⇒ comportement C2 inchangé (aucune seconde passe).
  */
-export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossTrainingEngine; readonly baseContext: Ctx<CrossTrainingContextInput>; readonly transportNeighbours?: boolean }): SportPort {
+export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossTrainingEngine; readonly baseContext: Ctx<CrossTrainingContextInput>; readonly transportNeighbours?: boolean; readonly qualityGovernance?: CtGovernance }): SportPort {
   const transport = def.transportNeighbours === true;
   // C3.5 — séances CT PRÉVUES plus tôt dans la semaine (prescription lue dans la séance, stimulus de l'archétype).
   const plannedOf = (slot: SlotRequest) => (slot.weekSessions ?? []).flatMap((w) => {
@@ -412,6 +427,7 @@ export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossT
   });
   const port = createEnginePort<unknown>({
     ...def, engine: def.engine as SportEngine<unknown>, sport: 'crosstraining', discipline: 'crosstraining', consumesNeighbours: transport,
+    quality: crossTrainingQuality(def.content.catalog, def.qualityGovernance, def.qualityEnv),
     context: (slot) => {
       const b = resolve(def.baseContext, slot);
       const n = slot.neighbours;
@@ -451,6 +467,7 @@ export function hyroxPort(def: Base<unknown> & { readonly engine: HyroxEngine; r
   });
   const port = createEnginePort<unknown>({
     ...def, engine: def.engine as SportEngine<unknown>, sport: 'hyrox', discipline: 'hybrid_race', consumesNeighbours: transport,
+    quality: hyroxQuality(def.content, def.qualityEnv),
     context: (slot) => {
       const b = resolve(def.baseContext, slot);
       const n = slot.neighbours;
@@ -467,4 +484,73 @@ export function hyroxPort(def: Base<unknown> & { readonly engine: HyroxEngine; r
     ...(transport ? { extraHistory: (slot: SlotRequest) => (slot.weekSessions ?? []).flatMap((w) => (w.fingerprint ? [{ fingerprint: w.fingerprint, at: def.clock.instantOf(w.date), status: 'planned' as const, repetitionIntents: [] }] : [])) } : {}),
   });
   return transport ? { ...port, consumesWeekSessions: true, weekSessionsScope: 'generated' } : port;
+}
+
+// ——— Q1 : diagnostic de qualité au niveau du port
+
+/**
+ * Q1 — DIAGNOSTIC DE QUALITÉ au niveau du port (lecture seule de la prescription GÉNÉRÉE par le moteur) :
+ *
+ *   MOTEUR → PRESCRIPTION → DIAGNOSTIC (ici) → PLANIFICATEUR / M3 → EXÉCUTION
+ *
+ * - Cross-training et HYROX H2 : critères propres à leur paquet (`assessC3Quality`, `assessH2Quality`).
+ * - Strength (S1→S5 gelé) et Running (inchangé) : critères GÉNÉRIQUES du CORE + lecture de leurs propres traces
+ *   (prescription hebdomadaire Strength, valeurs candidates Running) ; aucune règle de ces moteurs n'est réécrite.
+ * Le diagnostic ne modifie rien : il est calculé sur la séance telle que le moteur l'a produite, identique pour une
+ * séance placée ou composée mais non placée, et M3 ne le lit ni ne le change.
+ */
+export interface QualityInput {
+  readonly session: SessionDraft;
+  readonly archetypeId: string;
+  readonly reasons: readonly ReasonCode[];
+  readonly record: SessionRecord;
+}
+export type QualityOf = (x: QualityInput) => QualityAssessment;
+
+const estimateOf = (r: SessionRecord) => r.durationEstimate;
+
+/** Base des valeurs candidates TRACÉES par un moteur (`*.CANDIDATE_VALUE_USED`) : aucune trace ⇒ inconnue. */
+export function traceBasis(reasons: readonly ReasonCode[], env: QualityEnvironment): QualityBasis {
+  const candidate = reasons.some((r) => r.code.endsWith('.CANDIDATE_VALUE_USED'));
+  return candidate ? env ?? 'PROVISIONAL' : 'UNRESOLVED';
+}
+
+/** Strength (gelé) : critères génériques + prescription hebdomadaire TRACÉE par le moteur (volume, progression). */
+export function strengthQuality(ruleset: LoadedRuleset, env: QualityEnvironment): QualityOf {
+  return ({ session, reasons, record }) => {
+    const w = reasons.find((r) => r.code === 'PLAN.WEEK_PRESCRIPTION')?.params;
+    const criteria: QualityCriterion[] = [...genericCriteria(session, estimateOf(record))];
+    const b = (id: string) => basisOfParameter(ruleset.parameter(id), env);
+    criteria.push(governedCriterion('volume_target', [b('strength.volume')], w ? {
+      belowFloor: Number(w.belowFloor ?? 0), atOrAboveHigh: Number(w.atOrAboveHigh ?? 0), noTarget: Number(w.noTarget ?? 0), weeklySessions: Number(w.weeklySessions ?? 0),
+    } : { weekPrescription: 'not_traced' }, ['volume_source:strength.volume']));
+    criteria.push(governedCriterion('progression_support', [b('strength.progression'), b('strength.tracks')], w ? {
+      declaredAnchors: Array.isArray(w.anchors) ? (w.anchors as unknown[]).map(String) : [], blocked: Array.isArray(w.blocked) ? (w.blocked as unknown[]).map(String) : [],
+    } : { weekPrescription: 'not_traced' }, ['progression_source:strength.progression']));
+    return assessment(criteria);
+  };
+}
+
+/** Running (inchangé) : critères génériques + base des valeurs candidates tracées par le moteur. */
+export function runningQuality(env: QualityEnvironment): QualityOf {
+  return ({ session, reasons, record, archetypeId }) => assessment([
+    ...genericCriteria(session, estimateOf(record)),
+    governedCriterion('dose_coherence', [traceBasis(reasons, env)], { archetypeId, targetDurationS: session.targetDurationS }, ['dose_source:running_governance']),
+  ]);
+}
+
+/** Cross-training C3 : critères du paquet (gouvernance déclarée par l'appelant ; absente ⇒ bases inconnues). */
+export function crossTrainingQuality(catalog: LoadedCatalog, governance: CtGovernance | undefined, env: QualityEnvironment): QualityOf {
+  return ({ session, reasons, record, archetypeId }) => {
+    const stimulus = stimulusFromArchetypeId(archetypeId);
+    if (!stimulus || !governance) return assessment([...genericCriteria(session, estimateOf(record)), governedCriterion('dose_coherence', ['UNRESOLVED'], { archetypeId }, [governance ? 'stimulus_unknown' : 'governance_not_provided'])]);
+    return assessC3Quality(session, stimulus, { catalog, governance, env, estimate: estimateOf(record), reasons });
+  };
+}
+
+/** HYROX : H2 (rôle) ⇒ critères du paquet ; H1 (station) ⇒ génériques + dose non démontrée. */
+export function hyroxQuality(content: { readonly ruleset: LoadedRuleset; readonly catalog: LoadedCatalog }, env: QualityEnvironment): QualityOf {
+  return ({ session, reasons, record, archetypeId }) => (roleFromArchetype(archetypeId)
+    ? assessH2Quality(session, archetypeId, { catalog: content.catalog, ruleset: content.ruleset, env, estimate: estimateOf(record), reasons })
+    : assessment([...genericCriteria(session, estimateOf(record)), governedCriterion('dose_coherence', [traceBasis(reasons, env)], { archetypeId })]));
 }

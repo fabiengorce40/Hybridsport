@@ -107,6 +107,10 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/strength/tests/architecture/__reports__/core-source-digest.txt',
   // CORE « demand repetition » (eab25cf) : tours `for_time` comptés dans le profil de demande — tests génériques.
   'packages/engine/tests/unit/session-demand-repetition.test.ts',
+  // Q1 : contrat GÉNÉRIQUE de diagnostic de qualité (lecture seule d'une prescription ; aucune règle sportive).
+  'packages/engine/src/index.ts',
+  'packages/engine/src/quality/index.ts',
+  'packages/engine/tests/unit/quality.test.ts',
   ...STRENGTH_S1_CHANGES,
   ...STRENGTH_S2_CHANGES,
   ...STRENGTH_S3_CHANGES,

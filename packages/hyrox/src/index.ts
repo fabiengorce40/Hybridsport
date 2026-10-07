@@ -8,3 +8,4 @@ export * from './h2/taxonomy.js';
 export * from './h2/compose.js';
 export * from './h2/presentation.js';
 export * from './h2/execution.js';
+export * from './h2/quality.js';

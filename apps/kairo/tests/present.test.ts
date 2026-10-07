@@ -11,7 +11,7 @@ describe('présentation Strength S1', () => {
 
   it('composition Strength non gouvernée : explication compréhensible (Course : message générique inchangé)', () => {
     const v = (sport: 'strength' | 'running'): SessionView => ({
-      requestId: 'r', sport, date: null, status: 'not_planned', targetDurationS: null, estimatedDurationS: null, archetypeId: null, dataError: null, role: null, ctFormat: null, hrTimeCapS: null, compositionAuthority: null, compositionRule: null, pain: false, arbitration: null, placement: 'blocked', unplacedCause: null, manual: false,
+      requestId: 'r', sport, date: null, status: 'not_planned', targetDurationS: null, estimatedDurationS: null, archetypeId: null, dataError: null, role: null, ctFormat: null, hrTimeCapS: null, compositionAuthority: null, compositionRule: null, pain: false, arbitration: null, placement: 'blocked', unplacedCause: null, manual: false, quality: null,
       notPlanned: { category: 'governance_blocked', reason: { code: 'RULE.PLANNER.COMPOSITION_UNRESOLVED', params: {} }, triedDate: null },
     });
     expect(notPlannedText(v('strength'))).toMatch(/réduisez la fréquence de musculation/);

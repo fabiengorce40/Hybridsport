@@ -15,3 +15,4 @@ export * from './c3/formats.js';
 export * from './c3/compose.js';
 export * from './c3/presentation.js';
 export * from './c3/record.js';
+export * from './c3/quality.js';

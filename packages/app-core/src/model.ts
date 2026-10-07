@@ -261,6 +261,11 @@ export const zPersistedWeek = z.object({
      * RÉFÉRENCE de la composition (jamais un placement). Absent sur une demande non placée ⇒ aucune prescription.
      */
     composedFor: z.object({ referenceDate: date, availableMinutes: z.number().int().nonnegative() }).strict().optional(),
+    /**
+     * Q1 — diagnostic de qualité de la prescription, forme COMPACTE : verdict + `critère|statut|base` (les faits sont
+     * recalculables depuis la prescription persistée). Absent : semaine antérieure à Q1.
+     */
+    quality: z.object({ verdict: z.enum(['ACCEPTABLE', 'ACCEPTABLE_WITH_WARNINGS', 'BLOCKED', 'UNRESOLVED']), criteria: z.array(z.string().min(1)) }).strict().optional(),
     neighbourContext: z.object({ known: z.boolean(), neighbours: z.array(z.object({ sport: z.enum(SPORTS), discipline: z.string(), stimulus: z.string(), hoursFromThisSession: z.number(), demand: z.record(z.string(), z.string()), importance: z.enum(['key', 'standard', 'unknown']).optional() }).strict()) }).strict().optional(),
     reasons: z.array(zReason),
   }).strict()),

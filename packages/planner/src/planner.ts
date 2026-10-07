@@ -182,10 +182,16 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     const own = conflicts.filter((c) => c.params.sport === sport && tried.includes(String(c.params.date)));
     return own.length > 0 && own.every((c) => GOVERNANCE_RULE.test(String(c.params.rule))) ? 'governance_blocked' : 'interference_conflict';
   };
+  // Q1 — diagnostic de qualité de la prescription GÉNÉRÉE (lecture seule, même calcul pour placée / non placée).
+  const qualityOf = (sport: PlannerSport, archetypeId: string | undefined, out: Extract<PortOutcome, { status: 'planned' }>) => {
+    const q = ports[sport]?.quality;
+    return q && archetypeId !== undefined ? { quality: q({ session: out.session, archetypeId, reasons: out.reasons, record: out.record }) } : {};
+  };
   const plannedResult = (r: { requestId: string; sport: PlannerSport }, date: string, out: Extract<PortOutcome, { status: 'planned' }>, p: Placed, n?: NeighbourContext): RequestResult => {
     const c = compositionOf.get(r.requestId);
+    const archetypeId = requests.find((x) => x.requestId === r.requestId)?.intent?.archetypeId;
     return {
-      ...r, status: 'planned', category: 'planned', date, session: out.session, ...(out.fingerprint ? { fingerprint: out.fingerprint } : {}), record: out.record, demand: p.demand,
+      ...r, status: 'planned', category: 'planned', date, session: out.session, ...(out.fingerprint ? { fingerprint: out.fingerprint } : {}), record: out.record, demand: p.demand, ...qualityOf(r.sport, archetypeId, out),
       ...(n ? { neighbourContext: n } : {}), ...(c ? { composition: c.applied } : {}),
       reasons: [gpReasons.emit(GP_CODES.PLACED, { sport: r.sport, requestId: r.requestId, date }), ...(c?.reasons ?? []), ...(n ? [neighbourReason(r.requestId, n)] : []), ...weekReason(r.sport, date, r.requestId), ...out.reasons],
     };
@@ -202,6 +208,7 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     if (!port || !r.intent) return { reasons: [] };
     const toComposition = (date: string, out: Extract<PortOutcome, { status: 'planned' }>): UnplacedComposition => ({
       referenceDate: date, availableMinutes: minutes.get(date) ?? 0, session: out.session, ...(out.fingerprint ? { fingerprint: out.fingerprint } : {}), record: out.record, demand: port.demand(out.session, input.mode),
+      ...qualityOf(r.sport, r.intent?.archetypeId, out),
     });
     // Raisons de composition du moteur conservées avec la prescription (décisions persistées, comme une séance placée).
     if (done) return { composed: toComposition(done.date, done.out), reasons: [...done.out.reasons] };
