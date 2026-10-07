@@ -66,7 +66,9 @@ describe('semaine NON commencée', () => {
     const s0 = ensureBeta0Week(fixture('pre-s1-state.json'), clock(WED));
     expect(previewBeta0Recreation(s0, WED)).toMatchObject({ appliesFrom: MON, currentWeek: 'replanned', pastSessionsDropped: 2 });
     const s = recreateBeta0Programme(s0, asInput(s0), clock(WED, '10:00:00'), {});
-    expect(strengthOf(s, WED).filter((x) => x.date !== null).map((x) => [x.date, x.archetypeId])).toEqual([[WED, 'str_upper'], ['2026-10-09', 'str_lower']]);
+    // M3 : la séance Bas du vendredi (standard) cède à la course KEY du jeudi ; échange avec la course facile du dimanche.
+    expect(strengthOf(s, WED).filter((x) => x.date !== null).map((x) => [x.date, x.archetypeId])).toEqual([[WED, 'str_upper'], ['2026-10-11', 'str_lower']]);
+    expect(s.planner.weeks[MON]?.arbitration?.decisions.map((d) => [d.action, d.requestId, d.from, d.to, d.partner])).toEqual([['SWAP', `${MON}.strength.2`, '2026-10-09', '2026-10-11', `${MON}.running.1`]]);
     expect(beta0Integrity(s)).toEqual([]);
   });
 

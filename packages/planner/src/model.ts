@@ -53,7 +53,14 @@ export const zPlannerInput = z.object({
   demands: z.array(zSportIntent).refine((ds) => new Set(ds.map((d) => d.sport)).size === ds.length, 'un sport au plus une fois'),
   mode: z.enum(PLANNER_MODES),
   /** Séances antérieures à la semaine (historique) : interférence et contexte voisin, jamais modifiées. */
-  recent: z.array(z.object({ date, sport: z.enum(PLANNER_SPORTS), session: z.custom<SessionDraft>((v) => v !== null && typeof v === 'object') }).strict()).default([]),
+  recent: z.array(z.object({
+    date, sport: z.enum(PLANNER_SPORTS), session: z.custom<SessionDraft>((v) => v !== null && typeof v === 'object'),
+    /**
+     * M3 — statut CONNU de la séance antérieure : réalisée, abandonnée, manquée, ou seulement prévue (absent ⇒ prévue).
+     * Une séance prévue n'est jamais une observation ; la politique gouvernée décide lesquelles comptent.
+     */
+    status: z.enum(['executed', 'abandoned', 'missed', 'planned']).optional(),
+  }).strict()).default([]),
 }).strict();
 export type PlannerInput = z.input<typeof zPlannerInput>;
 export type ParsedPlannerInput = z.infer<typeof zPlannerInput>;
@@ -71,6 +78,8 @@ export interface NeighbourDemand {
   readonly stimulus: string;
   readonly hoursFromThisSession: number;
   readonly demand: Readonly<Record<string, DemandLevel>>;
+  /** M3 — importance de la voisine (rôle du moteur → table gouvernée), sinon `unknown`. */
+  readonly importance?: 'key' | 'standard' | 'unknown';
 }
 /** Contexte voisin : `known` seulement si TOUTES les voisines d'autres disciplines ont un profil dérivable. */
 export interface NeighbourContext { readonly known: boolean; readonly neighbours: readonly NeighbourDemand[] }
@@ -106,6 +115,22 @@ export type RequestResult =
   | (RequestBase & { readonly status: 'refused'; readonly date: string })
   | (RequestBase & { readonly status: 'unplaced' });
 
+/**
+ * M3 — ARBITRAGE de la semaine (compact, persistable) : statut, passes, décisions APPLIQUÉES, conflits RÉSIDUELS. Le
+ * diagnostic complet (tous les conflits évalués) est recalculable et n'est pas stocké.
+ */
+export interface M3Arbitration {
+  readonly status: 'NOT_APPLICABLE' | 'POLICY_UNAVAILABLE' | 'BLOCKED' | 'ADMISSIBLE' | 'RESOLVED' | 'PARTIAL';
+  readonly passes: number;
+  readonly policyVersion: string | null;
+  /** Conflits détectés avant toute action (identifiants compacts `règle|structure|membres`). */
+  readonly initial: readonly string[];
+  /** Décisions appliquées ; SWAP : `partner` = séance dont le jour a été échangé (régénérée par son moteur). */
+  readonly decisions: readonly { readonly action: 'MOVE' | 'SWAP' | 'RECOMPOSE'; readonly requestId: string; readonly from: string; readonly to: string; readonly partner?: string; readonly conflict: string; readonly why: readonly string[] }[];
+  readonly residual: readonly { readonly conflict: string; readonly cause: string; readonly tried: readonly string[] }[];
+  readonly reasons: readonly ReasonCode[];
+}
+
 export interface PlannedWeek {
   readonly weekStart: string;
   readonly mode: PlannerMode;
@@ -117,4 +142,6 @@ export interface PlannedWeek {
   readonly conflicts: readonly ReasonCode[];
   /** Traces de gouvernance du planificateur (paramètres indisponibles ou candidats). */
   readonly governance: readonly ReasonCode[];
+  /** M3 — arbitrage multisport de la semaine (multisport seulement). */
+  readonly arbitration?: M3Arbitration;
 }

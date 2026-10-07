@@ -251,11 +251,23 @@ export const zPersistedWeek = z.object({
     /** Séance planifiée : session_record courant (relu par la migration du CORE). */
     record: zSerializedEnvelope.optional(),
     demand: zDemandOutcome.optional(),
-    neighbourContext: z.object({ known: z.boolean(), neighbours: z.array(z.object({ sport: z.enum(SPORTS), discipline: z.string(), stimulus: z.string(), hoursFromThisSession: z.number(), demand: z.record(z.string(), z.string()) }).strict()) }).strict().optional(),
+    neighbourContext: z.object({ known: z.boolean(), neighbours: z.array(z.object({ sport: z.enum(SPORTS), discipline: z.string(), stimulus: z.string(), hoursFromThisSession: z.number(), demand: z.record(z.string(), z.string()), importance: z.enum(['key', 'standard', 'unknown']).optional() }).strict()) }).strict().optional(),
     reasons: z.array(zReason),
   }).strict()),
   conflicts: z.array(zReason),
   governance: z.array(zReason),
+  /**
+   * M3 — arbitrage multisport de la semaine, forme COMPACTE (champ additif ; absent : semaine antérieure à M3 ou
+   * mono-sport). Les raisons détaillées restent sur les séances (M3_DECISION / M3_CONFLICT_UNRESOLVED).
+   */
+  arbitration: z.object({
+    status: z.enum(['NOT_APPLICABLE', 'POLICY_UNAVAILABLE', 'BLOCKED', 'ADMISSIBLE', 'RESOLVED', 'PARTIAL']),
+    passes: z.number().int().nonnegative(),
+    policyVersion: z.string().nullable(),
+    initial: z.array(z.string()),
+    decisions: z.array(z.object({ action: z.enum(['MOVE', 'SWAP', 'RECOMPOSE']), requestId: z.string(), from: date, to: date, partner: z.string().optional(), conflict: z.string(), why: z.array(z.string()) }).strict()),
+    residual: z.array(z.object({ conflict: z.string(), cause: z.string(), tried: z.array(z.string()) }).strict()),
+  }).strict().optional(),
 }).strict();
 export type PersistedWeek = z.infer<typeof zPersistedWeek>;
 

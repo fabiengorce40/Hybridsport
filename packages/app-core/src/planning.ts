@@ -175,16 +175,27 @@ export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOri
         ...(r.neighbourContext ? { neighbourContext: { known: r.neighbourContext.known, neighbours: r.neighbourContext.neighbours.map((n) => ({ ...n, demand: { ...n.demand } })) } } : {}),
       } : {}),
     })),
-    conflicts: w.conflicts.map(reason), governance: w.governance.map(reason),
+    conflicts: w.conflicts.map(reason),
+    // M3 : raisons de l'arbitrage persistées seulement quand il est indisponible ou bloqué (fail-closed visible) ; les
+    // valeurs candidates lues chaque semaine sont déjà tracées par `simulation` (état compact).
+    governance: [...w.governance, ...(w.arbitration && (w.arbitration.status === 'BLOCKED' || w.arbitration.status === 'POLICY_UNAVAILABLE') ? w.arbitration.reasons : [])].map(reason),
+    ...(w.arbitration ? { arbitration: { status: w.arbitration.status, passes: w.arbitration.passes, policyVersion: w.arbitration.policyVersion, initial: [...w.arbitration.initial], decisions: w.arbitration.decisions.map((d) => ({ ...d, why: [...d.why] })), residual: w.arbitration.residual.map((r) => ({ ...r, tried: [...r.tried] })) } } : {}),
   };
 }
 
-/** Séances planifiées de la semaine précédente (historique d'interférence et de contexte voisin). */
-export function recentOf(state: AppState, p: Profile, weekStart: string): { date: string; sport: Sport; session: SessionDraft }[] {
+/**
+ * Séances planifiées de la semaine précédente (historique d'interférence et de contexte voisin), avec leur statut
+ * CONNU (M3) : réalisée (comme prévu ou modifiée), abandonnée, manquée, sinon seulement prévue. Une séance prévue n'est
+ * jamais présentée comme réalisée ; la politique gouvernée du planificateur décide lesquelles comptent.
+ */
+export function recentOf(state: AppState, p: Profile, weekStart: string): { date: string; sport: Sport; session: SessionDraft; status: 'executed' | 'abandoned' | 'missed' | 'planned' }[] {
   const prev = state.planner.weeks[addDays(weekStart, -p.availability.length)];
+  const results = new Map((state.programmeState?.results ?? []).map((x) => [x.requestId, x.completion]));
+  const STATUS = { completed_as_prescribed: 'executed', modified: 'executed', abandoned: 'abandoned', missed: 'missed' } as const;
   return (prev?.requests ?? []).flatMap((r) => {
     const data = r.record?.data as { session?: SessionDraft } | undefined;
-    return r.status === 'planned' && r.date && data?.session ? [{ date: r.date, sport: r.sport, session: data.session }] : [];
+    const c = results.get(r.requestId);
+    return r.status === 'planned' && r.date && data?.session ? [{ date: r.date, sport: r.sport, session: data.session, status: c === undefined ? 'planned' as const : STATUS[c] }] : [];
   });
 }
 

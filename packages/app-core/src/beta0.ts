@@ -22,7 +22,8 @@ import { StrengthEngine, STRENGTH_WEEKLY_COMPOSITION_CANDIDATE, goalKey, readStr
 import type { SportEngine } from '@hybridsport/engine';
 import { adherenceOf, weekIndexOf, weekStartAt, weekStatus, withinProgramme } from '@hybridsport/programme';
 import type { Adherence, ProgrammeDefinition, ProgrammeDefinitionInput, ProgrammeResult, ProgrammeState, WeekStatus } from '@hybridsport/programme';
-import { plannerGovernance, withDemand } from '../../planner/tests/simulation.js';
+import { withDemand } from '../../planner/tests/simulation.js';
+import { M3_SIMULATION_IDS, m3Governance } from '../../planner/tests/m3-governance.js';
 import { ctBeta0 } from '../../planner/tests/ct-beta0.js';
 import { hrBeta0 } from '../../planner/tests/hr-beta0.js';
 import { AppError } from './errors.js';
@@ -45,7 +46,9 @@ export const SIMULATION_ONLY = 'SIMULATION_ONLY — Beta 0 expérimental : valeu
  *   - normalisation des doses Strength / Running (fixture du planificateur) ;
  *   - intégration « planificateur global ↔ Running » déclarée satisfaite (dépendance technique de Running), tenue
  *     par la provenance obligatoire du planificateur ;
- *   - moteur Running en simulation (comme V0).
+ *   - moteur Running en simulation (comme V0) ;
+ *   - M3 : politique d'arbitrage multisport TEST_ONLY (`planner/tests/m3-governance.ts` : règles, fenêtres, actions,
+ *     qui cède, importance, historique, borne de passes), jamais approuvée.
  * Les règles de composition Running (V26, V10, V11) sont les valeurs CANDIDATES de la gouvernance Running existante
  * (non approuvées, tracées CANDIDATE_VALUE_USED, non résolues en PRODUCTION). La règle de composition Strength est la
  * règle CANDIDATE du moteur Strength (`STRENGTH_WEEKLY_COMPOSITION_CANDIDATE`, citation de la spec 02 §5 ; tracée
@@ -53,6 +56,7 @@ export const SIMULATION_ONLY = 'SIMULATION_ONLY — Beta 0 expérimental : valeu
  */
 export const BETA0_SIMULATION = [
   'planner.interference.structureWindows', 'demand.doseNormalization', 'running.technical.GLOBAL_PLANNER_INTEGRATION', 'running.engine.simulation',
+  ...M3_SIMULATION_IDS,
 ] as const;
 
 /** Gouvernance Running Beta 0 : décisions produit existantes + intégration planificateur déclarée (SIMULATION_ONLY). */
@@ -70,8 +74,9 @@ const simulationMark = { justification: SIMULATION_ONLY };
  * `beta0-s1` : composition hebdomadaire Strength par le moteur (S1). Absente : antérieure à S1.
  * `beta0-s3` : Strength longitudinal (S3) — graine Strength stable, ancres déclarées, prescription hebdomadaire tracée.
  * `beta0-s4` : continuité des exercices déclarée, priorité des sports transportée, bilan de volume, traces allégées.
+ * `beta0-m3` : arbitrage multisport M3 (déplacement / échange de jours, voisines bornées, importance transportée).
  */
-export const BETA0_PLANNING_VERSION = 'beta0-s4';
+export const BETA0_PLANNING_VERSION = 'beta0-m3';
 // C3.5 : la version n'est PAS incrémentée — Strength et Running sont inchangés ; Cross-training n'existe que dans les
 // programmes créés ou recréés après C3.5 (aucune semaine existante à régénérer).
 
@@ -92,7 +97,7 @@ export function beta0Environment(): ProgrammeEnvironment {
     // semaines qui contiennent une séance Cross-training (provenance exacte, jamais confondue avec APPROVED).
     crosstraining: { engine: ct.engine, content: ct.content, transportNeighbours: true, simulation: ct.simulation },
     mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: [...BETA0_SIMULATION], planningVersion: BETA0_PLANNING_VERSION,
-    governance: plannerGovernance(undefined, simulationMark),
+    governance: m3Governance({ extra: simulationMark }),
     strength: { engine: StrengthEngine as SportEngine<unknown>, content: withDemand(strengthContent(), undefined, simulationMark), composition: { rule: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } },
     running: {
       engine: requirePlannerProvenance(createRunningEngine({ governance: g, simulation: true }) as SportEngine<unknown>),
@@ -294,6 +299,12 @@ export interface SessionView {
    */
   readonly notPlanned: { readonly category: string; readonly reason: Reason | null; readonly triedDate: string | null } | null;
   readonly pain: boolean;
+  /**
+   * M3 — arbitrage multisport lisible : séance déplacée (`moved`, jour d'origine), jour échangé (`swapped`), recomposée
+   * par son moteur (`recomposed`), ou conflit restant (`conflict`, aucune solution admise). `withSport` : sport de la
+   * séance proche en cause. Lecture des raisons persistées, aucune logique sportive.
+   */
+  readonly arbitration: { readonly kind: 'moved' | 'swapped' | 'recomposed' | 'conflict'; readonly fromDate: string | null; readonly withSport: Sport | null } | null;
 }
 export interface Beta0WeekView {
   /** `horizonWeeks` null : programme continu ; `targetDate` : date d'objectif déclarée (la plus proche), sinon null. */
@@ -351,7 +362,18 @@ function hrTimeCapOf(blocks: readonly { format?: unknown; timeCapS?: unknown }[]
   return blocks?.length === 1 && b?.format === 'for_time' && typeof b.timeCapS === 'number' ? b.timeCapS : null;
 }
 
-function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResult | undefined): SessionView {
+function arbitrationOf(r: PersistedWeek['requests'][number], sportOf: (id: string) => Sport | null): SessionView['arbitration'] {
+  const d = r.reasons.find((x) => x.code === 'PLAN.PLANNER.M3_DECISION');
+  if (d) {
+    const why = Array.isArray(d.params.why) ? d.params.why : [];
+    const kind = d.params.action === 'RECOMPOSE' ? 'recomposed' : d.params.action === 'SWAP' ? 'swapped' : 'moved';
+    return { kind, fromDate: kind === 'recomposed' || why.some((w) => String(w).startsWith('swap_partner_of')) ? null : typeof d.params.from === 'string' ? d.params.from : null, withSport: sportOf(String(d.params.withRequestId)) };
+  }
+  const c = r.reasons.find((x) => x.code === 'RECOVERY.PLANNER.M3_CONFLICT_UNRESOLVED');
+  return c ? { kind: 'conflict', fromDate: null, withSport: sportOf(String(c.params.withRequestId)) } : null;
+}
+
+function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResult | undefined, sportOf: (id: string) => Sport | null = () => null): SessionView {
   const data = r.record?.data as { session?: { targetDurationS?: unknown; blocks?: { kind?: unknown; format?: unknown; items?: { prescription?: { type?: unknown; rounds?: unknown } }[] }[] }; durationEstimate?: { availability?: unknown; p50?: unknown } } | undefined;
   const composition = r.reasons.find((x) => x.code === 'PLAN.WEEK_COMPOSITION')?.params;
   const session = data?.session;
@@ -369,6 +391,7 @@ function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResu
     compositionRule: typeof composition?.rule === 'string' ? `${composition.rule}${typeof composition.version === 'string' ? `@${composition.version}` : ''}` : null,
     notPlanned: planned ? null : { category: r.category, reason: mainReason(r.reasons), triedDate: r.date ?? null },
     pain: result?.pain ?? false,
+    arbitration: planned ? arbitrationOf(r, sportOf) : null,
   };
 }
 
@@ -422,7 +445,8 @@ export function selectBeta0Week(state: AppState, today: string, weekIndex?: numb
   const pw = ps.weeks.find((w) => w.weekIndex === i);
   const week = pw ? state.planner.weeks[pw.plannerRef] : undefined;
   const resultOf = (id: string) => ps.results.find((x) => x.requestId === id);
-  const sessions = (week?.requests ?? []).map((r) => sessionView(r, resultOf(r.requestId)))
+  const sportById = new Map((week?.requests ?? []).map((r) => [r.requestId, r.sport]));
+  const sessions = (week?.requests ?? []).map((r) => sessionView(r, resultOf(r.requestId), (id) => sportById.get(id) ?? null))
     .sort((a, b) => (a.date === null ? 1 : 0) - (b.date === null ? 1 : 0) || (a.date ?? '').localeCompare(b.date ?? '') || a.requestId.localeCompare(b.requestId));
   const authority = week?.authority ?? 'unknown';
   const start = weekStartAt(ps, i);

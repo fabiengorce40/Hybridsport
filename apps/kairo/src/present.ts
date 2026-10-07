@@ -71,6 +71,17 @@ const REASON_HINTS: Readonly<Record<string, string>> = {
   // Composition Strength non gouvernée (Beta 0 : fréquence hors des bandes de la règle candidate du moteur Strength).
   'strength:RULE.PLANNER.COMPOSITION_UNRESOLVED': 'Aucune règle validée ne répartit encore ce nombre de séances de musculation dans la semaine : réduisez la fréquence de musculation.',
 };
+/** M3 — raison lisible d'un déplacement / d'un conflit restant (aucun code, aucune valeur). */
+export function arbitrationText(v: SessionView, dayLabel: (date: string) => string): string | null {
+  const a = v.arbitration;
+  if (!a) return null;
+  const OF: Readonly<Record<string, string>> = { strength: 'de musculation', running: 'de course', crosstraining: 'de cross-training', hyrox: 'HYROX' };
+  const other = a.withSport && OF[a.withSport] ? `une séance ${OF[a.withSport] ?? ''}` : 'une autre séance';
+  if (a.kind === 'moved') return `Déplacée${a.fromDate ? ` depuis ${dayLabel(a.fromDate)}` : ''} pour l’éloigner d’${other} qui sollicite les mêmes zones du corps.`;
+  if (a.kind === 'swapped') return `Jour échangé${a.fromDate ? ` (prévue ${dayLabel(a.fromDate)})` : ''} pour éloigner deux séances qui sollicitent les mêmes zones du corps.`;
+  if (a.kind === 'recomposed') return `Adaptée par son moteur à cause d’${other} proche.`;
+  return `Proche d’${other} qui sollicite les mêmes zones du corps : aucun autre jour disponible ne convenait.`;
+}
 export function notPlannedText(v: SessionView): string {
   const base = NOT_PLANNED_MESSAGES[v.notPlanned?.category ?? ''] ?? 'Cette séance n’a pas pu être planifiée.';
   const code = v.notPlanned?.reason?.code;

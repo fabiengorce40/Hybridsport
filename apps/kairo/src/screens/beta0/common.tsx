@@ -1,8 +1,8 @@
 /** Lectures et composants communs Beta 0 (présentation uniquement : projection de `selectBeta0Week`). */
 import { approxMinutes, selectBeta0Week } from '@hybridsport/app-core';
 import type { AppState, Beta0WeekView, SessionView } from '@hybridsport/app-core';
-import { ctFormatName, isTest, notPlannedText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, weekPlanningText } from '../../present.js';
-import { Notice } from '../../ui.js';
+import { arbitrationText, ctFormatName, isTest, notPlannedText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, weekPlanningText } from '../../present.js';
+import { formatDate, Notice } from '../../ui.js';
 import type { DisplayStatus } from '../../present.js';
 
 export interface SessionItemView extends SessionView { readonly display: DisplayStatus }
@@ -65,6 +65,7 @@ export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemV
       <div className="small muted num">
         {[role, ctFormatName(v.ctFormat), v.hrTimeCapS !== null ? `time cap ${approxMinutes(v.hrTimeCapS)}` : (v.estimatedDurationS ?? v.targetDurationS) !== null ? `≈ ${approxMinutes(v.estimatedDurationS ?? v.targetDurationS ?? 0)}` : null, v.pain ? 'douleur signalée' : null].filter(Boolean).join(' · ')}
       </div>
+      {v.arbitration && <div className="tiny muted" data-m3={v.arbitration.kind}>{arbitrationText(v, formatDate)}</div>}
     </button>
   );
 }

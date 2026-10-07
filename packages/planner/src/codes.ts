@@ -47,6 +47,12 @@ export const GP_CODES = {
   WEEK_EXPOSURES: 'PLAN.PLANNER.WEEK_EXPOSURES',
   /** Deux séances d'une même discipline sollicitent les mêmes structures : aucune règle same-discipline gouvernée (signalé, jamais bloqué). */
   SAME_DISCIPLINE_UNGOVERNED: 'PLAN.PLANNER.SAME_DISCIPLINE_UNGOVERNED',
+  /** M3 — décision d'arbitrage appliquée à une séance (déplacement ou recomposition par son moteur). */
+  M3_DECISION: 'PLAN.PLANNER.M3_DECISION',
+  /** M3 — conflit détecté et NON résolu (aucune action autorisée n'a suffi) : séance conservée, conflit visible. */
+  M3_CONFLICT_UNRESOLVED: 'RECOVERY.PLANNER.M3_CONFLICT_UNRESOLVED',
+  /** M3 — arbitrage indisponible ou bloqué (politique absente, profil de demande non dérivable…). */
+  M3_ARBITRATION_BLOCKED: 'RULE.PLANNER.M3_ARBITRATION_BLOCKED',
 } as const;
 
 export const GP_REASON_CODES: readonly ReasonCodeDefinition[] = [
@@ -68,6 +74,9 @@ export const GP_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: GP_CODES.PROVENANCE_REQUIRED, categories: ['business_hard'], params: { engineId: S }, audience: 'internal', severity: 'error' },
   { code: GP_CODES.WEEK_EXPOSURES, categories: ['information'], params: { sport: S, requestId: S, planned: N, sessions: L }, audience: 'internal', severity: 'info' },
   { code: GP_CODES.SAME_DISCIPLINE_UNGOVERNED, categories: ['information'], params: { sport: S, requestId: S, date: S, withRequestId: S, withDate: S, gapHours: N, structures: L }, audience: 'internal', severity: 'notice' },
+  { code: GP_CODES.M3_DECISION, categories: ['adaptation'], params: { action: S, requestId: S, sport: S, from: S, to: S, rule: S, structure: S, withRequestId: S, deltaHours: N, why: L }, audience: 'user', severity: 'notice' },
+  { code: GP_CODES.M3_CONFLICT_UNRESOLVED, categories: ['business_hard'], params: { rule: S, structure: S, requestId: S, withRequestId: S, deltaHours: N, cause: S, tried: L }, audience: 'user', severity: 'warning' },
+  { code: GP_CODES.M3_ARBITRATION_BLOCKED, categories: ['business_hard'], params: { cause: S, detail: S }, audience: 'internal', severity: 'warning' },
   { code: GP_CODES.DAY_EMPTY, categories: ['information'], params: { date: S, cause: S }, audience: 'internal', severity: 'info' },
 ];
 
