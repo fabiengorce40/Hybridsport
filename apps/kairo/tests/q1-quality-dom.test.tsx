@@ -18,12 +18,12 @@ const CODES = /UNRESOLVED|SIMULATION_ONLY|TEST_ONLY|dose_coherence|no_approved|s
 const mount = (s: AppState) => { const st = new MemoryStorage(); saveState(st, s); render(<StoreProvider storage={st} clock={clock}><App /></StoreProvider>); };
 
 describe('Q1 — qualité (DOM)', () => {
-  it('ligne « Qualité expérimentale » sur les séances, sans code ni score', () => {
+  it('ligne « Séance expérimentale » sur les séances, sans code ni score', () => {
     mount(createBeta0Programme(emptyState(), hrProfile({ hr: { role: 'hybrid_race.h2.strength_endurance' } }), clock(), {}));
     fireEvent.click(screen.getByRole('button', { name: 'Planning' }));
     const lines = Array.from(document.querySelectorAll('[data-quality]'));
     expect(lines.length).toBeGreaterThan(0);
-    for (const l of lines) expect(l.textContent).toBe('Qualité expérimentale : cohérence vérifiée, doses non validées.');
+    for (const l of lines) expect(l.textContent).toBe('Séance expérimentale');
     expect(document.body.textContent ?? '').not.toMatch(CODES);
   });
   it('qualité BLOQUÉE (séance non placée) : « Faire maintenant » absent', () => {
@@ -33,6 +33,6 @@ describe('Q1 — qualité (DOM)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Planning' }));
     expect(document.querySelector('[data-unplaced]')).not.toBeNull();
     expect(screen.queryByRole('button', { name: 'Faire maintenant' })).toBeNull();
-    expect(document.body.textContent).toContain('Qualité : prescription incohérente, séance non réalisable.');
+    expect(document.body.textContent).toContain('Séance non réalisable : prescription incohérente.');
   });
 });

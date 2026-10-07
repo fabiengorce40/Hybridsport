@@ -1,4 +1,4 @@
-import { durationLabel, exerciseLabel, HR_STRUCTURE_LABELS, selectHistory, selectProgrammeSession } from '@hybridsport/app-core';
+import { durationLabel, exerciseLabel, fieldFeedbackText, HR_STRUCTURE_LABELS, selectFieldHistory, selectProgrammeSession } from '@hybridsport/app-core';
 import type { HistoryEntry } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate } from '../../ui.js';
@@ -26,7 +26,7 @@ function StrengthLines({ e }: { e: HistoryEntry }) {
 
 export function History0({ onOpen }: { onOpen: (id: string) => void }) {
   const { state } = useStore();
-  const entries = selectHistory(state);
+  const entries = selectFieldHistory(state);
   return (
     <div className="screen">
       <h1 className="screen-title">Historique</h1>
@@ -55,6 +55,8 @@ export function History0({ onOpen }: { onOpen: (id: string) => void }) {
               {e.hr.performedLoads.length > 0 && <div>Charges réelles saisies : {String(e.hr.performedLoads.length)}</div>}
             </div>
           )}
+          {(e.durationS !== null || e.manual) && <div className="tiny muted num" data-history-meta>{[e.durationS !== null ? `Durée réelle ${durationLabel(e.durationS)}` : null, e.manual ? 'Faite hors planning (séance non planifiée)' : null].filter(Boolean).join(' · ')}</div>}
+          {e.feedback && <div className="small" data-history-feedback>Ressenti : {fieldFeedbackText(e.feedback)}</div>}
           {e.pain && <div className="small" style={{ color: 'var(--danger)' }}>⚠ Douleur signalée</div>}
         </button>
       ))}

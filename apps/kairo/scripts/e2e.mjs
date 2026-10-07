@@ -780,6 +780,182 @@ async function mobileFit(p, tag) {
   await c.close();
 }
 
+// ——— FIELD TEST DAY (360 × 640, mobile) : nouveau profil quatre sports, HYROX Équilibré, programme, planning, Strength
+// (commencer, recharger, terminer, retour terrain), historique, Cross-training, HYROX, séance non placée (Voir, Faire
+// maintenant), Journal Beta, export JSON + texte, rechargement complet : tout est conservé. Uniquement par l'interface.
+{
+  const c = await browser.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, locale: 'fr-FR', timezoneId: 'Europe/Paris', acceptDownloads: true });
+  const p = await c.newPage();
+  const perrors = [];
+  p.on('pageerror', (e) => perrors.push(e.message));
+  p.on('console', (m) => { if (m.type() === 'error') perrors.push(m.text()); });
+  await p.clock.install({ time: new Date('2026-10-05T07:30:00+02:00') });
+  await p.clock.resume();
+  await p.goto(URL_);
+  const tag = '[FIELD TEST DAY 360×640]';
+  const st = () => p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+  const body = () => p.locator('body').innerText();
+  const CODES = /hybrid_race|ex\.[a-z]|str_full|running\.[a-z]|crosstraining\.|UNRESOLVED|TEST_ONLY|SIMULATION_ONLY|USER_REPORTED|manual_from_unplaced|composed_unplaced/;
+  const nav = (name) => p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name, exact: true }).click();
+  const fit = async (t) => {
+    const r = await p.evaluate(() => {
+      const btns = [...document.querySelectorAll('.overlay button, .screen button')].filter((b) => b.getBoundingClientRect().height > 0);
+      const covered = btns.filter((b) => { b.scrollIntoView({ block: 'center' }); const r0 = b.getBoundingClientRect(); const el = document.elementFromPoint(r0.left + r0.width / 2, r0.top + r0.height / 2); return !(el && (b.contains(el) || el.contains(b))); }).length;
+      window.scrollTo(0, 0);
+      return { scroll: document.documentElement.scrollWidth > window.innerWidth + 1, covered };
+    });
+    check(!r.scroll && r.covered === 0, `${tag} ${t} : aucun défilement horizontal, aucun bouton sous la barre de navigation (${JSON.stringify(r)})`);
+  };
+  const feedback = async (o) => {
+    const card = p.getByLabel('Retour terrain');
+    await card.waitFor();
+    if (o.difficulty) await card.getByRole('radiogroup', { name: 'Difficulté ressentie' }).getByRole('radio', { name: o.difficulty, exact: true }).click();
+    if (o.tolerance) await card.getByRole('radiogroup', { name: 'Tolérance' }).getByRole('radio', { name: o.tolerance, exact: true }).click();
+    if (o.duration) await card.getByRole('radiogroup', { name: 'La durée de la séance vous a semblé' }).getByRole('radio', { name: o.duration, exact: true }).click();
+    if (o.comment) await card.getByLabel(/Commentaire/).fill(o.comment);
+    await card.getByRole('button', { name: 'Enregistrer mon ressenti' }).click();
+    await p.locator('[data-field-feedback="saved"]').waitFor();
+  };
+  // 1–4. Nouveau profil, quatre sports, HYROX Équilibré, programme.
+  await p.getByLabel(/J’ai compris/).check();
+  await p.getByRole('button', { name: 'Commencer' }).click();
+  await p.getByRole('radio', { name: /^Musculation \+ Course/ }).click();
+  await p.getByLabel('Ajouter du Cross-training').check();
+  await p.getByLabel('Ajouter HYROX').check();
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  await p.getByRole('radio', { name: /^Mixte/ }).click();
+  await p.getByLabel('Séances de Cross-training par semaine').selectOption('1');
+  await p.getByLabel('Niveau d’entraînement général').selectOption('intermediate');
+  await p.getByRole('radio', { name: /^Préparer une course HYROX/ }).click();
+  check(await p.getByRole('radio', { name: /^Équilibré/ }).getAttribute('aria-checked') === 'true', `${tag} HYROX Équilibré sélectionné`);
+  await p.getByLabel('Séances HYROX par semaine').selectOption('1');
+  await p.getByLabel('Durée (min)').fill('30');
+  await p.getByLabel('Distance (km)').fill('5');
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  for (const [i, d] of ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].entries()) await p.getByLabel(`Temps disponible le ${d}`).selectOption(i < 5 ? '60' : '0');
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  await p.getByRole('button', { name: 'Créer mon programme' }).click();
+  await p.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+  const home = await body();
+  check(home.includes('Commencer la séance') && home.includes('1 séance supplémentaire disponible'), `${tag} accueil : prochaine séance + « 1 séance supplémentaire disponible »`);
+  await nav('Programme');
+  const prog = await body();
+  check(prog.includes('Mode : Équilibré') && prog.includes('KAIRO alterne différents types de séances HYROX au fil des semaines.') && !/scientifiquement/.test(prog), `${tag} programme : Équilibré expliqué simplement (jamais « scientifiquement équilibré »)`);
+  // 5. Planning : quatre sports, jours uniques, aucune séance en double, séance non placée distincte, aucun code.
+  await nav('Planning');
+  const plan = await body();
+  check(['Musculation', 'Course', 'Cross-training', 'HYROX'].every((x) => plan.includes(x)) && !CODES.test(plan), `${tag} planning : quatre sports, aucun code interne`);
+  const days = await p.locator('.week .day .n').allInnerTexts();
+  const cards = await p.locator('.week [data-request]').evaluateAll((xs) => xs.map((x) => x.getAttribute('data-request')));
+  check(days.length === 7 && new Set(days).size === 7 && cards.length === 5 && new Set(cards).size === cards.length, `${tag} planning : 7 jours uniques, aucune séance affichée deux fois (${days.join(' ')})`);
+  check(await p.locator('[data-unplaced]').count() === 1 && /non planifiée/i.test(await p.locator('[data-unplaced]').innerText()) && plan.includes('Séance expérimentale'), `${tag} séance non placée distincte (NON PLANIFIÉE + raison), qualité « Séance expérimentale »`);
+  await fit('planning');
+  if (shots) await p.screenshot({ path: `${shots}/ft-01-planning.png`, fullPage: true });
+  // 6–11. Strength : commencer, recharger, terminer, retour terrain, historique.
+  await p.getByRole('button', { name: /^Musculation : / }).first().click();
+  await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  const line = p.locator('section.k-ex').first().locator('.k-set:not(.warm)').first();
+  await line.getByLabel('Répétitions réalisées').fill('8');
+  if ((await line.getByLabel('Charge (kg)').inputValue()) === '') await line.getByLabel('Charge (kg)').fill('30');
+  await line.getByRole('button', { name: 'Cocher la série' }).click();
+  await p.reload();
+  await p.getByRole('button', { name: 'Reprendre la séance' }).click();
+  check(await p.getByRole('button', { name: 'Décocher la série' }).count() === 1, `${tag} Strength : rechargement, série conservée`);
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await p.getByRole('radio', { name: 'J’ai adapté la séance' }).click();
+  await p.getByRole('button', { name: 'Enregistrer' }).click();
+  await p.getByText('Séance terminée').first().waitFor();
+  check((await body()).includes('Séance expérimentale : structure compatible'), `${tag} séance : explication courte de la qualité expérimentale (aucun code)`);
+  // Rechargement AVANT retour terrain : le formulaire est toujours proposé (rien de perdu, rien de supposé).
+  await p.reload();
+  await nav('Historique');
+  await p.locator('.card', { hasText: 'Adaptée' }).first().click();
+  check(await p.locator('[data-field-feedback="form"]').isVisible(), `${tag} rechargement avant retour : formulaire de retour toujours proposé`);
+  if (shots) await p.screenshot({ path: `${shots}/ft-02-feedback.png`, fullPage: true });
+  await feedback({ difficulty: 'Adaptée', tolerance: 'Bonne', duration: 'Trop longue', comment: 'Charges cohérentes, séance un peu longue.' });
+  const s1 = await st();
+  const f1 = Object.values(s1.programmeLogs).find((l) => l.sport === 'strength')?.field;
+  check(f1?.provenance === 'USER_REPORTED_FIELD_FEEDBACK' && f1.difficulty === 'adapted' && f1.tolerance === 'good' && f1.perceivedDuration === 'too_long', `${tag} retour terrain stocké avec la séance, provenance USER_REPORTED_FIELD_FEEDBACK`);
+  check(await p.getByRole('button', { name: 'Enregistrer mon ressenti' }).count() === 0, `${tag} double retour impossible (formulaire remplacé par le résumé)`);
+  await p.getByRole('button', { name: 'Retour' }).click();
+  check(await p.getByRole('navigation', { name: 'Navigation principale' }).isVisible(), `${tag} navigation après fin de séance : retour à l’onglet, barre visible`);
+  const h1 = await body();
+  check(h1.includes('Ressenti : difficulté adaptée') && h1.includes('Durée réelle') && h1.includes('« Charges cohérentes'), `${tag} historique : durée réelle, ressenti, commentaire`);
+  // 12–14. Cross-training.
+  await nav('Planning');
+  await p.getByRole('button', { name: /^Cross-training : / }).first().click();
+  await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  const w0 = JSON.stringify((await st()).programmeLogs);
+  await p.clock.fastForward('05:00');
+  await p.waitForTimeout(1200);
+  check(JSON.stringify((await st()).programmeLogs) === w0, `${tag} Cross-training : 5 min de chrono sans aucune écriture d’état`);
+  const plus = p.getByRole('button', { name: /plus un/ }).first();
+  if (await plus.count() > 0) await plus.click();
+  await p.clock.fastForward('10:00');
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
+  await sheet.getByRole('radio', { name: 'J’ai adapté la séance' }).click();
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+  await feedback({ difficulty: 'Difficile' });
+  // 15–17. HYROX.
+  await p.getByRole('button', { name: 'Retour' }).click();
+  await nav('Planning');
+  await p.getByRole('button', { name: /^HYROX : / }).first().click();
+  await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  for (let k = 0; k < 40 && await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).isEnabled(); k += 1) await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).click();
+  await p.clock.fastForward('12:00');
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await sheet.getByRole('radio', { name: /J’ai adapté la séance/ }).click();
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+  await feedback({ tolerance: 'Moyenne', comment: 'Stations enchaînées, transitions non chronométrées : OK.' });
+  await p.getByRole('button', { name: 'Retour' }).click();
+  // 18–22. Séance non placée : Voir, Faire maintenant, terminer, retour.
+  await nav('Planning');
+  const un = p.locator('[data-unplaced]').first();
+  const unId = await un.getAttribute('data-unplaced');
+  const before = JSON.stringify((await st()).planner);
+  await un.getByRole('button', { name: 'Voir la séance' }).click();
+  check(/non planifiée/i.test(await body()) && await p.getByRole('button', { name: 'Faire maintenant' }).isVisible(), `${tag} Voir : aperçu de la séance non placée, « Faire maintenant »`);
+  check(JSON.stringify((await st()).planner) === before, `${tag} Voir : aucune écriture`);
+  await p.getByRole('button', { name: 'Faire maintenant' }).click();
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await p.getByRole('radio', { name: 'Tout s’est passé comme prévu' }).click();
+  await p.getByLabel(/Durée totale courue/).fill('28');
+  await p.getByRole('button', { name: 'Enregistrer' }).click();
+  await feedback({ difficulty: 'Facile', duration: 'Adaptée' });
+  const s2 = await st();
+  const res = s2.programmeState.results.find((r) => r.requestId === unId);
+  check(res?.provenance === 'manual_from_unplaced' && res.date === '2026-10-05' && s2.planner.weeks['2026-10-05'].requests.find((r) => r.requestId === unId)?.status === 'unplaced', `${tag} Faire maintenant : date réelle, provenance manuelle, aucun faux placement`);
+  check(s2.running.realized.some((r) => r.sessionId === unId), `${tag} Faire maintenant : exécution transmise au moteur Running`);
+  await p.getByRole('button', { name: 'Retour' }).click();
+  // 23–24. Journal Beta + export.
+  await nav('Réglages');
+  check((await p.getByLabel('KAIRO FIELD TEST').innerText()).includes('Planification beta0-m31'), `${tag} Réglages : KAIRO FIELD TEST, version, planification`);
+  await p.getByRole('button', { name: /Journal Beta/ }).click();
+  const jt = await body();
+  check(jt.includes('4 réalisées') && jt.includes('4 retours terrain') && jt.includes('faite manuellement') && !CODES.test(jt), `${tag} Journal Beta : 4 séances réalisées, 4 retours, provenance manuelle lisible, aucun code`);
+  await fit('journal');
+  if (shots) await p.screenshot({ path: `${shots}/ft-03-journal.png`, fullPage: true });
+  const [dl] = await Promise.all([p.waitForEvent('download'), p.getByRole('button', { name: 'Exporter le journal Beta (JSON)' }).click()]);
+  const j = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+  const done = j.journal.filter((e) => e.execution?.finishedAt);
+  check(j.kind === 'kairo.field_journal' && j.planningVersion === 'beta0-m31' && done.length === 4 && done.every((e) => e.feedback?.provenance === 'USER_REPORTED_FIELD_FEEDBACK' && e.quality?.verdict && e.prescription), `${tag} export JSON : 4 séances avec prescription, exécution, retour terrain, qualité Q1`);
+  check(j.journal.some((e) => e.provenance === 'manual_from_unplaced') && j.weeks.length === 1 && j.profile && j.profile.displayName === undefined && j.programme?.audit, `${tag} export JSON : séance manuelle, semaines, profil sans prénom, décisions du programme`);
+  const [dt] = await Promise.all([p.waitForEvent('download'), p.getByRole('button', { name: 'Exporter le journal Beta (texte)' }).click()]);
+  const txt = readFileSync(await dt.path(), 'utf8');
+  check(txt.startsWith('KAIRO FIELD TEST') && txt.includes('retour terrain : difficulté difficile'), `${tag} export texte lisible`);
+  // 25–26. Rechargement complet : tout est conservé.
+  const saved = JSON.stringify(await st());
+  await p.reload();
+  await nav('Historique');
+  const h2 = await body();
+  check((h2.match(/Ressenti :/g) ?? []).length === 4 && h2.includes('Faite hors planning'), `${tag} rechargement : historique, 4 retours, séance hors planning`);
+  const after = await st();
+  check(JSON.stringify(after.programmeLogs) === JSON.stringify(JSON.parse(saved).programmeLogs) && after.programmeState.results.length === 4, `${tag} rechargement : séances, retours et résultats intacts`);
+  check(perrors.length === 0, `${tag} aucune erreur de page (${perrors.join(' | ')})`);
+  await c.close();
+}
+
 // Version réellement servie : identifiant de build affiché dans Réglages = version.json publié (site déployé seulement).
 {
   const { c, p } = await freshPage(readFileSync(new URL('../../../packages/app-core/tests/fixtures/pre-s1-state.json', import.meta.url), 'utf8'));

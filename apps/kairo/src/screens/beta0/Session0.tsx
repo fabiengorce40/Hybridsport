@@ -11,7 +11,8 @@ import type { FinishInput, ProgrammeSessionView, SessionItem, SetPrescription } 
 import { useStore } from '../../store.js';
 import { RestTimer0 } from '../../RestTimer0.js';
 import { Notice, sessionDay, startLabel, Topbar } from '../../ui.js';
-import { isTest, roleName, sessionName, sportName, STATUS_LABELS } from '../../present.js';
+import { isTest, qualityVerdictText, roleName, sessionName, sportName, STATUS_LABELS } from '../../present.js';
+import { FieldFeedbackCard } from '../../field/FieldFeedback.js';
 import { BLOCK_LABELS, RunStructureView, SetRow } from '../Session.js';
 import { StrengthWorkout } from '../../workout/StrengthWorkout.js';
 import { CrossTrainingWorkout } from '../../workout/CrossTrainingWorkout.js';
@@ -85,7 +86,29 @@ function FinishSheet({ v, onCancel, onSubmit }: { v: ProgrammeSessionView; onCan
   );
 }
 
+/**
+ * Séance du programme (les quatre sports) + FIELD TEST : ligne de qualité expérimentale (Q1, sans code) et, une fois la
+ * séance terminée, retour terrain de l'utilisateur (observation seulement, aucune influence sur les moteurs).
+ */
 export function Session0({ requestId, onBack }: { requestId: string; onBack: () => void }) {
+  const store = useStore();
+  const v = selectProgrammeSession(store.state, requestId);
+  const quality = qualityVerdictText(v?.quality ?? null);
+  const done = v?.result !== null && v?.result !== undefined && v.log?.finishedAt !== undefined;
+  return (
+    <>
+      <SessionBody requestId={requestId} onBack={onBack} />
+      {v && (quality || done) && (
+        <div className="field-after">
+          {quality && <p className="tiny muted" data-quality={v.quality ?? undefined} style={{ margin: 0 }}>{quality}</p>}
+          {done && <FieldFeedbackCard requestId={requestId} pain={v.log?.outcome?.pain === true} />}
+        </div>
+      )}
+    </>
+  );
+}
+
+function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => void }) {
   const store = useStore();
   const [finishing, setFinishing] = useState(false);
   const [, setTick] = useState(0);

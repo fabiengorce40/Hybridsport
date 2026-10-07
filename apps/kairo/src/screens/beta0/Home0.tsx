@@ -1,7 +1,7 @@
 import { programmeStatusAt, weekdayIndex } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate, Notice, weekdayShort } from '../../ui.js';
-import { isDone, sportName, STATUS_LABELS } from '../../present.js';
+import { isDone, sessionName, sportName, STATUS_LABELS } from '../../present.js';
 import { nextOf, placedOf, SessionCard0, weekOf, WeekPlanningNotice } from './common.js';
 import type { DayItemView } from './common.js';
 
@@ -45,6 +45,7 @@ export function Home0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo: (t
   const next = nextOf(planned, today);
   const done = planned.filter((x) => isDone(x.display)).length;
   const name = state.profile?.displayName;
+  const extra = (week?.items ?? []).filter((x) => x.placement === 'composed_unplaced' && (x.display === 'not_planned' || x.display === 'in_progress'));
   return (
     <div className="screen">
       <div className="hero">
@@ -58,6 +59,19 @@ export function Home0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo: (t
           </button>
         )}
       </div>
+
+      {/* FIELD TEST — séances composées mais non placées : visibles sans remplacer la séance prévue. */}
+      {extra.length > 0 && (
+        <div className="card" aria-label="Séances supplémentaires disponibles" data-extra={extra.length}>
+          <strong>{extra.length === 1 ? '1 séance supplémentaire disponible' : `${String(extra.length)} séances supplémentaires disponibles`}</strong>
+          <span className="tiny muted">Non planifiée cette semaine faute de créneau compatible : vous pouvez la faire quand vous voulez.</span>
+          {extra.map((x) => (
+            <button key={x.requestId} className="btn secondary" onClick={() => onOpen(x.requestId)}>
+              {x.display === 'in_progress' ? 'Reprendre' : 'Voir'} : {sportName(x.sport)} · {sessionName(x.sport, x.archetypeId, x.dataError)}
+            </button>
+          ))}
+        </div>
+      )}
 
       {state.safety.activePain && <PainPause onGo={() => onGo('settings')} />}
       {week && <WeekPlanningNotice planning={week.planning} />}

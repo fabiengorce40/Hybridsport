@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
-import { BUILD_ID } from '../../version.js';
-import { BETA0_RESET_CONFIRMATION, clearPain, decodeState, emptyState, exportState, isBeta0, resetBeta0Data } from '@hybridsport/app-core';
+import { BUILD_DATE, BUILD_ID } from '../../version.js';
+import { JournalBeta } from '../../field/JournalBeta.js';
+import { BETA0_PLANNING_VERSION, BETA0_RESET_CONFIRMATION, clearPain, decodeState, emptyState, exportState, isBeta0, resetBeta0Data } from '@hybridsport/app-core';
 import { openWeek, useStore } from '../../store.js';
 import { download } from '../Profile.js';
 import { Notice } from '../../ui.js';
@@ -113,14 +114,35 @@ export function PainCard() {
   );
 }
 
+/** Version EXACTE testée sur le terrain : commit, date de build, version de planification. */
+export function FieldTestCard() {
+  const built = BUILD_DATE ? new Date(BUILD_DATE).toLocaleString('fr-FR', { dateStyle: 'medium', timeStyle: 'short' }) : 'build locale';
+  return (
+    <div className="card" aria-label="KAIRO FIELD TEST" style={{ gap: 4 }}>
+      <div className="row between"><strong>KAIRO FIELD TEST</strong><span className="badge sim">Beta expérimentale</span></div>
+      <span className="small num">Version {BUILD_ID} · build du {built}</span>
+      <span className="small num">Planification {BETA0_PLANNING_VERSION}</span>
+    </div>
+  );
+}
+
 export function Settings0() {
   const store = useStore();
   const [runningProfile, setRunningProfile] = useState(false);
+  const [journal, setJournal] = useState(false);
   if (runningProfile) return <RunningProfileScreen onBack={() => setRunningProfile(false)} />;
+  if (journal) return <JournalBeta onBack={() => setJournal(false)} />;
   return (
     <div className="screen">
       <h1 className="screen-title">Réglages</h1>
       <PainCard />
+      <FieldTestCard />
+      {isBeta0(store.state) && (
+        <button className="card button-card" onClick={() => setJournal(true)}>
+          <h3>Journal Beta</h3>
+          <div className="small muted">Séances prescrites, réalisées et votre ressenti · export pour le test terrain</div>
+        </button>
+      )}
       {store.state.profile?.running.enabled && (
         <button className="card button-card" onClick={() => setRunningProfile(true)}>
           <h3>Profil Course</h3>
@@ -131,7 +153,7 @@ export function Settings0() {
       <BetaResetSection />
       <div className="section-title">À propos de la Beta</div>
       <div className="card small muted" style={{ gap: 6 }}>
-        <span><b>Beta expérimentale</b> : les séances viennent des moteurs Musculation et Course ; certaines valeurs et règles de planification sont encore en cours de validation.</span>
+        <span><b>Beta expérimentale</b> : les séances viennent des moteurs Musculation, Course, Cross-training et HYROX ; certaines valeurs et règles de planification sont encore en cours de validation.</span>
         <span>Une séance par jour au plus ; aucune règle de récupération universelle n’est appliquée.</span>
         <span>KAIRO ne remplace pas un avis médical.</span>
         <span aria-label="Version de l’application">Version : <span className="num">{BUILD_ID}</span></span>

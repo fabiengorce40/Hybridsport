@@ -410,7 +410,7 @@ function arbitrationOf(r: PersistedWeek['requests'][number], sportOf: (id: strin
   return c ? { kind: 'conflict', fromDate: null, withSport: sportOf(String(c.params.withRequestId)) } : null;
 }
 
-function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResult | undefined, sportOf: (id: string) => Sport | null = () => null): SessionView {
+export function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResult | undefined, sportOf: (id: string) => Sport | null = () => null): SessionView {
   const data = r.record?.data as { session?: { targetDurationS?: unknown; blocks?: { kind?: unknown; format?: unknown; items?: { prescription?: { type?: unknown; rounds?: unknown } }[] }[] }; durationEstimate?: { availability?: unknown; p50?: unknown } } | undefined;
   const composition = r.reasons.find((x) => x.code === 'PLAN.WEEK_COMPOSITION')?.params;
   const session = data?.session;

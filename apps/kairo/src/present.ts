@@ -72,7 +72,7 @@ const REASON_HINTS: Readonly<Record<string, string>> = {
   'strength:RULE.PLANNER.COMPOSITION_UNRESOLVED': 'Aucune règle validée ne répartit encore ce nombre de séances de musculation dans la semaine : réduisez la fréquence de musculation.',
 };
 /** M3 — raison lisible d'un déplacement / d'un conflit restant (aucun code, aucune valeur). */
-export function arbitrationText(v: SessionView, dayLabel: (date: string) => string): string | null {
+export function arbitrationText(v: { readonly arbitration: SessionView['arbitration'] }, dayLabel: (date: string) => string): string | null {
   const a = v.arbitration;
   if (!a) return null;
   const OF: Readonly<Record<string, string>> = { strength: 'de musculation', running: 'de course', crosstraining: 'de cross-training', hyrox: 'HYROX' };
@@ -86,12 +86,22 @@ export function arbitrationText(v: SessionView, dayLabel: (date: string) => stri
  * Q1 — qualité expérimentale (aucun code, aucun score) : le diagnostic montre seulement si la cohérence est vérifiée
  * et si des points ne sont pas validés. Null : rien à signaler (aucun diagnostic).
  */
-export function qualityText(v: SessionView): string | null {
-  const q = v.quality;
-  if (!q) return null;
-  if (q.verdict === 'BLOCKED') return 'Qualité : prescription incohérente, séance non réalisable.';
-  if (q.verdict === 'UNRESOLVED') return 'Qualité expérimentale : cohérence vérifiée, doses non validées.';
-  if (q.verdict === 'ACCEPTABLE_WITH_WARNINGS') return 'Qualité : cohérence vérifiée, point à surveiller.';
+export function qualityText(v: { readonly quality: SessionView['quality'] }): string | null {
+  return qualityVerdictText(v.quality?.verdict ?? null);
+}
+/** Version COURTE pour les cartes (planning, accueil) : l'explication complète est dans la séance. */
+export function qualityShortText(verdict: NonNullable<SessionView['quality']>['verdict'] | null | undefined): string | null {
+  if (verdict === 'BLOCKED') return 'Séance non réalisable : prescription incohérente.';
+  if (verdict === 'UNRESOLVED') return 'Séance expérimentale';
+  if (verdict === 'ACCEPTABLE_WITH_WARNINGS') return 'Point à surveiller';
+  return null;
+}
+/** Même texte à partir du seul verdict (vue de séance). */
+export function qualityVerdictText(verdict: NonNullable<SessionView['quality']>['verdict'] | null): string | null {
+  if (verdict === 'BLOCKED') return 'Qualité : prescription incohérente, séance non réalisable.';
+  // UNRESOLVED : statut scientifique interne, jamais une erreur pour l'utilisateur (FIELD TEST : séance réalisable).
+  if (verdict === 'UNRESOLVED') return 'Séance expérimentale : structure compatible avec votre programme, certaines doses et règles sont encore en cours de validation.';
+  if (verdict === 'ACCEPTABLE_WITH_WARNINGS') return 'Qualité : cohérence vérifiée, point à surveiller.';
   return null;
 }
 /** M3.1 — séance COMPOSÉE MAIS NON PLACÉE : cause lisible (jamais un code). */
@@ -139,5 +149,10 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   BETA_RESET_NOT_CONFIRMED: 'Recréation annulée : confirmation absente. Rien n’a été modifié.',
   BETA_RESET_NOT_ALLOWED: 'Cet outil de test n’est disponible que dans la Beta expérimentale. Rien n’a été modifié.',
   PROGRAMME_MISSING: 'Aucun programme à recréer.',
+  FIELD_FEEDBACK_SESSION_NOT_FINISHED: 'Terminez la séance avant de donner votre retour.',
+  FIELD_FEEDBACK_ALREADY_RECORDED: 'Votre retour est déjà enregistré pour cette séance.',
+  FIELD_FEEDBACK_EMPTY: 'Choisissez au moins une réponse ou écrivez un commentaire.',
+  FIELD_FEEDBACK_COMMENT_TOO_LONG: 'Commentaire trop long.',
+  FIELD_FEEDBACK_INVALID: 'Réponse invalide.',
   PROGRAMME_SESSION_IN_PROGRESS: 'Une séance est en cours : terminez-la avant de modifier le programme. Rien n’a été modifié.',
 };

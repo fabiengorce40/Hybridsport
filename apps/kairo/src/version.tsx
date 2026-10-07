@@ -6,9 +6,12 @@
 import { useEffect, useState } from 'react';
 
 declare const __KAIRO_BUILD__: string | undefined;
+declare const __KAIRO_BUILD_DATE__: string | undefined;
 
 /** Commit (7 caractères) de la build en cours d'exécution ; `dev` hors build de déploiement. */
 export const BUILD_ID: string = typeof __KAIRO_BUILD__ === 'string' && __KAIRO_BUILD__.length > 0 ? __KAIRO_BUILD__ : 'dev';
+/** Date de la build (horodatage de compilation) ; null hors build (tests). */
+export const BUILD_DATE: string | null = typeof __KAIRO_BUILD_DATE__ === 'string' && __KAIRO_BUILD_DATE__.length > 0 ? __KAIRO_BUILD_DATE__ : null;
 // technical-constant: longueur d'un identifiant de commit abrégé (affichage)
 const SHORT = 7;
 

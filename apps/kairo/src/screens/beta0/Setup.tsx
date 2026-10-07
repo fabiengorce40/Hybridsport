@@ -162,7 +162,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
         <div className="hero" style={{ minHeight: 280 }}>
           <div className="hero-brand">KAI<span>RO</span></div>
           <h1>Entraîne-toi.<br />Sans rien inventer.</h1>
-          <p>Musculation et course : un programme construit par des moteurs d’entraînement, semaine après semaine.</p>
+          <p>Musculation, course, Cross-training, HYROX : un programme construit par des moteurs d’entraînement, semaine après semaine.</p>
         </div>
       ) : (
         <>

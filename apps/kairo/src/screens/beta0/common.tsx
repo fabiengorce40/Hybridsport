@@ -2,7 +2,7 @@
 import { approxMinutes, selectBeta0Week } from '@hybridsport/app-core';
 import type { AppState, Beta0WeekView, SessionView } from '@hybridsport/app-core';
 import { startProgrammeSession } from '@hybridsport/app-core';
-import { arbitrationText, ctFormatName, isTest, notPlannedText, qualityText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
+import { arbitrationText, ctFormatName, isTest, notPlannedText, qualityShortText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import type { DisplayStatus } from '../../present.js';
@@ -56,12 +56,11 @@ export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemV
       <div className="card" aria-label={`${sportName(v.sport)} non planifiée`}>
         <div className="row between"><span className="small muted">{sportName(v.sport)}</span><StatusPill status="not_planned" /></div>
         <div className="small">{notPlannedText(v)}</div>
-        <details className="tiny"><summary>Détail technique</summary>{v.notPlanned?.category}{v.notPlanned?.reason ? ` · ${v.notPlanned.reason.code}` : ''}</details>
       </div>
     );
   }
   return (
-    <button className={`card button-card ${highlight ? 'accent' : ''}`} onClick={() => onOpen(v.requestId)} aria-label={`${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`}>
+    <button className={`card button-card ${highlight ? 'accent' : ''}`} data-request={v.requestId} onClick={() => onOpen(v.requestId)} aria-label={`${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`}>
       <div className="row between">
         <span className="small muted">{sportName(v.sport)}</span>
         <span className="row">{isTest(v.archetypeId) && <span className="badge test">TEST</span>}<StatusPill status={v.display} /></span>
@@ -71,7 +70,7 @@ export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemV
         {[role, ctFormatName(v.ctFormat), v.hrTimeCapS !== null ? `time cap ${approxMinutes(v.hrTimeCapS)}` : (v.estimatedDurationS ?? v.targetDurationS) !== null ? `≈ ${approxMinutes(v.estimatedDurationS ?? v.targetDurationS ?? 0)}` : null, v.pain ? 'douleur signalée' : null].filter(Boolean).join(' · ')}
       </div>
       {v.arbitration && <div className="tiny muted" data-m3={v.arbitration.kind}>{arbitrationText(v, formatDate)}</div>}
-      {qualityText(v) && <div className="tiny muted" data-quality={v.quality?.verdict}>{qualityText(v)}</div>}
+      {qualityShortText(v.quality?.verdict) && <div className="tiny muted" data-quality={v.quality?.verdict}>{qualityShortText(v.quality?.verdict)}</div>}
     </button>
   );
 }
@@ -90,7 +89,7 @@ function UnplacedCard({ v, onOpen }: { v: SessionItemView; onOpen: (id: string) 
       <h3>{name}</h3>
       {meta && <div className="small muted num">{meta}</div>}
       <div className="small">{unplacedText(v)}</div>
-      {qualityText(v) && <div className="tiny muted" data-quality={v.quality?.verdict}>{qualityText(v)}</div>}
+      {qualityShortText(v.quality?.verdict) && <div className="tiny muted" data-quality={v.quality?.verdict}>{qualityShortText(v.quality?.verdict)}</div>}
       <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
         <button className="btn" onClick={() => onOpen(v.requestId)}>Voir la séance</button>
         {/* Q1 — « Faire maintenant » ne contourne jamais une qualité BLOQUÉE. */}

@@ -323,6 +323,26 @@ export const zHrRuntime = z.object({
 }).strict();
 export type HrRuntime = z.infer<typeof zHrRuntime>;
 
+/**
+ * FIELD TEST — retour TERRAIN déclaré par l'utilisateur après une séance terminée. Observation seulement : jamais lue
+ * par un moteur, jamais interprétée, aucune valeur sportive déduite. Provenance explicite et constante.
+ */
+export const FIELD_FEEDBACK_PROVENANCE = 'USER_REPORTED_FIELD_FEEDBACK' as const;
+export const FIELD_DIFFICULTIES = ['very_easy', 'easy', 'adapted', 'hard', 'very_hard'] as const;
+export const FIELD_TOLERANCES = ['good', 'medium', 'poor'] as const;
+export const FIELD_DURATIONS = ['too_short', 'adapted', 'too_long'] as const;
+// technical-constant: longueur maximale du commentaire libre de terrain (borne de stockage, aucune valeur sportive)
+export const FIELD_COMMENT_MAX = 2000;
+export const zFieldFeedback = z.object({
+  provenance: z.literal(FIELD_FEEDBACK_PROVENANCE),
+  recordedAt: instant,
+  difficulty: z.enum(FIELD_DIFFICULTIES).optional(),
+  tolerance: z.enum(FIELD_TOLERANCES).optional(),
+  perceivedDuration: z.enum(FIELD_DURATIONS).optional(),
+  comment: z.string().min(1).max(FIELD_COMMENT_MAX).optional(),
+}).strict();
+export type FieldFeedback = z.infer<typeof zFieldFeedback>;
+
 /** Séance du programme commencée dans l'application. */
 export const zProgrammeLog = z.object({
   requestId: z.string().min(1),
@@ -346,6 +366,8 @@ export const zProgrammeLog = z.object({
     /** HYROX : résultat STRUCTURÉ validé par le moteur (completed / time_capped / abandoned), temps, charges réelles. */
     hr: z.object({ result: z.record(z.string(), z.unknown()), elapsedS: z.number().nonnegative(), performedLoads: z.array(z.object({ itemId: z.string().min(1), kg: z.number().positive().finite() }).strict()).default([]) }).strict().optional(),
   }).strict().optional(),
+  /** FIELD TEST — retour terrain déclaré après la fin (une seule fois ; jamais transmis aux moteurs). Champ additif. */
+  field: zFieldFeedback.optional(),
 }).strict();
 export type ProgrammeLog = z.infer<typeof zProgrammeLog>;
 
