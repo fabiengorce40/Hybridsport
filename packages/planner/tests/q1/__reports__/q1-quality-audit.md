@@ -44,7 +44,7 @@
 | duration_coherence | PASS | DERIVED | availableTimeS=3600 ; targetDurationS=3240 ; estimatedP50S=3017 ; estimatedP90S=3519 | p90_within_available_time |
 | prescription_integrity | PASS | DERIVED | blocks=4 ; mainBlocks=3 ; items=4 | schema_valid, main_content_present |
 | progression_support | UNRESOLVED | TEST_ONLY | declaredAnchors=[] ; blocked=[periodization, split_beyond_candidate, same_discipline_recovery, load_conversion_between_exercises, planned_exercise_rotation, priority_interference_policy, exact_success_progression, bodyweight_overload_method] | value_source:TEST_ONLY, no_approved_quality_range, progression_source:strength.progression |
-| volume_target | UNRESOLVED | TEST_ONLY | belowFloor=NaN ; atOrAboveHigh=0 ; noTarget=0 ; weeklySessions=1 | value_source:TEST_ONLY, no_approved_quality_range, volume_source:strength.volume |
+| volume_target | UNRESOLVED | TEST_ONLY | belowFloor=[arms, back, calves, chest, core, glutes, hamstrings, quads, shoulders] ; atOrAboveHigh=[] ; noTarget=[] ; weeklySessions=1 | value_source:TEST_ONLY, no_approved_quality_range, volume_source:strength.volume |
 
 ## B — Running réelle
 

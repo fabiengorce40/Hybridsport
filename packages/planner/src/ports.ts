@@ -515,6 +515,8 @@ export function traceBasis(reasons: readonly ReasonCode[], env: QualityEnvironme
   return candidate ? env ?? 'PROVISIONAL' : 'UNRESOLVED';
 }
 
+const listOf = (v: unknown): string[] => (Array.isArray(v) ? v.map(String) : []);
+
 /** Strength (gelé) : critères génériques + prescription hebdomadaire TRACÉE par le moteur (volume, progression). */
 export function strengthQuality(ruleset: LoadedRuleset, env: QualityEnvironment): QualityOf {
   return ({ session, reasons, record }) => {
@@ -522,10 +524,10 @@ export function strengthQuality(ruleset: LoadedRuleset, env: QualityEnvironment)
     const criteria: QualityCriterion[] = [...genericCriteria(session, estimateOf(record))];
     const b = (id: string) => basisOfParameter(ruleset.parameter(id), env);
     criteria.push(governedCriterion('volume_target', [b('strength.volume')], w ? {
-      belowFloor: Number(w.belowFloor ?? 0), atOrAboveHigh: Number(w.atOrAboveHigh ?? 0), noTarget: Number(w.noTarget ?? 0), weeklySessions: Number(w.weeklySessions ?? 0),
+      belowFloor: listOf(w.belowFloor), atOrAboveHigh: listOf(w.atOrAboveHigh), noTarget: listOf(w.noTarget), weeklySessions: Number(w.weeklySessions ?? 0),
     } : { weekPrescription: 'not_traced' }, ['volume_source:strength.volume']));
     criteria.push(governedCriterion('progression_support', [b('strength.progression'), b('strength.tracks')], w ? {
-      declaredAnchors: Array.isArray(w.anchors) ? (w.anchors as unknown[]).map(String) : [], blocked: Array.isArray(w.blocked) ? (w.blocked as unknown[]).map(String) : [],
+      declaredAnchors: listOf(w.anchors), blocked: listOf(w.blocked),
     } : { weekPrescription: 'not_traced' }, ['progression_source:strength.progression']));
     return assessment(criteria);
   };

@@ -324,6 +324,11 @@ describe('Q1 — adversarial (planificateur, moteurs)', () => {
   it('A35. aucun critère PASS ne repose sur une valeur non approuvée (PASS ⇒ base DERIVED ou APPROVED)', () => {
     for (const a of [q(hr), q(ct)]) for (const c of a.criteria.filter((x) => x.status === 'PASS')) expect(['DERIVED', 'APPROVED']).toContain(c.basis);
   });
+  it('A36. faits du diagnostic : aucune valeur numérique non finie (NaN) dans les quatre sports', () => {
+    const s = q(first(plan([D.strength(1)], { strength: strPort() }), 'strength'));
+    for (const a of [s, q(hr), q(ct)]) for (const c of a.criteria) for (const v of Object.values(c.facts)) if (typeof v === 'number') expect(Number.isFinite(v)).toBe(true);
+    expect(s.criteria.find((c) => c.id === 'volume_target')?.facts.belowFloor).toEqual(expect.any(Array));
+  });
 });
 
 afterAll(() => {
