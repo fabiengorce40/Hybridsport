@@ -1,7 +1,9 @@
 /** Lectures et composants communs Beta 0 (présentation uniquement : projection de `selectBeta0Week`). */
 import { approxMinutes, selectBeta0Week } from '@hybridsport/app-core';
 import type { AppState, Beta0WeekView, SessionView } from '@hybridsport/app-core';
-import { arbitrationText, ctFormatName, isTest, notPlannedText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, weekPlanningText } from '../../present.js';
+import { startProgrammeSession } from '@hybridsport/app-core';
+import { arbitrationText, ctFormatName, isTest, notPlannedText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
+import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import type { DisplayStatus } from '../../present.js';
 
@@ -17,7 +19,9 @@ export interface DayItemView { readonly date: string; readonly sessions: readonl
 export function weekOf(state: AppState, today: string): (Omit<Beta0WeekView, 'days'> & { readonly items: readonly SessionItemView[]; readonly days: readonly DayItemView[] }) | null {
   const v = selectBeta0Week(state, today);
   if (!v) return null;
-  const display = (x: SessionView): SessionItemView => ({ ...x, display: x.status === 'planned' && state.programmeLogs[x.requestId] ? 'in_progress' : x.status });
+  // « En cours » : séance commencée non terminée (planifiée, ou non placée réalisée maintenant — M3.1).
+  const started = (x: SessionView) => (x.status === 'planned' || (x.status === 'not_planned' && x.placement === 'composed_unplaced')) && state.programmeLogs[x.requestId] !== undefined;
+  const display = (x: SessionView): SessionItemView => ({ ...x, display: started(x) ? 'in_progress' : x.status });
   return { ...v, items: v.sessions.map(display), days: v.days.map((d) => ({ date: d.date, sessions: d.sessions.map(display) })) };
 }
 
@@ -46,6 +50,7 @@ export function ExperimentalBadge() {
 export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemView; onOpen: (id: string) => void; highlight?: boolean }) {
   const name = sessionName(v.sport, v.archetypeId, v.dataError);
   const role = roleName(v.role);
+  if (v.display === 'not_planned' && v.placement === 'composed_unplaced') return <UnplacedCard v={v} onOpen={onOpen} />;
   if (v.display === 'not_planned') {
     return (
       <div className="card" aria-label={`${sportName(v.sport)} non planifiée`}>
@@ -67,5 +72,27 @@ export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemV
       </div>
       {v.arbitration && <div className="tiny muted" data-m3={v.arbitration.kind}>{arbitrationText(v, formatDate)}</div>}
     </button>
+  );
+}
+
+/**
+ * M3.1 — séance COMPOSÉE MAIS NON PLACÉE : prescription du moteur (nom, rôle, durée), cause lisible, « Voir la séance »
+ * (workout normal en aperçu, prescription persistée) et « Faire maintenant » (exécution à l'heure réelle, même runtime).
+ */
+function UnplacedCard({ v, onOpen }: { v: SessionItemView; onOpen: (id: string) => void }) {
+  const store = useStore();
+  const name = sessionName(v.sport, v.archetypeId, v.dataError);
+  const meta = [roleName(v.role), ctFormatName(v.ctFormat), v.hrTimeCapS !== null ? `time cap ${approxMinutes(v.hrTimeCapS)}` : (v.estimatedDurationS ?? v.targetDurationS) !== null ? `≈ ${approxMinutes(v.estimatedDurationS ?? v.targetDurationS ?? 0)}` : null].filter(Boolean).join(' · ');
+  return (
+    <div className="card" aria-label={`${sportName(v.sport)} : ${name}, non planifiée`} data-unplaced={v.requestId}>
+      <div className="row between"><span className="small muted">{sportName(v.sport)}</span><StatusPill status="not_planned" /></div>
+      <h3>{name}</h3>
+      {meta && <div className="small muted num">{meta}</div>}
+      <div className="small">{unplacedText(v)}</div>
+      <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
+        <button className="btn" onClick={() => onOpen(v.requestId)}>Voir la séance</button>
+        <button className="btn primary" onClick={() => { store.apply((s, c) => startProgrammeSession(s, c, v.requestId)); onOpen(v.requestId); }}>Faire maintenant</button>
+      </div>
+    </div>
   );
 }

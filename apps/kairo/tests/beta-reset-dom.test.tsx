@@ -50,7 +50,7 @@ describe('reset Beta depuis l’état du téléphone (programme pré-S1)', () =>
     expect(screen.queryByText(/version précédente/)).toBeNull();
     expect(screen.queryByText(/Full body/)).toBeNull();
     const s = saved(st);
-    expect(s.planner.weeks['2026-10-05']?.planningVersion).toBe('beta0-m3');
+    expect(s.planner.weeks['2026-10-05']?.planningVersion).toBe('beta0-m31');
     expect(s.programmeState?.audit.some((a) => a.reason.code === 'KAIRO.BETA_DATA_RESET')).toBe(true);
     expect(dayLabels()).toEqual(['Lun 5', 'Mar 6', 'Mer 7', 'Jeu 8', 'Ven 9', 'Sam 10', 'Dim 11']);
   });

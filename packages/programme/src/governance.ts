@@ -33,6 +33,22 @@ export const PG_PARAMETERS = {
   },
   /** G2 : nombre de semaines APRÈS la semaine courante planifiables à l'avance (horizon glissant). Absent ⇒ semaine courante seule. */
   'programme.planning.horizonWeeks': { governance: 'G2', schema: z.number().int().nonnegative() },
+  /**
+   * G2 (M3.1) : intentions CANDIDATES d'un plan à rotation (« équilibré »), par sport puis objectif : archétype et
+   * stimulus de chaque candidate. Absent ⇒ aucune rotation (demande sans archétype ⇒ non planifiée, fail-closed).
+   */
+  'programme.rotation.candidates': {
+    governance: 'G2',
+    schema: z.record(z.string().min(1), z.record(z.string().min(1), z.array(z.object({ archetypeId: z.string().min(1), stimulus: z.string().min(1) }).strict()).min(1))),
+  },
+  /**
+   * G2 (M3.1) : critères ORDONNÉS de choix d'une candidate (la moins récemment réalisée / assignée ; égalité ⇒ ordre
+   * de la liste) et issues comptées comme « réalisée ». Aucun nombre : seul l'historique du programme est lu.
+   */
+  'programme.rotation.selection': {
+    governance: 'G2',
+    schema: z.object({ order: z.array(z.enum(['least_recently_executed', 'least_recently_assigned'])).min(1), executedCompletions: z.array(z.enum(['completed_as_prescribed', 'modified', 'abandoned'])) }).strict(),
+  },
 } as const;
 export type PgParamId = keyof typeof PG_PARAMETERS;
 export type PgParamValue<K extends PgParamId> = z.infer<(typeof PG_PARAMETERS)[K]['schema']>;

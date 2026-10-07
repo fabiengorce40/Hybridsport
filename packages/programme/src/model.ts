@@ -65,9 +65,16 @@ export const zSportPlan = z.object({
   variants: z.object({ PROGRESS: zPartialIntent.optional(), REGRESS: zPartialIntent.optional() }).strict().default({}),
   /** Évaluation déclarée pour ce sport (intention de séance du moteur) ; absente ⇒ contenu d'évaluation indisponible. */
   assessment: z.object({ kind: z.string().min(1), intent: zFullIntent }).strict().optional(),
+  /**
+   * M3.1 — plan à ROTATION (« équilibré ») : le PROGRAMME choisit l'archétype de chaque séance parmi les candidates
+   * gouvernées (`programme.rotation.*`) pour l'objectif `goal`, d'après l'historique ; le moteur compose chacune.
+   * L'intention ne déclare alors pas d'archétype. Absent : intention déclarée telle quelle (comportement inchangé).
+   */
+  rotation: z.object({ kind: z.literal('balanced'), goal: z.string().min(1) }).strict().optional(),
 }).strict().superRefine((p, ctx) => {
+  if (p.rotation && p.composition !== 'declared') ctx.addIssue({ code: 'custom', path: ['rotation'], message: 'rotation : composition déclarée exigée' });
   for (const f of INTENT_FIELDS) {
-    const engineOwned = p.composition === 'engine' && f === 'archetypeId';
+    const engineOwned = (p.composition === 'engine' || p.rotation !== undefined) && f === 'archetypeId';
     if (engineOwned && p.intent[f] !== undefined) ctx.addIssue({ code: 'custom', path: ['intent', f], message: 'composition par le moteur : archétype non déclaré' });
     if (!engineOwned && p.intent[f] === undefined) ctx.addIssue({ code: 'custom', path: ['intent', f], message: 'champ d’intention requis' });
     if (engineOwned && (p.variants.PROGRESS?.[f] !== undefined || p.variants.REGRESS?.[f] !== undefined)) ctx.addIssue({ code: 'custom', path: ['variants'], message: 'composition par le moteur : variante sans archétype' });
@@ -120,8 +127,12 @@ export const zProgrammeResult = z.object({
   date,
   completion: z.enum(COMPLETIONS),
   pain: z.boolean(),
-  /** declared : saisi par l'utilisateur ; derived_missed : aucune réalisation après la date de la séance. */
-  provenance: z.enum(['declared', 'derived_missed']),
+  /**
+   * declared : saisi par l'utilisateur ; derived_missed : aucune réalisation après la date de la séance ;
+   * manual_from_unplaced (M3.1) : séance COMPOSÉE MAIS NON PLACÉE réalisée à l'initiative de l'utilisateur — `date` est
+   * le jour RÉEL de la réalisation, jamais un placement réécrit.
+   */
+  provenance: z.enum(['declared', 'derived_missed', 'manual_from_unplaced']),
   recordedAt: instant,
   /** Forme historique (non écrite depuis F1) : conservée en lecture pour les états existants. */
   measured: z.object({ kind: z.string().min(1), values: z.record(z.string(), z.number()) }).strict().optional(),
@@ -158,6 +169,8 @@ export const zAdherence = z.object({
   abandoned: z.number().int().nonnegative(),
   missed: z.number().int().nonnegative(),
   painReported: z.number().int().nonnegative(),
+  /** M3.1 — séances non placées réalisées manuellement (réalisées ou modifiées), comptées à part (champ additif). */
+  completedFromUnplaced: z.number().int().nonnegative().optional(),
 }).strict();
 export type Adherence = z.infer<typeof zAdherence>;
 
@@ -202,6 +215,8 @@ export const zProgrammeWeek = z.object({
   /** Résumé minimal nécessaire à l'adhérence (statut et catégorie de chaque demande). */
   requests: z.array(z.object({
     requestId: z.string(), sport, status: z.enum(['planned', 'refused', 'unplaced']), category: z.enum(REQUEST_CATEGORIES), date: date.optional(),
+    /** M3.1 — demande non placée dont le moteur a composé une prescription valide (réalisable manuellement). */
+    composedUnplaced: z.literal(true).optional(),
     /** Intention RÉELLEMENT utilisée par le planificateur (déclarée, surchargée ou composée par le moteur). */
     intent: zFullIntent.optional(),
     /** Composition du moteur appliquée : autorité de sa règle et rôle de la séance. */

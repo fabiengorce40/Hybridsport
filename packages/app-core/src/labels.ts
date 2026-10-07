@@ -209,6 +209,8 @@ export const HR_ROLE_LABELS: Readonly<Record<string, { title: string; detail: st
   'hybrid_race.h2.compromised_running': { title: 'Course compromise', detail: 'Station puis course, répétées : courir sous fatigue' },
   'hybrid_race.h2.partial_simulation': { title: 'Simulation partielle', detail: 'Un segment de l’enchaînement course / stations' },
 };
+/** M3.1 — focus « équilibré » (programme) : n'est PAS un rôle H2. */
+export const HR_BALANCED_LABEL = { title: 'Équilibré', detail: 'Varier les différents types de séances HYROX au fil du programme' } as const;
 /** Objectifs HYROX (vocabulaire du programme). */
 export const HR_GOAL_LABELS: Readonly<Record<string, string>> = { GENERAL: 'Forme générale', RACE_PREPARATION: 'Préparer une course HYROX' };
 /** Structures de séance HYROX (lecture de la séance persistée). */

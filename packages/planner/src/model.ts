@@ -113,7 +113,32 @@ export type RequestResult =
     readonly record: SessionRecord; readonly demand: DemandOutcome; readonly neighbourContext?: NeighbourContext;
   })
   | (RequestBase & { readonly status: 'refused'; readonly date: string })
-  | (RequestBase & { readonly status: 'unplaced' });
+  | (RequestBase & {
+    readonly status: 'unplaced';
+    /**
+     * M3.1 — séance COMPOSÉE MAIS NON PLACÉE : le moteur a produit une prescription valide (validée par le CORE) mais
+     * aucun jour ne lui a été attribué (créneaux insuffisants, interférence). Absent : aucune prescription exécutable.
+     * `referenceDate` / `availableMinutes` : créneau de RÉFÉRENCE de la composition, jamais un placement.
+     */
+    readonly composed?: UnplacedComposition;
+  });
+
+/** Prescription d'une demande non placée (même forme que la partie « séance » d'une demande planifiée). */
+export interface UnplacedComposition {
+  readonly referenceDate: string;
+  readonly availableMinutes: number;
+  readonly session: SessionDraft;
+  readonly fingerprint?: SessionFingerprint;
+  readonly record: SessionRecord;
+  readonly demand: DemandOutcome;
+}
+
+/**
+ * Placement d'une demande (lecture du contrat, jamais du texte) : PLANNED (prescription + jour),
+ * COMPOSED_BUT_UNPLACED (prescription valide, aucun jour), BLOCKED (aucune prescription exécutable).
+ */
+export type Placement = 'PLANNED' | 'COMPOSED_BUT_UNPLACED' | 'BLOCKED';
+export const placementOf = (r: RequestResult): Placement => (r.status === 'planned' ? 'PLANNED' : r.status === 'unplaced' && r.composed ? 'COMPOSED_BUT_UNPLACED' : 'BLOCKED');
 
 /**
  * M3 — ARBITRAGE de la semaine (compact, persistable) : statut, passes, décisions APPLIQUÉES, conflits RÉSIDUELS. Le

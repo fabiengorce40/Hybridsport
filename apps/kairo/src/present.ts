@@ -82,6 +82,13 @@ export function arbitrationText(v: SessionView, dayLabel: (date: string) => stri
   if (a.kind === 'recomposed') return `Adaptée par son moteur à cause d’${other} proche.`;
   return `Proche d’${other} qui sollicite les mêmes zones du corps : aucun autre jour disponible ne convenait.`;
 }
+/** M3.1 — séance COMPOSÉE MAIS NON PLACÉE : cause lisible (jamais un code). */
+export function unplacedText(v: SessionView): string {
+  const cause = v.unplacedCause === 'week_full'
+    ? 'votre semaine est déjà complète.'
+    : 'aucun jour disponible n’était assez éloigné des séances qui sollicitent les mêmes zones du corps.';
+  return `KAIRO n’a pas trouvé de créneau compatible cette semaine : ${cause} La séance reste disponible.`;
+}
 export function notPlannedText(v: SessionView): string {
   const base = NOT_PLANNED_MESSAGES[v.notPlanned?.category ?? ''] ?? 'Cette séance n’a pas pu être planifiée.';
   const code = v.notPlanned?.reason?.code;

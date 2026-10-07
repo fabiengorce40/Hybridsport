@@ -8,7 +8,7 @@ import { useEffect, useState } from 'react';
 import { CT_FORMAT_LABELS, CT_INTENT_LABELS, controlCtTimer, ctClock, ctElapsedS, ctWorkoutOf, exerciseLabel, finishProgrammeSession, recordCtProgress, startProgrammeSession } from '@hybridsport/app-core';
 import type { CtWorkout, CtWorkoutItem, FinishInput, ProgrammeSessionView } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
-import { formatDate, Notice, Topbar } from '../ui.js';
+import { Notice, sessionDay, startLabel, Topbar } from '../ui.js';
 import { STATUS_LABELS } from '../present.js';
 import { DurationInput } from '../running/DurationInput.js';
 import { durationFromParts, formatChrono } from '../running/duration.js';
@@ -194,7 +194,7 @@ export function CrossTrainingWorkout({ v, onBack }: { v: ProgrammeSessionView; o
       <Topbar title="" onBack={onBack} right={v.experimental ? <span className="k-pill" title="Séance composée par le moteur Cross-training en environnement expérimental (valeurs de test, non approuvées).">Beta</span> : undefined} />
       <div className={`k-workout k-ct ${!log && !finished ? 'with-dock' : ''}`}>
         <header className="k-ct-head">
-          <div className="k-ct-eyebrow">Cross-training · {formatDate(v.date)}</div>
+          <div className="k-ct-eyebrow">Cross-training · {sessionDay(v)}</div>
           <h1 className="k-ct-title">{intent ?? 'Cross-training'}</h1>
           <div className="row wrap"><span className="k-pill accent">{CT_FORMAT_LABELS[w.format] ?? w.format}</span><span className="k-ct-headline num">{headline(w)}</span></div>
           {finished && <span className="k-pill done">✓ {STATUS_LABELS[v.result?.completion ?? 'completed_as_prescribed']}</span>}
@@ -233,7 +233,7 @@ export function CrossTrainingWorkout({ v, onBack }: { v: ProgrammeSessionView; o
           </div>
         )}
         {editable && <button className="k-cta ghost" onClick={() => setFinishing(true)}>Terminer la séance</button>}
-        {!log && !finished && <div className="k-dock"><button className="k-cta" onClick={() => store.apply((s, c) => startProgrammeSession(s, c, v.requestId))}>Commencer la séance</button></div>}
+        {!log && !finished && <div className="k-dock"><button className="k-cta" onClick={() => store.apply((s, c) => startProgrammeSession(s, c, v.requestId))}>{startLabel(v)}</button></div>}
       </div>
       {finishing && editable && (
         <CtFinishSheet w={w} elapsed={elapsed} rounds0={rt.rounds} reps0={rt.partialReps} onCancel={() => setFinishing(false)} onSubmit={(f) => {

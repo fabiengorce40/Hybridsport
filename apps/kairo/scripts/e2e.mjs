@@ -171,7 +171,7 @@ const strengthTitles = (p) => p.getByRole('button', { name: /^Musculation : / })
   check(titles.join(',') === 'Haut du corps,Bas du corps,Haut du corps,Bas du corps', `S1 programme pré-S1 : semaine régénérée dans le DOM (${titles.join(', ')})`);
   check((await p.locator('body').innerText()).includes('replanifiée avec la nouvelle version de KAIRO'), 'S1 programme pré-S1 : avis de replanification visible');
   const st = await p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
-  check(st.planner?.weeks?.['2026-10-05']?.planningVersion === 'beta0-m3', 'S1 programme pré-S1 : semaine persistée à la version courante');
+  check(st.planner?.weeks?.['2026-10-05']?.planningVersion === 'beta0-m31', 'S1 programme pré-S1 : semaine persistée à la version courante');
   await c.close();
 }
 
@@ -190,7 +190,7 @@ const strengthTitles = (p) => p.getByRole('button', { name: /^Musculation : / })
   await p.getByRole('button', { name: 'Effacer et recréer' }).click();
   const st = await p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
   const reqs = (st.planner?.weeks?.['2026-10-05']?.requests ?? []).filter((r) => r.sport === 'strength' && r.status === 'planned');
-  check(st.planner?.weeks?.['2026-10-05']?.planningVersion === 'beta0-m3' && reqs.every((r) => r.composition?.authority === 'provisional' && r.reasons.some((x) => x.code === 'PLAN.WEEK_COMPOSITION')), `reset Beta : AppState recomposé par S1 (${reqs.map((r) => `${r.date} ${r.intent?.archetypeId}`).join(', ')})`);
+  check(st.planner?.weeks?.['2026-10-05']?.planningVersion === 'beta0-m31' && reqs.every((r) => r.composition?.authority === 'provisional' && r.reasons.some((x) => x.code === 'PLAN.WEEK_COMPOSITION')), `reset Beta : AppState recomposé par S1 (${reqs.map((r) => `${r.date} ${r.intent?.archetypeId}`).join(', ')})`);
   await p.getByRole('button', { name: 'Planning', exact: true }).click();
   const after = await strengthTitles(p);
   const days = await p.locator('.week .day .n').allInnerTexts();
@@ -668,6 +668,116 @@ async function hrNoOverlap(p, tag) {
   await p2.getByRole('button', { name: 'Planning', exact: true }).click();
   check(/non planifiée/i.test(await p2.locator('body').innerText()), `${tag} refus visible dans le planning`);
   await c2.close();
+}
+
+// ——— M3.1 : séances composées mais non placées + HYROX Équilibré (360 × 640, mobile)
+async function m31Onboard(p, { type, sessions, openDays, level = 'intermediate' }) {
+  await p.getByLabel(/J’ai compris/).check();
+  await p.getByRole('button', { name: 'Commencer' }).click();
+  await p.getByRole('radio', { name: /^HYROX/ }).click();
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  await p.getByLabel('Niveau d’entraînement général').selectOption(level);
+  await p.getByRole('radio', { name: /^Préparer une course HYROX/ }).click();
+  if (type) await p.getByRole('radio', { name: new RegExp(`^${type}`) }).click();
+  await p.getByLabel('Séances HYROX par semaine').selectOption(sessions);
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  for (const [i, d] of ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].entries()) await p.getByLabel(`Temps disponible le ${d}`).selectOption(openDays.includes(i) ? '60' : '0');
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  await p.getByRole('button', { name: 'Créer mon programme' }).click();
+  await p.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+}
+async function mobileFit(p, tag) {
+  const r = await p.evaluate(() => {
+    const btns = [...document.querySelectorAll('[data-unplaced] button')];
+    const hidden = btns.filter((b) => { b.scrollIntoView({ block: 'center' }); const r0 = b.getBoundingClientRect(); const el = document.elementFromPoint(r0.left + r0.width / 2, r0.top + r0.height / 2); return !(el && b.contains(el)); }).length;
+    return { scroll: document.documentElement.scrollWidth > window.innerWidth + 1, buttons: btns.length, hidden, small: btns.filter((b) => b.getBoundingClientRect().height < 44).length };
+  });
+  check(!r.scroll && r.buttons >= 2 && r.hidden === 0 && r.small === 0, `${tag} carte non planifiée lisible : CTA visibles (aucun sous la barre de navigation), ≥ 44 px, aucun défilement horizontal (${JSON.stringify(r)})`);
+}
+{
+  const c = await browser.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+  const p = await c.newPage();
+  const perrors = [];
+  p.on('pageerror', (e) => perrors.push(e.message));
+  await p.clock.install({ time: new Date('2026-10-05T07:30:00+02:00') });
+  await p.clock.resume();
+  await p.goto(URL_);
+  const tag = '[M3.1 A/D 360×640]';
+  // Programme : Équilibré visible et compréhensible ; Continuer accessible.
+  await p.getByLabel(/J’ai compris/).check();
+  await p.getByRole('button', { name: 'Commencer' }).click();
+  await p.getByRole('radio', { name: /^HYROX/ }).click();
+  await p.getByRole('button', { name: 'Continuer' }).click();
+  await p.getByRole('radio', { name: /^Préparer une course HYROX/ }).click();
+  const eq = p.getByRole('radio', { name: /^Équilibré/ });
+  check(await eq.isVisible() && (await eq.innerText()).includes('Varier') && await eq.getAttribute('aria-checked') === 'true', `${tag} Programme : Équilibré visible, expliqué, proposé par défaut pour préparer une course`);
+  const cont = p.getByRole('button', { name: 'Continuer' });
+  await cont.scrollIntoViewIfNeeded();
+  check(await cont.isEnabled() && await p.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1), `${tag} Programme : Continuer accessible, aucun défilement horizontal`);
+  await p.reload();
+  await m31Onboard(p, { sessions: '2', openDays: [0] });
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  const card = p.locator('[data-unplaced]').first();
+  const ct = await card.innerText();
+  check(/non planifiée/i.test(ct) && ct.includes('KAIRO n’a pas trouvé de créneau compatible cette semaine') && /time cap/i.test(ct) && !HR_INTERNAL.test(ct), `${tag} semaine saturée : séance composée mais non placée, nom, time cap, cause lisible, aucun code`);
+  await mobileFit(p, tag);
+  if (shots) await p.screenshot({ path: `${shots}/m31-unplaced-card.png` });
+  const st0 = await hrState(p);
+  const req0 = (st0.planner?.weeks?.['2026-10-05']?.requests ?? []).filter((r) => r.sport === 'hyrox');
+  const un = req0.find((r) => r.status === 'unplaced' && r.composedFor);
+  const pl = req0.find((r) => r.status === 'planned');
+  check(un && pl && un.intent?.archetypeId !== pl.intent?.archetypeId, `${tag} D : Équilibré + M3 — un rôle placé (${pl?.intent?.archetypeId}), un autre composé mais non placé (${un?.intent?.archetypeId})`);
+  // Voir : workout normal en aperçu, prescription persistée.
+  await card.getByRole('button', { name: 'Voir la séance' }).click();
+  const body = await p.locator('body').innerText();
+  check(/non planifiée/i.test(body) && await p.getByRole('list', { name: 'Parcours de la séance' }).isVisible() && await p.getByRole('button', { name: 'Faire maintenant' }).isVisible(), `${tag} Voir : workout HYROX en aperçu (« non planifiée »), « Faire maintenant »`);
+  check(JSON.stringify((await hrState(p)).planner) === JSON.stringify(st0.planner), `${tag} Voir : aucune recomposition, aucune écriture`);
+  await p.getByRole('button', { name: 'Faire maintenant' }).click();
+  await p.getByRole('button', { name: /Étape faite/ }).click();
+  await p.clock.fastForward('05:00');
+  await p.reload();
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  await p.locator('.card', { hasText: 'En cours' }).first().click();
+  check(/Étape 2 \//.test(await p.locator('body').innerText()), `${tag} rechargement : séance non placée reprise à l’étape 2`);
+  for (let k = 0; k < 40 && await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).isEnabled(); k += 1) await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).click();
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
+  await sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }).click();
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+  const st1 = await hrState(p);
+  const res = st1.programmeState?.results?.find((r) => r.requestId === un?.requestId);
+  const realized = st1.hyrox?.realized?.find((r) => r.sessionId === un?.requestId);
+  check(res?.provenance === 'manual_from_unplaced' && res.date === '2026-10-05' && realized?.role === un?.intent?.archetypeId?.replace('hybrid_race.h2.', ''), `${tag} terminée : provenance manual_from_unplaced, jour réel, rôle réalisé = rôle non placé (${realized?.role})`);
+  check(st1.planner?.weeks?.['2026-10-05']?.requests?.find((r) => r.requestId === un?.requestId)?.status === 'unplaced', `${tag} aucun placement réécrit`);
+  await p.reload();
+  await p.getByRole('button', { name: 'Historique', exact: true }).click();
+  check((await p.locator('body').innerText()).includes('Terminée en'), `${tag} historique : séance réalisée visible`);
+  const saved = await p.evaluate(() => localStorage.getItem('kairo.state'));
+  check(perrors.length === 0, `${tag} aucune erreur de page (${perrors.join(' | ')})`);
+  await c.close();
+  // Génération suivante (C) : le programme lit le rôle réalisé ; rôles variés au fil des semaines.
+  const c2 = await browser.newContext({ viewport: { width: 360, height: 640 }, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+  const p2 = await c2.newPage();
+  await p2.clock.install({ time: new Date('2026-10-12T07:30:00+02:00') });
+  await p2.clock.resume();
+  await p2.addInitScript((x) => { if (!localStorage.getItem('kairo.state')) localStorage.setItem('kairo.state', x); }, saved);
+  await p2.goto(URL_);
+  await p2.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+  const st2 = await hrState(p2);
+  const w1 = (st2.planner?.weeks?.['2026-10-05']?.requests ?? []).filter((r) => r.sport === 'hyrox').map((r) => r.intent?.archetypeId);
+  const w2 = (st2.planner?.weeks?.['2026-10-12']?.requests ?? []).filter((r) => r.sport === 'hyrox').map((r) => r.intent?.archetypeId);
+  check(w2.length === 2 && new Set([...w1, ...w2]).size === 4, `[M3.1 C] Équilibré fréquence 2 : quatre rôles différents sur deux semaines (${[...w1, ...w2].join(', ')})`);
+  check(!w2.includes(un?.intent?.archetypeId), `[M3.1 C] le rôle réalisé manuellement est lu comme réalisé (non reproposé en premier)`);
+  await c2.close();
+}
+{
+  // B — séance BLOQUÉE (débutant : gouvernance H2 TEST_ONLY) : aucune possibilité de l'exécuter.
+  const { c, p } = await freshPage();
+  await m31Onboard(p, { sessions: '2', openDays: [0, 2, 4], level: 'beginner' });
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  const t = await p.locator('body').innerText();
+  check(/non planifiée/i.test(t) && await p.getByRole('button', { name: 'Faire maintenant' }).count() === 0 && await p.getByRole('button', { name: 'Voir la séance' }).count() === 0 && await p.locator('[data-unplaced]').count() === 0, '[M3.1 B] séance bloquée : ni « Voir » ni « Faire maintenant », jamais exécutable');
+  await c.close();
 }
 
 // Version réellement servie : identifiant de build affiché dans Réglages = version.json publié (site déployé seulement).

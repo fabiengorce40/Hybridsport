@@ -123,7 +123,7 @@ export function previewBeta0Recreation(state: AppState, today: string): Recreati
   const ps = state.programmeState;
   const week = state.planner.weeks[thisWeek];
   const ids = new Set((week?.requests ?? []).map((r) => r.requestId));
-  const started = ps !== null && ps.results.some((r) => ids.has(r.requestId) && r.provenance === 'declared');
+  const started = ps !== null && ps.results.some((r) => ids.has(r.requestId) && r.provenance !== 'derived_missed');
   const inProgress = Object.values(state.programmeLogs).find((l) => l.finishedAt === undefined && ids.has(l.requestId))?.requestId ?? null;
   const past = started ? 0 : (week?.requests ?? []).filter((r) => r.status === 'planned' && r.date !== undefined && r.date < today).length;
   const target = ps?.definition.goals.flatMap((g) => (g.sport === 'running' && 'targetDate' in g && g.targetDate ? [g.targetDate] : []))[0] ?? null;
@@ -279,8 +279,9 @@ function requestOf(state: AppState, requestId: string): PlannedRequest | undefin
   return undefined;
 }
 
+/** Prescription persistée : séance planifiée, ou séance COMPOSÉE MAIS NON PLACÉE (M3.1) ; jamais recomposée. */
 function recordOf(r: PlannedRequest | undefined): SessionRecord | undefined {
-  if (r?.status !== 'planned' || !r.record) return undefined;
+  if (!r?.record || !(r.status === 'planned' || (r.status === 'unplaced' && r.composedFor))) return undefined;
   const d = migrateToCurrent<SessionRecord>(r.record);
   return d.ok ? d.value : undefined;
 }
@@ -288,7 +289,13 @@ function recordOf(r: PlannedRequest | undefined): SessionRecord | undefined {
 export interface ProgrammeSessionView {
   readonly requestId: string;
   readonly sport: 'strength' | 'running' | 'crosstraining' | 'hyrox';
+  /**
+   * Jour de la séance : jour PLACÉ ; pour une séance non placée (M3.1), jour RÉEL de sa réalisation manuelle (début),
+   * sinon le créneau de référence de sa composition (jamais présenté comme un placement : voir `placement`).
+   */
   readonly date: string;
+  /** M3.1 — `composed_unplaced` : prescription valide sans jour attribué (aperçu et « Faire maintenant » admis). */
+  readonly placement: 'planned' | 'composed_unplaced';
   readonly session: SessionDraft;
   /** HYROX : stations des composantes (décisions H2 persistées avec la séance), sinon vide. */
   readonly hrStations: Readonly<Record<string, string>>;
@@ -309,10 +316,12 @@ export function selectProgrammeSession(state: AppState, requestId: string): Prog
   const r = requestOf(state, requestId);
   const record = recordOf(r);
   const session = record?.session;
-  if (!r?.date || !record || !session) return null;
+  const log = state.programmeLogs[requestId];
+  const date = r?.status === 'planned' ? r.date : log ? dateOf(log.startedAt) : r?.composedFor?.referenceDate;
+  if (!r || !date || !record || !session) return null;
   const week = Object.values(state.planner.weeks).find((w) => w.requests.includes(r));
   return {
-    requestId, sport: r.sport, date: r.date, session, hrStations: r.sport === 'hyrox' ? hrStationsOf(r.reasons) : {}, ...prescribedArchetype(r), role: r.composition?.role ?? null,
+    requestId, sport: r.sport, date, placement: r.status === 'planned' ? 'planned' : 'composed_unplaced', session, hrStations: r.sport === 'hyrox' ? hrStationsOf(r.reasons) : {}, ...prescribedArchetype(r), role: r.composition?.role ?? null,
     estimatedDurationS: record.durationEstimate.availability === 'AVAILABLE' ? record.durationEstimate.p50 : null,
     log: state.programmeLogs[requestId] ?? null, result: state.programmeState?.results.find((x) => x.requestId === requestId) ?? null,
     experimental: week?.authority !== 'production',

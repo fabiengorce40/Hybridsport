@@ -10,7 +10,7 @@ import {
 import type { FinishInput, ProgrammeSessionView, SessionItem, SetPrescription } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { RestTimer0 } from '../../RestTimer0.js';
-import { formatDate, Notice, Topbar } from '../../ui.js';
+import { Notice, sessionDay, startLabel, Topbar } from '../../ui.js';
 import { isTest, roleName, sessionName, sportName, STATUS_LABELS } from '../../present.js';
 import { BLOCK_LABELS, RunStructureView, SetRow } from '../Session.js';
 import { StrengthWorkout } from '../../workout/StrengthWorkout.js';
@@ -127,13 +127,13 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
         <Topbar title="" onBack={onBack} right={v.experimental ? <span className="k-pill" title="Certaines règles de planification sont encore en cours de validation.">Beta</span> : undefined} />
         <div className={`k-workout ${editable && log.rest ? 'with-timer' : ''} ${!started && !finished ? 'with-dock' : ''}`}>
           <StrengthWorkout
-            v={v} title={name} eyebrow={`${sportName(v.sport)} · ${formatDate(v.date)}${editable ? ` · ${String(Math.floor(elapsed / 60))}:${String(elapsed % 60).padStart(2, '0')}` : ''}`} editable={editable}
+            v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}${editable ? ` · ${String(Math.floor(elapsed / 60))}:${String(elapsed % 60).padStart(2, '0')}` : ''}`} editable={editable}
             onRecord={(item, index, x) => record(item, undefined, index, x)}
             onTogglePain={(itemId) => store.apply((s) => toggleProgrammePainItem(s, requestId, itemId))}
             onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, requestId, itemId, setIndex, rir))}
           />
           {finished && <div className="k-light"><span className="k-pill done">✓ {STATUS_LABELS[result.completion]}</span><span className="k-light-name">Séance terminée</span></div>}
-          {!started && !finished && <div className="k-dock"><button className="k-cta" onClick={() => store.apply((s, c) => startProgrammeSession(s, c, requestId))}>Commencer la séance</button></div>}
+          {!started && !finished && <div className="k-dock"><button className="k-cta" onClick={() => store.apply((s, c) => startProgrammeSession(s, c, requestId))}>{startLabel(v)}</button></div>}
           {editable && <button className="k-cta ghost" onClick={() => setFinishing(true)}>Terminer la séance</button>}
         </div>
         {timer}
@@ -147,7 +147,7 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
       <Topbar title={name} onBack={onBack} right={v.experimental ? <ExperimentalBadge /> : undefined} />
       <div className={`screen ${editable && log.rest ? 'with-timer' : ''}`}>
         <div className="session-header">
-          <span className="small muted">{sportName(v.sport)} · {formatDate(v.date)}</span>
+          <span className="small muted">{sportName(v.sport)} · {sessionDay(v)}</span>
           <h1 className="screen-title" style={{ marginTop: 0 }}>{name}</h1>
           <div className="row wrap">
             {test && <span className="badge test">TEST CHRONOMÉTRÉ</span>}
@@ -190,7 +190,7 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
           </div>
         ))}
 
-        {!started && !finished && <button className="btn primary block" onClick={() => store.apply((s, c) => startProgrammeSession(s, c, requestId))}>Commencer la séance</button>}
+        {!started && !finished && <button className="btn primary block" onClick={() => store.apply((s, c) => startProgrammeSession(s, c, requestId))}>{startLabel(v)}</button>}
         {editable && <button className="btn primary block" onClick={() => setFinishing(true)}>Terminer la séance</button>}
       </div>
       {timer}

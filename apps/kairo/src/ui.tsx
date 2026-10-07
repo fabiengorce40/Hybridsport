@@ -74,6 +74,17 @@ export function formatDate(date: string): string {
   return d.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
 }
 
+/**
+ * M3.1 — jour affiché d'une séance ouverte : jour PLACÉ ; séance non placée : « non planifiée » (jamais un faux
+ * placement), puis le jour RÉEL une fois réalisée hors planning.
+ */
+export function sessionDay(v: { readonly date: string; readonly placement: 'planned' | 'composed_unplaced'; readonly log: unknown }): string {
+  if (v.placement === 'planned') return formatDate(v.date);
+  return v.log ? `hors planning · ${formatDate(v.date)}` : 'non planifiée';
+}
+/** Libellé de démarrage : « Faire maintenant » pour une séance non placée. */
+export const startLabel = (v: { readonly placement: 'planned' | 'composed_unplaced' }): string => (v.placement === 'planned' ? 'Commencer la séance' : 'Faire maintenant');
+
 export function formatDateShort(date: string): string {
   return new Date(`${date}T12:00:00Z`).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'UTC' });
 }

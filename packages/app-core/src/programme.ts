@@ -177,7 +177,10 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
   const week = ps.weeks.find((w) => w.requests.some((r) => r.requestId === x.requestId));
   const req = week?.requests.find((r) => r.requestId === x.requestId);
   const planned = week ? state.planner.weeks[week.plannerRef]?.requests.find((r) => r.requestId === x.requestId) : undefined;
-  if (!week || req?.status !== 'planned' || !planned) return reject('EXECUTION_UNKNOWN_SESSION', pgReasons.emit(PG_CODES.RESULT_UNKNOWN_REQUEST, { requestId: x.requestId }));
+  // Séance planifiée, ou (M3.1) séance COMPOSÉE MAIS NON PLACÉE dont la prescription persistée est réalisée manuellement.
+  const manual = req?.status === 'unplaced' && req.composedUnplaced === true && planned?.composedFor !== undefined;
+  if (!week || !(req?.status === 'planned' || manual) || !planned) return reject('EXECUTION_UNKNOWN_SESSION', pgReasons.emit(PG_CODES.RESULT_UNKNOWN_REQUEST, { requestId: x.requestId }));
+  if (manual && x.completion === 'missed') return reject('EXECUTION_UNKNOWN_SESSION');
   if (req.sport !== x.sport) return reject('EXECUTION_SPORT_MISMATCH');
   if (ps.results.some((r) => r.requestId === x.requestId)) return reject('EXECUTION_DUPLICATE', pgReasons.emit(PG_CODES.RESULT_DUPLICATE, { requestId: x.requestId }));
   const decoded = planned.record ? migrateToCurrent<SessionRecord>(planned.record) : undefined;
@@ -268,7 +271,7 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
       }
     }
   }
-  const result = recordProgrammeResult(ps, { requestId: x.requestId, completion: x.completion, pain: pained, recordedAt: at, ...(evidence ? { evidence } : {}) });
+  const result = recordProgrammeResult(ps, { requestId: x.requestId, completion: x.completion, pain: pained, recordedAt: at, ...(evidence ? { evidence } : {}), ...(manual ? { executedOn: clock.today } : {}) });
   if (!result.ok) return reject('EXECUTION_REJECTED', ...result.reasons);
   // S3 — décisions de progression Strength de cette réalisation, auditées avec la semaine.
   const audited = progressionTrace.map((r) => ({ at, weekIndex: week.weekIndex, reason: { code: r.code, params: { ...r.params } } }));

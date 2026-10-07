@@ -4,7 +4,7 @@
  * Aussi utilisé pour créer un programme depuis un profil V0 existant, ou le recréer (workflow explicite).
  */
 import { useEffect, useState } from 'react';
-import { createBeta0Programme, CT_INTENT_LABELS, DIFFICULTY_LABELS, HR_GOAL_LABELS, HR_ROLE_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
+import { createBeta0Programme, CT_INTENT_LABELS, DIFFICULTY_LABELS, HR_BALANCED_LABEL, HR_GOAL_LABELS, HR_ROLE_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
 import type { Beta0ProgrammeOptions, DeclaredPerformance, Feedback, ProfileInput } from '@hybridsport/app-core';
 import { PerformanceForm } from '../../running/PerformanceForm.js';
 import { performanceText } from '../../running/RunningProfile.js';
@@ -41,7 +41,7 @@ function withChoice(p: ProfileInput, c: Choice, first: 'strength' | 'running', c
   const priorities = [...base, ...(withCt ? ['crosstraining'] : []), ...(withHr ? ['hyrox'] : [])] as ProfileInput['priorities'];
   const declared = { sessionsPerWeek: p.crosstraining.sessionsPerWeek ?? 2, returnState: p.crosstraining.returnState ?? 'NONE', ...(p.crosstraining.intent ? { intent: p.crosstraining.intent } : {}) };
   const h = p.hyrox;
-  const hrDeclared = { sessionsPerWeek: h.sessionsPerWeek ?? 2, returnState: h.returnState ?? 'NONE', ...(h.role ? { role: h.role } : {}), ...(h.goal ? { goal: h.goal } : {}) };
+  const hrDeclared = { sessionsPerWeek: h.sessionsPerWeek ?? 2, returnState: h.returnState ?? 'NONE', ...(h.role ? { role: h.role } : {}), ...(h.focus ? { focus: h.focus } : {}), ...(h.goal ? { goal: h.goal } : {}) };
   return { ...p, strength: { ...p.strength, enabled: strength }, running: { ...p.running, enabled: running }, crosstraining: { enabled: withCt, ...declared }, hyrox: { enabled: withHr, ...hrDeclared }, priorities };
 }
 
@@ -49,19 +49,25 @@ function withChoice(p: ProfileInput, c: Choice, first: 'strength' | 'running', c
 function HrSection({ p, set }: { p: ProfileInput; set: (f: (x: ProfileInput) => ProfileInput) => void }) {
   const hr = p.hyrox;
   const upd = (x: Partial<ProfileInput['hyrox']>) => set((y) => ({ ...y, hyrox: { ...y.hyrox, ...x } }));
+  const balanced = hr.focus === 'balanced';
   return (
     <div className="card">
       <h3>HYROX</h3>
       <div className="stack" role="radiogroup" aria-label="Type de séance HYROX">
+        {/* M3.1 — Équilibré : le programme varie les rôles (focus du programme, pas un rôle H2). Recommandé pour préparer une course. */}
+        <button type="button" role="radio" aria-checked={balanced} className={`option ${balanced ? 'on' : ''}`} onClick={() => upd({ focus: 'balanced' })}>
+          <div><div className="t">{HR_BALANCED_LABEL.title}{hr.goal === 'RACE_PREPARATION' ? ' · recommandé' : ''}</div><div className="tiny">{HR_BALANCED_LABEL.detail}</div></div>
+        </button>
         {Object.entries(HR_ROLE_LABELS).map(([k, v]) => (
-          <button key={k} type="button" role="radio" aria-checked={hr.role === k} className={`option ${hr.role === k ? 'on' : ''}`} onClick={() => upd({ role: k })}>
+          <button key={k} type="button" role="radio" aria-checked={!balanced && hr.role === k} className={`option ${!balanced && hr.role === k ? 'on' : ''}`} onClick={() => upd({ role: k, focus: 'specialized' })}>
             <div><div className="t">{v.title}</div><div className="tiny">{v.detail}</div></div>
           </button>
         ))}
       </div>
       <div className="stack" role="radiogroup" aria-label="Objectif HYROX">
         {Object.entries(HR_GOAL_LABELS).map(([k, v]) => (
-          <button key={k} type="button" role="radio" aria-checked={hr.goal === k} className={`option ${hr.goal === k ? 'on' : ''}`} onClick={() => upd({ goal: k as NonNullable<ProfileInput['hyrox']['goal']> })}><span className="t">{v}</span></button>
+          // Préparer une course : Équilibré proposé par défaut tant qu'aucun type n'a été choisi (jamais un choix écrasé).
+          <button key={k} type="button" role="radio" aria-checked={hr.goal === k} className={`option ${hr.goal === k ? 'on' : ''}`} onClick={() => upd({ goal: k as NonNullable<ProfileInput['hyrox']['goal']>, ...(k === 'RACE_PREPARATION' && hr.focus === undefined && hr.role === undefined ? { focus: 'balanced' as const } : {}) })}><span className="t">{v}</span></button>
         ))}
       </div>
       <label className="field">Séances HYROX par semaine
@@ -75,7 +81,7 @@ function HrSection({ p, set }: { p: ProfileInput; set: (f: (x: ProfileInput) => 
         </select>
       </label>
       {hr.returnState !== undefined && hr.returnState !== 'NONE' && <Notice tone="warn">Après une coupure, aucune règle de reprise HYROX n’est encore validée : aucune séance ne sera proposée.</Notice>}
-      <p className="tiny" style={{ margin: 0 }}>Chaque séance (structure, stations, doses, course) est composée par le moteur HYROX à partir de ce type de séance, de votre matériel et de votre historique. L’objectif est transmis sans modifier les doses. Version expérimentale : valeurs de test, aucune simulation complète de course.</p>
+      <p className="tiny" style={{ margin: 0 }}>Chaque séance (structure, stations, doses, course) est composée par le moteur HYROX à partir de ce type de séance (Équilibré : un type différent choisi par le programme au fil des semaines), de votre matériel et de votre historique. L’objectif est transmis sans modifier les doses. Version expérimentale : valeurs de test, aucune simulation complète de course.</p>
     </div>
   );
 }
@@ -134,7 +140,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const dateOk = targetDate === '' || (/^\d{4}-\d{2}-\d{2}$/.test(targetDate) && targetDate >= store.clock().today);
   const dated = p.running.enabled && p.running.goal !== 'GENERAL_RUNNING' && targetDate !== '' && dateOk;
   const ctOk = !p.crosstraining.enabled || (p.crosstraining.intent !== undefined && p.crosstraining.sessionsPerWeek !== undefined && p.crosstraining.returnState !== undefined);
-  const hrOk = !p.hyrox.enabled || (p.hyrox.role !== undefined && p.hyrox.goal !== undefined && p.hyrox.sessionsPerWeek !== undefined && p.hyrox.returnState !== undefined);
+  const hrOk = !p.hyrox.enabled || ((p.hyrox.focus === 'balanced' || p.hyrox.role !== undefined) && p.hyrox.goal !== undefined && p.hyrox.sessionsPerWeek !== undefined && p.hyrox.returnState !== undefined);
   const canNext = step === 0 ? accepted : step === 1 ? choice !== null : step === 2 ? lastRunOk && dateOk && ctOk && hrOk : step === 3 ? p.availability.some((m) => m > 0) : true;
 
   const create = () => {
@@ -270,7 +276,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
           <div className="card">
             <h3>Récapitulatif</h3>
             <div className="small muted">
-              {[p.strength.enabled && `Musculation · ${STRENGTH_GOAL_LABELS[p.strength.goal] ?? ''} · ${String(p.strength.sessionsPerWeek)}/sem.`, p.running.enabled && `Course · ${RUNNING_GOAL_LABELS[p.running.goal] ?? ''} · ${String(p.running.sessionsPerWeek)}/sem.`, p.crosstraining.enabled && `Cross-training · ${CT_INTENT_LABELS[p.crosstraining.intent ?? '']?.title ?? ''} · ${String(p.crosstraining.sessionsPerWeek ?? '')}/sem.`, p.hyrox.enabled && `HYROX · ${HR_ROLE_LABELS[p.hyrox.role ?? '']?.title ?? ''} · ${HR_GOAL_LABELS[p.hyrox.goal ?? ''] ?? ''} · ${String(p.hyrox.sessionsPerWeek ?? '')}/sem.`].filter(Boolean).join(' — ')}
+              {[p.strength.enabled && `Musculation · ${STRENGTH_GOAL_LABELS[p.strength.goal] ?? ''} · ${String(p.strength.sessionsPerWeek)}/sem.`, p.running.enabled && `Course · ${RUNNING_GOAL_LABELS[p.running.goal] ?? ''} · ${String(p.running.sessionsPerWeek)}/sem.`, p.crosstraining.enabled && `Cross-training · ${CT_INTENT_LABELS[p.crosstraining.intent ?? '']?.title ?? ''} · ${String(p.crosstraining.sessionsPerWeek ?? '')}/sem.`, p.hyrox.enabled && `HYROX · ${p.hyrox.focus === 'balanced' ? HR_BALANCED_LABEL.title : HR_ROLE_LABELS[p.hyrox.role ?? '']?.title ?? ''} · ${HR_GOAL_LABELS[p.hyrox.goal ?? ''] ?? ''} · ${String(p.hyrox.sessionsPerWeek ?? '')}/sem.`].filter(Boolean).join(' — ')}
             </div>
             <div className="small muted">{String(p.availability.filter((m) => m > 0).length)} jours disponibles par semaine</div>
             {dated ? <div className="small"><b>Objectif {RUNNING_GOAL_LABELS[p.running.goal]} le {formatDate(targetDate)}</b></div> : null}

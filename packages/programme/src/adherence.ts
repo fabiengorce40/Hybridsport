@@ -14,6 +14,7 @@ export function adherenceOf(requests: ProgrammeWeek['requests'], results: readon
     requested: requests.length, planned: planned.length, notPlanned: requests.length - planned.length,
     completed: asPrescribed + modified, completedAsPrescribed: asPrescribed, modified, abandoned: count('abandoned'), missed: count('missed'),
     painReported: res.filter((x) => x.pain).length,
+    ...((n) => (n > 0 ? { completedFromUnplaced: n } : {}))(results.filter((x) => x.provenance === 'manual_from_unplaced' && requests.some((r) => r.requestId === x.requestId) && (x.completion === 'completed_as_prescribed' || x.completion === 'modified')).length),
   };
 }
 

@@ -120,10 +120,12 @@ export function planProgrammeWeek(s: ProgrammeState, i: number, deps: PlanWeekDe
   const status = weekStatus(s, i, deps.today, ahead.ok ? ahead.value : undefined);
   const replannable = status === 'planned' && !s.results.some((r) => r.weekIndex === i);
   if (status !== 'plannable' && !replannable) return fail(pgReasons.emit(PG_CODES.WEEK_NOT_PLANNABLE, { weekIndex: i, status }), ...(status === 'projected' ? ahead.reasons : []));
-  const intent = weekIntent(s, i);
+  const rotated = rotateIntents(s, i, weekIntent(s, i), deps);
+  const intent = rotated.intent;
   const week = planMultisportWeek({ weekStart: intent.weekStart, days: deps.days, demands: intent.demands, mode: deps.mode, recent: deps.recent ?? [] }, deps.ports, deps.plannerGovernance, deps.clock);
   const requests = week.requests.map((r) => ({
     requestId: r.requestId, sport: r.sport, status: r.status, category: r.category, ...(r.status === 'unplaced' ? {} : { date: r.date }),
+    ...(r.status === 'unplaced' && r.composed ? { composedUnplaced: true as const } : {}),
     ...(r.intent ? { intent: r.intent } : {}), ...(r.composition ? { composition: r.composition } : {}),
   }));
   const entry: ProgrammeWeek = { weekIndex: i, weekStart: intent.weekStart, intent, plannedAt: deps.at, plannerRef: intent.weekStart, requests };
@@ -136,17 +138,79 @@ export function planProgrammeWeek(s: ProgrammeState, i: number, deps: PlanWeekDe
   });
   const planned = requests.filter((r) => r.status === 'planned').length;
   const note = pgReasons.emit(PG_CODES.WEEK_PLANNED, { weekIndex: i, weekStart: intent.weekStart, planned, requested: requests.length });
-  const state: ProgrammeState = { ...s, weeks: [...s.weeks.filter((w) => w.weekIndex !== i), entry].sort((a, b) => a.weekIndex - b.weekIndex), assessments, audit: audit(s, deps.at, i, [note]) };
+  const state: ProgrammeState = { ...s, weeks: [...s.weeks.filter((w) => w.weekIndex !== i), entry].sort((a, b) => a.weekIndex - b.weekIndex), assessments, audit: audit(s, deps.at, i, [...rotated.reasons, note]) };
   return { ok: true, value: { state, intent, week } };
 }
 
-/** Enregistre la réalisation déclarée d'une séance PLANIFIÉE (jamais d'une séance inconnue ; jamais deux fois). */
-export function recordProgrammeResult(s: ProgrammeState, raw: Omit<ProgrammeResult, 'weekIndex' | 'sport' | 'date' | 'provenance'> & { completion: Exclude<Completion, 'missed'> | 'missed' }): Outcome<ProgrammeState> {
-  const w = s.weeks.find((x) => x.requests.some((r) => r.requestId === raw.requestId && r.status === 'planned'));
+/**
+ * M3.1 — plans à ROTATION (« équilibré ») : le PROGRAMME assigne l'archétype de chaque séance de la semaine parmi les
+ * candidates GOUVERNÉES de l'objectif, d'après l'historique du programme : critères ordonnés (la moins récemment
+ * réalisée — issues comptées gouvernées —, la moins récemment assignée), égalité ⇒ ordre de la liste ; une candidate
+ * n'est reprise dans la semaine qu'une fois toutes utilisées. Une évaluation (surcharge existante) garde sa séance.
+ * Politique absente ⇒ aucune surcharge (demande sans archétype ⇒ non planifiée), tracé : jamais d'archétype inventé.
+ * Le moteur compose chaque séance ; le planificateur (M3) place ; aucun ne change l'archétype assigné.
+ */
+function rotateIntents(s: ProgrammeState, i: number, intent: ProgrammeWeekIntent, deps: Pick<PlanWeekDeps, 'mode' | 'programmeGovernance'>): { intent: ProgrammeWeekIntent; reasons: ReasonCode[] } {
+  const rotating = s.definition.sports.filter((p) => p.rotation !== undefined);
+  if (rotating.length === 0) return { intent, reasons: [] };
+  const cand = readProgrammeParam(deps.programmeGovernance, 'programme.rotation.candidates', deps.mode);
+  const sel = readProgrammeParam(deps.programmeGovernance, 'programme.rotation.selection', deps.mode);
+  const reasons: ReasonCode[] = [...cand.reasons, ...sel.reasons];
+  const demands = intent.demands.map((d) => {
+    const plan = rotating.find((p) => p.sport === d.sport);
+    if (!plan?.rotation) return d;
+    const list = cand.ok ? cand.value[d.sport]?.[plan.rotation.goal] : undefined;
+    if (!cand.ok || !sel.ok || !list) {
+      reasons.push(pgReasons.emit(PG_CODES.ROTATION_UNAVAILABLE, { sport: d.sport, weekIndex: i, cause: !cand.ok || !sel.ok ? 'POLICY_UNAVAILABLE' : 'NO_CANDIDATES_FOR_GOAL' }));
+      return d;
+    }
+    // Historique du programme (semaines antérieures) : dernière semaine où chaque archétype a été ASSIGNÉ / RÉALISÉ.
+    const lastAssigned = new Map<string, number>();
+    const lastExecuted = new Map<string, number>();
+    for (const w of s.weeks.filter((x) => x.weekIndex < i)) {
+      for (const r of w.requests.filter((x) => x.sport === d.sport && x.intent)) {
+        const a = r.intent?.archetypeId ?? '';
+        lastAssigned.set(a, Math.max(lastAssigned.get(a) ?? -1, w.weekIndex));
+        const res = s.results.find((x) => x.requestId === r.requestId);
+        if (res && (sel.value.executedCompletions as readonly string[]).includes(res.completion)) lastExecuted.set(a, Math.max(lastExecuted.get(a) ?? -1, w.weekIndex));
+      }
+    }
+    const key = (a: string, c: 'least_recently_executed' | 'least_recently_assigned') => (c === 'least_recently_executed' ? lastExecuted : lastAssigned).get(a) ?? -1;
+    const taken = new Set(d.overrides.map((o) => o.index));
+    const used = new Set<string>();
+    const overrides = [...d.overrides];
+    for (let k = 1; k <= d.sessions; k += 1) {
+      if (taken.has(k)) continue;
+      if (list.every((x) => used.has(x.archetypeId))) used.clear();
+      const pick = list.filter((x) => !used.has(x.archetypeId)).sort((a, b) => {
+        for (const c of sel.value.order) { const diff = key(a.archetypeId, c) - key(b.archetypeId, c); if (diff !== 0) return diff; }
+        return list.indexOf(a) - list.indexOf(b);
+      })[0];
+      if (!pick) continue;
+      used.add(pick.archetypeId);
+      overrides.push({ index: k, intent: { ...(d.intent as Record<string, string>), archetypeId: pick.archetypeId, stimulus: pick.stimulus } as FullIntent });
+    }
+    overrides.sort((a, b) => a.index - b.index);
+    reasons.push(pgReasons.emit(PG_CODES.ROTATION_ASSIGNED, { sport: d.sport, weekIndex: i, goal: plan.rotation.goal, assigned: overrides.map((o) => `${String(o.index)}:${o.intent.archetypeId}`), criteria: [...sel.value.order], policyVersion: `${cand.version}/${sel.version}` }));
+    return { ...d, overrides };
+  });
+  return { intent: { ...intent, demands }, reasons };
+}
+
+/**
+ * Enregistre la réalisation déclarée d'une séance PLANIFIÉE (jamais d'une séance inconnue ; jamais deux fois). M3.1 :
+ * une séance COMPOSÉE MAIS NON PLACÉE peut être réalisée manuellement (`executedOn` = jour réel, exigé) — provenance
+ * `manual_from_unplaced`, aucun placement réécrit ; jamais « manquée » (elle n'était pas planifiée).
+ */
+export function recordProgrammeResult(s: ProgrammeState, raw: Omit<ProgrammeResult, 'weekIndex' | 'sport' | 'date' | 'provenance'> & { completion: Exclude<Completion, 'missed'> | 'missed'; executedOn?: string }): Outcome<ProgrammeState> {
+  const w = s.weeks.find((x) => x.requests.some((r) => r.requestId === raw.requestId && (r.status === 'planned' || r.composedUnplaced === true)));
   const req = w?.requests.find((r) => r.requestId === raw.requestId);
-  if (!w || !req?.date) return fail(pgReasons.emit(PG_CODES.RESULT_UNKNOWN_REQUEST, { requestId: raw.requestId }));
+  const manual = req?.status === 'unplaced' && req.composedUnplaced === true;
+  const date = manual ? raw.executedOn : req?.date;
+  if (!w || !req || !date || (manual && raw.completion === 'missed')) return fail(pgReasons.emit(PG_CODES.RESULT_UNKNOWN_REQUEST, { requestId: raw.requestId }));
   if (s.results.some((r) => r.requestId === raw.requestId)) return fail(pgReasons.emit(PG_CODES.RESULT_DUPLICATE, { requestId: raw.requestId }));
-  const result = zProgrammeResult.parse({ ...raw, weekIndex: w.weekIndex, sport: req.sport, date: req.date, provenance: 'declared' });
+  const { executedOn: _executedOn, ...fields } = raw;
+  const result = zProgrammeResult.parse({ ...fields, weekIndex: w.weekIndex, sport: req.sport, date, provenance: manual ? 'manual_from_unplaced' : 'declared' });
   const reasons: ReasonCode[] = [];
   const assessments = s.assessments.map((a): Assessment => {
     if (a.requestId !== result.requestId) return a;
@@ -170,7 +234,7 @@ export function requestAssessment(s: ProgrammeState, sport: ProgrammeSport, i: n
   if (!plan) return refuse('SPORT_NOT_IN_PROGRAMME');
   if (!plan.assessment) return refuse('CONTENT_NOT_DECLARED');
   if (!withinProgramme(s, i)) return refuse('WEEK_OUT_OF_PROGRAMME');
-  if (weekOf(s, i)?.closedAt || s.results.some((r) => r.weekIndex === i && r.provenance === 'declared')) return refuse('WEEK_ALREADY_STARTED');
+  if (weekOf(s, i)?.closedAt || s.results.some((r) => r.weekIndex === i && r.provenance !== 'derived_missed')) return refuse('WEEK_ALREADY_STARTED');
   if (s.assessments.some((a) => a.sport === sport && (a.status === 'requested' || a.status === 'scheduled'))) return refuse('ASSESSMENT_ALREADY_OPEN');
   const assessmentId = `${s.definition.programmeId}.${sport}.user.w${String(i + 1)}.${String(s.assessments.length + 1)}`;
   const r = pgReasons.emit(PG_CODES.ASSESSMENT_USER_REQUESTED, { sport, assessmentId, weekIndex: i });

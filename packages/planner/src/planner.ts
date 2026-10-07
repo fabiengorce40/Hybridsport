@@ -30,7 +30,7 @@ import type { LoadedRuleset } from '@hybridsport/engine';
 import { GP_CODES, gpReasons } from './codes.js';
 import { readPlannerParam } from './governance.js';
 import { INTENT_FIELDS, zPlannerInput } from './model.js';
-import type { AppliedComposition, DayResult, DeclaredIntent, DemandOutcome, M3Arbitration, NeighbourContext, PlannedWeek, PlannerClock, PlannerInput, PlannerSport, RequestCategory, RequestResult } from './model.js';
+import type { AppliedComposition, DayResult, DeclaredIntent, DemandOutcome, M3Arbitration, NeighbourContext, PlannedWeek, PlannerClock, PlannerInput, PlannerSport, RequestCategory, RequestResult, UnplacedComposition } from './model.js';
 import { compareConflicts, conflictId, detectConflicts, unknownDemand as m3UnknownDemand, yielderOf } from './m3-analysis.js';
 import type { M3Conflict, M3Importance, M3Node, M3Origin } from './m3-analysis.js';
 import { readM3Policy, readNeighbourWindow } from './m3-policy.js';
@@ -191,6 +191,26 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     };
   };
 
+  /**
+   * M3.1 — demande non placée faute de JOUR (créneaux insuffisants, interférence) : la prescription produite par SON
+   * moteur est conservée avec son créneau de RÉFÉRENCE (jamais un placement). Une génération déjà faite sur un jour
+   * essayé est réutilisée telle quelle ; sinon le moteur compose sur le jour disponible le plus long. Refus du moteur
+   * ⇒ aucune prescription (la demande reste BLOCKED, refus tracé). Rien n'est inventé.
+   */
+  const composeUnplaced = (r: Request, done?: { date: string; out: Extract<PortOutcome, { status: 'planned' }> }): { composed?: UnplacedComposition; reasons: ReasonCode[] } => {
+    const port = ports[r.sport];
+    if (!port || !r.intent) return { reasons: [] };
+    const toComposition = (date: string, out: Extract<PortOutcome, { status: 'planned' }>): UnplacedComposition => ({
+      referenceDate: date, availableMinutes: minutes.get(date) ?? 0, session: out.session, ...(out.fingerprint ? { fingerprint: out.fingerprint } : {}), record: out.record, demand: port.demand(out.session, input.mode),
+    });
+    // Raisons de composition du moteur conservées avec la prescription (décisions persistées, comme une séance placée).
+    if (done) return { composed: toComposition(done.date, done.out), reasons: [...done.out.reasons] };
+    const ref = [...dates].filter((d) => (minutes.get(d) ?? 0) > 0).sort((a, b) => (minutes.get(b) ?? 0) - (minutes.get(a) ?? 0) || (a < b ? -1 : 1))[0];
+    if (ref === undefined) return { reasons: [] };
+    const out = port.generate({ requestId: r.requestId, date: ref, availableMinutes: minutes.get(ref) ?? 0, hybrid, seed: `planner:${r.requestId}:${ref}`, intent: r.intent, ...weekArg(r.sport, ref, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+    return out.status === 'planned' ? { composed: toComposition(ref, out), reasons: [...out.reasons] } : { reasons: [gpReasons.emit(GP_CODES.ENGINE_REFUSED, { sport: r.sport, requestId: r.requestId, date: ref }), ...out.reasons] };
+  };
+
   for (const r of requests) {
     const base = { requestId: r.requestId, sport: r.sport };
     const blocked = r.composed ? compositionBlocked.get(r.sport) : undefined;
@@ -202,9 +222,15 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     const gap = (d: string): number => (takenIdx.length === 0 ? 0 : Math.min(...takenIdx.map((i) => Math.abs(i - dates.indexOf(d)))));
     const taken = new Set([...placed.values()].map((x) => x.date));
     const candidates = dates.filter((d) => !taken.has(d) && (minutes.get(d) ?? 0) > 0).sort((a, b) => gap(b) - gap(a) || (a < b ? -1 : 1));
-    if (candidates.length === 0) { results.set(r.requestId, { ...base, status: 'unplaced', category: 'slot_unavailable', reasons: [gpReasons.emit(GP_CODES.NOT_ENOUGH_DAYS, { sport: r.sport, requestId: r.requestId })] }); continue; }
+    if (candidates.length === 0) {
+      const u = composeUnplaced(r);
+      results.set(r.requestId, { ...base, status: 'unplaced', category: 'slot_unavailable', reasons: [gpReasons.emit(GP_CODES.NOT_ENOUGH_DAYS, { sport: r.sport, requestId: r.requestId }), ...u.reasons], ...(u.composed ? { composed: u.composed } : {}) });
+      continue;
+    }
     let done = false;
     const tried: string[] = [];
+    // Première génération rejetée pour interférence (jour le mieux espacé) : conservée si aucun jour n'est trouvé.
+    let firstRejected: { date: string; out: Extract<PortOutcome, { status: 'planned' }> } | undefined;
     // Réessai BORNÉ : seulement après un refus dû au SEUL créneau, et seulement vers un créneau plus long ;
     // la demande (sport, intention, station, graine propre au jour) n'est jamais modifiée.
     let slotRetry: { minutes: number; trace: ReasonCode[]; last: { date: string; reasons: readonly ReasonCode[] } } | undefined;
@@ -227,7 +253,7 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
       const structures = port.structures(out.session);
       const found = conflictsOf(r.sport, date, structures);
       conflicts.push(...found, ...(structures.ok ? [] : structures.reasons));
-      if (found.length > 0) continue;
+      if (found.length > 0) { firstRejected ??= { date, out }; continue; }
       const p: Placed = { sport: r.sport, date, requestId: r.requestId, stimulus: r.intent.stimulus, archetypeId: r.intent.archetypeId, session: out.session, ...(out.fingerprint ? { fingerprint: out.fingerprint } : {}), structures, demand: port.demand(out.session, input.mode) };
       placed.set(r.requestId, p);
       const placedResult = plannedResult(base, date, out, p);
@@ -241,7 +267,12 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
       results.set(r.requestId, { ...base, status: 'refused', category: 'slot_unavailable', date, reasons: [...slotRetry.trace, gpReasons.emit(GP_CODES.ENGINE_REFUSED, { sport: r.sport, requestId: r.requestId, date }), ...reasons] });
       done = true;
     }
-    if (!done) results.set(r.requestId, { ...base, status: 'unplaced', category: conflictCategory(r.requestId, r.sport, tried), reasons: [gpReasons.emit(GP_CODES.INTERFERENCE_UNRESOLVED, { sport: r.sport, requestId: r.requestId, triedDates: tried })] });
+    if (!done) {
+      const category = conflictCategory(r.requestId, r.sport, tried);
+      // Interférence seule : prescription conservée ; règle d'interférence non gouvernée ⇒ BLOCKED (aucune prescription).
+      const u = category === 'interference_conflict' ? composeUnplaced(r, firstRejected) : { reasons: [] };
+      results.set(r.requestId, { ...base, status: 'unplaced', category, reasons: [gpReasons.emit(GP_CODES.INTERFERENCE_UNRESOLVED, { sport: r.sport, requestId: r.requestId, triedDates: tried }), ...u.reasons], ...(u.composed ? { composed: u.composed } : {}) });
+    }
   }
 
   // Passe de composition : le MOTEUR choisit l'archétype de chaque jour réservé à son sport (sonde = génération
@@ -283,7 +314,9 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
       conflicts.push(...found);
       if (found.length > 0) {
         placed.delete(r.requestId);
-        results.set(r.requestId, { ...base, status: 'unplaced', category: conflictCategory(r.requestId, r.sport, [p.date]), reasons: [gpReasons.emit(GP_CODES.INTERFERENCE_UNRESOLVED, { sport: r.sport, requestId: r.requestId, triedDates: [p.date] })] });
+        const category = conflictCategory(r.requestId, r.sport, [p.date]);
+        const u = category === 'interference_conflict' ? composeUnplaced(r, { date: p.date, out }) : { reasons: [] };
+        results.set(r.requestId, { ...base, status: 'unplaced', category, reasons: [gpReasons.emit(GP_CODES.INTERFERENCE_UNRESOLVED, { sport: r.sport, requestId: r.requestId, triedDates: [p.date] }), ...u.reasons], ...(u.composed ? { composed: u.composed } : {}) });
         continue;
       }
       const next: Placed = { ...withFingerprint(p, out.fingerprint), stimulus: slot.intent.stimulus, archetypeId: slot.intent.archetypeId, session: out.session, structures, demand: port.demand(out.session, input.mode) };
@@ -313,7 +346,9 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
       conflicts.push(...found);
       if (found.length > 0) {
         placed.delete(r.requestId);
-        results.set(r.requestId, { ...base, status: 'unplaced', category: conflictCategory(r.requestId, r.sport, [p.date]), reasons: [gpReasons.emit(GP_CODES.INTERFERENCE_UNRESOLVED, { sport: r.sport, requestId: r.requestId, triedDates: [p.date] })] });
+        const category = conflictCategory(r.requestId, r.sport, [p.date]);
+        const u = category === 'interference_conflict' ? composeUnplaced(r, { date: p.date, out }) : { reasons: [] };
+        results.set(r.requestId, { ...base, status: 'unplaced', category, reasons: [gpReasons.emit(GP_CODES.INTERFERENCE_UNRESOLVED, { sport: r.sport, requestId: r.requestId, triedDates: [p.date] }), ...u.reasons], ...(u.composed ? { composed: u.composed } : {}) });
         continue;
       }
       const next: Placed = { ...withFingerprint(p, out.fingerprint), session: out.session, structures, demand: port.demand(out.session, input.mode) };
@@ -345,7 +380,7 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
   return {
     weekStart: input.weekStart, mode: input.mode, hybrid, days,
     // Intention RÉELLEMENT utilisée : déclarée, surchargée ou composée (jamais l'archétype de simple réservation).
-    requests: requests.flatMap((r) => { const x = results.get(r.requestId); return x ? [r.final && r.intent ? { ...x, intent: r.intent } : x] : []; }),
+    requests: requests.flatMap((r) => { const x = results.get(r.requestId); return x ? [(r.final || (x.status === 'unplaced' && x.composed !== undefined)) && r.intent ? { ...x, intent: r.intent } : x] : []; }),
     conflicts, governance: hybrid ? [...windows.reasons, ...neighbourWindow.reasons] : [],
     ...(arbitration ? { arbitration } : {}),
   };

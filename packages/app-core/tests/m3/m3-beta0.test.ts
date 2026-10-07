@@ -44,11 +44,11 @@ describe('M3 dans la Beta 0', () => {
   const run12 = drive(s0(), W, EVENTS);
 
   it('environnement : politique M3 marquée SIMULATION_ONLY, version de planification M3', () => {
-    expect(BETA0_PLANNING_VERSION).toBe('beta0-m3');
+    expect(BETA0_PLANNING_VERSION).toBe('beta0-m31');
     expect(BETA0_SIMULATION).toEqual(expect.arrayContaining(['planner.m3.pairRules', 'planner.m3.actions', 'planner.m3.neighbourWindowHours']));
     const w = run12.final.planner.weeks[W[0] as string];
     expect(w?.simulation).toEqual(expect.arrayContaining(['planner.m3.pairRules']));
-    expect(w?.planningVersion).toBe('beta0-m3');
+    expect(w?.planningVersion).toBe('beta0-m31');
   });
 
   it('4 semaines : chaque semaine persiste un arbitrage compact ; aucune séance supprimée par M3', () => {

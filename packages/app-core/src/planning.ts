@@ -174,6 +174,11 @@ export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOri
         demand: r.demand.status === 'derived' ? { status: 'derived' as const, levels: { ...r.demand.levels } } : { status: 'unavailable' as const, reasons: r.demand.reasons.map(reason) },
         ...(r.neighbourContext ? { neighbourContext: { known: r.neighbourContext.known, neighbours: r.neighbourContext.neighbours.map((n) => ({ ...n, demand: { ...n.demand } })) } } : {}),
       } : {}),
+      // M3.1 — composée mais non placée : la prescription du moteur est persistée telle quelle (réalisable, jamais recomposée).
+      ...(r.status === 'unplaced' && r.composed ? {
+        record: toEnvelope('session_record', r.composed.record), composedFor: { referenceDate: r.composed.referenceDate, availableMinutes: r.composed.availableMinutes },
+        demand: r.composed.demand.status === 'derived' ? { status: 'derived' as const, levels: { ...r.composed.demand.levels } } : { status: 'unavailable' as const, reasons: r.composed.demand.reasons.map(reason) },
+      } : {}),
     })),
     conflicts: w.conflicts.map(reason),
     // M3 : raisons de l'arbitrage persistées seulement quand il est indisponible ou bloqué (fail-closed visible) ; les
@@ -190,12 +195,15 @@ export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOri
  */
 export function recentOf(state: AppState, p: Profile, weekStart: string): { date: string; sport: Sport; session: SessionDraft; status: 'executed' | 'abandoned' | 'missed' | 'planned' }[] {
   const prev = state.planner.weeks[addDays(weekStart, -p.availability.length)];
-  const results = new Map((state.programmeState?.results ?? []).map((x) => [x.requestId, x.completion]));
+  const results = new Map((state.programmeState?.results ?? []).map((x) => [x.requestId, x]));
   const STATUS = { completed_as_prescribed: 'executed', modified: 'executed', abandoned: 'abandoned', missed: 'missed' } as const;
   return (prev?.requests ?? []).flatMap((r) => {
     const data = r.record?.data as { session?: SessionDraft } | undefined;
-    const c = results.get(r.requestId);
-    return r.status === 'planned' && r.date && data?.session ? [{ date: r.date, sport: r.sport, session: data.session, status: c === undefined ? 'planned' as const : STATUS[c] }] : [];
+    const x = results.get(r.requestId);
+    if (r.status === 'planned' && r.date && data?.session) return [{ date: r.date, sport: r.sport, session: data.session, status: x === undefined ? 'planned' as const : STATUS[x.completion] }];
+    // M3.1 — séance non placée réalisée manuellement : exposition RÉELLE, au jour réel de sa réalisation.
+    if (r.status === 'unplaced' && x?.provenance === 'manual_from_unplaced' && data?.session) return [{ date: x.date, sport: r.sport, session: data.session, status: STATUS[x.completion] }];
+    return [];
   });
 }
 

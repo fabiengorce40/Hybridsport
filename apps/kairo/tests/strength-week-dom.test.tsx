@@ -67,7 +67,7 @@ describe('B — programme créé avant S1 (AppState réel pré-S1), application 
     expect(strengthCards()).toEqual(['Haut du corps', 'Bas du corps', 'Haut du corps', 'Bas du corps']);
     expect(screen.getByText(/replanifiée avec la nouvelle version de KAIRO/)).toBeTruthy();
     expect(screen.queryByText(/Full body/)).toBeNull();
-    expect(saved(storage).planner.weeks['2026-10-05']?.planningVersion).toBe('beta0-m3');
+    expect(saved(storage).planner.weeks['2026-10-05']?.planningVersion).toBe('beta0-m31');
   });
 
   it('ouverte le mercredi (séance de lundi passée) : conservée telle quelle (Full body), avis explicite ; lundi suivant : Haut / Bas', () => {

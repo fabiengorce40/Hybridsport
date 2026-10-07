@@ -32,6 +32,8 @@ export const PG_CODES = {
   ASSESSMENT_COMPLETED: 'PROGRESSION.PROGRAMME.ASSESSMENT_COMPLETED',
   ASSESSMENT_RESULT_MISSING: 'PROGRESSION.PROGRAMME.ASSESSMENT_RESULT_MISSING',
   ASSESSMENT_NOT_PLANNED: 'PROGRESSION.PROGRAMME.ASSESSMENT_NOT_PLANNED',
+  ROTATION_ASSIGNED: 'PLAN.PROGRAMME.ROTATION_ASSIGNED',
+  ROTATION_UNAVAILABLE: 'RULE.PROGRAMME.ROTATION_UNAVAILABLE',
 } as const;
 
 export const PG_REASON_CODES: readonly ReasonCodeDefinition[] = [
@@ -55,6 +57,8 @@ export const PG_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: PG_CODES.ASSESSMENT_COMPLETED, categories: ['information'], params: { sport: S, assessmentId: S, requestId: S }, audience: 'user', severity: 'info' },
   { code: PG_CODES.ASSESSMENT_RESULT_MISSING, categories: ['information'], params: { sport: S, assessmentId: S }, audience: 'user', severity: 'warning' },
   { code: PG_CODES.ASSESSMENT_NOT_PLANNED, categories: ['feasibility'], params: { sport: S, assessmentId: S, category: S }, audience: 'user', severity: 'warning' },
+  { code: PG_CODES.ROTATION_ASSIGNED, categories: ['information'], params: { sport: S, weekIndex: N, goal: S, assigned: L, criteria: L, policyVersion: S }, audience: 'internal', severity: 'info' },
+  { code: PG_CODES.ROTATION_UNAVAILABLE, categories: ['business_hard'], params: { sport: S, weekIndex: N, cause: S }, audience: 'internal', severity: 'warning' },
 ];
 
 export const pgReasons = createCoreRegistry(PG_REASON_CODES);

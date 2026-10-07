@@ -1,7 +1,7 @@
 import { beta0Integrity, weekdayIndex } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate, Notice, weekdayShort } from '../../ui.js';
-import { ExperimentalBadge, SessionCard0, weekOf, WeekPlanningNotice } from './common.js';
+import { ExperimentalBadge, placedOf, SessionCard0, weekOf, WeekPlanningNotice } from './common.js';
 import { NoWeek, PainPause } from './Home0.js';
 
 export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo: (t: 'settings') => void }) {
@@ -9,7 +9,9 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
   const today = clock().today;
   const week = weekOf(state, today);
   const avail = state.profile?.availability ?? [];
-  const unplanned = week?.items.filter((x) => x.display === 'not_planned') ?? [];
+  // Hors des jours : non planifiées (bloquées ou composées), y compris une non placée commencée ou réalisée hors planning.
+  const onDays = new Set(placedOf(week?.days ?? []).map((x) => x.requestId));
+  const unplanned = week?.items.filter((x) => !onDays.has(x.requestId)) ?? [];
   return (
     <div className="screen">
       <div className="row between"><h1 className="screen-title">Planning</h1>{week?.experimental && <ExperimentalBadge />}</div>

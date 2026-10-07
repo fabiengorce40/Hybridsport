@@ -9,7 +9,7 @@ import { useEffect, useState } from 'react';
 import { controlHrTimer, exerciseLabel, finishProgrammeSession, HR_ROLE_LABELS, HR_STRUCTURE_LABELS, hrClock, hrElapsedS, hrProgress, hrWorkoutOfView, recordHrLoad, setHrSteps, startProgrammeSession } from '@hybridsport/app-core';
 import type { FinishInput, HrStep, HrWorkout, HyroxComponent, ProgrammeSessionView } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
-import { formatDate, Notice, Topbar } from '../ui.js';
+import { Notice, sessionDay, startLabel, Topbar } from '../ui.js';
 import { STATUS_LABELS } from '../present.js';
 import { formatChrono } from '../running/duration.js';
 
@@ -137,7 +137,7 @@ export function HyroxWorkout({ v, onBack }: { v: ProgrammeSessionView; onBack: (
       <Topbar title="" onBack={onBack} right={v.experimental ? <span className="k-pill" title="Séance composée par le moteur HYROX en environnement expérimental (valeurs de test, non approuvées).">Beta</span> : undefined} />
       <div className={`k-workout k-hr ${!log && !finished ? 'with-dock' : ''}`}>
         <header className="k-ct-head">
-          <div className="k-ct-eyebrow">HYROX · {formatDate(v.date)}</div>
+          <div className="k-ct-eyebrow">HYROX · {sessionDay(v)}</div>
           <h1 className="k-ct-title">{role ?? 'HYROX'}</h1>
           <div className="row wrap">
             <span className="k-pill accent">{HR_STRUCTURE_LABELS[w.structure] ?? 'Séance HYROX'}</span>
@@ -202,7 +202,7 @@ export function HyroxWorkout({ v, onBack }: { v: ProgrammeSessionView; onBack: (
           </div>
         )}
         {editable && <button className="k-cta ghost" onClick={() => setFinishing(true)}>Terminer la séance</button>}
-        {!log && !finished && <div className="k-dock"><button className="k-cta" onClick={() => store.apply((s, c) => startProgrammeSession(s, c, v.requestId))}>Commencer la séance</button></div>}
+        {!log && !finished && <div className="k-dock"><button className="k-cta" onClick={() => store.apply((s, c) => startProgrammeSession(s, c, v.requestId))}>{startLabel(v)}</button></div>}
       </div>
       {finishing && editable && (
         <HrFinishSheet finished={prog.finished} capReached={clock.capReached} onCancel={() => setFinishing(false)} onSubmit={(f) => {

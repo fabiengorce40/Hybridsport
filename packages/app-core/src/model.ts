@@ -66,6 +66,11 @@ export const zProfile = z.object({
     enabled: z.boolean(),
     sessionsPerWeek: sessionsPerWeek.optional(),
     role: z.string().min(1).optional(),
+    /**
+     * M3.1 — FOCUS de programmation HYROX : `balanced` ⇒ le PROGRAMME varie les rôles H2 au fil des semaines (aucun
+     * sixième rôle H2) ; `specialized` (ou absent : profils antérieurs, jamais migrés) ⇒ le rôle déclaré, toujours.
+     */
+    focus: z.enum(['balanced', 'specialized']).optional(),
     goal: z.enum(HYROX_PROGRAMME_GOALS).optional(),
     returnState: z.enum(RETURN_STATES).optional(),
   }).strict(),
@@ -251,6 +256,11 @@ export const zPersistedWeek = z.object({
     /** Séance planifiée : session_record courant (relu par la migration du CORE). */
     record: zSerializedEnvelope.optional(),
     demand: zDemandOutcome.optional(),
+    /**
+     * M3.1 — demande NON PLACÉE dont le moteur a composé une prescription valide (`record` présent) : créneau de
+     * RÉFÉRENCE de la composition (jamais un placement). Absent sur une demande non placée ⇒ aucune prescription.
+     */
+    composedFor: z.object({ referenceDate: date, availableMinutes: z.number().int().nonnegative() }).strict().optional(),
     neighbourContext: z.object({ known: z.boolean(), neighbours: z.array(z.object({ sport: z.enum(SPORTS), discipline: z.string(), stimulus: z.string(), hoursFromThisSession: z.number(), demand: z.record(z.string(), z.string()), importance: z.enum(['key', 'standard', 'unknown']).optional() }).strict()) }).strict().optional(),
     reasons: z.array(zReason),
   }).strict()),
