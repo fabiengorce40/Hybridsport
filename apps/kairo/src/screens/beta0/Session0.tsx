@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from 'react';
 import {
-  approxMinutes, controlRest, manualStartAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, selectProgrammeSession, startProgrammeSession, toggleProgrammePainItem,
+  approxMinutes, controlRest, startAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, selectProgrammeSession, startProgrammeSession, toggleProgrammePainItem,
 } from '@hybridsport/app-core';
 import type { FinishInput, ProgrammeSessionView, SessionItem, SetPrescription } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
@@ -95,8 +95,8 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
   const v = selectProgrammeSession(store.state, requestId);
   const quality = qualityVerdictText(v?.quality ?? null);
   const done = v?.result !== null && v?.result !== undefined && v.log?.finishedAt !== undefined;
-  // P0 — séance non placée pas encore commencée : refus métier du jour réel affiché (le démarrage est refusé par app-core).
-  const refused = v && v.placement === 'composed_unplaced' && !v.log && !v.result ? manualStartText(manualStartAssessment(store.state, store.clock(), requestId)) : null;
+  // Séance pas encore commencée (planifiée ou non placée) : refus métier du jour réel affiché (app-core le fait respecter).
+  const refused = v && !v.log && !v.result ? manualStartText(startAssessment(store.state, store.clock(), requestId)) : null;
   return (
     <>
       <SessionBody requestId={requestId} onBack={onBack} />

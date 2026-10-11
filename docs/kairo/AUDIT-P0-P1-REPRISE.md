@@ -13,7 +13,22 @@ Branche : `claude/kairo-p0-safety-audit` (depuis `claude/crosstraining-c1-c2-spi
 | A5 | `hyrox/src/h2/compose.ts` (sélection des stations) | Deux séances `partial_simulation` IDENTIQUES dans la même semaine | Les 8 stations de test sont toutes « récentes » dans la fenêtre ⇒ `fresh_stations_in_segment:0/4`, départage au segment 0 ; le moteur trace `H2_REPEAT_UNAVOIDABLE` | Répétition non signalée dans l'interface | P1 | **Rendu visible** (`repeatFlagged`, carte, journal, export). La sélection n'est PAS modifiée : règle de diversité non gouvernée (H3) |
 | A6 | `apps/kairo/.../common.tsx` (cartes Strength) | « Full body » affiché pour toutes les séances | le titre de l'archétype seul masque l'alternance A/B/A réelle | Impression de répétition excessive | P2 | **Corrigé** : exercices principaux prescrits sur la carte (`mainExercises`) |
 | A7 | Strength S4 (continuité) | Semaine N+1 = mêmes exercices que la semaine N | règle de continuité (exercices stables pour suivre la progression) | Répétition d'une semaine à l'autre | — | **Conforme** (documenté, non modifié) |
+| A9 | `startProgrammeSession` (séances PLANIFIÉES) | Démarrage d'une séance planifiée possible pendant une pause douleur (le chemin V0 rend pourtant les séances indisponibles, et la planification est suspendue sur tous les chemins) | la garde douleur n'existait qu'à la planification et, depuis A2, au seul « Faire maintenant » : politique incohérente selon le placement | Nouvelle séance démarrable alors que KAIRO affiche « planification suspendue » | **P0** | **Corrigé** : politique unique `startAssessment` (voir ci-dessous) |
 | A8 | C3 / H2 (`compose.ts`) | Bloc principal seul | structure déclarée (échauffement / retour au calme) sans contenu gouverné, tracée `*_BLOCK_NOT_GENERATED` | — | — | Déjà traité au lot précédent (`TRAINING_BLOCK`, `FULL_SESSION_COMPOSITION_UNRESOLVED`) ; complété par les trois durées (A4) |
+
+## Politique unique de démarrage (`startAssessment`)
+
+| Contrôle | Séance planifiée | Non placée (« Faire maintenant ») |
+|---|---|---|
+| Reprise d'une séance déjà commencée | admise, jamais réévaluée | admise, jamais réévaluée |
+| Fin / saisie d'une séance commencée | admises (aucune saisie perdue) | admises |
+| Qualité BLOQUÉE | refus `QUALITY_BLOCKED` (même en reprise) | refus |
+| Pause douleur active | **refus `SAFETY_PAUSE_ACTIVE_PAIN`** (nouveau) | refus |
+| Semaine ≠ aujourd'hui | — | refus `MANUAL_START_OUTSIDE_WEEK` |
+| Interférence G4 au jour réel | — (appliquée au placement) | refus `MANUAL_START_INTERFERENCE` |
+| Fin directe sans démarrage | même contrôle (passe par le démarrage) | même contrôle |
+
+Aucun seuil : la pause douleur est la garde existante (`activePainPause`), levée seulement par l'utilisateur (`clearPain`). Historique, réalisations et Journal Beta ne sont jamais modifiés par un refus.
 
 ## Chemin « Faire maintenant » après correction
 
