@@ -20,7 +20,9 @@ import type { CompositionScope } from './beta0.js';
 import type { AppState, CtRuntime, Feedback, HrRuntime, PersistedWeek, ProfileInput, ProgrammeLog, Rest, SetLog } from './model.js';
 import { hrStationsOf, hrWorkoutOf } from './hr-workout.js';
 import type { HrWorkout } from './hr-workout.js';
-import { closeProgrammeWeekInApp, planProgrammeCurrentWeek, ProgrammeError, recordSessionExecution, startProgramme } from './programme.js';
+import { closeProgrammeWeekInApp, planProgrammeCurrentWeek, portInputs, ProgrammeError, recordSessionExecution, startProgramme } from './programme.js';
+import { buildPorts, clockOf, recentOf } from './planning.js';
+import { manualPlacementConflicts } from '@hybridsport/planner';
 import { strengthWeekBoundary } from './progression.js';
 import { compactHistory } from './history.js';
 import { declareRunningPerformance } from './running-profile.js';
@@ -341,8 +343,60 @@ function openLog(state: AppState, requestId: string): ProgrammeLog {
 }
 const withLog = (state: AppState, log: ProgrammeLog): AppState => ({ ...state, programmeLogs: { ...state.programmeLogs, [log.requestId]: log } });
 
+/**
+ * P0 — contrôle MÉTIER d'un démarrage manuel (« Faire maintenant ») d'une séance COMPOSÉE MAIS NON PLACÉE, au jour
+ * RÉEL : le planificateur ne l'a placée sur aucun jour (semaine complète ou interférence) ; la réaliser aujourd'hui doit
+ * donc respecter les mêmes garde-fous que le placement. Refus explicites (jamais d'autorisation implicite) :
+ *   - `QUALITY_BLOCKED` : prescription incohérente (Q1) ;
+ *   - `ACTIVE_PAIN` : pause douleur active ;
+ *   - `OUTSIDE_WEEK` : la séance appartient à une autre semaine que celle d'aujourd'hui ;
+ *   - `INTERFERENCE` : conflit G4 au jour réel avec une séance d'une autre discipline (semaine en cours : prévues non
+ *     manquées et réalisations manuelles ; semaine précédente : séances connues), MÊME règle gouvernée que le
+ *     placement (`manualPlacementConflicts`). Structures inconnues ou règle indisponible ⇒ conflit (fail-closed).
+ * Lecture seule ; `startProgrammeSession` l'applique. Une séance déjà commencée n'est pas réévaluée (reprise).
+ */
+export interface ManualStartAssessment {
+  readonly allowed: boolean;
+  readonly cause: 'QUALITY_BLOCKED' | 'ACTIVE_PAIN' | 'OUTSIDE_WEEK' | 'INTERFERENCE' | null;
+  readonly conflicts: readonly { readonly withSport: string; readonly withDate: string; readonly structure: string; readonly rule: string }[];
+}
+const MANUAL_OK: ManualStartAssessment = { allowed: true, cause: null, conflicts: [] };
+export function manualStartAssessment(state: AppState, clock: Clock, requestId: string, env: ProgrammeEnvironment = beta0Environment()): ManualStartAssessment {
+  const v = selectProgrammeSession(state, requestId);
+  if (!v || v.placement !== 'composed_unplaced') return MANUAL_OK;
+  const refuse = (cause: NonNullable<ManualStartAssessment['cause']>, conflicts: ManualStartAssessment['conflicts'] = []): ManualStartAssessment => ({ allowed: false, cause, conflicts });
+  if (v.quality === 'BLOCKED') return refuse('QUALITY_BLOCKED');
+  if (activePainPause(state)) return refuse('ACTIVE_PAIN');
+  const weekStart = Object.entries(state.planner.weeks).find(([, w]) => w.requests.some((r) => r.requestId === requestId))?.[0];
+  if (weekStart !== weekStartOf(clock.today)) return refuse('OUTSIDE_WEEK');
+  const p = state.profile;
+  const ps = state.programmeState;
+  if (!p || !ps) return refuse('INTERFERENCE');
+  const results = new Map(ps.results.map((x) => [x.requestId, x]));
+  const sessionOf = (r: PlannedRequest): SessionDraft | undefined => recordOf(r)?.session;
+  const week = state.planner.weeks[weekStart]?.requests ?? [];
+  const others = [
+    ...week.flatMap((r) => {
+      if (r.requestId === requestId) return [];
+      const x = results.get(r.requestId);
+      const session = sessionOf(r);
+      if (!session) return [];
+      if (r.status === 'planned' && r.date && x?.completion !== 'missed') return [{ sport: r.sport, date: r.date, session }];
+      if (r.status === 'unplaced' && x?.provenance === 'manual_from_unplaced') return [{ sport: r.sport, date: x.date, session }];
+      return [];
+    }),
+    ...recentOf(state, p, weekStart).filter((x) => x.status !== 'missed').map((x) => ({ sport: x.sport, date: x.date, session: x.session })),
+  ];
+  const { intent, goals } = portInputs(ps);
+  const conflicts = manualPlacementConflicts({ sport: v.sport, date: clock.today, session: v.session }, others, buildPorts(state, p, intent, env, goals), env.governance, env.mode, clockOf());
+  return conflicts.length === 0 ? MANUAL_OK : refuse('INTERFERENCE', conflicts.map((c) => ({ withSport: String(c.params.withSport), withDate: String(c.params.withDate), structure: String(c.params.structure), rule: String(c.params.rule) })));
+}
+const MANUAL_ERROR: Readonly<Record<NonNullable<ManualStartAssessment['cause']>, string>> = {
+  QUALITY_BLOCKED: 'QUALITY_BLOCKED', ACTIVE_PAIN: 'SAFETY_PAUSE_ACTIVE_PAIN', OUTSIDE_WEEK: 'MANUAL_START_OUTSIDE_WEEK', INTERFERENCE: 'MANUAL_START_INTERFERENCE',
+};
+
 /** Démarre (ou reprend) une séance planifiée, non encore enregistrée. */
-export function startProgrammeSession(state: AppState, clock: Clock, requestId: string): AppState {
+export function startProgrammeSession(state: AppState, clock: Clock, requestId: string, env: ProgrammeEnvironment = beta0Environment()): AppState {
   const v = selectProgrammeSession(state, requestId);
   if (!v) throw new AppError('SESSION_UNAVAILABLE');
   if (v.result) throw new AppError('SESSION_FINISHED');
@@ -350,6 +404,11 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   // exécutable selon la règle produit EXISTANTE de la Beta 0 (séances provisoires acceptées explicitement au profil).
   if (v.quality === 'BLOCKED') throw new AppError('QUALITY_BLOCKED');
   if (v.log) return state;
+  // P0 — « Faire maintenant » : mêmes garde-fous que le placement, au jour réel (refus explicite, état inchangé).
+  if (v.placement === 'composed_unplaced') {
+    const a = manualStartAssessment(state, clock, requestId, env);
+    if (!a.allowed && a.cause) throw new AppError(MANUAL_ERROR[a.cause]);
+  }
   const now = normalizeInstant(clock.now);
   // Cross-training : « Commencer » démarre le chrono (horodaté) ; tours et répétitions à zéro (saisies de l'athlète).
   const ct = v.sport === 'crosstraining' ? { ct: { runningSince: now, accumulatedS: 0, rounds: 0, partialReps: 0 } } : {};

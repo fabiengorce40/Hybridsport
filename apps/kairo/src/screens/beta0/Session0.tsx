@@ -5,13 +5,13 @@
  */
 import { useEffect, useState } from 'react';
 import {
-  approxMinutes, controlRest, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, selectProgrammeSession, startProgrammeSession, toggleProgrammePainItem,
+  approxMinutes, controlRest, manualStartAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, selectProgrammeSession, startProgrammeSession, toggleProgrammePainItem,
 } from '@hybridsport/app-core';
 import type { FinishInput, ProgrammeSessionView, SessionItem, SetPrescription } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { RestTimer0 } from '../../RestTimer0.js';
 import { Notice, sessionDay, startLabel, Topbar } from '../../ui.js';
-import { isTest, qualityVerdictText, roleName, sessionName, sportName, STATUS_LABELS } from '../../present.js';
+import { isTest, manualStartText, qualityVerdictText, roleName, sessionName, sportName, STATUS_LABELS } from '../../present.js';
 import { FieldFeedbackCard } from '../../field/FieldFeedback.js';
 import { BLOCK_LABELS, RunStructureView, SetRow } from '../Session.js';
 import { StrengthWorkout } from '../../workout/StrengthWorkout.js';
@@ -95,11 +95,14 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
   const v = selectProgrammeSession(store.state, requestId);
   const quality = qualityVerdictText(v?.quality ?? null);
   const done = v?.result !== null && v?.result !== undefined && v.log?.finishedAt !== undefined;
+  // P0 — séance non placée pas encore commencée : refus métier du jour réel affiché (le démarrage est refusé par app-core).
+  const refused = v && v.placement === 'composed_unplaced' && !v.log && !v.result ? manualStartText(manualStartAssessment(store.state, store.clock(), requestId)) : null;
   return (
     <>
       <SessionBody requestId={requestId} onBack={onBack} />
-      {v && (quality || done) && (
+      {v && (quality || done || refused) && (
         <div className="field-after">
+          {refused && <Notice tone="warn"><span role="status" data-manual-refused>{refused}</span></Notice>}
           {quality && <p className="tiny muted" data-quality={v.quality ?? undefined} style={{ margin: 0 }}>{quality}</p>}
           {done && <FieldFeedbackCard requestId={requestId} pain={v.log?.outcome?.pain === true} block={v.composition?.scope === 'TRAINING_BLOCK'} />}
         </div>

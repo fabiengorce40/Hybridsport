@@ -909,7 +909,13 @@ async function mobileFit(p, tag) {
   await sheet.getByRole('button', { name: 'Enregistrer' }).click();
   await feedback({ tolerance: 'Moyenne', comment: 'Stations enchaînées, transitions non chronométrées : OK.' });
   await p.getByRole('button', { name: 'Retour' }).click();
-  // 18–22. Séance non placée : Voir, Faire maintenant, terminer, retour.
+  // 18–22. Séance non placée : P0 — lundi (Musculation le même jour), « Faire maintenant » refusé avec sa raison ; samedi
+  // (aucun conflit gouverné) : Voir, Faire maintenant, terminer, retour.
+  await nav('Planning');
+  const un0 = p.locator('[data-unplaced]').first();
+  check(await un0.getByRole('button', { name: 'Faire maintenant' }).count() === 0 && /trop proche d’une séance/.test(await un0.locator('[data-manual-refused]').innerText()), `${tag} P0 : « Faire maintenant » refusé au jour réel (interférence gouvernée), raison lisible`);
+  await p.clock.setSystemTime(new Date('2026-10-10T09:00:00+02:00'));
+  await p.reload();
   await nav('Planning');
   const un = p.locator('[data-unplaced]').first();
   const unId = await un.getAttribute('data-unplaced');
@@ -925,7 +931,7 @@ async function mobileFit(p, tag) {
   await feedback({ difficulty: 'Facile', duration: 'Adaptée' });
   const s2 = await st();
   const res = s2.programmeState.results.find((r) => r.requestId === unId);
-  check(res?.provenance === 'manual_from_unplaced' && res.date === '2026-10-05' && s2.planner.weeks['2026-10-05'].requests.find((r) => r.requestId === unId)?.status === 'unplaced', `${tag} Faire maintenant : date réelle, provenance manuelle, aucun faux placement`);
+  check(res?.provenance === 'manual_from_unplaced' && res.date === '2026-10-10' && s2.planner.weeks['2026-10-05'].requests.find((r) => r.requestId === unId)?.status === 'unplaced', `${tag} Faire maintenant : date réelle, provenance manuelle, aucun faux placement`);
   check(s2.running.realized.some((r) => r.sessionId === unId), `${tag} Faire maintenant : exécution transmise au moteur Running`);
   await p.getByRole('button', { name: 'Retour' }).click();
   // 23–24. Journal Beta + export.

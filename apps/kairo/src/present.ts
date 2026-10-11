@@ -104,6 +104,18 @@ export function qualityVerdictText(verdict: NonNullable<SessionView['quality']>[
   if (verdict === 'ACCEPTABLE_WITH_WARNINGS') return 'Qualité : cohérence vérifiée, point à surveiller.';
   return null;
 }
+/** P0 — « Faire maintenant » refusé au jour réel : raison lisible (aucun code). */
+const OTHER_SPORT: Readonly<Record<string, string>> = { strength: 'de musculation', running: 'de course', crosstraining: 'de cross-training', hyrox: 'HYROX' };
+export function manualStartText(a: { readonly cause: string | null; readonly conflicts: readonly { readonly withSport: string }[] }): string | null {
+  if (a.cause === 'INTERFERENCE') {
+    const with_ = [...new Set(a.conflicts.map((c) => OTHER_SPORT[c.withSport] ?? ''))].filter(Boolean);
+    return `Pas aujourd’hui : trop proche d’une séance ${with_.length > 0 ? with_.join(' et ') : 'd’une autre discipline'} qui sollicite les mêmes zones du corps. Réessayez un autre jour de la semaine.`;
+  }
+  if (a.cause === 'ACTIVE_PAIN') return 'Indisponible pendant la pause douleur.';
+  if (a.cause === 'OUTSIDE_WEEK') return 'Cette séance appartient à une autre semaine.';
+  if (a.cause === 'QUALITY_BLOCKED') return 'Séance non réalisable : prescription incohérente.';
+  return null;
+}
 /** M3.1 — séance COMPOSÉE MAIS NON PLACÉE : cause lisible (jamais un code). */
 export function unplacedText(v: SessionView): string {
   const cause = v.unplacedCause === 'week_full'
@@ -149,6 +161,8 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   BETA_RESET_NOT_CONFIRMED: 'Recréation annulée : confirmation absente. Rien n’a été modifié.',
   BETA_RESET_NOT_ALLOWED: 'Cet outil de test n’est disponible que dans la Beta expérimentale. Rien n’a été modifié.',
   PROGRAMME_MISSING: 'Aucun programme à recréer.',
+  MANUAL_START_INTERFERENCE: 'Pas aujourd’hui : cette séance serait trop proche d’une autre séance qui sollicite les mêmes zones du corps.',
+  MANUAL_START_OUTSIDE_WEEK: 'Cette séance appartient à une autre semaine : elle ne peut plus être réalisée.',
   FIELD_FEEDBACK_SESSION_NOT_FINISHED: 'Terminez la séance avant de donner votre retour.',
   FIELD_FEEDBACK_ALREADY_RECORDED: 'Votre retour est déjà enregistré pour cette séance.',
   FIELD_FEEDBACK_EMPTY: 'Choisissez au moins une réponse ou écrivez un commentaire.',

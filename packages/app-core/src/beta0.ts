@@ -28,6 +28,8 @@ import { ROTATION_SIMULATION_IDS, rotationGovernance } from '../../programme/tes
 import { ctBeta0 } from '../../planner/tests/ct-beta0.js';
 import { hrBeta0 } from '../../planner/tests/hr-beta0.js';
 import { AppError } from './errors.js';
+import { ctWorkoutOf } from './ct-workout.js';
+import type { SessionDraft } from '@hybridsport/domain';
 import { addDays, daysBetween, weekStartOf } from './dates.js';
 import type { AppState, EnvironmentAuthority, PersistedWeek, Profile, Reason, Sport } from './model.js';
 import { STIMULUS_BY_GOAL } from './planner.js';
@@ -350,15 +352,26 @@ export interface CompositionScope {
   /** Blocs de la structure déclarée NON générés (ex. `warmup`, `cooldown`). */
   readonly notGenerated: readonly string[];
   readonly status: typeof FULL_SESSION_COMPOSITION_UNRESOLVED | null;
+  /**
+   * Trois durées DISTINCTES, jamais assimilées : durée PRESCRITE du bloc (Cross-training : durée du format ; HYROX :
+   * time cap), temps DISPONIBLE du créneau (plafond), durée CIBLE transmise au moteur. Null si illisible.
+   */
+  readonly blockDurationS: number | null;
+  readonly availableTimeS: number | null;
+  readonly targetDurationS: number | null;
 }
 const NOT_GENERATED = /^PLAN\.(CROSSTRAINING\.C3|HYROX\.H2)_BLOCK_NOT_GENERATED$/;
 const STRUCTURE_TRACED = /^PLAN\.(CROSSTRAINING\.C3_STRUCTURE|HYROX\.H2_SESSION_STRUCTURE)$/;
-export function compositionScopeOf(r: Pick<PersistedWeek['requests'][number], 'sport' | 'reasons'>): CompositionScope | null {
+export function compositionScopeOf(r: Pick<PersistedWeek['requests'][number], 'sport' | 'reasons'> & { readonly record?: PersistedWeek['requests'][number]['record'] }): CompositionScope | null {
   if (r.sport !== 'crosstraining' && r.sport !== 'hyrox') return null;
   const notGenerated = r.reasons.filter((x) => NOT_GENERATED.test(x.code)).map((x) => String(x.params.kind));
   const traced = r.reasons.some((x) => STRUCTURE_TRACED.test(x.code));
-  if (traced && notGenerated.length === 0) return { scope: 'FULL_SESSION', notGenerated: [], status: null };
-  return { scope: 'TRAINING_BLOCK', notGenerated, status: FULL_SESSION_COMPOSITION_UNRESOLVED };
+  const session = (r.record?.data as { session?: SessionDraft } | undefined)?.session;
+  const num = (x: unknown): number | null => (typeof x === 'number' && Number.isFinite(x) ? x : null);
+  const blockDurationS = !session ? null : r.sport === 'crosstraining' ? ctWorkoutOf(session)?.totalS ?? null : num((session.blocks[0] as { timeCapS?: unknown } | undefined)?.timeCapS);
+  const durations = { blockDurationS, availableTimeS: num(session?.availableTimeS), targetDurationS: num(session?.targetDurationS) };
+  if (traced && notGenerated.length === 0) return { scope: 'FULL_SESSION', notGenerated: [], status: null, ...durations };
+  return { scope: 'TRAINING_BLOCK', notGenerated, status: FULL_SESSION_COMPOSITION_UNRESOLVED, ...durations };
 }
 
 export interface QualityView { readonly verdict: 'ACCEPTABLE' | 'ACCEPTABLE_WITH_WARNINGS' | 'BLOCKED' | 'UNRESOLVED'; readonly unproven: number; readonly warnings: number; readonly blocked: number }

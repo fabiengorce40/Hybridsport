@@ -45,7 +45,7 @@ export function startProgramme(state: AppState, definition: ProgrammeDefinitionI
 }
 
 /** Intention au format du chemin multisport (déclarations transmises aux ports) et objectifs vers les contrats moteurs. */
-function portInputs(ps: ProgrammeState): { intent: ProgrammeIntent; goals: EngineGoals } {
+export function portInputs(ps: ProgrammeState): { intent: ProgrammeIntent; goals: EngineGoals } {
   const d = ps.definition;
   const intent: ProgrammeIntent = {
     origin: d.origin,
