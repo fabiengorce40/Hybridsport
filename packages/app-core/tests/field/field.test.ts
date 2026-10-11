@@ -204,3 +204,51 @@ describe('FIELD TEST — retour terrain (adversarial)', () => {
     expect(JSON.stringify(base.s)).toBe(snap);
   });
 });
+
+describe('FIELD TEST P0 — un bloc n’est pas une séance complète', () => {
+  const s0 = create(FOUR);
+  const i = ids(s0);
+  const view = (id: string) => week(s0)?.sessions.find((x) => x.requestId === id);
+
+  it('P0-1. Cross-training C3 : bloc principal seul, échauffement non généré ⇒ TRAINING_BLOCK (lu dans le contrat persisté)', () => {
+    expect(view(i.ct)?.composition).toEqual({ scope: 'TRAINING_BLOCK', notGenerated: ['warmup'], status: 'FULL_SESSION_COMPOSITION_UNRESOLVED' });
+  });
+  it('P0-2. HYROX H2 : bloc spécifique seul, échauffement et retour au calme non générés ⇒ TRAINING_BLOCK', () => {
+    expect(view(i.hyrox)?.composition).toEqual({ scope: 'TRAINING_BLOCK', notGenerated: ['warmup', 'cooldown'], status: 'FULL_SESSION_COMPOSITION_UNRESOLVED' });
+  });
+  it('P0-3. séance non placée (composée) : même portée ; Strength et Running : non concernés (null)', () => {
+    expect(view(i.strength)?.composition).toBeNull();
+    expect(view(i.running)?.composition).toBeNull();
+    expect(view(i.unplaced)?.placement).toBe('composed_unplaced');
+  });
+  it('P0-4. fail-closed : prescription valide SANS trace de structure ⇒ jamais « séance complète »', () => {
+    const strip = (s: AppState): AppState => ({ ...s, planner: { weeks: Object.fromEntries(Object.entries(s.planner.weeks).map(([k, w]) => [k, { ...w, requests: w.requests.map((r) => ({ ...r, reasons: r.reasons.filter((x) => !/(C3_STRUCTURE|H2_SESSION_STRUCTURE|BLOCK_NOT_GENERATED)$/.test(x.code)) })) }])) } });
+    const v = selectBetaJournal(strip(s0)).find((x) => x.requestId === i.ct);
+    expect(v?.composition?.scope).toBe('TRAINING_BLOCK');
+  });
+  it('P0-5. séance complète seulement si la structure est tracée ET aucun bloc n’est manquant', () => {
+    const only = (s: AppState): AppState => ({ ...s, planner: { weeks: Object.fromEntries(Object.entries(s.planner.weeks).map(([k, w]) => [k, { ...w, requests: w.requests.map((r) => ({ ...r, reasons: r.reasons.filter((x) => !/BLOCK_NOT_GENERATED$/.test(x.code)) })) }])) } });
+    expect(selectBetaJournal(only(s0)).find((x) => x.requestId === i.hyrox)?.composition?.scope).toBe('FULL_SESSION');
+  });
+  it('P0-6. la prescription n’est pas modifiée : un seul bloc, durée du bloc inchangée (aucune durée totale inventée)', () => {
+    const v = view(i.ct);
+    const r = Object.values(s0.planner.weeks).flatMap((w) => w.requests).find((x) => x.requestId === i.ct);
+    const blocks = (r?.record?.data as { session?: { blocks?: unknown[] } } | undefined)?.session?.blocks ?? [];
+    expect(blocks).toHaveLength(1);
+    expect(v?.estimatedDurationS).toBeLessThan(v?.targetDurationS ?? 0);
+  });
+  it('P0-7. journal Beta et export : FULL_SESSION_COMPOSITION_UNRESOLVED enregistré', () => {
+    const j = selectBetaJournal(s0);
+    expect(j.filter((e) => e.composition?.status === 'FULL_SESSION_COMPOSITION_UNRESOLVED').map((e) => e.sport).sort()).toEqual(['crosstraining', 'hyrox']);
+    expect(betaJournalText(s0, { build: 'x', builtAt: null, exportedAt: MON1 })).toContain('composition : TRAINING_BLOCK · FULL_SESSION_COMPOSITION_UNRESOLVED (non générés : warmup)');
+  });
+  it('P0-8. retour terrain spécifique au bloc : contenu et suffisance pour une séance complète, observations seulement', () => {
+    let s = finish(s0, i.ct, { completion: 'abandoned', pain: false });
+    s = fb(s, i.ct, { contentAmount: 'much_too_short', fullSessionAdequacy: 'very_insufficient' });
+    expect(s.programmeLogs[i.ct]?.field).toMatchObject({ provenance: 'USER_REPORTED_FIELD_FEEDBACK', contentAmount: 'much_too_short', fullSessionAdequacy: 'very_insufficient' });
+    expect(code(() => fb(finish(s0, i.ct, { completion: 'abandoned', pain: false }), i.ct, { contentAmount: 'tiny' as never }))).toBe('FIELD_FEEDBACK_INVALID');
+    const next = ensureBeta0Week(s, at(MON2));
+    const ref = ensureBeta0Week(finish(s0, i.ct, { completion: 'abandoned', pain: false }), at(MON2));
+    expect(next.planner.weeks['2026-10-12']).toEqual(ref.planner.weeks['2026-10-12']);
+  });
+});

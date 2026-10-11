@@ -29,7 +29,8 @@ function JournalRow({ e }: { e: BetaJournalEntry }) {
       <div className="row between"><span className="small muted">{e.date ? formatDate(e.date) : 'Sans jour'} · {sportName(e.sport)}</span><span className="badge neutral">{status}</span></div>
       <strong className="small">{e.placement === 'blocked' ? `${sportName(e.sport)} : non proposée${e.refusal ? ` (${NOT_PROPOSED[e.refusal.category] ?? 'refus'})` : ''}` : name}</strong>
       <span className="tiny muted">{PLACEMENT[e.placement]}{e.provenance === 'manual_from_unplaced' ? ' · faite manuellement (« Faire maintenant »)' : ''}</span>
-      {presc && <span className="tiny">Prescrit : {presc}</span>}
+      {e.composition?.scope === 'TRAINING_BLOCK' && <span className="tiny" data-block-scope="TRAINING_BLOCK">Bloc d’entraînement seulement : séance complète non composée par KAIRO</span>}
+      {presc && <span className="tiny">{e.composition?.scope === 'TRAINING_BLOCK' ? 'Bloc prescrit : ' : 'Prescrit : '}{presc}</span>}
       {e.execution?.finishedAt && <span className="tiny">Réalisé : {status}{dur !== null ? ` · ${durationLabel(dur)}` : ''}{e.execution.pain ? ' · douleur signalée' : ''}</span>}
       {e.feedback && <span className="tiny">Ressenti : {fieldFeedbackText(e.feedback)}</span>}
       {qualityShortText(e.quality?.verdict) && <span className="tiny muted">{qualityShortText(e.quality?.verdict)}</span>}

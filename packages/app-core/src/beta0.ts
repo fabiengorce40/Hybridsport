@@ -335,7 +335,32 @@ export interface SessionView {
    * avertissement / bloquants. Null : aucune prescription ou semaine antérieure à Q1.
    */
   readonly quality: QualityView | null;
+  /** FIELD TEST P0 — Cross-training / HYROX : bloc d'entraînement ou séance complète (null : autres sports, non prescrite). */
+  readonly composition: CompositionScope | null;
 }
+/**
+ * FIELD TEST P0 — PORTÉE réelle de la prescription Cross-training / HYROX, lue dans le contrat persisté (jamais déduite
+ * de la seule validité de la prescription) : C3 et H2 déclarent une structure de séance (échauffement, bloc principal,
+ * retour au calme) mais ne génèrent que le BLOC PRINCIPAL ; les blocs non générés sont tracés
+ * (`*_BLOCK_NOT_GENERATED`, contenu non gouverné). Fail-closed : sans trace de structure, jamais « séance complète ».
+ */
+export const FULL_SESSION_COMPOSITION_UNRESOLVED = 'FULL_SESSION_COMPOSITION_UNRESOLVED' as const;
+export interface CompositionScope {
+  readonly scope: 'FULL_SESSION' | 'TRAINING_BLOCK';
+  /** Blocs de la structure déclarée NON générés (ex. `warmup`, `cooldown`). */
+  readonly notGenerated: readonly string[];
+  readonly status: typeof FULL_SESSION_COMPOSITION_UNRESOLVED | null;
+}
+const NOT_GENERATED = /^PLAN\.(CROSSTRAINING\.C3|HYROX\.H2)_BLOCK_NOT_GENERATED$/;
+const STRUCTURE_TRACED = /^PLAN\.(CROSSTRAINING\.C3_STRUCTURE|HYROX\.H2_SESSION_STRUCTURE)$/;
+export function compositionScopeOf(r: Pick<PersistedWeek['requests'][number], 'sport' | 'reasons'>): CompositionScope | null {
+  if (r.sport !== 'crosstraining' && r.sport !== 'hyrox') return null;
+  const notGenerated = r.reasons.filter((x) => NOT_GENERATED.test(x.code)).map((x) => String(x.params.kind));
+  const traced = r.reasons.some((x) => STRUCTURE_TRACED.test(x.code));
+  if (traced && notGenerated.length === 0) return { scope: 'FULL_SESSION', notGenerated: [], status: null };
+  return { scope: 'TRAINING_BLOCK', notGenerated, status: FULL_SESSION_COMPOSITION_UNRESOLVED };
+}
+
 export interface QualityView { readonly verdict: 'ACCEPTABLE' | 'ACCEPTABLE_WITH_WARNINGS' | 'BLOCKED' | 'UNRESOLVED'; readonly unproven: number; readonly warnings: number; readonly blocked: number }
 /** Lecture d'un diagnostic compact persisté (`critère|statut|base`). */
 export function qualityViewOf(q: PersistedWeek['requests'][number]['quality']): QualityView | null {
@@ -437,6 +462,7 @@ export function sessionView(r: PersistedWeek['requests'][number], result: Progra
     unplacedCause: composed ? (r.reasons.some((x) => x.code === 'PLAN.PLANNER.NOT_ENOUGH_DAYS') ? 'week_full' : 'no_admissible_day') : null,
     manual,
     quality: prescribed ? qualityViewOf(r.quality) : null,
+    composition: prescribed ? compositionScopeOf(r) : null,
   };
 }
 

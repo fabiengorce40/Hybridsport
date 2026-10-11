@@ -956,6 +956,76 @@ async function mobileFit(p, tag) {
   await c.close();
 }
 
+// ——— FIELD TEST P0 (360 × 640) : un bloc n'est pas une séance complète. Cross-training (AMRAP) puis HYROX (endurance de
+// force) : carte « Bloc principal », aucune fausse durée totale, mention dans la séance, réalisation, retour terrain
+// (contenu / séance complète), historique, Journal Beta, export (FULL_SESSION_COMPOSITION_UNRESOLVED).
+async function p0Block(p, { tag, cardName, label, missing, content, full, shot }) {
+  const st = () => p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Planning', exact: true }).click();
+  const card = p.getByRole('button', { name: cardName }).first();
+  const ct = await card.innerText();
+  const mins = [...ct.matchAll(/(\d+) min/g)].map((m) => Number(m[1]));
+  check(ct.includes(label) && ct.includes('Bloc d’entraînement : pas une séance complète') && mins.every((m) => m <= 45), `${tag} carte : « ${label} », mention bloc, durée du bloc seulement (${ct.replace(/\n/g, ' | ')})`);
+  await card.click();
+  check((await p.locator('[data-block-label]').innerText()).length > 0 && /bloc principal uniquement/i.test(await p.locator('.k-block-note').innerText()) && (await p.locator('.k-block-note').innerText()).includes(missing), `${tag} séance : bloc identifié, éléments non composés nommés (${missing})`);
+  if (shots) await p.screenshot({ path: `${shots}/${shot}.png` });
+  await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  const steps = p.getByRole('button', { name: /[ÉéEe]tape faite/ });
+  for (let k = 0; k < 40 && await steps.count() > 0 && await steps.isEnabled(); k += 1) await steps.click();
+  await p.clock.fastForward('12:00');
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
+  await sheet.getByRole('radio', { name: /J’ai adapté la séance/ }).click();
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+  const fbc = p.getByLabel('Retour terrain');
+  await fbc.waitFor();
+  check(await fbc.getByRole('radiogroup', { name: 'La durée de la séance vous a semblé' }).count() === 0, `${tag} retour : aucune question « durée de la séance » pour un bloc`);
+  await fbc.getByRole('radiogroup', { name: 'Ce contenu vous a semblé' }).getByRole('radio', { name: content, exact: true }).click();
+  await fbc.getByRole('radiogroup', { name: 'Pour une séance complète, le contenu vous a semblé' }).getByRole('radio', { name: full, exact: true }).click();
+  await fbc.getByRole('button', { name: 'Enregistrer mon ressenti' }).click();
+  await p.locator('[data-field-feedback="saved"]').waitFor();
+  const field = Object.values((await st()).programmeLogs).find((l) => l.field?.contentAmount)?.field;
+  check(field?.provenance === 'USER_REPORTED_FIELD_FEEDBACK' && field.contentAmount && field.fullSessionAdequacy, `${tag} retour « contenu / séance complète » stocké (${JSON.stringify(field)})`);
+  await p.getByRole('button', { name: 'Retour' }).click();
+  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Historique', exact: true }).click();
+  const h = await p.locator('body').innerText();
+  check(h.includes('Bloc d’entraînement (pas une séance complète)') && h.includes(`contenu ${content.toLowerCase()}`), `${tag} historique : bloc d’entraînement, ressenti du contenu`);
+  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Réglages', exact: true }).click();
+  await p.getByRole('button', { name: /Journal Beta/ }).click();
+  check((await p.locator('body').innerText()).includes('Bloc d’entraînement seulement : séance complète non composée par KAIRO'), `${tag} Journal Beta : bloc d’entraînement signalé`);
+  const [dl] = await Promise.all([p.waitForEvent('download'), p.getByRole('button', { name: 'Exporter le journal Beta (JSON)' }).click()]);
+  const j = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+  const e = j.journal.find((x) => x.feedback?.contentAmount);
+  check(e?.composition?.scope === 'TRAINING_BLOCK' && e.composition.status === 'FULL_SESSION_COMPOSITION_UNRESOLVED', `${tag} export : FULL_SESSION_COMPOSITION_UNRESOLVED (${JSON.stringify(e?.composition)})`);
+}
+for (const sport of ['ct', 'hyrox']) {
+  const c = await browser.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, locale: 'fr-FR', timezoneId: 'Europe/Paris', acceptDownloads: true });
+  const p = await c.newPage();
+  const perrors = [];
+  p.on('pageerror', (e) => perrors.push(e.message));
+  await p.clock.install({ time: new Date('2026-10-05T07:30:00+02:00') });
+  await p.clock.resume();
+  await p.goto(URL_);
+  if (sport === 'ct') {
+    await p.getByLabel(/J’ai compris/).check();
+    await p.getByRole('button', { name: 'Commencer' }).click();
+    await p.getByRole('radio', { name: /^Cross-training/ }).click();
+    await p.getByRole('button', { name: 'Continuer' }).click();
+    await p.getByRole('radio', { name: /^Mixte/ }).click();
+    await p.getByLabel('Séances de Cross-training par semaine').selectOption('1');
+    await p.getByRole('button', { name: 'Continuer' }).click();
+    await p.getByRole('button', { name: 'Continuer' }).click();
+    await p.getByRole('button', { name: 'Créer mon programme' }).click();
+    await p.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+    await p0Block(p, { tag: '[P0 Cross-training 360×640]', cardName: /^Cross-training : Mixte/, label: 'Bloc principal', missing: 'l’échauffement', content: 'Trop court', full: 'Insuffisant', shot: 'p0-ct-bloc' });
+  } else {
+    await hrOnboard(p, 'Endurance de force', '1');
+    await p0Block(p, { tag: '[P0 HYROX 360×640]', cardName: /^HYROX : Endurance de force/, label: 'Bloc HYROX', missing: 'le retour au calme', content: 'Beaucoup trop court', full: 'Très insuffisant', shot: 'p0-hyrox-bloc' });
+  }
+  check(perrors.length === 0, `[P0 ${sport}] aucune erreur de page (${perrors.join(' | ')})`);
+  await c.close();
+}
+
 // Version réellement servie : identifiant de build affiché dans Réglages = version.json publié (site déployé seulement).
 {
   const { c, p } = await freshPage(readFileSync(new URL('../../../packages/app-core/tests/fixtures/pre-s1-state.json', import.meta.url), 'utf8'));

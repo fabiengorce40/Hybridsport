@@ -11,11 +11,12 @@ import { requestAssessment, weekIndexOf, withinProgramme, zProgrammeState } from
 import type { ProgrammeResult, ProgrammeState } from '@hybridsport/programme';
 import { logFreeRun } from './app.js';
 import type { Clock } from './app.js';
-import { beta0Environment, ctDeclarations, hrDeclarations, legacyBeta0StrengthIntent, prescribedArchetype, LEGACY_BETA0_STRENGTH_ARCHETYPE, programmeDefinitionFromProfile, weekPlanning } from './beta0.js';
+import { beta0Environment, compositionScopeOf, ctDeclarations, hrDeclarations, legacyBeta0StrengthIntent, prescribedArchetype, LEGACY_BETA0_STRENGTH_ARCHETYPE, programmeDefinitionFromProfile, weekPlanning } from './beta0.js';
 import { STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } from '@hybridsport/strength';
 import { addDays, dateOf, normalizeInstant, weekStartOf } from './dates.js';
 import { AppError } from './errors.js';
 import { emptyState, zProfile } from './model.js';
+import type { CompositionScope } from './beta0.js';
 import type { AppState, CtRuntime, Feedback, HrRuntime, PersistedWeek, ProfileInput, ProgrammeLog, Rest, SetLog } from './model.js';
 import { hrStationsOf, hrWorkoutOf } from './hr-workout.js';
 import type { HrWorkout } from './hr-workout.js';
@@ -298,6 +299,8 @@ export interface ProgrammeSessionView {
   readonly placement: 'planned' | 'composed_unplaced';
   /** Q1 — verdict de qualité persisté (null : antérieur à Q1). BLOCKED ⇒ jamais démarrable (placée ou non). */
   readonly quality: 'ACCEPTABLE' | 'ACCEPTABLE_WITH_WARNINGS' | 'BLOCKED' | 'UNRESOLVED' | null;
+  /** FIELD TEST P0 — Cross-training / HYROX : bloc d'entraînement (séance complète non composée) ou séance complète. */
+  readonly composition: CompositionScope | null;
   readonly session: SessionDraft;
   /** HYROX : stations des composantes (décisions H2 persistées avec la séance), sinon vide. */
   readonly hrStations: Readonly<Record<string, string>>;
@@ -323,7 +326,7 @@ export function selectProgrammeSession(state: AppState, requestId: string): Prog
   if (!r || !date || !record || !session) return null;
   const week = Object.values(state.planner.weeks).find((w) => w.requests.includes(r));
   return {
-    requestId, sport: r.sport, date, placement: r.status === 'planned' ? 'planned' : 'composed_unplaced', quality: r.quality?.verdict ?? null, session, hrStations: r.sport === 'hyrox' ? hrStationsOf(r.reasons) : {}, ...prescribedArchetype(r), role: r.composition?.role ?? null,
+    requestId, sport: r.sport, date, placement: r.status === 'planned' ? 'planned' : 'composed_unplaced', quality: r.quality?.verdict ?? null, composition: compositionScopeOf(r), session, hrStations: r.sport === 'hyrox' ? hrStationsOf(r.reasons) : {}, ...prescribedArchetype(r), role: r.composition?.role ?? null,
     estimatedDurationS: record.durationEstimate.availability === 'AVAILABLE' ? record.durationEstimate.p50 : null,
     log: state.programmeLogs[requestId] ?? null, result: state.programmeState?.results.find((x) => x.requestId === requestId) ?? null,
     experimental: week?.authority !== 'production',

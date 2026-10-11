@@ -101,7 +101,7 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
       {v && (quality || done) && (
         <div className="field-after">
           {quality && <p className="tiny muted" data-quality={v.quality ?? undefined} style={{ margin: 0 }}>{quality}</p>}
-          {done && <FieldFeedbackCard requestId={requestId} pain={v.log?.outcome?.pain === true} />}
+          {done && <FieldFeedbackCard requestId={requestId} pain={v.log?.outcome?.pain === true} block={v.composition?.scope === 'TRAINING_BLOCK'} />}
         </div>
       )}
     </>

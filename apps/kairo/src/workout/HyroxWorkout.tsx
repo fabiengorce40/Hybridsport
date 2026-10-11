@@ -11,6 +11,7 @@ import type { FinishInput, HrStep, HrWorkout, HyroxComponent, ProgrammeSessionVi
 import { useStore } from '../store.js';
 import { Notice, sessionDay, startLabel, Topbar } from '../ui.js';
 import { STATUS_LABELS } from '../present.js';
+import { BlockNotice, isBlock } from '../field/BlockScope.js';
 import { formatChrono } from '../running/duration.js';
 
 // technical-constant: rafraîchissement de l'AFFICHAGE du chrono (ms), aucune écriture d'état
@@ -139,11 +140,13 @@ export function HyroxWorkout({ v, onBack }: { v: ProgrammeSessionView; onBack: (
         <header className="k-ct-head">
           <div className="k-ct-eyebrow">HYROX · {sessionDay(v)}</div>
           <h1 className="k-ct-title">{role ?? 'HYROX'}</h1>
+          {isBlock(v.composition) && <div className="k-ct-eyebrow" data-block-label>Bloc HYROX</div>}
           <div className="row wrap">
             <span className="k-pill accent">{HR_STRUCTURE_LABELS[w.structure] ?? 'Séance HYROX'}</span>
             {w.rounds > 1 && <span className="k-pill num">{String(w.rounds)} tours</span>}
             <span className="k-pill num">Time cap {formatChrono(w.timeCapS)}</span>
           </div>
+          <BlockNotice c={v.composition} />
           {finished && <span className="k-pill done">✓ {STATUS_LABELS[v.result?.completion ?? 'completed_as_prescribed']}</span>}
         </header>
 

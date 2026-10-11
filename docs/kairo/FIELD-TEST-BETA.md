@@ -24,3 +24,17 @@ Version destinée au test terrain sur téléphone. Elle expose ce qui existe dé
 ## Transmettre les données
 
 Réglages → Journal Beta → « Exporter le journal Beta (JSON) », et si possible « (texte) ». Indiquer la version affichée dans Réglages → KAIRO FIELD TEST.
+
+## P0 — un bloc n'est pas une séance complète
+
+Audit du contrat réel (prescriptions inchangées) :
+
+| Moteur | Structure déclarée (gouvernance TEST_ONLY) | Généré | Portée |
+|---|---|---|---|
+| C3 (continuous, intervals, EMOM, AMRAP, for time) | `warmup` + `conditioning` (stimuli « strength/skill + conditioning » : refus) | le bloc de conditioning seul ; échauffement tracé `C3_BLOCK_NOT_GENERATED` (`ARCHITECTURAL_PLACE_ONLY_CONTENT_UNGOVERNED`) | `TRAINING_BLOCK` |
+| H2 (les cinq rôles) | `warmup` + `main` + `cooldown` | le bloc principal seul ; échauffement et retour au calme tracés `H2_BLOCK_NOT_GENERATED` | `TRAINING_BLOCK` |
+
+- Portée lue dans le contrat persisté (`compositionScopeOf`), fail-closed : sans trace de structure, jamais « séance complète ». Journal Beta et export : `FULL_SESSION_COMPOSITION_UNRESOLVED`.
+- Aucune séance complète n'est assemblée : aucune brique existante gouvernée ne compose un échauffement ou un retour au calme Cross-training / HYROX (C3 refuse lui-même la délégation au moteur Strength : `STRENGTH_ENGINE_DELEGATION_UNAVAILABLE`), et une seule séance par jour est planifiée.
+- Durée disponible : **plafond** (refus `EXCEEDS_AVAILABLE_TIME` si le bloc dépasse le temps disponible moins la marge du profil de tolérance du CORE) et contrainte de placement ; **jamais une cible**. La durée du bloc C3 vient de `ct.dose.construction[stimulus][niveau][format]` (ex. AMRAP intermédiaire mixte : 720 s), bornée par `ct.stimulus.timeDomains` (mixte : 480–900 s) ; H2 : time cap = estimation lente × (1 + marge), volume `hybrid_race.h2.structureVolume`. Toutes ces valeurs sont TEST_ONLY.
+- Interface : « Bloc principal » / « Bloc HYROX », durée du bloc seulement (jamais la durée cible du créneau), mention « Bloc principal uniquement » dans la séance, retour terrain « Ce contenu vous a semblé » (5 choix) et « Pour une séance complète, le contenu vous a semblé » (4 choix).

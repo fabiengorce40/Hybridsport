@@ -331,6 +331,9 @@ export const FIELD_FEEDBACK_PROVENANCE = 'USER_REPORTED_FIELD_FEEDBACK' as const
 export const FIELD_DIFFICULTIES = ['very_easy', 'easy', 'adapted', 'hard', 'very_hard'] as const;
 export const FIELD_TOLERANCES = ['good', 'medium', 'poor'] as const;
 export const FIELD_DURATIONS = ['too_short', 'adapted', 'too_long'] as const;
+/** Bloc Cross-training / HYROX : quantité de contenu ressentie, et suffisance pour une séance complète (observations). */
+export const FIELD_CONTENT_AMOUNTS = ['much_too_short', 'too_short', 'adapted', 'too_long', 'much_too_long'] as const;
+export const FIELD_FULL_SESSION = ['very_insufficient', 'insufficient', 'adapted', 'too_loaded'] as const;
 // technical-constant: longueur maximale du commentaire libre de terrain (borne de stockage, aucune valeur sportive)
 export const FIELD_COMMENT_MAX = 2000;
 export const zFieldFeedback = z.object({
@@ -339,6 +342,8 @@ export const zFieldFeedback = z.object({
   difficulty: z.enum(FIELD_DIFFICULTIES).optional(),
   tolerance: z.enum(FIELD_TOLERANCES).optional(),
   perceivedDuration: z.enum(FIELD_DURATIONS).optional(),
+  contentAmount: z.enum(FIELD_CONTENT_AMOUNTS).optional(),
+  fullSessionAdequacy: z.enum(FIELD_FULL_SESSION).optional(),
   comment: z.string().min(1).max(FIELD_COMMENT_MAX).optional(),
 }).strict();
 export type FieldFeedback = z.infer<typeof zFieldFeedback>;

@@ -10,6 +10,7 @@ import type { CtWorkout, CtWorkoutItem, FinishInput, ProgrammeSessionView } from
 import { useStore } from '../store.js';
 import { Notice, sessionDay, startLabel, Topbar } from '../ui.js';
 import { STATUS_LABELS } from '../present.js';
+import { BlockNotice, isBlock } from '../field/BlockScope.js';
 import { DurationInput } from '../running/DurationInput.js';
 import { durationFromParts, formatChrono } from '../running/duration.js';
 import type { DurationParts } from '../running/duration.js';
@@ -196,7 +197,9 @@ export function CrossTrainingWorkout({ v, onBack }: { v: ProgrammeSessionView; o
         <header className="k-ct-head">
           <div className="k-ct-eyebrow">Cross-training · {sessionDay(v)}</div>
           <h1 className="k-ct-title">{intent ?? 'Cross-training'}</h1>
+          {isBlock(v.composition) && <div className="k-ct-eyebrow" data-block-label>Bloc principal</div>}
           <div className="row wrap"><span className="k-pill accent">{CT_FORMAT_LABELS[w.format] ?? w.format}</span><span className="k-ct-headline num">{headline(w)}</span></div>
+          <BlockNotice c={v.composition} />
           {finished && <span className="k-pill done">✓ {STATUS_LABELS[v.result?.completion ?? 'completed_as_prescribed']}</span>}
         </header>
 

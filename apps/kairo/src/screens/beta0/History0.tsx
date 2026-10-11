@@ -55,6 +55,7 @@ export function History0({ onOpen }: { onOpen: (id: string) => void }) {
               {e.hr.performedLoads.length > 0 && <div>Charges réelles saisies : {String(e.hr.performedLoads.length)}</div>}
             </div>
           )}
+          {e.composition?.scope === 'TRAINING_BLOCK' && <div className="tiny muted" data-block-scope="TRAINING_BLOCK">Bloc d’entraînement (pas une séance complète)</div>}
           {(e.durationS !== null || e.manual) && <div className="tiny muted num" data-history-meta>{[e.durationS !== null ? `Durée réelle ${durationLabel(e.durationS)}` : null, e.manual ? 'Faite hors planning (séance non planifiée)' : null].filter(Boolean).join(' · ')}</div>}
           {e.feedback && <div className="small" data-history-feedback>Ressenti : {fieldFeedbackText(e.feedback)}</div>}
           {e.pain && <div className="small" style={{ color: 'var(--danger)' }}>⚠ Douleur signalée</div>}

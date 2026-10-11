@@ -5,6 +5,7 @@ import { startProgrammeSession } from '@hybridsport/app-core';
 import { arbitrationText, ctFormatName, isTest, notPlannedText, qualityShortText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
+import { blockCardText, isBlock } from '../../field/BlockScope.js';
 import type { DisplayStatus } from '../../present.js';
 
 export interface SessionItemView extends SessionView { readonly display: DisplayStatus }
@@ -47,9 +48,21 @@ export function ExperimentalBadge() {
   return <span className="badge sim" title="Certaines règles de planification sont encore en cours de validation.">Beta expérimentale</span>;
 }
 
+/**
+ * Ligne descriptive d'une carte : rôle, format, durée. FIELD TEST P0 — bloc d'entraînement Cross-training / HYROX :
+ * « Bloc principal » et durée DU BLOC (jamais présentée comme la durée d'une séance complète, jamais la cible du créneau).
+ */
+function metaOf(v: SessionItemView): string {
+  const block = isBlock(v.composition);
+  const dur = v.hrTimeCapS !== null ? `time cap ${approxMinutes(v.hrTimeCapS)}`
+    : v.estimatedDurationS !== null ? `≈ ${approxMinutes(v.estimatedDurationS)}`
+      : !block && v.targetDurationS !== null ? `≈ ${approxMinutes(v.targetDurationS)}` : null;
+  const fmt = ctFormatName(v.ctFormat);
+  return [roleName(v.role), block ? [v.sport === 'hyrox' ? 'Bloc HYROX' : 'Bloc principal', fmt].filter(Boolean).join(' ') : fmt, dur].filter(Boolean).join(' · ');
+}
+
 export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemView; onOpen: (id: string) => void; highlight?: boolean }) {
   const name = sessionName(v.sport, v.archetypeId, v.dataError);
-  const role = roleName(v.role);
   if (v.display === 'not_planned' && v.placement === 'composed_unplaced') return <UnplacedCard v={v} onOpen={onOpen} />;
   if (v.display === 'not_planned') {
     return (
@@ -67,8 +80,9 @@ export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemV
       </div>
       <h3>{name}</h3>
       <div className="small muted num">
-        {[role, ctFormatName(v.ctFormat), v.hrTimeCapS !== null ? `time cap ${approxMinutes(v.hrTimeCapS)}` : (v.estimatedDurationS ?? v.targetDurationS) !== null ? `≈ ${approxMinutes(v.estimatedDurationS ?? v.targetDurationS ?? 0)}` : null, v.pain ? 'douleur signalée' : null].filter(Boolean).join(' · ')}
+        {[metaOf(v), v.pain ? 'douleur signalée' : null].filter(Boolean).join(' · ')}
       </div>
+      {isBlock(v.composition) && <div className="tiny muted" data-block-scope="TRAINING_BLOCK">{blockCardText}</div>}
       {v.arbitration && <div className="tiny muted" data-m3={v.arbitration.kind}>{arbitrationText(v, formatDate)}</div>}
       {qualityShortText(v.quality?.verdict) && <div className="tiny muted" data-quality={v.quality?.verdict}>{qualityShortText(v.quality?.verdict)}</div>}
     </button>
@@ -82,12 +96,13 @@ export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemV
 function UnplacedCard({ v, onOpen }: { v: SessionItemView; onOpen: (id: string) => void }) {
   const store = useStore();
   const name = sessionName(v.sport, v.archetypeId, v.dataError);
-  const meta = [roleName(v.role), ctFormatName(v.ctFormat), v.hrTimeCapS !== null ? `time cap ${approxMinutes(v.hrTimeCapS)}` : (v.estimatedDurationS ?? v.targetDurationS) !== null ? `≈ ${approxMinutes(v.estimatedDurationS ?? v.targetDurationS ?? 0)}` : null].filter(Boolean).join(' · ');
+  const meta = metaOf(v);
   return (
     <div className="card" aria-label={`${sportName(v.sport)} : ${name}, non planifiée`} data-unplaced={v.requestId}>
       <div className="row between"><span className="small muted">{sportName(v.sport)}</span><StatusPill status="not_planned" /></div>
       <h3>{name}</h3>
       {meta && <div className="small muted num">{meta}</div>}
+      {isBlock(v.composition) && <div className="tiny muted" data-block-scope="TRAINING_BLOCK">{blockCardText}</div>}
       <div className="small">{unplacedText(v)}</div>
       {qualityShortText(v.quality?.verdict) && <div className="tiny muted" data-quality={v.quality?.verdict}>{qualityShortText(v.quality?.verdict)}</div>}
       <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>

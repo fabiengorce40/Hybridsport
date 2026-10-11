@@ -10,13 +10,13 @@ import { migrateToCurrent } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
 import type { ProgrammeResult } from '@hybridsport/programme';
 import type { Clock } from './app.js';
-import { BETA0_PLANNING_VERSION, beta0Integrity, sessionView } from './beta0.js';
-import type { SessionView } from './beta0.js';
+import { BETA0_PLANNING_VERSION, beta0Integrity, compositionScopeOf, sessionView } from './beta0.js';
+import type { CompositionScope, SessionView } from './beta0.js';
 import { selectHistory } from './beta0-app.js';
 import type { HistoryEntry } from './beta0-app.js';
 import { dateOf, normalizeInstant } from './dates.js';
 import { AppError } from './errors.js';
-import { FIELD_COMMENT_MAX, FIELD_DIFFICULTIES, FIELD_DURATIONS, FIELD_FEEDBACK_PROVENANCE, FIELD_TOLERANCES, zFieldFeedback } from './model.js';
+import { FIELD_COMMENT_MAX, FIELD_CONTENT_AMOUNTS, FIELD_DIFFICULTIES, FIELD_FULL_SESSION, FIELD_DURATIONS, FIELD_FEEDBACK_PROVENANCE, FIELD_TOLERANCES, zFieldFeedback } from './model.js';
 import type { AppState, FieldFeedback, PersistedWeek, ProgrammeLog, Sport } from './model.js';
 
 // technical-constant: conversion millisecondes → secondes
@@ -34,6 +34,8 @@ export interface FieldFeedbackInput {
   readonly difficulty?: FieldFeedback['difficulty'];
   readonly tolerance?: FieldFeedback['tolerance'];
   readonly perceivedDuration?: FieldFeedback['perceivedDuration'];
+  readonly contentAmount?: FieldFeedback['contentAmount'];
+  readonly fullSessionAdequacy?: FieldFeedback['fullSessionAdequacy'];
   readonly comment?: string;
 }
 
@@ -53,12 +55,17 @@ export function recordFieldFeedback(state: AppState, clock: Clock, requestId: st
   if (input.difficulty !== undefined && !oneOf(FIELD_DIFFICULTIES, input.difficulty)) throw new AppError('FIELD_FEEDBACK_INVALID');
   if (input.tolerance !== undefined && !oneOf(FIELD_TOLERANCES, input.tolerance)) throw new AppError('FIELD_FEEDBACK_INVALID');
   if (input.perceivedDuration !== undefined && !oneOf(FIELD_DURATIONS, input.perceivedDuration)) throw new AppError('FIELD_FEEDBACK_INVALID');
-  if (input.difficulty === undefined && input.tolerance === undefined && input.perceivedDuration === undefined && comment === '') throw new AppError('FIELD_FEEDBACK_EMPTY');
+  if (input.contentAmount !== undefined && !oneOf(FIELD_CONTENT_AMOUNTS, input.contentAmount)) throw new AppError('FIELD_FEEDBACK_INVALID');
+  if (input.fullSessionAdequacy !== undefined && !oneOf(FIELD_FULL_SESSION, input.fullSessionAdequacy)) throw new AppError('FIELD_FEEDBACK_INVALID');
+  const answered = [input.difficulty, input.tolerance, input.perceivedDuration, input.contentAmount, input.fullSessionAdequacy].some((x) => x !== undefined);
+  if (!answered && comment === '') throw new AppError('FIELD_FEEDBACK_EMPTY');
   const field = zFieldFeedback.parse({
     provenance: FIELD_FEEDBACK_PROVENANCE, recordedAt: normalizeInstant(clock.now),
     ...(input.difficulty !== undefined ? { difficulty: input.difficulty } : {}),
     ...(input.tolerance !== undefined ? { tolerance: input.tolerance } : {}),
     ...(input.perceivedDuration !== undefined ? { perceivedDuration: input.perceivedDuration } : {}),
+    ...(input.contentAmount !== undefined ? { contentAmount: input.contentAmount } : {}),
+    ...(input.fullSessionAdequacy !== undefined ? { fullSessionAdequacy: input.fullSessionAdequacy } : {}),
     ...(comment !== '' ? { comment } : {}),
   });
   const next: ProgrammeLog = { ...log, field };
@@ -126,6 +133,8 @@ export interface BetaJournalEntry {
   readonly refusal: { readonly category: string; readonly reasonCode: string | null } | null;
   /** M3 — arbitrage lisible (déplacement, échange, recomposition, conflit restant). */
   readonly m3: SessionView['arbitration'];
+  /** FIELD TEST P0 — Cross-training / HYROX : bloc d'entraînement (`FULL_SESSION_COMPOSITION_UNRESOLVED`) ou séance complète. */
+  readonly composition: CompositionScope | null;
 }
 
 const recordOf = (r: Req): SessionRecord | null => {
@@ -159,7 +168,7 @@ export function selectBetaJournal(state: AppState): readonly BetaJournalEntry[] 
         execution: executionOf(log), feedback: log?.field ?? null,
         quality: r.quality ? { verdict: r.quality.verdict, criteria: [...r.quality.criteria] } : null,
         refusal: v.notPlanned ? { category: v.notPlanned.category, reasonCode: v.notPlanned.reason?.code ?? null } : null,
-        m3: v.arbitration,
+        m3: v.arbitration, composition: v.composition,
       };
     });
   });
@@ -170,12 +179,16 @@ export interface FieldHistoryEntry extends HistoryEntry {
   readonly manual: boolean;
   readonly durationS: number | null;
   readonly feedback: FieldFeedback | null;
+  /** FIELD TEST P0 — bloc d'entraînement ou séance complète (Cross-training / HYROX), sinon null. */
+  readonly composition: CompositionScope | null;
 }
 export function selectFieldHistory(state: AppState): readonly FieldHistoryEntry[] {
   const results = state.programmeState?.results ?? [];
+  const requests = new Map(Object.values(state.planner.weeks).flatMap((w) => w.requests.map((r) => [r.requestId, r] as const)));
   return selectHistory(state).map((e) => ({
     ...e, manual: results.some((r) => r.requestId === e.requestId && r.provenance === 'manual_from_unplaced'),
     durationS: realDurationS(executionOf(state.programmeLogs[e.requestId])), feedback: state.programmeLogs[e.requestId]?.field ?? null,
+    composition: requests.get(e.requestId) ? compositionScopeOf(requests.get(e.requestId) as Req) : null,
   }));
 }
 
@@ -215,6 +228,8 @@ export function exportBetaJournal(state: AppState, meta: BetaJournalMeta): strin
 const DIFFICULTY_TEXT: Readonly<Record<string, string>> = { very_easy: 'très facile', easy: 'facile', adapted: 'adaptée', hard: 'difficile', very_hard: 'très difficile' };
 const TOLERANCE_TEXT: Readonly<Record<string, string>> = { good: 'bonne', medium: 'moyenne', poor: 'mauvaise' };
 const DURATION_TEXT: Readonly<Record<string, string>> = { too_short: 'trop courte', adapted: 'adaptée', too_long: 'trop longue' };
+const CONTENT_TEXT: Readonly<Record<string, string>> = { much_too_short: 'beaucoup trop court', too_short: 'trop court', adapted: 'adapté', too_long: 'trop long', much_too_long: 'beaucoup trop long' };
+const FULL_TEXT: Readonly<Record<string, string>> = { very_insufficient: 'très insuffisant', insufficient: 'insuffisant', adapted: 'adapté', too_loaded: 'trop chargé' };
 /** Retour terrain en texte lisible (libellés de l'utilisateur, aucune interprétation). */
 export function fieldFeedbackText(f: FieldFeedback | null): string | null {
   if (!f) return null;
@@ -222,6 +237,8 @@ export function fieldFeedbackText(f: FieldFeedback | null): string | null {
     f.difficulty ? `difficulté ${DIFFICULTY_TEXT[f.difficulty] ?? f.difficulty}` : null,
     f.tolerance ? `tolérance ${TOLERANCE_TEXT[f.tolerance] ?? f.tolerance}` : null,
     f.perceivedDuration ? `durée ${DURATION_TEXT[f.perceivedDuration] ?? f.perceivedDuration}` : null,
+    f.contentAmount ? `contenu ${CONTENT_TEXT[f.contentAmount] ?? f.contentAmount}` : null,
+    f.fullSessionAdequacy ? `pour une séance complète : ${FULL_TEXT[f.fullSessionAdequacy] ?? f.fullSessionAdequacy}` : null,
     f.comment ? `« ${f.comment} »` : null,
   ].filter(Boolean).join(' · ');
 }
@@ -235,6 +252,7 @@ export function betaJournalText(state: AppState, meta: BetaJournalMeta): string 
     lines.push(head);
     if (e.prescription) lines.push(`  prescription : ${[e.prescription.ctFormat, e.prescription.hrTimeCapS !== null ? `time cap ${mmss(e.prescription.hrTimeCapS)}` : null, e.prescription.estimatedDurationS !== null ? `≈ ${mmss(e.prescription.estimatedDurationS)}` : e.prescription.targetDurationS !== null ? `cible ${mmss(e.prescription.targetDurationS)}` : null, e.prescription.exercises.join(' + ')].filter(Boolean).join(' · ')}`);
     if (e.execution) lines.push(`  exécution : ${e.execution.completion ?? 'en cours'} · durée réelle ${mmss(realDurationS(e.execution))}${e.execution.pain ? ' · DOULEUR' : ''}${e.execution.ctResult ? ` · résultat ${JSON.stringify(e.execution.ctResult)}` : ''}${e.execution.hrResult ? ` · résultat ${JSON.stringify(e.execution.hrResult)}` : ''}`);
+    if (e.composition?.status) lines.push(`  composition : ${e.composition.scope} · ${e.composition.status}${e.composition.notGenerated.length > 0 ? ` (non générés : ${e.composition.notGenerated.join(', ')})` : ''}`);
     if (e.feedback) lines.push(`  retour terrain : ${fieldFeedbackText(e.feedback) ?? ''}`);
     if (e.quality) lines.push(`  qualité Q1 : ${e.quality.verdict}`);
     if (e.refusal) lines.push(`  non placée / refus : ${e.refusal.category}${e.refusal.reasonCode ? ` (${e.refusal.reasonCode})` : ''}`);

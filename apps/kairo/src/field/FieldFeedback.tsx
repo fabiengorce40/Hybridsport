@@ -9,6 +9,8 @@ import { useStore } from '../store.js';
 
 const DIFFICULTY: readonly [NonNullable<FieldFeedbackInput['difficulty']>, string][] = [['very_easy', 'Très facile'], ['easy', 'Facile'], ['adapted', 'Adaptée'], ['hard', 'Difficile'], ['very_hard', 'Très difficile']];
 const TOLERANCE: readonly [NonNullable<FieldFeedbackInput['tolerance']>, string][] = [['good', 'Bonne'], ['medium', 'Moyenne'], ['poor', 'Mauvaise']];
+const CONTENT: readonly [NonNullable<FieldFeedbackInput['contentAmount']>, string][] = [['much_too_short', 'Beaucoup trop court'], ['too_short', 'Trop court'], ['adapted', 'Adapté'], ['too_long', 'Trop long'], ['much_too_long', 'Beaucoup trop long']];
+const FULL: readonly [NonNullable<FieldFeedbackInput['fullSessionAdequacy']>, string][] = [['very_insufficient', 'Très insuffisant'], ['insufficient', 'Insuffisant'], ['adapted', 'Adapté'], ['too_loaded', 'Trop chargé']];
 const DURATION: readonly [NonNullable<FieldFeedbackInput['perceivedDuration']>, string][] = [['too_short', 'Trop courte'], ['adapted', 'Adaptée'], ['too_long', 'Trop longue']];
 
 function Choices<T extends string>({ label, options, value, onChange }: { label: string; options: readonly [T, string][]; value: T | undefined; onChange: (v: T | undefined) => void }) {
@@ -24,7 +26,7 @@ function Choices<T extends string>({ label, options, value, onChange }: { label:
   );
 }
 
-export function FieldFeedbackCard({ requestId, pain }: { requestId: string; pain: boolean }) {
+export function FieldFeedbackCard({ requestId, pain, block = false }: { requestId: string; pain: boolean; block?: boolean }) {
   const store = useStore();
   const saved = fieldFeedbackOf(store.state, requestId);
   const [f, setF] = useState<FieldFeedbackInput>({});
@@ -39,14 +41,20 @@ export function FieldFeedbackCard({ requestId, pain }: { requestId: string; pain
     );
   }
   if (skipped) return null;
-  const empty = f.difficulty === undefined && f.tolerance === undefined && f.perceivedDuration === undefined && (f.comment ?? '').trim() === '';
+  const empty = [f.difficulty, f.tolerance, f.perceivedDuration, f.contentAmount, f.fullSessionAdequacy].every((x) => x === undefined) && (f.comment ?? '').trim() === '';
   return (
     <div className="card" aria-label="Retour terrain" data-field-feedback="form">
       <strong>Votre retour terrain</strong>
       <span className="tiny muted">Facultatif. Ces observations servent au test terrain : elles ne modifient pas vos séances.</span>
       <Choices label="Difficulté ressentie" options={DIFFICULTY} value={f.difficulty} onChange={(difficulty) => setF({ ...f, difficulty })} />
       <Choices label="Tolérance" options={TOLERANCE} value={f.tolerance} onChange={(tolerance) => setF({ ...f, tolerance })} />
-      <Choices label="La durée de la séance vous a semblé" options={DURATION} value={f.perceivedDuration} onChange={(perceivedDuration) => setF({ ...f, perceivedDuration })} />
+      {block ? (
+        <>
+          {/* Bloc Cross-training / HYROX : le contenu prescrit n'est pas une séance complète (FIELD TEST P0). */}
+          <Choices label="Ce contenu vous a semblé" options={CONTENT} value={f.contentAmount} onChange={(contentAmount) => setF({ ...f, contentAmount })} />
+          <Choices label="Pour une séance complète, le contenu vous a semblé" options={FULL} value={f.fullSessionAdequacy} onChange={(fullSessionAdequacy) => setF({ ...f, fullSessionAdequacy })} />
+        </>
+      ) : <Choices label="La durée de la séance vous a semblé" options={DURATION} value={f.perceivedDuration} onChange={(perceivedDuration) => setF({ ...f, perceivedDuration })} />}
       <div className="small">Douleur : {pain ? 'signalée à la fin de la séance' : 'aucune signalée'}</div>
       <label className="field">Commentaire (facultatif)
         <textarea rows={3} maxLength={FIELD_COMMENT_MAX} value={f.comment ?? ''} onChange={(e) => setF({ ...f, comment: e.target.value })} placeholder="Ce qui vous a semblé étrange, trop dur, trop facile…" />

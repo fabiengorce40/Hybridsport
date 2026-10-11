@@ -269,3 +269,7 @@ details summary { cursor: pointer; min-height: 32px; display: flex; align-items:
 .field-chips { display: flex; flex-wrap: wrap; gap: 8px; }
 .field-chips .chip { min-height: 44px; }
 .field-after { padding: 0 var(--space-4) calc(var(--space-6, 24px) + env(safe-area-inset-bottom)); display: flex; flex-direction: column; gap: var(--space-3); }
+
+/* FIELD TEST P0 — bloc d'entraînement (pas une séance complète) : mention explicite, lisible, sans alarme. */
+.k-block-note { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: var(--radius-md); border: 1px dashed var(--border-strong); font-size: 13px; line-height: 1.4; color: var(--text-2); }
+.k-block-note strong { color: var(--text-1, inherit); font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
