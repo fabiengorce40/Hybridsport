@@ -339,6 +339,13 @@ export interface SessionView {
   readonly quality: QualityView | null;
   /** FIELD TEST P0 — Cross-training / HYROX : bloc d'entraînement ou séance complète (null : autres sports, non prescrite). */
   readonly composition: CompositionScope | null;
+  /**
+   * Répétition SIGNALÉE par le moteur (C3 / H2 `*_REPEAT_UNAVOIDABLE` : séance identique à une séance récente, aucune
+   * alternative dans les règles actuelles). Lecture de la trace persistée ; jamais corrigée ici.
+   */
+  readonly repeatFlagged: boolean;
+  /** Strength : exercices du bloc PRINCIPAL prescrit (identifiants, ordre de la prescription) ; vide sinon. */
+  readonly mainExercises: readonly string[];
 }
 /**
  * FIELD TEST P0 — PORTÉE réelle de la prescription Cross-training / HYROX, lue dans le contrat persisté (jamais déduite
@@ -448,6 +455,14 @@ function arbitrationOf(r: PersistedWeek['requests'][number], sportOf: (id: strin
   return c ? { kind: 'conflict', fromDate: null, withSport: sportOf(String(c.params.withRequestId)) } : null;
 }
 
+const REPEAT_FLAGGED = /^PLAN\.(CROSSTRAINING\.C3|HYROX\.H2)_REPEAT_UNAVOIDABLE$/;
+/** Exercices des blocs de travail (hors échauffement et retour au calme), tels que prescrits. */
+function mainExercisesOf(session: unknown): string[] {
+  const blocks = (session as { blocks?: { kind?: unknown; items?: { exerciseId?: unknown }[] }[] } | undefined)?.blocks;
+  return (blocks ?? []).filter((b) => b.kind !== 'warmup' && b.kind !== 'cooldown')
+    .flatMap((b) => (b.items ?? []).map((i) => i.exerciseId)).filter((x): x is string => typeof x === 'string');
+}
+
 export function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResult | undefined, sportOf: (id: string) => Sport | null = () => null): SessionView {
   const data = r.record?.data as { session?: { targetDurationS?: unknown; blocks?: { kind?: unknown; format?: unknown; items?: { prescription?: { type?: unknown; rounds?: unknown } }[] }[] }; durationEstimate?: { availability?: unknown; p50?: unknown } } | undefined;
   const composition = r.reasons.find((x) => x.code === 'PLAN.WEEK_COMPOSITION')?.params;
@@ -476,6 +491,8 @@ export function sessionView(r: PersistedWeek['requests'][number], result: Progra
     manual,
     quality: prescribed ? qualityViewOf(r.quality) : null,
     composition: prescribed ? compositionScopeOf(r) : null,
+    repeatFlagged: prescribed && r.reasons.some((x) => REPEAT_FLAGGED.test(x.code)),
+    mainExercises: prescribed && r.sport === 'strength' ? mainExercisesOf(session) : [],
   };
 }
 

@@ -1,5 +1,5 @@
 /** Lectures et composants communs Beta 0 (présentation uniquement : projection de `selectBeta0Week`). */
-import { approxMinutes, selectBeta0Week } from '@hybridsport/app-core';
+import { approxMinutes, exerciseLabel, selectBeta0Week } from '@hybridsport/app-core';
 import type { AppState, Beta0WeekView, SessionView } from '@hybridsport/app-core';
 import { manualStartAssessment, startProgrammeSession } from '@hybridsport/app-core';
 import { arbitrationText, ctFormatName, isTest, manualStartText, notPlannedText, qualityShortText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
@@ -17,6 +17,9 @@ export interface DayItemView { readonly date: string; readonly sessions: readonl
  * d'interface « en cours » (séance commencée). Les jours (`days`) viennent du selector : une séance n'apparaît sur un
  * jour que si elle y est réellement placée.
  */
+// technical-constant: nombre d'exercices principaux affichés sur une carte (lisibilité mobile)
+const MAIN_SHOWN = 3;
+
 export function weekOf(state: AppState, today: string): (Omit<Beta0WeekView, 'days'> & { readonly items: readonly SessionItemView[]; readonly days: readonly DayItemView[] }) | null {
   const v = selectBeta0Week(state, today);
   if (!v) return null;
@@ -86,6 +89,9 @@ export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemV
         {[metaOf(v), v.pain ? 'douleur signalée' : null].filter(Boolean).join(' · ')}
       </div>
       {isBlock(v.composition) && <div className="tiny muted" data-block-scope="TRAINING_BLOCK">{blockCardText}</div>}
+      {/* Strength : exercices principaux réellement prescrits (la variété A/B n'est pas masquée par le seul titre). */}
+      {v.mainExercises.length > 0 && <div className="tiny muted" data-main-exercises>{v.mainExercises.slice(0, MAIN_SHOWN).map((x) => exerciseLabel(x)).join(' · ')}{v.mainExercises.length > MAIN_SHOWN ? ' …' : ''}</div>}
+      {v.repeatFlagged && <div className="tiny" data-repeat-flagged>Identique à une séance récente : le moteur ne dispose pas d’autre option avec les règles actuelles.</div>}
       {v.arbitration && <div className="tiny muted" data-m3={v.arbitration.kind}>{arbitrationText(v, formatDate)}</div>}
       {qualityShortText(v.quality?.verdict) && <div className="tiny muted" data-quality={v.quality?.verdict}>{qualityShortText(v.quality?.verdict)}</div>}
     </button>
