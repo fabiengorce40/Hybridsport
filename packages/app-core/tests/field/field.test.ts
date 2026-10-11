@@ -6,7 +6,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  betaJournalText, decodeState, ensureBeta0Week, exportBetaJournal, exportState, FIELD_COMMENT_MAX, finishProgrammeSession, recordFieldFeedback,
+  betaJournalText, compositionScopeOf, ctWorkoutOf, selectProgrammeSession, decodeState, ensureBeta0Week, exportBetaJournal, exportState, FIELD_COMMENT_MAX, finishProgrammeSession, recordFieldFeedback,
   recreateBeta0Programme, selectBetaJournal, selectFieldHistory, startProgrammeSession, zAppState,
 } from '../../src/index.js';
 import type { AppState, FieldFeedbackInput } from '../../src/index.js';
@@ -126,9 +126,11 @@ describe('FIELD TEST — retour terrain (adversarial)', () => {
     let s = create(FOUR);
     const i = ids(s);
     expect(i.unplaced).not.toBe('');
-    s = finish(s, i.unplaced, { completion: 'completed_as_prescribed', pain: false, run: { realizedDurationS: 1500 } }, ['18:00', '18:30']);
-    const e = selectBetaJournal(fb(s, i.unplaced, { difficulty: 'easy' })).find((x) => x.requestId === i.unplaced);
-    expect(e).toMatchObject({ placement: 'composed_unplaced', provenance: 'manual_from_unplaced', date: '2026-10-05' });
+    // P0 — réalisée un jour sans conflit d'interférence gouverné (samedi) : le lundi est refusé (Musculation le même jour).
+    const sat = (h: string) => at(`2026-10-10T${h}:00.000Z`);
+    s = finishProgrammeSession(startProgrammeSession(s, sat('18:00'), i.unplaced), sat('18:30'), { requestId: i.unplaced, completion: 'completed_as_prescribed', pain: false, run: { realizedDurationS: 1500 } });
+    const e = selectBetaJournal(recordFieldFeedback(s, sat('19:00'), i.unplaced, { difficulty: 'easy' })).find((x) => x.requestId === i.unplaced);
+    expect(e).toMatchObject({ placement: 'composed_unplaced', provenance: 'manual_from_unplaced', date: '2026-10-10' });
     expect(e?.refusal?.category).toBeDefined();
     expect(Object.values(s.planner.weeks).flatMap((w) => w.requests).find((r) => r.requestId === i.unplaced)?.status).toBe('unplaced');
     expect(selectFieldHistory(s).find((x) => x.requestId === i.unplaced)?.manual).toBe(true);
@@ -211,10 +213,10 @@ describe('FIELD TEST P0 — un bloc n’est pas une séance complète', () => {
   const view = (id: string) => week(s0)?.sessions.find((x) => x.requestId === id);
 
   it('P0-1. Cross-training C3 : bloc principal seul, échauffement non généré ⇒ TRAINING_BLOCK (lu dans le contrat persisté)', () => {
-    expect(view(i.ct)?.composition).toEqual({ scope: 'TRAINING_BLOCK', notGenerated: ['warmup'], status: 'FULL_SESSION_COMPOSITION_UNRESOLVED' });
+    expect(view(i.ct)?.composition).toMatchObject({ scope: 'TRAINING_BLOCK', notGenerated: ['warmup'], status: 'FULL_SESSION_COMPOSITION_UNRESOLVED' });
   });
   it('P0-2. HYROX H2 : bloc spécifique seul, échauffement et retour au calme non générés ⇒ TRAINING_BLOCK', () => {
-    expect(view(i.hyrox)?.composition).toEqual({ scope: 'TRAINING_BLOCK', notGenerated: ['warmup', 'cooldown'], status: 'FULL_SESSION_COMPOSITION_UNRESOLVED' });
+    expect(view(i.hyrox)?.composition).toMatchObject({ scope: 'TRAINING_BLOCK', notGenerated: ['warmup', 'cooldown'], status: 'FULL_SESSION_COMPOSITION_UNRESOLVED' });
   });
   it('P0-3. séance non placée (composée) : même portée ; Strength et Running : non concernés (null)', () => {
     expect(view(i.strength)?.composition).toBeNull();
@@ -250,5 +252,20 @@ describe('FIELD TEST P0 — un bloc n’est pas une séance complète', () => {
     const next = ensureBeta0Week(s, at(MON2));
     const ref = ensureBeta0Week(finish(s0, i.ct, { completion: 'abandoned', pain: false }), at(MON2));
     expect(next.planner.weeks['2026-10-12']).toEqual(ref.planner.weeks['2026-10-12']);
+  });
+  it('P0-9. trois durées DISTINCTES : bloc prescrit < cible < disponible ; aucune assimilée ni remplie', () => {
+    for (const x of [view(i.ct), view(i.hyrox)]) {
+      const c = x?.composition;
+      expect(c?.blockDurationS).toBeGreaterThan(0);
+      expect(c?.availableTimeS).toBe(3600);
+      expect(c?.targetDurationS).toBeLessThanOrEqual(3600);
+      expect(c?.blockDurationS ?? Infinity).toBeLessThan(c?.targetDurationS ?? 0);
+    }
+    expect(view(i.ct)?.composition?.blockDurationS).toBe(selectProgrammeSession(s0, i.ct) ? ctWorkoutOf((selectProgrammeSession(s0, i.ct) as NonNullable<ReturnType<typeof selectProgrammeSession>>).session)?.totalS : -1);
+    expect(view(i.hyrox)?.composition?.blockDurationS).toBe(view(i.hyrox)?.hrTimeCapS);
+  });
+  it('P0-10. ancienne donnée sans prescription lisible : portée bloc, durées nulles (jamais inventées)', () => {
+    expect(compositionScopeOf({ sport: 'crosstraining', reasons: [] })).toEqual({ scope: 'TRAINING_BLOCK', notGenerated: [], status: 'FULL_SESSION_COMPOSITION_UNRESOLVED', blockDurationS: null, availableTimeS: null, targetDurationS: null });
+    expect(compositionScopeOf({ sport: 'strength', reasons: [] })).toBeNull();
   });
 });

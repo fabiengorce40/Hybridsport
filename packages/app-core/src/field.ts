@@ -134,7 +134,8 @@ export interface BetaJournalEntry {
   /** M3 — arbitrage lisible (déplacement, échange, recomposition, conflit restant). */
   readonly m3: SessionView['arbitration'];
   /** FIELD TEST P0 — Cross-training / HYROX : bloc d'entraînement (`FULL_SESSION_COMPOSITION_UNRESOLVED`) ou séance complète. */
-  readonly composition: CompositionScope | null;
+  readonly composition: CompositionScope | null;  /** Répétition signalée par le moteur (séance identique à une séance récente, aucune alternative). */
+  readonly repeatFlagged: boolean;
 }
 
 const recordOf = (r: Req): SessionRecord | null => {
@@ -168,7 +169,7 @@ export function selectBetaJournal(state: AppState): readonly BetaJournalEntry[] 
         execution: executionOf(log), feedback: log?.field ?? null,
         quality: r.quality ? { verdict: r.quality.verdict, criteria: [...r.quality.criteria] } : null,
         refusal: v.notPlanned ? { category: v.notPlanned.category, reasonCode: v.notPlanned.reason?.code ?? null } : null,
-        m3: v.arbitration, composition: v.composition,
+        m3: v.arbitration, composition: v.composition, repeatFlagged: v.repeatFlagged,
       };
     });
   });
@@ -253,6 +254,7 @@ export function betaJournalText(state: AppState, meta: BetaJournalMeta): string 
     if (e.prescription) lines.push(`  prescription : ${[e.prescription.ctFormat, e.prescription.hrTimeCapS !== null ? `time cap ${mmss(e.prescription.hrTimeCapS)}` : null, e.prescription.estimatedDurationS !== null ? `≈ ${mmss(e.prescription.estimatedDurationS)}` : e.prescription.targetDurationS !== null ? `cible ${mmss(e.prescription.targetDurationS)}` : null, e.prescription.exercises.join(' + ')].filter(Boolean).join(' · ')}`);
     if (e.execution) lines.push(`  exécution : ${e.execution.completion ?? 'en cours'} · durée réelle ${mmss(realDurationS(e.execution))}${e.execution.pain ? ' · DOULEUR' : ''}${e.execution.ctResult ? ` · résultat ${JSON.stringify(e.execution.ctResult)}` : ''}${e.execution.hrResult ? ` · résultat ${JSON.stringify(e.execution.hrResult)}` : ''}`);
     if (e.composition?.status) lines.push(`  composition : ${e.composition.scope} · ${e.composition.status}${e.composition.notGenerated.length > 0 ? ` (non générés : ${e.composition.notGenerated.join(', ')})` : ''}`);
+    if (e.repeatFlagged) lines.push('  répétition signalée par le moteur (REPEAT_UNAVOIDABLE)');
     if (e.feedback) lines.push(`  retour terrain : ${fieldFeedbackText(e.feedback) ?? ''}`);
     if (e.quality) lines.push(`  qualité Q1 : ${e.quality.verdict}`);
     if (e.refusal) lines.push(`  non placée / refus : ${e.refusal.category}${e.refusal.reasonCode ? ` (${e.refusal.reasonCode})` : ''}`);

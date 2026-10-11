@@ -104,6 +104,18 @@ export function qualityVerdictText(verdict: NonNullable<SessionView['quality']>[
   if (verdict === 'ACCEPTABLE_WITH_WARNINGS') return 'Qualité : cohérence vérifiée, point à surveiller.';
   return null;
 }
+/** Démarrage refusé (séance planifiée ou « Faire maintenant ») : raison lisible (aucun code). */
+const OTHER_SPORT: Readonly<Record<string, string>> = { strength: 'de musculation', running: 'de course', crosstraining: 'de cross-training', hyrox: 'HYROX' };
+export function manualStartText(a: { readonly cause: string | null; readonly conflicts: readonly { readonly withSport: string }[] }): string | null {
+  if (a.cause === 'INTERFERENCE') {
+    const with_ = [...new Set(a.conflicts.map((c) => OTHER_SPORT[c.withSport] ?? ''))].filter(Boolean);
+    return `Pas aujourd’hui : trop proche d’une séance ${with_.length > 0 ? with_.join(' et ') : 'd’une autre discipline'} qui sollicite les mêmes zones du corps. Réessayez un autre jour de la semaine.`;
+  }
+  if (a.cause === 'ACTIVE_PAIN') return 'Indisponible pendant la pause douleur : aucune nouvelle séance tant qu’elle n’est pas levée dans les réglages.';
+  if (a.cause === 'OUTSIDE_WEEK') return 'Cette séance appartient à une autre semaine.';
+  if (a.cause === 'QUALITY_BLOCKED') return 'Séance non réalisable : prescription incohérente.';
+  return null;
+}
 /** M3.1 — séance COMPOSÉE MAIS NON PLACÉE : cause lisible (jamais un code). */
 export function unplacedText(v: SessionView): string {
   const cause = v.unplacedCause === 'week_full'
@@ -129,7 +141,7 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   EXECUTION_STRENGTH_INCOMPLETE: 'Toutes les séries n’ont pas été validées : choisissez « J’ai adapté la séance ».',
   EXECUTION_RUN_DETAILS_REQUIRED: 'Indiquez la durée réellement courue.',
   EXECUTION_DUPLICATE: 'Cette séance est déjà enregistrée.',
-  SAFETY_PAUSE_ACTIVE_PAIN: 'La planification est suspendue : une douleur a été signalée.',
+  SAFETY_PAUSE_ACTIVE_PAIN: 'Pause douleur active : planification et nouvelles séances suspendues. Levez la pause dans les réglages quand la douleur a disparu.',
   PROGRAMME_WEEK_NOT_PLANNABLE: 'Cette semaine ne peut pas être planifiée pour le moment.',
   BETA0_SPORT_UNSUPPORTED: 'Seuls la musculation, la course et le Cross-training sont disponibles.',
   CT_DECLARATION_MISSING: 'Cross-training : choisissez une intention, un nombre de séances et indiquez une éventuelle coupure.',
@@ -149,6 +161,8 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   BETA_RESET_NOT_CONFIRMED: 'Recréation annulée : confirmation absente. Rien n’a été modifié.',
   BETA_RESET_NOT_ALLOWED: 'Cet outil de test n’est disponible que dans la Beta expérimentale. Rien n’a été modifié.',
   PROGRAMME_MISSING: 'Aucun programme à recréer.',
+  MANUAL_START_INTERFERENCE: 'Pas aujourd’hui : cette séance serait trop proche d’une autre séance qui sollicite les mêmes zones du corps.',
+  MANUAL_START_OUTSIDE_WEEK: 'Cette séance appartient à une autre semaine : elle ne peut plus être réalisée.',
   FIELD_FEEDBACK_SESSION_NOT_FINISHED: 'Terminez la séance avant de donner votre retour.',
   FIELD_FEEDBACK_ALREADY_RECORDED: 'Votre retour est déjà enregistré pour cette séance.',
   FIELD_FEEDBACK_EMPTY: 'Choisissez au moins une réponse ou écrivez un commentaire.',

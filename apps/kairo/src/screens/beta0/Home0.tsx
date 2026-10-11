@@ -45,6 +45,8 @@ export function Home0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo: (t
   const next = nextOf(planned, today);
   const done = planned.filter((x) => isDone(x.display)).length;
   const name = state.profile?.displayName;
+  // Pause douleur : aucune nouvelle séance (politique app-core) ; la reprise d'une séance commencée reste proposée.
+  const paused = state.safety.activePain !== null;
   const extra = (week?.items ?? []).filter((x) => x.placement === 'composed_unplaced' && (x.display === 'not_planned' || x.display === 'in_progress'));
   return (
     <div className="screen">
@@ -55,7 +57,7 @@ export function Home0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo: (t
         {next && <SessionCard0 v={next} onOpen={onOpen} highlight />}
         {next && (
           <button className="btn primary block" onClick={() => onOpen(next.requestId)}>
-            {next.display === 'in_progress' ? 'Reprendre la séance' : next.date === today ? 'Commencer la séance' : `Voir la séance de ${formatDate(next.date ?? today).split(' ')[0] ?? ''}`}
+            {next.display === 'in_progress' ? 'Reprendre la séance' : next.date === today && !paused ? 'Commencer la séance' : `Voir la séance${next.date === today ? '' : ` de ${formatDate(next.date ?? today).split(' ')[0] ?? ''}`}`}
           </button>
         )}
       </div>

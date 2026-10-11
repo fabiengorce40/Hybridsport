@@ -20,7 +20,9 @@ import type { CompositionScope } from './beta0.js';
 import type { AppState, CtRuntime, Feedback, HrRuntime, PersistedWeek, ProfileInput, ProgrammeLog, Rest, SetLog } from './model.js';
 import { hrStationsOf, hrWorkoutOf } from './hr-workout.js';
 import type { HrWorkout } from './hr-workout.js';
-import { closeProgrammeWeekInApp, planProgrammeCurrentWeek, ProgrammeError, recordSessionExecution, startProgramme } from './programme.js';
+import { closeProgrammeWeekInApp, planProgrammeCurrentWeek, portInputs, ProgrammeError, recordSessionExecution, startProgramme } from './programme.js';
+import { buildPorts, clockOf, recentOf } from './planning.js';
+import { manualPlacementConflicts } from '@hybridsport/planner';
 import { strengthWeekBoundary } from './progression.js';
 import { compactHistory } from './history.js';
 import { declareRunningPerformance } from './running-profile.js';
@@ -341,8 +343,72 @@ function openLog(state: AppState, requestId: string): ProgrammeLog {
 }
 const withLog = (state: AppState, log: ProgrammeLog): AppState => ({ ...state, programmeLogs: { ...state.programmeLogs, [log.requestId]: log } });
 
+/**
+ * Politique MÉTIER UNIQUE de démarrage d'une séance du programme (planifiée ou composée mais non placée), au jour réel.
+ * Aucun seuil médical ni sportif : seulement des garde-fous déjà existants, appliqués de façon cohérente.
+ *
+ * | contrôle                         | planifiée | non placée (« Faire maintenant ») |
+ * |----------------------------------|-----------|-----------------------------------|
+ * | reprise d'une séance commencée   | admise    | admise (jamais réévaluée)          |
+ * | qualité BLOQUÉE (Q1)             | refus     | refus                              |
+ * | pause douleur active             | refus     | refus                              |
+ * | semaine de la séance ≠ aujourd'hui | —       | refus                              |
+ * | interférence G4 au jour réel     | — (déjà appliquée au placement) | refus (même règle gouvernée) |
+ *
+ * Douleur : la pause douleur suspend déjà TOUTE planification (`assertPlanningAllowed`) ; elle interdit aussi tout
+ * NOUVEAU démarrage tant qu'elle n'est pas levée explicitement. Une séance déjà commencée reste reprise et terminée
+ * (sa saisie n'est jamais perdue) ; l'historique et les réalisations ne sont jamais modifiés.
+ * Interférence (non placée) : voisines = séances prévues de la semaine (sauf manquées), réalisations manuelles de la
+ * semaine, séances connues de la semaine précédente ; structures inconnues ou règle indisponible ⇒ refus (fail-closed).
+ */
+export interface StartAssessment {
+  readonly allowed: boolean;
+  readonly cause: 'QUALITY_BLOCKED' | 'ACTIVE_PAIN' | 'OUTSIDE_WEEK' | 'INTERFERENCE' | null;
+  readonly conflicts: readonly { readonly withSport: string; readonly withDate: string; readonly structure: string; readonly rule: string }[];
+}
+/** Nom historique (P0) : même évaluation. */
+export type ManualStartAssessment = StartAssessment;
+const START_OK: StartAssessment = { allowed: true, cause: null, conflicts: [] };
+export function startAssessment(state: AppState, clock: Clock, requestId: string, env: ProgrammeEnvironment = beta0Environment()): StartAssessment {
+  const v = selectProgrammeSession(state, requestId);
+  const refuse = (cause: NonNullable<StartAssessment['cause']>, conflicts: StartAssessment['conflicts'] = []): StartAssessment => ({ allowed: false, cause, conflicts });
+  if (!v || v.result) return START_OK;
+  if (v.quality === 'BLOCKED') return refuse('QUALITY_BLOCKED');
+  // Reprise : la séance a été démarrée quand c'était admis ; elle n'est jamais réévaluée (aucune saisie perdue).
+  if (v.log) return START_OK;
+  if (activePainPause(state)) return refuse('ACTIVE_PAIN');
+  if (v.placement !== 'composed_unplaced') return START_OK;
+  const weekStart = Object.entries(state.planner.weeks).find(([, w]) => w.requests.some((r) => r.requestId === requestId))?.[0];
+  if (weekStart !== weekStartOf(clock.today)) return refuse('OUTSIDE_WEEK');
+  const p = state.profile;
+  const ps = state.programmeState;
+  if (!p || !ps) return refuse('INTERFERENCE');
+  const results = new Map(ps.results.map((x) => [x.requestId, x]));
+  const week = state.planner.weeks[weekStart]?.requests ?? [];
+  const others = [
+    ...week.flatMap((r) => {
+      if (r.requestId === requestId) return [];
+      const x = results.get(r.requestId);
+      const session = recordOf(r)?.session;
+      if (!session) return [];
+      if (r.status === 'planned' && r.date && x?.completion !== 'missed') return [{ sport: r.sport, date: r.date, session }];
+      if (r.status === 'unplaced' && x?.provenance === 'manual_from_unplaced') return [{ sport: r.sport, date: x.date, session }];
+      return [];
+    }),
+    ...recentOf(state, p, weekStart).filter((x) => x.status !== 'missed').map((x) => ({ sport: x.sport, date: x.date, session: x.session })),
+  ];
+  const { intent, goals } = portInputs(ps);
+  const conflicts = manualPlacementConflicts({ sport: v.sport, date: clock.today, session: v.session }, others, buildPorts(state, p, intent, env, goals), env.governance, env.mode, clockOf());
+  return conflicts.length === 0 ? START_OK : refuse('INTERFERENCE', conflicts.map((c) => ({ withSport: String(c.params.withSport), withDate: String(c.params.withDate), structure: String(c.params.structure), rule: String(c.params.rule) })));
+}
+/** Nom historique (P0) : même évaluation, quel que soit le placement. */
+export const manualStartAssessment = startAssessment;
+const START_ERROR: Readonly<Record<NonNullable<StartAssessment['cause']>, string>> = {
+  QUALITY_BLOCKED: 'QUALITY_BLOCKED', ACTIVE_PAIN: 'SAFETY_PAUSE_ACTIVE_PAIN', OUTSIDE_WEEK: 'MANUAL_START_OUTSIDE_WEEK', INTERFERENCE: 'MANUAL_START_INTERFERENCE',
+};
+
 /** Démarre (ou reprend) une séance planifiée, non encore enregistrée. */
-export function startProgrammeSession(state: AppState, clock: Clock, requestId: string): AppState {
+export function startProgrammeSession(state: AppState, clock: Clock, requestId: string, env: ProgrammeEnvironment = beta0Environment()): AppState {
   const v = selectProgrammeSession(state, requestId);
   if (!v) throw new AppError('SESSION_UNAVAILABLE');
   if (v.result) throw new AppError('SESSION_FINISHED');
@@ -350,6 +416,9 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   // exécutable selon la règle produit EXISTANTE de la Beta 0 (séances provisoires acceptées explicitement au profil).
   if (v.quality === 'BLOCKED') throw new AppError('QUALITY_BLOCKED');
   if (v.log) return state;
+  // Politique unique (planifiée ou non placée) : douleur, semaine, interférence au jour réel ; refus explicite, état inchangé.
+  const a = startAssessment(state, clock, requestId, env);
+  if (!a.allowed && a.cause) throw new AppError(START_ERROR[a.cause]);
   const now = normalizeInstant(clock.now);
   // Cross-training : « Commencer » démarre le chrono (horodaté) ; tours et répétitions à zéro (saisies de l'athlète).
   const ct = v.sport === 'crosstraining' ? { ct: { runningSince: now, accumulatedS: 0, rounds: 0, partialReps: 0 } } : {};

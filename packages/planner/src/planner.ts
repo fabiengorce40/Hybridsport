@@ -62,6 +62,43 @@ interface Placed {
 
 type Applied = { readonly action: 'MOVE' | 'SWAP' | 'RECOMPOSE'; readonly from: string; readonly to: string; readonly partner?: string };
 
+type StructureWindows = ReturnType<typeof readPlannerParam<'planner.interference.structureWindows'>>;
+/**
+ * Règle G4 d'interférence (UNIQUE source : placement de la semaine ET contrôle d'une réalisation manuelle) : conflit
+ * avec chaque séance d'une AUTRE discipline partageant une structure, si l'écart est inférieur à la fenêtre gouvernée
+ * (`planner.interference.structureWindows`). Fail-closed : structures inconnues, paramètre indisponible ou structure
+ * non gouvernée ⇒ conflit explicite. Aucun seuil propre.
+ */
+function structureConflicts(sport: PlannerSport, date: string, own: StructuresResult, others: readonly { readonly sport: PlannerSport; readonly date: string; readonly structures: StructuresResult }[], windows: StructureWindows, hoursOf: (d: string) => number): ReasonCode[] {
+  const out: ReasonCode[] = [];
+  for (const p of others) {
+    if (p.sport === sport) continue;
+    const gapHours = Math.abs(hoursOf(date) - hoursOf(p.date));
+    const base = { sport, date, withSport: p.sport, withDate: p.date, gapHours };
+    if (!own.ok || !p.structures.ok) { out.push(gpReasons.emit(GP_CODES.INTERFERENCE_CONFLICT, { ...base, structure: '*', rule: 'STRUCTURES_UNAVAILABLE' })); continue; }
+    const theirs = new Set(p.structures.structures);
+    for (const s of own.structures.filter((x) => theirs.has(x))) {
+      if (!windows.ok) { out.push(gpReasons.emit(GP_CODES.INTERFERENCE_CONFLICT, { ...base, structure: s, rule: `${STRUCTURE_RULE}:UNAVAILABLE` })); continue; }
+      const required = windows.value[s];
+      if (required === undefined) out.push(gpReasons.emit(GP_CODES.INTERFERENCE_CONFLICT, { ...base, structure: s, rule: `${STRUCTURE_RULE}:UNGOVERNED_STRUCTURE` }));
+      else if (gapHours < required) out.push(gpReasons.emit(GP_CODES.INTERFERENCE_CONFLICT, { ...base, structure: s, rule: `${STRUCTURE_RULE}@${windows.version}` }));
+    }
+  }
+  return out;
+}
+
+/**
+ * P0 — interférence d'une séance RÉALISÉE MANUELLEMENT à une date réelle (séance composée mais non placée) avec les
+ * séances d'autres disciplines (semaine, réalisations récentes) : même règle G4 que le placement (`structureConflicts`),
+ * structures dérivées par le port de chaque discipline. Liste vide ⇒ aucun conflit gouverné détecté.
+ */
+export function manualPlacementConflicts(probe: { readonly sport: PlannerSport; readonly date: string; readonly session: SessionDraft }, others: readonly { readonly sport: PlannerSport; readonly date: string; readonly session: SessionDraft }[], ports: SportPorts, governance: LoadedRuleset | undefined, mode: PlannerInput['mode'], clock: PlannerClock): ReasonCode[] {
+  const windows = readPlannerParam(governance, 'planner.interference.structureWindows', mode);
+  const hoursOf = (d: string): number => Date.parse(clock.instantOf(d)) / MS_PER_HOUR;
+  const structuresOf = (sport: PlannerSport, session: SessionDraft): StructuresResult => ports[sport]?.structures(session) ?? { ok: false, reasons: [gpReasons.emit(GP_CODES.STRUCTURES_UNAVAILABLE, { sport, cause: 'ENGINE_UNAVAILABLE' })] };
+  return structureConflicts(probe.sport, probe.date, structuresOf(probe.sport, probe.session), others.map((o) => ({ sport: o.sport, date: o.date, structures: structuresOf(o.sport, o.session) })), windows, hoursOf);
+}
+
 export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governance: LoadedRuleset | undefined, clock: PlannerClock): PlannedWeek {
   const input = zPlannerInput.parse(raw);
   const hybrid = input.demands.length > 1;
@@ -87,23 +124,8 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
   const all = (): Placed[] => [...history, ...placed.values()];
 
   /** Conflits G4 d'une séance candidate avec les séances placées d'AUTRES disciplines (sauf `ignore`). */
-  const conflictsOf = (sport: PlannerSport, date: string, own: StructuresResult, ignore?: string): ReasonCode[] => {
-    const out: ReasonCode[] = [];
-    for (const p of all()) {
-      if (p.sport === sport || p.requestId === ignore) continue;
-      const gapHours = Math.abs(hoursOf(date) - hoursOf(p.date));
-      const base = { sport, date, withSport: p.sport, withDate: p.date, gapHours };
-      if (!own.ok || !p.structures.ok) { out.push(gpReasons.emit(GP_CODES.INTERFERENCE_CONFLICT, { ...base, structure: '*', rule: 'STRUCTURES_UNAVAILABLE' })); continue; }
-      const theirs = new Set(p.structures.structures);
-      for (const s of own.structures.filter((x) => theirs.has(x))) {
-        if (!windows.ok) { out.push(gpReasons.emit(GP_CODES.INTERFERENCE_CONFLICT, { ...base, structure: s, rule: `${STRUCTURE_RULE}:UNAVAILABLE` })); continue; }
-        const required = windows.value[s];
-        if (required === undefined) out.push(gpReasons.emit(GP_CODES.INTERFERENCE_CONFLICT, { ...base, structure: s, rule: `${STRUCTURE_RULE}:UNGOVERNED_STRUCTURE` }));
-        else if (gapHours < required) out.push(gpReasons.emit(GP_CODES.INTERFERENCE_CONFLICT, { ...base, structure: s, rule: `${STRUCTURE_RULE}@${windows.version}` }));
-      }
-    }
-    return out;
-  };
+  const conflictsOf = (sport: PlannerSport, date: string, own: StructuresResult, ignore?: string): ReasonCode[] =>
+    structureConflicts(sport, date, own, all().filter((p) => p.requestId !== ignore), windows, hoursOf);
 
   /** Séances de la MÊME discipline placées plus tôt dans la semaine (ordre des dates) : expositions prévues. */
   const weekOf = (sport: PlannerSport, date: string, requestId: string): WeekSession[] => [...placed.values()]

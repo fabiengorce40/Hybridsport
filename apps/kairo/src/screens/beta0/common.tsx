@@ -1,8 +1,8 @@
 /** Lectures et composants communs Beta 0 (présentation uniquement : projection de `selectBeta0Week`). */
-import { approxMinutes, selectBeta0Week } from '@hybridsport/app-core';
+import { approxMinutes, exerciseLabel, selectBeta0Week } from '@hybridsport/app-core';
 import type { AppState, Beta0WeekView, SessionView } from '@hybridsport/app-core';
-import { startProgrammeSession } from '@hybridsport/app-core';
-import { arbitrationText, ctFormatName, isTest, notPlannedText, qualityShortText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
+import { manualStartAssessment, startProgrammeSession } from '@hybridsport/app-core';
+import { arbitrationText, ctFormatName, isTest, manualStartText, notPlannedText, qualityShortText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import { blockCardText, isBlock } from '../../field/BlockScope.js';
@@ -17,6 +17,9 @@ export interface DayItemView { readonly date: string; readonly sessions: readonl
  * d'interface « en cours » (séance commencée). Les jours (`days`) viennent du selector : une séance n'apparaît sur un
  * jour que si elle y est réellement placée.
  */
+// technical-constant: nombre d'exercices principaux affichés sur une carte (lisibilité mobile)
+const MAIN_SHOWN = 3;
+
 export function weekOf(state: AppState, today: string): (Omit<Beta0WeekView, 'days'> & { readonly items: readonly SessionItemView[]; readonly days: readonly DayItemView[] }) | null {
   const v = selectBeta0Week(state, today);
   if (!v) return null;
@@ -54,7 +57,10 @@ export function ExperimentalBadge() {
  */
 function metaOf(v: SessionItemView): string {
   const block = isBlock(v.composition);
+  // Bloc Cross-training : durée PRESCRITE du format (exacte), jamais l'estimation du CORE ni la cible du créneau.
+  const blockS = block && v.sport === 'crosstraining' ? v.composition?.blockDurationS ?? null : null;
   const dur = v.hrTimeCapS !== null ? `time cap ${approxMinutes(v.hrTimeCapS)}`
+    : blockS !== null ? approxMinutes(blockS)
     : v.estimatedDurationS !== null ? `≈ ${approxMinutes(v.estimatedDurationS)}`
       : !block && v.targetDurationS !== null ? `≈ ${approxMinutes(v.targetDurationS)}` : null;
   const fmt = ctFormatName(v.ctFormat);
@@ -83,6 +89,9 @@ export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemV
         {[metaOf(v), v.pain ? 'douleur signalée' : null].filter(Boolean).join(' · ')}
       </div>
       {isBlock(v.composition) && <div className="tiny muted" data-block-scope="TRAINING_BLOCK">{blockCardText}</div>}
+      {/* Strength : exercices principaux réellement prescrits (la variété A/B n'est pas masquée par le seul titre). */}
+      {v.mainExercises.length > 0 && <div className="tiny muted" data-main-exercises>{v.mainExercises.slice(0, MAIN_SHOWN).map((x) => exerciseLabel(x)).join(' · ')}{v.mainExercises.length > MAIN_SHOWN ? ' …' : ''}</div>}
+      {v.repeatFlagged && <div className="tiny" data-repeat-flagged>Identique à une séance récente : le moteur ne dispose pas d’autre option avec les règles actuelles.</div>}
       {v.arbitration && <div className="tiny muted" data-m3={v.arbitration.kind}>{arbitrationText(v, formatDate)}</div>}
       {qualityShortText(v.quality?.verdict) && <div className="tiny muted" data-quality={v.quality?.verdict}>{qualityShortText(v.quality?.verdict)}</div>}
     </button>
@@ -97,6 +106,8 @@ function UnplacedCard({ v, onOpen }: { v: SessionItemView; onOpen: (id: string) 
   const store = useStore();
   const name = sessionName(v.sport, v.archetypeId, v.dataError);
   const meta = metaOf(v);
+  // Séance déjà commencée (reprise) : jamais réévaluée ; sinon contrôle métier au jour réel (app-core, aucune règle ici).
+  const startable = v.display === 'in_progress' ? { allowed: true, cause: null, conflicts: [] } : manualStartAssessment(store.state, store.clock(), v.requestId);
   return (
     <div className="card" aria-label={`${sportName(v.sport)} : ${name}, non planifiée`} data-unplaced={v.requestId}>
       <div className="row between"><span className="small muted">{sportName(v.sport)}</span><StatusPill status="not_planned" /></div>
@@ -107,9 +118,10 @@ function UnplacedCard({ v, onOpen }: { v: SessionItemView; onOpen: (id: string) 
       {qualityShortText(v.quality?.verdict) && <div className="tiny muted" data-quality={v.quality?.verdict}>{qualityShortText(v.quality?.verdict)}</div>}
       <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
         <button className="btn" onClick={() => onOpen(v.requestId)}>Voir la séance</button>
-        {/* Q1 — « Faire maintenant » ne contourne jamais une qualité BLOQUÉE. */}
-        {v.quality?.verdict !== 'BLOCKED' && <button className="btn primary" onClick={() => { store.apply((s, c) => startProgrammeSession(s, c, v.requestId)); onOpen(v.requestId); }}>Faire maintenant</button>}
+        {/* Q1 / P0 — « Faire maintenant » seulement si le contrôle métier du jour réel l'autorise (qualité, douleur, semaine, interférence). */}
+        {startable.allowed && <button className="btn primary" onClick={() => { store.apply((s, c) => startProgrammeSession(s, c, v.requestId)); onOpen(v.requestId); }}>Faire maintenant</button>}
       </div>
+      {!startable.allowed && manualStartText(startable) && <div className="small" role="status" data-manual-refused={startable.cause ?? undefined}>{manualStartText(startable)}</div>}
     </div>
   );
 }

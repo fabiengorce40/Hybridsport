@@ -28,6 +28,8 @@ import { ROTATION_SIMULATION_IDS, rotationGovernance } from '../../programme/tes
 import { ctBeta0 } from '../../planner/tests/ct-beta0.js';
 import { hrBeta0 } from '../../planner/tests/hr-beta0.js';
 import { AppError } from './errors.js';
+import { ctWorkoutOf } from './ct-workout.js';
+import type { SessionDraft } from '@hybridsport/domain';
 import { addDays, daysBetween, weekStartOf } from './dates.js';
 import type { AppState, EnvironmentAuthority, PersistedWeek, Profile, Reason, Sport } from './model.js';
 import { STIMULUS_BY_GOAL } from './planner.js';
@@ -337,6 +339,13 @@ export interface SessionView {
   readonly quality: QualityView | null;
   /** FIELD TEST P0 — Cross-training / HYROX : bloc d'entraînement ou séance complète (null : autres sports, non prescrite). */
   readonly composition: CompositionScope | null;
+  /**
+   * Répétition SIGNALÉE par le moteur (C3 / H2 `*_REPEAT_UNAVOIDABLE` : séance identique à une séance récente, aucune
+   * alternative dans les règles actuelles). Lecture de la trace persistée ; jamais corrigée ici.
+   */
+  readonly repeatFlagged: boolean;
+  /** Strength : exercices du bloc PRINCIPAL prescrit (identifiants, ordre de la prescription) ; vide sinon. */
+  readonly mainExercises: readonly string[];
 }
 /**
  * FIELD TEST P0 — PORTÉE réelle de la prescription Cross-training / HYROX, lue dans le contrat persisté (jamais déduite
@@ -350,15 +359,26 @@ export interface CompositionScope {
   /** Blocs de la structure déclarée NON générés (ex. `warmup`, `cooldown`). */
   readonly notGenerated: readonly string[];
   readonly status: typeof FULL_SESSION_COMPOSITION_UNRESOLVED | null;
+  /**
+   * Trois durées DISTINCTES, jamais assimilées : durée PRESCRITE du bloc (Cross-training : durée du format ; HYROX :
+   * time cap), temps DISPONIBLE du créneau (plafond), durée CIBLE transmise au moteur. Null si illisible.
+   */
+  readonly blockDurationS: number | null;
+  readonly availableTimeS: number | null;
+  readonly targetDurationS: number | null;
 }
 const NOT_GENERATED = /^PLAN\.(CROSSTRAINING\.C3|HYROX\.H2)_BLOCK_NOT_GENERATED$/;
 const STRUCTURE_TRACED = /^PLAN\.(CROSSTRAINING\.C3_STRUCTURE|HYROX\.H2_SESSION_STRUCTURE)$/;
-export function compositionScopeOf(r: Pick<PersistedWeek['requests'][number], 'sport' | 'reasons'>): CompositionScope | null {
+export function compositionScopeOf(r: Pick<PersistedWeek['requests'][number], 'sport' | 'reasons'> & { readonly record?: PersistedWeek['requests'][number]['record'] }): CompositionScope | null {
   if (r.sport !== 'crosstraining' && r.sport !== 'hyrox') return null;
   const notGenerated = r.reasons.filter((x) => NOT_GENERATED.test(x.code)).map((x) => String(x.params.kind));
   const traced = r.reasons.some((x) => STRUCTURE_TRACED.test(x.code));
-  if (traced && notGenerated.length === 0) return { scope: 'FULL_SESSION', notGenerated: [], status: null };
-  return { scope: 'TRAINING_BLOCK', notGenerated, status: FULL_SESSION_COMPOSITION_UNRESOLVED };
+  const session = (r.record?.data as { session?: SessionDraft } | undefined)?.session;
+  const num = (x: unknown): number | null => (typeof x === 'number' && Number.isFinite(x) ? x : null);
+  const blockDurationS = !session ? null : r.sport === 'crosstraining' ? ctWorkoutOf(session)?.totalS ?? null : num((session.blocks[0] as { timeCapS?: unknown } | undefined)?.timeCapS);
+  const durations = { blockDurationS, availableTimeS: num(session?.availableTimeS), targetDurationS: num(session?.targetDurationS) };
+  if (traced && notGenerated.length === 0) return { scope: 'FULL_SESSION', notGenerated: [], status: null, ...durations };
+  return { scope: 'TRAINING_BLOCK', notGenerated, status: FULL_SESSION_COMPOSITION_UNRESOLVED, ...durations };
 }
 
 export interface QualityView { readonly verdict: 'ACCEPTABLE' | 'ACCEPTABLE_WITH_WARNINGS' | 'BLOCKED' | 'UNRESOLVED'; readonly unproven: number; readonly warnings: number; readonly blocked: number }
@@ -435,6 +455,14 @@ function arbitrationOf(r: PersistedWeek['requests'][number], sportOf: (id: strin
   return c ? { kind: 'conflict', fromDate: null, withSport: sportOf(String(c.params.withRequestId)) } : null;
 }
 
+const REPEAT_FLAGGED = /^PLAN\.(CROSSTRAINING\.C3|HYROX\.H2)_REPEAT_UNAVOIDABLE$/;
+/** Exercices des blocs de travail (hors échauffement et retour au calme), tels que prescrits. */
+function mainExercisesOf(session: unknown): string[] {
+  const blocks = (session as { blocks?: { kind?: unknown; items?: { exerciseId?: unknown }[] }[] } | undefined)?.blocks;
+  return (blocks ?? []).filter((b) => b.kind !== 'warmup' && b.kind !== 'cooldown')
+    .flatMap((b) => (b.items ?? []).map((i) => i.exerciseId)).filter((x): x is string => typeof x === 'string');
+}
+
 export function sessionView(r: PersistedWeek['requests'][number], result: ProgrammeResult | undefined, sportOf: (id: string) => Sport | null = () => null): SessionView {
   const data = r.record?.data as { session?: { targetDurationS?: unknown; blocks?: { kind?: unknown; format?: unknown; items?: { prescription?: { type?: unknown; rounds?: unknown } }[] }[] }; durationEstimate?: { availability?: unknown; p50?: unknown } } | undefined;
   const composition = r.reasons.find((x) => x.code === 'PLAN.WEEK_COMPOSITION')?.params;
@@ -463,6 +491,8 @@ export function sessionView(r: PersistedWeek['requests'][number], result: Progra
     manual,
     quality: prescribed ? qualityViewOf(r.quality) : null,
     composition: prescribed ? compositionScopeOf(r) : null,
+    repeatFlagged: prescribed && r.reasons.some((x) => REPEAT_FLAGGED.test(x.code)),
+    mainExercises: prescribed && r.sport === 'strength' ? mainExercisesOf(session) : [],
   };
 }
 
