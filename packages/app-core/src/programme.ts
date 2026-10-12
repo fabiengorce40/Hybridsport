@@ -5,6 +5,7 @@
  * contrats existants (course réalisée, référence TEST, empreintes, douleur).
  */
 import type { FingerprintHistoryEntry, PainLevel, ReasonCode, SessionRecord } from '@hybridsport/domain';
+import { applySwaps } from './equipment.js';
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { LoadedRuleset } from '@hybridsport/engine';
 import { PG_CODES, closeProgrammeWeek, createProgramme, pgReasons, planProgrammeWeek, recordProgrammeResult, requestIntent, weekIndexOf } from '@hybridsport/programme';
@@ -185,10 +186,13 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
   if (manual && x.completion === 'missed') return reject('EXECUTION_UNKNOWN_SESSION');
   if (req.sport !== x.sport) return reject('EXECUTION_SPORT_MISMATCH');
   if (ps.results.some((r) => r.requestId === x.requestId)) return reject('EXECUTION_DUPLICATE', pgReasons.emit(PG_CODES.RESULT_DUPLICATE, { requestId: x.requestId }));
-  const decoded = planned.record ? migrateToCurrent<SessionRecord>(planned.record) : undefined;
+  // P0 — séance ADAPTÉE au démarrage (contrôle pré-séance) : c'est elle qui a été exécutée.
+  const adapted = state.programmeLogs[x.requestId]?.adaptation?.record;
+  const decoded = adapted ? migrateToCurrent<SessionRecord>(adapted) : planned.record ? migrateToCurrent<SessionRecord>(planned.record) : undefined;
   const record = decoded?.ok ? decoded.value : undefined;
   if (!record) return reject('EXECUTION_SESSION_UNREADABLE');
-  const session = record.session;
+  // P1 — exercices remplacés pendant la séance (matériel indisponible) : la séance EXÉCUTÉE.
+  const session = applySwaps(record.session, state.programmeLogs[x.requestId]?.swaps);
   const pained = (x.pain !== undefined && x.pain !== 'NONE') || (x.sport === 'strength' && (x.painItems?.length ?? 0) > 0);
   let s: AppState = state;
   let evidence: { history: ProgrammeState['definition']['priorities'][number]; ref: string; measurement?: string } | undefined;
@@ -297,7 +301,7 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
     s = { ...s, fingerprints: { ...s.fingerprints, [x.sport]: [...s.fingerprints[x.sport], { fingerprint: fp, at, status: 'completed', repetitionIntents: [] } as FingerprintHistoryEntry] } };
   }
   // Douleur déclarée : même règle G1 fail-closed que le chemin V0 (pause jusqu'à levée explicite).
-  if (pained) s = { ...s, safety: { activePain: { reportedAt: at, areas: [], sessionKey: x.requestId } } };
+  if (pained) s = { ...s, safety: { ...s.safety, activePain: { reportedAt: at, areas: [], sessionKey: x.requestId } } };
   return s;
 }
 

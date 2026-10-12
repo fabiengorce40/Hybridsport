@@ -15,7 +15,12 @@ afterEach(cleanup);
 const MONDAY = '2026-10-05';
 const at = (today: string, time = '07:30:00') => (): Clock => ({ today, now: `${today}T${time}.000Z` });
 const mount = (storage: MemoryStorage, clock = at(MONDAY)) => render(<StoreProvider storage={storage} clock={clock}><App /></StoreProvider>);
-const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
+const click = (name: string | RegExp) => {
+  fireEvent.click(screen.getByRole('button', { name }));
+  // P0 — démarrage : contrôle pré-séance passé sans réponse (état inconnu) ; vérifié explicitement dans precheck-dom.
+  const d = screen.queryByRole('dialog', { name: 'Avant de commencer' });
+  if (d) fireEvent.click(within(d).getByRole('button', { name: 'Passer' }));
+};
 const saved = (storage: MemoryStorage): AppState => JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}') as AppState;
 const fullGym = EQUIPMENT_PRESETS.find((p) => p.id === 'preset.full_gym')?.equipment ?? [];
 
@@ -38,6 +43,12 @@ function onboard(storage: MemoryStorage, choice: Choice) {
   click('Continuer');
   click('Continuer');
   if (choice === 'Musculation + Course') expect(screen.getByRole('radio', { name: 'Priorité Course' })).toBeTruthy();
+  if (choice !== 'Course') {
+    // P1 — aucun matériel présélectionné : création impossible tant que le lieu d'entraînement n'est pas choisi.
+    expect(screen.getByRole('button', { name: 'Créer mon programme' })).toHaveProperty('disabled', true);
+    expect(document.querySelector('[data-equipment-missing]')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Lieu d’entraînement'), { target: { value: 'preset.full_gym' } });
+  }
   click('Créer mon programme');
 }
 
@@ -68,7 +79,7 @@ describe('onboarding Beta 0 et programme', () => {
     expect(screen.getAllByText('BETA EXPÉRIMENTALE').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Commencer la séance' })).toBeTruthy();
     click('Planning');
-    expect(screen.getAllByRole('button', { name: /Musculation : Full body, Prévue/ }).length).toBe(2);
+    expect(screen.getAllByRole('button', { name: /Musculation : Full body( [A-Z])?, Prévue/ }).length).toBe(2);
     expect(screen.queryByText('str_full_body')).toBeNull();
     click('Programme');
     expect(screen.getByText(/Certaines règles de planification sont encore en cours de validation/)).toBeTruthy();
@@ -308,7 +319,7 @@ describe('séance Strength', () => {
     expect(screen.getByText(/Séance terminée/)).toBeTruthy();
     click('Retour');
     click('Planning');
-    expect(screen.getAllByRole('button', { name: /Full body, Adaptée/ })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /Full body( [A-Z])?, Adaptée/ })).toHaveLength(1);
     click('Historique');
     expect(screen.getByText(/6 × 40 kg/)).toBeTruthy();
     cleanup();

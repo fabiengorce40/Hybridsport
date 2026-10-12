@@ -1,4 +1,4 @@
-import { programmeStatusAt, weekdayIndex } from '@hybridsport/app-core';
+import { confirmEquipment, equipmentLabel, equipmentNeedsConfirmation, EQUIPMENT_PRESETS, programmeStatusAt, weekdayIndex } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate, Notice, weekdayShort } from '../../ui.js';
 import { isDone, sessionName, sportName, STATUS_LABELS } from '../../present.js';
@@ -12,6 +12,30 @@ export function PainPause({ onGo }: { onGo: () => void }) {
         <strong>La planification automatique est suspendue car une douleur a été signalée.</strong>
         <span>Consultez un professionnel de santé si elle persiste. Quand elle a disparu, levez la pause dans les réglages.</span>
         <button className="btn secondary" onClick={onGo}>Ouvrir les réglages</button>
+      </div>
+    </Notice>
+  );
+}
+
+/**
+ * P1 — profil antérieur dont le matériel n'a jamais été confirmé (ancienne présélection) : demande de confirmation,
+ * rien n'est écrasé ni replanifié ; « Modifier » ouvre l'assistant de modification du programme.
+ */
+export function EquipmentConfirm({ onEdit }: { onEdit: () => void }) {
+  const store = useStore();
+  if (!equipmentNeedsConfirmation(store.state)) return null;
+  const e = store.state.profile?.equipment;
+  const name = EQUIPMENT_PRESETS.find((x) => x.id === e?.presetId)?.name ?? 'Matériel personnalisé';
+  return (
+    <Notice tone="warn">
+      <div className="stack" data-equipment-confirm>
+        <strong>Vérifiez votre matériel</strong>
+        <span>Vos séances supposent : {name}. KAIRO ne doit jamais supposer qu’une machine est disponible.</span>
+        <details className="k-details"><summary>Matériel déclaré ({String(e?.items.length ?? 0)})</summary><p className="small" style={{ margin: 0 }}>{(e?.items ?? []).map((id) => equipmentLabel(id)).sort((a, b) => a.localeCompare(b, 'fr')).join(' · ')}</p></details>
+        <div className="row wrap">
+          <button className="btn primary" onClick={() => store.apply((s, c) => confirmEquipment(s, c))}>C’est bien mon matériel</button>
+          <button className="btn secondary" onClick={onEdit}>Modifier mon matériel</button>
+        </div>
       </div>
     </Notice>
   );
@@ -37,7 +61,7 @@ const stripSummary = (days: readonly DayItemView[]): string => {
   return marked.length > 0 ? marked.join('. ') : 'Aucune séance cette semaine.';
 };
 
-export function Home0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo: (t: 'plan' | 'settings') => void }) {
+export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) => void; onGo: (t: 'plan' | 'settings') => void; onEditProgramme?: () => void }) {
   const { state, clock } = useStore();
   const today = clock().today;
   const week = weekOf(state, today);
@@ -75,6 +99,7 @@ export function Home0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo: (t
         </div>
       )}
 
+      <EquipmentConfirm onEdit={() => onEditProgramme?.()} />
       {state.safety.activePain && <PainPause onGo={() => onGo('settings')} />}
       {week && <WeekPlanningNotice planning={week.planning} />}
 

@@ -5,9 +5,10 @@
  * EMOM (minute en cours), AMRAP (tours + répétitions), for time (chrono écoulé, time cap, tours). Résultat structuré.
  */
 import { useEffect, useState } from 'react';
-import { CT_FORMAT_LABELS, CT_INTENT_LABELS, controlCtTimer, controlRest, recordProgrammeSet, recordProgrammeSetEffort, toggleProgrammePainItem, ctClock, ctElapsedS, ctWorkoutOf, exerciseLabel, finishProgrammeSession, recordCtBlock, recordCtProgress, startProgrammeSession } from '@hybridsport/app-core';
+import { CT_FORMAT_LABELS, CT_INTENT_LABELS, controlCtTimer, controlRest, recordProgrammeSet, recordProgrammeSetEffort, reportEquipmentUnavailable, toggleProgrammePainItem, ctClock, ctElapsedS, ctWorkoutOf, exerciseLabel, finishProgrammeSession, recordCtBlock, recordCtProgress } from '@hybridsport/app-core';
 import type { C4BlockView, CtWorkout, CtWorkoutItem, FinishInput, ProgrammeSessionView, SessionDraft } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
+import { AdaptationNotice, useStartFlow } from '../precheck/PreSessionCheck.js';
 import { Notice, sessionDay, startLabel, Topbar } from '../ui.js';
 import { STATUS_LABELS } from '../present.js';
 import { BlockNotice, C4_STATUS_TEXT, FullSessionDefinition, isBlock, isFullC4 } from '../field/BlockScope.js';
@@ -225,7 +226,8 @@ function StrengthBlock({ b, v, editable }: { b: C4BlockView; v: ProgrammeSession
         <ExerciseCard key={item.id} number={k + 1} item={item} block={block} log={v.log} editable={editable} current={false}
           onRecord={(it, index, x) => store.apply((s, c) => recordProgrammeSet(s, c, v.requestId, { itemId: it.id, setIndex: index, ...x }))}
           onTogglePain={(itemId) => store.apply((s) => toggleProgrammePainItem(s, v.requestId, itemId))}
-          onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, v.requestId, itemId, setIndex, rir))} />
+          onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, v.requestId, itemId, setIndex, rir))}
+          onUnavailable={(itemId) => store.apply((s, c) => reportEquipmentUnavailable(s, c, v.requestId, itemId))} />
       ))}
       {done && <span className="k-pill done">✓ Bloc terminé</span>}
     </section>
@@ -254,6 +256,8 @@ export function ctResultText(result: Readonly<Record<string, unknown>> | null): 
 
 export function CrossTrainingWorkout({ v, onBack }: { v: ProgrammeSessionView; onBack: () => void }) {
   const store = useStore();
+  // P0 — nouveau démarrage : contrôle pré-séance (reprise : directe).
+  const flow = useStartFlow();
   const [finishing, setFinishing] = useState(false);
   const [, setTick] = useState(0);
   const w = ctWorkoutOf(v.session);
@@ -302,6 +306,7 @@ export function CrossTrainingWorkout({ v, onBack }: { v: ProgrammeSessionView; o
           {progress && <div className="tiny muted num" data-c4-progress aria-live="polite">Blocs terminés : {progress.done} / {progress.total}</div>}
           <div className="row wrap"><span className="k-pill accent">{CT_FORMAT_LABELS[w.format] ?? w.format}</span><span className="k-ct-headline num">{headline(w)}</span></div>
           <BlockNotice c={v.composition} />
+          <AdaptationNotice v={v} />
           <FullSessionDefinition c={v.composition} />
           {finished && <span className="k-pill done">✓ {STATUS_LABELS[v.result?.completion ?? 'completed_as_prescribed']}</span>}
         </header>
@@ -345,8 +350,9 @@ export function CrossTrainingWorkout({ v, onBack }: { v: ProgrammeSessionView; o
           </div>
         )}
         {editable && <button className="k-cta ghost" onClick={() => setFinishing(true)}>Terminer la séance</button>}
-        {!log && !finished && <div className="k-dock"><button className="k-cta" onClick={() => store.apply((s, c) => startProgrammeSession(s, c, v.requestId))}>{startLabel(v)}</button></div>}
+        {!log && !finished && <div className="k-dock"><button className="k-cta" onClick={() => flow.start(v.requestId)}>{startLabel(v)}</button></div>}
       </div>
+      {flow.sheet}
       {editable && <RestTimer0 rest={log.rest} now={() => store.clock().now} onAction={(a) => store.apply((s, c) => controlRest(s, c, v.requestId, a))} />}
       {finishing && editable && (
         <CtFinishSheet w={w} elapsed={elapsed} rounds0={rt.rounds} reps0={rt.partialReps} onCancel={() => setFinishing(false)} onSubmit={(f) => {

@@ -5,7 +5,7 @@
  */
 import { useState } from 'react';
 import {
-  EQUIPMENT_PRESETS, equipmentLabel, LEVEL_LABELS, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, RUNNING_LEVEL_LABELS, SPORT_LABELS, STRENGTH_GOAL_LABELS,
+  EQUIPMENT_PRESETS, equipmentLabel, strengthSupportedFrequencies, LEVEL_LABELS, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, RUNNING_LEVEL_LABELS, SPORT_LABELS, STRENGTH_GOAL_LABELS,
 } from '@hybridsport/app-core';
 import type { ProfileInput, Sport } from '@hybridsport/app-core';
 import { Notice, WEEKDAY_NAMES } from './ui.js';
@@ -15,13 +15,13 @@ const ALL_EQUIPMENT = [...new Set(EQUIPMENT_PRESETS.flatMap((p) => p.equipment))
 const SESSION_CHOICES = [1, 2, 3, 4, 5, 6];
 
 export function defaultProfile(acceptedAt: string): ProfileInput {
-  const gym = EQUIPMENT_PRESETS.find((p) => p.id === 'preset.full_gym') ?? EQUIPMENT_PRESETS[0];
+  // P1 — aucun matériel présélectionné : le lieu d'entraînement est choisi EXPLICITEMENT (jamais une machine supposée).
   return {
     displayName: '', level: 'beginner', priorities: [],
     strength: { enabled: false, goal: 'general', sessionsPerWeek: 2 },
     running: { enabled: false, population: 'P_R1', goal: 'GENERAL_RUNNING', wearable: false, sessionsPerWeek: 2, returnState: 'NONE' },
     crosstraining: { enabled: false }, hyrox: { enabled: false },
-    equipment: { presetId: gym?.id ?? '', items: [...(gym?.equipment ?? [])] },
+    equipment: { presetId: '', items: [] },
     availability: [60, 0, 60, 0, 60, 90, 0], excludedExercises: [], acceptedProvisionalAt: acceptedAt,
   };
 }
@@ -72,9 +72,11 @@ export function GoalsSection({ p, set, beta0 = false }: { p: ProfileInput; set: 
           </div>
           <label className="field">Séances par semaine
             <select value={p.strength.sessionsPerWeek} onChange={(e) => set((x) => ({ ...x, strength: { ...x.strength, sessionsPerWeek: Number(e.target.value) } }))}>
-              {SESSION_CHOICES.map((n) => <option key={n} value={n}>{n}</option>)}
+              {/* P1 — fréquences que la composition Musculation ne sait pas encore gérer : affichées, jamais proposées. */}
+              {SESSION_CHOICES.map((n) => <option key={n} value={n} disabled={!strengthSupportedFrequencies().includes(n)}>{strengthSupportedFrequencies().includes(n) ? String(n) : `${String(n)} — pas encore pris en charge`}</option>)}
             </select>
           </label>
+          {!strengthSupportedFrequencies().includes(p.strength.sessionsPerWeek) && <p className="small" role="alert" data-strength-frequency-unsupported style={{ margin: 0 }}>KAIRO ne sait pas encore composer {String(p.strength.sessionsPerWeek)} séances de musculation par semaine. Choisissez {String(Math.max(...strengthSupportedFrequencies()))} séances ou moins.</p>}
         </div>
       )}
       {p.running.enabled && (
@@ -135,19 +137,33 @@ export function AvailabilitySection({ p, set }: { p: ProfileInput; set: Setter }
   );
 }
 
+/** Un lieu d'entraînement a-t-il été choisi explicitement (préréglage connu) ? */
+export const equipmentChosen = (p: ProfileInput): boolean => EQUIPMENT_PRESETS.some((x) => x.id === p.equipment.presetId);
+/** Sports qui utilisent le matériel déclaré. */
+export const needsEquipment = (p: ProfileInput): boolean => p.strength.enabled || p.crosstraining.enabled || p.hyrox.enabled;
+
 export function EquipmentSection({ p, set }: { p: ProfileInput; set: Setter }) {
   const [open, setOpen] = useState(false);
+  const chosen = equipmentChosen(p);
   return (
-    <div className="stack-3">
+    <div className="stack-3" data-equipment-section>
       <label className="field">Lieu d’entraînement
-        <select value={p.equipment.presetId} onChange={(e) => {
+        <select value={chosen ? p.equipment.presetId : ''} onChange={(e) => {
           const preset = EQUIPMENT_PRESETS.find((x) => x.id === e.target.value);
           if (preset) set((x) => ({ ...x, equipment: { presetId: preset.id, items: [...preset.equipment] } }));
         }}>
+          <option value="" disabled>Choisissez votre lieu d’entraînement</option>
           {EQUIPMENT_PRESETS.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
         </select>
       </label>
-      <button type="button" className="btn secondary" onClick={() => setOpen(!open)}>{open ? 'Masquer le détail' : `Ajuster le matériel (${String(p.equipment.items.length)})`}</button>
+      {!chosen && <p className="small" role="status" data-equipment-missing style={{ margin: 0 }}>Aucun matériel n’est supposé : choisissez votre lieu d’entraînement, puis vérifiez la liste.</p>}
+      {chosen && (
+        <details className="k-details" data-equipment-summary>
+          <summary>Matériel supposé disponible ({String(p.equipment.items.length)}) — vérifiez chaque machine</summary>
+          <p className="small" style={{ margin: 0 }}>{p.equipment.items.map((id) => equipmentLabel(id)).sort((a, b) => a.localeCompare(b, 'fr')).join(' · ') || 'Aucun'}</p>
+        </details>
+      )}
+      {chosen && <button type="button" className="btn secondary" onClick={() => setOpen(!open)}>{open ? 'Masquer le détail' : `Ajuster le matériel (${String(p.equipment.items.length)})`}</button>}
       {open && (
         <div className="stack">
           {ALL_EQUIPMENT.map((id) => (

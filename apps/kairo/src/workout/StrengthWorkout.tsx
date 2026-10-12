@@ -27,6 +27,8 @@ export interface StrengthWorkoutProps {
   readonly onTogglePain: (itemId: string) => void;
   /** S5 — effort observé (répétitions en réserve) de la dernière série validée ; `null` = effacer (effort inconnu). */
   readonly onEffort?: (itemId: string, setIndex: number, rir: number | null) => void;
+  /** P1 — matériel indisponible : substitut validé par Strength ou refus explicite (app-core). */
+  readonly onUnavailable?: (itemId: string) => void;
 }
 
 /** Ligne de série : SÉRIE 1 · REPS · KG · ○ — la valeur réellement saisie reste toujours lisible. */
@@ -51,7 +53,7 @@ export function SetLine({ set, label, saved, editable, onRecord }: {
     <div className={`k-set ${warm ? 'warm' : ''} ${done ? 'done' : ''}`}>
       <div className="k-set-label"><b>{label}</b><span>{target}</span></div>
       <label className="k-field">
-        <input aria-label="Répétitions réalisées" inputMode="numeric" placeholder="—" value={reps} disabled={!editable || done} onChange={(e) => setReps(e.target.value.replace(/[^0-9]/g, ''))} />
+        <input aria-label="Répétitions réalisées" inputMode="numeric" placeholder={typeof set.reps === 'number' ? '—' : repsTarget(set.reps)} value={reps} disabled={!editable || done} onChange={(e) => setReps(e.target.value.replace(/[^0-9]/g, ''))} />
         <small>REPS</small>
       </label>
       <label className="k-field">
@@ -59,6 +61,7 @@ export function SetLine({ set, label, saved, editable, onRecord }: {
         <small>KG</small>
       </label>
       <button className={`k-check ${done ? 'on' : ''}`} aria-label={done ? 'Décocher la série' : 'Cocher la série'} aria-pressed={done} disabled={!editable || (!done && !valid)} onClick={toggle}>✓</button>
+      {editable && !done && repsN === undefined && <small className="k-set-hint" data-reps-required>Saisissez les répétitions réalisées pour valider la série{typeof set.reps === 'number' ? '' : ` (objectif ${repsTarget(set.reps)})`}.</small>}
     </div>
   );
 }
@@ -101,10 +104,21 @@ export function EffortRow({ name, setLabel, setIndex, itemId, target, value, edi
   );
 }
 
+/**
+ * P1 — après une série validée, la série suivante à faire est amenée au-dessus du chrono de repos flottant (marge de
+ * défilement `.k-set`), jamais laissée sous lui. Affichage seulement.
+ */
+function revealNextSet(): void {
+  requestAnimationFrame(() => {
+    const next = [...document.querySelectorAll('.k-set:not(.done)')].find((x) => x.querySelector('.k-check') !== null);
+    next?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  });
+}
+
 /** Carte exercice : nom dominant ; consignes et douleur en second plan. */
-export function ExerciseCard({ number, item, block, log, editable, current, onRecord, onTogglePain, onEffort }: {
+export function ExerciseCard({ number, item, block, log, editable, current, onRecord, onTogglePain, onEffort, onUnavailable }: {
   number: number; item: SetsItem; block: Block; log: ProgrammeSessionView['log']; editable: boolean; current: boolean;
-  onRecord: StrengthWorkoutProps['onRecord']; onTogglePain: (itemId: string) => void; onEffort?: StrengthWorkoutProps['onEffort'];
+  onRecord: StrengthWorkoutProps['onRecord']; onTogglePain: (itemId: string) => void; onEffort?: StrengthWorkoutProps['onEffort']; onUnavailable?: StrengthWorkoutProps['onUnavailable'];
 }) {
   const sets = item.prescription.sets;
   const working = sets.filter((s) => s.kind !== 'rampup');
@@ -114,6 +128,10 @@ export function ExerciseCard({ number, item, block, log, editable, current, onRe
   const saved = (i: number) => log?.sets.find((x) => x.itemId === item.id && x.setIndex === i);
   const complete = sets.every((_, i) => saved(i)?.done === true);
   const painful = log?.painItems.includes(item.id) === true;
+  // P1 — dernier remplacement de cet exercice (matériel indisponible) : substitut validé, ou refus explicite.
+  const swap = (log?.swaps ?? []).filter((x) => x.itemId === item.id).at(-1);
+  const refused = swap !== undefined && swap.substituteId === undefined;
+  const anyDone = sets.some((_, i) => saved(i)?.done === true);
   const name = exerciseLabel(item.exerciseId);
   const effort = first ? intensityLabel(first) : '';
   // Dernière série de TRAVAIL validée : celle dont l'effort est lu par le moteur.
@@ -139,8 +157,10 @@ export function ExerciseCard({ number, item, block, log, editable, current, onRe
           </div>
         </div>
       </div>
+      {swap?.substituteId && <div className="small" data-swap="substituted">Remplace {exerciseLabel(swap.fromExerciseId)} (matériel indisponible) · même séries et répétitions, charge à choisir selon l’effort indiqué.</div>}
+      {refused && <div className="small" role="status" data-swap="refused">Matériel indisponible : aucun exercice de remplacement validé par KAIRO. Passez cet exercice ; la séance sera enregistrée comme adaptée.</div>}
       <div className="k-sets">
-        {sets.map((set, i) => <SetLine key={`${item.id}.${String(i)}`} set={set} label={labels[i] ?? ''} saved={saved(i)} editable={editable} onRecord={(x) => onRecord(item, i, x)} />)}
+        {sets.map((set, i) => <SetLine key={`${item.id}.${String(i)}`} set={set} label={labels[i] ?? ''} saved={saved(i)} editable={editable} onRecord={(x) => { onRecord(item, i, x); if (x.done) revealNextSet(); }} />)}
       </div>
       {lastDone && onEffort && (editable || savedRir !== undefined) && (
         <EffortRow name={name} setLabel={labels[lastDone.i] ?? ''} setIndex={lastDone.i} itemId={item.id} target={targetRirOf(lastDone.x)} value={savedRir} editable={editable} onEffort={onEffort} />
@@ -153,7 +173,10 @@ export function ExerciseCard({ number, item, block, log, editable, current, onRe
               <ul>{notes.map((n) => <li key={n}>{n}</li>)}</ul>
             </details>
           ) : <span />}
-          {editable && <button className="k-link" aria-pressed={painful} aria-label={`Douleur sur ${name}`} onClick={() => onTogglePain(item.id)}>{painful ? 'Douleur signalée' : 'Signaler une douleur'}</button>}
+          <span className="row wrap" style={{ gap: 12 }}>
+            {editable && onUnavailable && !anyDone && !refused && <button className="k-link" aria-label={`Matériel indisponible pour ${name}`} onClick={() => onUnavailable(item.id)}>Matériel indisponible</button>}
+            {editable && <button className="k-link" aria-pressed={painful} aria-label={`Douleur sur ${name}`} onClick={() => onTogglePain(item.id)}>{painful ? 'Douleur signalée' : 'Signaler une douleur'}</button>}
+          </span>
         </div>
       )}
     </section>
@@ -179,7 +202,7 @@ function LightBlock({ block }: { block: Block }) {
   );
 }
 
-export function StrengthWorkout({ v, title, eyebrow, editable, onRecord, onTogglePain, onEffort }: StrengthWorkoutProps) {
+export function StrengthWorkout({ v, title, eyebrow, editable, onRecord, onTogglePain, onEffort, onUnavailable }: StrengthWorkoutProps) {
   const { session, log } = v;
   const main = session.blocks.filter((b) => !LIGHT_BLOCKS.includes(b.kind)).flatMap((b) => b.items.filter(isSets).map((item) => ({ block: b, item })));
   // Séries des exercices (hors échauffement / retour au calme, comme le contrat d'exécution).
@@ -218,7 +241,7 @@ export function StrengthWorkout({ v, title, eyebrow, editable, onRecord, onToggl
 
       {session.blocks.filter((b) => b.kind === 'warmup').map((b) => <LightBlock key={b.id} block={b} />)}
       {main.map(({ block, item }, k) => (
-        <ExerciseCard key={item.id} number={k + 1} item={item} block={block} log={log} editable={editable} current={k === currentIdx} onRecord={onRecord} onTogglePain={onTogglePain} {...(onEffort ? { onEffort } : {})} />
+        <ExerciseCard key={item.id} number={k + 1} item={item} block={block} log={log} editable={editable} current={k === currentIdx} onRecord={onRecord} onTogglePain={onTogglePain} {...(onEffort ? { onEffort } : {})} {...(onUnavailable ? { onUnavailable } : {})} />
       ))}
       {session.blocks.filter((b) => !LIGHT_BLOCKS.includes(b.kind)).flatMap((b) => b.items.filter((it) => !isSets(it)).map((it) => ({ b, it }))).map(({ b, it }) => <LightBlock key={it.id} block={{ ...b, items: [it] } as Block} />)}
       {session.blocks.filter((b) => b.kind === 'cooldown').map((b) => <LightBlock key={b.id} block={b} />)}

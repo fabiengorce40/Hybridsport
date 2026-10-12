@@ -6,6 +6,7 @@
  * sont RÉUTILISÉS tels quels : l'application ne redéfinit aucune donnée sportive.
  */
 import { z } from 'zod';
+import { zCheckIn } from './checkin.js';
 import { isISODateTime, LEVELS, zFingerprintHistoryEntry, zSerializedEnvelope, zSessionDraft } from '@hybridsport/domain';
 import { INTENT_FIELDS, PLANNER_MODES, REQUEST_CATEGORIES } from '@hybridsport/planner';
 import { HYROX_PROGRAMME_GOALS, zProgrammeState } from '@hybridsport/programme';
@@ -74,7 +75,11 @@ export const zProfile = z.object({
     goal: z.enum(HYROX_PROGRAMME_GOALS).optional(),
     returnState: z.enum(RETURN_STATES).optional(),
   }).strict(),
-  equipment: z.object({ presetId: z.string().min(1), items: z.array(z.string().min(1)) }).strict(),
+  /**
+   * Matériel DÉCLARÉ. `confirmedAt` : choix explicite confirmé par l'utilisateur (absent : profil antérieur créé avec
+   * une présélection, à faire confirmer sans écraser ses réglages). Champ additif.
+   */
+  equipment: z.object({ presetId: z.string().min(1), items: z.array(z.string().min(1)), confirmedAt: instant.optional() }).strict(),
   /** Minutes disponibles par jour, du lundi (0) au dimanche (6) ; 0 = indisponible. */
   // technical-constant: minutes dans une journée (borne de saisie)
   availability: z.array(z.number().int().min(0).max(24 * 60)).length(DAYS_PER_WEEK),
@@ -375,6 +380,16 @@ export const zProgrammeLog = z.object({
   }).strict().optional(),
   /** FIELD TEST — retour terrain déclaré après la fin (une seule fois ; jamais transmis aux moteurs). Champ additif. */
   field: zFieldFeedback.optional(),
+  /**
+   * P0 — séance ADAPTÉE au démarrage par le contrôle pré-séance (régénérée par le moteur de la discipline avec l'état du
+   * jour, validée par le CORE) : elle remplace la prescription planifiée pour CETTE exécution. Champ additif.
+   */
+  adaptation: z.object({ checkInId: z.string().min(1), record: zSerializedEnvelope, changes: z.array(z.string()), reasons: z.array(zReason) }).strict().optional(),
+  /**
+   * P1 — exercices remplacés pendant la séance (matériel indisponible) : substitut DIRECT validé par Strength, ou refus
+   * explicite (`substituteId` absent). Champ additif.
+   */
+  swaps: z.array(z.object({ itemId: z.string().min(1), fromExerciseId: z.string().min(1), substituteId: z.string().min(1).optional(), cause: z.literal('equipment_unavailable'), at: instant, reasons: z.array(zReason) }).strict()).optional(),
 }).strict();
 export type ProgrammeLog = z.infer<typeof zProgrammeLog>;
 
@@ -403,7 +418,11 @@ export const zAppState = z.object({
    */
   hyrox: z.object({ realized: z.array(z.record(z.string(), z.unknown())) }).strict().default({ realized: [] }),
   fingerprints: z.object({ strength: z.array(zFingerprintHistoryEntry), running: z.array(zFingerprintHistoryEntry), crosstraining: z.array(zFingerprintHistoryEntry).default([]) }).strict(),
-  safety: z.object({ activePain: z.object({ reportedAt: instant, areas: z.array(z.string()), sessionKey: z.string().optional() }).strict().nullable() }).strict(),
+  safety: z.object({
+    activePain: z.object({ reportedAt: instant, areas: z.array(z.string()), sessionKey: z.string().optional() }).strict().nullable(),
+    /** Dernière levée explicite de la pause douleur : vaut résolution des douleurs connues antérieures (contrôle pré-séance). */
+    clearedAt: instant.optional(),
+  }).strict(),
   /** Intention de programme multisport (absente d'un état antérieur ⇒ null : champ additif). */
   programme: zProgrammeIntent.nullable().default(null),
   /** Programme longitudinal (Programme Engine) : contrat versionné du paquet programme ; absent ⇒ null (champ additif). */
@@ -415,6 +434,8 @@ export const zAppState = z.object({
   programmeLogs: z.record(z.string(), zProgrammeLog).default({}),
   /** Semaines planifiées par le planificateur global (absent d'un état antérieur ⇒ vide : champ additif). */
   planner: z.object({ weeks: z.record(date, zPersistedWeek) }).strict().default({ weeks: {} }),
+  /** P0 — contrôles pré-séance (état du jour déclaré), les plus récents en dernier, bornés. Champ additif. */
+  checkIns: z.array(zCheckIn).default([]),
   /** Incrémentée à chaque séance terminée ou course enregistrée (l'historique a changé). */
   revision: z.number().int().nonnegative(),
 }).strict();
@@ -427,6 +448,6 @@ export function emptyState(): AppState {
   return {
     schemaVersion: CURRENT_SCHEMA_VERSION, profile: null, plans: {}, sessions: {}, logs: {},
     strength: { tracks: [], exposures: [], accessoryCounts: {} }, running: { realized: [], references: [] }, crosstraining: { realized: [] }, hyrox: { realized: [] },
-    fingerprints: { strength: [], running: [], crosstraining: [] }, safety: { activePain: null }, programme: null, programmeState: null, programmeLogs: {}, planner: { weeks: {} }, revision: 0,
+    fingerprints: { strength: [], running: [], crosstraining: [] }, safety: { activePain: null }, programme: null, programmeState: null, programmeLogs: {}, planner: { weeks: {} }, checkIns: [], revision: 0,
   };
 }

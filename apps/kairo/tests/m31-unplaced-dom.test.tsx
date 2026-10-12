@@ -40,6 +40,7 @@ describe('M3.1 — séance non placée (DOM)', () => {
     expect(document.body.textContent).toMatch(/non planifiée/);
     expect(JSON.stringify(saved(st))).toBe(before);
     fireEvent.click(screen.getByRole('button', { name: 'Faire maintenant' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Avant de commencer' })).getByRole('button', { name: 'Passer' }));
     expect(screen.getByRole('timer', { name: 'Chrono de la séance' })).toBeTruthy();
     const id = card.getAttribute('data-unplaced') ?? '';
     expect(saved(st).programmeLogs[id]?.startedAt).toBe('2026-10-05T07:30:00Z');

@@ -62,6 +62,7 @@ describe('séance Cross-training (DOM)', () => {
     expect(document.querySelector('[data-c4-block="warmup_general"]')?.textContent).toContain('Échauffement général');
     expect(document.querySelector('[data-c4-block="cooldown"]')?.textContent).toContain('Retour au calme');
     fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Avant de commencer' })).getByRole('button', { name: 'Passer' }));
     // Le chrono du bloc principal ne démarre pas pendant l'échauffement (démarrage explicite).
     expect(screen.getByRole('timer', { name: 'Chrono de la séance' }).textContent).toContain('PRÊT');
     const total = document.querySelectorAll('[data-c4-block]').length + 1;

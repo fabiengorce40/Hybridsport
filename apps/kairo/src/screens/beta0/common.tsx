@@ -1,8 +1,9 @@
 /** Lectures et composants communs Beta 0 (présentation uniquement : projection de `selectBeta0Week`). */
 import { approxMinutes, exerciseLabel, selectBeta0Week } from '@hybridsport/app-core';
 import type { AppState, Beta0WeekView, SessionView } from '@hybridsport/app-core';
-import { manualStartAssessment, startProgrammeSession } from '@hybridsport/app-core';
-import { arbitrationText, ctFormatName, isTest, manualStartText, notPlannedText, qualityShortText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
+import { manualStartAssessment } from '@hybridsport/app-core';
+import { useStartFlow } from '../../precheck/PreSessionCheck.js';
+import { arbitrationText, sessionTitle, ctFormatName, isTest, manualStartText, notPlannedText, qualityShortText, roleName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import { blockCardText, fullSessionCardText, isBlock, isFullC4 } from '../../field/BlockScope.js';
@@ -71,7 +72,7 @@ function metaOf(v: SessionItemView): string {
 }
 
 export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemView; onOpen: (id: string) => void; highlight?: boolean }) {
-  const name = sessionName(v.sport, v.archetypeId, v.dataError);
+  const name = sessionTitle(v);
   if (v.display === 'not_planned' && v.placement === 'composed_unplaced') return <UnplacedCard v={v} onOpen={onOpen} />;
   if (v.display === 'not_planned') {
     return (
@@ -108,7 +109,9 @@ export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemV
  */
 function UnplacedCard({ v, onOpen }: { v: SessionItemView; onOpen: (id: string) => void }) {
   const store = useStore();
-  const name = sessionName(v.sport, v.archetypeId, v.dataError);
+  // P0 — « Faire maintenant » : contrôle pré-séance, puis ouverture de la séance démarrée.
+  const flow = useStartFlow(onOpen);
+  const name = sessionTitle(v);
   const meta = metaOf(v);
   // Séance déjà commencée (reprise) : jamais réévaluée ; sinon contrôle métier au jour réel (app-core, aucune règle ici).
   const startable = v.display === 'in_progress' ? { allowed: true, cause: null, conflicts: [] } : manualStartAssessment(store.state, store.clock(), v.requestId);
@@ -124,9 +127,10 @@ function UnplacedCard({ v, onOpen }: { v: SessionItemView; onOpen: (id: string) 
       <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
         <button className="btn" onClick={() => onOpen(v.requestId)}>Voir la séance</button>
         {/* Q1 / P0 — « Faire maintenant » seulement si le contrôle métier du jour réel l'autorise (qualité, douleur, semaine, interférence). */}
-        {startable.allowed && <button className="btn primary" onClick={() => { store.apply((s, c) => startProgrammeSession(s, c, v.requestId)); onOpen(v.requestId); }}>Faire maintenant</button>}
+        {startable.allowed && <button className="btn primary" onClick={() => flow.start(v.requestId)}>Faire maintenant</button>}
       </div>
       {!startable.allowed && manualStartText(startable) && <div className="small" role="status" data-manual-refused={startable.cause ?? undefined}>{manualStartText(startable)}</div>}
+      {flow.sheet}
     </div>
   );
 }

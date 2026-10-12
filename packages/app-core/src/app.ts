@@ -139,7 +139,7 @@ export function logFreeRun(state: AppState, run: { realizedDurationS: number; co
   };
   const next: AppState = {
     ...state, running: { ...state.running, realized: [...state.running.realized, realized] }, revision: state.revision + 1,
-    safety: run.pain ? { activePain: { reportedAt: at, areas: [] } } : state.safety,
+    safety: run.pain ? { ...state.safety, activePain: { reportedAt: at, areas: [] } } : state.safety,
   };
   return refreshSessions(next, clock);
 }
@@ -166,5 +166,5 @@ export function recordCrossTrainingSession(state: AppState, entry: { readonly re
 
 /** Levée EXPLICITE de la pause douleur par l'utilisateur (déclaration : douleur disparue ou avis professionnel). */
 export function clearPain(state: AppState, clock: Clock): AppState {
-  return refreshSessions({ ...state, safety: { activePain: null }, revision: state.revision + 1 }, clock);
+  return refreshSessions({ ...state, safety: { activePain: null, clearedAt: normalizeInstant(clock.now) }, revision: state.revision + 1 }, clock);
 }

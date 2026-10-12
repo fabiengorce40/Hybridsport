@@ -1,8 +1,9 @@
-import { CT_INTENT_LABELS, HR_GOAL_LABELS, HR_ROLE_LABELS, programmeStatusAt, programmeTargetDate, programmeWeekIndex, RUNNING_GOAL_LABELS, selectBeta0Week, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
+import { CT_INTENT_LABELS, HR_GOAL_LABELS, HR_ROLE_LABELS, programmeStatusAt, programmeTargetDate, programmeWeekIndex, RUNNING_GOAL_LABELS, selectBeta0Week, STRENGTH_GOAL_LABELS, strengthSupportedFrequencies } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import { sessionName, sportName } from '../../present.js';
 import { ExperimentalBadge } from './common.js';
+import { StrengthWeekCard } from '../../strength/StrengthInsight.js';
 
 /**
  * Programme. « Modifier » ouvre l'assistant en PLEIN ÉCRAN (géré par l'App, sans barre de navigation) : il n'est jamais
@@ -38,9 +39,13 @@ export function Programme0({ onEdit }: { onEdit: () => void }) {
             <div className="small muted">Objectif : {goal ? goalText(goal) : '—'}{goal && 'targetDate' in goal && goal.targetDate ? ` · le ${formatDate(goal.targetDate)}` : ''}</div>
             <div className="small muted">{String(plan?.sessionsPerWeek ?? 0)} séance{(plan?.sessionsPerWeek ?? 0) > 1 ? 's' : ''} par semaine{plan?.composition === 'engine' ? ` · composition de la semaine par le moteur ${sportName(sp)}` : ''}</div>
             {sp === 'hyrox' && <HyroxMode />}
+            {sp === 'strength' && !strengthSupportedFrequencies().includes(plan?.sessionsPerWeek ?? 0) && (
+              <Notice tone="warn"><span data-strength-frequency-unsupported>KAIRO ne sait pas encore composer {String(plan?.sessionsPerWeek ?? 0)} séances de musculation par semaine : aucune séance n’est inventée. Choisissez {String(Math.max(...strengthSupportedFrequencies()))} séances ou moins dans « Modifier ».</span></Notice>
+            )}
           </div>
         );
       })}
+      {p.strength.enabled && (() => { const w = selectBeta0Week(state, clock().today); return w ? <StrengthWeekCard weekStart={w.weekStart} /> : null; })()}
       <div className="section-title">Modifier</div>
       <p className="small muted" style={{ margin: 0 }}>Changer de sports, d’objectifs, de fréquence ou de disponibilités recrée le programme. Votre historique est conservé.</p>
       <button className="btn secondary" onClick={onEdit}>Modifier et recréer le programme</button>

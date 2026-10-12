@@ -25,7 +25,7 @@ const mount = (storage: MemoryStorage, today: string) => render(<StoreProvider s
 const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
 const saved = (storage: MemoryStorage): AppState => JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}') as AppState;
 /** Titres des séances de musculation affichées dans le Planning, dans l'ordre des jours (DOM). */
-const strengthCards = () => screen.getAllByRole('button', { name: /^Musculation : / }).map((b) => (b.getAttribute('aria-label') ?? '').replace(/^Musculation : /, '').replace(/, [^,]+$/, ''));
+const strengthCards = () => screen.getAllByRole('button', { name: /^Musculation : / }).map((b) => (b.getAttribute('aria-label') ?? '').replace(/^Musculation : /, '').replace(/, [^,]+$/, '').replace(/ [A-Z]$/, ''));
 
 describe('A — programme neuf après S1 (onboarding UI, 4 séances de musculation)', () => {
   it('Planning : Haut / Bas en alternance, identique à la composition renvoyée par selectBeta0Week ; aucun Full body', () => {
@@ -39,6 +39,8 @@ describe('A — programme neuf après S1 (onboarding UI, 4 séances de musculati
     fireEvent.change(within(card).getByLabelText('Séances par semaine'), { target: { value: '4' } });
     click('Continuer');
     click('Continuer');
+    // P1 — lieu d'entraînement choisi explicitement (aucune présélection).
+    fireEvent.change(screen.getByLabelText('Lieu d’entraînement'), { target: { value: 'preset.full_gym' } });
     click('Créer mon programme');
     click('Planning');
     const shown = strengthCards();

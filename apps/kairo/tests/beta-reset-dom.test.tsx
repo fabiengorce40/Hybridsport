@@ -20,7 +20,7 @@ const PRE_S1 = readFileSync(join(import.meta.dirname, '../../../packages/app-cor
 const at = (today: string) => (): Clock => ({ today, now: `${today}T07:30:00.000Z` });
 const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
 const saved = (st: MemoryStorage): AppState => JSON.parse(st.getItem(STORAGE_KEY) ?? '{}') as AppState;
-const strengthCards = () => screen.queryAllByRole('button', { name: /^Musculation : / }).map((b) => (b.getAttribute('aria-label') ?? '').replace(/^Musculation : /, '').replace(/, [^,]+$/, ''));
+const strengthCards = () => screen.queryAllByRole('button', { name: /^Musculation : / }).map((b) => (b.getAttribute('aria-label') ?? '').replace(/^Musculation : /, '').replace(/, [^,]+$/, '').replace(/ [A-Z]$/, ''));
 const dayLabels = () => [...document.querySelectorAll('.week .day')].map((d) => `${d.querySelector('.w')?.textContent ?? ''} ${d.querySelector('.n')?.textContent ?? ''}`);
 
 describe('reset Beta depuis l’état du téléphone (programme pré-S1)', () => {

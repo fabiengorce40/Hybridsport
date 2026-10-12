@@ -4,13 +4,13 @@
  * Aussi utilisé pour créer un programme depuis un profil V0 existant, ou le recréer (workflow explicite).
  */
 import { useEffect, useState } from 'react';
-import { createBeta0Programme, CT_INTENT_LABELS, DIFFICULTY_LABELS, HR_BALANCED_LABEL, HR_GOAL_LABELS, HR_ROLE_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
+import { createBeta0Programme, strengthSupportedFrequencies, CT_INTENT_LABELS, DIFFICULTY_LABELS, HR_BALANCED_LABEL, HR_GOAL_LABELS, HR_ROLE_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
 import type { Beta0ProgrammeOptions, DeclaredPerformance, Feedback, ProfileInput } from '@hybridsport/app-core';
 import { PerformanceForm } from '../../running/PerformanceForm.js';
 import { performanceText } from '../../running/RunningProfile.js';
 
 import { useStore } from '../../store.js';
-import { AvailabilitySection, defaultProfile, EquipmentSection, GoalsSection } from '../../ProfileForm.js';
+import { AvailabilitySection, defaultProfile, EquipmentSection, equipmentChosen, GoalsSection, needsEquipment } from '../../ProfileForm.js';
 import { formatDate, Notice } from '../../ui.js';
 
 type Choice = 'strength' | 'running' | 'hybrid' | 'crosstraining' | 'hyrox';
@@ -141,7 +141,8 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const dated = p.running.enabled && p.running.goal !== 'GENERAL_RUNNING' && targetDate !== '' && dateOk;
   const ctOk = !p.crosstraining.enabled || (p.crosstraining.intent !== undefined && p.crosstraining.sessionsPerWeek !== undefined && p.crosstraining.returnState !== undefined);
   const hrOk = !p.hyrox.enabled || ((p.hyrox.focus === 'balanced' || p.hyrox.role !== undefined) && p.hyrox.goal !== undefined && p.hyrox.sessionsPerWeek !== undefined && p.hyrox.returnState !== undefined);
-  const canNext = step === 0 ? accepted : step === 1 ? choice !== null : step === 2 ? lastRunOk && dateOk && ctOk && hrOk : step === 3 ? p.availability.some((m) => m > 0) : true;
+  const strengthOk = !p.strength.enabled || strengthSupportedFrequencies().includes(p.strength.sessionsPerWeek);
+  const canNext = step === 0 ? accepted : step === 1 ? choice !== null : step === 2 ? lastRunOk && dateOk && ctOk && hrOk && strengthOk : step === 3 ? p.availability.some((m) => m > 0) : true;
 
   const create = () => {
     const o: Beta0ProgrammeOptions = {
@@ -150,9 +151,13 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
       ...(p.running.enabled && targetDate && p.running.goal !== 'GENERAL_RUNNING' ? { runningTargetDate: targetDate } : {}),
       ...(p.running.enabled && runMin !== '' ? { lastRun: { realizedDurationS: Number(runMin) * 60, ...(km !== undefined ? { distanceM: km * 1000 } : {}), difficulty: runFeel } } : {}),
     };
+    // P1 — matériel : choix explicite CONFIRMÉ (horodaté) ; sans sport à matériel et sans choix, aucun matériel supposé.
+    const withEquipment = (c: { now: string }): ProfileInput => needsEquipment(p)
+      ? { ...p, equipment: { ...p.equipment, confirmedAt: normalizeInstant(c.now) } }
+      : equipmentChosen(p) ? p : { ...p, equipment: { presetId: 'preset.none', items: [] } };
     const ok = store.apply((s, c) => mode === 'recreate'
-      ? recreateBeta0Programme(s, p, c, o)
-      : createBeta0Programme(s, { ...p, acceptedProvisionalAt: existing ? p.acceptedProvisionalAt : normalizeInstant(c.now) }, c, o));
+      ? recreateBeta0Programme(s, withEquipment(c), c, o)
+      : createBeta0Programme(s, { ...withEquipment(c), acceptedProvisionalAt: existing ? p.acceptedProvisionalAt : normalizeInstant(c.now) }, c, o));
     if (ok) onDone?.();
   };
 
@@ -291,7 +296,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
         {step === (existing ? 1 : 0) && onCancel && <button className="btn secondary" onClick={onCancel}>Annuler</button>}
         {step < STEPS.length - 1
           ? <button className="btn primary block" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 0 ? 'Commencer' : 'Continuer'}</button>
-          : <button className="btn primary block" disabled={preview?.sessionInProgress != null} onClick={create}>{mode === 'recreate' ? 'Recréer mon programme' : 'Créer mon programme'}</button>}
+          : <button className="btn primary block" disabled={preview?.sessionInProgress != null || (needsEquipment(p) && !equipmentChosen(p))} onClick={create}>{mode === 'recreate' ? 'Recréer mon programme' : 'Créer mon programme'}</button>}
       </div>
     </div>
   );
