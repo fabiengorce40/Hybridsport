@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { completeOnboarding, normalizeInstant, SPORT_LABELS } from '@hybridsport/app-core';
 import type { ProfileInput } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
-import { AvailabilitySection, defaultProfile, EquipmentSection, GoalsSection, SportsSection } from '../ProfileForm.js';
+import { AvailabilitySection, defaultProfile, EquipmentSection, equipmentChosen, GoalsSection, needsEquipment, SportsSection } from '../ProfileForm.js';
 import { Notice } from '../ui.js';
 
 const STEPS = ['Bienvenue', 'Sports', 'Objectifs', 'Disponibilités', 'Matériel'];
@@ -15,7 +15,11 @@ export function Onboarding() {
   const set = (f: (x: ProfileInput) => ProfileInput) => setP(f);
   const anySport = p.strength.enabled || p.running.enabled || p.crosstraining.enabled || p.hyrox.enabled;
   const canNext = step === 0 ? accepted : step === 1 ? anySport : step === 3 ? p.availability.some((m) => m > 0) : true;
-  const finish = () => store.apply((s, c) => completeOnboarding(s, { ...p, acceptedProvisionalAt: normalizeInstant(c.now) }, c));
+  const finish = () => store.apply((s, c) => completeOnboarding(s, {
+    ...p, acceptedProvisionalAt: normalizeInstant(c.now),
+    // P1 — matériel choisi explicitement (confirmé) ; sans sport à matériel et sans choix : aucun matériel supposé.
+    equipment: needsEquipment(p) ? { ...p.equipment, confirmedAt: normalizeInstant(c.now) } : equipmentChosen(p) ? p.equipment : { presetId: 'preset.none', items: [] },
+  }, c));
 
   return (
     <div className="screen" style={{ paddingBottom: 120 }}>
@@ -75,7 +79,7 @@ export function Onboarding() {
         {step > 0 && <button className="btn secondary" onClick={() => setStep(step - 1)}>Retour</button>}
         {step < STEPS.length - 1
           ? <button className="btn primary block" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 0 ? 'Commencer' : 'Continuer'}</button>
-          : <button className="btn primary block" onClick={finish}>Générer mon planning</button>}
+          : <button className="btn primary block" disabled={needsEquipment(p) && !equipmentChosen(p)} onClick={finish}>Générer mon planning</button>}
       </div>
     </div>
   );

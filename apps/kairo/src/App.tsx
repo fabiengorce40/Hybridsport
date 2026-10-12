@@ -58,7 +58,7 @@ export function App() {
   else if (beta0) body = (
     <div className="app">
       <div aria-hidden={open ? true : undefined} inert={open ? true : undefined}>
-        {tab === 'home' && <Home0 onOpen={setOpen} onGo={setTab} />}
+        {tab === 'home' && <Home0 onOpen={setOpen} onGo={setTab} onEditProgramme={() => setEditing(true)} />}
         {tab === 'plan' && <Planning0 onOpen={setOpen} onGo={setTab} />}
         {tab === 'history' && <History0 onOpen={setOpen} />}
         {tab === 'programme' && <Programme0 onEdit={() => setEditing(true)} />}

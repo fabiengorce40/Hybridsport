@@ -5,7 +5,7 @@
  * EMOM (minute en cours), AMRAP (tours + répétitions), for time (chrono écoulé, time cap, tours). Résultat structuré.
  */
 import { useEffect, useState } from 'react';
-import { CT_FORMAT_LABELS, CT_INTENT_LABELS, controlCtTimer, controlRest, recordProgrammeSet, recordProgrammeSetEffort, toggleProgrammePainItem, ctClock, ctElapsedS, ctWorkoutOf, exerciseLabel, finishProgrammeSession, recordCtBlock, recordCtProgress } from '@hybridsport/app-core';
+import { CT_FORMAT_LABELS, CT_INTENT_LABELS, controlCtTimer, controlRest, recordProgrammeSet, recordProgrammeSetEffort, reportEquipmentUnavailable, toggleProgrammePainItem, ctClock, ctElapsedS, ctWorkoutOf, exerciseLabel, finishProgrammeSession, recordCtBlock, recordCtProgress } from '@hybridsport/app-core';
 import type { C4BlockView, CtWorkout, CtWorkoutItem, FinishInput, ProgrammeSessionView, SessionDraft } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
 import { AdaptationNotice, useStartFlow } from '../precheck/PreSessionCheck.js';
@@ -226,7 +226,8 @@ function StrengthBlock({ b, v, editable }: { b: C4BlockView; v: ProgrammeSession
         <ExerciseCard key={item.id} number={k + 1} item={item} block={block} log={v.log} editable={editable} current={false}
           onRecord={(it, index, x) => store.apply((s, c) => recordProgrammeSet(s, c, v.requestId, { itemId: it.id, setIndex: index, ...x }))}
           onTogglePain={(itemId) => store.apply((s) => toggleProgrammePainItem(s, v.requestId, itemId))}
-          onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, v.requestId, itemId, setIndex, rir))} />
+          onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, v.requestId, itemId, setIndex, rir))}
+          onUnavailable={(itemId) => store.apply((s, c) => reportEquipmentUnavailable(s, c, v.requestId, itemId))} />
       ))}
       {done && <span className="k-pill done">✓ Bloc terminé</span>}
     </section>

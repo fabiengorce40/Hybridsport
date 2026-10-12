@@ -43,6 +43,12 @@ function onboard(storage: MemoryStorage, choice: Choice) {
   click('Continuer');
   click('Continuer');
   if (choice === 'Musculation + Course') expect(screen.getByRole('radio', { name: 'Priorité Course' })).toBeTruthy();
+  if (choice !== 'Course') {
+    // P1 — aucun matériel présélectionné : création impossible tant que le lieu d'entraînement n'est pas choisi.
+    expect(screen.getByRole('button', { name: 'Créer mon programme' })).toHaveProperty('disabled', true);
+    expect(document.querySelector('[data-equipment-missing]')).toBeTruthy();
+    fireEvent.change(screen.getByLabelText('Lieu d’entraînement'), { target: { value: 'preset.full_gym' } });
+  }
   click('Créer mon programme');
 }
 

@@ -5,6 +5,7 @@
  * contrats existants (course réalisée, référence TEST, empreintes, douleur).
  */
 import type { FingerprintHistoryEntry, PainLevel, ReasonCode, SessionRecord } from '@hybridsport/domain';
+import { applySwaps } from './equipment.js';
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { LoadedRuleset } from '@hybridsport/engine';
 import { PG_CODES, closeProgrammeWeek, createProgramme, pgReasons, planProgrammeWeek, recordProgrammeResult, requestIntent, weekIndexOf } from '@hybridsport/programme';
@@ -190,7 +191,8 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
   const decoded = adapted ? migrateToCurrent<SessionRecord>(adapted) : planned.record ? migrateToCurrent<SessionRecord>(planned.record) : undefined;
   const record = decoded?.ok ? decoded.value : undefined;
   if (!record) return reject('EXECUTION_SESSION_UNREADABLE');
-  const session = record.session;
+  // P1 — exercices remplacés pendant la séance (matériel indisponible) : la séance EXÉCUTÉE.
+  const session = applySwaps(record.session, state.programmeLogs[x.requestId]?.swaps);
   const pained = (x.pain !== undefined && x.pain !== 'NONE') || (x.sport === 'strength' && (x.painItems?.length ?? 0) > 0);
   let s: AppState = state;
   let evidence: { history: ProgrammeState['definition']['priorities'][number]; ref: string; measurement?: string } | undefined;

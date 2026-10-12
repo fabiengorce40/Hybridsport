@@ -10,7 +10,7 @@ import { PerformanceForm } from '../../running/PerformanceForm.js';
 import { performanceText } from '../../running/RunningProfile.js';
 
 import { useStore } from '../../store.js';
-import { AvailabilitySection, defaultProfile, EquipmentSection, GoalsSection } from '../../ProfileForm.js';
+import { AvailabilitySection, defaultProfile, EquipmentSection, equipmentChosen, GoalsSection, needsEquipment } from '../../ProfileForm.js';
 import { formatDate, Notice } from '../../ui.js';
 
 type Choice = 'strength' | 'running' | 'hybrid' | 'crosstraining' | 'hyrox';
@@ -150,9 +150,13 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
       ...(p.running.enabled && targetDate && p.running.goal !== 'GENERAL_RUNNING' ? { runningTargetDate: targetDate } : {}),
       ...(p.running.enabled && runMin !== '' ? { lastRun: { realizedDurationS: Number(runMin) * 60, ...(km !== undefined ? { distanceM: km * 1000 } : {}), difficulty: runFeel } } : {}),
     };
+    // P1 — matériel : choix explicite CONFIRMÉ (horodaté) ; sans sport à matériel et sans choix, aucun matériel supposé.
+    const withEquipment = (c: { now: string }): ProfileInput => needsEquipment(p)
+      ? { ...p, equipment: { ...p.equipment, confirmedAt: normalizeInstant(c.now) } }
+      : equipmentChosen(p) ? p : { ...p, equipment: { presetId: 'preset.none', items: [] } };
     const ok = store.apply((s, c) => mode === 'recreate'
-      ? recreateBeta0Programme(s, p, c, o)
-      : createBeta0Programme(s, { ...p, acceptedProvisionalAt: existing ? p.acceptedProvisionalAt : normalizeInstant(c.now) }, c, o));
+      ? recreateBeta0Programme(s, withEquipment(c), c, o)
+      : createBeta0Programme(s, { ...withEquipment(c), acceptedProvisionalAt: existing ? p.acceptedProvisionalAt : normalizeInstant(c.now) }, c, o));
     if (ok) onDone?.();
   };
 
@@ -291,7 +295,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
         {step === (existing ? 1 : 0) && onCancel && <button className="btn secondary" onClick={onCancel}>Annuler</button>}
         {step < STEPS.length - 1
           ? <button className="btn primary block" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 0 ? 'Commencer' : 'Continuer'}</button>
-          : <button className="btn primary block" disabled={preview?.sessionInProgress != null} onClick={create}>{mode === 'recreate' ? 'Recréer mon programme' : 'Créer mon programme'}</button>}
+          : <button className="btn primary block" disabled={preview?.sessionInProgress != null || (needsEquipment(p) && !equipmentChosen(p))} onClick={create}>{mode === 'recreate' ? 'Recréer mon programme' : 'Créer mon programme'}</button>}
       </div>
     </div>
   );

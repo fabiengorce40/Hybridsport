@@ -39,6 +39,8 @@ describe('A — programme neuf après S1 (onboarding UI, 4 séances de musculati
     fireEvent.change(within(card).getByLabelText('Séances par semaine'), { target: { value: '4' } });
     click('Continuer');
     click('Continuer');
+    // P1 — lieu d'entraînement choisi explicitement (aucune présélection).
+    fireEvent.change(screen.getByLabelText('Lieu d’entraînement'), { target: { value: 'preset.full_gym' } });
     click('Créer mon programme');
     click('Planning');
     const shown = strengthCards();

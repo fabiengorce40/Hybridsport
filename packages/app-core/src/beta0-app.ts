@@ -32,6 +32,7 @@ import { activePainPause } from './weeks.js';
 import { CHECKIN_HISTORY_MAX, evaluateCheckIn, zCheckInInput } from './checkin.js';
 import type { CheckIn, CheckInInput } from './checkin.js';
 import { decideStart } from './start-check.js';
+import { applySwaps, equipmentSwap } from './equipment.js';
 import { strengthContent } from './provisional-content.js';
 import type { LoadedCatalog, LoadedRuleset } from '@hybridsport/engine';
 
@@ -334,7 +335,8 @@ export function selectProgrammeSession(state: AppState, requestId: string): Prog
   // P0 — séance ADAPTÉE au démarrage (contrôle pré-séance) : elle remplace la prescription planifiée pour cette exécution.
   const adapted = log?.adaptation ? migrateToCurrent<SessionRecord>(log.adaptation.record) : undefined;
   const record = adapted?.ok ? adapted.value : recordOf(r);
-  const session = record?.session;
+  // P1 — exercices remplacés (matériel indisponible) : remplacement déterministe, relu partout.
+  const session = record ? applySwaps(record.session, log?.swaps) : undefined;
   const date = r?.status === 'planned' ? r.date : log ? dateOf(log.startedAt) : r?.composedFor?.referenceDate;
   if (!r || !date || !record || !session) return null;
   const week = Object.values(state.planner.weeks).find((w) => w.requests.includes(r));
@@ -610,6 +612,20 @@ export function recordProgrammeSetEffort(state: AppState, requestId: string, ite
   const { rir: _previous, ...rest } = cur;
   const next: SetLog = rir === null ? rest : { ...rest, rir };
   return withLog(state, { ...log, sets: log.sets.map((x) => (x === cur ? next : x)) });
+}
+
+/**
+ * P1 — MATÉRIEL INDISPONIBLE pendant la séance : substitut DIRECT validé par le contrat Strength (faisable sans ce
+ * matériel, compatible avec les zones restreintes du jour), ou refus explicite tracé. Aucune série déjà validée perdue :
+ * refusé après une série validée de l'exercice.
+ */
+export function reportEquipmentUnavailable(state: AppState, clock: Clock, requestId: string, itemId: string, env: ProgrammeEnvironment = beta0Environment()): AppState {
+  const log = openLog(state, requestId);
+  const v = selectProgrammeSession(state, requestId);
+  const catalog = v ? env[v.sport]?.content.catalog : undefined;
+  if (!v || !catalog) throw new AppError('SESSION_UNAVAILABLE');
+  const restricted = (v.checkIn?.pains ?? []).filter((x) => x.level === 'P2' || x.level === 'P3').map((x) => x.area);
+  return withLog(state, equipmentSwap(state, clock, log, v.session, itemId, catalog, restricted));
 }
 
 export function toggleProgrammePainItem(state: AppState, requestId: string, itemId: string): AppState {
