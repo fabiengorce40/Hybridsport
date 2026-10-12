@@ -62,6 +62,8 @@ export interface SlotRequest {
    * volume de force hebdomadaire (Strength ↔ blocs de force des séances Cross-training). Transport seul.
    */
   readonly crossSportWeek?: Readonly<Partial<Record<PlannerSport, readonly WeekSession[]>>>;
+  /** Notes de planification transmises au moteur pour CE créneau (ex. `planned_variation`, lue par sa politique gouvernée). */
+  readonly plannerNotes?: readonly string[];
   /** C4.3 — bloc de force délégué transporté vers le moteur hôte (Cross-training) pour la seconde composition. */
   readonly delegatedStrength?: { readonly blocks: readonly unknown[]; readonly durationS: number; readonly excludeStructures: readonly string[]; readonly excludeExercises: readonly string[]; readonly source: { readonly engine: 'strength'; readonly archetypeId: string; readonly sessionId: string; readonly ruleId: string } };
 }
@@ -222,7 +224,7 @@ export function createEnginePort<C>(def: EnginePortDefinition<C>): SportPort {
       const request: SportSessionRequest = {
         intent: {
           id: `plan.${slot.requestId}`, discipline: def.discipline, archetypeId: i.archetypeId, stimulus: i.stimulus, objective: i.objective, priority: 'standard', phase: i.phase,
-          availableTimeS, targetDurationS: targetFromAvailable(availableTimeS, readToleranceProfile(def.content.ruleset, i.toleranceProfile)), repetitionIntents: def.repetitionIntents?.(slot, disciplineContext) ?? [], plannerNotes: [...(def.plannerNotes ?? [])],
+          availableTimeS, targetDurationS: targetFromAvailable(availableTimeS, readToleranceProfile(def.content.ruleset, i.toleranceProfile)), repetitionIntents: def.repetitionIntents?.(slot, disciplineContext) ?? [], plannerNotes: [...(def.plannerNotes ?? []), ...(slot.plannerNotes ?? [])],
         },
         profile: def.profile, state: typeof def.state === 'function' ? def.state(slot) : def.state,
         history: [...def.history, ...(def.extraHistory?.(slot) ?? [])].filter((h) => h.at < now),
@@ -287,7 +289,15 @@ function ctStrengthBlocks(slot: SlotRequest): WeekSession[] {
   });
 }
 
-export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] } }): SportPort {
+/**
+ * Règle de déclenchement (TEST_ONLY, fournie par l'environnement) : une séance Strength STRICTEMENT identique (mêmes
+ * exercices) à une séance du même archétype placée plus tôt dans la semaine est redemandée avec la note de
+ * planification gouvernée par le ruleset Strength (`strength.selection.repetitionPolicy.rotationReasons.plannerNotes`).
+ * Strength décide seul de la variation ; sans variation possible, la séance initiale est conservée (tracé).
+ */
+export interface StrengthWithinWeekVariationRule { readonly ruleId: string; readonly status: 'TEST_ONLY'; readonly note: string }
+
+export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule }): SportPort {
   const params = () => readStrengthParams(def.content.ruleset).values;
   const context = (slot: SlotRequest): StrengthContextInput => {
     const resolved = resolve(def.baseContext, slot);
@@ -346,7 +356,25 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
     extraHistory: (slot) => (slot.weekSessions ?? []).flatMap((w) => (w.fingerprint ? [{ fingerprint: w.fingerprint, at: def.clock.instantOf(w.date), status: 'planned' as const, repetitionIntents: [] }] : [])),
   });
   const comp = def.composition;
-  const withWeek = { ...port, consumesWeekSessions: true, crossSportWeek: ['crosstraining'] as const };
+  const variation = def.withinWeekVariation;
+  const signature = (s: SessionDraft): string => s.blocks.flatMap((b) => b.items.map((i) => i.exerciseId)).join('|');
+  const generate = (slot: SlotRequest): PortOutcome => {
+    const out = port.generate(slot);
+    if (!variation || out.status !== 'planned') return out;
+    const twin = (slot.weekSessions ?? []).find((w) => w.archetypeId === slot.intent.archetypeId && signature(w.session) === signature(out.session));
+    if (!twin) return out;
+    const again = port.generate({ ...slot, plannerNotes: [...(slot.plannerNotes ?? []), variation.note] });
+    // Garde-fou : la variation ne change JAMAIS le volume (séries de travail par groupe, fonction de Strength) — ni hausse
+    // ni baisse ; sinon la séance initiale est conservée et le refus est tracé.
+    const volume = (s: SessionDraft): string => JSON.stringify(Object.entries(sessionPlannedHardSets(s, params(), def.content.catalog)).filter(([, n]) => n > 0).sort(([a], [b]) => (a < b ? -1 : 1)));
+    const differs = again.status === 'planned' && signature(again.session) !== signature(twin.session);
+    const sameVolume = again.status === 'planned' && volume(again.session) === volume(out.session);
+    const varied = differs && sameVolume;
+    const chosen = varied ? again : out;
+    const outcome = varied ? 'varied' : differs ? 'no_governed_variation:volume_changed' : 'no_governed_variation';
+    return { ...chosen, reasons: [...chosen.reasons, gpReasons.emit(GP_CODES.STRENGTH_WITHIN_WEEK_VARIATION, { ruleId: variation.ruleId, requestId: slot.requestId, twin: twin.requestId, outcome, note: variation.note })] };
+  };
+  const withWeek = { ...port, generate, consumesWeekSessions: true, crossSportWeek: ['crosstraining'] as const };
   if (!comp) return withWeek;
   // Objectif du PROGRAMME (contrat de contexte Strength `goal.primary`), niveau du profil CORE, fréquence déclarée.
   const run = (days: readonly CompositionDay[], weeklySessions: number, mode: PlannerMode) => {

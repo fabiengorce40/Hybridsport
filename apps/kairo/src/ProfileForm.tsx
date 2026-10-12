@@ -5,7 +5,7 @@
  */
 import { useState } from 'react';
 import {
-  EQUIPMENT_PRESETS, equipmentLabel, LEVEL_LABELS, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, RUNNING_LEVEL_LABELS, SPORT_LABELS, STRENGTH_GOAL_LABELS,
+  EQUIPMENT_PRESETS, equipmentLabel, strengthSupportedFrequencies, LEVEL_LABELS, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, RUNNING_LEVEL_LABELS, SPORT_LABELS, STRENGTH_GOAL_LABELS,
 } from '@hybridsport/app-core';
 import type { ProfileInput, Sport } from '@hybridsport/app-core';
 import { Notice, WEEKDAY_NAMES } from './ui.js';
@@ -72,9 +72,11 @@ export function GoalsSection({ p, set, beta0 = false }: { p: ProfileInput; set: 
           </div>
           <label className="field">Séances par semaine
             <select value={p.strength.sessionsPerWeek} onChange={(e) => set((x) => ({ ...x, strength: { ...x.strength, sessionsPerWeek: Number(e.target.value) } }))}>
-              {SESSION_CHOICES.map((n) => <option key={n} value={n}>{n}</option>)}
+              {/* P1 — fréquences que la composition Musculation ne sait pas encore gérer : affichées, jamais proposées. */}
+              {SESSION_CHOICES.map((n) => <option key={n} value={n} disabled={!strengthSupportedFrequencies().includes(n)}>{strengthSupportedFrequencies().includes(n) ? String(n) : `${String(n)} — pas encore pris en charge`}</option>)}
             </select>
           </label>
+          {!strengthSupportedFrequencies().includes(p.strength.sessionsPerWeek) && <p className="small" role="alert" data-strength-frequency-unsupported style={{ margin: 0 }}>KAIRO ne sait pas encore composer {String(p.strength.sessionsPerWeek)} séances de musculation par semaine. Choisissez {String(Math.max(...strengthSupportedFrequencies()))} séances ou moins.</p>}
         </div>
       )}
       {p.running.enabled && (

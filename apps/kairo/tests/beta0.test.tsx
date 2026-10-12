@@ -79,7 +79,7 @@ describe('onboarding Beta 0 et programme', () => {
     expect(screen.getAllByText('BETA EXPÉRIMENTALE').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Commencer la séance' })).toBeTruthy();
     click('Planning');
-    expect(screen.getAllByRole('button', { name: /Musculation : Full body, Prévue/ }).length).toBe(2);
+    expect(screen.getAllByRole('button', { name: /Musculation : Full body( [A-Z])?, Prévue/ }).length).toBe(2);
     expect(screen.queryByText('str_full_body')).toBeNull();
     click('Programme');
     expect(screen.getByText(/Certaines règles de planification sont encore en cours de validation/)).toBeTruthy();
@@ -319,7 +319,7 @@ describe('séance Strength', () => {
     expect(screen.getByText(/Séance terminée/)).toBeTruthy();
     click('Retour');
     click('Planning');
-    expect(screen.getAllByRole('button', { name: /Full body, Adaptée/ })).toHaveLength(1);
+    expect(screen.getAllByRole('button', { name: /Full body( [A-Z])?, Adaptée/ })).toHaveLength(1);
     click('Historique');
     expect(screen.getByText(/6 × 40 kg/)).toBeTruthy();
     cleanup();

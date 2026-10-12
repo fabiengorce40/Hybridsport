@@ -5,18 +5,19 @@
  */
 import { useEffect, useState } from 'react';
 import {
-  approxMinutes, controlRest, startAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, reportEquipmentUnavailable, selectProgrammeSession, toggleProgrammePainItem,
+  approxMinutes, controlRest, startAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, reportEquipmentUnavailable, selectProgrammeSession, strengthInsightOf, toggleProgrammePainItem,
 } from '@hybridsport/app-core';
 import type { FinishInput, ProgrammeSessionView, SessionItem, SetPrescription } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { RestTimer0 } from '../../RestTimer0.js';
 import { Notice, sessionDay, startLabel, Topbar } from '../../ui.js';
-import { isTest, manualStartText, qualityVerdictText, roleName, sessionName, sportName, STATUS_LABELS } from '../../present.js';
+import { isTest, manualStartText, sessionTitle, qualityVerdictText, roleName, sportName, STATUS_LABELS } from '../../present.js';
 import { FieldFeedbackCard } from '../../field/FieldFeedback.js';
 import { BLOCK_LABELS, RunStructureView, SetRow } from '../Session.js';
 import { StrengthWorkout } from '../../workout/StrengthWorkout.js';
 import { CrossTrainingWorkout } from '../../workout/CrossTrainingWorkout.js';
 import { AdaptationNotice, useStartFlow } from '../../precheck/PreSessionCheck.js';
+import { StrengthInsightPanel } from '../../strength/StrengthInsight.js';
 import { HyroxWorkout } from '../../workout/HyroxWorkout.js';
 import { ExperimentalBadge } from './common.js';
 import { DurationInput } from '../../running/DurationInput.js';
@@ -132,7 +133,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   // HYROX : séance propre (enchaînement de la prescription persistée), jamais de repli Strength, Cross-training ou legacy.
   if (v.sport === 'hyrox') return <HyroxWorkout v={v} onBack={onBack} />;
   const { session, log, result } = v;
-  const name = sessionName(v.sport, v.archetypeId, v.dataError);
+  const name = sessionTitle({ ...v, strengthVariant: v.sport === 'strength' ? strengthInsightOf(store.state, requestId)?.insight.variant ?? null : null });
   const role = roleName(v.role);
   const test = isTest(v.archetypeId);
   const started = log !== null;
@@ -156,6 +157,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
         <Topbar title="" onBack={onBack} right={v.experimental ? <span className="k-pill" title="Certaines règles de planification sont encore en cours de validation.">Beta</span> : undefined} />
         <div className={`k-workout ${editable && log.rest ? 'with-timer' : ''} ${!started && !finished ? 'with-dock' : ''}`}>
           <AdaptationNotice v={v} />
+          <StrengthInsightPanel requestId={requestId} />
           <StrengthWorkout
             v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}${editable ? ` · ${String(Math.floor(elapsed / 60))}:${String(elapsed % 60).padStart(2, '0')}` : ''}`} editable={editable}
             onRecord={(item, index, x) => record(item, undefined, index, x)}

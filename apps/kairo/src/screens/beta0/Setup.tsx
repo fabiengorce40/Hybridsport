@@ -4,7 +4,7 @@
  * Aussi utilisé pour créer un programme depuis un profil V0 existant, ou le recréer (workflow explicite).
  */
 import { useEffect, useState } from 'react';
-import { createBeta0Programme, CT_INTENT_LABELS, DIFFICULTY_LABELS, HR_BALANCED_LABEL, HR_GOAL_LABELS, HR_ROLE_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
+import { createBeta0Programme, strengthSupportedFrequencies, CT_INTENT_LABELS, DIFFICULTY_LABELS, HR_BALANCED_LABEL, HR_GOAL_LABELS, HR_ROLE_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
 import type { Beta0ProgrammeOptions, DeclaredPerformance, Feedback, ProfileInput } from '@hybridsport/app-core';
 import { PerformanceForm } from '../../running/PerformanceForm.js';
 import { performanceText } from '../../running/RunningProfile.js';
@@ -141,7 +141,8 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const dated = p.running.enabled && p.running.goal !== 'GENERAL_RUNNING' && targetDate !== '' && dateOk;
   const ctOk = !p.crosstraining.enabled || (p.crosstraining.intent !== undefined && p.crosstraining.sessionsPerWeek !== undefined && p.crosstraining.returnState !== undefined);
   const hrOk = !p.hyrox.enabled || ((p.hyrox.focus === 'balanced' || p.hyrox.role !== undefined) && p.hyrox.goal !== undefined && p.hyrox.sessionsPerWeek !== undefined && p.hyrox.returnState !== undefined);
-  const canNext = step === 0 ? accepted : step === 1 ? choice !== null : step === 2 ? lastRunOk && dateOk && ctOk && hrOk : step === 3 ? p.availability.some((m) => m > 0) : true;
+  const strengthOk = !p.strength.enabled || strengthSupportedFrequencies().includes(p.strength.sessionsPerWeek);
+  const canNext = step === 0 ? accepted : step === 1 ? choice !== null : step === 2 ? lastRunOk && dateOk && ctOk && hrOk && strengthOk : step === 3 ? p.availability.some((m) => m > 0) : true;
 
   const create = () => {
     const o: Beta0ProgrammeOptions = {

@@ -15,6 +15,7 @@
  * `BETA0_SIMULATION`, tracés dans chaque semaine persistée). Aucune n'est approuvée : en PRODUCTION elles sont
  * refusées par les lecteurs gouvernés (fail-closed) et un environnement `production` qui en porte est refusé.
  */
+import { strengthWeekInsights } from './strength-insight.js';
 import { CURRENT_RUNNING_GOVERNANCE, ARCHETYPE_INTENT_IDS, createRunningEngine, withProductDecisions } from '@hybridsport/running';
 import type { RunningGovernance } from '@hybridsport/running';
 import { requirePlannerProvenance } from '@hybridsport/planner';
@@ -89,6 +90,12 @@ export const BETA0_PLANNING_VERSION = 'beta0-m31';
  * Running n'accepte un athlète multisport QUE par le planificateur global (provenance obligatoire) : tout autre
  * chemin reste refusé. Aucune politique d'adaptation (décisions BLOCKED) ni horizon d'avance : aucune valeur inventée.
  */
+/**
+ * Règle de DÉCLENCHEMENT de la variation intra-semaine (TEST_ONLY, Beta 0) : la variation elle-même est décidée par
+ * Strength selon sa politique gouvernée (`rotationReasons.plannerNotes`). Absente en production (aucun changement).
+ */
+export const BETA0_STRENGTH_WITHIN_WEEK_VARIATION = { ruleId: 'planner.strength.withinWeekVariation.test-0', status: 'TEST_ONLY', note: 'planned_variation' } as const;
+
 export function beta0Environment(): ProgrammeEnvironment {
   const g = beta0RunningGovernance();
   const ct = ctBeta0(simulationMark);
@@ -105,7 +112,9 @@ export function beta0Environment(): ProgrammeEnvironment {
     mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: [...BETA0_SIMULATION], planningVersion: BETA0_PLANNING_VERSION,
     governance: m3Governance({ extra: simulationMark }),
     programmeGovernance: rotationGovernance(simulationMark),
-    strength: { engine: StrengthEngine as SportEngine<unknown>, content: withDemand(strengthContent(), undefined, simulationMark), composition: { rule: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } },
+    // Musculation P1 — déclencheur TEST_ONLY de la variation gouvernée (note `planned_variation` du ruleset Strength)
+    // quand une séance serait strictement identique à une séance du même archétype plus tôt dans la semaine.
+    strength: { engine: StrengthEngine as SportEngine<unknown>, content: withDemand(strengthContent(), undefined, simulationMark), composition: { rule: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE }, withinWeekVariation: BETA0_STRENGTH_WITHIN_WEEK_VARIATION },
     running: {
       engine: requirePlannerProvenance(createRunningEngine({ governance: g, simulation: true }) as SportEngine<unknown>),
       content: withDemand(runningContent(), undefined, simulationMark),
@@ -347,6 +356,8 @@ export interface SessionView {
   readonly repeatFlagged: boolean;
   /** Strength : exercices du bloc PRINCIPAL prescrit (identifiants, ordre de la prescription) ; vide sinon. */
   readonly mainExercises: readonly string[];
+  /** P1 — Strength : variante (A, B, C…) parmi les séances du même archétype de la semaine ; null sinon. */
+  readonly strengthVariant?: string | null;
 }
 /**
  * FIELD TEST P0 — PORTÉE réelle de la prescription Cross-training / HYROX, lue dans le contrat persisté (jamais déduite
@@ -623,7 +634,10 @@ export function selectBeta0Week(state: AppState, today: string, weekIndex?: numb
   const week = pw ? state.planner.weeks[pw.plannerRef] : undefined;
   const resultOf = (id: string) => ps.results.find((x) => x.requestId === id);
   const sportById = new Map((week?.requests ?? []).map((r) => [r.requestId, r.sport]));
-  const sessions = (week?.requests ?? []).map((r) => sessionView(r, resultOf(r.requestId), (id) => sportById.get(id) ?? null))
+  // P1 — variantes A / B / C des séances Strength (lecture des séances persistées, aucune règle).
+  const insight = pw ? strengthWeekInsights(state, pw.plannerRef) : null;
+  const variantOf = (id: string) => insight?.sessions.find((x) => x.requestId === id)?.variant ?? null;
+  const sessions = (week?.requests ?? []).map((r) => ({ ...sessionView(r, resultOf(r.requestId), (id) => sportById.get(id) ?? null), strengthVariant: r.sport === 'strength' ? variantOf(r.requestId) : null }))
     .sort((a, b) => (a.date === null ? 1 : 0) - (b.date === null ? 1 : 0) || (a.date ?? '').localeCompare(b.date ?? '') || a.requestId.localeCompare(b.requestId));
   const authority = week?.authority ?? 'unknown';
   const start = weekStartAt(ps, i);

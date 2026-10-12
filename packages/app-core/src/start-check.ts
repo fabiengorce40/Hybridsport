@@ -112,6 +112,10 @@ export type StartDecision =
   | { readonly kind: 'postponed'; readonly reasons: readonly Reason[] };
 
 /** Codes de trace utiles à l'utilisateur dans la séance adaptée (douleur, réparation, dosage selon l'état). */
+// technical-constant: nombre de raisons de décision conservées par contrôle (taille d'état, affichage)
+const SHOWN_MAX = 8;
+// technical-constant: nombre de raisons conservées avec une séance adaptée (taille d'état)
+const ADAPTATION_REASONS_MAX = 24;
 const SHOWN = /^(SAFETY\.|REPAIR\.|DOSE\.(MODIFIED|READINESS)|DATA\.READINESS)/;
 
 /**
@@ -122,7 +126,7 @@ export function decideStart(state: AppState, requestId: string, planned: Session
   const base = ev.reasons.map(reason);
   if (!ev.needsAdaptation) return { kind: 'unchanged', reasons: base };
   const regen = regenerateSession(state, requestId, coreStateOf(ev.readiness, ev.reports), env);
-  if (regen.status === 'refused') return { kind: 'postponed', reasons: [...base, { code: 'KAIRO.CHECKIN_SESSION_NOT_ADAPTABLE', params: { requestId } }, ...regen.reasons.filter((x) => SHOWN.test(x.code) || /REFUSED|NO_VALID|UNAVAILABLE|BLOCKING_NEED/.test(x.code)).slice(0, 8)] };
+  if (regen.status === 'refused') return { kind: 'postponed', reasons: [...base, { code: 'KAIRO.CHECKIN_SESSION_NOT_ADAPTABLE', params: { requestId } }, ...regen.reasons.filter((x) => SHOWN.test(x.code) || /REFUSED|NO_VALID|UNAVAILABLE|BLOCKING_NEED/.test(x.code)).slice(0, SHOWN_MAX)] };
   if (regen.status === 'not_regenerable') {
     // Séance non régénérable : gardée seulement si aucune zone restreinte (exclusion) n'est sollicitée.
     const excluded = ev.safety.areaRestrictions.filter((a) => a.action === 'exclude').map((a) => a.area);
@@ -132,6 +136,6 @@ export function decideStart(state: AppState, requestId: string, planned: Session
   }
   const changes = sessionChanges(planned, regen.record.session);
   const traced = regen.reasons.filter((x) => SHOWN.test(x.code));
-  if (changes.length === 0) return { kind: 'unchanged', reasons: [...base, { code: 'KAIRO.CHECKIN_NO_CHANGE', params: { requestId, readiness: ev.readiness } }, ...traced.slice(0, 8)] };
-  return { kind: 'adapted', adaptation: { record: toEnvelope('session_record', regen.record), changes, reasons: traced.slice(0, 24) }, reasons: [...base, { code: 'KAIRO.CHECKIN_SESSION_ADAPTED', params: { requestId, changes: changes.length } }] };
+  if (changes.length === 0) return { kind: 'unchanged', reasons: [...base, { code: 'KAIRO.CHECKIN_NO_CHANGE', params: { requestId, readiness: ev.readiness } }, ...traced.slice(0, SHOWN_MAX)] };
+  return { kind: 'adapted', adaptation: { record: toEnvelope('session_record', regen.record), changes, reasons: traced.slice(0, ADAPTATION_REASONS_MAX) }, reasons: [...base, { code: 'KAIRO.CHECKIN_SESSION_ADAPTED', params: { requestId, changes: changes.length } }] };
 }

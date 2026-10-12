@@ -3,7 +3,7 @@ import { approxMinutes, exerciseLabel, selectBeta0Week } from '@hybridsport/app-
 import type { AppState, Beta0WeekView, SessionView } from '@hybridsport/app-core';
 import { manualStartAssessment } from '@hybridsport/app-core';
 import { useStartFlow } from '../../precheck/PreSessionCheck.js';
-import { arbitrationText, ctFormatName, isTest, manualStartText, notPlannedText, qualityShortText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
+import { arbitrationText, sessionTitle, ctFormatName, isTest, manualStartText, notPlannedText, qualityShortText, roleName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import { blockCardText, fullSessionCardText, isBlock, isFullC4 } from '../../field/BlockScope.js';
@@ -72,7 +72,7 @@ function metaOf(v: SessionItemView): string {
 }
 
 export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemView; onOpen: (id: string) => void; highlight?: boolean }) {
-  const name = sessionName(v.sport, v.archetypeId, v.dataError);
+  const name = sessionTitle(v);
   if (v.display === 'not_planned' && v.placement === 'composed_unplaced') return <UnplacedCard v={v} onOpen={onOpen} />;
   if (v.display === 'not_planned') {
     return (
@@ -111,7 +111,7 @@ function UnplacedCard({ v, onOpen }: { v: SessionItemView; onOpen: (id: string) 
   const store = useStore();
   // P0 — « Faire maintenant » : contrôle pré-séance, puis ouverture de la séance démarrée.
   const flow = useStartFlow(onOpen);
-  const name = sessionName(v.sport, v.archetypeId, v.dataError);
+  const name = sessionTitle(v);
   const meta = metaOf(v);
   // Séance déjà commencée (reprise) : jamais réévaluée ; sinon contrôle métier au jour réel (app-core, aucune règle ici).
   const startable = v.display === 'in_progress' ? { allowed: true, cause: null, conflicts: [] } : manualStartAssessment(store.state, store.clock(), v.requestId);

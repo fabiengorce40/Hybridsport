@@ -31,6 +31,7 @@ export const GP_CODES = {
   STRENGTH_DELEGATION_UNRESOLVED: 'PLAN.PLANNER.STRENGTH_DELEGATION_UNRESOLVED',
   /** C4.3 — bloc de force composé par Strength et intégré à la séance d'un autre moteur (provenance, règle, structures protégées). */
   STRENGTH_DELEGATED: 'PLAN.PLANNER.STRENGTH_DELEGATED',
+  STRENGTH_WITHIN_WEEK_VARIATION: 'PLAN.PLANNER.STRENGTH_WITHIN_WEEK_VARIATION',
   /** Intention de programme incomplète pour ce sport (champs manquants) : le planificateur n'en invente aucun. */
   PROGRAMME_INTENT_INCOMPLETE: 'PLAN.PLANNER.PROGRAMME_INTENT_INCOMPLETE',
   /** Contexte voisin transmis au moteur (profils de demande des séances voisines d'autres disciplines). */
@@ -69,6 +70,7 @@ export const GP_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: GP_CODES.INTERFERENCE_CONFLICT, categories: ['business_hard'], params: { sport: S, date: S, withSport: S, withDate: S, structure: S, gapHours: N, rule: S }, audience: 'user', severity: 'warning' },
   { code: GP_CODES.INTERFERENCE_UNRESOLVED, categories: ['feasibility'], params: { sport: S, requestId: S, triedDates: L }, audience: 'user', severity: 'error' },
   { code: GP_CODES.PLACED, categories: ['information'], params: { sport: S, requestId: S, date: S }, audience: 'internal', severity: 'info' },
+  { code: GP_CODES.STRENGTH_WITHIN_WEEK_VARIATION, categories: ['information'], params: { ruleId: S, requestId: S, twin: S, outcome: S, note: S }, audience: 'internal', severity: 'info' },
   { code: GP_CODES.STRENGTH_DELEGATED, categories: ['information'], params: { requester: S, requestId: S, ruleId: S, strengthSessionId: S, archetypeId: S, exercises: L, durationS: N, protectedStructures: L }, audience: 'internal', severity: 'info' },
   { code: GP_CODES.STRENGTH_DELEGATION_UNRESOLVED, categories: ['feasibility'], params: { requester: S, requestId: S, purpose: S, cause: S, missingRules: L }, audience: 'user', severity: 'notice' },
   { code: GP_CODES.PROGRAMME_INTENT_INCOMPLETE, categories: ['feasibility'], params: { sport: S, missing: L }, audience: 'user', severity: 'error' },

@@ -226,3 +226,35 @@ export function adaptationChangesText(changes: readonly string[]): string[] {
     return '';
   }).filter(Boolean);
 }
+
+// ——— P1 — programmation Musculation : libellés (lecture des décisions persistées)
+
+export const MUSCLE_GROUP_LABELS: Readonly<Record<string, string>> = {
+  chest: 'Pectoraux', back: 'Dos', shoulders: 'Épaules', arms: 'Bras', quads: 'Quadriceps', hamstrings: 'Ischio-jambiers',
+  glutes: 'Fessiers', calves: 'Mollets', core: 'Tronc',
+};
+const STRUCTURE_LABELS: Readonly<Record<string, string>> = {
+  lower_knee: 'genoux / cuisses', lower_hip: 'hanches / chaîne postérieure', upper_push: 'poussées du haut du corps', upper_pull: 'tirages du haut du corps', grip: 'préhension', trunk: 'tronc', lower_back: 'bas du dos',
+};
+const SPORT_OF_SOURCE: Readonly<Record<string, string>> = { running: 'course', crosstraining: 'Cross-training', hyrox: 'HYROX', strength: 'musculation' };
+
+/** Titre d'une séance avec sa variante (« Full body A ») quand la semaine en compte plusieurs du même type. */
+export function sessionTitle(v: { readonly sport: string; readonly archetypeId: string | null; readonly dataError: SessionView['dataError']; readonly strengthVariant?: string | null }): string {
+  const name = sessionName(v.sport, v.archetypeId, v.dataError);
+  return v.sport === 'strength' && v.strengthVariant ? `${name} ${v.strengthVariant}` : name;
+}
+
+/** Raison d'allègement (interférence multisport tracée par Strength), en clair. */
+export function reductionText(r: { readonly withSport: string; readonly hours: number; readonly structure: string; readonly action: string }): string {
+  const when = r.hours < 0 ? `${SPORT_OF_SOURCE[r.withSport] ?? r.withSport} ${r.hours === -24 ? 'la veille' : `${String(Math.round(-r.hours / 24))} j avant`}` : `${SPORT_OF_SOURCE[r.withSport] ?? r.withSport} ${r.hours === 24 ? 'le lendemain' : `${String(Math.round(r.hours / 24))} j après`}`;
+  const what = r.action === 'rir_only' ? 'effort plus facile' : 'moins de séries et effort plus facile';
+  return `Allégée (${what}) sur ${STRUCTURE_LABELS[r.structure] ?? r.structure} : ${when}.`;
+}
+
+/** Signal de récupération (règle non résolue) en clair. */
+export function recoveryText(r: { readonly first: { readonly date: string; readonly kind: string }; readonly second: { readonly date: string; readonly kind: string }; readonly groups: readonly string[]; readonly sameExercises: readonly string[] }): string {
+  const k = (x: string) => (x === 'strength' ? 'Musculation' : 'bloc de force Cross-training');
+  const groups = r.groups.map((g) => (MUSCLE_GROUP_LABELS[g] ?? g).toLowerCase()).join(', ');
+  const same = r.sameExercises.length > 0 ? ` Même exercice deux jours de suite : ${r.sameExercises.map((e) => exerciseLabel(e)).join(', ')}.` : '';
+  return `Séances de force rapprochées (${k(r.first.kind)} le ${r.first.date.slice(8)}/${r.first.date.slice(5, 7)}, ${k(r.second.kind)} le ${r.second.date.slice(8)}/${r.second.date.slice(5, 7)}) sollicitant : ${groups || 'les mêmes mouvements'}.${same} KAIRO n’a pas encore de règle validée de récupération entre séances de force : rien n’est déplacé automatiquement.`;
+}
