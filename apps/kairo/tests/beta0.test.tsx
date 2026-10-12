@@ -15,7 +15,12 @@ afterEach(cleanup);
 const MONDAY = '2026-10-05';
 const at = (today: string, time = '07:30:00') => (): Clock => ({ today, now: `${today}T${time}.000Z` });
 const mount = (storage: MemoryStorage, clock = at(MONDAY)) => render(<StoreProvider storage={storage} clock={clock}><App /></StoreProvider>);
-const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
+const click = (name: string | RegExp) => {
+  fireEvent.click(screen.getByRole('button', { name }));
+  // P0 — démarrage : contrôle pré-séance passé sans réponse (état inconnu) ; vérifié explicitement dans precheck-dom.
+  const d = screen.queryByRole('dialog', { name: 'Avant de commencer' });
+  if (d) fireEvent.click(within(d).getByRole('button', { name: 'Passer' }));
+};
 const saved = (storage: MemoryStorage): AppState => JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}') as AppState;
 const fullGym = EQUIPMENT_PRESETS.find((p) => p.id === 'preset.full_gym')?.equipment ?? [];
 

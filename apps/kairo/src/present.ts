@@ -2,7 +2,7 @@
  * Mapping de PRÉSENTATION Beta 0 (UI uniquement) : identifiants et catégories du backend → libellés compréhensibles.
  * Aucun code interne n'est affiché tel quel ; aucune décision sportive ici.
  */
-import { CT_FORMAT_LABELS, CT_INTENT_LABELS, HR_ROLE_LABELS, RUNNING_ARCHETYPE_LABELS, RUNNING_ROLE_LABELS, SPORT_LABELS } from '@hybridsport/app-core';
+import { CT_FORMAT_LABELS, CT_INTENT_LABELS, exerciseLabel, HR_ROLE_LABELS, RUNNING_ARCHETYPE_LABELS, RUNNING_ROLE_LABELS, SPORT_LABELS } from '@hybridsport/app-core';
 import type { Beta0WeekView, SessionView, SessionViewStatus } from '@hybridsport/app-core';
 
 const STRENGTH_TITLES: Readonly<Record<string, string>> = { str_full_body: 'Full body', str_upper: 'Haut du corps', str_lower: 'Bas du corps', str_support: 'Renforcement' };
@@ -173,3 +173,54 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   FIELD_FEEDBACK_INVALID: 'Réponse invalide.',
   PROGRAMME_SESSION_IN_PROGRESS: 'Une séance est en cours : terminez-la avant de modifier le programme. Rien n’a été modifié.',
 };
+
+// ——— P0 — contrôle pré-séance : libellés (choix fermés, aucun diagnostic)
+
+export const AREA_LABELS: Readonly<Record<string, string>> = {
+  shoulder: 'Épaule', elbow: 'Coude', wrist_hand: 'Poignet / main', neck: 'Cou', upper_back: 'Haut du dos', lower_back: 'Bas du dos',
+  hip_groin: 'Hanche / aine', knee: 'Genou', lower_leg: 'Jambe (mollet, tibia)', ankle_foot: 'Cheville / pied',
+};
+/** Niveaux P1–P4 : libellés de l'architecture validée (spec moteur 09 §7.2), jamais un diagnostic. */
+export const PAIN_LEVEL_LABELS: Readonly<Record<string, string>> = {
+  P1: 'Gêne légère', P2: 'Douleur qui gêne certains mouvements', P3: 'Douleur importante',
+  P4: 'Signal général inquiétant (pas seulement une zone)',
+};
+export const FATIGUE_LABELS: Readonly<Record<string, string>> = { low: 'Faible', moderate: 'Modérée', high: 'Élevée', unknown: 'Je ne sais pas' };
+export const RECOVERY_LABELS: Readonly<Record<string, string>> = { good: 'Bonne', average: 'Moyenne', poor: 'Mauvaise', unknown: 'Je ne sais pas' };
+export const READINESS_LABELS: Readonly<Record<string, string>> = { unknown: 'État du jour inconnu', normal: 'État du jour normal', caution: 'Prudence (fatigue ou récupération)', reduce: 'Allègement' };
+const NEED_LABELS: Readonly<Record<string, string>> = {
+  push_horizontal: 'poussée horizontale (pectoraux)', push_vertical: 'poussée verticale (épaules)', pull_horizontal: 'tirage horizontal (dos)', pull_vertical: 'tirage vertical (dos)',
+  knee_dominant: 'mouvement dominante genou (squat)', hip_dominant: 'mouvement dominante hanche', lunge: 'fente', core: 'gainage',
+};
+
+/** Raisons d'une décision du contrôle, en clair (codes inconnus ignorés : jamais de code brut affiché). */
+export function checkInReasonsText(reasons: readonly { readonly code: string; readonly params: Readonly<Record<string, unknown>> }[]): string[] {
+  const s = (v: unknown): string => (typeof v === 'string' ? v : '');
+  const out = reasons.flatMap((r) => {
+    const p = r.params;
+    switch (r.code) {
+      case 'SELECT.BLOCKING_NEED': return [`Aucun exercice compatible avec votre état pour : ${NEED_LABELS[s(p.need)] ?? 'un mouvement obligatoire de la séance'}.`];
+      case 'SAFETY.PAIN.ZONE_RESTRICTED': return [`${exerciseLabel(s(p.exerciseId))} sollicite la zone ${(AREA_LABELS[s(p.bodyArea)] ?? '').toLowerCase()} : ${p.painLevel === 'P1' ? 'prudence' : 'retiré ou remplacé'}.`];
+      case 'SAFETY.PAIN.P4_INTERRUPTED': return ['Signal général : la séance est interrompue par sécurité.'];
+      case 'SAFETY.PROGRAM_PAUSED': return ['Les règles de sécurité suspendent la planification (douleur importante ou étendue).'];
+      case 'KAIRO.CHECKIN_PAIN_ESCALATED': return ['Douleur signalée à plusieurs reprises : elle est traitée avec plus de prudence.'];
+      case 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED': return ['État du jour enregistré : cette séance n’est pas ajustée automatiquement (aucune règle d’adaptation pour ce type de séance).'];
+      case 'KAIRO.CHECKIN_NO_CHANGE': return ['État du jour pris en compte : aucun changement nécessaire.'];
+      default: return [];
+    }
+  });
+  return [...new Set(out)];
+}
+
+/** Changements d'une séance adaptée au démarrage, en clair. */
+export function adaptationChangesText(changes: readonly string[]): string[] {
+  return changes.map((c) => {
+    const [kind, ex = '', delta = ''] = c.split(':');
+    const [a = '', b = ''] = delta.split('>');
+    if (kind === 'removed') return `${exerciseLabel(ex)} retiré`;
+    if (kind === 'added') return `${exerciseLabel(ex)} ajouté`;
+    if (kind === 'sets') return `${exerciseLabel(ex)} : ${a} → ${b} séries de travail`;
+    if (kind === 'rir') return `${exerciseLabel(ex)} : effort plus ${Number(b) > Number(a) ? 'facile' : 'soutenu'} (${a} → ${b} répétitions en réserve)`;
+    return '';
+  }).filter(Boolean);
+}

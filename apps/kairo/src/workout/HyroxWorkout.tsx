@@ -6,9 +6,10 @@
  * Transitions : aucune durée affichée (inconnue). Résultat structuré validé par le moteur (terminée / time cap / arrêt).
  */
 import { useEffect, useState } from 'react';
-import { controlHrTimer, exerciseLabel, finishProgrammeSession, HR_ROLE_LABELS, HR_STRUCTURE_LABELS, hrClock, hrElapsedS, hrProgress, hrWorkoutOfView, recordHrLoad, setHrSteps, startProgrammeSession } from '@hybridsport/app-core';
+import { controlHrTimer, exerciseLabel, finishProgrammeSession, HR_ROLE_LABELS, HR_STRUCTURE_LABELS, hrClock, hrElapsedS, hrProgress, hrWorkoutOfView, recordHrLoad, setHrSteps } from '@hybridsport/app-core';
 import type { FinishInput, HrStep, HrWorkout, HyroxComponent, ProgrammeSessionView } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
+import { AdaptationNotice, useStartFlow } from '../precheck/PreSessionCheck.js';
 import { Notice, sessionDay, startLabel, Topbar } from '../ui.js';
 import { STATUS_LABELS } from '../present.js';
 import { BlockNotice, isBlock } from '../field/BlockScope.js';
@@ -112,6 +113,8 @@ function HrFinishSheet({ finished, capReached, onCancel, onSubmit }: { finished:
 
 export function HyroxWorkout({ v, onBack }: { v: ProgrammeSessionView; onBack: () => void }) {
   const store = useStore();
+  // P0 — nouveau démarrage : contrôle pré-séance (reprise : directe).
+  const flow = useStartFlow();
   const [finishing, setFinishing] = useState(false);
   const [, setTick] = useState(0);
   const w = hrWorkoutOfView(v);
@@ -147,6 +150,7 @@ export function HyroxWorkout({ v, onBack }: { v: ProgrammeSessionView; onBack: (
             <span className="k-pill num">Time cap {formatChrono(w.timeCapS)}</span>
           </div>
           <BlockNotice c={v.composition} />
+          <AdaptationNotice v={v} />
           {finished && <span className="k-pill done">✓ {STATUS_LABELS[v.result?.completion ?? 'completed_as_prescribed']}</span>}
         </header>
 
@@ -205,8 +209,9 @@ export function HyroxWorkout({ v, onBack }: { v: ProgrammeSessionView; onBack: (
           </div>
         )}
         {editable && <button className="k-cta ghost" onClick={() => setFinishing(true)}>Terminer la séance</button>}
-        {!log && !finished && <div className="k-dock"><button className="k-cta" onClick={() => store.apply((s, c) => startProgrammeSession(s, c, v.requestId))}>{startLabel(v)}</button></div>}
+        {!log && !finished && <div className="k-dock"><button className="k-cta" onClick={() => flow.start(v.requestId)}>{startLabel(v)}</button></div>}
       </div>
+      {flow.sheet}
       {finishing && editable && (
         <HrFinishSheet finished={prog.finished} capReached={clock.capReached} onCancel={() => setFinishing(false)} onSubmit={(f) => {
           if (store.apply((s, c) => finishProgrammeSession(s, c, { requestId: v.requestId, ...f }))) setFinishing(false);

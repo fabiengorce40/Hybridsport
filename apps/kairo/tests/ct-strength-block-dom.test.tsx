@@ -56,6 +56,7 @@ describe('bloc de force délégué (DOM)', () => {
     // Aucune validation manuelle globale du bloc de force.
     expect(within(strengthBlock()).queryByRole('button', { name: 'Marquer le bloc terminé' })).toBeNull();
     fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Avant de commencer' })).getByRole('button', { name: 'Passer' }));
     const total = checks().length;
     expect(total).toBeGreaterThan(1);
     // Première série : charge saisie, validée ⇒ chrono de repos (persisté).

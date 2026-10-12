@@ -6,7 +6,7 @@
  * séance a changé (le pec deck n'y figure plus) ; l'exercice « sans alternative » vérifié est désormais les tractions.
  */
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { createBeta0Programme, emptyState, EQUIPMENT_PRESETS, exerciseLabel, MemoryStorage, saveState } from '@hybridsport/app-core';
 import type { Clock } from '@hybridsport/app-core';
 import { App } from '../src/App.js';
@@ -29,6 +29,7 @@ describe('alternatives dans la séance', () => {
     render(<StoreProvider storage={storage} clock={clock}><App /></StoreProvider>);
     fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));
     fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Avant de commencer' })).getByRole('button', { name: 'Passer' }));
     const section = (id: string) => screen.getByRole('region', { name: new RegExp(`: ${exerciseLabel(id)}$`) }).textContent ?? '';
     expect(section('ex.pull_up')).not.toMatch(/Alternative/);
     expect(section('ex.bench_press')).toContain(`Alternatives prévues (compatibles) : ${exerciseLabel('ex.db_bench_press')}, ${exerciseLabel('ex.machine_chest_press')}.`);

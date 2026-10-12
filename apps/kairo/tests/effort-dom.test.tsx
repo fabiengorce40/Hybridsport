@@ -41,6 +41,7 @@ describe('effort observé (RIR) dans la séance', () => {
     render(<StoreProvider storage={storage} clock={clock}><App /></StoreProvider>);
     fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));
     fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Avant de commencer' })).getByRole('button', { name: 'Passer' }));
     const section = screen.getByRole('region', { name: new RegExp(`: ${exerciseLabel('ex.bench_press')}$`) });
     // Avant toute série validée : aucune saisie d'effort proposée.
     expect(within(section).queryByRole('group', { name: /Répétitions en réserve/ })).toBeNull();

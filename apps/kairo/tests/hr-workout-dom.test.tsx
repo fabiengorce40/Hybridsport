@@ -51,6 +51,7 @@ describe('séance HYROX (DOM)', () => {
     // Avant départ : le parcours prescrit est visible (station → course → …), aucun chrono.
     expect(screen.getByRole('list', { name: 'Parcours de la séance' })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Avant de commencer' })).getByRole('button', { name: 'Passer' }));
     expect(screen.getByRole('timer', { name: 'Chrono de la séance' }).textContent).toContain('Time cap');
     const nowCard = () => screen.getByLabelText('Maintenant');
     expect(nowCard().textContent).toContain('Station');
@@ -107,6 +108,7 @@ describe('séance HYROX (DOM)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Planning' }));
     fireEvent.click(screen.getAllByRole('button', { name: /^HYROX : Capacité stations/ })[0] as HTMLElement);
     fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));
+    fireEvent.click(within(screen.getByRole('dialog', { name: 'Avant de commencer' })).getByRole('button', { name: 'Passer' }));
     for (let k = 0; k < 20 && screen.queryByRole('button', { name: /[ÉéEe]tape faite/ })?.hasAttribute('disabled') === false; k += 1) fireEvent.click(screen.getByRole('button', { name: /[ÉéEe]tape faite/ }));
     expect(screen.getByText('Toutes les étapes sont validées')).toBeTruthy();
     now = '2026-10-05T07:55:00.000Z';

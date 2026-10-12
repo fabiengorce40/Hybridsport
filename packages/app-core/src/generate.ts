@@ -19,6 +19,7 @@ import { dateOf, daysBetween, sessionInstant, weekStartOf } from './dates.js';
 import type { AppState, Authority, GeneratedSession, PlanEntry, Profile, Reason } from './model.js';
 import { STIMULUS_BY_GOAL } from './planner.js';
 import { anchorsToDeclare } from './progression.js';
+import { UNKNOWN_CORE_STATE } from './checkin.js';
 import { activePainPause } from './weeks.js';
 import { runningContent, strengthContent } from './provisional-content.js';
 import type { ContentSource } from './provisional-content.js';
@@ -28,7 +29,8 @@ const S_PER_MIN = 60;
 // technical-constant: fenêtre du champ `hardSets.d7` du contrat StrengthContext (7 jours)
 const D7 = 7;
 
-const FRESH_STATE: CoreState = { readiness: 'normal', activePain: [], painHistory: 'available', dayAvailable: true };
+// P0 — aucun état du jour déclaré sur ce chemin : INCONNU, jamais « normal » par défaut (spec 04 S4).
+const FRESH_STATE: CoreState = UNKNOWN_CORE_STATE;
 
 export function coreProfile(p: Profile) {
   return {

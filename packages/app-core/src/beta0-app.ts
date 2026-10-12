@@ -17,7 +17,7 @@ import { addDays, dateOf, normalizeInstant, weekStartOf } from './dates.js';
 import { AppError } from './errors.js';
 import { emptyState, zProfile } from './model.js';
 import type { CompositionScope } from './beta0.js';
-import type { AppState, CtRuntime, Feedback, HrRuntime, PersistedWeek, ProfileInput, ProgrammeLog, Rest, SetLog } from './model.js';
+import type { AppState, CtRuntime, Feedback, HrRuntime, PersistedWeek, ProfileInput, ProgrammeLog, Reason, Rest, SetLog } from './model.js';
 import { hrStationsOf, hrWorkoutOf } from './hr-workout.js';
 import type { HrWorkout } from './hr-workout.js';
 import { closeProgrammeWeekInApp, planProgrammeCurrentWeek, portInputs, ProgrammeError, recordSessionExecution, startProgramme } from './programme.js';
@@ -29,6 +29,11 @@ import { declareRunningPerformance } from './running-profile.js';
 import type { DeclaredPerformance } from './running-profile.js';
 import type { ProgrammeEnvironment } from './programme.js';
 import { activePainPause } from './weeks.js';
+import { CHECKIN_HISTORY_MAX, evaluateCheckIn, zCheckInInput } from './checkin.js';
+import type { CheckIn, CheckInInput } from './checkin.js';
+import { decideStart } from './start-check.js';
+import { strengthContent } from './provisional-content.js';
+import type { LoadedCatalog, LoadedRuleset } from '@hybridsport/engine';
 
 // technical-constant: conversion secondes → millisecondes
 const MS_PER_S = 1000;
@@ -316,14 +321,20 @@ export interface ProgrammeSessionView {
   readonly result: ProgrammeResult | null;
   /** Semaine planifiée en autorité expérimentale. */
   readonly experimental: boolean;
+  /** P0 — adaptation de la séance au démarrage (contrôle pré-séance) : changements et raisons ; null si aucune. */
+  readonly adaptation: { readonly changes: readonly string[]; readonly reasons: readonly Reason[] } | null;
+  /** P0 — dernier contrôle pré-séance de cette séance (décision et raisons), null si aucun. */
+  readonly checkIn: CheckIn | null;
 }
 
 /** Lecture d'une séance planifiée du programme (prescription du moteur, saisies en cours, résultat). */
 export function selectProgrammeSession(state: AppState, requestId: string): ProgrammeSessionView | null {
   const r = requestOf(state, requestId);
-  const record = recordOf(r);
-  const session = record?.session;
   const log = state.programmeLogs[requestId];
+  // P0 — séance ADAPTÉE au démarrage (contrôle pré-séance) : elle remplace la prescription planifiée pour cette exécution.
+  const adapted = log?.adaptation ? migrateToCurrent<SessionRecord>(log.adaptation.record) : undefined;
+  const record = adapted?.ok ? adapted.value : recordOf(r);
+  const session = record?.session;
   const date = r?.status === 'planned' ? r.date : log ? dateOf(log.startedAt) : r?.composedFor?.referenceDate;
   if (!r || !date || !record || !session) return null;
   const week = Object.values(state.planner.weeks).find((w) => w.requests.includes(r));
@@ -332,6 +343,8 @@ export function selectProgrammeSession(state: AppState, requestId: string): Prog
     estimatedDurationS: record.durationEstimate.availability === 'AVAILABLE' ? record.durationEstimate.p50 : null,
     log: state.programmeLogs[requestId] ?? null, result: state.programmeState?.results.find((x) => x.requestId === requestId) ?? null,
     experimental: week?.authority !== 'production',
+    adaptation: log?.adaptation ? { changes: [...log.adaptation.changes], reasons: log.adaptation.reasons.map((x) => ({ ...x, params: { ...x.params } })) } : null,
+    checkIn: [...state.checkIns].reverse().find((c) => c.requestId === requestId) ?? null,
   };
 }
 
@@ -407,8 +420,18 @@ const START_ERROR: Readonly<Record<NonNullable<StartAssessment['cause']>, string
   QUALITY_BLOCKED: 'QUALITY_BLOCKED', ACTIVE_PAIN: 'SAFETY_PAUSE_ACTIVE_PAIN', OUTSIDE_WEEK: 'MANUAL_START_OUTSIDE_WEEK', INTERFERENCE: 'MANUAL_START_INTERFERENCE',
 };
 
-/** Démarre (ou reprend) une séance planifiée, non encore enregistrée. */
-export function startProgrammeSession(state: AppState, clock: Clock, requestId: string, env: ProgrammeEnvironment = beta0Environment()): AppState {
+/**
+ * Démarre (ou reprend) une séance planifiée, non encore enregistrée.
+ *
+ * P0 — CONTRÔLE PRÉ-SÉANCE avant tout NOUVEAU démarrage (tous les chemins : planning, accueil, « Faire maintenant »,
+ * séance non placée) : `checkIn` = état du jour déclaré ; absent = contrôle passé sans réponse (état INCONNU, jamais
+ * « normal »). Le contrôle est enregistré, puis :
+ *   - règles G1 du CORE (douleur) ⇒ pause / interruption : pause douleur active, séance NON démarrée ;
+ *   - sinon, si l'état l'exige : séance RÉGÉNÉRÉE par son moteur avec l'état du jour (adaptée), ou REPORTÉE si le
+ *     moteur / le CORE la refuse dans cet état ; sinon inchangée.
+ * Une séance déjà commencée est REPRISE telle quelle (aucun contrôle, aucune donnée perdue).
+ */
+export function startProgrammeSession(state: AppState, clock: Clock, requestId: string, env: ProgrammeEnvironment = beta0Environment(), checkIn?: CheckInInput): AppState {
   const v = selectProgrammeSession(state, requestId);
   if (!v) throw new AppError('SESSION_UNAVAILABLE');
   if (v.result) throw new AppError('SESSION_FINISHED');
@@ -420,16 +443,49 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   const a = startAssessment(state, clock, requestId, env);
   if (!a.allowed && a.cause) throw new AppError(START_ERROR[a.cause]);
   const now = normalizeInstant(clock.now);
+  const input = zCheckInInput.safeParse(checkIn ?? {});
+  if (!input.success) throw new AppError('CHECKIN_INVALID');
+  const ci = input.data;
+  const answered = checkIn !== undefined && (ci.pains.length > 0 || ci.generalSignal || ci.fatigue !== 'unknown' || ci.recovery !== 'unknown');
+  const id = `checkin.${requestId}.${now}`;
+  const content = sportContent(env, v.sport);
+  const ev = evaluateCheckIn({ id, at: now, pains: ci.pains, generalSignal: ci.generalSignal, fatigue: ci.fatigue, recovery: ci.recovery }, state.checkIns, safetyRuleset(env));
+  const record = (decision: CheckIn['decision'], reasons: readonly Reason[]): CheckIn => ({
+    id, at: now, requestId, answered, pains: ev.reports.filter((r) => r.level !== 'P4').flatMap((r) => r.bodyAreas.map((area) => ({ area, level: r.level }))), generalSignal: ci.generalSignal,
+    fatigue: ci.fatigue, recovery: ci.recovery, readiness: ev.readiness, decision, reasons: reasons.map((x) => ({ code: x.code, params: { ...x.params } })),
+  });
+  const withCheckIn = (s: AppState, c: CheckIn): AppState => ({ ...s, checkIns: [...s.checkIns, c].slice(-CHECKIN_HISTORY_MAX) });
+  // Règles G1 du CORE : pause du programme ou interruption (P4) ⇒ pause douleur active (garde commune), aucun démarrage.
+  if (ev.safety.pauseProgram || ev.safety.interruptSession) {
+    const areas = [...new Set(ev.reports.flatMap((r) => r.bodyAreas))].sort();
+    const reasons = [...ev.reasons.map((x) => ({ code: x.code, params: { ...x.params } })), { code: 'KAIRO.CHECKIN_SAFETY_PAUSE', params: { requestId, ...(ev.safety.messageKey ? { messageKey: ev.safety.messageKey } : {}) } }];
+    return { ...withCheckIn(state, record('paused', reasons)), safety: { activePain: { reportedAt: now, areas, sessionKey: requestId } } };
+  }
+  const d = decideStart(state, requestId, v.session, ev, env, (ex) => content?.catalog.exercise(ex)?.painSensitiveAreas ?? []);
+  if (d.kind === 'postponed') return withCheckIn(state, record('postponed', d.reasons));
+  const adaptation = d.kind === 'adapted' ? { checkInId: id, record: d.adaptation.record, changes: [...d.adaptation.changes], reasons: d.adaptation.reasons.map((x) => ({ code: x.code, params: { ...x.params } })) } : undefined;
+  const s1 = withCheckIn(state, record(d.kind === 'adapted' ? 'adapted' : 'unchanged', d.reasons));
+  const decoded = adaptation ? migrateToCurrent<SessionRecord>(adaptation.record) : undefined;
+  const session = decoded?.ok ? decoded.value.session : v.session;
   // Cross-training : « Commencer » démarre le chrono (horodaté) ; tours et répétitions à zéro (saisies de l'athlète).
   // C4 : un échauffement PRÉCÈDE le bloc principal ⇒ chrono du bloc principal NON démarré (démarrage explicite, après
   // l'échauffement) ; le chrono mesure toujours le seul bloc principal (résultat du format inchangé).
-  const warmupFirst = v.sport === 'crosstraining' && v.session.blocks.findIndex((b) => b.kind === 'warmup') !== -1
-    && v.session.blocks.findIndex((b) => b.kind === 'warmup') < v.session.blocks.findIndex((b) => b.kind === 'conditioning');
+  const warmupFirst = v.sport === 'crosstraining' && session.blocks.findIndex((b) => b.kind === 'warmup') !== -1
+    && session.blocks.findIndex((b) => b.kind === 'warmup') < session.blocks.findIndex((b) => b.kind === 'conditioning');
   const ct = v.sport === 'crosstraining' ? { ct: { runningSince: warmupFirst ? null : now, accumulatedS: 0, rounds: 0, partialReps: 0 } } : {};
   // HYROX : séance H2 lisible exigée (jamais de démarrage sur une séance hors contrat) ; chrono démarré, position 0.
   if (v.sport === 'hyrox' && !hrWorkoutOfView(v)) throw new AppError('HR_SESSION_UNREADABLE');
   const hr = v.sport === 'hyrox' ? { hr: { runningSince: now, accumulatedS: 0, steps: 0, loads: [] } } : {};
-  return withLog(state, { requestId, sport: v.sport, startedAt: now, sets: [], painItems: [], rest: null, ...ct, ...hr });
+  return withLog(s1, { requestId, sport: v.sport, startedAt: now, sets: [], painItems: [], rest: null, ...ct, ...hr, ...(adaptation ? { adaptation } : {}) });
+}
+
+/** Contenu (ruleset, catalogue) de la discipline d'une séance dans l'environnement. */
+function sportContent(env: ProgrammeEnvironment, sport: ProgrammeSessionView['sport']): { readonly catalog: LoadedCatalog } | undefined {
+  return env[sport]?.content;
+}
+/** Ruleset portant les règles G1 de douleur du CORE (contenu Strength de l'environnement, sinon contenu provisoire). */
+function safetyRuleset(env: ProgrammeEnvironment): LoadedRuleset {
+  return env.strength?.content.ruleset ?? strengthContent().ruleset;
 }
 
 // ——— HYROX (H2.5) : chrono horodaté, position dans la séquence, charges réelles — aucune écriture par seconde

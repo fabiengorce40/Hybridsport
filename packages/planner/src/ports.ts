@@ -133,7 +133,8 @@ export interface EnginePortDefinition<C> {
   readonly engine: SportEngine<C>;
   readonly content: Content;
   readonly profile: CoreProfile;
-  readonly state: CoreState;
+  /** État CORE du créneau : constant, ou lu par date (état du jour déclaré au contrôle pré-séance, sinon inconnu). */
+  readonly state: CoreState | ((slot: SlotRequest) => CoreState);
   readonly history: readonly FingerprintHistoryEntry[];
   readonly clock: PlannerClock;
   readonly consumesNeighbours?: boolean;
@@ -223,7 +224,7 @@ export function createEnginePort<C>(def: EnginePortDefinition<C>): SportPort {
           id: `plan.${slot.requestId}`, discipline: def.discipline, archetypeId: i.archetypeId, stimulus: i.stimulus, objective: i.objective, priority: 'standard', phase: i.phase,
           availableTimeS, targetDurationS: targetFromAvailable(availableTimeS, readToleranceProfile(def.content.ruleset, i.toleranceProfile)), repetitionIntents: def.repetitionIntents?.(slot, disciplineContext) ?? [], plannerNotes: [...(def.plannerNotes ?? [])],
         },
-        profile: def.profile, state: def.state,
+        profile: def.profile, state: typeof def.state === 'function' ? def.state(slot) : def.state,
         history: [...def.history, ...(def.extraHistory?.(slot) ?? [])].filter((h) => h.at < now),
         disciplineContext,
       };

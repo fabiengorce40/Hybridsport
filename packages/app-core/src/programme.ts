@@ -185,7 +185,9 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
   if (manual && x.completion === 'missed') return reject('EXECUTION_UNKNOWN_SESSION');
   if (req.sport !== x.sport) return reject('EXECUTION_SPORT_MISMATCH');
   if (ps.results.some((r) => r.requestId === x.requestId)) return reject('EXECUTION_DUPLICATE', pgReasons.emit(PG_CODES.RESULT_DUPLICATE, { requestId: x.requestId }));
-  const decoded = planned.record ? migrateToCurrent<SessionRecord>(planned.record) : undefined;
+  // P0 — séance ADAPTÉE au démarrage (contrôle pré-séance) : c'est elle qui a été exécutée.
+  const adapted = state.programmeLogs[x.requestId]?.adaptation?.record;
+  const decoded = adapted ? migrateToCurrent<SessionRecord>(adapted) : planned.record ? migrateToCurrent<SessionRecord>(planned.record) : undefined;
   const record = decoded?.ok ? decoded.value : undefined;
   if (!record) return reject('EXECUTION_SESSION_UNREADABLE');
   const session = record.session;
