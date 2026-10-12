@@ -216,6 +216,7 @@ describe('codes et correspondance d’archétype', () => {
       [CT_CODES.C3_STRUCTURE]: 'internal/info/information',
       [CT_CODES.C4_BLOCK]: 'internal/info/information',
       [CT_CODES.C4_BLOCK_NOT_GENERATED]: 'internal/notice/information',
+      [CT_CODES.C4_VARIANT_RETRY]: 'internal/notice/information',
       [CT_CODES.C4_SESSION_STATUS]: 'internal/info/information',
       [CT_CODES.C3_BLOCK_NOT_GENERATED]: 'internal/notice/information',
       [CT_CODES.C3_STRUCTURE_UNAVAILABLE]: 'user/error/feasibility',

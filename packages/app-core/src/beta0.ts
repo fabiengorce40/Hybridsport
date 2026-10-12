@@ -387,8 +387,14 @@ export interface C4View {
   readonly notGenerated: readonly string[];
   /** Durée PLANIFIÉE de la séance complète (valeurs gouvernées), null hors séance complète. */
   readonly plannedDurationS: number | null;
-  /** Cible produit 45–75 min : position de la séance (jamais remplie artificiellement). */
+  /** Cible produit 45–75 min : position de la durée PLANIFIÉE (jamais remplie artificiellement). */
   readonly target: { readonly minS: number; readonly maxS: number; readonly position: string } | null;
+  /**
+   * C4.1 — durée ESTIMÉE par le CORE pour la séance complète (consignes et transitions comprises, médiane), null si
+   * indisponible ; `estimatedPosition` : sa position par rapport à la cible produit (lecture, aucune règle nouvelle).
+   */
+  readonly estimatedDurationS: number | null;
+  readonly estimatedPosition: 'below' | 'within' | 'above' | null;
   /** Blocs complémentaires générés, dans l'ordre de la séance (le bloc principal est lu par `ctWorkoutOf`). */
   readonly blocks: readonly C4BlockView[];
 }
@@ -400,26 +406,25 @@ const strs = (x: unknown): string[] => (Array.isArray(x) ? x.filter((y): y is st
  * C4 — lecture fail-closed : « séance complète » seulement si le statut tracé est FULL_SESSION ET que chaque bloc
  * déclaré généré est PRÉSENT dans la séance persistée (sinon bloc principal uniquement, cause `PERSISTED_BLOCKS_MISMATCH`).
  */
-function c4ViewOf(reasons: readonly { readonly code: string; readonly params: Readonly<Record<string, unknown>> }[], session: SessionDraft | undefined): C4View | null {
+function c4ViewOf(reasons: readonly { readonly code: string; readonly params: Readonly<Record<string, unknown>> }[], session: SessionDraft | undefined, estimateS: number | null): C4View | null {
   const st = [...reasons].reverse().find((x) => x.code === C4_STATUS);
   // Sans statut C4 tracé (C3 seul, donnée antérieure) : aucune lecture C4, portée P0 inchangée.
   if (!st) return null;
   const raw = String(st.params.status);
   const status: C4SessionStatus = (C4_STATUSES as readonly string[]).includes(raw) ? raw as C4SessionStatus : 'MAIN_BLOCK_ONLY';
   const base = { cause: String(st.params.cause), notGenerated: strs(st.params.notGenerated) };
-  if (!session) return { status: 'BLOCKED', ...base, plannedDurationS: null, target: null, blocks: [] };
-  if (status !== 'FULL_SESSION') return { status, ...base, plannedDurationS: null, target: null, blocks: [] };
+  if (!session) return { status: 'BLOCKED', ...base, plannedDurationS: null, target: null, estimatedDurationS: null, estimatedPosition: null, blocks: [] };
+  if (status !== 'FULL_SESSION') return { status, ...base, plannedDurationS: null, target: null, estimatedDurationS: null, estimatedPosition: null, blocks: [] };
   const blocks = reasons.filter((x) => x.code === C4_BLOCK).flatMap((x): C4BlockView[] => {
     const b = session.blocks.find((y) => y.id.endsWith(`.c4.${String(x.params.block)}`));
     return b ? [{ blockId: b.id, block: String(x.params.block), kind: String(x.params.kind), purpose: String(x.params.purpose), durationS: Number(x.params.durationS), exercises: strs(x.params.exercises) }] : [];
   });
   const declared = strs(st.params.generated).filter((x) => x !== 'conditioning');
-  if (declared.length !== blocks.length || declared.some((d) => !blocks.some((b) => b.block === d))) return { status: 'MAIN_BLOCK_ONLY', ...base, cause: 'PERSISTED_BLOCKS_MISMATCH', plannedDurationS: null, target: null, blocks: [] };
+  if (declared.length !== blocks.length || declared.some((d) => !blocks.some((b) => b.block === d))) return { status: 'MAIN_BLOCK_ONLY', ...base, cause: 'PERSISTED_BLOCKS_MISMATCH', plannedDurationS: null, target: null, estimatedDurationS: null, estimatedPosition: null, blocks: [] };
   const num = Number(st.params.plannedDurationS);
-  return {
-    status, ...base, plannedDurationS: Number.isFinite(num) && num > 0 ? num : null,
-    target: { minS: Number(st.params.targetMinS), maxS: Number(st.params.targetMaxS), position: String(st.params.target) }, blocks,
-  };
+  const target = { minS: Number(st.params.targetMinS), maxS: Number(st.params.targetMaxS), position: String(st.params.target) };
+  const estimatedPosition = estimateS === null ? null : estimateS < target.minS ? 'below' : estimateS > target.maxS ? 'above' : 'within';
+  return { status, ...base, plannedDurationS: Number.isFinite(num) && num > 0 ? num : null, target, estimatedDurationS: estimateS, estimatedPosition, blocks };
 }
 const NOT_GENERATED = /^PLAN\.(CROSSTRAINING\.C3|HYROX\.H2)_BLOCK_NOT_GENERATED$/;
 const STRUCTURE_TRACED = /^PLAN\.(CROSSTRAINING\.C3_STRUCTURE|HYROX\.H2_SESSION_STRUCTURE)$/;
@@ -430,7 +435,8 @@ export function compositionScopeOf(r: Pick<PersistedWeek['requests'][number], 's
   const session = (r.record?.data as { session?: SessionDraft } | undefined)?.session;
   const num = (x: unknown): number | null => (typeof x === 'number' && Number.isFinite(x) ? x : null);
   const blockDurationS = !session ? null : r.sport === 'crosstraining' ? ctWorkoutOf(session)?.totalS ?? null : num((session.blocks[0] as { timeCapS?: unknown } | undefined)?.timeCapS);
-  const c4 = r.sport === 'crosstraining' ? c4ViewOf(r.reasons, session) : null;
+  const est = (r.record?.data as { durationEstimate?: { availability?: unknown; p50?: unknown } } | undefined)?.durationEstimate;
+  const c4 = r.sport === 'crosstraining' ? c4ViewOf(r.reasons, session, est?.availability === 'AVAILABLE' ? num(est.p50) : null) : null;
   const durations = { blockDurationS, availableTimeS: num(session?.availableTimeS), targetDurationS: num(session?.targetDurationS), c4 };
   // C4 tracé : il fait autorité sur la structure C3 (dont l'échauffement reste tracé « non généré » par C3).
   if (c4) return c4.status === 'FULL_SESSION' ? { scope: 'FULL_SESSION', notGenerated: c4.notGenerated, status: null, ...durations } : { scope: 'TRAINING_BLOCK', notGenerated: c4.notGenerated.length > 0 ? c4.notGenerated : notGenerated, status: FULL_SESSION_COMPOSITION_UNRESOLVED, ...durations };

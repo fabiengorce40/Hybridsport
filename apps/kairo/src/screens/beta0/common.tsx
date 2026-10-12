@@ -60,7 +60,8 @@ function metaOf(v: SessionItemView): string {
   // Bloc Cross-training : durée PRESCRITE du format (exacte), jamais l'estimation du CORE ni la cible du créneau.
   const blockS = block && v.sport === 'crosstraining' ? v.composition?.blockDurationS ?? null : null;
   // C4 — séance complète : durée PLANIFIÉE de l'ensemble des blocs (valeurs gouvernées), jamais la cible du créneau.
-  const fullS = v.sport === 'crosstraining' && isFullC4(v.composition) ? v.composition?.c4?.plannedDurationS ?? null : null;
+  // C4.1 — estimation du CORE (consignes et transitions comprises) si disponible, sinon durée planifiée des blocs.
+  const fullS = v.sport === 'crosstraining' && isFullC4(v.composition) ? v.composition?.c4?.estimatedDurationS ?? v.composition?.c4?.plannedDurationS ?? null : null;
   const dur = fullS !== null ? `≈ ${approxMinutes(fullS)}` : v.hrTimeCapS !== null ? `time cap ${approxMinutes(v.hrTimeCapS)}`
     : blockS !== null ? approxMinutes(blockS)
     : v.estimatedDurationS !== null ? `≈ ${approxMinutes(v.estimatedDurationS)}`

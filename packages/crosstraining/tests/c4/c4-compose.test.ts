@@ -107,6 +107,28 @@ describe('C4 — temps disponible (plafond) et cible produit 45–75 min (jamais
   });
 });
 
+describe('C4.1 — variante courte avant le repli', () => {
+  it('14. CORE qui refuse la variante longue ⇒ variante courte essayée (C4_VARIANT_RETRY) ; jamais au-delà du temps disponible', () => {
+    let retried = 0;
+    for (let t = 1800; t <= 3600; t += 120) {
+      const x = run({ availableTimeS: t });
+      const warn = x.r.outcome.result.status === 'ok' ? x.r.outcome.result.warnings.find((w) => w.code === 'PLAN.CROSSTRAINING.C4_VARIANT_RETRY') : undefined;
+      if (!warn) continue;
+      retried += 1;
+      expect(warn.params).toEqual({ refused: 'long', retried: 'short' });
+      expect(x.status).toMatchObject({ status: 'FULL_SESSION', variant: 'short' });
+      expect(Number(x.status?.plannedDurationS)).toBeLessThanOrEqual(t);
+    }
+    expect(retried).toBeGreaterThan(0);
+  });
+  it('15. raisons sans doublon (provenance commune C3 / C4 tracée une fois)', () => {
+    const x = run({ availableTimeS: 3600 });
+    const rs = x.r.compose?.ok ? x.r.compose.proposal.reasons : [];
+    const keys = rs.map((r) => `${r.code}|${JSON.stringify(r.params)}`);
+    expect(new Set(keys).size).toBe(keys.length);
+  });
+});
+
 describe('C4 — formats, niveaux, matériel, douleur', () => {
   const only = (stimulus: CtStimulus, format: string) => c3Governance({ c4: true, override: { 'ct.stimulus.admissibleFormats': { ...TEST_C3['ct.stimulus.admissibleFormats'], [stimulus]: [format] } } });
   it.each([

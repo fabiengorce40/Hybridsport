@@ -53,6 +53,12 @@ const asProposalReason = (r: ReasonCode): SportEngineProposalInput['reasons'][nu
   ...r, params: Object.fromEntries(Object.entries(r.params).map(([k, v]) => [k, Array.isArray(v) ? [...v] : v])) as Record<string, string | number | boolean | string[]>, ruleRefs: [...r.ruleRefs],
 });
 
+/** Une raison identique (code et paramètres) n'est persistée qu'une fois : C3 et C4 lisent des paramètres communs. */
+const merged = (a: SportEngineProposalInput['reasons'], b: readonly ReasonCode[]): SportEngineProposalInput['reasons'] => {
+  const seen = new Set(a.map((r) => `${r.code}|${JSON.stringify(r.params)}`));
+  return [...a, ...b.filter((r) => { const k = `${r.code}|${JSON.stringify(r.params)}`; if (seen.has(k)) return false; seen.add(k); return true; }).map(asProposalReason)];
+};
+
 /**
  * Complète la proposition C3. Rend la proposition C3 INCHANGÉE (statut null) si le plan C4 n'est pas gouverné ; sinon
  * une proposition avec statut tracé : séance complète, ou bloc principal seul avec la cause.
@@ -71,10 +77,8 @@ export function composeC4(input: Input, stimulus: CtStimulus, c3: { readonly pla
     status: s, generated: extra.generated ?? ['conditioning'], notGenerated: extra.notGenerated ?? [], cause, plannedDurationS: extra.plannedS ?? 0,
     targetMinS: extra.target?.minS ?? 0, targetMaxS: extra.target?.maxS ?? 0, target: extra.position ?? 'unknown', variant: extra.variant ?? 'none',
   });
-  // Une lecture de paramètre n'est tracée qu'une fois (capacité et lecture directe émettent la même provenance).
-  const uniq = (xs: readonly ReasonCode[]) => [...new Map(xs.map((r) => [`${r.code}|${JSON.stringify(r.params)}`, r])).values()];
   const mainOnly = (s: C4Status, cause: string, more: ReasonCode[] = [], notGenerated: string[] = []): C4Outcome => ({
-    proposal: { ...c3.proposal, reasons: [...c3.proposal.reasons, ...uniq([...trace, ...more, status(s, cause, { notGenerated })]).map(asProposalReason)] }, status: s,
+    proposal: { ...c3.proposal, reasons: merged(c3.proposal.reasons, [...trace, ...more, status(s, cause, { notGenerated })]) }, status: s,
   });
 
   const plan = planRead.value[stimulus];
@@ -163,7 +167,7 @@ export function composeC4(input: Input, stimulus: CtStimulus, c3: { readonly pla
   let marginS: number;
   try { marginS = readToleranceProfile(input.ruleset, c3Session.toleranceProfile).marginS; } catch { return mainOnly('MAIN_BLOCK_ONLY', 'TOLERANCE_PROFILE_UNAVAILABLE', missing); }
   const mainS = c3.plan.blockS;
-  for (const v of VARIANTS) {
+  for (const v of input.discipline.fullSessionVariant === 'short' ? (['short'] as const) : VARIANTS) {
     const b = blocksFor(v);
     const plannedS = b.plannedS + mainS;
     if (!(plannedS <= input.intent.availableTimeS - marginS)) continue;
@@ -182,7 +186,7 @@ export function composeC4(input: Input, stimulus: CtStimulus, c3: { readonly pla
     const notGenerated = [...missing.map((m) => String(m.params.block)), ...b.covered];
     const cause = position === 'within' ? 'WITHIN_PRODUCT_TARGET' : position === 'below' ? 'BELOW_PRODUCT_TARGET_NOT_FILLED' : 'ABOVE_PRODUCT_TARGET';
     const reasons = [...trace, ...b.notes, ...missing, status('FULL_SESSION', cause, { generated: [...b.generated, 'conditioning'], notGenerated, plannedS: Math.round(plannedS), target, position, variant: v })];
-    return { proposal: { ...c3.proposal, session, fingerprintInputs: { ...fp, volumeByItem }, reasons: [...c3.proposal.reasons, ...uniq(reasons).map(asProposalReason)] }, status: 'FULL_SESSION' };
+    return { proposal: { ...c3.proposal, session, fingerprintInputs: { ...fp, volumeByItem }, reasons: merged(c3.proposal.reasons, reasons) }, status: 'FULL_SESSION' };
   }
   return mainOnly('MAIN_BLOCK_ONLY', 'SESSION_EXCEEDS_AVAILABLE_TIME', missing);
 }

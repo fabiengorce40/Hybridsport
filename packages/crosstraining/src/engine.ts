@@ -211,6 +211,14 @@ export function runCrossTrainingC2(engine: CrossTrainingEngine, request: SportSe
   const dc = request.disciplineContext as { readonly capabilityRequests?: readonly string[] } | null;
   const requests = Array.isArray(dc?.capabilityRequests) ? dc.capabilityRequests : [];
   if (outcome.result.status === 'ok' || !requests.includes('ctFullSessionComposition')) return outcome;
+  // C4.1 — variante courte (bornes basses gouvernées) avant le bloc principal seul : le CORE reste l'autorité.
+  if ((dc as { fullSessionVariant?: unknown } | null)?.fullSessionVariant === undefined) {
+    const short = runOnce(engine, { ...request, disciplineContext: { ...(dc as object), fullSessionVariant: 'short' } }, ctx);
+    if (short.result.status === 'ok') {
+      const retry = ctReasons.emit(CT_CODES.C4_VARIANT_RETRY, { refused: 'long', retried: 'short' });
+      return { ...short, result: { ...short.result, warnings: [...short.result.warnings, retry] } };
+    }
+  }
   const fallback = runOnce(engine, { ...request, disciplineContext: { ...(dc as object), capabilityRequests: requests.filter((x) => x !== 'ctFullSessionComposition') } }, ctx);
   if (fallback.result.status !== 'ok') return outcome;
   const reason = ctReasons.emit(CT_CODES.C4_SESSION_STATUS, {

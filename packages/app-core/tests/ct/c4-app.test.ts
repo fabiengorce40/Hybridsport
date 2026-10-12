@@ -4,7 +4,7 @@
  * chrono du bloc principal démarré explicitement, résultat inchangé, quatre semaines, pause douleur.
  */
 import { describe, expect, it } from 'vitest';
-import { controlCtTimer, ctElapsedS, ensureBeta0Week, finishProgrammeSession, recordCtBlock, selectProgrammeSession, startProgrammeSession } from '../../src/index.js';
+import { compactHistory, controlCtTimer, ctElapsedS, DROPPABLE_CODES, ensureBeta0Week, expandFoldedReasons, exportBetaJournal, finishProgrammeSession, HISTORY_COMPACTED, PROVENANCE_FOLDED, recordCtBlock, selectProgrammeSession, startProgrammeSession } from '../../src/index.js';
 import type { AppState } from '../../src/index.js';
 import { at, create, ctSessions, MON1, profile, reload, startCt, week } from './ct-fixtures.js';
 
@@ -26,6 +26,16 @@ describe('C4 — application', () => {
         expect(c4.blocks.length).toBeGreaterThan(0);
         expect(x.composition?.scope).toBe('FULL_SESSION');
       } else expect(x.composition?.scope).toBe('TRAINING_BLOCK');
+    }
+  });
+
+  it('1b. durée ESTIMÉE par le CORE (transitions comprises) exposée, ≥ durée planifiée des blocs, position / cible lue', () => {
+    const s = create();
+    for (const x of ctSessions(s).filter((y) => y.composition?.c4?.status === 'FULL_SESSION')) {
+      const c4 = x.composition?.c4;
+      expect(c4?.estimatedDurationS).toBe(x.estimatedDurationS);
+      expect(c4?.estimatedDurationS ?? 0).toBeGreaterThanOrEqual(c4?.plannedDurationS ?? Infinity);
+      expect(['below', 'within', 'above']).toContain(c4?.estimatedPosition);
     }
   });
 
@@ -108,5 +118,29 @@ describe('C4 — application', () => {
     if (!a || !b) throw new Error('deux séances attendues');
     s = finishProgrammeSession(startCt(s, at(T('07:00')), a.requestId), at(T('07:30')), { requestId: a.requestId, completion: 'abandoned', pain: true });
     expect(code(() => startProgrammeSession(s, at(MON1), b.requestId))).toBe('SAFETY_PAUSE_ACTIVE_PAIN');
+  });
+});
+
+describe('C4.1 — regroupement de provenance des semaines anciennes (sans perte)', () => {
+  it('8. semaine compactée : provenance regroupée, restitution EXACTE (contenu et ordre), idempotence, export restitué', () => {
+    let s = create();
+    s = ensureBeta0Week(s, at('2026-10-12T07:30:00.000Z'));
+    const before = structuredClone(s.planner.weeks['2026-10-05']?.requests.filter((r) => r.sport === 'crosstraining') ?? []);
+    s = ensureBeta0Week(s, at('2026-10-19T07:30:00.000Z'));
+    s = reload(s, '2026-10-19T08:00:00.000Z');
+    const after = s.planner.weeks['2026-10-05']?.requests.filter((r) => r.sport === 'crosstraining') ?? [];
+    expect(after.length).toBe(before.length);
+    for (const [i, r] of after.entries()) {
+      const orig = (before[i]?.reasons ?? []).filter((x) => !DROPPABLE_CODES.has(x.code));
+      expect(r.reasons.some((x) => x.code === PROVENANCE_FOLDED)).toBe(true);
+      expect(r.reasons.filter((x) => x.code.endsWith('.CANDIDATE_VALUE_USED'))).toEqual([]);
+      expect(expandFoldedReasons(r.reasons).filter((x) => x.code !== HISTORY_COMPACTED)).toEqual(orig);
+      expect(JSON.stringify(r.reasons).length).toBeLessThan(JSON.stringify(orig).length);
+    }
+    expect(compactHistory(s)).toBe(s);
+    const j = JSON.parse(exportBetaJournal(s, { build: 'x', builtAt: null, exportedAt: '2026-10-19T09:00:00.000Z' })) as { weeks: { requests: { requestId: string; reasons: { code: string }[] }[] }[] };
+    const exported = j.weeks.flatMap((w) => w.requests).find((r) => r.requestId === after[0]?.requestId);
+    expect(exported?.reasons.some((x) => x.code === PROVENANCE_FOLDED)).toBe(false);
+    expect(exported?.reasons.some((x) => x.code.endsWith('.CANDIDATE_VALUE_USED'))).toBe(true);
   });
 });

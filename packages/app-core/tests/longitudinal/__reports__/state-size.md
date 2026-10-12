@@ -5,7 +5,7 @@ JSON compact écrit par `saveState` (Kio). Réalisations TEST_ONLY. Compaction d
 | Poste | 4 sem. | 12 sem. | 26 sem. | 52 sem. |
 |---|---|---|---|---|
 | séances planifiées (session_record) | 85 | 254 | 549 | 1096 |
-| raisons persistées des séances | 74 | 170 | 333 | 637 |
+| raisons persistées des séances | 74 | 170 | 332 | 635 |
 | semaines planifiées (autres champs) | 25 | 64 | 130 | 254 |
 | audit du programme | 29 | 100 | 218 | 438 |
 | programme (définition, semaines, résultats) | 24 | 68 | 145 | 288 |
@@ -14,6 +14,6 @@ JSON compact écrit par `saveState` (Kio). Réalisations TEST_ONLY. Compaction d
 | empreintes (anti-doublon) | 23 | 69 | 149 | 298 |
 | Running : réalisé et références | 3 | 7 | 15 | 30 |
 | autres | 1 | 1 | 1 | 1 |
-| **Total** | **278** | **764** | **1605** | **3166** |
+| **Total** | **278** | **764** | **1604** | **3164** |
 | séances compactées | 11 | 51 | 121 | 251 |
 

@@ -1,6 +1,6 @@
 # C4 — Séance Cross-training complète : audit, spécification, gouvernance
 
-Base : `claude/crosstraining-c1-c2-spike-vbg8dv` @ `f9f7e2e`. Statut : **prototype EXPÉRIMENTAL** (Beta 0, SIMULATION_ONLY). Aucune valeur de C4 n'est approuvée scientifiquement ; en PRODUCTION chaque paramètre C4 est NON RÉSOLU et le moteur retombe sur le bloc principal C3 (fail-closed).
+Base : `claude/crosstraining-c1-c2-spike-vbg8dv` @ `f9f7e2e`. Suite C4.1 (audit des durées, décisions à valider, variante courte, durée estimée, réduction d'état) : [`C4.1-CROSSTRAINING-DECISIONS.md`](./C4.1-CROSSTRAINING-DECISIONS.md). Statut : **prototype EXPÉRIMENTAL** (Beta 0, SIMULATION_ONLY). Aucune valeur de C4 n'est approuvée scientifiquement ; en PRODUCTION chaque paramètre C4 est NON RÉSOLU et le moteur retombe sur le bloc principal C3 (fail-closed).
 
 ## 1. Audit C3 (état réel)
 
@@ -47,7 +47,7 @@ La plage produit 45–75 min (`ct.c4.sessionDurationTarget`) est une **cible**, 
 
 1. Durée PLANIFIÉE (valeurs gouvernées seulement) = blocs C4 (durées `generalS`, `easyS`, `mobilityS` ; échauffement spécifique au débit LENT gouverné `ct.estimation.workRates`) + durée du bloc principal C3.
 2. Variante longue (bornes hautes) si planifiée ≤ disponible − marge du profil de tolérance ; sinon variante courte (bornes basses) ; sinon `MAIN_BLOCK_ONLY` (`SESSION_EXCEEDS_AVAILABLE_TIME`).
-3. Le CORE estime et valide la séance complète ; s'il la refuse, le port Cross-training relance la même demande SANS la capacité C4 (bloc principal C3, inchangé) et trace `MAIN_BLOCK_ONLY` / `CORE_REFUSED_FULL_SESSION` (avertissement persisté).
+3. Le CORE estime et valide la séance complète ; s'il refuse la variante longue, le port relance la variante COURTE (C4.1, `C4_VARIANT_RETRY`) ; s'il la refuse aussi, la même demande SANS la capacité C4 (bloc principal C3, inchangé), tracée `MAIN_BLOCK_ONLY` / `CORE_REFUSED_FULL_SESSION`.
 4. Le temps disponible reste un PLAFOND, jamais une cible ; la cible produit 45–75 min n'allonge jamais la séance.
 
 ### Application (app-core → UI)

@@ -408,7 +408,7 @@ export function runningPort(def: Base<unknown> & { readonly engine: SportEngine<
  * → moteur) : intention, structure, historique vu, voisines, formats écartés / choisi, mouvements et raisons, dose,
  * durée, densité, provenance des valeurs candidates. Les listes de candidats écartés restent dans la trace du CORE.
  */
-const CT_PERSISTED_DECISIONS = /^(PLAN\.CROSSTRAINING\.C3_(INTENT|STRUCTURE|BLOCK_NOT_GENERATED|HISTORY|NEIGHBOURS|FORMAT_REJECTED|FORMAT_CHOSEN|MOVEMENT_SELECTED|DURATION|DENSITY|REPEAT_UNAVOIDABLE|PROPOSED)|PLAN\.CROSSTRAINING\.C4_(SESSION_STATUS|BLOCK|BLOCK_NOT_GENERATED)|SAFETY\.CROSSTRAINING\.C3_HISTORY_NEGATIVE|DOSE\.CROSSTRAINING\.C3_DOSE|DATA\.CROSSTRAINING\.CANDIDATE_VALUE_USED)$/;
+const CT_PERSISTED_DECISIONS = /^(PLAN\.CROSSTRAINING\.C3_(INTENT|STRUCTURE|BLOCK_NOT_GENERATED|HISTORY|NEIGHBOURS|FORMAT_REJECTED|FORMAT_CHOSEN|MOVEMENT_SELECTED|DURATION|DENSITY|REPEAT_UNAVOIDABLE|PROPOSED)|PLAN\.CROSSTRAINING\.C4_(SESSION_STATUS|BLOCK|BLOCK_NOT_GENERATED|VARIANT_RETRY)|SAFETY\.CROSSTRAINING\.C3_HISTORY_NEGATIVE|DOSE\.CROSSTRAINING\.C3_DOSE|DATA\.CROSSTRAINING\.CANDIDATE_VALUE_USED)$/;
 
 /** Sport du planificateur → discipline du contrat de contexte (HYROX = `hybrid_race`). */
 const DISCIPLINE_OF: Readonly<Record<PlannerSport, 'strength' | 'running' | 'crosstraining' | 'hybrid_race'>> = { strength: 'strength', running: 'running', crosstraining: 'crosstraining', hyrox: 'hybrid_race' };

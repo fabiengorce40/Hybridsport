@@ -171,6 +171,11 @@ export const zCrossTrainingContext = z.object({
   plannedSessions: z.array(z.object({ sessionId: z.string().min(1), plannedAt: instant, stimulus: z.enum(CT_STIMULI), prescription: zCtPrescription }).strict()).optional(),
   /** C3 — ordre de priorité DÉCLARÉ des sports du programme (transporté ; aucune politique d'interférence gouvernée). */
   sportPriority: z.object({ order: z.array(z.enum(DISCIPLINES)).min(1) }).strict().optional(),
+  /**
+   * C4.1 — variante de séance complète IMPOSÉE par le port après un refus du CORE sur la variante longue (bornes basses
+   * gouvernées seulement). Absent = longue, sinon courte (comportement C4).
+   */
+  fullSessionVariant: z.enum(['short']).optional(),
 }).strict();
 export type CrossTrainingContext = z.infer<typeof zCrossTrainingContext>;
 export type CrossTrainingContextInput = z.input<typeof zCrossTrainingContext>;

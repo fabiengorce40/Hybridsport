@@ -43,8 +43,30 @@ export const C4_STATUS_TEXT: Readonly<Record<string, string>> = {
   BLOCKED: 'Prescription bloquée',
 };
 
-/** Ligne courte des cartes pour une séance complète C4 (durée PLANIFIÉE, position par rapport à la cible produit). */
+/** Blocs du plan NON composés par KAIRO, en clair (ex. « bloc technique, travail complémentaire »). */
+export function c4MissingText(c: CompositionScope): string {
+  const xs = (c.c4?.notGenerated ?? []).filter((k) => k !== 'warmup_specific').map((k) => PART[k] ?? k);
+  return xs.join(', ');
+}
+
+/**
+ * Ligne courte des cartes pour une séance complète C4 : complète SELON LE PLAN expérimental (blocs générés), jamais
+ * présentée comme incluant les blocs non composés ; position de la durée ESTIMÉE (transitions comprises) / cible.
+ */
 export function fullSessionCardText(c: CompositionScope): string {
-  const below = c.c4?.target?.position === 'below';
-  return `Séance complète expérimentale : échauffement, bloc principal, retour au calme${below ? ' · plus courte que la cible 45–75 min (non complétée artificiellement)' : ''}`;
+  const missing = c4MissingText(c);
+  const pos = c.c4?.estimatedPosition ?? c.c4?.target?.position;
+  return `Séance complète expérimentale (selon le plan KAIRO non validé) : échauffement, bloc principal, retour au calme${missing ? ` · sans ${missing}` : ''}${pos === 'below' ? ' · plus courte que la cible 45–75 min (non complétée artificiellement)' : ''}`;
+}
+
+/** C4.1 — définition affichée dans la séance : ce que « complète » veut dire, et ce qui n'est PAS inclus. */
+export function FullSessionDefinition({ c }: { c: CompositionScope | null }) {
+  if (!c?.c4 || c.c4.status !== 'FULL_SESSION') return null;
+  const missing = c4MissingText(c);
+  return (
+    <div className="k-block-note" role="note" data-c4-definition>
+      <strong>Séance complète expérimentale</strong>
+      <span>« Complète » signifie : tous les blocs du plan expérimental de KAIRO sont composés (échauffement, bloc principal, retour au calme). Ce plan, ses durées et ses contenus ne sont pas validés scientifiquement.{missing ? ` Non inclus, faute de règles validées : ${missing}.` : ''}</span>
+    </div>
+  );
 }

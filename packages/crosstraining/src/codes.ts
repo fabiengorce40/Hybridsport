@@ -54,6 +54,7 @@ export const CT_CODES = {
   C4_SESSION_STATUS: 'PLAN.CROSSTRAINING.C4_SESSION_STATUS',
   C4_BLOCK: 'PLAN.CROSSTRAINING.C4_BLOCK',
   C4_BLOCK_NOT_GENERATED: 'PLAN.CROSSTRAINING.C4_BLOCK_NOT_GENERATED',
+  C4_VARIANT_RETRY: 'PLAN.CROSSTRAINING.C4_VARIANT_RETRY',
 } as const;
 export type CtCode = (typeof CT_CODES)[keyof typeof CT_CODES];
 
@@ -99,6 +100,7 @@ export const CT_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: CT_CODES.C4_SESSION_STATUS, categories: ['information'], params: { status: S, generated: L, notGenerated: L, cause: S, plannedDurationS: N, targetMinS: N, targetMaxS: N, target: S, variant: S }, audience: 'internal', severity: 'info' },
   { code: CT_CODES.C4_BLOCK, categories: ['information'], params: { block: S, kind: S, purpose: S, durationS: N, exercises: L, criteria: L, parameterIds: L }, audience: 'internal', severity: 'info' },
   { code: CT_CODES.C4_BLOCK_NOT_GENERATED, categories: ['information'], params: { block: S, required: S, cause: S }, audience: 'internal', severity: 'notice' },
+  { code: CT_CODES.C4_VARIANT_RETRY, categories: ['information'], params: { refused: S, retried: S }, audience: 'internal', severity: 'notice' },
 ];
 
 export const ctReasons = createCoreRegistry(CT_REASON_CODES);

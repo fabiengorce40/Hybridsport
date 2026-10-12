@@ -41,13 +41,20 @@ describe('séance Cross-training (DOM)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Planning' }));
     const card = screen.getAllByRole('button', { name: /^Cross-training : Mixte/ })[0] as HTMLElement;
     expect(card.textContent).toContain('AMRAP');
-    expect(card.querySelector('[data-block-scope="FULL_SESSION"]')?.textContent).toContain('Séance complète expérimentale');
+    expect(card.querySelector('[data-block-scope="FULL_SESSION"]')?.textContent).toContain('Séance complète expérimentale (selon le plan KAIRO non validé)');
+    expect(card.querySelector('[data-block-scope="FULL_SESSION"]')?.textContent).toContain('sans le bloc technique, le travail complémentaire');
     fireEvent.click(card);
     expect(screen.getByRole('heading', { name: 'Mixte', level: 1 })).toBeTruthy();
     expect(screen.queryByLabelText('Répétitions réalisées')).toBeNull();
     // C4 — séance complète EXPÉRIMENTALE : statut, blocs détaillés avant / après le bloc principal.
     expect(document.querySelector('[data-c4-status]')?.textContent).toContain('Séance complète expérimentale');
     expect(document.querySelector('[data-c4-experimental]')?.textContent).toContain('non validées');
+    // C4.1 — « complète » = selon le plan expérimental ; blocs non composés nommés, jamais présentés comme inclus.
+    const def = document.querySelector('[data-c4-definition]')?.textContent ?? '';
+    expect(def).toContain('tous les blocs du plan expérimental');
+    expect(def).toContain('Non inclus');
+    expect(def).toContain('le bloc technique');
+    expect(document.querySelector('[data-c4-durations]')?.textContent).toContain('transitions comprises');
     expect(document.querySelector('[data-c4-block="warmup_general"]')?.textContent).toContain('Échauffement général');
     expect(document.querySelector('[data-c4-block="cooldown"]')?.textContent).toContain('Retour au calme');
     fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));

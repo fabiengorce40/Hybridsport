@@ -10,7 +10,7 @@ import type { C4BlockView, CtWorkout, CtWorkoutItem, FinishInput, ProgrammeSessi
 import { useStore } from '../store.js';
 import { Notice, sessionDay, startLabel, Topbar } from '../ui.js';
 import { STATUS_LABELS } from '../present.js';
-import { BlockNotice, C4_STATUS_TEXT, isBlock, isFullC4 } from '../field/BlockScope.js';
+import { BlockNotice, C4_STATUS_TEXT, FullSessionDefinition, isBlock, isFullC4 } from '../field/BlockScope.js';
 import { DurationInput } from '../running/DurationInput.js';
 import { durationFromParts, formatChrono } from '../running/duration.js';
 import type { DurationParts } from '../running/duration.js';
@@ -249,10 +249,12 @@ export function CrossTrainingWorkout({ v, onBack }: { v: ProgrammeSessionView; o
           <div className="k-ct-eyebrow">Cross-training · {sessionDay(v)}</div>
           <h1 className="k-ct-title">{intent ?? 'Cross-training'}</h1>
           {isBlock(v.composition) && <div className="k-ct-eyebrow" data-block-label>Bloc principal</div>}
-          {c4 && <div className="k-ct-eyebrow" data-c4-status={c4.status}>{C4_STATUS_TEXT[c4.status]}{c4.plannedDurationS !== null ? ` · ≈ ${String(Math.round(c4.plannedDurationS / S_PER_MIN))} min planifiées` : ''}</div>}
+          {c4 && <div className="k-ct-eyebrow" data-c4-status={c4.status}>{C4_STATUS_TEXT[c4.status]}{c4.estimatedDurationS !== null ? ` · ≈ ${String(Math.round(c4.estimatedDurationS / S_PER_MIN))} min estimées` : c4.plannedDurationS !== null ? ` · ≈ ${String(Math.round(c4.plannedDurationS / S_PER_MIN))} min planifiées` : ''}</div>}
+          {c4 && c4.estimatedDurationS !== null && c4.plannedDurationS !== null && <div className="tiny muted num" data-c4-durations>Blocs : ≈ {String(Math.round(c4.plannedDurationS / S_PER_MIN))} min · consignes et transitions comprises : ≈ {String(Math.round(c4.estimatedDurationS / S_PER_MIN))} min (estimation)</div>}
           {progress && <div className="tiny muted num" data-c4-progress aria-live="polite">Blocs terminés : {progress.done} / {progress.total}</div>}
           <div className="row wrap"><span className="k-pill accent">{CT_FORMAT_LABELS[w.format] ?? w.format}</span><span className="k-ct-headline num">{headline(w)}</span></div>
           <BlockNotice c={v.composition} />
+          <FullSessionDefinition c={v.composition} />
           {finished && <span className="k-pill done">✓ {STATUS_LABELS[v.result?.completion ?? 'completed_as_prescribed']}</span>}
         </header>
 
@@ -280,7 +282,7 @@ export function CrossTrainingWorkout({ v, onBack }: { v: ProgrammeSessionView; o
         )}
 
         {after.map(support)}
-        {c4 && c4.notGenerated.length > 0 && <div className="tiny muted" data-c4-not-generated>Non composé par KAIRO (règles non validées) : {c4.notGenerated.map((x) => x === 'skill' ? 'bloc technique' : x === 'accessory' ? 'travail complémentaire' : x === 'strength' ? 'bloc de force' : x === 'warmup_specific' ? 'échauffement spécifique (couvert par l’échauffement général)' : x).join(', ')}.</div>}
+        {c4 && c4.notGenerated.includes('warmup_specific') && <div className="tiny muted" data-c4-not-generated>Échauffement spécifique couvert par l’échauffement général (bloc principal sans mouvement à répétitions).</div>}
         {c4 && <div className="tiny muted" data-c4-experimental>Composition expérimentale : durées et contenus des blocs sont des valeurs de test, non validées scientifiquement.</div>}
 
         {finished && (
