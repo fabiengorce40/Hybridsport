@@ -16,7 +16,7 @@ import { addDays, normalizeInstant } from './dates.js';
 import type { AppState, Feedback, ProgrammeIntent, SessionLog, SetLog } from './model.js';
 import { appPlannerEnvironment, assertEnvironment, buildPorts, clockOf, persistWeek, recentOf } from './planning.js';
 import type { EngineGoals, PlannerEnvironment } from './planning.js';
-import { applyStrengthExecutionTraced, realizedRunFrom, testReferenceFrom } from './progression.js';
+import { applyStrengthExecutionTraced, performedSets, realizedRunFrom, testReferenceFrom } from './progression.js';
 import { isHyroxComposed, realizeCrossTrainingExecution, realizeHyroxComposed, realizeHyroxStation } from '@hybridsport/planner';
 import { assessStrengthWeekVolume, readStrengthParams } from '@hybridsport/strength';
 import type { StrengthGoalRef, WeekVolumeAssessment } from '@hybridsport/strength';
@@ -147,6 +147,8 @@ export type SessionExecutionInput = ExecutionCommon & (
     readonly ctResult?: Readonly<Record<string, unknown>>;
     /** Charges RÉELLEMENT utilisées (observation), distinctes de la prescription. */
     readonly performedLoads?: readonly { readonly exerciseId: string; readonly kg: number }[];
+    /** C4.3 — séries saisies du bloc de force DÉLÉGUÉ (Strength) de la séance, s'il existe. */
+    readonly sets?: readonly SetLog[];
     readonly sessionRpe?: number;
   }
   | {
@@ -241,7 +243,21 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
           ...(x.sessionRpe !== undefined ? { sessionRpe: x.sessionRpe } : {}), ...(x.performedLoads ? { performedLoads: x.performedLoads } : {}),
         });
         if (!r.ok) return reject('EXECUTION_INVALID', ...r.reasons);
-        s = { ...s, crosstraining: { realized: [...s.crosstraining.realized, { ...r.value }] } };
+        // C4.3 — bloc de force délégué : séries RÉALISÉES ajoutées aux expositions Strength (volume hebdomadaire,
+        // alternance, références de charge), JAMAIS aux tracks (la progression reste portée par les séances Strength :
+        // aucune double progression). Séries inconnues refusées ; « telle que prescrite » exige chaque série de travail.
+        const blockItems = session.blocks.filter((b) => b.kind === 'strength').flatMap((b) => b.items);
+        const ctSets = x.sets ?? [];
+        if (ctSets.some((l) => !blockItems.some((it) => it.id === l.itemId && it.prescription.type === 'sets' && l.setIndex < it.prescription.sets.length))) return reject('EXECUTION_STRENGTH_SET_UNKNOWN');
+        const workOf = (it: (typeof blockItems)[number]) => (it.prescription.type === 'sets' ? it.prescription.sets.flatMap((p, i) => (p.kind !== 'rampup' && p.optional !== true ? [i] : [])) : []);
+        if (x.completion === 'completed_as_prescribed' && !blockItems.every((it) => workOf(it).every((i) => ctSets.some((l) => l.itemId === it.id && l.setIndex === i && l.done && l.reps !== undefined)))) return reject('EXECUTION_STRENGTH_INCOMPLETE');
+        const blockLog = { sets: [...ctSets], painItems: [] } as unknown as SessionLog;
+        const blockExposures = blockItems.flatMap((it) => {
+          if (it.prescription.type !== 'sets') return [];
+          const performed = performedSets(it.id, it.prescription.sets, blockLog);
+          return performed.length > 0 ? [{ exerciseId: it.exerciseId, at, ...(it.refs?.slotId ? { slotId: it.refs.slotId } : {}), sets: performed }] : [];
+        });
+        s = { ...s, crosstraining: { realized: [...s.crosstraining.realized, { ...r.value }] }, ...(blockExposures.length > 0 ? { strength: { ...s.strength, exposures: [...s.strength.exposures, ...blockExposures] } } : {}) };
         evidence = { history: 'crosstraining', ref: x.requestId };
         break;
       }

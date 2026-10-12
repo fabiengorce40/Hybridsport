@@ -35,13 +35,26 @@ export const TEST_C3 = {
     mixed_modal_medium: ['warmup', 'conditioning'], muscular_endurance: ['warmup', 'conditioning'],
     strength_plus_conditioning: ['warmup', 'strength', 'conditioning'], skill_plus_conditioning: ['warmup', 'skill', 'conditioning'],
   },
-  'ct.composition.movementPool': ['ex.row_erg', 'ex.skierg', 'ex.air_squat', 'ex.reverse_lunge_bw', 'ex.box_jump', 'ex.wall_ball', 'ex.kb_swing', 'ex.push_up', 'ex.incline_push_up', 'ex.pull_up', 'ex.band_assisted_pull_up']
-    .map((movementId) => ({ movementId, contentReviewRef: 'TEST-ONLY' })),
+  'ct.composition.movementPool': [
+    ...['ex.row_erg', 'ex.skierg', 'ex.air_squat', 'ex.reverse_lunge_bw', 'ex.box_jump', 'ex.wall_ball', 'ex.kb_swing', 'ex.push_up', 'ex.incline_push_up', 'ex.pull_up', 'ex.band_assisted_pull_up']
+      .map((movementId) => ({ movementId, contentReviewRef: 'TEST-ONLY' })),
+    // C4.3 (TEST_ONLY) — course : mouvement monostructural de REPLI, seulement sans ergomètre éligible (formats à durée).
+    { movementId: 'ex.easy_run', contentReviewRef: 'TEST-ONLY', fallbackOnly: true },
+  ],
+  // C4.3 (TEST_ONLY, CT-D24) — le rôle monostructural d'un AMRAP / for time mixte devient facultatif : sans ergomètre,
+  // couplet / triplet au poids du corps aux doses existantes (aucune dose nouvelle).
+  'ct.composition.optionalRoles': {
+    mixed_modal_medium: { amrap: ['monostructural'], for_time: ['monostructural'] },
+    // C4.3 — après un bloc de force, le bas du corps peut être exclu (structures protégées) : rôle facultatif.
+    strength_plus_conditioning: { amrap: ['monostructural', 'lower_body'] },
+  },
   'ct.composition.movementRoles': {
     aerobic_capacity: { continuous: ['monostructural'], intervals: ['monostructural'], emom: ['monostructural', 'lower_body'] },
     threshold: { intervals: ['monostructural'] }, anaerobic_intervals: { intervals: ['monostructural'] },
     mixed_modal_medium: { amrap: ['monostructural', 'lower_body', 'upper_pull'], for_time: ['monostructural', 'lower_body', 'upper_push'], emom: ['lower_body', 'upper_push'] },
     muscular_endurance: { emom: ['lower_body', 'upper_push', 'upper_pull'], amrap: ['lower_body', 'lower_body', 'upper_push'] },
+    // C4.3 (TEST_ONLY) — rôles IMPLIQUÉS par la dose existante `strength_plus_conditioning` (monostructural, bas du corps, tirage).
+    strength_plus_conditioning: { amrap: ['monostructural', 'lower_body', 'upper_pull'] },
   },
   'ct.dose.construction': {
     aerobic_capacity: {
@@ -90,6 +103,48 @@ export const TEST_C3 = {
   'ct.load.percentE1rmByStimulus': { testOnly: true },
 } as const;
 /* fin du bloc TEST_ONLY */
+/**
+ * C4 — séance complète : HYPOTHÈSES à valider (aucune n'est approuvée ni scientifiquement validée). Seule la cible de
+ * durée 45–75 min est une DÉCISION PRODUIT (2026-10-12) — cible, jamais une obligation de remplissage.
+ */
+const FULL_PLAN = { required: ['warmup_general', 'warmup_specific', 'conditioning', 'cooldown'], optional: ['skill', 'accessory'] };
+// C4.2 — échauffement spécifique PROGRESSIF : 3 tours à ≈ 30 / 50 / 70 % des répétitions du bloc principal (jamais
+// 100 % : préparer sans pré-fatiguer), tour supplémentaire à 80 % si un mouvement a un coût technique ≥ 2 ; 3 accélérations
+// progressives (2 en variante courte) de 20 s (40 s de récupération) sur l'ergomètre d'un bloc principal non continu. Retour au calme raccourci
+// et plafonné à l'échauffement (S7). Hypothèses de programmation, à valider par un expert.
+const WARMUP = { generalS: { min: 300, max: 480 }, specificRamp: [0.3, 0.5, 0.7], technicalRamp: [0.8], technicalThreshold: 2, buildups: { rounds: { min: 2, max: 3 }, workS: 20, restS: 40 } };
+const COOLDOWN = { easyS: { min: 120, max: 240 }, mobilityPerMovementS: { min: 60, max: 90 }, maxMobilityMovements: 2, maxShareOfWarmup: 1 };
+// C4.2 — circuit au poids du corps : intervalles de 40 s ; impact plafonné à 1 (novice, débutant) ou 2 (intermédiaire, avancé).
+const CIRCUIT_LOW = { intervalS: 40, maxImpact: 1, maxDynamicPrep: 2 };
+const CIRCUIT = { intervalS: 40, maxImpact: 2, maxDynamicPrep: 2 };
+export const TEST_C4 = {
+  'ct.c4.sessionPlan': {
+    aerobic_capacity: FULL_PLAN, threshold: FULL_PLAN, anaerobic_intervals: FULL_PLAN, mixed_modal_medium: FULL_PLAN, muscular_endurance: FULL_PLAN,
+    strength_plus_conditioning: { required: ['warmup_general', 'strength', 'conditioning', 'cooldown'], optional: ['warmup_specific'] },
+    skill_plus_conditioning: { required: ['warmup_general', 'skill', 'conditioning', 'cooldown'], optional: [] },
+  },
+  'ct.c4.warmup': { novice: WARMUP, beginner: WARMUP, intermediate: WARMUP, advanced: WARMUP },
+  'ct.c4.cooldown': { novice: COOLDOWN, beginner: COOLDOWN, intermediate: COOLDOWN, advanced: COOLDOWN },
+  'ct.c4.sessionDurationTarget': { minS: 2700, maxS: 4500 },
+  // C4.3 (TEST_ONLY, CT-D25) — besoin de force : stimulus « force + conditionnement » seulement ; budget 15–20 min du bloc
+  // délégué (Strength décide exercices, séries, répétitions, repos et charges dans ce budget).
+  'ct.c4.strengthNeed': { strength_plus_conditioning: { budgetS: { min: 900, max: 1200 }, purpose: 'strength_before_conditioning' } },
+  // Ordre = priorité gouvernée (premier mouvement éligible du rôle).
+  'ct.c4.generalWarmupPool': [
+    { movementId: 'ex.jumping_jack', role: 'pulse_raise', regions: ['full'] },
+    { movementId: 'ex.march_in_place', role: 'pulse_raise', regions: ['lower', 'full'] },
+    { movementId: 'ex.inchworm', role: 'dynamic_prep', regions: ['lower', 'upper', 'core'] },
+    { movementId: 'ex.leg_swings', role: 'dynamic_prep', regions: ['lower'] },
+    { movementId: 'ex.arm_circles', role: 'dynamic_prep', regions: ['upper'] },
+  ],
+  'ct.c4.generalWarmupCircuit': { novice: CIRCUIT_LOW, beginner: CIRCUIT_LOW, intermediate: CIRCUIT, advanced: CIRCUIT },
+  'ct.c4.mobilityPool': [
+    { movementId: 'ex.hip_mobility_flow', regions: ['lower'] },
+    { movementId: 'ex.shoulder_mobility_flow', regions: ['upper'] },
+    { movementId: 'ex.thoracic_mobility_flow', regions: ['upper', 'core'] },
+  ],
+} as const;
+
 
 export interface C3GovOptions {
   /** Paramètres à laisser NON RÉSOLUS (valeur réelle du registre). */
@@ -98,6 +153,8 @@ export interface C3GovOptions {
   readonly override?: Readonly<Record<string, unknown>>;
   /** Charges : CORE_EXT_C1 déclaré satisfait + standards d'implément (TEST_ONLY). */
   readonly loads?: boolean;
+  /** C4 (séance complète, expérimental) : plan, échauffement, retour au calme, cible produit (TEST_ONLY). */
+  readonly c4?: boolean;
   /** Multisport : planificateur global déclaré satisfait + `ct.hybrid.policy` (TEST_ONLY). */
   readonly hybrid?: boolean;
 }
@@ -110,7 +167,7 @@ export function c3Governance(o: C3GovOptions = {}): CtGovernance {
     technical: { ...CURRENT_CT_GOVERNANCE.technical, CT_CONTENT: 'SATISFIED', ...(o.loads ? { CORE_EXT_C1: 'SATISFIED' as const } : {}), ...(o.hybrid === false ? {} : { GLOBAL_PLANNER: 'SATISFIED' as const }) },
   };
   for (const id of ['ct.return.protocol', 'ct.safety.novelEccentricVolume', 'ct.history.anchorPolicy', 'ct.history.completionCriterion']) g = withParameter(g, id, (p: CtParameter) => candidate(p));
-  const values: Record<string, unknown> = { ...TEST_C3, ...(o.override ?? {}) };
+  const values: Record<string, unknown> = { ...TEST_C3, ...(o.c4 ? TEST_C4 : {}), ...(o.override ?? {}) };
   for (const [id, v] of Object.entries(values)) {
     if (o.unresolved?.includes(id)) continue;
     if (!o.loads && id.startsWith('ct.load.')) continue;

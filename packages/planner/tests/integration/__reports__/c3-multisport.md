@@ -25,7 +25,7 @@ Autres séances : strength planned le 2026-10-11. CT : planned le 2026-10-05.
 - Candidats écartés (lower_body) : ex.wall_ball:LOAD_POLICY_UNGOVERNED, ex.kb_swing:LOAD_POLICY_UNGOVERNED
 - **Profil de demande (CORE)** : lower_knee=moderate, lower_hip=low, upper_pull=moderate, high_intensity_systemic=moderate, grip=low
 - **Résultat CORE** : séance publiée, identique à la proposition
-- **Provenance** : 16 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.movementPool, ct.composition.movementRoles, ct.composition.sessionStructure, ct.dose.construction, ct.estimation.workRates, ct.history.negativeResponse, ct.history.recencyBand, ct.hybrid.policy, ct.return.protocol, ct.safety.novelEccentricVolume, ct.safety.novicePolicy, ct.safety.repsPerMovementCap, ct.safety.technicalUnderFatigue, ct.stimulus.admissibleFormats, ct.stimulus.catalog, ct.stimulus.timeDomains
+- **Provenance** : 17 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.movementPool, ct.composition.movementRoles, ct.composition.optionalRoles, ct.composition.sessionStructure, ct.dose.construction, ct.estimation.workRates, ct.history.negativeResponse, ct.history.recencyBand, ct.hybrid.policy, ct.return.protocol, ct.safety.novelEccentricVolume, ct.safety.novicePolicy, ct.safety.repsPerMovementCap, ct.safety.technicalUnderFatigue, ct.stimulus.admissibleFormats, ct.stimulus.catalog, ct.stimulus.timeDomains
 
 ## Scénario B bis — Strength (priorité 1) + Cross-training (priorité 2)
 
@@ -50,7 +50,7 @@ Autres séances : strength planned le 2026-10-05. CT : planned le 2026-10-11.
 - Candidats écartés (lower_body) : ex.wall_ball:LOAD_POLICY_UNGOVERNED, ex.kb_swing:LOAD_POLICY_UNGOVERNED
 - **Profil de demande (CORE)** : lower_knee=moderate, lower_hip=low, upper_push=low, upper_pull=moderate, high_intensity_systemic=moderate, grip=low
 - **Résultat CORE** : séance publiée, identique à la proposition
-- **Provenance** : 16 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.movementPool, ct.composition.movementRoles, ct.composition.sessionStructure, ct.dose.construction, ct.estimation.workRates, ct.history.negativeResponse, ct.history.recencyBand, ct.hybrid.policy, ct.return.protocol, ct.safety.novelEccentricVolume, ct.safety.novicePolicy, ct.safety.repsPerMovementCap, ct.safety.technicalUnderFatigue, ct.stimulus.admissibleFormats, ct.stimulus.catalog, ct.stimulus.timeDomains
+- **Provenance** : 17 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.movementPool, ct.composition.movementRoles, ct.composition.optionalRoles, ct.composition.sessionStructure, ct.dose.construction, ct.estimation.workRates, ct.history.negativeResponse, ct.history.recencyBand, ct.hybrid.policy, ct.return.protocol, ct.safety.novelEccentricVolume, ct.safety.novicePolicy, ct.safety.repsPerMovementCap, ct.safety.technicalUnderFatigue, ct.stimulus.admissibleFormats, ct.stimulus.catalog, ct.stimulus.timeDomains
 
 ## Scénario C — Cross-training + Running
 
@@ -75,4 +75,4 @@ Autres séances : running planned le 2026-10-11. CT : planned le 2026-10-05.
 - Candidats écartés (lower_body) : ex.wall_ball:LOAD_POLICY_UNGOVERNED, ex.kb_swing:LOAD_POLICY_UNGOVERNED
 - **Profil de demande (CORE)** : lower_knee=moderate, lower_hip=low, upper_push=low, upper_pull=moderate, high_intensity_systemic=moderate, grip=low
 - **Résultat CORE** : séance publiée, identique à la proposition
-- **Provenance** : 16 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.movementPool, ct.composition.movementRoles, ct.composition.sessionStructure, ct.dose.construction, ct.estimation.workRates, ct.history.negativeResponse, ct.history.recencyBand, ct.hybrid.policy, ct.return.protocol, ct.safety.novelEccentricVolume, ct.safety.novicePolicy, ct.safety.repsPerMovementCap, ct.safety.technicalUnderFatigue, ct.stimulus.admissibleFormats, ct.stimulus.catalog, ct.stimulus.timeDomains
+- **Provenance** : 17 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.movementPool, ct.composition.movementRoles, ct.composition.optionalRoles, ct.composition.sessionStructure, ct.dose.construction, ct.estimation.workRates, ct.history.negativeResponse, ct.history.recencyBand, ct.hybrid.policy, ct.return.protocol, ct.safety.novelEccentricVolume, ct.safety.novicePolicy, ct.safety.repsPerMovementCap, ct.safety.technicalUnderFatigue, ct.stimulus.admissibleFormats, ct.stimulus.catalog, ct.stimulus.timeDomains

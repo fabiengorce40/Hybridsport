@@ -421,7 +421,11 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   if (!a.allowed && a.cause) throw new AppError(START_ERROR[a.cause]);
   const now = normalizeInstant(clock.now);
   // Cross-training : « Commencer » démarre le chrono (horodaté) ; tours et répétitions à zéro (saisies de l'athlète).
-  const ct = v.sport === 'crosstraining' ? { ct: { runningSince: now, accumulatedS: 0, rounds: 0, partialReps: 0 } } : {};
+  // C4 : un échauffement PRÉCÈDE le bloc principal ⇒ chrono du bloc principal NON démarré (démarrage explicite, après
+  // l'échauffement) ; le chrono mesure toujours le seul bloc principal (résultat du format inchangé).
+  const warmupFirst = v.sport === 'crosstraining' && v.session.blocks.findIndex((b) => b.kind === 'warmup') !== -1
+    && v.session.blocks.findIndex((b) => b.kind === 'warmup') < v.session.blocks.findIndex((b) => b.kind === 'conditioning');
+  const ct = v.sport === 'crosstraining' ? { ct: { runningSince: warmupFirst ? null : now, accumulatedS: 0, rounds: 0, partialReps: 0 } } : {};
   // HYROX : séance H2 lisible exigée (jamais de démarrage sur une séance hors contrat) ; chrono démarré, position 0.
   if (v.sport === 'hyrox' && !hrWorkoutOfView(v)) throw new AppError('HR_SESSION_UNREADABLE');
   const hr = v.sport === 'hyrox' ? { hr: { runningSince: now, accumulatedS: 0, steps: 0, loads: [] } } : {};
@@ -501,6 +505,19 @@ export function recordCtProgress(state: AppState, requestId: string, x: { readon
   const ok = (n: number | undefined) => n === undefined || (Number.isInteger(n) && n >= 0);
   if (!ok(x.rounds) || !ok(x.partialReps)) throw new AppError('CT_PROGRESS_INVALID');
   return withLog(state, { ...log, ct: { ...log.ct, ...(x.rounds !== undefined ? { rounds: x.rounds } : {}), ...(x.partialReps !== undefined ? { partialReps: x.partialReps } : {}) } });
+}
+
+/**
+ * C4 — bloc d'échauffement / retour au calme validé (ou dé-validé) MANUELLEMENT. Seuls les blocs non principaux de la
+ * séance persistée sont admis ; le bloc principal se termine par son propre résultat. Aucun bloc supposé fait.
+ */
+export function recordCtBlock(state: AppState, requestId: string, blockId: string, done: boolean): AppState {
+  const log = openCt(state, requestId);
+  const b = selectProgrammeSession(state, requestId)?.session.blocks.find((x) => x.id === blockId);
+  if (!b || b.kind === 'conditioning') throw new AppError('CT_BLOCK_UNKNOWN');
+  const cur = log.ct.blocksDone ?? [];
+  const blocksDone = done ? (cur.includes(blockId) ? cur : [...cur, blockId]) : cur.filter((x) => x !== blockId);
+  return withLog(state, { ...log, ct: { ...log.ct, blocksDone } });
 }
 
 /**
@@ -608,13 +625,16 @@ export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishI
     const rt = log.ct ?? { runningSince: null, accumulatedS: 0, rounds: 0, partialReps: 0 };
     const elapsedS = ctElapsedS(rt, clock.now);
     const loads = f.ct?.performedLoads ?? [];
+    // C4.3 — douleur signalée sur un exercice du bloc de force délégué = douleur de séance (pause de la planification).
+    const ctPain = f.pain || log.painItems.length > 0;
     const recorded = recordSessionExecution(s0, clock, {
-      requestId: f.requestId, sport: 'crosstraining', completion: f.completion, pain,
+      requestId: f.requestId, sport: 'crosstraining', completion: f.completion, pain: ctPain ? 'REPORTED' : 'NONE',
       ...(f.completion !== 'abandoned' && f.ct?.result ? { ctResult: f.ct.result } : {}), ...(loads.length > 0 ? { performedLoads: loads } : {}),
+      ...(log.sets.length > 0 ? { sets: log.sets } : {}),
     });
     const ct = { result: f.completion === 'abandoned' ? null : { ...(f.ct?.result ?? {}) }, elapsedS, performedLoads: loads.map((l) => ({ ...l })) };
     // Chrono figé à la fin (cumul), jamais relancé.
-    return withLog(recorded, { ...log, ct: { ...rt, runningSince: null, accumulatedS: elapsedS }, rest: null, finishedAt: normalizeInstant(clock.now), outcome: { completion: f.completion, pain: f.pain, ct } });
+    return withLog(recorded, { ...log, ct: { ...rt, runningSince: null, accumulatedS: elapsedS }, rest: null, finishedAt: normalizeInstant(clock.now), outcome: { completion: f.completion, pain: ctPain, ct } });
   }
   const recorded = log.sport === 'strength'
     ? recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'strength', completion: f.completion, pain, sets: log.sets, painItems: log.painItems })

@@ -33,5 +33,5 @@
 
 ### Terrain — abandon avec la salle complète Beta 0 (rameur seul ergomètre)
 
-- Semaine 2 : 3 séance(s) CT refusée(s) explicitement (`engine_refused`, formats écartés tracés) : [{"format":"for_time","causes":["ROLE_UNFILLED:monostructural"]},{"format":"emom","causes":["ROLE_UNFILLED:lower_body"]},{"format":"amrap","causes":["ROLE_UNFILLED:monostructural"]}]
+- Semaine 2 : 3 séance(s) CT refusée(s) explicitement (`engine_refused`, formats écartés tracés) : [{"format":"for_time","causes":["OUTSIDE_TIME_DOMAIN"]},{"format":"emom","causes":["ROLE_UNFILLED:lower_body"]},{"format":"amrap","causes":["ROLE_UNFILLED:lower_body"]}]
 - Semaine 4 (fenêtre de récence dépassée) : 3 séance(s) planifiée(s).

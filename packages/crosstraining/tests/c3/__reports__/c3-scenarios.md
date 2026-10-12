@@ -23,7 +23,7 @@ Stimulus `mixed_modal_medium`, historique vide.
 - Candidats écartés (lower_body) : ex.wall_ball:LOAD_POLICY_UNGOVERNED, ex.kb_swing:LOAD_POLICY_UNGOVERNED
 - **Profil de demande (CORE)** : lower_knee=moderate, lower_hip=low, upper_pull=moderate, high_intensity_systemic=moderate, grip=low
 - **Résultat CORE** : séance publiée, identique à la proposition
-- **Provenance** : 15 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.movementPool, ct.composition.movementRoles, ct.composition.sessionStructure, ct.dose.construction, ct.estimation.workRates, ct.history.negativeResponse, ct.history.recencyBand, ct.return.protocol, ct.safety.novelEccentricVolume, ct.safety.novicePolicy, ct.safety.repsPerMovementCap, ct.safety.technicalUnderFatigue, ct.stimulus.admissibleFormats, ct.stimulus.catalog, ct.stimulus.timeDomains
+- **Provenance** : 16 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.movementPool, ct.composition.movementRoles, ct.composition.optionalRoles, ct.composition.sessionStructure, ct.dose.construction, ct.estimation.workRates, ct.history.negativeResponse, ct.history.recencyBand, ct.return.protocol, ct.safety.novelEccentricVolume, ct.safety.novicePolicy, ct.safety.repsPerMovementCap, ct.safety.technicalUnderFatigue, ct.stimulus.admissibleFormats, ct.stimulus.catalog, ct.stimulus.timeDomains
 
 ## Aperçu par stimulus (intermédiaire, 60 min, matériel complet)
 
@@ -60,7 +60,7 @@ Stimulus `mixed_modal_medium`, 30 min disponibles.
 - Candidats écartés (lower_body) : ex.wall_ball:LOAD_POLICY_UNGOVERNED, ex.kb_swing:LOAD_POLICY_UNGOVERNED
 - **Profil de demande (CORE)** : lower_knee=moderate, lower_hip=low, upper_pull=moderate, high_intensity_systemic=moderate, grip=low
 - **Résultat CORE** : séance publiée, identique à la proposition
-- **Provenance** : 15 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.movementPool, ct.composition.movementRoles, ct.composition.sessionStructure, ct.dose.construction, ct.estimation.workRates, ct.history.negativeResponse, ct.history.recencyBand, ct.return.protocol, ct.safety.novelEccentricVolume, ct.safety.novicePolicy, ct.safety.repsPerMovementCap, ct.safety.technicalUnderFatigue, ct.stimulus.admissibleFormats, ct.stimulus.catalog, ct.stimulus.timeDomains
+- **Provenance** : 16 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.movementPool, ct.composition.movementRoles, ct.composition.optionalRoles, ct.composition.sessionStructure, ct.dose.construction, ct.estimation.workRates, ct.history.negativeResponse, ct.history.recencyBand, ct.return.protocol, ct.safety.novelEccentricVolume, ct.safety.novicePolicy, ct.safety.repsPerMovementCap, ct.safety.technicalUnderFatigue, ct.stimulus.admissibleFormats, ct.stimulus.catalog, ct.stimulus.timeDomains
 
 ## Scénario D bis — 20 min en capacité aérobie
 
@@ -82,8 +82,8 @@ Barre de traction et élastiques seulement.
 - **Structure** : warmup, conditioning · warmup non généré (ARCHITECTURAL_PLACE_ONLY_CONTENT_UNGOVERNED)
 - **Voisines / priorité** : connues=absent, [], interprétation=none, priorité=blocked:priority_interference_policy
 - **Historique** : 0 séance(s) du même stimulus dans la fenêtre, dernier format none, mouvements récents []
-- Format écarté `amrap` : ROLE_UNFILLED:monostructural
-- Format écarté `for_time` : ROLE_UNFILLED:monostructural
+- Format écarté `amrap` : ROLE_UNFILLED:lower_body
+- Format écarté `for_time` : OUTSIDE_TIME_DOMAIN
 - **Format** : `emom` (admissible_for_stimulus, governed_order, after_rejected:amrap|for_time)
 - **Durée** : PRESCRITE 720 s · tour estimé 26.4 s (rapide 21.6, lent 40) · CORE : p50 735 s · p90 735 s
 - **Densité** : estimated (work_per_minute_slow=40s/max=45s)
@@ -97,7 +97,7 @@ Barre de traction et élastiques seulement.
 - Candidats écartés (upper_push) : ex.incline_push_up:EQUIPMENT_MISSING
 - **Profil de demande (CORE)** : lower_knee=low, lower_hip=low, upper_push=low, high_intensity_systemic=low
 - **Résultat CORE** : séance publiée, identique à la proposition
-- **Provenance** : 16 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.movementPool, ct.composition.movementRoles, ct.composition.sessionStructure, ct.dose.construction, ct.estimation.workRates, ct.format.emomDensity, ct.history.negativeResponse, ct.history.recencyBand, ct.return.protocol, ct.safety.novelEccentricVolume, ct.safety.novicePolicy, ct.safety.repsPerMovementCap, ct.safety.technicalUnderFatigue, ct.stimulus.admissibleFormats, ct.stimulus.catalog, ct.stimulus.timeDomains
+- **Provenance** : 18 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.movementPool, ct.composition.movementRoles, ct.composition.optionalRoles, ct.composition.sessionStructure, ct.dose.construction, ct.estimation.workRates, ct.format.emomDensity, ct.format.timeCapMargin, ct.history.negativeResponse, ct.history.recencyBand, ct.return.protocol, ct.safety.novelEccentricVolume, ct.safety.novicePolicy, ct.safety.repsPerMovementCap, ct.safety.technicalUnderFatigue, ct.stimulus.admissibleFormats, ct.stimulus.catalog, ct.stimulus.timeDomains
 
 ## Scénario F — douleur (genou) et exclusion (push-up), sans politique de charge
 
@@ -109,7 +109,7 @@ Douleur P2 genou déclarée ; push-up exclu par l’utilisateur ; `ct.load.*` no
 - **Refus** : PLAN.CROSSTRAINING.C3_NO_FORMAT {"stimulus":"mixed_modal_medium","tried":["amrap:ROLE_UNFILLED:lower_body","for_time:ROLE_UNFILLED:lower_body","emom:ROLE_UNFILLED:lower_body"]}
 - **Profil de demande (CORE)** : —
 - **Résultat CORE** : refus NO_VALID_SOLUTION
-- **Provenance** : 1 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.estimation.workRates
+- **Provenance** : 2 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.optionalRoles, ct.estimation.workRates
 
 ## Scénario F bis — même douleur, charges TEST_ONLY (CORE_EXT_C1 + standards d’implément)
 
@@ -132,4 +132,4 @@ Politique de charge injectée (TEST_ONLY) : le swing (charnière, non sensible a
 - Candidats écartés (lower_body) : ex.air_squat:PAIN_AREA, ex.reverse_lunge_bw:PAIN_AREA, ex.box_jump:PAIN_AREA, ex.wall_ball:PAIN_AREA
 - **Profil de demande (CORE)** : lower_knee=low, lower_hip=moderate, upper_pull=moderate, axial=low, high_intensity_systemic=moderate, grip=low
 - **Résultat CORE** : séance publiée, identique à la proposition
-- **Provenance** : 16 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.movementPool, ct.composition.movementRoles, ct.composition.sessionStructure, ct.dose.construction, ct.estimation.workRates, ct.history.negativeResponse, ct.history.recencyBand, ct.load.implementStandards, ct.return.protocol, ct.safety.novelEccentricVolume, ct.safety.novicePolicy, ct.safety.repsPerMovementCap, ct.safety.technicalUnderFatigue, ct.stimulus.admissibleFormats, ct.stimulus.catalog, ct.stimulus.timeDomains
+- **Provenance** : 17 paramètre(s) TEST_ONLY (EXPERT_PROPOSED, CANDIDATE) : ct.composition.movementPool, ct.composition.movementRoles, ct.composition.optionalRoles, ct.composition.sessionStructure, ct.dose.construction, ct.estimation.workRates, ct.history.negativeResponse, ct.history.recencyBand, ct.load.implementStandards, ct.return.protocol, ct.safety.novelEccentricVolume, ct.safety.novicePolicy, ct.safety.repsPerMovementCap, ct.safety.technicalUnderFatigue, ct.stimulus.admissibleFormats, ct.stimulus.catalog, ct.stimulus.timeDomains

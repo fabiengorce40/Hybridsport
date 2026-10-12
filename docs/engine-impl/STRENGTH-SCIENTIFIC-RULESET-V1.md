@@ -74,9 +74,9 @@
 
 | Champ | Valeur |
 |---|---|
-| Ancienne valeur (0.2.0) | table (11235 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Valeur 4E (0.3.0) | table (11235 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
-| Valeur 4F (0.4.0) | table (11235 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Ancienne valeur (0.2.0) | table (12679 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4E (0.3.0) | table (12679 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
+| Valeur 4F (0.4.0) | table (12679 caractères), voir `packages/strength/tests/fixtures/ruleset.ts` |
 | Lecture | Archétypes et emplacements inchangés. |
 | Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |

@@ -15,6 +15,8 @@ export const EXERCISE_LABELS: Readonly<Record<string, string>> = {
   'ex.seated_cable_row': 'Tirage horizontal poulie', 'ex.machine_row': 'Rowing machine', 'ex.db_row': 'Rowing haltère', 'ex.farmers_carry': 'Farmer walk',
   'ex.plank': 'Gainage', 'ex.easy_run': 'Course facile', 'ex.row_erg': 'Rameur', 'ex.skierg': 'SkiErg', 'ex.sled_push': 'Poussée de traîneau',
   'ex.sandbag_lunge': 'Fentes sandbag', 'ex.wall_ball': 'Wall ball', 'ex.box_jump': 'Box jump', 'ex.hip_mobility_flow': 'Mobilité hanches',
+  'ex.march_in_place': 'Marche sur place genoux hauts', 'ex.jumping_jack': 'Jumping jacks', 'ex.leg_swings': 'Balanciers de jambes', 'ex.inchworm': 'Inchworm (marche des mains)',
+  'ex.arm_circles': 'Cercles de bras', 'ex.thoracic_mobility_flow': 'Mobilité thoracique',
   'ex.hack_squat': 'Hack squat', 'ex.leg_extension': 'Leg extension', 'ex.machine_calf_raise': 'Mollets machine', 'ex.db_calf_raise': 'Mollets haltères',
   'ex.hip_thrust_barbell': 'Hip thrust barre', 'ex.hip_thrust_machine': 'Hip thrust machine', 'ex.barbell_ohp': 'Développé militaire',
   'ex.machine_shoulder_press': 'Développé épaules machine', 'ex.db_curl': 'Curl haltères', 'ex.cable_curl': 'Curl poulie',
@@ -188,6 +190,8 @@ export const CT_INTENT_LABELS: Readonly<Record<string, { title: string; detail: 
   'crosstraining.threshold': { title: 'Seuil', detail: 'Intervalles longs avec récupération' },
   'crosstraining.anaerobic_intervals': { title: 'Intervalles intenses', detail: 'Efforts courts, récupérations plus longues' },
   'crosstraining.muscular_endurance': { title: 'Endurance musculaire', detail: 'Répétitions au poids du corps, chaque minute' },
+  // C4.3 — expérimental : bloc de force composé par le moteur Musculation (délégation), puis un WOD court.
+  'crosstraining.strength_plus_conditioning': { title: 'Force + conditionnement', detail: 'Bloc de force (moteur Musculation) puis WOD court — expérimental, niveau intermédiaire et matériel à charges uniquement' },
 };
 export const CT_FORMAT_LABELS: Readonly<Record<string, string>> = { continuous: 'Continu', intervals: 'Intervalles', emom: 'EMOM', amrap: 'AMRAP', for_time: 'For time' };
 export const RETURN_STATE_LABELS: Readonly<Record<string, string>> = { NONE: 'Pas de coupure', SHORT: 'Courte coupure', MODERATE: 'Coupure moyenne', LONG: 'Longue coupure', UNKNOWN: 'Je ne sais pas' };

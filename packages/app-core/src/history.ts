@@ -36,11 +36,63 @@ export const DROPPABLE_CODES: ReadonlySet<string> = new Set([
 
 export const HISTORY_COMPACTED = 'KAIRO.HISTORY_COMPACTED';
 
+/**
+ * C4.1 — provenance des valeurs candidates (`*.CANDIDATE_VALUE_USED`) REGROUPÉE sans perte dans les semaines anciennes :
+ * une raison par code, colonnes de paramètres et positions d'origine (`at`). `expandFoldedReasons` restitue la liste
+ * exacte (mêmes raisons, même ordre). Regroupement seulement si toutes les entrées d'un code ont les mêmes clés.
+ */
+export const PROVENANCE_FOLDED = 'KAIRO.PROVENANCE_FOLDED';
+const FOLDABLE = /\.CANDIDATE_VALUE_USED$/;
+
 type Request = PersistedWeek['requests'][number];
+type Reason = Request['reasons'][number];
+
+function foldProvenance(reasons: readonly Reason[]): { reasons: Reason[]; folded: string[] } {
+  // Déjà regroupée : aucune nouvelle passe (les positions d'origine restent celles du premier regroupement).
+  if (reasons.some((x) => x.code === PROVENANCE_FOLDED)) return { reasons: [...reasons], folded: [] };
+  const groups = new Map<string, number[]>();
+  reasons.forEach((x, i) => { if (FOLDABLE.test(x.code)) groups.set(x.code, [...(groups.get(x.code) ?? []), i]); });
+  const folds: Reason[] = [];
+  const taken = new Set<number>();
+  for (const [code, at] of groups) {
+    const keys = Object.keys(reasons[at[0] ?? 0]?.params ?? {}).sort();
+    const same = at.every((i) => JSON.stringify(Object.keys(reasons[i]?.params ?? {}).sort()) === JSON.stringify(keys));
+    if (at.length <= 1 || !same) continue;
+    const columns = Object.fromEntries(keys.map((k) => [k, at.map((i) => reasons[i]?.params[k])]));
+    folds.push({ code: PROVENANCE_FOLDED, params: { code, at, keys, columns } });
+    for (const i of at) taken.add(i);
+  }
+  return { reasons: [...reasons.filter((_, i) => !taken.has(i)), ...folds], folded: folds.map((f) => String(f.params.code)) };
+}
+
+/** Restitue la liste de raisons d'origine (positions et contenus exacts) ; sans regroupement : liste inchangée. */
+export function expandFoldedReasons<T extends Reason>(reasons: readonly T[]): Reason[] {
+  const folds = reasons.filter((x) => x.code === PROVENANCE_FOLDED);
+  if (folds.length === 0) return [...reasons];
+  const rest: Reason[] = reasons.filter((x) => x.code !== PROVENANCE_FOLDED);
+  const placed = new Map<number, Reason>();
+  for (const f of folds) {
+    const at = (f.params.at as number[] | undefined) ?? [];
+    const keys = (f.params.keys as string[] | undefined) ?? [];
+    const cols = (f.params.columns as Record<string, unknown[]> | undefined) ?? {};
+    at.forEach((pos, j) => placed.set(pos, { code: String(f.params.code), params: Object.fromEntries(keys.map((k) => [k, cols[k]?.[j]])) }));
+  }
+  const out: Reason[] = [];
+  let k = 0;
+  // Positions relatives à la liste sans le marqueur de compaction (toujours en dernier) : il est réajouté à la fin.
+  const marker = rest.filter((x) => x.code === HISTORY_COMPACTED);
+  const body = rest.filter((x) => x.code !== HISTORY_COMPACTED);
+  for (let i = 0; i < body.length + placed.size; i += 1) {
+    const p = placed.get(i);
+    if (p) out.push(p); else { const b = body[k]; k += 1; if (b) out.push(b); }
+  }
+  return [...out, ...marker];
+}
 
 function compactRequest(r: Request): Request {
   // Rien de nouveau à retirer (séance déjà compactée ou sans audit/debug) : séance inchangée (idempotence stricte).
-  if (!r.demand && !r.neighbourContext && !r.reasons.some((x) => DROPPABLE_CODES.has(x.code))) return r;
+  const foldable = r.reasons.filter((x) => FOLDABLE.test(x.code)).length > 1;
+  if (!r.demand && !r.neighbourContext && !foldable && !r.reasons.some((x) => DROPPABLE_CODES.has(x.code))) return r;
   const dropped = new Map<string, number>();
   const prior = r.reasons.find((x) => x.code === HISTORY_COMPACTED);
   for (const d of (prior?.params.dropped as string[] | undefined) ?? []) {
@@ -54,10 +106,12 @@ function compactRequest(r: Request): Request {
     return false;
   });
   const fields = [...new Set([...((prior?.params.fields as string[] | undefined) ?? []), ...(r.demand ? ['demand'] : []), ...(r.neighbourContext ? ['neighbourContext'] : [])])].sort();
-  if (dropped.size === 0 && fields.length === 0) return r;
+  const f = foldProvenance(kept);
+  if (dropped.size === 0 && fields.length === 0 && f.folded.length === 0) return r;
   const { demand: _demand, neighbourContext: _neighbours, ...rest } = r;
-  const marker = { code: HISTORY_COMPACTED, params: { dropped: [...dropped].sort(([a], [b]) => (a < b ? -1 : 1)).map(([c, n]) => `${c}×${String(n)}`), fields } };
-  return { ...rest, reasons: [...kept, marker] };
+  const folded = [...new Set([...((prior?.params.folded as string[] | undefined) ?? []), ...f.folded])].sort();
+  const marker = { code: HISTORY_COMPACTED, params: { dropped: [...dropped].sort(([a], [b]) => (a < b ? -1 : 1)).map(([c, n]) => `${c}×${String(n)}`), fields, ...(folded.length > 0 ? { folded } : {}) } };
+  return { ...rest, reasons: [...f.reasons, marker] };
 }
 
 /** Semaines compactables : semaines du programme clôturées, sauf la plus récente clôturée. */

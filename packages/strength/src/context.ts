@@ -124,6 +124,12 @@ export const zStrengthContext = z.object({
    * interprétation. Tracée par le moteur ; aucune politique d'interférence ne la lit (capacité BLOQUÉE).
    */
   sportPriority: z.object({ order: z.array(z.enum(DISCIPLINES)).min(1) }).strict().optional(),
+  /**
+   * C4.3 — MODE BLOC (demande du planificateur) : bloc de force autonome destiné à une séance hôte (Cross-training) qui
+   * porte déjà échauffement général et retour au calme ⇒ AUCUNE mobilité propre ; la préparation spécifique de charge
+   * (séries de montée) reste celle de Strength. Archétype `usage: 'block'` exigé.
+   */
+  blockMode: z.object({ host: z.literal('crosstraining') }).strict().optional(),
 }).strict();
 export type StrengthContext = z.infer<typeof zStrengthContext>;
 export type StrengthContextInput = z.input<typeof zStrengthContext>;

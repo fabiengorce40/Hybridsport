@@ -21,6 +21,7 @@ export interface CapabilityDefinition {
 export const CT_CAPABILITY_IDS = [
   'ctReplayHold', 'ctBootstrapExposure', 'ctCalibratedDose', 'ctProgression', 'ctFirstExposure', 'ctLoadedMovements',
   'ctTechnicalMovements', 'ctIntensityTargets', 'ctBenchmarks', 'ctWeeklyComposition', 'ctHybridPlanning', 'ctSessionComposition',
+  'ctFullSessionComposition',
 ] as const;
 export type CtCapabilityId = (typeof CT_CAPABILITY_IDS)[number];
 export const CT_FOUNDATION = 'ctFoundation';
@@ -59,6 +60,11 @@ export const CT_CAPABILITIES: Readonly<Record<CtCapabilityId, CapabilityDefiniti
   ctFirstExposure: {
     parameters: ['ct.stimulus.catalog', 'ct.firstExposure.byStimulus', 'ct.safety.novicePolicy', 'ct.safety.novelEccentricVolume', 'ct.safety.repsPerMovementCap', 'ct.safety.jumpContactsCap'],
     decisions: ['CT-D1', 'CT-D4', 'CT-D6', 'CT-G1'], g1Policies: ['CT-G1-NOVICE', 'CT-G1-EXERTIONAL'], technical: ['CT_CONTENT'],
+  },
+  // C4 (CT-D21, expérimental) : séance complète autour du bloc principal C3 (échauffement, retour au calme).
+  ctFullSessionComposition: {
+    parameters: ['ct.c4.sessionPlan', 'ct.c4.warmup', 'ct.c4.cooldown', 'ct.c4.sessionDurationTarget', 'ct.c4.generalWarmupPool', 'ct.c4.generalWarmupCircuit', 'ct.c4.mobilityPool'],
+    decisions: ['CT-D21', 'CT-D22', 'CT-D23'], g1Policies: [], technical: ['CT_CONTENT'],
   },
   ctLoadedMovements: {
     parameters: ['ct.load.implementStandards', 'ct.load.percentE1rmByStimulus'],

@@ -100,7 +100,8 @@ export function beta0Environment(): ProgrammeEnvironment {
     hyrox: { engine: hr.engine, content: hr.content, transportNeighbours: true, simulation: [...hr.simulation, ...ROTATION_SIMULATION_IDS] },
     // C3.5 — Cross-training : moteur C3 en simulation, gouvernance TEST_ONLY ; marques SIMULATION_ONLY ajoutées aux seules
     // semaines qui contiennent une séance Cross-training (provenance exacte, jamais confondue avec APPROVED).
-    crosstraining: { engine: ct.engine, content: ct.content, transportNeighbours: true, simulation: ct.simulation, governance: ct.governance },
+    // C4.3 — délégation d'un bloc de force (règle TEST_ONLY, SIMULATION_ONLY) pour le stimulus « force + conditionnement ».
+    crosstraining: { engine: ct.engine, content: ct.content, transportNeighbours: true, simulation: ct.simulation, governance: ct.governance, strengthBlockRule: ct.strengthBlockRule },
     mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: [...BETA0_SIMULATION], planningVersion: BETA0_PLANNING_VERSION,
     governance: m3Governance({ extra: simulationMark }),
     programmeGovernance: rotationGovernance(simulationMark),
@@ -366,6 +367,77 @@ export interface CompositionScope {
   readonly blockDurationS: number | null;
   readonly availableTimeS: number | null;
   readonly targetDurationS: number | null;
+  /** C4 (Cross-training) — statut de composition de séance tracé par le moteur ; null si non tracé (C3 seul, HYROX). */
+  readonly c4: C4View | null;
+}
+/** C4 — statut EXPLICITE de la séance Cross-training (expérimental) et blocs générés, lus dans la trace persistée. */
+export type C4SessionStatus = 'FULL_SESSION' | 'MAIN_BLOCK_ONLY' | 'COMPOSITION_UNRESOLVED' | 'BLOCKED';
+export interface C4BlockView {
+  /** Identifiant du bloc dans la séance persistée (validation manuelle). */
+  readonly blockId: string;
+  readonly block: string;
+  readonly kind: string;
+  readonly purpose: string;
+  readonly durationS: number;
+  readonly exercises: readonly string[];
+}
+export interface C4View {
+  readonly status: C4SessionStatus;
+  readonly cause: string;
+  /** Blocs non générés (facultatifs non composables, couverts par un autre bloc, ou requis manquants). */
+  readonly notGenerated: readonly string[];
+  /** Durée PLANIFIÉE de la séance complète (valeurs gouvernées), null hors séance complète. */
+  readonly plannedDurationS: number | null;
+  /** Cible produit 45–75 min : position de la durée ESTIMÉE par le CORE (S8), jamais remplie artificiellement. */
+  readonly target: { readonly minS: number; readonly maxS: number; readonly position: string } | null;
+  /**
+   * C4.1 — durée ESTIMÉE par le CORE pour la séance complète (consignes et transitions comprises, médiane), null si
+   * indisponible ; `estimatedPosition` : sa position par rapport à la cible produit (lecture, aucune règle nouvelle).
+   */
+  readonly estimatedDurationS: number | null;
+  readonly estimatedPosition: 'below' | 'within' | 'above' | null;
+  /** Blocs complémentaires générés, dans l'ordre de la séance (le bloc principal est lu par `ctWorkoutOf`). */
+  readonly blocks: readonly C4BlockView[];
+}
+const C4_STATUS = 'PLAN.CROSSTRAINING.C4_SESSION_STATUS';
+const C4_BLOCK = 'PLAN.CROSSTRAINING.C4_BLOCK';
+const C4_STATUSES: readonly C4SessionStatus[] = ['FULL_SESSION', 'MAIN_BLOCK_ONLY', 'COMPOSITION_UNRESOLVED', 'BLOCKED'];
+const strs = (x: unknown): string[] => (Array.isArray(x) ? x.filter((y): y is string => typeof y === 'string') : []);
+/**
+ * C4 — lecture fail-closed : « séance complète » seulement si le statut tracé est FULL_SESSION ET que chaque bloc
+ * déclaré généré est PRÉSENT dans la séance persistée (sinon bloc principal uniquement, cause `PERSISTED_BLOCKS_MISMATCH`).
+ */
+function c4ViewOf(reasons: readonly { readonly code: string; readonly params: Readonly<Record<string, unknown>> }[], session: SessionDraft | undefined, estimateS: number | null): C4View | null {
+  const st = [...reasons].reverse().find((x) => x.code === C4_STATUS);
+  // Sans statut C4 tracé (C3 seul, donnée antérieure) : aucune lecture C4, portée P0 inchangée.
+  if (!st) return null;
+  const raw = String(st.params.status);
+  const status: C4SessionStatus = (C4_STATUSES as readonly string[]).includes(raw) ? raw as C4SessionStatus : 'MAIN_BLOCK_ONLY';
+  const base = { cause: String(st.params.cause), notGenerated: strs(st.params.notGenerated) };
+  if (!session) return { status: 'BLOCKED', ...base, plannedDurationS: null, target: null, estimatedDurationS: null, estimatedPosition: null, blocks: [] };
+  if (status !== 'FULL_SESSION') return { status, ...base, plannedDurationS: null, target: null, estimatedDurationS: null, estimatedPosition: null, blocks: [] };
+  // C4.2 — l'échauffement spécifique peut porter un second bloc CORE (accélérations progressives sur l'ergomètre).
+  const timedS = (b: SessionDraft['blocks'][number]) => b.items.reduce((a, i) => a + (i.prescription.type === 'timed' ? i.prescription.workS * (i.prescription.rounds ?? 1) + i.prescription.restS * Math.max(0, (i.prescription.rounds ?? 1) - 1) : 0), 0);
+  const blocks = reasons.filter((x) => x.code === C4_BLOCK).flatMap((x): C4BlockView[] => {
+    const name = String(x.params.block);
+    const b = session.blocks.find((y) => y.id.endsWith(`.c4.${name}`));
+    const extra = name === 'warmup_specific' ? session.blocks.find((y) => y.id.endsWith('.c4.warmup_buildups')) : undefined;
+    const view = (blk: SessionDraft['blocks'][number], durationS: number): C4BlockView => ({ blockId: blk.id, block: name, kind: String(x.params.kind), purpose: String(x.params.purpose), durationS, exercises: blk.items.map((i) => i.exerciseId) });
+    if (!b) return [];
+    return extra ? [view(b, Number(x.params.durationS) - timedS(extra)), { ...view(extra, timedS(extra)), purpose: 'progressive_buildups' }] : [view(b, Number(x.params.durationS))];
+  });
+  const declared = strs(st.params.generated).filter((x) => x !== 'conditioning');
+  const names = [...new Set(blocks.map((b) => b.block))];
+  if (declared.length !== names.length || declared.some((d) => !names.includes(d))) return { status: 'MAIN_BLOCK_ONLY', ...base, cause: 'PERSISTED_BLOCKS_MISMATCH', plannedDurationS: null, target: null, estimatedDurationS: null, estimatedPosition: null, blocks: [] };
+  const num = Number(st.params.plannedDurationS);
+  const minS = Number(st.params.targetMinS);
+  const maxS = Number(st.params.targetMaxS);
+  // S8 (C4.2) — référence de la cible produit : estimation du CORE (consignes et transitions comprises). Sans estimation,
+  // position inconnue (jamais la durée des blocs) ; la position tracée par une version antérieure reste lisible en repli.
+  const estimatedPosition = estimateS === null ? null : estimateS < minS ? 'below' : estimateS > maxS ? 'above' : 'within';
+  const traced = String(st.params.target);
+  const target = { minS, maxS, position: estimatedPosition ?? (traced === 'core_estimate' ? 'unknown' : traced) };
+  return { status, ...base, plannedDurationS: Number.isFinite(num) && num > 0 ? num : null, target, estimatedDurationS: estimateS, estimatedPosition, blocks };
 }
 const NOT_GENERATED = /^PLAN\.(CROSSTRAINING\.C3|HYROX\.H2)_BLOCK_NOT_GENERATED$/;
 const STRUCTURE_TRACED = /^PLAN\.(CROSSTRAINING\.C3_STRUCTURE|HYROX\.H2_SESSION_STRUCTURE)$/;
@@ -376,7 +448,11 @@ export function compositionScopeOf(r: Pick<PersistedWeek['requests'][number], 's
   const session = (r.record?.data as { session?: SessionDraft } | undefined)?.session;
   const num = (x: unknown): number | null => (typeof x === 'number' && Number.isFinite(x) ? x : null);
   const blockDurationS = !session ? null : r.sport === 'crosstraining' ? ctWorkoutOf(session)?.totalS ?? null : num((session.blocks[0] as { timeCapS?: unknown } | undefined)?.timeCapS);
-  const durations = { blockDurationS, availableTimeS: num(session?.availableTimeS), targetDurationS: num(session?.targetDurationS) };
+  const est = (r.record?.data as { durationEstimate?: { availability?: unknown; p50?: unknown } } | undefined)?.durationEstimate;
+  const c4 = r.sport === 'crosstraining' ? c4ViewOf(r.reasons, session, est?.availability === 'AVAILABLE' ? num(est.p50) : null) : null;
+  const durations = { blockDurationS, availableTimeS: num(session?.availableTimeS), targetDurationS: num(session?.targetDurationS), c4 };
+  // C4 tracé : il fait autorité sur la structure C3 (dont l'échauffement reste tracé « non généré » par C3).
+  if (c4) return c4.status === 'FULL_SESSION' ? { scope: 'FULL_SESSION', notGenerated: c4.notGenerated, status: null, ...durations } : { scope: 'TRAINING_BLOCK', notGenerated: c4.notGenerated.length > 0 ? c4.notGenerated : notGenerated, status: FULL_SESSION_COMPOSITION_UNRESOLVED, ...durations };
   if (traced && notGenerated.length === 0) return { scope: 'FULL_SESSION', notGenerated: [], status: null, ...durations };
   return { scope: 'TRAINING_BLOCK', notGenerated, status: FULL_SESSION_COMPOSITION_UNRESOLVED, ...durations };
 }

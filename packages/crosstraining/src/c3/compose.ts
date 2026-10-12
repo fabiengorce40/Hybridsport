@@ -129,8 +129,17 @@ export function composeC3(input: Input, stimulus: CtStimulus, governance: CtGove
   const structure = P['ct.composition.sessionStructure'][stimulus];
   if (!structure) return fail([ctReasons.emit(CT_CODES.C3_STRUCTURE_UNAVAILABLE, { stimulus, kind: 'session', cause: 'STRUCTURE_UNDECIDED' })]);
   trace.push(ctReasons.emit(CT_CODES.C3_STRUCTURE, { stimulus, blocks: [...structure] }));
+  const delegated = ctx.delegatedStrength;
   for (const kind of structure) {
-    if (kind === 'strength') return fail([ctReasons.emit(CT_CODES.C3_STRUCTURE_UNAVAILABLE, { stimulus, kind, cause: 'STRENGTH_ENGINE_DELEGATION_UNAVAILABLE' })]);
+    // C4.3 — bloc de force DÉLÉGUÉ par le planificateur (composé par Strength) : C3 ne compose que le conditionnement.
+    if (kind === 'strength' && delegated) { trace.push(ctReasons.emit(CT_CODES.C3_BLOCK_NOT_GENERATED, { kind, cause: 'DELEGATED_TO_STRENGTH_BY_PLANNER' })); continue; }
+    if (kind === 'strength') {
+      // Besoin EXPRIMÉ (gouverné, CT-D25) quand la séance complète est demandée : le planificateur peut le résoudre.
+      const need = requested.has('ctFullSessionComposition') ? readC3(governance, 'ct.c4.strengthNeed', mode) : undefined;
+      const n = need?.ok ? need.value[stimulus] : undefined;
+      const expressed = n ? [...(need?.reasons ?? []), ctReasons.emit(CT_CODES.C4_STRENGTH_NEED, { stimulus, purpose: n.purpose, budgetMinS: n.budgetS.min, budgetMaxS: n.budgetS.max })] : [];
+      return fail([ctReasons.emit(CT_CODES.C3_STRUCTURE_UNAVAILABLE, { stimulus, kind, cause: 'STRENGTH_ENGINE_DELEGATION_UNAVAILABLE' }), ...expressed]);
+    }
     if (kind === 'skill') return fail([ctReasons.emit(CT_CODES.C3_STRUCTURE_UNAVAILABLE, { stimulus, kind, cause: 'SKILL_ACQUISITION_UNMODELLED' })]);
     if (kind === 'warmup' || kind === 'cooldown') trace.push(ctReasons.emit(CT_CODES.C3_BLOCK_NOT_GENERATED, { kind, cause: 'ARCHITECTURAL_PLACE_ONLY_CONTENT_UNGOVERNED' }));
   }
@@ -167,6 +176,12 @@ export function composeC3(input: Input, stimulus: CtStimulus, governance: CtGove
   let table: DerivationTable | undefined;
   const neighbours = ctx.neighbours?.items ?? [];
   let policy = 'none';
+  // C4.3 — structures protégées par le bloc de force délégué : table de dérivation exigée pour les reconnaître.
+  if (delegated && delegated.excludeStructures.length > 0) {
+    const raw = input.ruleset.parameter('demand.derivationTable')?.value;
+    if (!isDerivationTable(raw)) return fail([ctReasons.emit(CT_CODES.C3_PARAMETER_UNREADABLE, { parameterId: 'demand.derivationTable', detail: 'structures des mouvements non dérivables : interférence intra-séance non vérifiable' })]);
+    table = raw;
+  }
   if (neighbours.length > 0) {
     const pol = readC3(governance, 'ct.hybrid.policy', mode);
     if (pol.ok) {
@@ -190,7 +205,7 @@ export function composeC3(input: Input, stimulus: CtStimulus, governance: CtGove
   const ordered = admissible.map((f, i) => ({ f, i, at: lastUse(f) })).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : a.i - b.i)).map((x) => x.f);
   const rejected: { format: string; causes: string[] }[] = [];
   const rejectedReasons: ReasonCode[] = [];
-  const env: Env = { input, governance, P, level, stimulus, recentMovements, excludedByHistory, avoided, table, last };
+  const env: Env = { input, governance, P, level, stimulus, recentMovements, excludedByHistory, avoided, excluded: new Set(delegated?.excludeStructures ?? []), excludedExercises: new Set(delegated?.excludeExercises ?? []), delegatedS: delegated?.durationS ?? 0, table, last };
   for (const format of ordered) {
     const gen = formatGenerability(format, governance, mode);
     // Réessai DÉTERMINISTE : un mouvement responsable d'un plafond ou de la densité est écarté (tracé), puis le format
@@ -250,6 +265,12 @@ interface Env {
   readonly recentMovements: ReadonlySet<string>;
   readonly excludedByHistory: readonly string[];
   readonly avoided: ReadonlySet<string>;
+  /** C4.3 — structures EXCLUES du conditionnement (bloc de force délégué dans la même séance). */
+  readonly excluded: ReadonlySet<string>;
+  /** C4.3 — exercices du bloc de force délégué : jamais répétés dans le conditionnement. */
+  readonly excludedExercises: ReadonlySet<string>;
+  /** C4.3 — durée estimée du bloc délégué, retranchée du temps utilisable du conditionnement. */
+  readonly delegatedS: number;
   readonly table: DerivationTable | undefined;
   readonly last: Exposure | undefined;
 }
@@ -294,6 +315,8 @@ function composeFormat(env: Env, format: CtFormat, banned: ReadonlyMap<string, s
     const ban = banned.get(movementId);
     if (ban) issues.push(ban);
     const structures = env.table ? Object.keys(deriveExerciseStructures(e, env.table)) : [];
+    if (structures.some((x) => env.excluded.has(x))) issues.push('INTRA_SESSION_STRUCTURE_CONFLICT');
+    if (env.excludedExercises.has(movementId)) issues.push('INTRA_SESSION_REPEAT_OF_STRENGTH_BLOCK');
     return { e, roles: movementRoles(e, patternRegion.get(e.patterns.primary)), issues, recent: env.recentMovements.has(movementId), conflicts: structures.filter((s) => env.avoided.has(s)).length };
   });
 
@@ -310,8 +333,16 @@ function composeFormat(env: Env, format: CtFormat, banned: ReadonlyMap<string, s
 
   // ——— RÔLES → SÉLECTION (classement déterministe, raisons tracées) ———
   const chosen: { c: Candidate; role: CtMovementRole; criteria: string[] }[] = [];
+  // C4.3 — rôles facultatifs (gouvernés, CT-D24) et mouvements de repli (`fallbackOnly`) : lus seulement s'ils sont résolus.
+  const optional = readC3(governance, 'ct.composition.optionalRoles', mode);
+  const optionalRoles: readonly string[] = optional.ok ? optional.value[stimulus]?.[format] ?? [] : [];
+  if (optional.ok && optionalRoles.length > 0) trace.push(...optional.reasons);
+  const fallbackIds = new Set(P['ct.composition.movementPool'].filter((m) => m.fallbackOnly === true).map((m) => m.movementId));
   for (const role of roles) {
-    const withRole = candidates.filter((c) => c.roles.includes(role));
+    const all = candidates.filter((c) => c.roles.includes(role));
+    // Un mouvement de repli n'est candidat que si AUCUN autre mouvement du rôle n'est sans problème de matériel / éligibilité.
+    const primaryOk = all.some((c) => !fallbackIds.has(c.e.id) && c.issues.length === 0 && fitIssues(c, role).length === 0);
+    const withRole = primaryOk ? all.filter((c) => !fallbackIds.has(c.e.id)) : all;
     const rejectedHere: string[] = [];
     const eligible = withRole.filter((c) => {
       const causes = [...c.issues, ...fitIssues(c, role), ...incompatibilities(c.e, chosen.map((x) => x.c.e))];
@@ -320,6 +351,10 @@ function composeFormat(env: Env, format: CtFormat, banned: ReadonlyMap<string, s
       return causes.length === 0;
     });
     if (rejectedHere.length > 0) trace.push(ctReasons.emit(CT_CODES.C3_CANDIDATES_REJECTED, { format, role, rejected: rejectedHere }));
+    if (eligible.length === 0 && optionalRoles.includes(role) && roles.length > 1) {
+      trace.push(ctReasons.emit(CT_CODES.C3_ROLE_DROPPED, { format, role, cause: 'NO_ELIGIBLE_MOVEMENT' }));
+      continue;
+    }
     if (eligible.length === 0) return { ok: false, causes: [`ROLE_UNFILLED:${role}`], trace };
     const key = (c: Candidate): readonly (number | string)[] => [c.recent ? 1 : 0, c.conflicts, c.e.cost.technical, -(c.e.relevance.crosstraining ?? 0), c.e.id];
     const ranked = [...eligible].sort((a, b) => compareKeys(key(a), key(b)));
@@ -335,6 +370,8 @@ function composeFormat(env: Env, format: CtFormat, banned: ReadonlyMap<string, s
     chosen.push({ c: best, role, criteria });
     trace.push(ctReasons.emit(CT_CODES.C3_MOVEMENT_SELECTED, { format, role, exerciseId: best.e.id, criteria }));
   }
+
+  if (chosen.length === 0) return { ok: false, causes: ['ROLE_UNFILLED:all'], trace };
 
   // ——— DOSE ———
   const items: C3Item[] = chosen.map(({ c, role, criteria }, i) => {
@@ -377,7 +414,7 @@ function composeFormat(env: Env, format: CtFormat, banned: ReadonlyMap<string, s
   let marginS: number | undefined;
   try { marginS = readToleranceProfile(input.ruleset, TOLERANCE_PROFILE[spec.duration]).marginS; } catch { marginS = undefined; }
   if (marginS === undefined) causes.push('TOLERANCE_PROFILE_UNAVAILABLE');
-  else if (blockS > input.intent.availableTimeS - marginS) causes.push('EXCEEDS_AVAILABLE_TIME');
+  else if (blockS > input.intent.availableTimeS - env.delegatedS - marginS) causes.push('EXCEEDS_AVAILABLE_TIME');
 
   // ——— DENSITÉ ———
   let density: C3Plan['density'] = { kind: spec.density, detail: 'self_paced' };

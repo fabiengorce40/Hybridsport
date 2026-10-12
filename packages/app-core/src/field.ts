@@ -15,6 +15,7 @@ import type { CompositionScope, SessionView } from './beta0.js';
 import { selectHistory } from './beta0-app.js';
 import type { HistoryEntry } from './beta0-app.js';
 import { dateOf, normalizeInstant } from './dates.js';
+import { expandFoldedReasons } from './history.js';
 import { AppError } from './errors.js';
 import { FIELD_COMMENT_MAX, FIELD_CONTENT_AMOUNTS, FIELD_DIFFICULTIES, FIELD_FULL_SESSION, FIELD_DURATIONS, FIELD_FEEDBACK_PROVENANCE, FIELD_TOLERANCES, zFieldFeedback } from './model.js';
 import type { AppState, FieldFeedback, PersistedWeek, ProgrammeLog, Sport } from './model.js';
@@ -216,7 +217,7 @@ export function exportBetaJournal(state: AppState, meta: BetaJournalMeta): strin
     programme: ps ? { definition: ps.definition, weeks: ps.weeks, results: ps.results, audit: ps.audit } : null,
     weeks: programmeWeeks(state).map((w) => ({
       weekStart: w.weekStart, planningVersion: w.planningVersion ?? null, authority: w.authority, simulation: w.simulation,
-      requests: w.requests.map((r) => ({ requestId: r.requestId, sport: r.sport, status: r.status, date: r.date ?? null, category: r.category, intent: r.intent ?? null, composition: r.composition ?? null, composedFor: r.composedFor ?? null, quality: r.quality ?? null, reasons: r.reasons, session: recordOf(r)?.session ?? null })),
+      requests: w.requests.map((r) => ({ requestId: r.requestId, sport: r.sport, status: r.status, date: r.date ?? null, category: r.category, intent: r.intent ?? null, composition: r.composition ?? null, composedFor: r.composedFor ?? null, quality: r.quality ?? null, reasons: expandFoldedReasons(r.reasons), session: recordOf(r)?.session ?? null })),
     })),
     journal: selectBetaJournal(state),
     history: selectFieldHistory(state),
@@ -254,6 +255,8 @@ export function betaJournalText(state: AppState, meta: BetaJournalMeta): string 
     if (e.prescription) lines.push(`  prescription : ${[e.prescription.ctFormat, e.prescription.hrTimeCapS !== null ? `time cap ${mmss(e.prescription.hrTimeCapS)}` : null, e.prescription.estimatedDurationS !== null ? `≈ ${mmss(e.prescription.estimatedDurationS)}` : e.prescription.targetDurationS !== null ? `cible ${mmss(e.prescription.targetDurationS)}` : null, e.prescription.exercises.join(' + ')].filter(Boolean).join(' · ')}`);
     if (e.execution) lines.push(`  exécution : ${e.execution.completion ?? 'en cours'} · durée réelle ${mmss(realDurationS(e.execution))}${e.execution.pain ? ' · DOULEUR' : ''}${e.execution.ctResult ? ` · résultat ${JSON.stringify(e.execution.ctResult)}` : ''}${e.execution.hrResult ? ` · résultat ${JSON.stringify(e.execution.hrResult)}` : ''}`);
     if (e.composition?.status) lines.push(`  composition : ${e.composition.scope} · ${e.composition.status}${e.composition.notGenerated.length > 0 ? ` (non générés : ${e.composition.notGenerated.join(', ')})` : ''}`);
+    // C4 (expérimental) : statut explicite de la séance Cross-training, cause, blocs générés, durée planifiée.
+    if (e.composition?.c4) lines.push(`  séance C4 (expérimentale) : ${e.composition.c4.status} · ${e.composition.c4.cause}${e.composition.c4.blocks.length > 0 ? ` · blocs ${e.composition.c4.blocks.map((b) => b.block).join(', ')}` : ''}${e.composition.c4.plannedDurationS !== null ? ` · planifiée ${String(Math.round(e.composition.c4.plannedDurationS))} s` : ''}${e.composition.c4.estimatedDurationS !== null ? ` · estimée ${String(Math.round(e.composition.c4.estimatedDurationS))} s` : ''}`);
     if (e.repeatFlagged) lines.push('  répétition signalée par le moteur (REPEAT_UNAVOIDABLE)');
     if (e.feedback) lines.push(`  retour terrain : ${fieldFeedbackText(e.feedback) ?? ''}`);
     if (e.quality) lines.push(`  qualité Q1 : ${e.quality.verdict}`);

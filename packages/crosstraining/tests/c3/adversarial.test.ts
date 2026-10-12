@@ -36,16 +36,20 @@ const NEIGHBOUR_HIGH = (structure: string, discipline: 'strength' | 'running' = 
 const realizedOf = (c: C3Outcome | undefined, o: Record<string, unknown> = {}) => realizedFrom(c, 'ct.prev', PREV_AT, o);
 
 describe('C3 — 32 tests adversariaux', () => {
-  it('1. aucun matériel ⇒ refus (rôles intenables pour tous les formats), aucun mouvement inventé', () => {
+  it('1. aucun matériel ⇒ refus des formats intenables, aucun mouvement inventé (C4.3 : rôle facultatif, course de repli)', () => {
     const r = run({ profile: { ...PROFILE_GYM, availableEquipment: [] } });
-    // Poids du corps pur : EMOM squat + pompes reste possible ; AMRAP / for time exigent un ergomètre.
+    // Poids du corps pur : EMOM squat + pompes possible ; AMRAP : rôle monostructural facultatif retiré mais tirage
+    // impossible sans barre ; for time : couplet trop court pour le domaine de temps (refus honnêtes, aucune dose créée).
     const p = planOf(r.compose);
     expect(p.format).toBe('emom');
     expect(p.items.every((i) => ['ex.air_squat', 'ex.reverse_lunge_bw', 'ex.push_up'].includes(i.exerciseId))).toBe(true);
-    expect(p.rejectedFormats).toEqual([{ format: 'amrap', causes: ['ROLE_UNFILLED:monostructural'] }, { format: 'for_time', causes: ['ROLE_UNFILLED:monostructural'] }]);
+    expect(p.rejectedFormats).toEqual([{ format: 'amrap', causes: ['ROLE_UNFILLED:upper_pull'] }, { format: 'for_time', causes: ['OUTSIDE_TIME_DOMAIN'] }]);
+    // Aérobie : course de REPLI (aucun ergomètre), dose de format en temps inchangée ; refus si la course est interdite.
     const aerobic = run({ stimulus: 'aerobic_capacity', profile: { ...PROFILE_GYM, availableEquipment: [] } });
-    expect(aerobic.compose?.ok).toBe(false);
-    expect(codes(aerobic.compose)).toContain(CT_CODES.C3_NO_FORMAT);
+    expect(planOf(aerobic.compose).items.map((i) => i.exerciseId)).toEqual(['ex.easy_run']);
+    const noRun = run({ stimulus: 'aerobic_capacity', profile: { ...PROFILE_GYM, availableEquipment: [], restrictions: ['no_running'] } });
+    expect(noRun.compose?.ok).toBe(false);
+    expect(codes(noRun.compose)).toContain(CT_CODES.C3_NO_FORMAT);
   });
 
   it('2. matériel incomplet (pas de rameur ni de SkiErg) ⇒ rôle monostructural intenable, format suivant', () => {

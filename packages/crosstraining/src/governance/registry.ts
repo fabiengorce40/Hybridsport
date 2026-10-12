@@ -72,6 +72,18 @@ export const CT_PARAMETER_REGISTRY_C1: readonly CtParameter[] = [
   unresolved('ct.composition.sessionStructure', 'CT-D16', 'PLANNING', 'block-kinds-per-stimulus', 'EXPERT', 'structure de séance par stimulus non décidée'),
   unresolved('ct.composition.movementPool', 'CT-D16', 'CLASSIFICATION', 'reviewed-movement-set', 'EXPERT', 'aucun mouvement relu pour la composition'),
   unresolved('ct.composition.movementRoles', 'CT-D16', 'CLASSIFICATION', 'roles-per-stimulus-per-format', 'EXPERT', 'rôles de mouvement par stimulus et par format non décidés'),
+  // CT-D24 (C4.3) — diversification sans ergomètre : rôles facultatifs (mouvement de repli : `fallbackOnly` du réservoir)
+  unresolved('ct.composition.optionalRoles', 'CT-D24', 'CLASSIFICATION', 'optional-roles-per-stimulus-per-format', 'EXPERT', 'rôles facultatifs non décidés'),
+  // CT-D21 (C4) — séance complète : plan de blocs, échauffement, retour au calme, cible de durée (produit)
+  unresolved('ct.c4.sessionPlan', 'CT-D21', 'PLANNING', 'required-optional-blocks-per-stimulus', 'EXPERT', 'plan de séance complète par stimulus non décidé'),
+  unresolved('ct.c4.warmup', 'CT-D21', 'PRESCRIPTION', 's-rounds-fraction-per-level', 'EXPERT', 'échauffement (durée, tours, fraction des répétitions) non décidé'),
+  unresolved('ct.c4.cooldown', 'CT-D21', 'PRESCRIPTION', 's-per-level', 'EXPERT', 'retour au calme (allure facile, mobilité) non décidé'),
+  unresolved('ct.c4.sessionDurationTarget', 'CT-D21', 'PLANNING', 's', 'PRODUCT_AND_EXPERT', 'cible de durée de séance non décidée'),
+  // CT-D22 (C4.2) — échauffement sans ergomètre ; CT-D23 — mobilité de retour au calme (orientations S4 / S5 validées, valeurs non)
+  unresolved('ct.c4.generalWarmupPool', 'CT-D22', 'PRESCRIPTION', 'movement-role-regions', 'EXPERT', 'réservoir d’échauffement au poids du corps non décidé'),
+  unresolved('ct.c4.generalWarmupCircuit', 'CT-D22', 'PRESCRIPTION', 's-impact-per-level', 'EXPERT', 'circuit d’échauffement au poids du corps non décidé'),
+  unresolved('ct.c4.strengthNeed', 'CT-D25', 'PLANNING', 'stimulus-budget-s', 'EXPERT', 'besoin de force par stimulus non décidé'),
+  unresolved('ct.c4.mobilityPool', 'CT-D23', 'PRESCRIPTION', 'movement-regions', 'EXPERT', 'réservoir de mobilité de retour au calme non décidé'),
   // CT-G1 — politiques de sécurité
   unresolved('ct.safety.novicePolicy', 'CT-G1', 'SAFETY', 'rule', 'G1_POLICY', 'exclusions novice non signées'),
   unresolved('ct.return.protocol', 'CT-G1', 'SAFETY', 'rule', 'G1_POLICY', 'protocole de reprise non signé'),

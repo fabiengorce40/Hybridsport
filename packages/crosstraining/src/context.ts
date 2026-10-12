@@ -171,6 +171,24 @@ export const zCrossTrainingContext = z.object({
   plannedSessions: z.array(z.object({ sessionId: z.string().min(1), plannedAt: instant, stimulus: z.enum(CT_STIMULI), prescription: zCtPrescription }).strict()).optional(),
   /** C3 — ordre de priorité DÉCLARÉ des sports du programme (transporté ; aucune politique d'interférence gouvernée). */
   sportPriority: z.object({ order: z.array(z.enum(DISCIPLINES)).min(1) }).strict().optional(),
+  /**
+   * C4.1 — variante de séance complète IMPOSÉE par le port après un refus du CORE sur la variante longue (bornes basses
+   * gouvernées seulement). Absent = longue, sinon courte (comportement C4).
+   */
+  fullSessionVariant: z.enum(['short']).optional(),
+  /**
+   * C4.3 — bloc de force DÉLÉGUÉ (composé par Strength à la demande du planificateur) : blocs CORE transportés TELS
+   * QUELS (Strength reste propriétaire de la prescription), durée estimée par le CORE, structures que le conditionnement
+   * ne doit pas solliciter dans la même séance (règle du planificateur), provenance. Cross-training ne le modifie jamais.
+   */
+  delegatedStrength: z.object({
+    blocks: z.array(z.record(z.string(), z.unknown())).min(1),
+    durationS: z.number().positive(),
+    excludeStructures: z.array(z.string().min(1)),
+    /** Exercices du bloc de force : jamais répétés dans le conditionnement de la même séance. */
+    excludeExercises: z.array(z.string().min(1)),
+    source: z.object({ engine: z.literal('strength'), archetypeId: z.string().min(1), sessionId: z.string().min(1), ruleId: z.string().min(1) }).strict(),
+  }).strict().optional(),
 }).strict();
 export type CrossTrainingContext = z.infer<typeof zCrossTrainingContext>;
 export type CrossTrainingContextInput = z.input<typeof zCrossTrainingContext>;

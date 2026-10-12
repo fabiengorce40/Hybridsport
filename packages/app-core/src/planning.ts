@@ -12,7 +12,7 @@ import { findArchetype, readStrengthParams, StrengthEngine } from '@hybridsport/
 import type { StrengthCompositionRule } from '@hybridsport/strength';
 import { crossTrainingPort, hyroxHistoriesOf, hyroxPort, planMultisportWeek, runningPort, strengthPort } from '@hybridsport/planner';
 import type { QualityAssessment } from '@hybridsport/engine';
-import type { CrossTrainingEngine, CtGovernance, HyroxEngine, PlannedWeek, PlannerClock, PlannerMode, SportPorts } from '@hybridsport/planner';
+import type { CrossTrainingEngine, CtGovernance, HyroxEngine, PlannedWeek, PlannerClock, PlannerMode, SportPorts, StrengthBlockRule } from '@hybridsport/planner';
 import type { LoadedRuleset, SportEngine } from '@hybridsport/engine';
 import { addDays, normalizeInstant, sessionInstant, weekStartOf } from './dates.js';
 import { coreProfile, RUNNING_CAPABILITY_REQUESTS, runningContext, simulatedRunning, strengthContextAt } from './generate.js';
@@ -48,7 +48,7 @@ export interface PlannerEnvironment {
    * `transportNeighbours` : voisines (seconde passe) et priorité transportées au contexte CT (C3) ; `simulation` :
    * identifiants SIMULATION_ONLY propres au Cross-training, tracés dans les seules semaines qui en contiennent.
    */
-  readonly crosstraining?: { readonly engine: CrossTrainingEngine; readonly content: Content; readonly transportNeighbours?: boolean; readonly simulation?: readonly string[]; readonly governance?: CtGovernance };
+  readonly crosstraining?: { readonly engine: CrossTrainingEngine; readonly content: Content; readonly transportNeighbours?: boolean; readonly simulation?: readonly string[]; readonly governance?: CtGovernance; readonly strengthBlockRule?: StrengthBlockRule };
   /**
    * `transportNeighbours` (H2.5) : voisines, priorité et séances HYROX de la semaine transportées au contexte H2 ;
    * `simulation` : identifiants SIMULATION_ONLY propres à HYROX, tracés dans les seules semaines qui en contiennent.
@@ -76,7 +76,7 @@ export function assertEnvironment(env: Pick<PlannerEnvironment, 'mode' | 'author
 }
 
 /** Capacités Cross-training DEMANDÉES par l'application (le moteur décide de leur activation selon sa gouvernance). */
-export const CT_CAPABILITY_REQUESTS = ['ctBootstrapExposure', 'ctReplayHold', 'ctHybridPlanning', 'ctSessionComposition'] as const;
+export const CT_CAPABILITY_REQUESTS = ['ctBootstrapExposure', 'ctReplayHold', 'ctHybridPlanning', 'ctSessionComposition', 'ctFullSessionComposition'] as const;
 
 /**
  * Intention de programme Strength / Running issue des déclarations du PROFIL (nombre de séances déclaré par
@@ -140,7 +140,16 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
     });
   }
   if (env.crosstraining) {
+    // C4.3 — port Strength en MODE BLOC (délégation par le planificateur) : même moteur et même contenu que Strength,
+    // profil réel (matériel déclaré), historique réalisé ; objectif support:crosstraining ; règle TEST_ONLY de l'environnement.
+    const rule = env.crosstraining.strengthBlockRule;
+    const sc = env.strength?.content as ContentSource | undefined;
+    const blockPort = rule && env.strength && sc ? strengthPort({
+      ...q, engine: env.strength.engine, content: sc, profile, state: state0, history: state.fingerprints.strength, clock,
+      baseContext: (slot) => ({ ...strengthContextAt(state, p, slot.date, sc), goal: { primary: { goal: 'support' as const, supportFor: 'crosstraining' as const } }, blockMode: { host: 'crosstraining' as const } }),
+    }) : undefined;
     ports.crosstraining = crossTrainingPort({
+      ...(blockPort && rule ? { strengthBlocks: { port: blockPort, rule } } : {}),
       ...q, ...(env.crosstraining.governance ? { qualityGovernance: env.crosstraining.governance } : {}), engine: env.crosstraining.engine, content: env.crosstraining.content, profile, state: state0, history: state.fingerprints.crosstraining, clock,
       ...(env.crosstraining.transportNeighbours ? { transportNeighbours: true } : {}),
       baseContext: (slot) => ({ ...decl('crosstraining'), ...(goals.crosstraining ? { goal: { type: goals.crosstraining } } : {}), sessionHistory: state.crosstraining.realized.filter((r) => typeof r.completedAt === 'string' && r.completedAt < sessionInstant(slot.date)), mode: env.mode, capabilityRequests: [...CT_CAPABILITY_REQUESTS] }) as never,

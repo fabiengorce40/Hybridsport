@@ -44,12 +44,21 @@ export const CT_CODES = {
   C3_NO_FORMAT: 'PLAN.CROSSTRAINING.C3_NO_FORMAT',
   C3_FORMAT_CHOSEN: 'PLAN.CROSSTRAINING.C3_FORMAT_CHOSEN',
   C3_CANDIDATES_REJECTED: 'PLAN.CROSSTRAINING.C3_CANDIDATES_REJECTED',
+  /** C4.3 — rôle FACULTATIF retiré faute de mouvement éligible (doses des autres rôles inchangées). */
+  C3_ROLE_DROPPED: 'PLAN.CROSSTRAINING.C3_ROLE_DROPPED',
   C3_MOVEMENT_SELECTED: 'PLAN.CROSSTRAINING.C3_MOVEMENT_SELECTED',
   C3_DOSE: 'DOSE.CROSSTRAINING.C3_DOSE',
   C3_DURATION: 'PLAN.CROSSTRAINING.C3_DURATION',
   C3_DENSITY: 'PLAN.CROSSTRAINING.C3_DENSITY',
   C3_REPEAT_UNAVOIDABLE: 'PLAN.CROSSTRAINING.C3_REPEAT_UNAVOIDABLE',
   C3_PROPOSED: 'PLAN.CROSSTRAINING.C3_PROPOSED',
+  // C4 — séance complète (expérimental)
+  C4_SESSION_STATUS: 'PLAN.CROSSTRAINING.C4_SESSION_STATUS',
+  C4_BLOCK: 'PLAN.CROSSTRAINING.C4_BLOCK',
+  C4_BLOCK_NOT_GENERATED: 'PLAN.CROSSTRAINING.C4_BLOCK_NOT_GENERATED',
+  C4_VARIANT_RETRY: 'PLAN.CROSSTRAINING.C4_VARIANT_RETRY',
+  /** C4.3 — besoin de force EXPRIMÉ (budget, objectif) : à résoudre par le planificateur (délégation à Strength). */
+  C4_STRENGTH_NEED: 'PLAN.CROSSTRAINING.C4_STRENGTH_NEED',
 } as const;
 export type CtCode = (typeof CT_CODES)[keyof typeof CT_CODES];
 
@@ -86,12 +95,18 @@ export const CT_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: CT_CODES.C3_NO_FORMAT, categories: ['feasibility'], params: { stimulus: S, tried: L }, audience: 'user', severity: 'error' },
   { code: CT_CODES.C3_FORMAT_CHOSEN, categories: ['information'], params: { format: S, durationKind: S, criteria: L }, audience: 'internal', severity: 'info' },
   { code: CT_CODES.C3_CANDIDATES_REJECTED, categories: ['information'], params: { format: S, role: S, rejected: L }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C3_ROLE_DROPPED, categories: ['information'], params: { format: S, role: S, cause: S }, audience: 'internal', severity: 'notice' },
   { code: CT_CODES.C3_MOVEMENT_SELECTED, categories: ['information'], params: { format: S, role: S, exerciseId: S, criteria: L }, audience: 'internal', severity: 'info' },
   { code: CT_CODES.C3_DOSE, categories: ['information'], params: { exerciseId: S, quantity: S, load: S }, audience: 'internal', severity: 'info' },
   { code: CT_CODES.C3_DURATION, categories: ['information'], params: { format: S, kind: S, prescribedS: N, estimatedTypicalS: N, estimatedSlowS: N }, audience: 'internal', severity: 'info' },
   { code: CT_CODES.C3_DENSITY, categories: ['information'], params: { format: S, kind: S, detail: S }, audience: 'internal', severity: 'info' },
   { code: CT_CODES.C3_REPEAT_UNAVOIDABLE, categories: ['information'], params: { identicalLevels: L }, audience: 'internal', severity: 'notice' },
   { code: CT_CODES.C3_PROPOSED, categories: ['information'], params: { stimulus: S, format: S, exercises: L }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C4_SESSION_STATUS, categories: ['information'], params: { status: S, generated: L, notGenerated: L, cause: S, plannedDurationS: N, targetMinS: N, targetMaxS: N, target: S, variant: S }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C4_BLOCK, categories: ['information'], params: { block: S, kind: S, purpose: S, durationS: N, exercises: L, criteria: L, parameterIds: L }, audience: 'internal', severity: 'info' },
+  { code: CT_CODES.C4_BLOCK_NOT_GENERATED, categories: ['information'], params: { block: S, required: S, cause: S }, audience: 'internal', severity: 'notice' },
+  { code: CT_CODES.C4_STRENGTH_NEED, categories: ['information'], params: { stimulus: S, purpose: S, budgetMinS: N, budgetMaxS: N }, audience: 'internal', severity: 'notice' },
+  { code: CT_CODES.C4_VARIANT_RETRY, categories: ['information'], params: { refused: S, retried: S }, audience: 'internal', severity: 'notice' },
 ];
 
 export const ctReasons = createCoreRegistry(CT_REASON_CODES);

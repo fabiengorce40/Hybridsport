@@ -22,6 +22,7 @@ import { parseCrossTrainingContext } from './context.js';
 import type { CrossTrainingContext } from './context.js';
 import { analyzeCrossTraining } from './analysis.js';
 import { composeC3 } from './c3/compose.js';
+import { composeC4 } from './c4/compose.js';
 import type { C3Outcome } from './c3/compose.js';
 import type { CtAnalysis } from './analysis.js';
 import { CURRENT_CT_GOVERNANCE, governanceIssues } from './governance/state.js';
@@ -73,7 +74,17 @@ export function createCrossTrainingEngine(options: CrossTrainingEngineOptions = 
   const engineRef = { id: CT_ENGINE_ID, version: CT_ENGINE_VERSION };
   const compose = (input: SportEngineInput<CrossTrainingContext>): C3Outcome | undefined => {
     const stimulus = stimulusFromArchetypeId(input.intent.archetypeId);
-    return stimulus === undefined ? undefined : composeC3(input, stimulus, governance, simulation, engineRef);
+    if (stimulus === undefined) return undefined;
+    const c3 = composeC3(input, stimulus, governance, simulation, engineRef);
+    // C4 (expérimental) : séance complète autour du bloc principal si le plan est gouverné ; sinon bloc C3 inchangé.
+    if (!c3.ok) return c3;
+    const c4 = composeC4(input, stimulus, c3, governance);
+    // C4.3 — un bloc de force DÉLÉGUÉ n'existe que dans une séance complète : jamais de repli « bloc principal seul »
+    // qui le supprimerait silencieusement (l'intention force + conditionnement ne serait plus respectée) ⇒ refus tracé.
+    if (input.discipline.delegatedStrength !== undefined && c4.status !== 'FULL_SESSION') {
+      return { ok: false, reasons: [...c4.proposal.reasons.filter((r) => r.code === CT_CODES.C4_SESSION_STATUS), delegatedRefusal('C4_FULL_SESSION_UNAVAILABLE')] };
+    }
+    return { ...c3, proposal: c4.proposal };
   };
 
   return {
@@ -109,6 +120,13 @@ export function createCrossTrainingEngine(options: CrossTrainingEngineOptions = 
       return refuse(input, reasons);
     },
   };
+}
+
+/** C4.3 — refus d'une séance hôte d'un bloc de force délégué (statut C4 non résolu, cause tracée). */
+function delegatedRefusal(cause: string): ReasonCode {
+  return ctReasons.emit(CT_CODES.C4_SESSION_STATUS, {
+    status: 'COMPOSITION_UNRESOLVED', generated: [], notGenerated: ['strength'], cause: `DELEGATED_STRENGTH_REQUIRES_FULL_SESSION:${cause}`, plannedDurationS: 0, targetMinS: 0, targetMaxS: 0, target: 'unknown', variant: 'none',
+  });
 }
 
 /** UNIQUE émetteur de propositions du moteur (C2 et C3) : une proposition au plus. */
@@ -201,6 +219,35 @@ const prescriptive = (blocks: readonly unknown[]): string => canonicalStringify(
  * `NO_VALID_SOLUTION` (C2_MODIFIED_BY_CORE) : un rejeu ou un amorçage modifié n'est jamais publié.
  */
 export function runCrossTrainingC2(engine: CrossTrainingEngine, request: SportSessionRequest, ctx: EngineContext<LoadedRuleset, LoadedCatalog>): CorePipelineOutcome {
+  const outcome = runOnce(engine, request, ctx);
+  // C4 — repli fail-closed : si le CORE refuse la séance COMPLÈTE, le bloc principal C3 seul est recomposé (inchangé)
+  // et le statut C4 « bloc principal uniquement » est tracé ; jamais de séance complète non validée par le CORE.
+  const dc = request.disciplineContext as { readonly capabilityRequests?: readonly string[] } | null;
+  const requests = Array.isArray(dc?.capabilityRequests) ? dc.capabilityRequests : [];
+  if (outcome.result.status === 'ok' || !requests.includes('ctFullSessionComposition')) return outcome;
+  const delegated = (dc as { delegatedStrength?: unknown } | null)?.delegatedStrength !== undefined;
+  // C4.1 — variante courte (bornes basses gouvernées) avant le bloc principal seul : le CORE reste l'autorité.
+  if ((dc as { fullSessionVariant?: unknown } | null)?.fullSessionVariant === undefined) {
+    const short = runOnce(engine, { ...request, disciplineContext: { ...(dc as object), fullSessionVariant: 'short' } }, ctx);
+    if (short.result.status === 'ok') {
+      const retry = ctReasons.emit(CT_CODES.C4_VARIANT_RETRY, { refused: 'long', retried: 'short' });
+      return { ...short, result: { ...short.result, warnings: [...short.result.warnings, retry] } };
+    }
+  }
+  // C4.3 — bloc de force délégué : aucun repli « bloc principal seul » (il supprimerait le bloc) ⇒ refus du CORE, tracé.
+  if (delegated) {
+    const reason = delegatedRefusal('CORE_REFUSED_FULL_SESSION');
+    return outcome.result.status === 'error' ? { ...outcome, result: { ...outcome.result, error: { ...outcome.result.error, reasons: [...outcome.result.error.reasons, reason] } } } : outcome;
+  }
+  const fallback = runOnce(engine, { ...request, disciplineContext: { ...(dc as object), capabilityRequests: requests.filter((x) => x !== 'ctFullSessionComposition') } }, ctx);
+  if (fallback.result.status !== 'ok') return outcome;
+  const reason = ctReasons.emit(CT_CODES.C4_SESSION_STATUS, {
+    status: 'MAIN_BLOCK_ONLY', generated: ['conditioning'], notGenerated: [], cause: 'CORE_REFUSED_FULL_SESSION', plannedDurationS: 0, targetMinS: 0, targetMaxS: 0, target: 'unknown', variant: 'none',
+  });
+  return { ...fallback, result: { ...fallback.result, warnings: [...fallback.result.warnings, reason] } };
+}
+
+function runOnce(engine: CrossTrainingEngine, request: SportSessionRequest, ctx: EngineContext<LoadedRuleset, LoadedCatalog>): CorePipelineOutcome {
   let proposed: unknown;
   const watched: CrossTrainingEngine = {
     ...engine,
