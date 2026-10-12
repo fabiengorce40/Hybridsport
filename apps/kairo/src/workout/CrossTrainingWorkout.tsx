@@ -5,13 +5,15 @@
  * EMOM (minute en cours), AMRAP (tours + répétitions), for time (chrono écoulé, time cap, tours). Résultat structuré.
  */
 import { useEffect, useState } from 'react';
-import { CT_FORMAT_LABELS, CT_INTENT_LABELS, controlCtTimer, ctClock, ctElapsedS, ctWorkoutOf, exerciseLabel, finishProgrammeSession, recordCtBlock, recordCtProgress, startProgrammeSession } from '@hybridsport/app-core';
+import { CT_FORMAT_LABELS, CT_INTENT_LABELS, controlCtTimer, controlRest, recordProgrammeSet, recordProgrammeSetEffort, toggleProgrammePainItem, ctClock, ctElapsedS, ctWorkoutOf, exerciseLabel, finishProgrammeSession, recordCtBlock, recordCtProgress, startProgrammeSession } from '@hybridsport/app-core';
 import type { C4BlockView, CtWorkout, CtWorkoutItem, FinishInput, ProgrammeSessionView, SessionDraft } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
 import { Notice, sessionDay, startLabel, Topbar } from '../ui.js';
 import { STATUS_LABELS } from '../present.js';
 import { BlockNotice, C4_STATUS_TEXT, FullSessionDefinition, isBlock, isFullC4 } from '../field/BlockScope.js';
 import { DurationInput } from '../running/DurationInput.js';
+import { RestTimer0 } from '../RestTimer0.js';
+import { ExerciseCard, isSets } from './StrengthWorkout.js';
 import { durationFromParts, formatChrono } from '../running/duration.js';
 import type { DurationParts } from '../running/duration.js';
 
@@ -204,6 +206,37 @@ function SupportBlock({ b, session, done, editable, onToggle }: { b: C4BlockView
   );
 }
 
+/**
+ * C4.3 — bloc de force DÉLÉGUÉ (prescription du moteur Musculation, affichée telle quelle) : une carte par exercice,
+ * saisie série par série (répétitions, charge, répétitions en réserve), douleur, chrono de repos persisté. Le bloc est
+ * terminé quand TOUTES ses séries sont validées (aucune validation manuelle globale).
+ */
+function StrengthBlock({ b, v, editable }: { b: C4BlockView; v: ProgrammeSessionView; editable: boolean }) {
+  const store = useStore();
+  const block = v.session.blocks.find((x) => x.id === b.blockId);
+  if (!block) return null;
+  const items = block.items.filter(isSets);
+  const done = strengthBlockDone(block, v.log);
+  return (
+    <section aria-label="Bloc de force" className="k-ct-moves" data-c4-block="strength">
+      <div className="row between"><div className="k-ct-moves-title">Bloc de force</div><span className="k-ct-move-dose num">≈ {formatChrono(b.durationS)}</span></div>
+      <div className="tiny muted">Prescription du moteur Musculation (séries, répétitions, intensité, repos), avant le conditionnement · expérimental</div>
+      {items.map((item, k) => (
+        <ExerciseCard key={item.id} number={k + 1} item={item} block={block} log={v.log} editable={editable} current={false}
+          onRecord={(it, index, x) => store.apply((s, c) => recordProgrammeSet(s, c, v.requestId, { itemId: it.id, setIndex: index, ...x }))}
+          onTogglePain={(itemId) => store.apply((s) => toggleProgrammePainItem(s, v.requestId, itemId))}
+          onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, v.requestId, itemId, setIndex, rir))} />
+      ))}
+      {done && <span className="k-pill done">✓ Bloc terminé</span>}
+    </section>
+  );
+}
+
+/** Bloc de force terminé : chaque série prescrite validée (lecture des saisies persistées). */
+function strengthBlockDone(block: SessionDraft['blocks'][number], log: ProgrammeSessionView['log']): boolean {
+  return block.items.filter(isSets).every((it) => it.prescription.sets.every((_, i) => log?.sets.some((x) => x.itemId === it.id && x.setIndex === i && x.done) === true));
+}
+
 /** Résultat enregistré, lisible (donnée source structurée ; « 7+12 » n'est qu'un affichage). */
 export function ctResultText(result: Readonly<Record<string, unknown>> | null): string {
   if (!result) return 'Arrêtée';
@@ -243,16 +276,23 @@ export function CrossTrainingWorkout({ v, onBack }: { v: ProgrammeSessionView; o
   const c4 = isFullC4(v.composition) ? v.composition?.c4 ?? null : null;
   const mainIdx = v.session.blocks.findIndex((b) => b.kind === 'conditioning');
   const order = (b: C4BlockView) => v.session.blocks.findIndex((x) => x.id === b.blockId);
-  const before = (c4?.blocks ?? []).filter((b) => order(b) < mainIdx);
-  const after = (c4?.blocks ?? []).filter((b) => order(b) > mainIdx);
+  // Ordre de la SÉANCE persistée (jamais celui de la trace) : échauffement général → force → échauffement spécifique.
+  const sorted = [...(c4?.blocks ?? [])].sort((a, b) => order(a) - order(b));
+  const before = sorted.filter((b) => order(b) < mainIdx);
+  const after = sorted.filter((b) => order(b) > mainIdx);
   const blocksDone = rt?.blocksDone ?? [];
-  const progress = c4 ? { done: c4.blocks.filter((b) => blocksDone.includes(b.blockId)).length + (finished ? 1 : 0), total: c4.blocks.length + 1 } : null;
-  const support = (b: C4BlockView) => <SupportBlock key={b.blockId} b={b} session={v.session} done={blocksDone.includes(b.blockId)} editable={editable} onToggle={(d) => store.apply((s) => recordCtBlock(s, v.requestId, b.blockId, d))} />;
+  const isDone = (b: C4BlockView) => {
+    if (b.block !== 'strength') return blocksDone.includes(b.blockId);
+    const sb = v.session.blocks.find((x) => x.id === b.blockId);
+    return sb !== undefined && strengthBlockDone(sb, log);
+  };
+  const progress = c4 ? { done: c4.blocks.filter(isDone).length + (finished ? 1 : 0), total: c4.blocks.length + 1 } : null;
+  const support = (b: C4BlockView) => b.block === 'strength' ? <StrengthBlock key={b.blockId} b={b} v={v} editable={editable} /> : <SupportBlock key={b.blockId} b={b} session={v.session} done={blocksDone.includes(b.blockId)} editable={editable} onToggle={(d) => store.apply((s) => recordCtBlock(s, v.requestId, b.blockId, d))} />;
   const notStarted = editable && rt.runningSince === null && rt.accumulatedS === 0;
   return (
     <>
       <Topbar title="" onBack={onBack} right={v.experimental ? <span className="k-pill" title="Séance composée par le moteur Cross-training en environnement expérimental (valeurs de test, non approuvées).">Beta</span> : undefined} />
-      <div className={`k-workout k-ct ${!log && !finished ? 'with-dock' : ''}`}>
+      <div className={`k-workout k-ct ${!log && !finished ? 'with-dock' : ''} ${editable && log.rest ? 'with-timer' : ''}`}>
         <header className="k-ct-head">
           <div className="k-ct-eyebrow">Cross-training · {sessionDay(v)}</div>
           <h1 className="k-ct-title">{intent ?? 'Cross-training'}</h1>
@@ -307,6 +347,7 @@ export function CrossTrainingWorkout({ v, onBack }: { v: ProgrammeSessionView; o
         {editable && <button className="k-cta ghost" onClick={() => setFinishing(true)}>Terminer la séance</button>}
         {!log && !finished && <div className="k-dock"><button className="k-cta" onClick={() => store.apply((s, c) => startProgrammeSession(s, c, v.requestId))}>{startLabel(v)}</button></div>}
       </div>
+      {editable && <RestTimer0 rest={log.rest} now={() => store.clock().now} onAction={(a) => store.apply((s, c) => controlRest(s, c, v.requestId, a))} />}
       {finishing && editable && (
         <CtFinishSheet w={w} elapsed={elapsed} rounds0={rt.rounds} reps0={rt.partialReps} onCancel={() => setFinishing(false)} onSubmit={(f) => {
           if (store.apply((s, c) => finishProgrammeSession(s, c, { requestId: v.requestId, ...f }))) setFinishing(false);

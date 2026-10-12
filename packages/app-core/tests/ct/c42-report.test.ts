@@ -103,6 +103,7 @@ describe('C4.2 — rapport comparatif', () => {
       'Prescriptions Strength / Running / HYROX : strictement identiques avec un port Cross-training C3 seul ou C4.2 (`packages/planner/tests/c4/c4-multisport.test.ts`) ; mobilité Strength protégée par discipline (`packages/strength/tests/unit/discipline-mobility.test.ts`).', '');
     expect(bySport.strength?.length).toBeGreaterThan(0);
 
-    writeFileSync(new URL('./__reports__/c42-comparison.md', import.meta.url).pathname, `${lines.join('\n')}\n`);
+    // Rapport HISTORIQUE (C4.1 → C4.2) : réécrit seulement sur demande explicite (garde-fous toujours vérifiés).
+    if (process.env.C42_REPORT !== undefined) writeFileSync(new URL('./__reports__/c42-comparison.md', import.meta.url).pathname, `${lines.join('\n')}\n`);
   }, 600_000);
 });

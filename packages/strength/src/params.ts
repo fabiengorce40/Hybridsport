@@ -39,6 +39,12 @@ export const zStrengthArchetype = z.object({
   goals: z.array(id).min(1),
   toleranceProfile: id,
   duration: range(pos),
+  /**
+   * C4.3 — usage de l'archétype : `session` (séance Strength entière, défaut) ou `block` (bloc de force AUTONOME intégré
+   * par le planificateur dans une séance d'une autre discipline : aucune mobilité propre, budget de temps transmis).
+   * Un archétype `block` n'est composé qu'en mode bloc ; un archétype de séance jamais en mode bloc.
+   */
+  usage: z.enum(['session', 'block']).optional(),
   feasiblePresets: z.array(id), declaredInfeasiblePresets: z.array(id), declaredInfeasibleRestrictions: z.array(id),
   blocks: z.array(z.object({
     id, kind: z.enum(['strength', 'accessory']), role: z.enum(['primary', 'secondary', 'support']),

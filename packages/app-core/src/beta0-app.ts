@@ -625,13 +625,16 @@ export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishI
     const rt = log.ct ?? { runningSince: null, accumulatedS: 0, rounds: 0, partialReps: 0 };
     const elapsedS = ctElapsedS(rt, clock.now);
     const loads = f.ct?.performedLoads ?? [];
+    // C4.3 — douleur signalée sur un exercice du bloc de force délégué = douleur de séance (pause de la planification).
+    const ctPain = f.pain || log.painItems.length > 0;
     const recorded = recordSessionExecution(s0, clock, {
-      requestId: f.requestId, sport: 'crosstraining', completion: f.completion, pain,
+      requestId: f.requestId, sport: 'crosstraining', completion: f.completion, pain: ctPain ? 'REPORTED' : 'NONE',
       ...(f.completion !== 'abandoned' && f.ct?.result ? { ctResult: f.ct.result } : {}), ...(loads.length > 0 ? { performedLoads: loads } : {}),
+      ...(log.sets.length > 0 ? { sets: log.sets } : {}),
     });
     const ct = { result: f.completion === 'abandoned' ? null : { ...(f.ct?.result ?? {}) }, elapsedS, performedLoads: loads.map((l) => ({ ...l })) };
     // Chrono figé à la fin (cumul), jamais relancé.
-    return withLog(recorded, { ...log, ct: { ...rt, runningSince: null, accumulatedS: elapsedS }, rest: null, finishedAt: normalizeInstant(clock.now), outcome: { completion: f.completion, pain: f.pain, ct } });
+    return withLog(recorded, { ...log, ct: { ...rt, runningSince: null, accumulatedS: elapsedS }, rest: null, finishedAt: normalizeInstant(clock.now), outcome: { completion: f.completion, pain: ctPain, ct } });
   }
   const recorded = log.sport === 'strength'
     ? recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'strength', completion: f.completion, pain, sets: log.sets, painItems: log.painItems })

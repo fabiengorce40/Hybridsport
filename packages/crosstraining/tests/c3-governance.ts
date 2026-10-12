@@ -35,13 +35,26 @@ export const TEST_C3 = {
     mixed_modal_medium: ['warmup', 'conditioning'], muscular_endurance: ['warmup', 'conditioning'],
     strength_plus_conditioning: ['warmup', 'strength', 'conditioning'], skill_plus_conditioning: ['warmup', 'skill', 'conditioning'],
   },
-  'ct.composition.movementPool': ['ex.row_erg', 'ex.skierg', 'ex.air_squat', 'ex.reverse_lunge_bw', 'ex.box_jump', 'ex.wall_ball', 'ex.kb_swing', 'ex.push_up', 'ex.incline_push_up', 'ex.pull_up', 'ex.band_assisted_pull_up']
-    .map((movementId) => ({ movementId, contentReviewRef: 'TEST-ONLY' })),
+  'ct.composition.movementPool': [
+    ...['ex.row_erg', 'ex.skierg', 'ex.air_squat', 'ex.reverse_lunge_bw', 'ex.box_jump', 'ex.wall_ball', 'ex.kb_swing', 'ex.push_up', 'ex.incline_push_up', 'ex.pull_up', 'ex.band_assisted_pull_up']
+      .map((movementId) => ({ movementId, contentReviewRef: 'TEST-ONLY' })),
+    // C4.3 (TEST_ONLY) — course : mouvement monostructural de REPLI, seulement sans ergomètre éligible (formats à durée).
+    { movementId: 'ex.easy_run', contentReviewRef: 'TEST-ONLY', fallbackOnly: true },
+  ],
+  // C4.3 (TEST_ONLY, CT-D24) — le rôle monostructural d'un AMRAP / for time mixte devient facultatif : sans ergomètre,
+  // couplet / triplet au poids du corps aux doses existantes (aucune dose nouvelle).
+  'ct.composition.optionalRoles': {
+    mixed_modal_medium: { amrap: ['monostructural'], for_time: ['monostructural'] },
+    // C4.3 — après un bloc de force, le bas du corps peut être exclu (structures protégées) : rôle facultatif.
+    strength_plus_conditioning: { amrap: ['monostructural', 'lower_body'] },
+  },
   'ct.composition.movementRoles': {
     aerobic_capacity: { continuous: ['monostructural'], intervals: ['monostructural'], emom: ['monostructural', 'lower_body'] },
     threshold: { intervals: ['monostructural'] }, anaerobic_intervals: { intervals: ['monostructural'] },
     mixed_modal_medium: { amrap: ['monostructural', 'lower_body', 'upper_pull'], for_time: ['monostructural', 'lower_body', 'upper_push'], emom: ['lower_body', 'upper_push'] },
     muscular_endurance: { emom: ['lower_body', 'upper_push', 'upper_pull'], amrap: ['lower_body', 'lower_body', 'upper_push'] },
+    // C4.3 (TEST_ONLY) — rôles IMPLIQUÉS par la dose existante `strength_plus_conditioning` (monostructural, bas du corps, tirage).
+    strength_plus_conditioning: { amrap: ['monostructural', 'lower_body', 'upper_pull'] },
   },
   'ct.dose.construction': {
     aerobic_capacity: {
@@ -107,12 +120,15 @@ const CIRCUIT = { intervalS: 40, maxImpact: 2, maxDynamicPrep: 2 };
 export const TEST_C4 = {
   'ct.c4.sessionPlan': {
     aerobic_capacity: FULL_PLAN, threshold: FULL_PLAN, anaerobic_intervals: FULL_PLAN, mixed_modal_medium: FULL_PLAN, muscular_endurance: FULL_PLAN,
-    strength_plus_conditioning: { required: ['warmup_general', 'strength', 'conditioning', 'cooldown'], optional: [] },
+    strength_plus_conditioning: { required: ['warmup_general', 'strength', 'conditioning', 'cooldown'], optional: ['warmup_specific'] },
     skill_plus_conditioning: { required: ['warmup_general', 'skill', 'conditioning', 'cooldown'], optional: [] },
   },
   'ct.c4.warmup': { novice: WARMUP, beginner: WARMUP, intermediate: WARMUP, advanced: WARMUP },
   'ct.c4.cooldown': { novice: COOLDOWN, beginner: COOLDOWN, intermediate: COOLDOWN, advanced: COOLDOWN },
   'ct.c4.sessionDurationTarget': { minS: 2700, maxS: 4500 },
+  // C4.3 (TEST_ONLY, CT-D25) — besoin de force : stimulus « force + conditionnement » seulement ; budget 15–20 min du bloc
+  // délégué (Strength décide exercices, séries, répétitions, repos et charges dans ce budget).
+  'ct.c4.strengthNeed': { strength_plus_conditioning: { budgetS: { min: 900, max: 1200 }, purpose: 'strength_before_conditioning' } },
   // Ordre = priorité gouvernée (premier mouvement éligible du rôle).
   'ct.c4.generalWarmupPool': [
     { movementId: 'ex.jumping_jack', role: 'pulse_raise', regions: ['full'] },

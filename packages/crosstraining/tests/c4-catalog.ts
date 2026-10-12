@@ -1,14 +1,14 @@
 /**
  * C4.2 — EXTENSION DE CATALOGUE CROSS-TRAINING (TEST_ONLY, statut draft, non relue par un expert).
  *
- * Mouvements d'échauffement au poids du corps et de mobilité (épaules, thoracique, hanches) ajoutés au SEUL catalogue du
+ * Mouvements d'échauffement au poids du corps et de mobilité (thoracique ; épaules et hanches : catalogue existant) ajoutés au SEUL catalogue du
  * port Cross-training : le catalogue du CORE (`testCatalogDocument`) et celui de Strength ne sont PAS modifiés, donc
  * aucune prescription Strength / HYROX ne peut changer. `disciplines: ['crosstraining']` : marqueur respecté par Strength
  * (A2) si les catalogues venaient à être unifiés. Métadonnées plausibles, choisies pour exercer les critères
  * d'éligibilité (matériel, impact, zones sensibles, restrictions) — jamais des valeurs validées.
  */
 import type { CatalogDocumentInput, ExerciseInput } from '@hybridsport/domain';
-import { testCatalogDocument } from '../../engine/tests/fixtures/catalog.js';
+import { strengthCatalogDocument } from '../../strength/tests/fixtures/catalog.js';
 
 const bodyweight = { allOf: [], anyOf: [] };
 const ZERO: ExerciseInput['cost'] = { localMuscular: 0, systemic: 0, cardiovascular: 0, technical: 0, impact: 0, axialLoad: 0, grip: 0 };
@@ -36,12 +36,15 @@ export const C4_CATALOG_EXERCISES: ExerciseInput[] = [
   // Préparation dynamique épaules.
   cx('ex.arm_circles', { patterns: { primary: 'mobility', secondary: ['push_vertical', 'pull_vertical'] }, muscles: { primary: ['side_delts', 'rear_delts'], secondary: ['front_delts'] }, family: 'fam.warmup_arm_circles', equivalenceClass: 'eq.warmup_arm_circles', movementType: 'mobility', painSensitiveAreas: ['shoulder'] }),
   // Mobilité de retour au calme : épaules, région thoracique.
-  cx('ex.shoulder_mobility_flow', { patterns: { primary: 'mobility', secondary: ['push_vertical', 'pull_horizontal'] }, muscles: { primary: ['rear_delts'], secondary: ['upper_back_traps', 'chest'] }, family: 'fam.mobility_shoulder', equivalenceClass: 'eq.mobility_shoulder', movementType: 'mobility', painSensitiveAreas: ['shoulder'] }),
   cx('ex.thoracic_mobility_flow', { patterns: { primary: 'mobility', secondary: ['rotation', 'pull_horizontal'] }, muscles: { primary: ['upper_back_traps'], secondary: ['lats', 'abs_obliques'] }, family: 'fam.mobility_thoracic', equivalenceClass: 'eq.mobility_thoracic', movementType: 'mobility', painSensitiveAreas: ['upper_back'] }),
 ];
 
-/** Catalogue du port Cross-training : catalogue de test du CORE + extension C4.2 (version SemVer distincte : 0.1.1-test, traçable dans la provenance des séances). */
+/**
+ * Catalogue du port Cross-training : catalogue Strength de test (catalogue du CORE + exercices Strength : un bloc de force
+ * délégué par le planificateur ne contient que des exercices connus du CORE de la séance hôte) + extension C4.2.
+ * `ex.shoulder_mobility_flow` : définition du catalogue Strength (une seule source). Version SemVer distincte, traçable.
+ */
 export function ctCatalogDocument(): CatalogDocumentInput {
-  const base = testCatalogDocument();
-  return { ...base, catalogVersion: '0.1.1-test', exercises: [...base.exercises, ...C4_CATALOG_EXERCISES] };
+  const base = strengthCatalogDocument();
+  return { ...base, catalogVersion: '0.2.1-ct-test', exercises: [...base.exercises, ...C4_CATALOG_EXERCISES] };
 }

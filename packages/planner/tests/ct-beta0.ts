@@ -10,6 +10,7 @@
  */
 import { createCrossTrainingEngine } from '@hybridsport/crosstraining';
 import type { CrossTrainingEngine, CtGovernance } from '@hybridsport/crosstraining';
+import type { StrengthBlockRule } from '../src/index.js';
 import type { LoadedCatalog, LoadedRuleset } from '@hybridsport/engine';
 import { testCatalog, testRuleset } from '../../engine/tests/fixtures/load.js';
 import { testRulesetDocumentWithDuplicate } from '../../engine/tests/fixtures/ruleset.js';
@@ -23,12 +24,24 @@ export const CT_BETA0_SIMULATION = ['crosstraining.c3.testGovernance', 'crosstra
 // technical-constant: TEST_ONLY — normalisation des mètres / calories Cross-training (profil de demande), comme les rapports C3
 export const CT_DOSE_NORMALIZATION = { ...TEST_DOSE_NORMALIZATION, crosstraining: { ...TEST_DOSE_NORMALIZATION.crosstraining, meter: { perUnit: 0.01, intensityBand: 'high' }, calorie: { perUnit: 0.2, intensityBand: 'high' } } };
 
+/**
+ * C4.3 — règle de DÉLÉGATION d'un bloc de force par le planificateur (TEST_ONLY, SIMULATION_ONLY) : intention Strength
+ * du bloc (archétype de bloc `str_ct_block`, stimulus général, objectif support:crosstraining fourni par le contexte),
+ * et structures sollicitées au niveau `high` par le bloc EXCLUES du conditionnement de la même séance. Jamais approuvée.
+ */
+export const CT_STRENGTH_BLOCK_RULE: StrengthBlockRule = {
+  ruleId: 'planner.intraSessionInterference.test-0', status: 'TEST_ONLY', mode: 'CANDIDATE', excludeConditioningAtLevels: ['high'], requireExternalLoad: true, noRepeatInConditioning: true,
+  intent: { archetypeId: 'str_ct_block', stimulus: 'strength_general', objective: 'objective.strength_general', phase: 'phase.accumulation', toleranceProfile: 'strength_sets' },
+};
+
 export interface CtBeta0 {
   readonly engine: CrossTrainingEngine;
   readonly content: { readonly ruleset: LoadedRuleset; readonly catalog: LoadedCatalog };
   readonly simulation: readonly string[];
   /** Q1 — gouvernance lue par le diagnostic de qualité (base des valeurs). */
   readonly governance: CtGovernance;
+  /** C4.3 — règle de délégation de force (TEST_ONLY). */
+  readonly strengthBlockRule: StrengthBlockRule;
 }
 
 /** Moteur + contenu Cross-training de la Beta 0 expérimentale (marque SIMULATION_ONLY portée par la normalisation). */
@@ -36,6 +49,7 @@ export function ctBeta0(mark: Record<string, unknown> = {}): CtBeta0 {
   const governance = c3Governance({ hybrid: true, c4: true });
   return {
     governance,
+    strengthBlockRule: CT_STRENGTH_BLOCK_RULE,
     engine: createCrossTrainingEngine({ governance, simulation: true }),
     content: withDemand({ ruleset: testRuleset(testRulesetDocumentWithDuplicate()), catalog: testCatalog(ctCatalogDocument()) }, CT_DOSE_NORMALIZATION, mark),
     simulation: [...CT_BETA0_SIMULATION],

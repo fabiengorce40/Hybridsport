@@ -139,6 +139,8 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   SESSION_NOT_STARTED: 'Démarrez la séance d’abord.',
   SET_REPS_REQUIRED: 'Indiquez les répétitions réalisées.',
   EXECUTION_STRENGTH_INCOMPLETE: 'Toutes les séries n’ont pas été validées : choisissez « J’ai adapté la séance ».',
+  EXECUTION_STRENGTH_SET_UNKNOWN: 'Une série saisie n’appartient pas au bloc de force prévu.',
+  SET_UNKNOWN: 'Série inconnue dans cette séance.',
   EXECUTION_RUN_DETAILS_REQUIRED: 'Indiquez la durée réellement courue.',
   EXECUTION_DUPLICATE: 'Cette séance est déjà enregistrée.',
   SAFETY_PAUSE_ACTIVE_PAIN: 'Pause douleur active : planification et nouvelles séances suspendues. Levez la pause dans les réglages quand la douleur a disparu.',

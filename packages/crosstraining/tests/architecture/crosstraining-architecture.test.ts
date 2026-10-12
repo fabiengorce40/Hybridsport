@@ -58,6 +58,13 @@ const STRENGTH_S2_CHANGES = [
 const STRENGTH_C42_A2_CHANGES = [
   'packages/strength/src/engine.ts',
   'packages/strength/tests/unit/discipline-mobility.test.ts',
+  // C4.3 (liste FERMÉE) — mode bloc Strength : usage d'archétype, contexte `blockMode`, test dédié.
+  'packages/strength/src/params.ts',
+  'packages/strength/src/context.ts',
+  'packages/strength/tests/unit/block-mode.test.ts',
+  // Archétype de bloc TEST_ONLY (draft) du ruleset de test Strength et liste fermée des archétypes de son test.
+  'packages/strength/tests/fixtures/ruleset.ts',
+  'packages/strength/tests/unit/archetypes-selection.test.ts',
 ];
 const STRENGTH_S3_CHANGES = [
   'packages/strength/src/week-prescription.ts',

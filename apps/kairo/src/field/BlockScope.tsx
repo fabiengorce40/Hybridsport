@@ -53,10 +53,13 @@ export function c4MissingText(c: CompositionScope): string {
  * Ligne courte des cartes pour une séance complète C4 : complète SELON LE PLAN expérimental (blocs générés), jamais
  * présentée comme incluant les blocs non composés ; position de la durée ESTIMÉE (transitions comprises) / cible.
  */
+/** C4.3 — parties composées, dans l'ordre de la séance (bloc de force délégué au moteur Musculation s'il est présent). */
+const composedParts = (c: CompositionScope): string => (c.c4?.blocks.some((b) => b.block === 'strength') ? 'échauffement, bloc de force (moteur Musculation), bloc principal, retour au calme' : 'échauffement, bloc principal, retour au calme');
+
 export function fullSessionCardText(c: CompositionScope): string {
   const missing = c4MissingText(c);
   const pos = c.c4?.estimatedPosition ?? c.c4?.target?.position;
-  return `Séance complète expérimentale (selon le plan KAIRO non validé) : échauffement, bloc principal, retour au calme${missing ? ` · sans ${missing}` : ''}${pos === 'below' ? ' · plus courte que la cible 45–75 min (non complétée artificiellement)' : ''}`;
+  return `Séance complète expérimentale (selon le plan KAIRO non validé) : ${composedParts(c)}${missing ? ` · sans ${missing}` : ''}${pos === 'below' ? ' · plus courte que la cible 45–75 min (non complétée artificiellement)' : ''}`;
 }
 
 /** C4.1 — définition affichée dans la séance : ce que « complète » veut dire, et ce qui n'est PAS inclus. */
@@ -66,7 +69,7 @@ export function FullSessionDefinition({ c }: { c: CompositionScope | null }) {
   return (
     <div className="k-block-note" role="note" data-c4-definition>
       <strong>Séance complète expérimentale</strong>
-      <span>« Complète » signifie : tous les blocs du plan expérimental de KAIRO sont composés (échauffement, bloc principal, retour au calme). Ce plan, ses durées et ses contenus ne sont pas validés scientifiquement.{missing ? ` Non inclus, faute de règles validées : ${missing}.` : ''}</span>
+      <span>« Complète » signifie : tous les blocs du plan expérimental de KAIRO sont composés ({composedParts(c)}). Ce plan, ses durées et ses contenus ne sont pas validés scientifiquement.{missing ? ` Non inclus, faute de règles validées : ${missing}.` : ''}</span>
     </div>
   );
 }

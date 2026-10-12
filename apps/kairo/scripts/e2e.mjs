@@ -78,7 +78,7 @@ const reps = page.getByLabel('Répétitions réalisées');
 const kg = page.getByLabel('Charge (kg)');
 await reps.nth(0).fill('6');
 await kg.nth(0).fill('42.5');
-await page.getByRole('button', { name: 'Cocher la série', exact: true }).first().click();
+await page.getByRole('button', { name: 'Cocher la série' }).first().click();
 const timer = page.getByRole('timer', { name: 'Chrono de repos' });
 check(await timer.isVisible(), 'chrono de repos démarré automatiquement');
 await page.mouse.wheel(0, 2000);
@@ -1069,7 +1069,50 @@ async function c4Full(p, tag) {
   const e = j.journal.find((x) => x.sport === 'crosstraining' && x.composition?.c4);
   check(e?.composition?.scope === 'FULL_SESSION' && e.composition.c4.status === 'FULL_SESSION' && e.composition.c4.blocks.length >= 2, `${tag} export : statut C4 FULL_SESSION et blocs (${JSON.stringify(e?.composition?.c4?.status)})`);
 }
-for (const sport of ['ct', 'hyrox']) {
+// ——— C4.3 (360 × 640) : bloc de force DÉLÉGUÉ dans la séance Cross-training — ordre des blocs, saisie des séries
+// (charge), chrono de repos, bloc terminé quand toutes les séries sont validées, rechargement, fin, expositions Strength.
+async function c43Strength(p, tag) {
+  const st = () => p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Planning', exact: true }).click();
+  const card = p.getByRole('button', { name: /^Cross-training : Force \+ conditionnement/ }).first();
+  const ct = await card.innerText();
+  check(ct.includes('bloc de force (moteur Musculation)'), `${tag} carte : bloc de force annoncé (${ct.replace(/\n/g, ' | ')})`);
+  await card.click();
+  const order = await p.evaluate(() => [...document.querySelectorAll('[data-c4-block], [data-c4-main]')].map((x) => x.getAttribute('data-c4-block') ?? 'main'));
+  const si = order.indexOf('strength');
+  const sp = order.indexOf('warmup_specific');
+  check(order[0] === 'warmup_general' && si > 0 && si < order.indexOf('main') && (sp < 0 || sp > si), `${tag} ordre : échauffement général → force → échauffement spécifique → bloc principal (${order.join(' > ')})`);
+  if (shots) await p.screenshot({ path: `${shots}/c43-ct-force.png`, fullPage: true });
+  await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  const block = p.locator('[data-c4-block="strength"]');
+  await block.getByLabel('Charge (kg)').first().fill('40');
+  await block.getByRole('button', { name: 'Cocher la série', exact: true }).first().click();
+  const rest = p.getByRole('timer', { name: 'Chrono de repos' });
+  check(await rest.isVisible(), `${tag} chrono de repos démarré après la série`);
+  const fit = await p.evaluate(() => ({ scroll: document.documentElement.scrollWidth > window.innerWidth + 1, small: [...document.querySelectorAll('[data-c4-block="strength"] .k-check')].filter((b) => b.getBoundingClientRect().height < 44).length }));
+  check(!fit.scroll && fit.small === 0, `${tag} mobile : aucun défilement horizontal, cases de série ≥ 44 px (${JSON.stringify(fit)})`);
+  if (shots) await p.screenshot({ path: `${shots}/c43-ct-force-repos.png` });
+  await p.reload();
+  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Planning', exact: true }).click();
+  await p.locator('.card', { hasText: 'En cours' }).first().click();
+  check(await p.locator('[data-c4-block="strength"] .k-check.on').count() === 1 && await rest.isVisible(), `${tag} rechargement : série validée et repos conservés`);
+  while (await block.getByRole('button', { name: 'Cocher la série', exact: true }).count() > 0) {
+    if (await rest.isVisible()) await rest.getByRole('button', { name: /^(Passer|OK)$/ }).click();
+    await block.getByRole('button', { name: 'Cocher la série', exact: true }).first().click();
+  }
+  check(await block.getByText('✓ Bloc terminé').isVisible(), `${tag} bloc de force terminé quand toutes ses séries sont validées`);
+  if (await rest.isVisible()) await rest.getByRole('button', { name: /^(Passer|OK)$/ }).click();
+  await p.getByRole('button', { name: 'Démarrer le bloc principal' }).click();
+  await p.clock.fastForward('05:00');
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
+  await sheet.getByRole('radio', { name: /J’ai adapté la séance/ }).click();
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+  await p.getByLabel('Retour terrain').waitFor();
+  const s1 = await st();
+  check(s1.crosstraining?.realized?.length === 1 && (s1.strength?.exposures?.length ?? 0) > 0, `${tag} fin : résultat enregistré, séries du bloc dans les expositions Strength (${String(s1.strength?.exposures?.length)})`);
+}
+for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   const c = await browser.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, locale: 'fr-FR', timezoneId: 'Europe/Paris', acceptDownloads: true });
   const p = await c.newPage();
   const perrors = [];
@@ -1089,6 +1132,20 @@ for (const sport of ['ct', 'hyrox']) {
     await p.getByRole('button', { name: 'Créer mon programme' }).click();
     await p.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
     await c4Full(p, '[C4 Cross-training 360×640]');
+  } else if (sport === 'ct_strength') {
+    await p.getByLabel(/J’ai compris/).check();
+    await p.getByRole('button', { name: 'Commencer' }).click();
+    await p.getByRole('radio', { name: /^Cross-training/ }).click();
+    await p.getByRole('button', { name: 'Continuer' }).click();
+    await p.getByLabel('Niveau d’entraînement général').selectOption('intermediate');
+    await p.getByRole('radio', { name: /^Force \+ conditionnement/ }).click();
+    await p.getByLabel('Séances de Cross-training par semaine').selectOption('1');
+    await p.getByRole('button', { name: 'Continuer' }).click();
+    for (const d of ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche']) await p.getByLabel(`Temps disponible le ${d}`).selectOption('60');
+    await p.getByRole('button', { name: 'Continuer' }).click();
+    await p.getByRole('button', { name: 'Créer mon programme' }).click();
+    await p.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+    await c43Strength(p, '[C4.3 force + conditionnement 360×640]');
   } else {
     await hrOnboard(p, 'Endurance de force', '1');
     await p0Block(p, { tag: '[P0 HYROX 360×640]', cardName: /^HYROX : Endurance de force/, label: 'Bloc HYROX', missing: 'le retour au calme', content: 'Beaucoup trop court', full: 'Très insuffisant', shot: 'p0-hyrox-bloc' });

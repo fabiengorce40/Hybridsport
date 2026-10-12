@@ -323,7 +323,9 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
   let keepPrimaryRest = false;
   let withCooldown = !mobPolicy || mobPolicy.cooldown === 'always';
   // Échauffement / retour au calme : durée haute par défaut, basse sous contrainte de temps (plages G2).
-  const mobility = (tp: boolean) => ({
+  // C4.3 — mode bloc : la séance hôte porte l'échauffement général et le retour au calme (aucun doublon).
+  const hosted = input.discipline.blockMode !== undefined;
+  const mobility = (tp: boolean) => hosted ? { warmup: undefined, cooldown: undefined } : ({
     warmup: mobilityItem(env, 'i.warmup', tp || !warmupExtra ? mob.warmupS.min : mob.warmupS.max, primaryPattern),
     cooldown: withCooldown ? mobilityItem(env, 'i.cooldown', tp ? mob.cooldownS.min : mob.cooldownS.max, primaryPattern) : undefined,
   });
@@ -622,6 +624,9 @@ export function proposeStrength(input: Input): ProposeResult {
   if (archetype.status === 'deprecated') return na('deprecated');
   if (!archetype.levels.includes(input.profile.athleteLevel)) return na('level_not_admitted');
   if (!archetype.goals.includes(gk)) return na('goal_not_admitted');
+  // C4.3 — un archétype de bloc n'est jamais une séance entière, et inversement (fail-closed).
+  const blockMode = input.discipline.blockMode !== undefined;
+  if (blockMode !== (archetype.usage === 'block')) return na(blockMode ? 'block_mode_requires_block_archetype' : 'block_archetype_requires_block_mode');
   if (!params['strength.stimuli'][input.intent.stimulus]) return na('unknown_stimulus');
   const inter = loweredStructures(input, params);
   // Version du registre scientifique (provenance) : tracée dans chaque séance, avec la version du ruleset.

@@ -100,7 +100,8 @@ export function beta0Environment(): ProgrammeEnvironment {
     hyrox: { engine: hr.engine, content: hr.content, transportNeighbours: true, simulation: [...hr.simulation, ...ROTATION_SIMULATION_IDS] },
     // C3.5 — Cross-training : moteur C3 en simulation, gouvernance TEST_ONLY ; marques SIMULATION_ONLY ajoutées aux seules
     // semaines qui contiennent une séance Cross-training (provenance exacte, jamais confondue avec APPROVED).
-    crosstraining: { engine: ct.engine, content: ct.content, transportNeighbours: true, simulation: ct.simulation, governance: ct.governance },
+    // C4.3 — délégation d'un bloc de force (règle TEST_ONLY, SIMULATION_ONLY) pour le stimulus « force + conditionnement ».
+    crosstraining: { engine: ct.engine, content: ct.content, transportNeighbours: true, simulation: ct.simulation, governance: ct.governance, strengthBlockRule: ct.strengthBlockRule },
     mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: [...BETA0_SIMULATION], planningVersion: BETA0_PLANNING_VERSION,
     governance: m3Governance({ extra: simulationMark }),
     programmeGovernance: rotationGovernance(simulationMark),

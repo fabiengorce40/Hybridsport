@@ -132,7 +132,16 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     .filter((p) => p.sport === sport && p.requestId !== requestId && (p.date < date || ports[sport]?.weekSessionsScope === 'generated'))
     .sort((a, b) => (a.date < b.date ? -1 : 1))
     .map((p) => ({ requestId: p.requestId, date: p.date, archetypeId: p.archetypeId ?? '', session: p.session, ...(p.fingerprint ? { fingerprint: p.fingerprint } : {}) }));
-  const weekArg = (sport: PlannerSport, date: string, requestId: string): { weekSessions?: WeekSession[]; sportSessions?: number; sportPriority?: PlannerSport[] } => {
+  /** C4.3 — séances d'autres disciplines déjà placées dans la semaine (ports qui le déclarent), quelle que soit leur date. */
+  const crossOf = (sport: PlannerSport, requestId: string): { crossSportWeek?: Partial<Record<PlannerSport, WeekSession[]>> } => {
+    const wanted = ports[sport]?.crossSportWeek ?? [];
+    if (wanted.length === 0) return {};
+    const out = Object.fromEntries(wanted.map((o) => [o, [...placed.values()].filter((p) => p.sport === o && p.requestId !== requestId).sort((a, b) => (a.date < b.date ? -1 : 1))
+      .map((p) => ({ requestId: p.requestId, date: p.date, archetypeId: p.archetypeId ?? '', session: p.session, ...(p.fingerprint ? { fingerprint: p.fingerprint } : {}) }))]).filter(([, v]) => (v?.length ?? 0) > 0));
+    return Object.keys(out).length > 0 ? { crossSportWeek: out } : {};
+  };
+  const weekArg = (sport: PlannerSport, date: string, requestId: string): { weekSessions?: WeekSession[]; sportSessions?: number; sportPriority?: PlannerSport[]; crossSportWeek?: Partial<Record<PlannerSport, WeekSession[]>> } => ({ ...weekArgOwn(sport, date, requestId), ...crossOf(sport, requestId) });
+  const weekArgOwn = (sport: PlannerSport, date: string, requestId: string): { weekSessions?: WeekSession[]; sportSessions?: number; sportPriority?: PlannerSport[] } => {
     // S4 — ORDRE DE PRIORITÉ déclaré (ordre des demandes du programme), transporté tel quel : aucune interprétation ici.
     const sportPriority = input.demands.map((d) => d.sport);
     // C3 — un port consommateur de voisines reçoit aussi l'ordre de priorité (transport seul).

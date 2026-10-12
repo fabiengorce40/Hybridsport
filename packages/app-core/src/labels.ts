@@ -190,6 +190,8 @@ export const CT_INTENT_LABELS: Readonly<Record<string, { title: string; detail: 
   'crosstraining.threshold': { title: 'Seuil', detail: 'Intervalles longs avec récupération' },
   'crosstraining.anaerobic_intervals': { title: 'Intervalles intenses', detail: 'Efforts courts, récupérations plus longues' },
   'crosstraining.muscular_endurance': { title: 'Endurance musculaire', detail: 'Répétitions au poids du corps, chaque minute' },
+  // C4.3 — expérimental : bloc de force composé par le moteur Musculation (délégation), puis un WOD court.
+  'crosstraining.strength_plus_conditioning': { title: 'Force + conditionnement', detail: 'Bloc de force (moteur Musculation) puis WOD court — expérimental, niveau intermédiaire et matériel à charges uniquement' },
 };
 export const CT_FORMAT_LABELS: Readonly<Record<string, string>> = { continuous: 'Continu', intervals: 'Intervalles', emom: 'EMOM', amrap: 'AMRAP', for_time: 'For time' };
 export const RETURN_STATE_LABELS: Readonly<Record<string, string>> = { NONE: 'Pas de coupure', SHORT: 'Courte coupure', MODERATE: 'Coupure moyenne', LONG: 'Longue coupure', UNKNOWN: 'Je ne sais pas' };

@@ -10,9 +10,9 @@ import type { ProgrammeSessionView, SessionItem, SetLog, SetPrescription } from 
 import { BLOCK_LABELS } from '../screens/Session.js';
 
 type Block = ProgrammeSessionView['session']['blocks'][number];
-type SetsItem = SessionItem & { prescription: Extract<SessionItem['prescription'], { type: 'sets' }> };
+export type SetsItem = SessionItem & { prescription: Extract<SessionItem['prescription'], { type: 'sets' }> };
 const LIGHT_BLOCKS: readonly Block['kind'][] = ['warmup', 'cooldown'];
-const isSets = (it: SessionItem): it is SetsItem => it.prescription.type === 'sets';
+export const isSets = (it: SessionItem): it is SetsItem => it.prescription.type === 'sets';
 const two = (n: number): string => String(n).padStart(2, '0');
 /** Repos prescrit au format chrono (m:ss). */
 const clockOf = (s: number): string => `${String(Math.floor(s / 60))}:${two(s % 60)}`;

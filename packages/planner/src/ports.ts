@@ -20,8 +20,8 @@ import type { RunningContextInput, RunningParameter } from '@hybridsport/running
 import { composeStrengthWeek, declarableAnchors, plannedWeekExposures, readStrengthParams, sessionPlannedHardSets, strengthReasons, strengthWeekPrescription, weekPrescriptionSummary } from '@hybridsport/strength';
 import type { StrengthCompositionRule, StrengthContextInput } from '@hybridsport/strength';
 import { GP_CODES, gpReasons } from './codes.js';
-import { delegateStrengthBlock, expressesStrengthNeed } from './strength-delegation.js';
-import type { StrengthBlockCapability } from './strength-delegation.js';
+import { delegateStrengthBlock, expressesStrengthNeed, strengthNeedOf } from './strength-delegation.js';
+import type { StrengthBlockCapability, StrengthBlockRule } from './strength-delegation.js';
 import { assessC3Quality } from '@hybridsport/crosstraining';
 import type { CtGovernance } from '@hybridsport/crosstraining';
 import { assessH2Quality, roleFromArchetype } from '@hybridsport/hyrox';
@@ -57,6 +57,13 @@ export interface SlotRequest {
   readonly sportSessions?: number;
   /** S4 — ordre de priorité DÉCLARÉ des sports du programme (transporté, jamais interprété par le planificateur). */
   readonly sportPriority?: readonly PlannerSport[];
+  /**
+   * C4.3 — séances d'AUTRES disciplines déjà placées dans la semaine, pour les ports qui le déclarent (`crossSportWeek`) :
+   * volume de force hebdomadaire (Strength ↔ blocs de force des séances Cross-training). Transport seul.
+   */
+  readonly crossSportWeek?: Readonly<Partial<Record<PlannerSport, readonly WeekSession[]>>>;
+  /** C4.3 — bloc de force délégué transporté vers le moteur hôte (Cross-training) pour la seconde composition. */
+  readonly delegatedStrength?: { readonly blocks: readonly unknown[]; readonly durationS: number; readonly excludeStructures: readonly string[]; readonly excludeExercises: readonly string[]; readonly source: { readonly engine: 'strength'; readonly archetypeId: string; readonly sessionId: string; readonly ruleId: string } };
 }
 
 /** Séance de la même discipline placée plus tôt dans la semaine (exposition PRÉVUE). */
@@ -107,6 +114,8 @@ export interface SportPort {
    * Cross-training, indépendante de l'ordre de génération du planificateur).
    */
   readonly weekSessionsScope?: 'before' | 'generated';
+  /** C4.3 — disciplines dont les séances placées de la semaine sont transmises (`SlotRequest.crossSportWeek`). */
+  readonly crossSportWeek?: readonly PlannerSport[];
   generate(slot: SlotRequest): PortOutcome;
   /** Structures sollicitées (dérivées du catalogue par la table GOUVERNÉE du ruleset de la discipline). */
   structures(session: SessionDraft): StructuresResult;
@@ -269,6 +278,14 @@ const resolve = <T>(c: Ctx<T>, slot: SlotRequest): T => (typeof c === 'function'
  */
 const STRENGTH_PERSISTED_DECISIONS = /^(SELECT\.(EXERCISE\.CHOSEN|CHOICE_GROUP|CONTINUITY|CONTINUITY_KEPT|SLOT_OMITTED|SUBSTITUTION|PATTERN_FALLBACK|STIMULUS_PRESERVED)|PROGRESSION\.(?!ANCHOR_APPLIED$)|DOSE\.LOAD\.|PLAN\.(STRUCTURE_LOWERED|INTERFERENCE_ASSESSED|VOLUME_IMBALANCE_WEEK|ANCHOR|SPORT_PRIORITY))/;
 
+/** C4.3 — séances Cross-training de la semaine réduites à leurs blocs de force délégués (aucun bloc : ignorées). */
+function ctStrengthBlocks(slot: SlotRequest): WeekSession[] {
+  return (slot.crossSportWeek?.crosstraining ?? []).flatMap((w) => {
+    const blocks = w.session.blocks.filter((b) => b.kind === 'strength');
+    return blocks.length > 0 ? [{ ...w, session: { ...w.session, blocks } }] : [];
+  });
+}
+
 export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] } }): SportPort {
   const params = () => readStrengthParams(def.content.ruleset).values;
   const context = (slot: SlotRequest): StrengthContextInput => {
@@ -277,11 +294,14 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
     const order = (slot.sportPriority ?? []).filter((x): x is 'strength' | 'running' | 'crosstraining' => x === 'strength' || x === 'running' || x === 'crosstraining');
     const base: StrengthContextInput = order.length > 0 ? { ...resolved, sportPriority: { order } } : resolved;
     const earlier = slot.weekSessions ?? [];
-    const withWeek: StrengthContextInput = earlier.length === 0 ? base : {
+    // C4.3 — blocs de force des séances Cross-training de la semaine : séries PRÉVUES comptées dans le volume Strength
+    // (règle `strength.weeklyVolumeAccounting` : fonction de séries de Strength, aucune règle nouvelle).
+    const hosted = ctStrengthBlocks(slot);
+    const withWeek: StrengthContextInput = earlier.length === 0 && hosted.length === 0 ? base : {
       ...base,
       week: {
         ...base.week,
-        otherStrengthSessions: [...base.week.otherStrengthSessions, ...earlier.map((w) => ({ intentId: `plan.${w.requestId}`, archetypeId: w.archetypeId, plannedHardSets: sessionPlannedHardSets(w.session, params(), def.content.catalog), done: false }))],
+        otherStrengthSessions: [...base.week.otherStrengthSessions, ...[...earlier, ...hosted].map((w) => ({ intentId: `plan.${w.requestId}`, archetypeId: w.archetypeId, plannedHardSets: sessionPlannedHardSets(w.session, params(), def.content.catalog), done: false }))],
       },
     };
     if (!slot.hybrid) return withWeek;
@@ -297,7 +317,7 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
   };
   // S3 — expositions RÉALISÉES + séances PRÉVUES plus tôt dans la semaine (même date d'instant que l'historique prévu) :
   // l'alternance entre ancres d'un même groupe se lit sur l'usage le plus ancien, réalisé ou prévu.
-  const plannedExposures = (slot: SlotRequest) => plannedWeekExposures((slot.weekSessions ?? []).map((w) => ({ at: def.clock.instantOf(w.date), session: w.session })));
+  const plannedExposures = (slot: SlotRequest) => plannedWeekExposures([...(slot.weekSessions ?? []), ...ctStrengthBlocks(slot)].map((w) => ({ at: def.clock.instantOf(w.date), session: w.session })));
   const anchorsOf = (slot: SlotRequest, c: StrengthContextInput) => declarableAnchors(c.tracks, [...c.recentExposures, ...plannedExposures(slot)], slot.intent.archetypeId, params());
   const port = createEnginePort({
     ...def, sport: 'strength', discipline: 'strength', consumesNeighbours: true, context, quality: strengthQuality(def.content.ruleset, def.qualityEnv),
@@ -325,7 +345,7 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
     extraHistory: (slot) => (slot.weekSessions ?? []).flatMap((w) => (w.fingerprint ? [{ fingerprint: w.fingerprint, at: def.clock.instantOf(w.date), status: 'planned' as const, repetitionIntents: [] }] : [])),
   });
   const comp = def.composition;
-  const withWeek = { ...port, consumesWeekSessions: true };
+  const withWeek = { ...port, consumesWeekSessions: true, crossSportWeek: ['crosstraining'] as const };
   if (!comp) return withWeek;
   // Objectif du PROGRAMME (contrat de contexte Strength `goal.primary`), niveau du profil CORE, fréquence déclarée.
   const run = (days: readonly CompositionDay[], weeklySessions: number, mode: PlannerMode) => {
@@ -410,7 +430,7 @@ export function runningPort(def: Base<unknown> & { readonly engine: SportEngine<
  * → moteur) : intention, structure, historique vu, voisines, formats écartés / choisi, mouvements et raisons, dose,
  * durée, densité, provenance des valeurs candidates. Les listes de candidats écartés restent dans la trace du CORE.
  */
-const CT_PERSISTED_DECISIONS = /^(PLAN\.CROSSTRAINING\.C3_(INTENT|STRUCTURE|BLOCK_NOT_GENERATED|HISTORY|NEIGHBOURS|FORMAT_REJECTED|FORMAT_CHOSEN|MOVEMENT_SELECTED|DURATION|DENSITY|REPEAT_UNAVOIDABLE|PROPOSED)|PLAN\.CROSSTRAINING\.C4_(SESSION_STATUS|BLOCK|BLOCK_NOT_GENERATED|VARIANT_RETRY)|SAFETY\.CROSSTRAINING\.C3_HISTORY_NEGATIVE|DOSE\.CROSSTRAINING\.C3_DOSE|DATA\.CROSSTRAINING\.CANDIDATE_VALUE_USED)$/;
+const CT_PERSISTED_DECISIONS = /^(PLAN\.CROSSTRAINING\.C3_(INTENT|STRUCTURE|BLOCK_NOT_GENERATED|HISTORY|NEIGHBOURS|FORMAT_REJECTED|FORMAT_CHOSEN|MOVEMENT_SELECTED|ROLE_DROPPED|DURATION|DENSITY|REPEAT_UNAVOIDABLE|PROPOSED)|PLAN\.CROSSTRAINING\.C4_(SESSION_STATUS|BLOCK|BLOCK_NOT_GENERATED|VARIANT_RETRY|STRENGTH_NEED)|SAFETY\.CROSSTRAINING\.C3_HISTORY_NEGATIVE|DOSE\.CROSSTRAINING\.C3_DOSE|DATA\.CROSSTRAINING\.CANDIDATE_VALUE_USED)$/;
 
 /** Sport du planificateur → discipline du contrat de contexte (HYROX = `hybrid_race`). */
 const DISCIPLINE_OF: Readonly<Record<PlannerSport, 'strength' | 'running' | 'crosstraining' | 'hybrid_race'>> = { strength: 'strength', running: 'running', crosstraining: 'crosstraining', hyrox: 'hybrid_race' };
@@ -419,7 +439,7 @@ const DISCIPLINE_OF: Readonly<Record<PlannerSport, 'strength' | 'running' | 'cro
  * Cross-training. `transportNeighbours` (C3) : voisines (seconde passe) et ordre de priorité DÉCLARÉ transportés dans le
  * contexte, sans interprétation ; absent ⇒ comportement C2 inchangé (aucune seconde passe).
  */
-export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossTrainingEngine; readonly baseContext: Ctx<CrossTrainingContextInput>; readonly transportNeighbours?: boolean; readonly qualityGovernance?: CtGovernance; readonly strengthBlocks?: StrengthBlockCapability }): SportPort {
+export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossTrainingEngine; readonly baseContext: Ctx<CrossTrainingContextInput>; readonly transportNeighbours?: boolean; readonly qualityGovernance?: CtGovernance; readonly strengthBlocks?: StrengthBlockCapability & { readonly port?: SportPort; readonly rule?: StrengthBlockRule } }): SportPort {
   const transport = def.transportNeighbours === true;
   // C3.5 — séances CT PRÉVUES plus tôt dans la semaine (prescription lue dans la séance, stimulus de l'archétype).
   const plannedOf = (slot: SlotRequest) => (slot.weekSessions ?? []).flatMap((w) => {
@@ -439,6 +459,8 @@ export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossT
         ...(transport && n ? { neighbours: { known: n.known, items: n.neighbours.map((x) => ({ discipline: x.discipline, hoursFromThisSession: x.hoursFromThisSession, demand: { ...x.demand } })) } } : {}),
         ...(transport && order.length > 0 ? { sportPriority: { order } } : {}),
         ...(transport && plannedOf(slot).length > 0 ? { plannedSessions: plannedOf(slot) } : {}),
+        // C4.3 — bloc de force délégué (seconde composition), transporté tel quel.
+        ...(slot.delegatedStrength ? { delegatedStrength: { ...slot.delegatedStrength, blocks: [...slot.delegatedStrength.blocks], excludeStructures: [...slot.delegatedStrength.excludeStructures], excludeExercises: [...slot.delegatedStrength.excludeExercises] } } : {}),
       };
     },
     run: (_e, r, c) => runCrossTrainingC2(def.engine, r, c),
@@ -448,12 +470,52 @@ export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossT
   });
   // C4.2 (S1 / A1) — un refus qui EXPRIME un besoin de force est soumis au contrat de délégation du planificateur :
   // aujourd'hui NON RÉSOLU (Strength ne compose pas de bloc isolé), tracé avec les règles manquantes ; refus maintenu.
+  const sb = def.strengthBlocks;
   const delegating: SportPort = {
     ...port,
+    ...(sb?.port && sb.rule ? { crossSportWeek: ['strength'] as const } : {}),
     generate(slot) {
       const o = port.generate(slot);
       if (o.status !== 'refused' || !expressesStrengthNeed(o.reasons)) return o;
-      return { ...o, reasons: [...o.reasons, ...delegateStrengthBlock({ requester: 'crosstraining', requestId: slot.requestId, purpose: 'strength_before_conditioning' }, def.strengthBlocks).reasons] };
+      const req = { requester: 'crosstraining' as const, requestId: slot.requestId, purpose: 'strength_before_conditioning' as const };
+      const unresolved = (cause?: string, more: readonly ReasonCode[] = []) => ({ ...o, reasons: [...o.reasons, ...delegateStrengthBlock(req, sb, cause).reasons, ...more] });
+      const need = strengthNeedOf(o.reasons);
+      if (!need || !sb?.port || !sb.rule) return unresolved();
+      // 2. Strength en MODE BLOC : budget du besoin, séances Strength de la semaine (volume, alternance), voisines.
+      // Volume et alternance : séances Strength de la semaine ET blocs de force des autres séances Cross-training (prévus).
+      const strengthWeek = [...(slot.crossSportWeek?.strength ?? []), ...ctStrengthBlocks({ ...slot, crossSportWeek: { crosstraining: slot.weekSessions ?? [] } })];
+      const s = sb.port.generate({
+        requestId: `${slot.requestId}.strength_block`, date: slot.date, availableMinutes: Math.floor(need.budgetMaxS / S_PER_MIN), hybrid: slot.hybrid,
+        seed: `${slot.seed}:strength_block`, intent: sb.rule.intent, ...(strengthWeek.length > 0 ? { weekSessions: strengthWeek } : {}),
+        ...(slot.neighbours ? { neighbours: slot.neighbours } : {}), ...(slot.sportPriority ? { sportPriority: slot.sportPriority } : {}),
+      });
+      if (s.status !== 'planned') return unresolved('STRENGTH_REFUSED_BLOCK', s.reasons);
+      const est = s.record.durationEstimate;
+      if (est.availability !== 'AVAILABLE') return unresolved('STRENGTH_BLOCK_DURATION_UNAVAILABLE');
+      const blocks = s.session.blocks.filter((b) => b.kind !== 'warmup' && b.kind !== 'cooldown');
+      // Garde (défense en profondeur) : chaque exercice délégué doit être RÉALISABLE avec le matériel déclaré de
+      // l'athlète (catalogue de la séance hôte) — sa présence au catalogue ne prouve pas la disponibilité du matériel.
+      const owned = new Set(def.profile.availableEquipment);
+      const infeasible = blocks.flatMap((b) => b.items).map((i) => i.exerciseId).filter((id) => { const e = def.content.catalog.exercise(id); return !e || !def.content.catalog.isFeasibleWith(e, owned); });
+      if (infeasible.length > 0) return unresolved(`STRENGTH_BLOCK_EQUIPMENT_UNAVAILABLE:${infeasible.join('+')}`);
+      // Règle de délégation (TEST_ONLY) : un bloc « force » exige une charge externe (sinon : travail au poids du corps,
+      // pas un bloc de force) ; refus tracé plutôt qu'une séance incohérente.
+      const loaded = blocks.flatMap((b) => b.items).some((i) => { const e = def.content.catalog.exercise(i.exerciseId); return e !== undefined && e.loadable && e.loadModel !== undefined && e.loadModel !== 'bodyweight_plus'; });
+      if (sb.rule.requireExternalLoad && !loaded) return unresolved('STRENGTH_BLOCK_WITHOUT_EXTERNAL_LOAD');
+      // 4. Structures du bloc (demande dérivée par le CORE, table gouvernée) au niveau qui les EXCLUT du conditionnement.
+      const d = sb.port.demand({ ...s.session, blocks }, sb.rule.mode);
+      if (d.status !== 'derived') return unresolved('STRENGTH_BLOCK_DEMAND_UNAVAILABLE', d.reasons);
+      const excludeStructures = Object.entries(d.levels).filter(([, l]) => sb.rule?.excludeConditioningAtLevels.includes(l)).map(([k]) => k).sort();
+      const source = { engine: 'strength' as const, archetypeId: sb.rule.intent.archetypeId ?? '', sessionId: s.session.id, ruleId: sb.rule.ruleId };
+      const excludeExercises = sb.rule.noRepeatInConditioning ? [...new Set(blocks.flatMap((b) => b.items.map((i) => i.exerciseId)))].sort() : [];
+      const o2 = port.generate({ ...slot, delegatedStrength: { blocks, durationS: est.p90, excludeStructures, excludeExercises, source } });
+      if (o2.status !== 'planned') return unresolved('HOST_REFUSED_WITH_BLOCK', o2.reasons);
+      const delegated = gpReasons.emit(GP_CODES.STRENGTH_DELEGATED, {
+        requester: 'crosstraining', requestId: slot.requestId, ruleId: sb.rule.ruleId, strengthSessionId: s.session.id, archetypeId: source.archetypeId,
+        exercises: blocks.flatMap((b) => b.items.map((i) => i.exerciseId)), durationS: Math.round(est.p90), protectedStructures: excludeStructures,
+      });
+      // Traçabilité : décisions PERSISTÉES de Strength (choix, charge, alternance) jointes à la séance hôte.
+      return { ...o2, reasons: [...o2.reasons, delegated, ...s.reasons] };
     },
   };
   return transport ? { ...delegating, consumesWeekSessions: true, weekSessionsScope: 'generated' } : delegating;

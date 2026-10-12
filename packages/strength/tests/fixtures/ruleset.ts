@@ -96,6 +96,21 @@ export const TEST_ARCHETYPES = [
       slot('lo.trunk', 'b.accessory', 'trunk', 'accessory', 'optional', { trackable: false }),
     ],
   },
+  // C4.3 — TEST_ONLY (draft) : BLOC de force autonome intégré par le planificateur dans une séance Cross-training
+  // « force + conditionnement ». Un seul besoin principal (groupe de choix : alternance par exposition la moins récente),
+  // aucune track ni ancre (la progression reste portée par les séances Strength : pas de doublon), aucune mobilité propre.
+  // Niveaux débutant / intermédiaire seulement (avancé non débloqué). Doses : règles Strength de l'objectif support:crosstraining.
+  {
+    id: 'str_ct_block', version: '0.1.0', status: 'draft', usage: 'block', levels: ['beginner', 'intermediate'], goals: ['support:crosstraining'], toleranceProfile: 'strength_sets', duration: { min: 480, max: 1500 },
+    ...presets(['preset.bodyweight']),
+    blocks: [block('b.main', 'strength', 'primary', [])],
+    slots: [
+      slot('ctb.main_knee', 'b.main', 'knee_dominant', 'primary', 'required', { choiceGroup: 'main', modalityPreference: 'load_ceiling', anchorable: false, trackable: false }),
+      slot('ctb.main_hip', 'b.main', 'hip_dominant', 'primary', 'required', { choiceGroup: 'main', modalityPreference: 'load_ceiling', anchorable: false, trackable: false }),
+      slot('ctb.main_push_h', 'b.main', 'push_horizontal', 'primary', 'required', { choiceGroup: 'main', modalityPreference: 'load_ceiling', anchorable: false, trackable: false }),
+      slot('ctb.main_push_v', 'b.main', 'push_vertical', 'primary', 'required', { choiceGroup: 'main', modalityPreference: 'load_ceiling', anchorable: false, trackable: false }),
+    ],
+  },
   {
     id: 'str_support', version: '0.1.0', status: 'draft', levels: LEVELS, goals: ['support:running', 'support:hybrid_race', 'support:crosstraining', 'general'], toleranceProfile: 'strength_sets', duration: { min: 1200, max: 3000 },
     ...presets([]),

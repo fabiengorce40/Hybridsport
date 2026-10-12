@@ -1,0 +1,579 @@
+{
+ "mixed_modal_medium|beginner|full": {
+  "n": 9,
+  "status": {
+   "FULL_SESSION": 9
+  },
+  "estimatedS": 2401.222222222222,
+  "plannedS": 1758,
+  "blocks": {
+   "main": 683.6666666666666,
+   "warmup_general": 460,
+   "warmup_specific": 214.33333333333334,
+   "cooldown": 400
+  },
+  "position": {
+   "below": 9
+  },
+  "warmupMovements": [
+   "ex.row_erg"
+  ],
+  "mobility": [
+   "ex.hip_mobility_flow",
+   "ex.row_erg",
+   "ex.shoulder_mobility_flow"
+  ],
+  "formats": {
+   "amrap": 3,
+   "emom": 3,
+   "for_time": 3
+  }
+ },
+ "mixed_modal_medium|beginner|no_erg": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "mixed_modal_medium|intermediate|full": {
+  "n": 9,
+  "status": {
+   "FULL_SESSION": 9
+  },
+  "estimatedS": 2598.8888888888887,
+  "plannedS": 1943.6666666666667,
+  "blocks": {
+   "main": 858.6666666666666,
+   "warmup_general": 460,
+   "warmup_specific": 225,
+   "cooldown": 400
+  },
+  "position": {
+   "below": 7,
+   "within": 2
+  },
+  "warmupMovements": [
+   "ex.row_erg"
+  ],
+  "mobility": [
+   "ex.hip_mobility_flow",
+   "ex.row_erg",
+   "ex.shoulder_mobility_flow"
+  ],
+  "formats": {
+   "amrap": 3,
+   "emom": 3,
+   "for_time": 3
+  }
+ },
+ "mixed_modal_medium|intermediate|no_erg": {
+  "n": 9,
+  "status": {
+   "FULL_SESSION": 9
+  },
+  "estimatedS": 2319.6666666666665,
+  "plannedS": 1681,
+  "blocks": {
+   "main": 720,
+   "warmup_general": 480,
+   "warmup_specific": 61,
+   "cooldown": 420
+  },
+  "position": {
+   "below": 9
+  },
+  "warmupMovements": [
+   "ex.arm_circles",
+   "ex.inchworm",
+   "ex.jumping_jack"
+  ],
+  "mobility": [
+   "ex.hip_mobility_flow",
+   "ex.march_in_place",
+   "ex.shoulder_mobility_flow"
+  ],
+  "formats": {
+   "emom": 9
+  }
+ },
+ "mixed_modal_medium|advanced|full": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "mixed_modal_medium|advanced|no_erg": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "aerobic_capacity|beginner|full": {
+  "n": 9,
+  "status": {
+   "FULL_SESSION": 9
+  },
+  "estimatedS": 2663.5555555555557,
+  "plannedS": 2205.6666666666665,
+  "blocks": {
+   "main": 1280,
+   "warmup_general": 460,
+   "cooldown": 370,
+   "warmup_specific": 95.66666666666667
+  },
+  "position": {
+   "below": 7,
+   "within": 2
+  },
+  "warmupMovements": [
+   "ex.row_erg"
+  ],
+  "mobility": [
+   "ex.hip_mobility_flow",
+   "ex.row_erg",
+   "ex.shoulder_mobility_flow"
+  ],
+  "formats": {
+   "continuous": 3,
+   "emom": 3,
+   "intervals": 3
+  }
+ },
+ "aerobic_capacity|beginner|no_erg": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "aerobic_capacity|intermediate|full": {
+  "n": 9,
+  "status": {
+   "MAIN_BLOCK_ONLY": 2,
+   "FULL_SESSION": 7
+  },
+  "estimatedS": 3010.4285714285716,
+  "plannedS": 2547.1428571428573,
+  "blocks": {
+   "main": 1628.5714285714287,
+   "warmup_general": 454.2857142857143,
+   "warmup_specific": 104.28571428571429,
+   "cooldown": 360
+  },
+  "position": {
+   "below": 1,
+   "within": 6
+  },
+  "warmupMovements": [
+   "ex.row_erg"
+  ],
+  "mobility": [
+   "ex.hip_mobility_flow",
+   "ex.row_erg",
+   "ex.shoulder_mobility_flow"
+  ],
+  "formats": {
+   "continuous": 3,
+   "emom": 3,
+   "intervals": 3
+  }
+ },
+ "aerobic_capacity|intermediate|no_erg": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "aerobic_capacity|advanced|full": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "aerobic_capacity|advanced|no_erg": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "threshold|beginner|full": {
+  "n": 9,
+  "status": {
+   "FULL_SESSION": 9
+  },
+  "estimatedS": 2502.6666666666665,
+  "plannedS": 1980,
+  "blocks": {
+   "main": 1080,
+   "warmup_general": 420,
+   "warmup_specific": 120,
+   "cooldown": 360
+  },
+  "position": {
+   "below": 9
+  },
+  "warmupMovements": [
+   "ex.row_erg"
+  ],
+  "mobility": [
+   "ex.hip_mobility_flow",
+   "ex.row_erg",
+   "ex.shoulder_mobility_flow"
+  ],
+  "formats": {
+   "intervals": 9
+  }
+ },
+ "threshold|beginner|no_erg": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "threshold|intermediate|full": {
+  "n": 9,
+  "status": {
+   "FULL_SESSION": 9
+  },
+  "estimatedS": 2742.6666666666665,
+  "plannedS": 2220,
+  "blocks": {
+   "main": 1320,
+   "warmup_general": 420,
+   "warmup_specific": 120,
+   "cooldown": 360
+  },
+  "position": {
+   "below": 3,
+   "within": 6
+  },
+  "warmupMovements": [
+   "ex.row_erg"
+  ],
+  "mobility": [
+   "ex.hip_mobility_flow",
+   "ex.row_erg",
+   "ex.shoulder_mobility_flow"
+  ],
+  "formats": {
+   "intervals": 9
+  }
+ },
+ "threshold|intermediate|no_erg": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "threshold|advanced|full": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "threshold|advanced|no_erg": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "anaerobic_intervals|beginner|full": {
+  "n": 9,
+  "status": {
+   "FULL_SESSION": 9
+  },
+  "estimatedS": 2203,
+  "plannedS": 1670,
+  "blocks": {
+   "main": 630,
+   "warmup_general": 480,
+   "warmup_specific": 140,
+   "cooldown": 420
+  },
+  "position": {
+   "below": 9
+  },
+  "warmupMovements": [
+   "ex.row_erg"
+  ],
+  "mobility": [
+   "ex.hip_mobility_flow",
+   "ex.row_erg",
+   "ex.shoulder_mobility_flow"
+  ],
+  "formats": {
+   "intervals": 9
+  }
+ },
+ "anaerobic_intervals|beginner|no_erg": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "anaerobic_intervals|intermediate|full": {
+  "n": 9,
+  "status": {
+   "FULL_SESSION": 9
+  },
+  "estimatedS": 2422,
+  "plannedS": 1880,
+  "blocks": {
+   "main": 840,
+   "warmup_general": 480,
+   "warmup_specific": 140,
+   "cooldown": 420
+  },
+  "position": {
+   "below": 9
+  },
+  "warmupMovements": [
+   "ex.row_erg"
+  ],
+  "mobility": [
+   "ex.hip_mobility_flow",
+   "ex.row_erg",
+   "ex.shoulder_mobility_flow"
+  ],
+  "formats": {
+   "intervals": 9
+  }
+ },
+ "anaerobic_intervals|intermediate|no_erg": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "anaerobic_intervals|advanced|full": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "anaerobic_intervals|advanced|no_erg": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "muscular_endurance|beginner|full": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "muscular_endurance|beginner|no_erg": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "muscular_endurance|intermediate|full": {
+  "n": 9,
+  "status": {
+   "FULL_SESSION": 9
+  },
+  "estimatedS": 2636.6666666666665,
+  "plannedS": 1841.3333333333333,
+  "blocks": {
+   "main": 900,
+   "warmup_general": 440,
+   "warmup_specific": 121.33333333333333,
+   "cooldown": 380
+  },
+  "position": {
+   "below": 5,
+   "within": 4
+  },
+  "warmupMovements": [
+   "ex.row_erg"
+  ],
+  "mobility": [
+   "ex.hip_mobility_flow",
+   "ex.row_erg",
+   "ex.shoulder_mobility_flow"
+  ],
+  "formats": {
+   "emom": 6,
+   "amrap": 3
+  }
+ },
+ "muscular_endurance|intermediate|no_erg": {
+  "n": 9,
+  "status": {
+   "FULL_SESSION": 9
+  },
+  "estimatedS": 2636.6666666666665,
+  "plannedS": 1781.3333333333333,
+  "blocks": {
+   "main": 900,
+   "warmup_general": 400,
+   "warmup_specific": 121.33333333333333,
+   "cooldown": 360
+  },
+  "position": {
+   "below": 3,
+   "within": 6
+  },
+  "warmupMovements": [
+   "ex.arm_circles",
+   "ex.inchworm",
+   "ex.jumping_jack",
+   "ex.leg_swings"
+  ],
+  "mobility": [
+   "ex.hip_mobility_flow",
+   "ex.march_in_place",
+   "ex.shoulder_mobility_flow"
+  ],
+  "formats": {
+   "emom": 6,
+   "amrap": 3
+  }
+ },
+ "muscular_endurance|advanced|full": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ },
+ "muscular_endurance|advanced|no_erg": {
+  "n": 9,
+  "status": {
+   "BLOCKED": 9
+  },
+  "estimatedS": null,
+  "plannedS": null,
+  "blocks": {},
+  "position": {},
+  "warmupMovements": [],
+  "mobility": [],
+  "formats": {}
+ }
+}

@@ -63,7 +63,17 @@ export const PARAMETER_SCHEMAS = {
   'ct.stimulus.timeDomains': z.partialRecord(stimulus, z.object({ minS: positive, maxS: positive }).strict().refine((d) => d.minS <= d.maxS, 'minS ≤ maxS')),
   'ct.stimulus.workRestRatios': z.partialRecord(stimulus, z.object({ min: positive, max: positive }).strict().refine((d) => d.min <= d.max, 'min ≤ max')),
   'ct.composition.sessionStructure': z.partialRecord(stimulus, z.array(z.enum(CT_SESSION_BLOCK_KINDS)).min(1)),
-  'ct.composition.movementPool': z.array(z.object({ movementId: z.string().min(1), contentReviewRef: z.string().min(1) }).strict()),
+  /**
+   * `fallbackOnly` (C4.3) : mouvement retenu pour un rôle SEULEMENT si aucun autre mouvement du réservoir n'y est
+   * éligible (ex. course quand aucun ergomètre n'est disponible) ; les séances avec ergomètre sont inchangées.
+   */
+  'ct.composition.movementPool': z.array(z.object({ movementId: z.string().min(1), contentReviewRef: z.string().min(1), fallbackOnly: z.boolean().optional() }).strict()),
+  /**
+   * C4.3 (CT-D24) — rôles FACULTATIFS par stimulus et format : un tel rôle, impossible à remplir (aucun mouvement
+   * éligible : matériel, douleur, restriction…), est retiré du bloc (tracé) au lieu de rejeter le format ; les doses
+   * des autres rôles sont inchangées. Absent / non résolu : tous les rôles restent obligatoires (comportement C3).
+   */
+  'ct.composition.optionalRoles': z.partialRecord(stimulus, z.partialRecord(format, z.array(role).min(1))),
   'ct.composition.movementRoles': z.partialRecord(stimulus, z.partialRecord(format, z.array(role).min(1))),
   'ct.dose.construction': zDoseConstruction,
   'ct.estimation.workRates': zWorkRates,
@@ -114,6 +124,11 @@ export const PARAMETER_SCHEMAS = {
     maxShareOfWarmup: z.number().positive(),
   }).strict()),
   /** C4 — cible de durée d'une séance complète (décision produit) : jamais une obligation de remplissage. */
+  /**
+   * C4.3 (CT-D25) — BESOIN de force exprimé par stimulus (jamais systématique : seuls les stimulus listés) : budget de
+   * temps du bloc délégué à Strength via le planificateur ; aucune prescription de force côté Cross-training.
+   */
+  'ct.c4.strengthNeed': z.partialRecord(stimulus, z.object({ budgetS: span, purpose: z.enum(['strength_before_conditioning']) }).strict()),
   'ct.c4.sessionDurationTarget': z.object({ minS: positive, maxS: positive }).strict().refine((d) => d.minS <= d.maxS, 'minS ≤ maxS'),
   /** Charge d'implément par mouvement et par niveau (kg). */
   'ct.load.implementStandards': z.record(z.string().min(1), perLevel(positive)),

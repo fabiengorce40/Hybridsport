@@ -25,8 +25,10 @@ const NONE = { chosen: [] };
 describe('archétypes (étape 4)', () => {
   const env = envFor(scenario());
 
-  it('les 4 archétypes V1 seulement, chacun valide pour le CORE (leviers, couverture du catalogue, préréglages)', () => {
-    expect(TEST_ARCHETYPES.map((a) => a.id).sort()).toEqual(['str_full_body', 'str_lower', 'str_support', 'str_upper']);
+  it('les 4 archétypes V1 de séance + le bloc C4.3 (TEST_ONLY), chacun valide pour le CORE (leviers, couverture du catalogue, préréglages)', () => {
+    expect(TEST_ARCHETYPES.map((a) => a.id).sort()).toEqual(['str_ct_block', 'str_full_body', 'str_lower', 'str_support', 'str_upper']);
+    // C4.3 — seul l'archétype de bloc porte `usage: 'block'` (jamais composé comme séance Strength).
+    expect(TEST_ARCHETYPES.filter((a) => (a as { usage?: string }).usage === 'block').map((a) => a.id)).toEqual(['str_ct_block']);
     for (const a of env.params['strength.archetypes']) {
       const r = strengthArchetypeIssues(a, env.params, CATALOG);
       expect(r.core, a.id).toEqual([]);

@@ -86,9 +86,12 @@ export function composeC4(input: Input, stimulus: CtStimulus, c3: { readonly pla
   if (!plan) return mainOnly('MAIN_BLOCK_ONLY', 'SESSION_PLAN_UNDECIDED_FOR_STIMULUS');
   // Blocs que C4 ne sait pas composer : requis ⇒ composition non résolue ; facultatifs ⇒ tracés.
   const missing: ReasonCode[] = [];
-  const requiredUnsupported = plan.required.filter((b) => !COMPOSABLE.has(b));
+  // C4.3 — bloc de force composable SEULEMENT s'il est délégué (composé par Strength, transporté par le planificateur).
+  const delegated = input.discipline.delegatedStrength;
+  const composable = (b: C4Block) => COMPOSABLE.has(b) || (b === 'strength' && delegated !== undefined);
+  const requiredUnsupported = plan.required.filter((b) => !composable(b));
   for (const b of [...plan.required, ...plan.optional]) {
-    if (COMPOSABLE.has(b)) continue;
+    if (composable(b)) continue;
     missing.push(ctReasons.emit(CT_CODES.C4_BLOCK_NOT_GENERATED, { block: b, required: plan.required.includes(b) ? 'required' : 'optional', cause: NOT_COMPOSABLE_CAUSE[b] ?? 'UNSUPPORTED' }));
   }
   if (requiredUnsupported.length > 0) return mainOnly('COMPOSITION_UNRESOLVED', `REQUIRED_BLOCK_NOT_COMPOSABLE:${requiredUnsupported.join(',')}`, missing, requiredUnsupported);
@@ -127,7 +130,8 @@ export function composeC4(input: Input, stimulus: CtStimulus, c3: { readonly pla
   const eligible = (e: Exercise | undefined, id: string) => e !== undefined && movementIssues(id, e, input, governance).length === 0 && !c3.plan.excludedByHistory.includes(id);
 
   // ——— Échauffement général, mode 1 : ergomètre éligible (présent dans le bloc principal d'abord, puis coût technique).
-  const mono = pr.value.map((m) => input.catalog.exercise(m.movementId))
+  // Un mouvement de REPLI du réservoir (`fallbackOnly`, ex. course) ne sert d'échauffement que s'il est dans le bloc principal.
+  const mono = pr.value.filter((m) => m.fallbackOnly !== true || mainIds.has(m.movementId)).map((m) => input.catalog.exercise(m.movementId))
     .filter((e): e is Exercise => e !== undefined && movementRoles(e, regionOf.get(e.patterns.primary)).includes('monostructural') && eligible(e, e.id))
     .sort((a, b) => Number(mainIds.has(b.id)) - Number(mainIds.has(a.id)) || a.cost.technical - b.cost.technical || (a.id < b.id ? -1 : 1))[0];
   // Mode 2 (C4.2, CT-D22) : circuit au poids du corps — UN mouvement d'élévation de température (premier éligible du
@@ -236,7 +240,16 @@ export function composeC4(input: Input, stimulus: CtStimulus, c3: { readonly pla
   const c3Session = c3.proposal.session as SessionDraftInput;
   let marginS: number;
   try { marginS = readToleranceProfile(input.ruleset, c3Session.toleranceProfile).marginS; } catch { return mainOnly('MAIN_BLOCK_ONLY', 'TOLERANCE_PROFILE_UNAVAILABLE', missing); }
-  const mainS = c3.plan.blockS;
+  const mainS = c3.plan.blockS + (delegated?.durationS ?? 0);
+  // Bloc de force délégué : blocs CORE de Strength TELS QUELS (exercices, séries, répétitions, repos, intensités), sans
+  // levier de compression (le CORE ne peut pas raccourcir une prescription dont Strength est propriétaire), identifiants
+  // préfixés (unicité dans la séance) ; références de Strength conservées (emplacement, source de prescription).
+  const strengthBlocks: Block[] = (delegated?.blocks ?? []).map((raw, k, all) => {
+    const b = raw as unknown as Block;
+    return { ...b, id: all.length === 1 ? `${base}.c4.strength` : `${base}.c4.strength.${String(k + 1)}`, levers: [], items: b.items.map((it, j) => ({ ...it, id: `${base}.c4.st.${String(k + 1)}.${String(j + 1)}` })) } as Block;
+  });
+  const strengthNote = delegated ? [ctReasons.emit(CT_CODES.C4_BLOCK, { block: 'strength', kind: 'strength', purpose: 'delegated_strength_block', durationS: Math.round(delegated.durationS), exercises: strengthBlocks.flatMap((b) => b.items.map((i) => i.exerciseId)),
+    criteria: ['owner:strength', `archetype:${delegated.source.archetypeId}`, `strength_session:${delegated.source.sessionId}`, `rule:${delegated.source.ruleId}`, `protected_structures:${delegated.excludeStructures.join('+') || 'none'}`], parameterIds: ['ct.c4.strengthNeed'] })] : [];
   for (const v of input.discipline.fullSessionVariant === 'short' ? (['short'] as const) : VARIANTS) {
     const b = blocksFor(v);
     const plannedS = b.plannedS + mainS;
@@ -244,18 +257,23 @@ export function composeC4(input: Input, stimulus: CtStimulus, c3: { readonly pla
     // S8 (C4.2) — la référence de la cible produit est l'estimation du CORE (consignes et transitions comprises),
     // lue en aval sur la séance enregistrée ; le moteur ne juge pas la cible sur sa durée planifiée.
     const target = tr.value;
-    const missingRequired = plan.required.filter((x) => x !== 'conditioning' && !b.generated.includes(x) && !b.covered.includes(x));
+    const missingRequired = plan.required.filter((x) => x !== 'conditioning' && !(x === 'strength' && delegated) && !b.generated.includes(x) && !b.covered.includes(x));
     if (missingRequired.length > 0) return mainOnly('MAIN_BLOCK_ONLY', `REQUIRED_BLOCK_NOT_GENERATED:${missingRequired.join(',')}`, missing, missingRequired);
-    const session: SessionDraftInput = { ...c3Session, blocks: [...b.before, ...c3Session.blocks, ...b.after] };
+    // Ordre (règle d'ordre du planificateur, C4.3) : échauffement général → bloc de force (ses séries de montée) →
+    // préparation spécifique du bloc principal (juste avant lui) → bloc principal → retour au calme.
+    const isSpecific = (x: Block) => x.id.endsWith('.c4.warmup_specific') || x.id.endsWith('.c4.warmup_buildups');
+    const ordered = delegated ? [...b.before.filter((x) => !isSpecific(x)), ...strengthBlocks, ...b.before.filter(isSpecific)] : b.before;
+    const session: SessionDraftInput = { ...c3Session, blocks: [...ordered, ...c3Session.blocks, ...b.after] };
     // Empreinte : volume de CHAQUE item (exigence du CORE) ; échauffement / retour au calme lus dans leur prescription.
     const volumeOf = (it: Block['items'][number]): number => {
       const p = it.prescription;
       return p.type === 'timed' ? p.workS * (p.rounds ?? 1) : p.type === 'mobility' ? p.seconds * (p.sides ?? 1) : p.type === 'sets' ? p.sets.reduce((a, x) => a + (typeof x.reps === 'number' ? x.reps : 0), 0) : 0;
     };
     const fp = c3.proposal.fingerprintInputs as { readonly volumeByItem?: Readonly<Record<string, number>> } & Readonly<Record<string, unknown>>;
-    const volumeByItem = { ...fp.volumeByItem, ...Object.fromEntries([...b.before, ...b.after].flatMap((x) => x.items).map((it) => [it.id, volumeOf(it)])) };
+    const working = (it: Block['items'][number]) => (it.prescription.type === 'sets' ? it.prescription.sets.filter((x) => x.kind !== 'rampup').length : volumeOf(it));
+    const volumeByItem = { ...fp.volumeByItem, ...Object.fromEntries([...b.before, ...b.after].flatMap((x) => x.items).map((it) => [it.id, volumeOf(it)])), ...Object.fromEntries(strengthBlocks.flatMap((x) => x.items).map((it) => [it.id, working(it)])) };
     const notGenerated = [...missing.map((m) => String(m.params.block)), ...b.covered];
-    const reasons = [...trace, ...b.notes, ...missing, status('FULL_SESSION', 'PLANNED_BLOCKS_COMPOSED', { generated: [...b.generated, 'conditioning'], notGenerated, plannedS: Math.round(plannedS), target, position: 'core_estimate', variant: v })];
+    const reasons = [...trace, ...b.notes, ...strengthNote, ...missing, status('FULL_SESSION', 'PLANNED_BLOCKS_COMPOSED', { generated: [...b.generated, ...(delegated ? ['strength'] : []), 'conditioning'], notGenerated, plannedS: Math.round(plannedS), target, position: 'core_estimate', variant: v })];
     return { proposal: { ...c3.proposal, session, fingerprintInputs: { ...fp, volumeByItem }, reasons: merged(c3.proposal.reasons, reasons) }, status: 'FULL_SESSION' };
   }
   return mainOnly('MAIN_BLOCK_ONLY', 'SESSION_EXCEEDS_AVAILABLE_TIME', missing);
