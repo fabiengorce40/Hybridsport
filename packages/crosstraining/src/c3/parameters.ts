@@ -85,9 +85,34 @@ export const PARAMETER_SCHEMAS = {
   /** C4 — blocs REQUIS / FACULTATIFS d'une séance complète, par stimulus (hypothèse experte). */
   'ct.c4.sessionPlan': z.partialRecord(stimulus, z.object({ required: z.array(z.enum(C4_BLOCKS)), optional: z.array(z.enum(C4_BLOCKS)) }).strict()),
   /** C4 — échauffement : durée générale (bornes), tours et fraction des répétitions du bloc principal pour l'échauffement spécifique. */
-  'ct.c4.warmup': perLevel(z.object({ generalS: span, specificRounds: positiveInt, specificFraction: z.number().positive().max(1) }).strict()),
+  'ct.c4.warmup': perLevel(z.object({
+    generalS: span,
+    /** C4.2 — échauffement spécifique PROGRESSIF : une fraction des répétitions du bloc principal par tour (rampe). */
+    specificRamp: z.array(z.number().positive().max(1)).min(1),
+    /** Tours supplémentaires si un mouvement à répétitions du bloc principal atteint le coût technique `technicalThreshold`. */
+    technicalRamp: z.array(z.number().positive().max(1)),
+    technicalThreshold: z.number().int().nonnegative(),
+    /**
+     * C4.2 — accélérations PROGRESSIVES sur l'ergomètre du bloc principal (tours, travail, récupération), seulement si le
+     * bloc principal n'est pas continu ; aucune allure chiffrée (consigne « progressif »).
+     */
+    buildups: z.object({ rounds: z.object({ min: positiveInt, max: positiveInt }).strict().refine((d) => d.min <= d.max, 'min ≤ max'), workS: positiveInt, restS: z.number().int().nonnegative() }).strict(),
+  }).strict()),
+  /** C4.2 (CT-D22) — échauffement général SANS ergomètre : réservoir de mouvements au poids du corps et rôle de chacun. */
+  'ct.c4.generalWarmupPool': z.array(z.object({ movementId: z.string().min(1), role: z.enum(['pulse_raise', 'dynamic_prep']), regions: z.array(z.enum(['lower', 'upper', 'core', 'full'])).min(1) }).strict()).min(1),
+  /** C4.2 (CT-D22) — circuit au poids du corps : durée de chaque intervalle, impact maximal admis, préparations dynamiques maximales. */
+  'ct.c4.generalWarmupCircuit': perLevel(z.object({ intervalS: positiveInt, maxImpact: z.number().int().nonnegative(), maxDynamicPrep: positiveInt }).strict()),
+  /** C4.2 (CT-D23) — mobilité de retour au calme : mouvements et régions couvertes (sélection par régions du bloc principal). */
+  'ct.c4.mobilityPool': z.array(z.object({ movementId: z.string().min(1), regions: z.array(z.enum(['lower', 'upper', 'core'])).min(1) }).strict()).min(1),
   /** C4 — retour au calme : allure facile (bornes), mobilité (bornes). */
-  'ct.c4.cooldown': perLevel(z.object({ easyS: span, mobilityS: span }).strict()),
+  'ct.c4.cooldown': perLevel(z.object({
+    easyS: span,
+    /** C4.2 — durée PAR mouvement de mobilité ; nombre maximal de mouvements (un par région sollicitée). */
+    mobilityPerMovementS: span,
+    maxMobilityMovements: positiveInt,
+    /** C4.2 (S7) — plafond du retour au calme en part de l'échauffement planifié (il ne compense jamais un échauffement court). */
+    maxShareOfWarmup: z.number().positive(),
+  }).strict()),
   /** C4 — cible de durée d'une séance complète (décision produit) : jamais une obligation de remplissage. */
   'ct.c4.sessionDurationTarget': z.object({ minS: positive, maxS: positive }).strict().refine((d) => d.minS <= d.maxS, 'minS ≤ maxS'),
   /** Charge d'implément par mouvement et par niveau (kg). */

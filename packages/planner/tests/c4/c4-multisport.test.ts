@@ -5,21 +5,22 @@
  */
 import { describe, expect, it } from 'vitest';
 import { createCrossTrainingEngine } from '@hybridsport/crosstraining';
-import { crossTrainingPort } from '../../src/index.js';
+import { crossTrainingPort, delegateStrengthBlock, STRENGTH_DELEGATION_MISSING_RULES } from '../../src/index.js';
 import type { PlannedWeek, SportPort } from '../../src/index.js';
-import { D, m3Ports, planM3 } from '../m3-fixtures.js';
+import { C3_INTENT, D, m3Ports, planM3 } from '../m3-fixtures.js';
 import { CT_DOSE_NORMALIZATION } from '../ct-beta0.js';
-import { clock, PROFILE } from '../fixtures.js';
+import { clock, PROFILE, want } from '../fixtures.js';
 import { withDemand } from '../simulation.js';
 import { C3_REQUESTS, c3Governance } from '../../../crosstraining/tests/c3-fixtures.js';
 import { ctxInput } from '../../../crosstraining/tests/fixtures.js';
+import { ctCatalogDocument } from '../../../crosstraining/tests/c4-catalog.js';
 import { testCatalog, testRuleset } from '../../../engine/tests/fixtures/load.js';
 import { testRulesetDocumentWithDuplicate } from '../../../engine/tests/fixtures/ruleset.js';
 import { STATE_FRESH } from '../../../engine/tests/harness/requests.js';
 
 function ctC4(): SportPort {
   return crossTrainingPort({
-    engine: createCrossTrainingEngine({ governance: c3Governance({ hybrid: true, c4: true }), simulation: true }), content: withDemand({ ruleset: testRuleset(testRulesetDocumentWithDuplicate()), catalog: testCatalog() }, CT_DOSE_NORMALIZATION),
+    engine: createCrossTrainingEngine({ governance: c3Governance({ hybrid: true, c4: true }), simulation: true }), content: withDemand({ ruleset: testRuleset(testRulesetDocumentWithDuplicate()), catalog: testCatalog(ctCatalogDocument()) }, CT_DOSE_NORMALIZATION),
     profile: PROFILE, state: STATE_FRESH, history: [], clock, baseContext: ctxInput({ capabilityRequests: [...C3_REQUESTS, 'ctFullSessionComposition'] }), transportNeighbours: true,
   });
 }
@@ -56,5 +57,26 @@ describe('C4 — cohabitation Strength / Running / HYROX', () => {
     const statuses = ct.map((r) => r.reasons.find((x) => x.code === 'PLAN.CROSSTRAINING.C4_SESSION_STATUS')?.params.status);
     expect(statuses.every((s) => typeof s === 'string')).toBe(true);
     expect(statuses).toContain('FULL_SESSION');
+  });
+});
+
+describe('C4.2 — délégation d’un bloc de force par le planificateur (S1 / A1)', () => {
+  const sc = want('crosstraining', 1, { intent: { ...C3_INTENT, archetypeId: 'crosstraining.strength_plus_conditioning' } });
+  it('5. stimulus force + conditionnement : besoin exprimé, délégation NON RÉSOLUE tracée (règles manquantes), aucune séance inventée', () => {
+    const w = planM3([sc], { minutes: [75, 0, 0, 0, 0, 0, 0], ports: { ...m3Ports(), crosstraining: ctC4() } });
+    const r = w.requests.find((x) => x.sport === 'crosstraining');
+    expect(r?.status).not.toBe('planned');
+    const d = r?.reasons.find((x) => x.code === 'PLAN.PLANNER.STRENGTH_DELEGATION_UNRESOLVED');
+    expect(d?.params).toMatchObject({ requester: 'crosstraining', cause: 'STRENGTH_BLOCK_MODE_UNAVAILABLE', purpose: 'strength_before_conditioning' });
+    expect(d?.params.missingRules).toEqual([...STRENGTH_DELEGATION_MISSING_RULES]);
+  });
+  it('6. même un port Strength déclarant un mode bloc ne suffit pas : règles de coordination encore manquantes (fail-closed)', () => {
+    const o = delegateStrengthBlock({ requester: 'crosstraining', requestId: 'r', purpose: 'strength_before_conditioning' }, { composesIsolatedBlock: true });
+    expect(o).toMatchObject({ status: 'UNRESOLVED', cause: 'DELEGATION_RULES_MISSING' });
+    expect(o.reasons[0]?.params.missingRules).not.toContain('strength.blockMode');
+  });
+  it('7. séances sans besoin de force : aucune trace de délégation (pas de bloc de force systématique)', () => {
+    const w = plan(true);
+    expect(w.requests.flatMap((r) => r.reasons).some((x) => x.code === 'PLAN.PLANNER.STRENGTH_DELEGATION_UNRESOLVED')).toBe(false);
   });
 });

@@ -27,6 +27,8 @@ export const GP_CODES = {
   INTERFERENCE_UNRESOLVED: 'PLAN.PLANNER.INTERFERENCE_UNRESOLVED',
   /** Séance placée. */
   PLACED: 'PLAN.PLANNER.PLACED',
+  /** C4.2 (S1 / A1) — délégation d'un bloc de force à Strength demandée par un autre moteur : NON RÉSOLUE (cause, règles manquantes). */
+  STRENGTH_DELEGATION_UNRESOLVED: 'PLAN.PLANNER.STRENGTH_DELEGATION_UNRESOLVED',
   /** Intention de programme incomplète pour ce sport (champs manquants) : le planificateur n'en invente aucun. */
   PROGRAMME_INTENT_INCOMPLETE: 'PLAN.PLANNER.PROGRAMME_INTENT_INCOMPLETE',
   /** Contexte voisin transmis au moteur (profils de demande des séances voisines d'autres disciplines). */
@@ -65,6 +67,7 @@ export const GP_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: GP_CODES.INTERFERENCE_CONFLICT, categories: ['business_hard'], params: { sport: S, date: S, withSport: S, withDate: S, structure: S, gapHours: N, rule: S }, audience: 'user', severity: 'warning' },
   { code: GP_CODES.INTERFERENCE_UNRESOLVED, categories: ['feasibility'], params: { sport: S, requestId: S, triedDates: L }, audience: 'user', severity: 'error' },
   { code: GP_CODES.PLACED, categories: ['information'], params: { sport: S, requestId: S, date: S }, audience: 'internal', severity: 'info' },
+  { code: GP_CODES.STRENGTH_DELEGATION_UNRESOLVED, categories: ['feasibility'], params: { requester: S, requestId: S, purpose: S, cause: S, missingRules: L }, audience: 'user', severity: 'notice' },
   { code: GP_CODES.PROGRAMME_INTENT_INCOMPLETE, categories: ['feasibility'], params: { sport: S, missing: L }, audience: 'user', severity: 'error' },
   { code: GP_CODES.NEIGHBOUR_CONTEXT, categories: ['information'], params: { requestId: S, known: S, neighbours: N, unknown: L }, audience: 'internal', severity: 'info' },
   { code: GP_CODES.DEMAND_PROFILE_NOT_APPROVED, categories: ['business_hard'], params: { sport: S, parameterId: S, mode: S }, audience: 'internal', severity: 'warning' },

@@ -63,8 +63,8 @@ export const CT_CAPABILITIES: Readonly<Record<CtCapabilityId, CapabilityDefiniti
   },
   // C4 (CT-D21, expérimental) : séance complète autour du bloc principal C3 (échauffement, retour au calme).
   ctFullSessionComposition: {
-    parameters: ['ct.c4.sessionPlan', 'ct.c4.warmup', 'ct.c4.cooldown', 'ct.c4.sessionDurationTarget'],
-    decisions: ['CT-D21'], g1Policies: [], technical: ['CT_CONTENT'],
+    parameters: ['ct.c4.sessionPlan', 'ct.c4.warmup', 'ct.c4.cooldown', 'ct.c4.sessionDurationTarget', 'ct.c4.generalWarmupPool', 'ct.c4.generalWarmupCircuit', 'ct.c4.mobilityPool'],
+    decisions: ['CT-D21', 'CT-D22', 'CT-D23'], g1Policies: [], technical: ['CT_CONTENT'],
   },
   ctLoadedMovements: {
     parameters: ['ct.load.implementStandards', 'ct.load.percentE1rmByStimulus'],

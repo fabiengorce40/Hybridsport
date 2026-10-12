@@ -20,6 +20,8 @@ import type { RunningContextInput, RunningParameter } from '@hybridsport/running
 import { composeStrengthWeek, declarableAnchors, plannedWeekExposures, readStrengthParams, sessionPlannedHardSets, strengthReasons, strengthWeekPrescription, weekPrescriptionSummary } from '@hybridsport/strength';
 import type { StrengthCompositionRule, StrengthContextInput } from '@hybridsport/strength';
 import { GP_CODES, gpReasons } from './codes.js';
+import { delegateStrengthBlock, expressesStrengthNeed } from './strength-delegation.js';
+import type { StrengthBlockCapability } from './strength-delegation.js';
 import { assessC3Quality } from '@hybridsport/crosstraining';
 import type { CtGovernance } from '@hybridsport/crosstraining';
 import { assessH2Quality, roleFromArchetype } from '@hybridsport/hyrox';
@@ -417,7 +419,7 @@ const DISCIPLINE_OF: Readonly<Record<PlannerSport, 'strength' | 'running' | 'cro
  * Cross-training. `transportNeighbours` (C3) : voisines (seconde passe) et ordre de priorité DÉCLARÉ transportés dans le
  * contexte, sans interprétation ; absent ⇒ comportement C2 inchangé (aucune seconde passe).
  */
-export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossTrainingEngine; readonly baseContext: Ctx<CrossTrainingContextInput>; readonly transportNeighbours?: boolean; readonly qualityGovernance?: CtGovernance }): SportPort {
+export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossTrainingEngine; readonly baseContext: Ctx<CrossTrainingContextInput>; readonly transportNeighbours?: boolean; readonly qualityGovernance?: CtGovernance; readonly strengthBlocks?: StrengthBlockCapability }): SportPort {
   const transport = def.transportNeighbours === true;
   // C3.5 — séances CT PRÉVUES plus tôt dans la semaine (prescription lue dans la séance, stimulus de l'archétype).
   const plannedOf = (slot: SlotRequest) => (slot.weekSessions ?? []).flatMap((w) => {
@@ -444,7 +446,17 @@ export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossT
     // Empreintes des séances prévues de la semaine : anti-doublon du CORE (statut `planned`), comme Strength.
     ...(transport ? { extraHistory: (slot: SlotRequest) => (slot.weekSessions ?? []).flatMap((w) => (w.fingerprint ? [{ fingerprint: w.fingerprint, at: def.clock.instantOf(w.date), status: 'planned' as const, repetitionIntents: [] }] : [])) } : {}),
   });
-  return transport ? { ...port, consumesWeekSessions: true, weekSessionsScope: 'generated' } : port;
+  // C4.2 (S1 / A1) — un refus qui EXPRIME un besoin de force est soumis au contrat de délégation du planificateur :
+  // aujourd'hui NON RÉSOLU (Strength ne compose pas de bloc isolé), tracé avec les règles manquantes ; refus maintenu.
+  const delegating: SportPort = {
+    ...port,
+    generate(slot) {
+      const o = port.generate(slot);
+      if (o.status !== 'refused' || !expressesStrengthNeed(o.reasons)) return o;
+      return { ...o, reasons: [...o.reasons, ...delegateStrengthBlock({ requester: 'crosstraining', requestId: slot.requestId, purpose: 'strength_before_conditioning' }, def.strengthBlocks).reasons] };
+    },
+  };
+  return transport ? { ...delegating, consumesWeekSessions: true, weekSessionsScope: 'generated' } : delegating;
 }
 
 /**

@@ -51,6 +51,14 @@ const STRENGTH_S2_CHANGES = [
  * (week-prescription.ts), trace des groupes de choix (archetypes.ts, engine.ts, codes.ts), preuve de progression
  * `load_deviation` (progression.ts) ; goldens : seule la raison `SELECT.CHOICE_GROUP` est ajoutée (listés en S2).
  */
+/**
+ * Lot C4.2 A2 (liste FERMÉE) : sélection de mobilité Strength gouvernée par DISCIPLINE (un exercice réservé au
+ * Cross-training n'est jamais retenu) et son test de non-régression (prescriptions Strength identiques).
+ */
+const STRENGTH_C42_A2_CHANGES = [
+  'packages/strength/src/engine.ts',
+  'packages/strength/tests/unit/discipline-mobility.test.ts',
+];
 const STRENGTH_S3_CHANGES = [
   'packages/strength/src/week-prescription.ts',
   'packages/strength/src/archetypes.ts',
@@ -116,6 +124,7 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   ...STRENGTH_S3_CHANGES,
   ...STRENGTH_S4_CHANGES,
   ...STRENGTH_S5_CHANGES,
+  ...STRENGTH_C42_A2_CHANGES,
 ];
 
 describe('frontières', () => {
@@ -144,7 +153,7 @@ describe('frontières', () => {
     }
     const changed = diff.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
     expect(changed.filter((f) => !CT_C2_AUTHORIZED_CORE_CHANGES.includes(f))).toEqual([]);
-    expect(changed.filter((f) => f.startsWith('packages/running/') || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f)))).toEqual([]);
+    expect(changed.filter((f) => f.startsWith('packages/running/') || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f) && !STRENGTH_C42_A2_CHANGES.includes(f)))).toEqual([]);
   });
 });
 

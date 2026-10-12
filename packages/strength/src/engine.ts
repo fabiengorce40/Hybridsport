@@ -241,8 +241,12 @@ function prescribe(pick: Pick, env: Env, timePressure: boolean, allocated: numbe
 function mobilityItem(env: Env, itemId: string, seconds: number, primaryPattern: string | undefined): SessionItem | undefined {
   if (seconds <= 0) return undefined;
   const slot: SlotInstance = { def: { id: itemId, blockId: 'mobility', need: 'mobility', role: 'accessory', status: 'optional', count: { min: 1, max: 1 }, anchorable: false, trackable: false }, requirement: { movementTypes: ['mobility'] } };
+  // A2 (C4.2) — sélection gouvernée par DISCIPLINE : un exercice de mobilité réservé à une autre discipline (ex.
+  // `disciplines: ['crosstraining']`) n'est jamais retenu par Strength (l'ancienne tolérance du filtre F8 est retirée).
+  // Catalogues actuels : tous les exercices de mobilité du catalogue Strength déclarent `strength` (prescriptions
+  // inchangées, tests de référence et test de non-régression dédié).
   const cands = [...env.catalog.exercises()].sort((a, b) => (a.id < b.id ? -1 : 1))
-    .filter((e) => firstFailingFilter(e, slot, env, { technicalCount: 0 }) === undefined || firstFailingFilter(e, slot, env, { technicalCount: 0 }) === 'F8_discipline');
+    .filter((e) => e.disciplines.includes('strength') && firstFailingFilter(e, slot, env, { technicalCount: 0 }) === undefined);
   const best = [...cands].sort((a, b) => Number(primaryPattern !== undefined && b.patterns.secondary.includes(primaryPattern)) - Number(primaryPattern !== undefined && a.patterns.secondary.includes(primaryPattern)))[0];
   return best ? { id: itemId, exerciseId: best.id, prescription: { type: 'mobility', seconds, sides: 1 } } : undefined;
 }

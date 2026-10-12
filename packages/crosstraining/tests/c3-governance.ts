@@ -95,8 +95,15 @@ export const TEST_C3 = {
  * durée 45–75 min est une DÉCISION PRODUIT (2026-10-12) — cible, jamais une obligation de remplissage.
  */
 const FULL_PLAN = { required: ['warmup_general', 'warmup_specific', 'conditioning', 'cooldown'], optional: ['skill', 'accessory'] };
-const WARMUP = { generalS: { min: 300, max: 480 }, specificRounds: 2, specificFraction: 0.5 };
-const COOLDOWN = { easyS: { min: 180, max: 300 }, mobilityS: { min: 180, max: 300 } };
+// C4.2 — échauffement spécifique PROGRESSIF : 3 tours à ≈ 30 / 50 / 70 % des répétitions du bloc principal (jamais
+// 100 % : préparer sans pré-fatiguer), tour supplémentaire à 80 % si un mouvement a un coût technique ≥ 2 ; 3 accélérations
+// progressives (2 en variante courte) de 20 s (40 s de récupération) sur l'ergomètre d'un bloc principal non continu. Retour au calme raccourci
+// et plafonné à l'échauffement (S7). Hypothèses de programmation, à valider par un expert.
+const WARMUP = { generalS: { min: 300, max: 480 }, specificRamp: [0.3, 0.5, 0.7], technicalRamp: [0.8], technicalThreshold: 2, buildups: { rounds: { min: 2, max: 3 }, workS: 20, restS: 40 } };
+const COOLDOWN = { easyS: { min: 120, max: 240 }, mobilityPerMovementS: { min: 60, max: 90 }, maxMobilityMovements: 2, maxShareOfWarmup: 1 };
+// C4.2 — circuit au poids du corps : intervalles de 40 s ; impact plafonné à 1 (novice, débutant) ou 2 (intermédiaire, avancé).
+const CIRCUIT_LOW = { intervalS: 40, maxImpact: 1, maxDynamicPrep: 2 };
+const CIRCUIT = { intervalS: 40, maxImpact: 2, maxDynamicPrep: 2 };
 export const TEST_C4 = {
   'ct.c4.sessionPlan': {
     aerobic_capacity: FULL_PLAN, threshold: FULL_PLAN, anaerobic_intervals: FULL_PLAN, mixed_modal_medium: FULL_PLAN, muscular_endurance: FULL_PLAN,
@@ -106,6 +113,20 @@ export const TEST_C4 = {
   'ct.c4.warmup': { novice: WARMUP, beginner: WARMUP, intermediate: WARMUP, advanced: WARMUP },
   'ct.c4.cooldown': { novice: COOLDOWN, beginner: COOLDOWN, intermediate: COOLDOWN, advanced: COOLDOWN },
   'ct.c4.sessionDurationTarget': { minS: 2700, maxS: 4500 },
+  // Ordre = priorité gouvernée (premier mouvement éligible du rôle).
+  'ct.c4.generalWarmupPool': [
+    { movementId: 'ex.jumping_jack', role: 'pulse_raise', regions: ['full'] },
+    { movementId: 'ex.march_in_place', role: 'pulse_raise', regions: ['lower', 'full'] },
+    { movementId: 'ex.inchworm', role: 'dynamic_prep', regions: ['lower', 'upper', 'core'] },
+    { movementId: 'ex.leg_swings', role: 'dynamic_prep', regions: ['lower'] },
+    { movementId: 'ex.arm_circles', role: 'dynamic_prep', regions: ['upper'] },
+  ],
+  'ct.c4.generalWarmupCircuit': { novice: CIRCUIT_LOW, beginner: CIRCUIT_LOW, intermediate: CIRCUIT, advanced: CIRCUIT },
+  'ct.c4.mobilityPool': [
+    { movementId: 'ex.hip_mobility_flow', regions: ['lower'] },
+    { movementId: 'ex.shoulder_mobility_flow', regions: ['upper'] },
+    { movementId: 'ex.thoracic_mobility_flow', regions: ['upper', 'core'] },
+  ],
 } as const;
 
 

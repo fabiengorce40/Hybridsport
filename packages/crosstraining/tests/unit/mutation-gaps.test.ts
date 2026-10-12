@@ -29,7 +29,7 @@ describe('dépendances déclarées par capacité (table relue)', () => {
       ctWeeklyComposition: { d: ['CT-D10'], g: [], t: ['CT_CONTENT'] },
       ctHybridPlanning: { d: ['CT-D11'], g: [], t: ['GLOBAL_PLANNER'] },
       ctSessionComposition: { d: ['CT-D1', 'CT-D2', 'CT-D7', 'CT-D15', 'CT-D16'], g: ['CT-G1-PAIN', 'CT-G1-NOVICE', 'CT-G1-EXERTIONAL'], t: ['CT_CONTENT'] },
-      ctFullSessionComposition: { d: ['CT-D21'], g: [], t: ['CT_CONTENT'] },
+      ctFullSessionComposition: { d: ['CT-D21', 'CT-D22', 'CT-D23'], g: [], t: ['CT_CONTENT'] },
     });
     // Socle C2 : ni taxonomie (CT-D1) ni plafonds de volume (CT-D6) ; ils vivent dans les capacités qui en ont besoin.
     expect(CT_FOUNDATION_DEFINITION).toMatchObject({ parameters: ['ct.safety.novicePolicy', 'ct.return.protocol', 'ct.safety.novelEccentricVolume'], decisions: ['CT-G1'], g1Policies: ['CT-G1-PAIN', 'CT-G1-NOVICE', 'CT-G1-RETURN', 'CT-G1-EXERTIONAL'], technical: ['CT_CONTENT'] });

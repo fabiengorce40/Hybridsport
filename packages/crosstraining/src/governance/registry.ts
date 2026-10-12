@@ -77,6 +77,10 @@ export const CT_PARAMETER_REGISTRY_C1: readonly CtParameter[] = [
   unresolved('ct.c4.warmup', 'CT-D21', 'PRESCRIPTION', 's-rounds-fraction-per-level', 'EXPERT', 'échauffement (durée, tours, fraction des répétitions) non décidé'),
   unresolved('ct.c4.cooldown', 'CT-D21', 'PRESCRIPTION', 's-per-level', 'EXPERT', 'retour au calme (allure facile, mobilité) non décidé'),
   unresolved('ct.c4.sessionDurationTarget', 'CT-D21', 'PLANNING', 's', 'PRODUCT_AND_EXPERT', 'cible de durée de séance non décidée'),
+  // CT-D22 (C4.2) — échauffement sans ergomètre ; CT-D23 — mobilité de retour au calme (orientations S4 / S5 validées, valeurs non)
+  unresolved('ct.c4.generalWarmupPool', 'CT-D22', 'PRESCRIPTION', 'movement-role-regions', 'EXPERT', 'réservoir d’échauffement au poids du corps non décidé'),
+  unresolved('ct.c4.generalWarmupCircuit', 'CT-D22', 'PRESCRIPTION', 's-impact-per-level', 'EXPERT', 'circuit d’échauffement au poids du corps non décidé'),
+  unresolved('ct.c4.mobilityPool', 'CT-D23', 'PRESCRIPTION', 'movement-regions', 'EXPERT', 'réservoir de mobilité de retour au calme non décidé'),
   // CT-G1 — politiques de sécurité
   unresolved('ct.safety.novicePolicy', 'CT-G1', 'SAFETY', 'rule', 'G1_POLICY', 'exclusions novice non signées'),
   unresolved('ct.return.protocol', 'CT-G1', 'SAFETY', 'rule', 'G1_POLICY', 'protocole de reprise non signé'),

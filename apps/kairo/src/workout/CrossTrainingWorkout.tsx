@@ -161,15 +161,22 @@ const C4_BLOCK_TITLE: Readonly<Record<string, string>> = {
 };
 const C4_PURPOSE: Readonly<Record<string, string>> = {
   raise_temperature_easy_pace: 'Allure facile, progressive : préparer le corps',
+  raise_temperature_bodyweight_circuit: 'Circuit au poids du corps, enchaîné sans pause : préparer le corps',
   rehearse_main_block_movements_reduced_dose: 'Mouvements du bloc principal à dose réduite, sans charge',
+  rehearse_main_block_movements_progressive: 'Mouvements du bloc principal, répétitions croissantes à chaque tour, sans charge',
   return_to_calm_easy_pace_and_mobility: 'Allure facile puis mobilité',
+  return_to_calm_mobility: 'Mobilité, au calme',
+  progressive_buildups: 'Accélérations progressives sur l’ergomètre du bloc principal, récupération facile entre chaque',
 };
 
 /** Dose d'un item d'échauffement / retour au calme, lue dans la prescription PERSISTÉE (aucune reconstruction). */
 function supportDose(p: SessionDraft['blocks'][number]['items'][number]['prescription']): string {
-  if (p.type === 'timed') return formatChrono(p.workS * (p.rounds ?? 1));
+  if (p.type === 'timed') return (p.rounds ?? 1) > 1 ? `${String(p.rounds)} × ${formatChrono(p.workS)}` : formatChrono(p.workS);
   if (p.type === 'mobility') return formatChrono(p.seconds * (p.sides ?? 1));
-  if (p.type === 'sets') return `${String(p.sets.length)} × ${String(p.sets[0]?.reps ?? 0)} rép.`;
+  if (p.type === 'sets') {
+    const reps = p.sets.map((x) => (typeof x.reps === 'number' ? x.reps : 0));
+    return reps.every((r) => r === reps[0]) ? `${String(reps.length)} × ${String(reps[0] ?? 0)} rép.` : `${reps.join(' · ')} rép.`;
+  }
   return '';
 }
 
@@ -177,9 +184,10 @@ function supportDose(p: SessionDraft['blocks'][number]['items'][number]['prescri
 function SupportBlock({ b, session, done, editable, onToggle }: { b: C4BlockView; session: SessionDraft; done: boolean; editable: boolean; onToggle: (d: boolean) => void }) {
   const block = session.blocks.find((x) => x.id === b.blockId);
   if (!block) return null;
+  const title = b.purpose === 'progressive_buildups' ? 'Accélérations progressives' : C4_BLOCK_TITLE[b.block] ?? b.block;
   return (
-    <section aria-label={C4_BLOCK_TITLE[b.block] ?? b.block} className="k-ct-moves" data-c4-block={b.block}>
-      <div className="row between"><div className="k-ct-moves-title">{C4_BLOCK_TITLE[b.block] ?? b.block}</div><span className="k-ct-move-dose num">≈ {formatChrono(b.durationS)}</span></div>
+    <section aria-label={title} className="k-ct-moves" data-c4-block={b.block}>
+      <div className="row between"><div className="k-ct-moves-title">{title}</div><span className="k-ct-move-dose num">≈ {formatChrono(b.durationS)}</span></div>
       <div className="tiny muted">{C4_PURPOSE[b.purpose] ?? b.purpose}{block.format === 'sets' ? ` · ${String((block.items[0]?.prescription.type === 'sets' ? block.items[0].prescription.sets.length : 0))} tours en circuit` : ''}</div>
       <ol className="k-ct-list">
         {block.items.map((it) => (

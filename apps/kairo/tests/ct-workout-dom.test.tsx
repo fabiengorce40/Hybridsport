@@ -55,6 +55,10 @@ describe('séance Cross-training (DOM)', () => {
     expect(def).toContain('Non inclus');
     expect(def).toContain('le bloc technique');
     expect(document.querySelector('[data-c4-durations]')?.textContent).toContain('transitions comprises');
+    // C4.2 — échauffement spécifique progressif (répétitions croissantes) ; mobilité par régions (épaules incluses).
+    const spec = [...document.querySelectorAll('[data-c4-block="warmup_specific"]')].map((x) => x.textContent ?? '').join(' ');
+    expect(spec).toMatch(/\d+ · \d+ · \d+ rép\./);
+    expect(document.querySelector('[data-c4-block="cooldown"]')?.textContent).toContain('Mobilité épaules');
     expect(document.querySelector('[data-c4-block="warmup_general"]')?.textContent).toContain('Échauffement général');
     expect(document.querySelector('[data-c4-block="cooldown"]')?.textContent).toContain('Retour au calme');
     fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));

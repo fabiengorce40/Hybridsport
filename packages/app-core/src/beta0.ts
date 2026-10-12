@@ -387,7 +387,7 @@ export interface C4View {
   readonly notGenerated: readonly string[];
   /** Durée PLANIFIÉE de la séance complète (valeurs gouvernées), null hors séance complète. */
   readonly plannedDurationS: number | null;
-  /** Cible produit 45–75 min : position de la durée PLANIFIÉE (jamais remplie artificiellement). */
+  /** Cible produit 45–75 min : position de la durée ESTIMÉE par le CORE (S8), jamais remplie artificiellement. */
   readonly target: { readonly minS: number; readonly maxS: number; readonly position: string } | null;
   /**
    * C4.1 — durée ESTIMÉE par le CORE pour la séance complète (consignes et transitions comprises, médiane), null si
@@ -415,15 +415,27 @@ function c4ViewOf(reasons: readonly { readonly code: string; readonly params: Re
   const base = { cause: String(st.params.cause), notGenerated: strs(st.params.notGenerated) };
   if (!session) return { status: 'BLOCKED', ...base, plannedDurationS: null, target: null, estimatedDurationS: null, estimatedPosition: null, blocks: [] };
   if (status !== 'FULL_SESSION') return { status, ...base, plannedDurationS: null, target: null, estimatedDurationS: null, estimatedPosition: null, blocks: [] };
+  // C4.2 — l'échauffement spécifique peut porter un second bloc CORE (accélérations progressives sur l'ergomètre).
+  const timedS = (b: SessionDraft['blocks'][number]) => b.items.reduce((a, i) => a + (i.prescription.type === 'timed' ? i.prescription.workS * (i.prescription.rounds ?? 1) + i.prescription.restS * Math.max(0, (i.prescription.rounds ?? 1) - 1) : 0), 0);
   const blocks = reasons.filter((x) => x.code === C4_BLOCK).flatMap((x): C4BlockView[] => {
-    const b = session.blocks.find((y) => y.id.endsWith(`.c4.${String(x.params.block)}`));
-    return b ? [{ blockId: b.id, block: String(x.params.block), kind: String(x.params.kind), purpose: String(x.params.purpose), durationS: Number(x.params.durationS), exercises: strs(x.params.exercises) }] : [];
+    const name = String(x.params.block);
+    const b = session.blocks.find((y) => y.id.endsWith(`.c4.${name}`));
+    const extra = name === 'warmup_specific' ? session.blocks.find((y) => y.id.endsWith('.c4.warmup_buildups')) : undefined;
+    const view = (blk: SessionDraft['blocks'][number], durationS: number): C4BlockView => ({ blockId: blk.id, block: name, kind: String(x.params.kind), purpose: String(x.params.purpose), durationS, exercises: blk.items.map((i) => i.exerciseId) });
+    if (!b) return [];
+    return extra ? [view(b, Number(x.params.durationS) - timedS(extra)), { ...view(extra, timedS(extra)), purpose: 'progressive_buildups' }] : [view(b, Number(x.params.durationS))];
   });
   const declared = strs(st.params.generated).filter((x) => x !== 'conditioning');
-  if (declared.length !== blocks.length || declared.some((d) => !blocks.some((b) => b.block === d))) return { status: 'MAIN_BLOCK_ONLY', ...base, cause: 'PERSISTED_BLOCKS_MISMATCH', plannedDurationS: null, target: null, estimatedDurationS: null, estimatedPosition: null, blocks: [] };
+  const names = [...new Set(blocks.map((b) => b.block))];
+  if (declared.length !== names.length || declared.some((d) => !names.includes(d))) return { status: 'MAIN_BLOCK_ONLY', ...base, cause: 'PERSISTED_BLOCKS_MISMATCH', plannedDurationS: null, target: null, estimatedDurationS: null, estimatedPosition: null, blocks: [] };
   const num = Number(st.params.plannedDurationS);
-  const target = { minS: Number(st.params.targetMinS), maxS: Number(st.params.targetMaxS), position: String(st.params.target) };
-  const estimatedPosition = estimateS === null ? null : estimateS < target.minS ? 'below' : estimateS > target.maxS ? 'above' : 'within';
+  const minS = Number(st.params.targetMinS);
+  const maxS = Number(st.params.targetMaxS);
+  // S8 (C4.2) — référence de la cible produit : estimation du CORE (consignes et transitions comprises). Sans estimation,
+  // position inconnue (jamais la durée des blocs) ; la position tracée par une version antérieure reste lisible en repli.
+  const estimatedPosition = estimateS === null ? null : estimateS < minS ? 'below' : estimateS > maxS ? 'above' : 'within';
+  const traced = String(st.params.target);
+  const target = { minS, maxS, position: estimatedPosition ?? (traced === 'core_estimate' ? 'unknown' : traced) };
   return { status, ...base, plannedDurationS: Number.isFinite(num) && num > 0 ? num : null, target, estimatedDurationS: estimateS, estimatedPosition, blocks };
 }
 const NOT_GENERATED = /^PLAN\.(CROSSTRAINING\.C3|HYROX\.H2)_BLOCK_NOT_GENERATED$/;
