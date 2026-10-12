@@ -2,7 +2,7 @@
  * Fixtures C3.5 (tests app-core) : profils Beta 0 avec Cross-training, horloge, lecture des décisions C3 PERSISTÉES.
  * Toutes les valeurs sportives viennent de l'environnement Beta 0 (gouvernance C3 TEST_ONLY, SIMULATION_ONLY).
  */
-import { createBeta0Programme, emptyState, EQUIPMENT_PRESETS, finishProgrammeSession, loadState, MemoryStorage, saveState, selectBeta0Week, startProgrammeSession } from '../../src/index.js';
+import { controlCtTimer, createBeta0Programme, emptyState, EQUIPMENT_PRESETS, finishProgrammeSession, loadState, MemoryStorage, saveState, selectBeta0Week, startProgrammeSession } from '../../src/index.js';
 import type { AppState, Clock, FinishInput, ProfileInput } from '../../src/index.js';
 
 export const fullGym = EQUIPMENT_PRESETS.find((p) => p.id === 'preset.full_gym')?.equipment ?? [];
@@ -40,9 +40,19 @@ export function request(s: AppState, requestId: string) {
 /** Décisions C3 PERSISTÉES de la séance (code → params). */
 export const decisions = (s: AppState, requestId: string, code: string) => (request(s, requestId)?.reasons ?? []).filter((r) => r.code.endsWith(code)).map((r) => r.params);
 
+/**
+ * C4 — démarre la séance ET le chrono du bloc principal au même instant (séance complète : l'échauffement précède le
+ * bloc principal, dont le chrono démarre sur commande explicite). Sans échauffement : identique au démarrage seul.
+ */
+export function startCt(s: AppState, clock: Clock, requestId: string): AppState {
+  const started = startProgrammeSession(s, clock, requestId);
+  const rt = started.programmeLogs[requestId]?.ct;
+  return rt && rt.runningSince === null && rt.accumulatedS === 0 ? controlCtTimer(started, clock, requestId, 'resume') : started;
+}
+
 /** Démarre puis termine une séance CT à un instant donné. */
 export function doCt(s: AppState, requestId: string, startIso: string, endIso: string, f: Omit<FinishInput, 'requestId'>): AppState {
-  const started = startProgrammeSession(s, at(startIso), requestId);
+  const started = startCt(s, at(startIso), requestId);
   return finishProgrammeSession(started, at(endIso), { requestId, ...f });
 }
 

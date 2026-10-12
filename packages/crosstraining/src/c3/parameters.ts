@@ -25,6 +25,10 @@ const stimulus = z.enum(CT_STIMULI);
 const format = z.enum(CT_FORMATS);
 const role = z.enum(CT_MOVEMENT_ROLES);
 const perLevel = <T extends z.ZodType>(t: T) => z.partialRecord(level, t);
+const span = z.object({ min: positive, max: positive }).strict().refine((d) => d.min <= d.max, 'min ≤ max');
+/** Blocs d'une séance complète C4 (plan) ; seuls certains sont composables en C4 v1. */
+export const C4_BLOCKS = ['warmup_general', 'warmup_specific', 'skill', 'strength', 'conditioning', 'accessory', 'cooldown'] as const;
+export type C4Block = (typeof C4_BLOCKS)[number];
 
 /** Quantité par rôle (ce que l'athlète reçoit), dans l'unité NATIVE du mouvement ; aucune conversion. */
 export const zRoleQuantity = z.discriminatedUnion('kind', [
@@ -78,6 +82,14 @@ export const PARAMETER_SCHEMAS = {
   }).strict(),
   /** Interprétation des voisines transportées : niveaux de demande d'une voisine qui font ÉVITER (jamais exclure) un mouvement. */
   'ct.hybrid.policy': z.object({ avoidNeighbourLevels: z.array(z.enum(DEMAND_LEVELS)) }).strict(),
+  /** C4 — blocs REQUIS / FACULTATIFS d'une séance complète, par stimulus (hypothèse experte). */
+  'ct.c4.sessionPlan': z.partialRecord(stimulus, z.object({ required: z.array(z.enum(C4_BLOCKS)), optional: z.array(z.enum(C4_BLOCKS)) }).strict()),
+  /** C4 — échauffement : durée générale (bornes), tours et fraction des répétitions du bloc principal pour l'échauffement spécifique. */
+  'ct.c4.warmup': perLevel(z.object({ generalS: span, specificRounds: positiveInt, specificFraction: z.number().positive().max(1) }).strict()),
+  /** C4 — retour au calme : allure facile (bornes), mobilité (bornes). */
+  'ct.c4.cooldown': perLevel(z.object({ easyS: span, mobilityS: span }).strict()),
+  /** C4 — cible de durée d'une séance complète (décision produit) : jamais une obligation de remplissage. */
+  'ct.c4.sessionDurationTarget': z.object({ minS: positive, maxS: positive }).strict().refine((d) => d.minS <= d.maxS, 'minS ≤ maxS'),
   /** Charge d'implément par mouvement et par niveau (kg). */
   'ct.load.implementStandards': z.record(z.string().min(1), perLevel(positive)),
 } as const;

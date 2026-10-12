@@ -147,6 +147,7 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   CT_DECLARATION_MISSING: 'Cross-training : choisissez une intention, un nombre de séances et indiquez une éventuelle coupure.',
   CT_INTENT_UNKNOWN: 'Cross-training : intention inconnue.',
   CT_PROGRESS_INVALID: 'Valeur de progression invalide.',
+  CT_BLOCK_UNKNOWN: 'Bloc inconnu dans cette séance.',
   HR_DECLARATION_MISSING: 'HYROX : choisissez un type de séance, un objectif, un nombre de séances et indiquez une éventuelle coupure.',
   HR_ROLE_UNKNOWN: 'HYROX : type de séance inconnu.',
   HR_PROGRESS_INVALID: 'Étape hors de la séance prescrite.',

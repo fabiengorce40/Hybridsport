@@ -7,9 +7,9 @@
 import { describe, expect, it } from 'vitest';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { controlCtTimer, ensureBeta0Week, recordCtProgress, selectHistory, selectProgrammeSession, startProgrammeSession, finishProgrammeSession } from '../../src/index.js';
+import { controlCtTimer, ensureBeta0Week, recordCtProgress, selectHistory, selectProgrammeSession, finishProgrammeSession } from '../../src/index.js';
 import type { AppState } from '../../src/index.js';
-import { at, create, ctSessions, decisions, fullGym, MON1, MON2, profile, reload } from './ct-fixtures.js';
+import { at, create, ctSessions, decisions, fullGym, MON1, MON2, profile, reload, startCt } from './ct-fixtures.js';
 
 const fmt = (v: unknown) => JSON.stringify(v);
 const request0 = (s: AppState, id: string) => decisions(s, id, 'C3_FORMAT_REJECTED');
@@ -39,7 +39,7 @@ describe('C3.5 — moteur → terrain → moteur', () => {
     if (!A) throw new Error('séance A attendue');
     lines.push(...describeSession(s, A.requestId, 'A — composée par C3 (semaine 1)'));
     // Exécution réelle : départ 07:30, 2 tours, 5 répétitions, pause / reprise, fin 07:45.
-    s = startProgrammeSession(s, at(MON1), A.requestId);
+    s = startCt(s, at(MON1), A.requestId);
     s = recordCtProgress(s, A.requestId, { rounds: 2 });
     s = recordCtProgress(s, A.requestId, { partialReps: 5 });
     s = controlCtTimer(s, at('2026-10-05T07:35:00.000Z'), A.requestId, 'pause');
@@ -58,11 +58,11 @@ describe('C3.5 — moteur → terrain → moteur', () => {
     if (!B) throw new Error('séance B attendue');
     lines.push(...describeSession(s, B.requestId, 'B — composée par C3 (semaine 2), en connaissance de A'));
     const seen = decisions(s, B.requestId, 'C3_HISTORY')[0];
-    const aMoves = (selectProgrammeSession(s, A.requestId)?.session.blocks[0]?.items ?? []).map((i) => i.exerciseId);
+    const aMoves = (selectProgrammeSession(s, A.requestId)?.session.blocks.find((b) => b.kind === 'conditioning')?.items ?? []).map((i) => i.exerciseId);
     expect(seen?.sameStimulus).toBeGreaterThanOrEqual(1);
     for (const m of aMoves) expect(seen?.recentMovements).toContain(m);
-    const bFormat = selectProgrammeSession(s, B.requestId)?.session.blocks[0]?.format;
-    expect(bFormat).not.toBe(selectProgrammeSession(s, A.requestId)?.session.blocks[0]?.format);
+    const bFormat = selectProgrammeSession(s, B.requestId)?.session.blocks.find((b) => b.kind === 'conditioning')?.format;
+    expect(bFormat).not.toBe(selectProgrammeSession(s, A.requestId)?.session.blocks.find((b) => b.kind === 'conditioning')?.format);
     expect(decisions(s, B.requestId, 'C3_FORMAT_CHOSEN')[0]?.criteria).toContain('not_used_in_window');
     lines.push(`- **Influence de A sur B** : B lit A (${String(seen?.sameStimulus)} séance(s) du stimulus, mouvements récents ${fmt(seen?.recentMovements)}), choisit un format non utilisé dans la fenêtre (\`${String(bFormat)}\`, critère \`not_used_in_window\`).`, '');
   });
@@ -72,7 +72,7 @@ describe('C3.5 — moteur → terrain → moteur', () => {
     let s = create(profile({ equipment: [...fullGym, 'skierg'] }));
     const A = ctSessions(s)[0];
     if (!A) throw new Error('séance A attendue');
-    s = startProgrammeSession(s, at(MON1), A.requestId);
+    s = startCt(s, at(MON1), A.requestId);
     s = finishProgrammeSession(s, at('2026-10-05T07:40:00.000Z'), { requestId: A.requestId, completion: 'abandoned', pain: false });
     expect(s.crosstraining.realized[0]).toMatchObject({ completion: 'abandoned', result: { kind: 'abandoned' } });
     s = ensureBeta0Week(reload(s, '2026-10-05T08:00:00.000Z'), at(MON2));
@@ -80,8 +80,8 @@ describe('C3.5 — moteur → terrain → moteur', () => {
     if (!B) throw new Error('séance B attendue');
     const neg = decisions(s, B.requestId, 'C3_HISTORY_NEGATIVE')[0];
     expect(neg).toMatchObject({ sessionId: A.requestId, causes: ['abandoned'], action: 'exclude_movements' });
-    const aMoves = (selectProgrammeSession(s, A.requestId)?.session.blocks[0]?.items ?? []).map((i) => i.exerciseId);
-    const bMoves = (selectProgrammeSession(s, B.requestId)?.session.blocks[0]?.items ?? []).map((i) => i.exerciseId);
+    const aMoves = (selectProgrammeSession(s, A.requestId)?.session.blocks.find((b) => b.kind === 'conditioning')?.items ?? []).map((i) => i.exerciseId);
+    const bMoves = (selectProgrammeSession(s, B.requestId)?.session.blocks.find((b) => b.kind === 'conditioning')?.items ?? []).map((i) => i.exerciseId);
     for (const m of aMoves) expect(bMoves).not.toContain(m);
     lines.push('### Variante — A abandonnée', '', `- Décision persistée de B : ${fmt(neg)}`, `- Mouvements de A : ${aMoves.join(', ')} ; mouvements de B : ${bMoves.join(', ')} (aucun en commun)`, '');
   });
@@ -90,7 +90,7 @@ describe('C3.5 — moteur → terrain → moteur', () => {
     let s = create();
     const A = ctSessions(s)[0];
     if (!A) throw new Error('séance A attendue');
-    s = startProgrammeSession(s, at(MON1), A.requestId);
+    s = startCt(s, at(MON1), A.requestId);
     s = finishProgrammeSession(s, at('2026-10-05T07:40:00.000Z'), { requestId: A.requestId, completion: 'abandoned', pain: false });
     s = ensureBeta0Week(s, at(MON2));
     const refused = ctSessions(s, MON2);

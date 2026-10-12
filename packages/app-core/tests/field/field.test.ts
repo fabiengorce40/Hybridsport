@@ -9,7 +9,7 @@ import {
   betaJournalText, compositionScopeOf, ctWorkoutOf, selectProgrammeSession, decodeState, ensureBeta0Week, exportBetaJournal, exportState, FIELD_COMMENT_MAX, finishProgrammeSession, recordFieldFeedback,
   recreateBeta0Programme, selectBetaJournal, selectFieldHistory, startProgrammeSession, zAppState,
 } from '../../src/index.js';
-import type { AppState, FieldFeedbackInput } from '../../src/index.js';
+import type { AppState, FieldFeedbackInput, SessionDraft } from '../../src/index.js';
 import { at, create, doHr, hrProfile, MON1, MON2, reload, ROLE, week } from '../hr/hr-fixtures.js';
 
 const code = (f: () => unknown): string => { try { f(); return 'OK'; } catch (e) { return (e as { code?: string }).code ?? String(e); } };
@@ -212,8 +212,11 @@ describe('FIELD TEST P0 — un bloc n’est pas une séance complète', () => {
   const i = ids(s0);
   const view = (id: string) => week(s0)?.sessions.find((x) => x.requestId === id);
 
-  it('P0-1. Cross-training C3 : bloc principal seul, échauffement non généré ⇒ TRAINING_BLOCK (lu dans le contrat persisté)', () => {
-    expect(view(i.ct)?.composition).toMatchObject({ scope: 'TRAINING_BLOCK', notGenerated: ['warmup'], status: 'FULL_SESSION_COMPOSITION_UNRESOLVED' });
+  it('P0-1 (C4). Cross-training Beta 0 : séance complète EXPÉRIMENTALE tracée par C4 (échauffements, bloc principal, retour au calme), blocs non composables listés', () => {
+    const c = view(i.ct)?.composition;
+    expect(c).toMatchObject({ scope: 'FULL_SESSION', status: null, c4: { status: 'FULL_SESSION' } });
+    expect(c?.c4?.blocks.map((b) => b.block)).toEqual(expect.arrayContaining(['warmup_general', 'cooldown']));
+    expect(c?.notGenerated).toEqual(expect.arrayContaining(['skill', 'accessory']));
   });
   it('P0-2. HYROX H2 : bloc spécifique seul, échauffement et retour au calme non générés ⇒ TRAINING_BLOCK', () => {
     expect(view(i.hyrox)?.composition).toMatchObject({ scope: 'TRAINING_BLOCK', notGenerated: ['warmup', 'cooldown'], status: 'FULL_SESSION_COMPOSITION_UNRESOLVED' });
@@ -224,7 +227,7 @@ describe('FIELD TEST P0 — un bloc n’est pas une séance complète', () => {
     expect(view(i.unplaced)?.placement).toBe('composed_unplaced');
   });
   it('P0-4. fail-closed : prescription valide SANS trace de structure ⇒ jamais « séance complète »', () => {
-    const strip = (s: AppState): AppState => ({ ...s, planner: { weeks: Object.fromEntries(Object.entries(s.planner.weeks).map(([k, w]) => [k, { ...w, requests: w.requests.map((r) => ({ ...r, reasons: r.reasons.filter((x) => !/(C3_STRUCTURE|H2_SESSION_STRUCTURE|BLOCK_NOT_GENERATED)$/.test(x.code)) })) }])) } });
+    const strip = (s: AppState): AppState => ({ ...s, planner: { weeks: Object.fromEntries(Object.entries(s.planner.weeks).map(([k, w]) => [k, { ...w, requests: w.requests.map((r) => ({ ...r, reasons: r.reasons.filter((x) => !/(C3_STRUCTURE|H2_SESSION_STRUCTURE|BLOCK_NOT_GENERATED|C4_SESSION_STATUS)$/.test(x.code)) })) }])) } });
     const v = selectBetaJournal(strip(s0)).find((x) => x.requestId === i.ct);
     expect(v?.composition?.scope).toBe('TRAINING_BLOCK');
   });
@@ -232,17 +235,27 @@ describe('FIELD TEST P0 — un bloc n’est pas une séance complète', () => {
     const only = (s: AppState): AppState => ({ ...s, planner: { weeks: Object.fromEntries(Object.entries(s.planner.weeks).map(([k, w]) => [k, { ...w, requests: w.requests.map((r) => ({ ...r, reasons: r.reasons.filter((x) => !/BLOCK_NOT_GENERATED$/.test(x.code)) })) }])) } });
     expect(selectBetaJournal(only(s0)).find((x) => x.requestId === i.hyrox)?.composition?.scope).toBe('FULL_SESSION');
   });
-  it('P0-6. la prescription n’est pas modifiée : un seul bloc, durée du bloc inchangée (aucune durée totale inventée)', () => {
+  it('P0-6 (C4). bloc principal unique et inchangé ; blocs complémentaires échauffement / retour au calme seulement ; durée planifiée tracée, jamais la cible', () => {
     const v = view(i.ct);
     const r = Object.values(s0.planner.weeks).flatMap((w) => w.requests).find((x) => x.requestId === i.ct);
-    const blocks = (r?.record?.data as { session?: { blocks?: unknown[] } } | undefined)?.session?.blocks ?? [];
-    expect(blocks).toHaveLength(1);
-    expect(v?.estimatedDurationS).toBeLessThan(v?.targetDurationS ?? 0);
+    const blocks = (r?.record?.data as { session?: { blocks?: { kind: string }[] } } | undefined)?.session?.blocks ?? [];
+    expect(blocks.filter((b) => b.kind === 'conditioning')).toHaveLength(1);
+    expect(blocks.every((b) => ['warmup', 'conditioning', 'cooldown'].includes(b.kind))).toBe(true);
+    expect(v?.composition?.c4?.plannedDurationS).toBeGreaterThan(v?.composition?.blockDurationS ?? Infinity);
+    expect(v?.composition?.c4?.plannedDurationS).toBeLessThanOrEqual(v?.composition?.availableTimeS ?? 0);
+  });
+  it('P0-6b (C4). fail-closed : bloc déclaré généré ABSENT de la séance persistée ⇒ bloc principal uniquement', () => {
+    const r = Object.values(s0.planner.weeks).flatMap((w) => w.requests).find((x) => x.requestId === i.ct);
+    const data = r?.record?.data as { session: SessionDraft };
+    const session = { ...data.session, blocks: data.session.blocks.filter((b) => b.kind !== 'cooldown') };
+    const c = compositionScopeOf({ sport: 'crosstraining', reasons: r?.reasons ?? [], record: { ...(r?.record as NonNullable<typeof r>['record'] & object), data: { ...data, session } } });
+    expect(c).toMatchObject({ scope: 'TRAINING_BLOCK', c4: { status: 'MAIN_BLOCK_ONLY', cause: 'PERSISTED_BLOCKS_MISMATCH' } });
   });
   it('P0-7. journal Beta et export : FULL_SESSION_COMPOSITION_UNRESOLVED enregistré', () => {
     const j = selectBetaJournal(s0);
-    expect(j.filter((e) => e.composition?.status === 'FULL_SESSION_COMPOSITION_UNRESOLVED').map((e) => e.sport).sort()).toEqual(['crosstraining', 'hyrox']);
-    expect(betaJournalText(s0, { build: 'x', builtAt: null, exportedAt: MON1 })).toContain('composition : TRAINING_BLOCK · FULL_SESSION_COMPOSITION_UNRESOLVED (non générés : warmup)');
+    expect(j.filter((e) => e.composition?.status === 'FULL_SESSION_COMPOSITION_UNRESOLVED').map((e) => e.sport).sort()).toEqual(['hyrox']);
+    expect(betaJournalText(s0, { build: 'x', builtAt: null, exportedAt: MON1 })).toContain('composition : TRAINING_BLOCK · FULL_SESSION_COMPOSITION_UNRESOLVED (non générés : warmup, cooldown)');
+    expect(betaJournalText(s0, { build: 'x', builtAt: null, exportedAt: MON1 })).toContain('séance C4 (expérimentale) : FULL_SESSION');
   });
   it('P0-8. retour terrain spécifique au bloc : contenu et suffisance pour une séance complète, observations seulement', () => {
     let s = finish(s0, i.ct, { completion: 'abandoned', pain: false });
@@ -265,7 +278,7 @@ describe('FIELD TEST P0 — un bloc n’est pas une séance complète', () => {
     expect(view(i.hyrox)?.composition?.blockDurationS).toBe(view(i.hyrox)?.hrTimeCapS);
   });
   it('P0-10. ancienne donnée sans prescription lisible : portée bloc, durées nulles (jamais inventées)', () => {
-    expect(compositionScopeOf({ sport: 'crosstraining', reasons: [] })).toEqual({ scope: 'TRAINING_BLOCK', notGenerated: [], status: 'FULL_SESSION_COMPOSITION_UNRESOLVED', blockDurationS: null, availableTimeS: null, targetDurationS: null });
+    expect(compositionScopeOf({ sport: 'crosstraining', reasons: [] })).toEqual({ scope: 'TRAINING_BLOCK', notGenerated: [], status: 'FULL_SESSION_COMPOSITION_UNRESOLVED', blockDurationS: null, availableTimeS: null, targetDurationS: null, c4: null });
     expect(compositionScopeOf({ sport: 'strength', reasons: [] })).toBeNull();
   });
 });

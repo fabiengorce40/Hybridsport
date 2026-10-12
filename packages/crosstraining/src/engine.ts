@@ -22,6 +22,7 @@ import { parseCrossTrainingContext } from './context.js';
 import type { CrossTrainingContext } from './context.js';
 import { analyzeCrossTraining } from './analysis.js';
 import { composeC3 } from './c3/compose.js';
+import { composeC4 } from './c4/compose.js';
 import type { C3Outcome } from './c3/compose.js';
 import type { CtAnalysis } from './analysis.js';
 import { CURRENT_CT_GOVERNANCE, governanceIssues } from './governance/state.js';
@@ -73,7 +74,10 @@ export function createCrossTrainingEngine(options: CrossTrainingEngineOptions = 
   const engineRef = { id: CT_ENGINE_ID, version: CT_ENGINE_VERSION };
   const compose = (input: SportEngineInput<CrossTrainingContext>): C3Outcome | undefined => {
     const stimulus = stimulusFromArchetypeId(input.intent.archetypeId);
-    return stimulus === undefined ? undefined : composeC3(input, stimulus, governance, simulation, engineRef);
+    if (stimulus === undefined) return undefined;
+    const c3 = composeC3(input, stimulus, governance, simulation, engineRef);
+    // C4 (expérimental) : séance complète autour du bloc principal si le plan est gouverné ; sinon bloc C3 inchangé.
+    return c3.ok ? { ...c3, proposal: composeC4(input, stimulus, c3, governance).proposal } : c3;
   };
 
   return {
@@ -201,6 +205,21 @@ const prescriptive = (blocks: readonly unknown[]): string => canonicalStringify(
  * `NO_VALID_SOLUTION` (C2_MODIFIED_BY_CORE) : un rejeu ou un amorçage modifié n'est jamais publié.
  */
 export function runCrossTrainingC2(engine: CrossTrainingEngine, request: SportSessionRequest, ctx: EngineContext<LoadedRuleset, LoadedCatalog>): CorePipelineOutcome {
+  const outcome = runOnce(engine, request, ctx);
+  // C4 — repli fail-closed : si le CORE refuse la séance COMPLÈTE, le bloc principal C3 seul est recomposé (inchangé)
+  // et le statut C4 « bloc principal uniquement » est tracé ; jamais de séance complète non validée par le CORE.
+  const dc = request.disciplineContext as { readonly capabilityRequests?: readonly string[] } | null;
+  const requests = Array.isArray(dc?.capabilityRequests) ? dc.capabilityRequests : [];
+  if (outcome.result.status === 'ok' || !requests.includes('ctFullSessionComposition')) return outcome;
+  const fallback = runOnce(engine, { ...request, disciplineContext: { ...(dc as object), capabilityRequests: requests.filter((x) => x !== 'ctFullSessionComposition') } }, ctx);
+  if (fallback.result.status !== 'ok') return outcome;
+  const reason = ctReasons.emit(CT_CODES.C4_SESSION_STATUS, {
+    status: 'MAIN_BLOCK_ONLY', generated: ['conditioning'], notGenerated: [], cause: 'CORE_REFUSED_FULL_SESSION', plannedDurationS: 0, targetMinS: 0, targetMaxS: 0, target: 'unknown', variant: 'none',
+  });
+  return { ...fallback, result: { ...fallback.result, warnings: [...fallback.result.warnings, reason] } };
+}
+
+function runOnce(engine: CrossTrainingEngine, request: SportSessionRequest, ctx: EngineContext<LoadedRuleset, LoadedCatalog>): CorePipelineOutcome {
   let proposed: unknown;
   const watched: CrossTrainingEngine = {
     ...engine,

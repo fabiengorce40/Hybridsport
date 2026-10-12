@@ -90,6 +90,24 @@ export const TEST_C3 = {
   'ct.load.percentE1rmByStimulus': { testOnly: true },
 } as const;
 /* fin du bloc TEST_ONLY */
+/**
+ * C4 — séance complète : HYPOTHÈSES à valider (aucune n'est approuvée ni scientifiquement validée). Seule la cible de
+ * durée 45–75 min est une DÉCISION PRODUIT (2026-10-12) — cible, jamais une obligation de remplissage.
+ */
+const FULL_PLAN = { required: ['warmup_general', 'warmup_specific', 'conditioning', 'cooldown'], optional: ['skill', 'accessory'] };
+const WARMUP = { generalS: { min: 300, max: 480 }, specificRounds: 2, specificFraction: 0.5 };
+const COOLDOWN = { easyS: { min: 180, max: 300 }, mobilityS: { min: 180, max: 300 } };
+export const TEST_C4 = {
+  'ct.c4.sessionPlan': {
+    aerobic_capacity: FULL_PLAN, threshold: FULL_PLAN, anaerobic_intervals: FULL_PLAN, mixed_modal_medium: FULL_PLAN, muscular_endurance: FULL_PLAN,
+    strength_plus_conditioning: { required: ['warmup_general', 'strength', 'conditioning', 'cooldown'], optional: [] },
+    skill_plus_conditioning: { required: ['warmup_general', 'skill', 'conditioning', 'cooldown'], optional: [] },
+  },
+  'ct.c4.warmup': { novice: WARMUP, beginner: WARMUP, intermediate: WARMUP, advanced: WARMUP },
+  'ct.c4.cooldown': { novice: COOLDOWN, beginner: COOLDOWN, intermediate: COOLDOWN, advanced: COOLDOWN },
+  'ct.c4.sessionDurationTarget': { minS: 2700, maxS: 4500 },
+} as const;
+
 
 export interface C3GovOptions {
   /** Paramètres à laisser NON RÉSOLUS (valeur réelle du registre). */
@@ -98,6 +116,8 @@ export interface C3GovOptions {
   readonly override?: Readonly<Record<string, unknown>>;
   /** Charges : CORE_EXT_C1 déclaré satisfait + standards d'implément (TEST_ONLY). */
   readonly loads?: boolean;
+  /** C4 (séance complète, expérimental) : plan, échauffement, retour au calme, cible produit (TEST_ONLY). */
+  readonly c4?: boolean;
   /** Multisport : planificateur global déclaré satisfait + `ct.hybrid.policy` (TEST_ONLY). */
   readonly hybrid?: boolean;
 }
@@ -110,7 +130,7 @@ export function c3Governance(o: C3GovOptions = {}): CtGovernance {
     technical: { ...CURRENT_CT_GOVERNANCE.technical, CT_CONTENT: 'SATISFIED', ...(o.loads ? { CORE_EXT_C1: 'SATISFIED' as const } : {}), ...(o.hybrid === false ? {} : { GLOBAL_PLANNER: 'SATISFIED' as const }) },
   };
   for (const id of ['ct.return.protocol', 'ct.safety.novelEccentricVolume', 'ct.history.anchorPolicy', 'ct.history.completionCriterion']) g = withParameter(g, id, (p: CtParameter) => candidate(p));
-  const values: Record<string, unknown> = { ...TEST_C3, ...(o.override ?? {}) };
+  const values: Record<string, unknown> = { ...TEST_C3, ...(o.c4 ? TEST_C4 : {}), ...(o.override ?? {}) };
   for (const [id, v] of Object.entries(values)) {
     if (o.unresolved?.includes(id)) continue;
     if (!o.loads && id.startsWith('ct.load.')) continue;

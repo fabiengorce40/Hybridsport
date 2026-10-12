@@ -41,10 +41,25 @@ describe('séance Cross-training (DOM)', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Planning' }));
     const card = screen.getAllByRole('button', { name: /^Cross-training : Mixte/ })[0] as HTMLElement;
     expect(card.textContent).toContain('AMRAP');
+    expect(card.querySelector('[data-block-scope="FULL_SESSION"]')?.textContent).toContain('Séance complète expérimentale');
     fireEvent.click(card);
     expect(screen.getByRole('heading', { name: 'Mixte', level: 1 })).toBeTruthy();
     expect(screen.queryByLabelText('Répétitions réalisées')).toBeNull();
+    // C4 — séance complète EXPÉRIMENTALE : statut, blocs détaillés avant / après le bloc principal.
+    expect(document.querySelector('[data-c4-status]')?.textContent).toContain('Séance complète expérimentale');
+    expect(document.querySelector('[data-c4-experimental]')?.textContent).toContain('non validées');
+    expect(document.querySelector('[data-c4-block="warmup_general"]')?.textContent).toContain('Échauffement général');
+    expect(document.querySelector('[data-c4-block="cooldown"]')?.textContent).toContain('Retour au calme');
     fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));
+    // Le chrono du bloc principal ne démarre pas pendant l'échauffement (démarrage explicite).
+    expect(screen.getByRole('timer', { name: 'Chrono de la séance' }).textContent).toContain('PRÊT');
+    const total = document.querySelectorAll('[data-c4-block]').length + 1;
+    expect(document.querySelector('[data-c4-progress]')?.textContent).toContain(`0 / ${String(total)}`);
+    for (const b of document.querySelectorAll('[data-c4-block^="warmup"]')) fireEvent.click(within(b as HTMLElement).getByRole('button', { name: 'Marquer le bloc terminé' }));
+    const warmups = document.querySelectorAll('[data-c4-block^="warmup"]').length;
+    expect(document.querySelector('[data-c4-progress]')?.textContent).toContain(`${String(warmups)} / ${String(total)}`);
+    expect(Object.values(saved(storage).programmeLogs)[0]?.ct?.blocksDone).toHaveLength(warmups);
+    fireEvent.click(screen.getByRole('button', { name: 'Démarrer le bloc principal' }));
     expect(screen.getByRole('timer', { name: 'Chrono de la séance' })).toBeTruthy();
     // Deux tours, puis 5 répétitions du tour en cours (valeurs absolues persistées à chaque appui).
     fireEvent.click(screen.getByRole('button', { name: 'Tours complets : plus un' }));

@@ -14,6 +14,8 @@ const URL_ = process.env.E2E_URL ?? 'http://localhost:4173/';
 const shots = process.argv[2];
 const fail = (m) => { console.error(`ÉCHEC : ${m}`); process.exit(1); };
 const check = (cond, m) => { if (!cond) fail(m); console.log(`ok  ${m}`); };
+// C4 — séance Cross-training complète : le chrono du bloc principal démarre sur commande explicite (après l'échauffement).
+async function startMain(p) { const b = p.getByRole('button', { name: 'Démarrer le bloc principal' }); if (await b.count() > 0) await b.click(); }
 
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
@@ -71,6 +73,7 @@ check(!/str_full_body|running\.|WEEK_|COMPOSITION/.test(t), 'aucun code interne 
 // Séance Musculation.
 await page.getByRole('button', { name: /^Musculation : Full body/ }).first().click();
 await page.getByRole('button', { name: 'Commencer la séance' }).click();
+await startMain(page);
 const reps = page.getByLabel('Répétitions réalisées');
 const kg = page.getByLabel('Charge (kg)');
 await reps.nth(0).fill('6');
@@ -108,6 +111,7 @@ await page.getByRole('button', { name: 'Planning', exact: true }).click();
 await page.getByRole('button', { name: /^Course : / }).first().click();
 await shot('10-course');
 await page.getByRole('button', { name: 'Commencer la séance' }).click();
+await startMain(page);
 await page.getByRole('button', { name: 'Terminer la séance' }).click();
 await page.getByRole('radio', { name: 'Tout s’est passé comme prévu' }).click();
 await page.getByLabel(/Durée totale courue/).fill('31');
@@ -277,6 +281,7 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
   const st = () => p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
   await p.getByRole('button', { name: /^Musculation : Haut du corps/ }).first().click();
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  await startMain(p);
   const ex = p.locator('section.k-ex').first();
   const line = ex.locator('.k-set:not(.warm)').first();
   await line.getByLabel('Répétitions réalisées').fill('6');
@@ -359,6 +364,7 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
   check(await p.getByRole('heading', { name: 'Mixte', level: 1 }).isVisible() && (await p.locator('body').innerText()).includes('max de tours'), `${tag} AMRAP ouvert : intention, format, durée`);
   check(await p.getByLabel('Répétitions réalisées').count() === 0, `${tag} aucun repli Strength (pas de séries)`);
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  await startMain(p);
   const timer = p.getByRole('timer', { name: 'Chrono de la séance' });
   check(await timer.isVisible(), `${tag} chrono démarré`);
   await p.getByRole('button', { name: 'Tours complets : plus un' }).click();
@@ -393,6 +399,7 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
   await p.getByRole('button', { name: 'Planning', exact: true }).click();
   await p.locator('.card', { hasText: 'EMOM' }).first().click();
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  await startMain(p);
   check((await timer.innerText()).includes('Minute 1'), `${tag} EMOM : minute 1`);
   await p.clock.fastForward('01:05');
   await p.waitForTimeout(1200);
@@ -416,6 +423,7 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
   await p.getByRole('button', { name: 'Planning', exact: true }).click();
   await p.locator('.card', { hasText: 'For time' }).first().click();
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  await startMain(p);
   check((await timer.innerText()).includes('Temps écoulé') && (await timer.innerText()).includes('Time cap'), `${tag} For time : chrono écoulé et time cap affichés`);
   await p.getByRole('button', { name: 'Tours complets : plus un' }).click();
   await p.getByRole('button', { name: 'Répétitions du tour en cours : plus un' }).click();
@@ -519,6 +527,7 @@ async function hrNoOverlap(p, tag) {
   check(await p.getByRole('list', { name: 'Parcours de la séance' }).isVisible(), `${tag} parcours prescrit visible avant départ`);
   await hrNoOverlap(p, tag);
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  await startMain(p);
   const timer = p.getByRole('timer', { name: 'Chrono de la séance' });
   check((await timer.innerText()).includes('plafond'), `${tag} time cap présenté comme un plafond, pas un objectif`);
   const nowCard = p.getByLabel('Maintenant');
@@ -574,6 +583,7 @@ async function hrNoOverlap(p, tag) {
   const rail = await p.locator('.k-hr-step').evaluateAll((xs) => xs.map((x) => (x.classList.contains('run') ? 'run' : 'station')));
   check(rail.length >= 4 && rail.every((k, i) => k === (i % 2 === 0 ? 'station' : 'run')), `${tag} ordre prescrit : station → course → station → course (${rail.join(',')})`);
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  await startMain(p);
   const timer = p.getByRole('timer', { name: 'Chrono de la séance' });
   const nowCard = p.getByLabel('Maintenant');
   check(/station/i.test(await nowCard.innerText()), `${tag} étape 1 : station`);
@@ -601,6 +611,7 @@ async function hrNoOverlap(p, tag) {
   await p.getByRole('button', { name: 'Planning', exact: true }).click();
   await p.locator('.card', { hasText: 'Prévue' }).filter({ hasText: 'Course compromise' }).first().click();
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  await startMain(p);
   await p.getByRole('button', { name: /Étape faite/ }).click();
   await p.getByRole('button', { name: /Étape faite/ }).click();
   await p.getByRole('button', { name: /Étape faite/ }).click();
@@ -634,6 +645,7 @@ async function hrNoOverlap(p, tag) {
   await p.getByRole('button', { name: 'Planning', exact: true }).click();
   await p.getByRole('button', { name: /^HYROX : Course compromise/ }).first().click();
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  await startMain(p);
   await p.getByRole('button', { name: /Étape faite/ }).click();
   await p.getByRole('button', { name: /Étape faite/ }).click();
   await p.clock.fastForward('09:00');
@@ -854,6 +866,7 @@ async function mobileFit(p, tag) {
   // 6–11. Strength : commencer, recharger, terminer, retour terrain, historique.
   await p.getByRole('button', { name: /^Musculation : / }).first().click();
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  await startMain(p);
   const line = p.locator('section.k-ex').first().locator('.k-set:not(.warm)').first();
   await line.getByLabel('Répétitions réalisées').fill('8');
   if ((await line.getByLabel('Charge (kg)').inputValue()) === '') await line.getByLabel('Charge (kg)').fill('30');
@@ -885,6 +898,7 @@ async function mobileFit(p, tag) {
   await nav('Planning');
   await p.getByRole('button', { name: /^Cross-training : / }).first().click();
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  await startMain(p);
   const w0 = JSON.stringify((await st()).programmeLogs);
   await p.clock.fastForward('05:00');
   await p.waitForTimeout(1200);
@@ -902,6 +916,7 @@ async function mobileFit(p, tag) {
   await nav('Planning');
   await p.getByRole('button', { name: /^HYROX : / }).first().click();
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  await startMain(p);
   for (let k = 0; k < 40 && await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).isEnabled(); k += 1) await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).click();
   await p.clock.fastForward('12:00');
   await p.getByRole('button', { name: 'Terminer la séance' }).click();
@@ -976,6 +991,7 @@ async function p0Block(p, { tag, cardName, label, missing, content, full, shot }
   check((await p.locator('[data-block-label]').innerText()).length > 0 && /bloc principal uniquement/i.test(await p.locator('.k-block-note').innerText()) && (await p.locator('.k-block-note').innerText()).includes(missing), `${tag} séance : bloc identifié, éléments non composés nommés (${missing})`);
   if (shots) await p.screenshot({ path: `${shots}/${shot}.png` });
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  await startMain(p);
   const steps = p.getByRole('button', { name: /[ÉéEe]tape faite/ });
   for (let k = 0; k < 40 && await steps.count() > 0 && await steps.isEnabled(); k += 1) await steps.click();
   await p.clock.fastForward('12:00');
@@ -1004,6 +1020,55 @@ async function p0Block(p, { tag, cardName, label, missing, content, full, shot }
   const e = j.journal.find((x) => x.feedback?.contentAmount);
   check(e?.composition?.scope === 'TRAINING_BLOCK' && e.composition.status === 'FULL_SESSION_COMPOSITION_UNRESOLVED', `${tag} export : FULL_SESSION_COMPOSITION_UNRESOLVED (${JSON.stringify(e?.composition)})`);
 }
+// ——— C4 (360 × 640) : séance Cross-training COMPLÈTE EXPÉRIMENTALE — carte, blocs (objectif, durée, exercices, doses),
+// validation manuelle des blocs persistée au rechargement, chrono du bloc principal démarré explicitement, fin, export.
+async function c4Full(p, tag) {
+  const st = () => p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Planning', exact: true }).click();
+  const card = p.getByRole('button', { name: /^Cross-training : Mixte/ }).first();
+  const ct = await card.innerText();
+  check(ct.includes('Séance complète expérimentale') && !ct.includes('pas une séance complète'), `${tag} carte : séance complète expérimentale, durée planifiée (${ct.replace(/\n/g, ' | ')})`);
+  await card.click();
+  // textContent : libellés en capitales par la feuille de style (le texte source reste vérifié).
+  const body = await p.locator('body').textContent() ?? '';
+  check(((await p.locator('[data-c4-status]').textContent()) ?? '').includes('Séance complète expérimentale') && body.includes('non validées scientifiquement'), `${tag} séance : statut expérimental explicite`);
+  check(await p.locator('[data-c4-block="warmup_general"]').isVisible() && await p.locator('[data-c4-block="cooldown"]').count() === 1 && body.includes('Échauffement général') && body.includes('Retour au calme'), `${tag} blocs détaillés : échauffement, bloc principal, retour au calme`);
+  if (shots) await p.screenshot({ path: `${shots}/c4-ct-seance.png`, fullPage: true });
+  await p.getByRole('button', { name: 'Commencer la séance' }).click();
+  const timer = p.getByRole('timer', { name: 'Chrono de la séance' });
+  check(((await timer.textContent()) ?? '').includes('PRÊT'), `${tag} chrono du bloc principal non démarré pendant l’échauffement`);
+  const marks = p.locator('[data-c4-block^="warmup"]').getByRole('button', { name: 'Marquer le bloc terminé' });
+  const nw = await marks.count();
+  for (let k = 0; k < nw; k += 1) await marks.first().click();
+  const fit = await p.evaluate(() => ({ scroll: document.documentElement.scrollWidth > window.innerWidth + 1, small: [...document.querySelectorAll('[data-c4-block] button')].filter((b) => b.getBoundingClientRect().height < 44).length }));
+  check(!fit.scroll && fit.small === 0, `${tag} mobile : aucun défilement horizontal, boutons de bloc ≥ 44 px (${JSON.stringify(fit)})`);
+  const prog = await p.locator('[data-c4-progress]').innerText();
+  check(nw >= 1 && prog.includes(`${String(nw)} /`), `${tag} progression : ${prog}`);
+  await p.reload();
+  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Planning', exact: true }).click();
+  await p.locator('.card', { hasText: 'En cours' }).first().click();
+  check((await p.locator('[data-c4-progress]').innerText()) === prog && ((await timer.textContent()) ?? '').includes('PRÊT'), `${tag} rechargement : blocs validés et chrono conservés`);
+  await p.getByRole('button', { name: 'Démarrer le bloc principal' }).click();
+  await p.clock.fastForward('05:00');
+  await p.waitForTimeout(1200);
+  check(!((await timer.textContent()) ?? '').includes('PRÊT'), `${tag} bloc principal démarré explicitement`);
+  if (shots) await p.screenshot({ path: `${shots}/c4-ct-bloc-principal.png` });
+  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
+  await sheet.getByRole('radio', { name: /J’ai adapté la séance/ }).click();
+  await sheet.getByRole('button', { name: 'Enregistrer' }).click();
+  await p.getByLabel('Retour terrain').waitFor();
+  const s1 = await st();
+  const log = Object.values(s1.programmeLogs ?? {})[0];
+  check(log?.ct?.blocksDone?.length === nw && log.outcome?.ct?.elapsedS >= 300 && s1.crosstraining?.realized?.length === 1, `${tag} fin : blocs validés et résultat du bloc principal persistés (${JSON.stringify(log?.ct)})`);
+  await p.getByRole('button', { name: 'Retour' }).click();
+  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Réglages', exact: true }).click();
+  await p.getByRole('button', { name: /Journal Beta/ }).click();
+  const [dl] = await Promise.all([p.waitForEvent('download'), p.getByRole('button', { name: 'Exporter le journal Beta (JSON)' }).click()]);
+  const j = JSON.parse(readFileSync(await dl.path(), 'utf8'));
+  const e = j.journal.find((x) => x.sport === 'crosstraining' && x.composition?.c4);
+  check(e?.composition?.scope === 'FULL_SESSION' && e.composition.c4.status === 'FULL_SESSION' && e.composition.c4.blocks.length >= 2, `${tag} export : statut C4 FULL_SESSION et blocs (${JSON.stringify(e?.composition?.c4?.status)})`);
+}
 for (const sport of ['ct', 'hyrox']) {
   const c = await browser.newContext({ viewport: { width: 360, height: 640 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, locale: 'fr-FR', timezoneId: 'Europe/Paris', acceptDownloads: true });
   const p = await c.newPage();
@@ -1023,7 +1088,7 @@ for (const sport of ['ct', 'hyrox']) {
     await p.getByRole('button', { name: 'Continuer' }).click();
     await p.getByRole('button', { name: 'Créer mon programme' }).click();
     await p.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
-    await p0Block(p, { tag: '[P0 Cross-training 360×640]', cardName: /^Cross-training : Mixte/, label: 'Bloc principal', missing: 'l’échauffement', content: 'Trop court', full: 'Insuffisant', shot: 'p0-ct-bloc' });
+    await c4Full(p, '[C4 Cross-training 360×640]');
   } else {
     await hrOnboard(p, 'Endurance de force', '1');
     await p0Block(p, { tag: '[P0 HYROX 360×640]', cardName: /^HYROX : Endurance de force/, label: 'Bloc HYROX', missing: 'le retour au calme', content: 'Beaucoup trop court', full: 'Très insuffisant', shot: 'p0-hyrox-bloc' });

@@ -76,7 +76,7 @@ export function assertEnvironment(env: Pick<PlannerEnvironment, 'mode' | 'author
 }
 
 /** Capacités Cross-training DEMANDÉES par l'application (le moteur décide de leur activation selon sa gouvernance). */
-export const CT_CAPABILITY_REQUESTS = ['ctBootstrapExposure', 'ctReplayHold', 'ctHybridPlanning', 'ctSessionComposition'] as const;
+export const CT_CAPABILITY_REQUESTS = ['ctBootstrapExposure', 'ctReplayHold', 'ctHybridPlanning', 'ctSessionComposition', 'ctFullSessionComposition'] as const;
 
 /**
  * Intention de programme Strength / Running issue des déclarations du PROFIL (nombre de séances déclaré par

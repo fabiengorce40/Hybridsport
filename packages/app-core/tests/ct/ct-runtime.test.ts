@@ -5,10 +5,10 @@
 import { describe, expect, it } from 'vitest';
 import {
   beta0Environment, controlCtTimer, ctClock, ctElapsedS, ctWorkoutOf, decodeState, ensureBeta0Week, exportState, finishProgrammeSession, planProgrammeCurrentWeek, recordCtProgress,
-  recordSessionExecution, recreateBeta0Programme, selectBeta0Week, selectHistory, selectProgrammeSession, startProgrammeSession,
+  recordSessionExecution, recreateBeta0Programme, selectBeta0Week, selectHistory, selectProgrammeSession,
 } from '../../src/index.js';
 import type { AppState, SessionDraft } from '../../src/index.js';
-import { at, create, ctSessions, decisions, doCt, fullGym, MON1, MON2, profile, reload } from './ct-fixtures.js';
+import { at, create, ctSessions, decisions, doCt, fullGym, MON1, MON2, profile, reload, startCt } from './ct-fixtures.js';
 
 const ids = (s: AppState) => ctSessions(s).filter((x) => x.status === 'planned').map((x) => x.requestId);
 const formatOf = (s: AppState, id: string) => { const v = selectProgrammeSession(s, id); return v ? ctWorkoutOf(v.session)?.format : undefined; };
@@ -27,7 +27,7 @@ describe('C3.5 — parcours Cross-training : 40 tests adversariaux', () => {
   it('1. séance CT absente ⇒ aucune vue, démarrage refusé', () => {
     const s = mixed();
     expect(selectProgrammeSession(s, 'absente')).toBeNull();
-    expect(() => startProgrammeSession(s, at(MON1), 'absente')).toThrow('SESSION_UNAVAILABLE');
+    expect(() => startCt(s, at(MON1), 'absente')).toThrow('SESSION_UNAVAILABLE');
   });
 
   it('2. séance CT invalide (bloc de séries) ⇒ projection nulle, jamais reconstruite', () => {
@@ -54,7 +54,7 @@ describe('C3.5 — parcours Cross-training : 40 tests adversariaux', () => {
     const id = ofFormat(s, 'intervals');
     const w = ctWorkoutOf(selectProgrammeSession(s, id)?.session as SessionDraft);
     if (!w?.workS || !w.restS || !w.rounds) throw new Error('intervalles attendus');
-    s = startProgrammeSession(s, at(T('07:00')), id);
+    s = startCt(s, at(T('07:00')), id);
     expect(s.programmeLogs[id]?.ct?.runningSince).toBe('2026-10-05T07:00:00Z');
     expect(ctClock(w, 1).phase).toBe('work');
     expect(ctClock(w, w.workS + 1)).toMatchObject({ phase: 'rest', round: 1, completedIntervals: 1 });
@@ -76,7 +76,7 @@ describe('C3.5 — parcours Cross-training : 40 tests adversariaux', () => {
   it('7. AMRAP : compteurs persistés, résultat « rounds_reps »', () => {
     let s = mixed();
     const id = ofFormat(s, 'amrap');
-    s = startProgrammeSession(s, at(T('07:00')), id);
+    s = startCt(s, at(T('07:00')), id);
     s = recordCtProgress(s, id, { rounds: 7 });
     s = recordCtProgress(s, id, { partialReps: 12 });
     s = finishProgrammeSession(s, at(T('07:13')), { requestId: id, completion: 'completed_as_prescribed', pain: false, ct: { result: { kind: 'rounds_reps', rounds: 7, reps: 12 } } });
@@ -101,11 +101,11 @@ describe('C3.5 — parcours Cross-training : 40 tests adversariaux', () => {
   it('10. charge réalisée ≠ prescrite : observation séparée ; mouvement non prescrit ⇒ refus', () => {
     let s = mixed();
     const id = ofFormat(s, 'amrap');
-    const ex = selectProgrammeSession(s, id)?.session.blocks[0]?.items[1]?.exerciseId ?? '';
+    const ex = selectProgrammeSession(s, id)?.session.blocks.find((b) => b.kind === 'conditioning')?.items[1]?.exerciseId ?? '';
     const done = doCt(s, id, T('07:00'), T('07:13'), { completion: 'completed_as_prescribed', pain: false, ct: { result: { kind: 'rounds_reps', rounds: 5, reps: 0 }, performedLoads: [{ exerciseId: ex, kg: 10 }] } });
     expect(realizedOf(done, id)?.performedLoads).toEqual([{ exerciseId: ex, kg: 10 }]);
     expect((realizedOf(done, id)?.prescription as { items: { load?: unknown }[] }).items.every((i) => i.load === undefined)).toBe(true);
-    s = startProgrammeSession(s, at(T('07:00')), id);
+    s = startCt(s, at(T('07:00')), id);
     expect(() => finishProgrammeSession(s, at(T('07:13')), { requestId: id, completion: 'completed_as_prescribed', pain: false, ct: { result: { kind: 'rounds_reps', rounds: 5, reps: 0 }, performedLoads: [{ exerciseId: 'ex.back_squat', kg: 60 }] } })).toThrow('EXECUTION_INVALID');
   });
 
@@ -138,7 +138,7 @@ describe('C3.5 — parcours Cross-training : 40 tests adversariaux', () => {
   });
 
   it('14. reload pendant le chrono ⇒ le temps continue (horodatage), compteurs conservés', () => {
-    let s = startProgrammeSession(mixed(), at(T('07:00')), ofFormat(mixed(), 'amrap'));
+    let s = startCt(mixed(), at(T('07:00')), ofFormat(mixed(), 'amrap'));
     const id = ofFormat(mixed(), 'amrap');
     s = recordCtProgress(s, id, { rounds: 3 });
     s = reload(s, T('07:05'));
@@ -150,7 +150,7 @@ describe('C3.5 — parcours Cross-training : 40 tests adversariaux', () => {
 
   it('15. reload en pause ⇒ cumul figé, aucune dérive', () => {
     const id = ofFormat(mixed(), 'amrap');
-    let s = startProgrammeSession(mixed(), at(T('07:00')), id);
+    let s = startCt(mixed(), at(T('07:00')), id);
     s = controlCtTimer(s, at(T('07:02')), id, 'pause');
     s = reload(s, T('08:00'));
     const rt = s.programmeLogs[id]?.ct;
@@ -176,7 +176,7 @@ describe('C3.5 — parcours Cross-training : 40 tests adversariaux', () => {
 
   it('18. navigation hors séance puis retour ⇒ aucune écriture, aucun abandon', () => {
     const id = ofFormat(mixed(), 'amrap');
-    const s = startProgrammeSession(mixed(), at(T('07:00')), id);
+    const s = startCt(mixed(), at(T('07:00')), id);
     const before = JSON.stringify(s);
     selectProgrammeSession(s, id);
     selectBeta0Week(s, MON1.slice(0, 10));
@@ -207,7 +207,7 @@ describe('C3.5 — parcours Cross-training : 40 tests adversariaux', () => {
   it('22. export / import ⇒ séance en cours (chrono, compteurs) et réalisée restaurées à l’identique', () => {
     const [a, b] = [ofFormat(mixed(), 'amrap'), ofFormat(mixed(), 'emom')];
     let s = doCt(mixed(), b, T('06:00'), T('06:12'), { completion: 'completed_as_prescribed', pain: false, ct: { result: { kind: 'emom', minutesCompleted: 12 } } });
-    s = recordCtProgress(startProgrammeSession(s, at(T('07:00')), a), a, { rounds: 2 });
+    s = recordCtProgress(startCt(s, at(T('07:00')), a), a, { rounds: 2 });
     const back = decodeState(exportState(s));
     expect(back.ok && back.state.programmeLogs[a]?.ct).toEqual(s.programmeLogs[a]?.ct);
     expect(back.ok && back.state.crosstraining.realized).toEqual(s.crosstraining.realized);
@@ -264,7 +264,7 @@ describe('C3.5 — parcours Cross-training : 40 tests adversariaux', () => {
 
   it('31. chrono sans écriture par seconde : l’état ne change pas sans commande', () => {
     const id = ofFormat(mixed(), 'amrap');
-    const s = startProgrammeSession(mixed(), at(T('07:00')), id);
+    const s = startCt(mixed(), at(T('07:00')), id);
     const rt = s.programmeLogs[id]?.ct;
     if (!rt) throw new Error('chrono attendu');
     const snapshot = JSON.stringify(s);
@@ -276,15 +276,15 @@ describe('C3.5 — parcours Cross-training : 40 tests adversariaux', () => {
   it('32–36. résultats STRUCTURÉS par format (jamais une chaîne « 7+12 »), incohérences refusées par le contrat', () => {
     const s = mixed();
     const amrap = ofFormat(s, 'amrap');
-    const started = startProgrammeSession(s, at(T('07:00')), amrap);
+    const started = startCt(s, at(T('07:00')), amrap);
     expect(() => finishProgrammeSession(started, at(T('07:13')), { requestId: amrap, completion: 'completed_as_prescribed', pain: false, ct: { result: { kind: 'time', completionS: 600 } } })).toThrow('EXECUTION_INVALID');
     const ft = ofFormat(s, 'for_time');
-    const s2 = startProgrammeSession(s, at(T('07:00')), ft);
+    const s2 = startCt(s, at(T('07:00')), ft);
     // Time cap atteint déclaré « comme prévu » ⇒ incohérent ; tous les tours au time cap ⇒ incohérent.
     expect(() => finishProgrammeSession(s2, at(T('07:20')), { requestId: ft, completion: 'completed_as_prescribed', pain: false, ct: { result: { kind: 'capped_rounds', roundsCompleted: 2, partialReps: 0 } } })).toThrow('EXECUTION_INVALID');
     expect(() => finishProgrammeSession(s2, at(T('07:20')), { requestId: ft, completion: 'modified', pain: false, ct: { result: { kind: 'capped_rounds', roundsCompleted: 99, partialReps: 0 } } })).toThrow('EXECUTION_INVALID');
     const em = ofFormat(s, 'emom');
-    const s3 = startProgrammeSession(s, at(T('07:00')), em);
+    const s3 = startCt(s, at(T('07:00')), em);
     expect(() => finishProgrammeSession(s3, at(T('07:12')), { requestId: em, completion: 'completed_as_prescribed', pain: false, ct: { result: { kind: 'emom', minutesCompleted: 3 } } })).toThrow('EXECUTION_INVALID');
     expect(() => finishProgrammeSession(s3, at(T('07:12')), { requestId: em, completion: 'completed_as_prescribed', pain: false })).toThrow();
   });
@@ -326,7 +326,7 @@ describe('C3.5 — parcours Cross-training : 40 tests adversariaux', () => {
     const done = reload(doCt(s0, id, T('07:00'), T('07:13'), { completion: 'completed_as_prescribed', pain: false, ct: { result: { kind: 'rounds_reps', rounds: 5, reps: 3 } } }), T('09:00'));
     const s = ensureBeta0Week(done, at(MON2));
     const b = ctSessions(s, MON2)[0]?.requestId ?? '';
-    const moves = (selectProgrammeSession(s, id)?.session.blocks[0]?.items ?? []).map((i) => i.exerciseId);
+    const moves = (selectProgrammeSession(s, id)?.session.blocks.find((b) => b.kind === 'conditioning')?.items ?? []).map((i) => i.exerciseId);
     expect(decisions(s, b, 'C3_HISTORY')[0]?.recentMovements).toEqual(expect.arrayContaining(moves));
   });
 });

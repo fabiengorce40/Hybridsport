@@ -5,7 +5,7 @@ import { manualStartAssessment, startProgrammeSession } from '@hybridsport/app-c
 import { arbitrationText, ctFormatName, isTest, manualStartText, notPlannedText, qualityShortText, roleName, sessionName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
-import { blockCardText, isBlock } from '../../field/BlockScope.js';
+import { blockCardText, fullSessionCardText, isBlock, isFullC4 } from '../../field/BlockScope.js';
 import type { DisplayStatus } from '../../present.js';
 
 export interface SessionItemView extends SessionView { readonly display: DisplayStatus }
@@ -59,12 +59,14 @@ function metaOf(v: SessionItemView): string {
   const block = isBlock(v.composition);
   // Bloc Cross-training : durée PRESCRITE du format (exacte), jamais l'estimation du CORE ni la cible du créneau.
   const blockS = block && v.sport === 'crosstraining' ? v.composition?.blockDurationS ?? null : null;
-  const dur = v.hrTimeCapS !== null ? `time cap ${approxMinutes(v.hrTimeCapS)}`
+  // C4 — séance complète : durée PLANIFIÉE de l'ensemble des blocs (valeurs gouvernées), jamais la cible du créneau.
+  const fullS = v.sport === 'crosstraining' && isFullC4(v.composition) ? v.composition?.c4?.plannedDurationS ?? null : null;
+  const dur = fullS !== null ? `≈ ${approxMinutes(fullS)}` : v.hrTimeCapS !== null ? `time cap ${approxMinutes(v.hrTimeCapS)}`
     : blockS !== null ? approxMinutes(blockS)
     : v.estimatedDurationS !== null ? `≈ ${approxMinutes(v.estimatedDurationS)}`
       : !block && v.targetDurationS !== null ? `≈ ${approxMinutes(v.targetDurationS)}` : null;
   const fmt = ctFormatName(v.ctFormat);
-  return [roleName(v.role), block ? [v.sport === 'hyrox' ? 'Bloc HYROX' : 'Bloc principal', fmt].filter(Boolean).join(' ') : fmt, dur].filter(Boolean).join(' · ');
+  return [roleName(v.role), fullS !== null ? ['Séance complète', fmt].filter(Boolean).join(' · ') : block ? [v.sport === 'hyrox' ? 'Bloc HYROX' : 'Bloc principal', fmt].filter(Boolean).join(' ') : fmt, dur].filter(Boolean).join(' · ');
 }
 
 export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemView; onOpen: (id: string) => void; highlight?: boolean }) {
@@ -89,6 +91,7 @@ export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemV
         {[metaOf(v), v.pain ? 'douleur signalée' : null].filter(Boolean).join(' · ')}
       </div>
       {isBlock(v.composition) && <div className="tiny muted" data-block-scope="TRAINING_BLOCK">{blockCardText}</div>}
+      {isFullC4(v.composition) && v.composition && <div className="tiny muted" data-block-scope="FULL_SESSION">{fullSessionCardText(v.composition)}</div>}
       {/* Strength : exercices principaux réellement prescrits (la variété A/B n'est pas masquée par le seul titre). */}
       {v.mainExercises.length > 0 && <div className="tiny muted" data-main-exercises>{v.mainExercises.slice(0, MAIN_SHOWN).map((x) => exerciseLabel(x)).join(' · ')}{v.mainExercises.length > MAIN_SHOWN ? ' …' : ''}</div>}
       {v.repeatFlagged && <div className="tiny" data-repeat-flagged>Identique à une séance récente : le moteur ne dispose pas d’autre option avec les règles actuelles.</div>}
@@ -114,6 +117,7 @@ function UnplacedCard({ v, onOpen }: { v: SessionItemView; onOpen: (id: string) 
       <h3>{name}</h3>
       {meta && <div className="small muted num">{meta}</div>}
       {isBlock(v.composition) && <div className="tiny muted" data-block-scope="TRAINING_BLOCK">{blockCardText}</div>}
+      {isFullC4(v.composition) && v.composition && <div className="tiny muted" data-block-scope="FULL_SESSION">{fullSessionCardText(v.composition)}</div>}
       <div className="small">{unplacedText(v)}</div>
       {qualityShortText(v.quality?.verdict) && <div className="tiny muted" data-quality={v.quality?.verdict}>{qualityShortText(v.quality?.verdict)}</div>}
       <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>

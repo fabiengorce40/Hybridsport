@@ -1,6 +1,6 @@
 /**
  * Cross-training C3 pour l'environnement Beta 0 EXPÉRIMENTAL (SIMULATION_ONLY), source unique côté planificateur :
- *   - moteur Cross-training en mode simulation, gouvernance C3 TEST_ONLY (`c3-governance.ts`, valeurs EXPERT_PROPOSED,
+ *   - moteur Cross-training en mode simulation, gouvernance C3 + C4 (séance complète) TEST_ONLY (`c3-governance.ts`, valeurs EXPERT_PROPOSED,
  *     jamais PRODUCTION_ELIGIBLE) avec multisport admis (planificateur global déclaré satisfait, `ct.hybrid.policy` de
  *     test) et SANS politique de charge (mouvements chargés inéligibles) ;
  *   - contenu : ruleset de test du CORE AVEC les paramètres d'anti-doublon (comme Running : sans eux, toute génération
@@ -32,7 +32,7 @@ export interface CtBeta0 {
 
 /** Moteur + contenu Cross-training de la Beta 0 expérimentale (marque SIMULATION_ONLY portée par la normalisation). */
 export function ctBeta0(mark: Record<string, unknown> = {}): CtBeta0 {
-  const governance = c3Governance({ hybrid: true });
+  const governance = c3Governance({ hybrid: true, c4: true });
   return {
     governance,
     engine: createCrossTrainingEngine({ governance, simulation: true }),

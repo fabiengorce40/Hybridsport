@@ -307,6 +307,8 @@ export const zCtRuntime = z.object({
   accumulatedS: z.number().nonnegative(),
   rounds: z.number().int().nonnegative(),
   partialReps: z.number().int().nonnegative(),
+  /** C4 — blocs d'échauffement / retour au calme VALIDÉS manuellement par l'utilisateur (identifiants de bloc). */
+  blocksDone: z.array(z.string().min(1)).optional(),
 }).strict();
 export type CtRuntime = z.infer<typeof zCtRuntime>;
 
