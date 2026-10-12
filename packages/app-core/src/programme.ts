@@ -301,7 +301,7 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
     s = { ...s, fingerprints: { ...s.fingerprints, [x.sport]: [...s.fingerprints[x.sport], { fingerprint: fp, at, status: 'completed', repetitionIntents: [] } as FingerprintHistoryEntry] } };
   }
   // Douleur déclarée : même règle G1 fail-closed que le chemin V0 (pause jusqu'à levée explicite).
-  if (pained) s = { ...s, safety: { activePain: { reportedAt: at, areas: [], sessionKey: x.requestId } } };
+  if (pained) s = { ...s, safety: { ...s.safety, activePain: { reportedAt: at, areas: [], sessionKey: x.requestId } } };
   return s;
 }
 

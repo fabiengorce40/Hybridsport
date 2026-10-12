@@ -418,7 +418,11 @@ export const zAppState = z.object({
    */
   hyrox: z.object({ realized: z.array(z.record(z.string(), z.unknown())) }).strict().default({ realized: [] }),
   fingerprints: z.object({ strength: z.array(zFingerprintHistoryEntry), running: z.array(zFingerprintHistoryEntry), crosstraining: z.array(zFingerprintHistoryEntry).default([]) }).strict(),
-  safety: z.object({ activePain: z.object({ reportedAt: instant, areas: z.array(z.string()), sessionKey: z.string().optional() }).strict().nullable() }).strict(),
+  safety: z.object({
+    activePain: z.object({ reportedAt: instant, areas: z.array(z.string()), sessionKey: z.string().optional() }).strict().nullable(),
+    /** Dernière levée explicite de la pause douleur : vaut résolution des douleurs connues antérieures (contrôle pré-séance). */
+    clearedAt: instant.optional(),
+  }).strict(),
   /** Intention de programme multisport (absente d'un état antérieur ⇒ null : champ additif). */
   programme: zProgrammeIntent.nullable().default(null),
   /** Programme longitudinal (Programme Engine) : contrat versionné du paquet programme ; absent ⇒ null (champ additif). */

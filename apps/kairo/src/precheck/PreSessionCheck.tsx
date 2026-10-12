@@ -1,16 +1,17 @@
 /**
  * P0 — CONTRÔLE PRÉ-SÉANCE (interface) : avant CHAQUE nouveau démarrage (planning, séance, « Faire maintenant », séance
  * non placée), quelques questions fermées : douleur actuelle (zone, intensité), fatigue, récupération. « Passer » =
- * état inconnu. La décision (inchangée, adaptée, reportée, pause) est prise par app-core (règles du CORE et du moteur) ;
+ * état inconnu. La question douleur exige une réponse EXPLICITE (« Non » / « Oui ») pour valider : sans réponse, rien n'est
+ * lu comme « aucune douleur ». Les douleurs déjà connues sont rappelées ; « Passer » les conserve. La décision (inchangée, adaptée, reportée, pause) est prise par app-core (règles du CORE et du moteur) ;
  * cet écran l'affiche telle quelle. Aucun diagnostic, aucun texte libre. Une séance commencée est reprise sans contrôle.
  */
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import { CHECKIN_BODY_AREAS, selectProgrammeSession, startProgrammeSession } from '@hybridsport/app-core';
-import type { CheckIn, CheckInInput } from '@hybridsport/app-core';
+import { CHECKIN_BODY_AREAS, knownPainsOf, selectProgrammeSession, startProgrammeSession } from '@hybridsport/app-core';
+import type { CheckIn, CheckInInput, KnownPain } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
 import { Notice } from '../ui.js';
-import { adaptationChangesText, AREA_LABELS, checkInReasonsText, FATIGUE_LABELS, PAIN_LEVEL_LABELS, READINESS_LABELS, RECOVERY_LABELS } from '../present.js';
+import { adaptationChangesText, AREA_LABELS, checkInReasonsText, knownPainText, FATIGUE_LABELS, PAIN_LEVEL_LABELS, READINESS_LABELS, RECOVERY_LABELS } from '../present.js';
 
 type Area = (typeof CHECKIN_BODY_AREAS)[number];
 type Level = 'P1' | 'P2' | 'P3';
@@ -29,7 +30,7 @@ function Choice<T extends string>({ label, value, options, onChange }: { label: 
 }
 
 /** Feuille du contrôle : réponses → `onSubmit(checkIn)` ; « Passer » → `onSubmit(undefined)` (état inconnu). */
-export function PreSessionSheet({ result, onSubmit, onClose }: { result: CheckIn | null; onSubmit: (c: CheckInInput | undefined) => void; onClose: () => void }) {
+export function PreSessionSheet({ result, known = [], onSubmit, onClose }: { result: CheckIn | null; known?: readonly KnownPain[]; onSubmit: (c: CheckInInput | undefined) => void; onClose: () => void }) {
   const [pain, setPain] = useState<'no' | 'yes' | null>(null);
   const [areas, setAreas] = useState<Partial<Record<Area, Level>>>({});
   const [general, setGeneral] = useState(false);
@@ -38,6 +39,14 @@ export function PreSessionSheet({ result, onSubmit, onClose }: { result: CheckIn
   const [tried, setTried] = useState(false);
   const chosen = Object.entries(areas) as [Area, Level][];
   const missingLevel = pain === 'yes' && chosen.length === 0 && !general;
+  const missingPain = pain === null;
+  const isArea = (a: string): a is Area => (CHECKIN_BODY_AREAS as readonly string[]).includes(a);
+  const isLevel = (l: string): l is Level => l === 'P1' || l === 'P2' || l === 'P3';
+  // « Oui » : zones déjà connues présélectionnées (modifiables) — une douleur connue n'est jamais oubliée par mégarde.
+  const answerPain = (v: 'no' | 'yes') => {
+    setPain(v);
+    if (v === 'yes' && Object.keys(areas).length === 0) setAreas(Object.fromEntries(known.flatMap((k) => (isArea(k.area) && isLevel(k.level) ? [[k.area, k.level]] : []))));
+  };
   if (result && (result.decision === 'postponed' || result.decision === 'paused')) {
     return (
       <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-label="Avant de commencer">
@@ -57,7 +66,15 @@ export function PreSessionSheet({ result, onSubmit, onClose }: { result: CheckIn
       <div className="sheet" data-checkin-form>
         <h2 style={{ margin: 0 }}>Avant de commencer</h2>
         <p className="small muted" style={{ margin: 0 }}>Quelques secondes pour adapter la séance à votre état du jour. KAIRO ne pose aucun diagnostic.</p>
-        <Choice label="Avez-vous une douleur en ce moment ?" value={pain ?? ('' as 'no')} options={[{ id: 'no', label: 'Non' }, { id: 'yes', label: 'Oui' }]} onChange={(v) => setPain(v)} />
+        {known.length > 0 && (
+          <div className="k-block-note" role="note" data-checkin-known>
+            <strong>Douleur déjà signalée</strong>
+            <span>{knownPainText(known.map((k) => `${k.area}:${k.level}`))} — le {new Date(known[0]?.reportedAt ?? '').toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}.</span>
+            <span className="small">Elle reste prise en compte si vous passez ce contrôle. Répondez « Non » si elle a disparu.</span>
+          </div>
+        )}
+        <Choice label="Avez-vous une douleur en ce moment ?" value={pain ?? ('' as 'no')} options={[{ id: 'no', label: 'Non' }, { id: 'yes', label: 'Oui' }]} onChange={answerPain} />
+        {tried && missingPain && <div className="k-dur-error" role="alert">Répondez à la question douleur (« Non » ou « Oui »), ou touchez « Passer ».</div>}
         {pain === 'yes' && (
           <div className="stack" data-checkin-pain>
             <div className="small">Où ? Touchez chaque zone concernée, puis son intensité.</div>
@@ -80,11 +97,13 @@ export function PreSessionSheet({ result, onSubmit, onClose }: { result: CheckIn
           <button type="button" className="btn secondary" onClick={() => onSubmit(undefined)}>Passer</button>
           <button type="button" className="btn primary block" onClick={() => {
             setTried(true);
-            if (missingLevel) return;
-            onSubmit({ pains: pain === 'yes' ? chosen.map(([area, level]) => ({ area, level })) : [], generalSignal: pain === 'yes' && general, fatigue, recovery });
+            if (missingPain || missingLevel) return;
+            onSubmit({ painAnswer: pain, pains: pain === 'yes' ? chosen.map(([area, level]) => ({ area, level })) : [], generalSignal: pain === 'yes' && general, fatigue, recovery });
           }}>Valider et commencer</button>
         </div>
-        <p className="tiny muted" style={{ margin: 0 }}>« Passer » : votre état reste inconnu ; la séance prévue est proposée telle quelle.</p>
+        <p className="tiny muted" style={{ margin: 0 }}>{known.length > 0
+          ? '« Passer » : votre état reste inconnu ; la douleur déjà signalée reste prise en compte.'
+          : '« Passer » : votre état reste inconnu ; la séance prévue est proposée telle quelle.'}</p>
         <button type="button" className="btn ghost" onClick={onClose}>Annuler</button>
       </div>
     </div>
@@ -106,7 +125,7 @@ export function useStartFlow(onStarted?: (requestId: string) => void): { start: 
     setTarget(requestId);
   };
   const sheet = target === null ? null : (
-    <PreSessionSheet result={result} onClose={close} onSubmit={(ci) => {
+    <PreSessionSheet result={result} known={knownPainsOf(store.state.checkIns, store.state.safety.clearedAt)} onClose={close} onSubmit={(ci) => {
       let last: CheckIn | undefined;
       const ok = store.apply((s, c) => { const n = startProgrammeSession(s, c, target, undefined, ci); last = n.checkIns.at(-1); return n; });
       if (!ok) { close(); return; }
@@ -127,7 +146,7 @@ export function AdaptationNotice({ v }: { v: { readonly adaptation: { readonly c
   return (
     <div className="k-block-note" role="note" data-adaptation>
       <strong>Séance adaptée à votre état du jour</strong>
-      <span>{v.checkIn ? READINESS_LABELS[v.checkIn.readiness] : ''}{v.checkIn && v.checkIn.pains.length > 0 ? ` · douleur : ${v.checkIn.pains.map((p) => `${(AREA_LABELS[p.area] ?? p.area).toLowerCase()} (${(PAIN_LEVEL_LABELS[p.level] ?? p.level).toLowerCase()})`).join(', ')}` : ''}</span>
+      <span>{v.checkIn ? READINESS_LABELS[v.checkIn.readiness] : ''}{v.checkIn && v.checkIn.pains.length > 0 ? ` · douleur : ${v.checkIn.pains.map((p) => `${(AREA_LABELS[p.area] ?? p.area).toLowerCase()} (${(PAIN_LEVEL_LABELS[p.level] ?? p.level).toLowerCase()})`).join(', ')}` : ''}{v.checkIn && v.checkIn.knownPains.length > 0 ? ` · douleur déjà signalée : ${knownPainText(v.checkIn.knownPains.map((k) => `${k.area}:${k.level}`))}` : ''}</span>
       {changes.length > 0 && <ul className="small" style={{ margin: 0 }}>{changes.map((t) => <li key={t}>{t}</li>)}</ul>}
       {why.length > 0 && <details className="k-details"><summary>Pourquoi</summary><ul className="small">{why.map((t) => <li key={t}>{t}</li>)}</ul></details>}
     </div>

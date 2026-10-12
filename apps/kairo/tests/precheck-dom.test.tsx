@@ -28,10 +28,11 @@ function seeded(): MemoryStorage {
 }
 const saved = (s: MemoryStorage): AppState => { const r = loadState(s, now); if (r.status !== 'ok') throw new Error(r.status); return r.state; };
 const mount = (s: MemoryStorage) => render(<StoreProvider storage={s} clock={clock}><App /></StoreProvider>);
-const openFirstStrength = () => {
+const openStrength = (k: number) => {
   fireEvent.click(screen.getByRole('button', { name: 'Planning' }));
-  fireEvent.click(screen.getAllByRole('button', { name: /^Musculation/ })[0] as HTMLElement);
+  fireEvent.click(screen.getAllByRole('button', { name: /^Musculation/ })[k] as HTMLElement);
 };
+const openFirstStrength = () => openStrength(0);
 const dialog = () => screen.getByRole('dialog', { name: 'Avant de commencer' });
 const radio = (group: string, name: string) => fireEvent.click(within(within(dialog()).getByRole('radiogroup', { name: group })).getByRole('radio', { name }));
 
@@ -111,5 +112,47 @@ describe('contrôle pré-séance (DOM)', () => {
     expect(s.checkIns.at(-1)).toMatchObject({ answered: false, readiness: 'unknown', decision: 'unchanged' });
     expect(Object.keys(s.programmeLogs)).toHaveLength(1);
     expect(document.querySelector('[data-adaptation]')).toBeNull();
+  });
+
+  it('question douleur sans réponse ⇒ validation refusée (message), rien démarré ni enregistré — jamais « aucune douleur »', () => {
+    const storage = seeded();
+    mount(storage);
+    openFirstStrength();
+    fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));
+    radio('Fatigue aujourd’hui', 'Faible');
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Valider et commencer' }));
+    expect(within(dialog()).getByRole('alert').textContent).toContain('Répondez à la question douleur');
+    const s = saved(storage);
+    expect(s.programmeLogs).toEqual({});
+    expect(s.checkIns).toEqual([]);
+    radio('Avez-vous une douleur en ce moment ?', 'Non');
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Valider et commencer' }));
+    expect(saved(storage).checkIns.at(-1)).toMatchObject({ answered: true, painStatus: 'none', fatigue: 'low' });
+  });
+
+  it('douleur connue : rappelée, présélectionnée sur « Oui », conservée par « Passer » (séance adaptée, mention affichée)', () => {
+    const storage = seeded();
+    mount(storage);
+    openFirstStrength();
+    fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));
+    radio('Avez-vous une douleur en ce moment ?', 'Oui');
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Genou' }));
+    radio('Intensité · Genou', 'Douleur qui gêne certains mouvements');
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Valider et commencer' }));
+    cleanup();
+    mount(storage);
+    openStrength(1);
+    fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));
+    const known = document.querySelector('[data-checkin-known]');
+    expect(known?.textContent).toContain('Douleur déjà signalée');
+    expect(known?.textContent).toContain('genou');
+    expect(within(dialog()).getByText(/la douleur déjà signalée reste prise en compte/)).toBeTruthy();
+    radio('Avez-vous une douleur en ce moment ?', 'Oui');
+    expect(within(dialog()).getByRole('button', { name: 'Genou' }).getAttribute('aria-pressed')).toBe('true');
+    fireEvent.click(within(dialog()).getByRole('button', { name: 'Passer' }));
+    const c = saved(storage).checkIns.at(-1);
+    expect(c).toMatchObject({ answered: false, painStatus: 'unknown', pains: [], knownPains: [expect.objectContaining({ area: 'knee', level: 'P2' })] });
+    if (c?.decision === 'adapted') expect(document.querySelector('[data-adaptation]')?.textContent).toContain('douleur déjà signalée : genou');
+    else expect(document.querySelector('[data-checkin-decision="postponed"]')).toBeTruthy();
   });
 });

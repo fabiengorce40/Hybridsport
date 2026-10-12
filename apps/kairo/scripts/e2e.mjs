@@ -1252,6 +1252,9 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   const dlg = p.getByRole('dialog', { name: 'Avant de commencer' });
   check(await dlg.isVisible() && Object.keys((await st()).programmeLogs ?? {}).length === 0, `${tag} « Commencer » ⇒ contrôle pré-séance, rien démarré avant réponse`);
   await snap('04-controle-pre-seance');
+  // Question douleur sans réponse : validation refusée, jamais lue comme « aucune douleur ».
+  await dlg.getByRole('button', { name: 'Valider et commencer' }).click();
+  check(/Répondez à la question douleur/.test(await dlg.getByRole('alert').innerText()) && Object.keys((await st()).programmeLogs ?? {}).length === 0 && ((await st()).checkIns ?? []).length === 0, `${tag} question douleur sans réponse ⇒ validation refusée, rien enregistré`);
   await dlg.getByRole('radiogroup', { name: 'Avez-vous une douleur en ce moment ?' }).getByRole('radio', { name: 'Oui' }).click();
   await dlg.getByRole('button', { name: 'Genou' }).click();
   await dlg.getByRole('radiogroup', { name: 'Intensité · Genou' }).getByRole('radio', { name: 'Douleur qui gêne certains mouvements' }).click();
@@ -1316,7 +1319,12 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Planning', exact: true }).click();
   await p.getByRole('button', { name: /^Musculation : .*Prévue/ }).first().click();
   await p.getByRole('button', { name: /Commencer la séance|Faire maintenant/ }).last().click();
+  // Douleur connue (genou, séance 1) : rappelée, et présélectionnée sur « Oui ».
+  const knownNote = dlg.locator('[data-checkin-known]');
+  check(await knownNote.isVisible() && /genou/.test(await knownNote.innerText()), `${tag} douleur connue rappelée au contrôle suivant (${(await knownNote.innerText()).replace(/\n/g, ' | ').slice(0, 120)})`);
   await dlg.getByRole('radiogroup', { name: 'Avez-vous une douleur en ce moment ?' }).getByRole('radio', { name: 'Oui' }).click();
+  check(await dlg.getByRole('button', { name: 'Genou' }).getAttribute('aria-pressed') === 'true', `${tag} « Oui » : douleur connue présélectionnée`);
+  await snap('11-douleur-connue');
   await dlg.getByRole('button', { name: 'Épaule' }).click();
   await dlg.getByRole('radiogroup', { name: 'Intensité · Épaule' }).getByRole('radio', { name: 'Douleur qui gêne certains mouvements' }).click();
   await dlg.getByRole('button', { name: 'Valider et commencer' }).click();

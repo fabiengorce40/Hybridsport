@@ -29,7 +29,7 @@ import { declareRunningPerformance } from './running-profile.js';
 import type { DeclaredPerformance } from './running-profile.js';
 import type { ProgrammeEnvironment } from './programme.js';
 import { activePainPause } from './weeks.js';
-import { CHECKIN_HISTORY_MAX, evaluateCheckIn, zCheckInInput } from './checkin.js';
+import { CHECKIN_HISTORY_MAX, evaluateCheckIn, painAnswerOf, zCheckInInput } from './checkin.js';
 import type { CheckIn, CheckInInput } from './checkin.js';
 import { decideStart } from './start-check.js';
 import { applySwaps, equipmentSwap } from './equipment.js';
@@ -448,12 +448,15 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   const input = zCheckInInput.safeParse(checkIn ?? {});
   if (!input.success) throw new AppError('CHECKIN_INVALID');
   const ci = input.data;
-  const answered = checkIn !== undefined && (ci.pains.length > 0 || ci.generalSignal || ci.fatigue !== 'unknown' || ci.recovery !== 'unknown');
+  // Question douleur sans réponse ⇒ INCONNUE (jamais « aucune douleur ») : les douleurs connues restent appliquées.
+  const painStatus = ({ no: 'none', yes: 'reported', unknown: 'unknown' } as const)[painAnswerOf(ci)];
+  const answered = checkIn !== undefined && (painStatus !== 'unknown' || ci.fatigue !== 'unknown' || ci.recovery !== 'unknown');
   const id = `checkin.${requestId}.${now}`;
   const content = sportContent(env, v.sport);
-  const ev = evaluateCheckIn({ id, at: now, pains: ci.pains, generalSignal: ci.generalSignal, fatigue: ci.fatigue, recovery: ci.recovery }, state.checkIns, safetyRuleset(env));
+  const ev = evaluateCheckIn({ id, at: now, pains: ci.pains, generalSignal: ci.generalSignal, fatigue: ci.fatigue, recovery: ci.recovery, painStatus }, state.checkIns, safetyRuleset(env), state.safety.clearedAt);
   const record = (decision: CheckIn['decision'], reasons: readonly Reason[]): CheckIn => ({
-    id, at: now, requestId, answered, pains: ev.reports.filter((r) => r.level !== 'P4').flatMap((r) => r.bodyAreas.map((area) => ({ area, level: r.level }))), generalSignal: ci.generalSignal,
+    id, at: now, requestId, answered, pains: ev.declared.filter((r) => r.level !== 'P4').flatMap((r) => r.bodyAreas.map((area) => ({ area, level: r.level }))), generalSignal: ci.generalSignal,
+    painStatus, knownPains: ev.known.map((k) => ({ ...k })),
     fatigue: ci.fatigue, recovery: ci.recovery, readiness: ev.readiness, decision, reasons: reasons.map((x) => ({ code: x.code, params: { ...x.params } })),
   });
   const withCheckIn = (s: AppState, c: CheckIn): AppState => ({ ...s, checkIns: [...s.checkIns, c].slice(-CHECKIN_HISTORY_MAX) });
@@ -461,12 +464,18 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   if (ev.safety.pauseProgram || ev.safety.interruptSession) {
     const areas = [...new Set(ev.reports.flatMap((r) => r.bodyAreas))].sort();
     const reasons = [...ev.reasons.map((x) => ({ code: x.code, params: { ...x.params } })), { code: 'KAIRO.CHECKIN_SAFETY_PAUSE', params: { requestId, ...(ev.safety.messageKey ? { messageKey: ev.safety.messageKey } : {}) } }];
-    return { ...withCheckIn(state, record('paused', reasons)), safety: { activePain: { reportedAt: now, areas, sessionKey: requestId } } };
+    return { ...withCheckIn(state, record('paused', reasons)), safety: { ...state.safety, activePain: { reportedAt: now, areas, sessionKey: requestId } } };
   }
   const d = decideStart(state, requestId, v.session, ev, env, (ex) => content?.catalog.exercise(ex)?.painSensitiveAreas ?? []);
   if (d.kind === 'postponed') return withCheckIn(state, record('postponed', d.reasons));
   const adaptation = d.kind === 'adapted' ? { checkInId: id, record: d.adaptation.record, changes: [...d.adaptation.changes], reasons: d.adaptation.reasons.map((x) => ({ code: x.code, params: { ...x.params } })) } : undefined;
   const s1 = withCheckIn(state, record(d.kind === 'adapted' ? 'adapted' : 'unchanged', d.reasons));
+  return openStartedLog(s1, v, now, adaptation);
+}
+
+/** Journal d'une séance démarrée (séance planifiée, ou adaptée au démarrage) : chronos CT / HYROX initialisés. */
+function openStartedLog(s1: AppState, v: ProgrammeSessionView, now: ReturnType<typeof normalizeInstant>, adaptation?: NonNullable<ProgrammeLog['adaptation']>): AppState {
+  const requestId = v.requestId;
   const decoded = adaptation ? migrateToCurrent<SessionRecord>(adaptation.record) : undefined;
   const session = decoded?.ok ? decoded.value.session : v.session;
   // Cross-training : « Commencer » démarre le chrono (horodaté) ; tours et répétitions à zéro (saisies de l'athlète).
@@ -479,6 +488,20 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   if (v.sport === 'hyrox' && !hrWorkoutOfView(v)) throw new AppError('HR_SESSION_UNREADABLE');
   const hr = v.sport === 'hyrox' ? { hr: { runningSince: now, accumulatedS: 0, steps: 0, loads: [] } } : {};
   return withLog(s1, { requestId, sport: v.sport, startedAt: now, sets: [], painItems: [], rest: null, ...ct, ...hr, ...(adaptation ? { adaptation } : {}) });
+}
+
+/**
+ * Séance déclarée réalisée SANS avoir été démarrée dans l'app (fin directe) : elle a déjà eu lieu, aucun contrôle
+ * pré-séance n'a de sens (et aucune adaptation a posteriori) ; les gardes de démarrage s'appliquent toujours.
+ */
+function startWithoutCheck(state: AppState, clock: Clock, requestId: string): AppState {
+  const v = selectProgrammeSession(state, requestId);
+  if (!v) throw new AppError('SESSION_UNAVAILABLE');
+  if (v.result) throw new AppError('SESSION_FINISHED');
+  if (v.quality === 'BLOCKED') throw new AppError('QUALITY_BLOCKED');
+  const a = startAssessment(state, clock, requestId);
+  if (!a.allowed && a.cause) throw new AppError(START_ERROR[a.cause]);
+  return openStartedLog(state, v, normalizeInstant(clock.now));
 }
 
 /** Contenu (ruleset, catalogue) de la discipline d'une séance dans l'environnement. */
@@ -678,7 +701,7 @@ export interface FinishInput {
  * `recordSessionExecution` (validation par le contrat du moteur, historique, programme). Refus ⇒ état inchangé.
  */
 export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishInput): AppState {
-  const s0 = state.programmeLogs[f.requestId] ? state : startProgrammeSession(state, clock, f.requestId);
+  const s0 = state.programmeLogs[f.requestId] ? state : startWithoutCheck(state, clock, f.requestId);
   const log = openLog(s0, f.requestId);
   const pain = f.pain ? 'REPORTED' as const : 'NONE' as const;
   if (log.sport === 'hyrox') {

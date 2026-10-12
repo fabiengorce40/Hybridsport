@@ -196,6 +196,11 @@ const NEED_LABELS: Readonly<Record<string, string>> = {
 };
 
 /** Raisons d'une décision du contrôle, en clair (codes inconnus ignorés : jamais de code brut affiché). */
+/** Douleurs connues (« zone:niveau ») en clair. */
+export function knownPainText(areas: readonly string[]): string {
+  return areas.map((x) => { const [a = '', l = ''] = x.split(':'); return `${(AREA_LABELS[a] ?? a).toLowerCase()} (${(PAIN_LEVEL_LABELS[l] ?? l).toLowerCase()})`; }).join(', ');
+}
+
 export function checkInReasonsText(reasons: readonly { readonly code: string; readonly params: Readonly<Record<string, unknown>> }[]): string[] {
   const s = (v: unknown): string => (typeof v === 'string' ? v : '');
   const out = reasons.flatMap((r) => {
@@ -205,6 +210,7 @@ export function checkInReasonsText(reasons: readonly { readonly code: string; re
       case 'SAFETY.PAIN.ZONE_RESTRICTED': return [`${exerciseLabel(s(p.exerciseId))} sollicite la zone ${(AREA_LABELS[s(p.bodyArea)] ?? '').toLowerCase()} : ${p.painLevel === 'P1' ? 'prudence' : 'retiré ou remplacé'}.`];
       case 'SAFETY.PAIN.P4_INTERRUPTED': return ['Signal général : la séance est interrompue par sécurité.'];
       case 'SAFETY.PROGRAM_PAUSED': return ['Les règles de sécurité suspendent la planification (douleur importante ou étendue).'];
+      case 'KAIRO.CHECKIN_KNOWN_PAIN_KEPT': return [`Douleur déjà signalée, toujours prise en compte faute de réponse : ${knownPainText(Array.isArray(p.areas) ? p.areas.map(String) : [])}.`];
       case 'KAIRO.CHECKIN_PAIN_ESCALATED': return ['Douleur signalée à plusieurs reprises : elle est traitée avec plus de prudence.'];
       case 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED': return ['État du jour enregistré : cette séance n’est pas ajustée automatiquement (aucune règle d’adaptation pour ce type de séance).'];
       case 'KAIRO.CHECKIN_NO_CHANGE': return ['État du jour pris en compte : aucun changement nécessaire.'];

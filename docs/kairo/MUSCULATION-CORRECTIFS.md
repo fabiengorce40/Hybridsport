@@ -20,6 +20,60 @@ Aucun diagnostic médical : les messages renvoient vers un professionnel de sant
 
 Fichiers : `app-core/src/checkin.ts`, `start-check.ts`, `beta0-app.ts` (`startProgrammeSession`), `kairo/src/precheck/PreSessionCheck.tsx`.
 
+### 1.1 Sécurisation : réponse douleur explicite et douleurs connues (comportement exact)
+
+**Question douleur.** Trois statuts sont enregistrés (`painStatus`) :
+
+| Réponse | Statut | Effet |
+|---|---|---|
+| « Non » | `none` | Aucune douleur aujourd'hui ; les douleurs connues sont **résolues**. |
+| « Oui » + zones et/ou signal général | `reported` | Les zones déclarées **remplacent** les douleurs connues. À « Oui », les zones connues sont **présélectionnées** (modifiables), pour qu'aucune ne soit oubliée par mégarde. |
+| Aucune réponse : « Passer », ou douleur non renseignée côté app-core | `unknown` | Jamais lu comme « aucune douleur » : les douleurs connues restent appliquées. |
+
+- Dans l'interface, « Valider et commencer » est refusé tant que la question douleur n'a pas reçu « Non » ou « Oui »
+  (message explicite) ; « Passer » reste toujours possible.
+- Côté app-core, une entrée sans `painAnswer` vaut `yes` si des zones sont fournies, sinon `unknown`, jamais `no`.
+- Les combinaisons incohérentes (« Oui » sans zone, « Non » ou « inconnu » avec des zones) sont refusées
+  (`CHECKIN_INVALID`), sans rien modifier dans l'état.
+
+**Douleurs connues.** Ce sont les douleurs du **dernier contrôle à réponse explicite**, au niveau enregistré (après
+récurrence). Elles sont annulées dans trois cas :
+
+- ce contrôle répondait « Non » ;
+- il a déclenché la pause douleur ;
+- la pause douleur a été levée explicitement depuis (`safety.clearedAt`, posé quand la levée de la pause est confirmée dans les réglages).
+
+Les contrôles sans réponse sont ignorés : ils ne lèvent rien. Le statut CORE `isActive` est respecté : un signalement
+reste actif jusqu'à sa résolution, et aucune durée d'expiration n'a été inventée.
+
+**« Passer » (ou douleur sans réponse) :**
+- Le contrôle est enregistré avec `pains: []` et `knownPains: [...]` (zone, niveau, contrôle d'origine, date).
+- La raison `KAIRO.CHECKIN_KNOWN_PAIN_KEPT` est affichée en clair : « Douleur déjà signalée, toujours prise en compte
+  faute de réponse ».
+- Les règles G1 s'appliquent aux douleurs connues comme au premier signalement : zone restreinte, puis séance
+  régénérée (adaptée) ou reportée.
+- Le formulaire rappelle les douleurs connues avant toute réponse (« Douleur déjà signalée … Répondez « Non » si elle
+  a disparu »).
+- Une pause douleur active n'est **jamais** levée par « Passer » : le démarrage est refusé (`SAFETY_PAUSE_ACTIVE_PAIN`)
+  avant tout contrôle, et l'état reste inchangé.
+- Fatigue et récupération ne sont **pas** reportées : sans réponse, l'état du jour reste `unknown`.
+
+**Récurrence (règle G1 `detectRecurrence`, inchangée).** Seules les douleurs **déclarées** (`pains`) comptent. Les
+douleurs connues reportées ne sont jamais recomptées : un P1 suivi de « Passer » reste P1, alors qu'un P1 déclaré deux
+fois en 14 jours passe en P2, même avec un « Passer » entre les deux.
+
+**Chemins de démarrage.**
+
+| Chemin | Comportement |
+|---|---|
+| Planifiée, « Faire maintenant » | Même contrôle ; la séance est régénérée sur son créneau. |
+| Non placée (manuelle) | Le contrôle est enregistré. La séance n'est pas régénérable : elle est reportée si une zone exclue est sollicitée (ex. course avec un genou P2 connu), sinon elle démarre telle quelle (raison tracée). |
+| Reprise | Aucun contrôle, aucune douleur appliquée a posteriori ; séries, repos et adaptation sont conservés. |
+| Fin directe d'une séance non démarrée | La séance a déjà eu lieu : aucun contrôle ni adaptation a posteriori. La garde de pause douleur s'applique toujours. |
+
+Tests : `packages/app-core/tests/strength-fixes/precheck-safety.test.ts` (21 tests) et `apps/kairo/tests/precheck-dom.test.tsx`
+(2 tests ajoutés).
+
 ## 2. P1 — Programmation Strength
 
 - **Full Body A/B/C** est conservé pour 1 à 3 séances (règle de composition inchangée, aucun Upper/Lower imposé à 3).
@@ -109,3 +163,4 @@ machine n'est supposée présente.
   - `mu-07` matériel indisponible, `mu-08` série suivante visible au-dessus du chrono ;
   - `mu-09` épaule P2 : séance reportée ;
   - `mu-10` volume hebdomadaire et signal de récupération.
+  - `mu-11` douleur connue rappelée et présélectionnée au contrôle suivant.
