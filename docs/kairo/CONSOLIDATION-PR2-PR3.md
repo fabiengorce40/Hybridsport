@@ -8,7 +8,7 @@ n'a été ajoutée.
 | PR | Branche → destination | Tête | Contenu |
 |---|---|---|---|
 | #2 | `claude/c4-crosstraining-full-session` → `claude/crosstraining-c1-c2-spike-vbg8dv` | `fccdd77` | C4 → C4.3 : séance Cross-training complète, bloc de force délégué à Strength (4 commits) |
-| #3 | `claude/strength-fixes-precheck` → `claude/c4-crosstraining-full-session` | `e61df0e` | Correctifs Musculation P0/P1, sécurisation du contrôle pré-séance, correctif de consolidation (9 commits) |
+| #3 | `claude/strength-fixes-precheck` → `claude/c4-crosstraining-full-session` | `e61df0e` | Correctifs Musculation P0/P1, sécurisation du contrôle pré-séance, correctif de consolidation (8 commits) |
 
 - **Dépendances :**
   - #3 est empilée sur #2 : la base de #3 est la tête de #2, et la base de #2 (`f9f7e2e`) est ancêtre de #2.
