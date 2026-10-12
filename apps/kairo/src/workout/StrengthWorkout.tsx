@@ -53,7 +53,7 @@ export function SetLine({ set, label, saved, editable, onRecord }: {
     <div className={`k-set ${warm ? 'warm' : ''} ${done ? 'done' : ''}`}>
       <div className="k-set-label"><b>{label}</b><span>{target}</span></div>
       <label className="k-field">
-        <input aria-label="Répétitions réalisées" inputMode="numeric" placeholder="—" value={reps} disabled={!editable || done} onChange={(e) => setReps(e.target.value.replace(/[^0-9]/g, ''))} />
+        <input aria-label="Répétitions réalisées" inputMode="numeric" placeholder={typeof set.reps === 'number' ? '—' : repsTarget(set.reps)} value={reps} disabled={!editable || done} onChange={(e) => setReps(e.target.value.replace(/[^0-9]/g, ''))} />
         <small>REPS</small>
       </label>
       <label className="k-field">
@@ -61,6 +61,7 @@ export function SetLine({ set, label, saved, editable, onRecord }: {
         <small>KG</small>
       </label>
       <button className={`k-check ${done ? 'on' : ''}`} aria-label={done ? 'Décocher la série' : 'Cocher la série'} aria-pressed={done} disabled={!editable || (!done && !valid)} onClick={toggle}>✓</button>
+      {editable && !done && repsN === undefined && <small className="k-set-hint" data-reps-required>Saisissez les répétitions réalisées pour valider la série{typeof set.reps === 'number' ? '' : ` (objectif ${repsTarget(set.reps)})`}.</small>}
     </div>
   );
 }
@@ -101,6 +102,17 @@ export function EffortRow({ name, setLabel, setIndex, itemId, target, value, edi
       </div>
     </div>
   );
+}
+
+/**
+ * P1 — après une série validée, la série suivante à faire est amenée au-dessus du chrono de repos flottant (marge de
+ * défilement `.k-set`), jamais laissée sous lui. Affichage seulement.
+ */
+function revealNextSet(): void {
+  requestAnimationFrame(() => {
+    const next = [...document.querySelectorAll('.k-set:not(.done)')].find((x) => x.querySelector('.k-check') !== null);
+    next?.scrollIntoView?.({ block: 'nearest', behavior: 'smooth' });
+  });
 }
 
 /** Carte exercice : nom dominant ; consignes et douleur en second plan. */
@@ -148,7 +160,7 @@ export function ExerciseCard({ number, item, block, log, editable, current, onRe
       {swap?.substituteId && <div className="small" data-swap="substituted">Remplace {exerciseLabel(swap.fromExerciseId)} (matériel indisponible) · même séries et répétitions, charge à choisir selon l’effort indiqué.</div>}
       {refused && <div className="small" role="status" data-swap="refused">Matériel indisponible : aucun exercice de remplacement validé par KAIRO. Passez cet exercice ; la séance sera enregistrée comme adaptée.</div>}
       <div className="k-sets">
-        {sets.map((set, i) => <SetLine key={`${item.id}.${String(i)}`} set={set} label={labels[i] ?? ''} saved={saved(i)} editable={editable} onRecord={(x) => onRecord(item, i, x)} />)}
+        {sets.map((set, i) => <SetLine key={`${item.id}.${String(i)}`} set={set} label={labels[i] ?? ''} saved={saved(i)} editable={editable} onRecord={(x) => { onRecord(item, i, x); if (x.done) revealNextSet(); }} />)}
       </div>
       {lastDone && onEffort && (editable || savedRir !== undefined) && (
         <EffortRow name={name} setLabel={labels[lastDone.i] ?? ''} setIndex={lastDone.i} itemId={item.id} target={targetRirOf(lastDone.x)} value={savedRir} editable={editable} onEffort={onEffort} />
