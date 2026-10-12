@@ -6,6 +6,12 @@
  * planificateur, intention, contexte voisin persisté, séances de la semaine) ; seul l'état CORE du jour change. Rien
  * n'est inventé ici : aucune dose, aucun exercice, aucune règle de douleur. Séance non régénérable (non placée,
  * HYROX) : séance gardée si elle ne sollicite aucune zone restreinte, sinon report explicite.
+ *
+ * Reproductibilité (consolidation) : la composition dépend aussi de l'historique (expositions, progression) et de la
+ * version du moteur. Une séance planifiée n'est donc régénérable FIDÈLEMENT que si sa régénération à état INCONNU redonne
+ * exactement la séance planifiée. Sinon (séance réalisée depuis dans la semaine, semaine composée par une version
+ * antérieure), aucun changement n'est attribué à l'état du jour : la séance planifiée est gardée si aucune zone exclue
+ * n'est sollicitée ; sinon la séance recomposée est proposée, en signalant que la recomposition dépasse la douleur.
  */
 import { migrateToCurrent, toEnvelope } from '@hybridsport/engine';
 import type { CoreState } from '@hybridsport/engine';
@@ -126,16 +132,24 @@ export function decideStart(state: AppState, requestId: string, planned: Session
   const base = ev.reasons.map(reason);
   if (!ev.needsAdaptation) return { kind: 'unchanged', reasons: base };
   const regen = regenerateSession(state, requestId, coreStateOf(ev.readiness, ev.reports), env);
+  const excludedAreas = ev.safety.areaRestrictions.filter((a) => a.action === 'exclude').map((a) => a.area);
+  const hits = planned.blocks.flatMap((b) => b.items).filter((it) => catalogAreas(it.exerciseId).some((a) => excludedAreas.includes(a)));
+  const baseline = regen.status === 'not_regenerable' ? null : regenerateSession(state, requestId, UNKNOWN_CORE_STATE, env);
+  const reproducible = baseline === null || (baseline.status === 'planned' && sessionChanges(planned, baseline.record.session).length === 0);
+  // Non reproductible et aucune zone exclue sollicitée : séance planifiée gardée (jamais de changement attribué à tort).
+  if (!reproducible && hits.length === 0 && !ev.safety.suspendHighIntensity) {
+    return { kind: 'unchanged', reasons: [...base, { code: 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED', params: { requestId, cause: 'session_not_reproducible', readiness: ev.readiness } }] };
+  }
+  const recomposed = reproducible ? [] : [{ code: 'KAIRO.CHECKIN_SESSION_RECOMPOSED', params: { requestId, cause: 'session_not_reproducible' } }];
   if (regen.status === 'refused') return { kind: 'postponed', reasons: [...base, { code: 'KAIRO.CHECKIN_SESSION_NOT_ADAPTABLE', params: { requestId } }, ...regen.reasons.filter((x) => SHOWN.test(x.code) || /REFUSED|NO_VALID|UNAVAILABLE|BLOCKING_NEED/.test(x.code)).slice(0, SHOWN_MAX)] };
   if (regen.status === 'not_regenerable') {
     // Séance non régénérable : gardée seulement si aucune zone restreinte (exclusion) n'est sollicitée.
-    const excluded = ev.safety.areaRestrictions.filter((a) => a.action === 'exclude').map((a) => a.area);
-    const hit = planned.blocks.flatMap((b) => b.items).filter((it) => catalogAreas(it.exerciseId).some((a) => excluded.includes(a)));
+    const hit = hits;
     if (hit.length > 0 || ev.safety.suspendHighIntensity) return { kind: 'postponed', reasons: [...base, { code: 'KAIRO.CHECKIN_SESSION_NOT_ADAPTABLE', params: { requestId, cause: regen.cause, exercises: hit.map((x) => x.exerciseId) } }] };
     return { kind: 'unchanged', reasons: [...base, { code: 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED', params: { requestId, cause: regen.cause, readiness: ev.readiness } }] };
   }
   const changes = sessionChanges(planned, regen.record.session);
   const traced = regen.reasons.filter((x) => SHOWN.test(x.code));
   if (changes.length === 0) return { kind: 'unchanged', reasons: [...base, { code: 'KAIRO.CHECKIN_NO_CHANGE', params: { requestId, readiness: ev.readiness } }, ...traced.slice(0, SHOWN_MAX)] };
-  return { kind: 'adapted', adaptation: { record: toEnvelope('session_record', regen.record), changes, reasons: traced.slice(0, ADAPTATION_REASONS_MAX) }, reasons: [...base, { code: 'KAIRO.CHECKIN_SESSION_ADAPTED', params: { requestId, changes: changes.length } }] };
+  return { kind: 'adapted', adaptation: { record: toEnvelope('session_record', regen.record), changes, reasons: [...recomposed, ...traced].slice(0, ADAPTATION_REASONS_MAX) }, reasons: [...base, ...recomposed, { code: 'KAIRO.CHECKIN_SESSION_ADAPTED', params: { requestId, changes: changes.length } }] };
 }

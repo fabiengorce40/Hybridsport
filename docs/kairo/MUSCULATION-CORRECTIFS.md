@@ -71,6 +71,29 @@ fois en 14 jours passe en P2, même avec un « Passer » entre les deux.
 | Reprise | Aucun contrôle, aucune douleur appliquée a posteriori ; séries, repos et adaptation sont conservés. |
 | Fin directe d'une séance non démarrée | La séance a déjà eu lieu : aucun contrôle ni adaptation a posteriori. La garde de pause douleur s'applique toujours. |
 
+### 1.2 Reproductibilité de la séance avant adaptation (correctif de consolidation)
+
+**Anomalie corrigée.** La composition Strength dépend aussi de l'historique : expositions et progression. Dès qu'une
+séance est réalisée dans la semaine, recomposer une autre séance planifiée donne d'autres exercices, même à état
+identique. Le même effet apparaît sur une semaine composée par une version antérieure du moteur : état réel de la
+version déployée `f9f7e2e`, ou séance Cross-training C3 qui deviendrait une séance C4. Le contrôle attribuait alors ces
+écarts à l'état du jour. Exemple : « fatigue élevée » affichait « développé couché, tirage, pec deck retirés ».
+
+**Comportement.**
+- Une séance n'est adaptée que si sa régénération à état **inconnu** redonne exactement la séance planifiée.
+- Sinon, si aucune zone exclue n'est sollicitée et que la haute intensité n'est pas suspendue :
+  - la séance planifiée est gardée **telle quelle** ;
+  - la raison `KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED {cause: session_not_reproducible}` est tracée ;
+  - l'ajustement d'effort lié à la fatigue n'est donc pas appliqué.
+- Sinon (une zone exclue est sollicitée), la sécurité prime :
+  - la séance recomposée par le moteur est proposée sans la zone, avec `KAIRO.CHECKIN_SESSION_RECOMPOSED`
+    (« certains changements ne sont pas liés à la douleur ») ;
+  - si le moteur la refuse, elle est reportée.
+
+Aucune règle sportive n'est ajoutée. Tests : `precheck-reproducibility.test.ts`. Il couvre 4 cas en semaine courante
+et 5 états réels générés par le code déployé : séance en cours, Cross-training C3 en cours, pause douleur, prise de
+masse 4 séances par semaine.
+
 Tests : `packages/app-core/tests/strength-fixes/precheck-safety.test.ts` (21 tests) et `apps/kairo/tests/precheck-dom.test.tsx`
 (2 tests ajoutés).
 
