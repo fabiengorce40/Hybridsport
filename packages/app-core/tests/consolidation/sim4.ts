@@ -28,8 +28,10 @@ const S_PER_MIN = 60;
 
 export const PROFILE = { ...massProfile({ preset: 'preset.commercial_gym' }), crosstraining: { enabled: true, sessionsPerWeek: 1, intent: 'crosstraining.strength_plus_conditioning', returnState: 'NONE' } } as ProfileInput;
 
-interface Plan { readonly ci?: CheckInInput; readonly label: string; readonly skip?: boolean; readonly unavailable?: boolean }
-function plan(w: number, v: SessionView, k: number): Plan {
+export interface Plan { readonly ci?: CheckInInput; readonly label: string; readonly skip?: boolean; readonly unavailable?: boolean }
+export type PlanFn = (w: number, v: SessionView, k: number) => Plan;
+/** Réponses scénarisées par défaut (normal, fatigue, genou P2 connu, épaule P1 ×2, course manquée). */
+export function plan(w: number, v: SessionView, k: number): Plan {
   const no: CheckInInput = { painAnswer: 'no', fatigue: 'low', recovery: 'good' };
   if (w === 0) return { ci: no, label: 'Non · fatigue faible · bonne récup.', unavailable: v.sport === 'strength' && k === 0 };
   if (w === 1) {
@@ -88,7 +90,9 @@ function excludedOf(c: CheckIn | undefined): string[] {
   return s.areaRestrictions.filter((a) => a.action === 'exclude').map((a) => a.area).sort();
 }
 
-export function simulate(): SimResult {
+/** `cfg` : profil et réponses au contrôle (défaut : profil masse de la consolidation, scénario par défaut). */
+export function simulate(cfg: { readonly profile?: ProfileInput; readonly plan?: PlanFn } = {}): SimResult {
+  const planOf = cfg.plan ?? plan;
   const env = beta0Environment();
   const content = strengthContent();
   const params = readStrengthParams(content.ruleset).values;
@@ -99,7 +103,7 @@ export function simulate(): SimResult {
     const e = estimateDuration(sess, c.catalog, readDurationParams(c.ruleset));
     return e.ok ? Math.round(e.estimate.p50 / S_PER_MIN) : null;
   };
-  let s = create(PROFILE, T(MONS[0] as string, '07:30'));
+  let s = create(cfg.profile ?? PROFILE, T(MONS[0] as string, '07:30'));
   const sessions: SimSession[] = [];
   const weeks: SimWeek[] = [];
   for (const [w, mon] of MONS.entries()) {
@@ -110,7 +114,7 @@ export function simulate(): SimResult {
     const placed = view.filter((v) => v.placement === 'planned' && v.date).sort((a, b) => ((a.date ?? '') < (b.date ?? '') ? -1 : 1));
     for (const [k, v] of placed.entries()) {
       const d = v.date ?? mon;
-      const p = plan(w, v, k);
+      const p = planOf(w, v, k);
       const variant = insights?.sessions.find((x) => x.requestId === v.requestId)?.variant;
       const plannedSession = selectProgrammeSession(s, v.requestId)?.session;
       const title = v.sport === 'strength' ? `${v.archetypeId ?? ''}${variant ? ` ${variant}` : ''}` : v.sport === 'crosstraining' ? `${v.ctFormat ?? ''}${plannedSession?.blocks.some((b) => b.kind === 'strength') ? ' + bloc force' : ''}` : (v.archetypeId ?? '');
