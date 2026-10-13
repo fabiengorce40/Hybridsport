@@ -212,8 +212,10 @@ export function checkInReasonsText(reasons: readonly { readonly code: string; re
       case 'SAFETY.PROGRAM_PAUSED': return ['Les règles de sécurité suspendent la planification (douleur importante ou étendue).'];
       case 'KAIRO.CHECKIN_KNOWN_PAIN_KEPT': return [`Douleur déjà signalée, toujours prise en compte faute de réponse : ${knownPainText(Array.isArray(p.areas) ? p.areas.map(String) : [])}.`];
       case 'KAIRO.CHECKIN_PAIN_ESCALATED': return ['Douleur signalée à plusieurs reprises : elle est traitée avec plus de prudence.'];
+      case 'KAIRO.CHECKIN_PERSISTED_ADAPTED': return ['Séance prévue conservée et ajustée à votre douleur : seuls les exercices concernés sont remplacés ou retirés.'];
       case 'KAIRO.CHECKIN_SESSION_RECOMPOSED': return ['Séance recomposée avec votre historique récent : certains changements ne sont pas liés à la douleur déclarée.'];
-      case 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED': if (p.cause === 'session_not_reproducible') return ['État du jour enregistré : la séance prévue est gardée telle quelle (elle ne peut plus être recomposée à l’identique ; aucun ajustement automatique).'];
+      case 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED': if (p.cause === 'readiness_requires_reproducible_session') return ['Fatigue ou récupération enregistrée : l’effort de cette séance n’est pas ajusté automatiquement ; écoutez vos sensations.'];
+        if (p.cause === 'session_not_reproducible') return ['État du jour enregistré : la séance prévue est gardée telle quelle (elle ne peut plus être recomposée à l’identique ; aucun ajustement automatique).'];
         return ['État du jour enregistré : cette séance n’est pas ajustée automatiquement (aucune règle d’adaptation pour ce type de séance).'];
       case 'KAIRO.CHECKIN_NO_CHANGE': return ['État du jour pris en compte : aucun changement nécessaire.'];
       default: return [];

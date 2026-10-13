@@ -12,9 +12,15 @@
  * exactement la séance planifiée. Sinon (séance réalisée depuis dans la semaine, semaine composée par une version
  * antérieure), aucun changement n'est attribué à l'état du jour : la séance planifiée est gardée si aucune zone exclue
  * n'est sollicitée ; sinon la séance recomposée est proposée, en signalant que la recomposition dépasse la douleur.
+ *
+ * R2 (consolidation) — fidélité accrue sans rien persister : la régénération lit les historiques ajoutés AU PLUS TARD à
+ * la planification de la semaine (`plannedAt` : expositions, empreintes, réalisations), comme le planificateur les a lus.
+ * Séance encore non reproductible (historique propre au planificateur, tracks de progression, version du moteur) :
+ * adaptation de la séance PERSISTÉE par la validation et la réparation du CORE (`adaptPersistedSession`), qui ne change
+ * que ce que l'état déclaré impose. La recomposition signalée et le report ne sont que les derniers recours.
  */
-import { migrateToCurrent, toEnvelope } from '@hybridsport/engine';
-import type { CoreState } from '@hybridsport/engine';
+import { deriveProgramStatus, ENGINE_VERSION, estimateDuration, migrateToCurrent, readDurationParams, repairSession, toEnvelope, toRecordedDurationEstimate, validateSession } from '@hybridsport/engine';
+import type { CoreState, ValidationContext } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
 import type { PlannerSport, SlotRequest, WeekSession } from '@hybridsport/planner';
 import type { AppState, PersistedWeek, Reason } from './model.js';
@@ -22,6 +28,7 @@ import type { CheckInEvaluation } from './checkin.js';
 import { coreStateOf, UNKNOWN_CORE_STATE } from './checkin.js';
 import { buildPorts } from './planning.js';
 import { portInputs } from './programme.js';
+import { coreProfile } from './generate.js';
 import type { ProgrammeEnvironment } from './programme.js';
 
 type Request = PersistedWeek['requests'][number];
@@ -52,8 +59,10 @@ const REGENERABLE: readonly PlannerSport[] = ['strength', 'running', 'crosstrain
  * Régénère la séance PLANIFIÉE `requestId` avec l'état CORE `coreState` sur son jour (les autres jours : inconnu).
  * Pur : n'écrit rien dans l'état.
  */
-export function regenerateSession(state: AppState, requestId: string, coreState: CoreState, env: ProgrammeEnvironment): Regeneration {
-  const at = locate(state, requestId);
+export function regenerateSession(state0: AppState, requestId: string, coreState: CoreState, env: ProgrammeEnvironment): Regeneration {
+  const at = locate(state0, requestId);
+  // Historiques tels qu'à la planification de la semaine (aucune donnée persistée en plus ; tracks : état courant).
+  const state = at ? asOfPlanning(state0, at.week.plannedAt) : state0;
   const p = state.profile;
   const ps = state.programmeState;
   if (!at || !p || !ps) return { status: 'not_regenerable', cause: 'session_unknown' };
@@ -85,6 +94,54 @@ export function regenerateSession(state: AppState, requestId: string, coreState:
   const out = port.generate(slot);
   if (out.status !== 'planned') return { status: 'refused', reasons: out.reasons.map(reason) };
   return { status: 'planned', record: out.record, reasons: out.reasons.map(reason) };
+}
+
+/** État dont les historiques AJOUTÉS (append-only) sont coupés à l'instant `cutoff` ; le reste est inchangé. */
+export function asOfPlanning(state: AppState, cutoff: string): AppState {
+  const t = Date.parse(cutoff);
+  const keep = (iso: unknown): boolean => typeof iso !== 'string' || Date.parse(iso) <= t;
+  return {
+    ...state,
+    strength: { ...state.strength, exposures: state.strength.exposures.filter((x) => keep(x.at)) },
+    fingerprints: { strength: state.fingerprints.strength.filter((x) => keep(x.at)), running: state.fingerprints.running.filter((x) => keep(x.at)), crosstraining: state.fingerprints.crosstraining.filter((x) => keep(x.at)) },
+    running: { ...state.running, realized: state.running.realized.filter((x) => keep(x.completedAt)) },
+    crosstraining: { realized: state.crosstraining.realized.filter((x) => keep(x.completedAt)) },
+    hyrox: { realized: state.hyrox.realized.filter((x) => keep(x.completedAt)) },
+  };
+}
+
+export type PersistedAdaptation =
+  | { readonly status: 'adapted'; readonly record: SessionRecord; readonly changes: readonly string[]; readonly reasons: readonly Reason[] }
+  | { readonly status: 'impossible'; readonly cause: string; readonly reasons: readonly Reason[] };
+
+/**
+ * R2 — adaptation de la séance PERSISTÉE (jamais régénérée) par le CORE : validation puis réparation sous les
+ * restrictions de douleur du jour (`validateSession`, `repairSession` : substituts admissibles du catalogue, ou retrait).
+ * Garde : la séance planifiée doit être VALIDE sans restriction (sinon un écart non lié à l'état serait attribué à
+ * tort). La dose selon l'état (règle du moteur de la discipline) n'est PAS appliquée ici : tracée comme non appliquée.
+ */
+export function adaptPersistedSession(state: AppState, requestId: string, ev: CheckInEvaluation, env: ProgrammeEnvironment): PersistedAdaptation {
+  const at = locate(state, requestId);
+  const rec = recordOf(at?.r);
+  const p = state.profile;
+  const content = at ? env[at.r.sport]?.content : undefined;
+  if (!at || !rec || !p || !content) return { status: 'impossible', cause: 'session_unknown', reasons: [] };
+  const cp = coreProfile(p);
+  const deps = { catalog: content.catalog, ruleset: content.ruleset, engineVersion: ENGINE_VERSION };
+  const ctxOf = (restricted: boolean): ValidationContext => ({
+    programStatus: deriveProgramStatus({ eligibility: cp.eligibility, declarations: [], safety: restricted ? ev.safety : { pauseProgram: false }, ruleset: content.ruleset }).status,
+    eligibility: cp.eligibility, athleteLevel: cp.athleteLevel, availableEquipment: cp.availableEquipment, restrictions: cp.restrictions,
+    areaRestrictions: restricted ? ev.safety.areaRestrictions : [], restrictedMovements: restricted ? ev.safety.restrictedMovements : [],
+    excludedExercises: cp.excludedExercises, dayAvailable: true,
+  });
+  if (validateSession(rec.session, ctxOf(false), deps).report.status === 'INVALID') return { status: 'impossible', cause: 'planned_session_invalid_without_restrictions', reasons: [] };
+  const out = repairSession(rec.session, ctxOf(true), deps, { seed: `checkin:${requestId}` });
+  const traced = out.trace.entries.flatMap((e) => e.reasons).filter((r) => SHOWN.test(r.code)).map(reason);
+  if (out.result.status !== 'ok') return { status: 'impossible', cause: 'repair_refused', reasons: (out.result.status === 'error' ? out.result.error.reasons : out.result.reasons).map(reason) };
+  const session = out.result.value;
+  const est = estimateDuration(session, content.catalog, readDurationParams(content.ruleset));
+  const record: SessionRecord = { ...rec, session, durationEstimate: est.ok ? toRecordedDurationEstimate(est.estimate) : rec.durationEstimate };
+  return { status: 'adapted', record, changes: sessionChanges(rec.session, session), reasons: traced };
 }
 
 /** Différences lisibles (codes) entre la séance planifiée et la séance adaptée : exercices, séries de travail, effort. */
@@ -131,25 +188,44 @@ const SHOWN = /^(SAFETY\.|REPAIR\.|DOSE\.(MODIFIED|READINESS)|DATA\.READINESS)/;
 export function decideStart(state: AppState, requestId: string, planned: SessionDraft, ev: CheckInEvaluation, env: ProgrammeEnvironment, catalogAreas: (exerciseId: string) => readonly string[]): StartDecision {
   const base = ev.reasons.map(reason);
   if (!ev.needsAdaptation) return { kind: 'unchanged', reasons: base };
-  const regen = regenerateSession(state, requestId, coreStateOf(ev.readiness, ev.reports), env);
   const excludedAreas = ev.safety.areaRestrictions.filter((a) => a.action === 'exclude').map((a) => a.area);
-  const hits = planned.blocks.flatMap((b) => b.items).filter((it) => catalogAreas(it.exerciseId).some((a) => excludedAreas.includes(a)));
-  const baseline = regen.status === 'not_regenerable' ? null : regenerateSession(state, requestId, UNKNOWN_CORE_STATE, env);
-  const reproducible = baseline === null || (baseline.status === 'planned' && sessionChanges(planned, baseline.record.session).length === 0);
-  // Non reproductible et aucune zone exclue sollicitée : séance planifiée gardée (jamais de changement attribué à tort).
-  if (!reproducible && hits.length === 0 && !ev.safety.suspendHighIntensity) {
-    return { kind: 'unchanged', reasons: [...base, { code: 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED', params: { requestId, cause: 'session_not_reproducible', readiness: ev.readiness } }] };
-  }
-  const recomposed = reproducible ? [] : [{ code: 'KAIRO.CHECKIN_SESSION_RECOMPOSED', params: { requestId, cause: 'session_not_reproducible' } }];
-  if (regen.status === 'refused') return { kind: 'postponed', reasons: [...base, { code: 'KAIRO.CHECKIN_SESSION_NOT_ADAPTABLE', params: { requestId } }, ...regen.reasons.filter((x) => SHOWN.test(x.code) || /REFUSED|NO_VALID|UNAVAILABLE|BLOCKING_NEED/.test(x.code)).slice(0, SHOWN_MAX)] };
+  const hitsOf = (s: SessionDraft) => s.blocks.flatMap((b) => b.items).filter((it) => catalogAreas(it.exerciseId).some((a) => excludedAreas.includes(a)));
+  const hits = hitsOf(planned);
+  const mustChange = hits.length > 0 || ev.safety.suspendHighIntensity;
+  const notApplied = (cause: string): StartDecision => ({ kind: 'unchanged', reasons: [...base, { code: 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED', params: { requestId, cause, readiness: ev.readiness } }] });
+  const postponed = (more: readonly Reason[], params: Record<string, unknown> = {}): StartDecision => ({ kind: 'postponed', reasons: [...base, { code: 'KAIRO.CHECKIN_SESSION_NOT_ADAPTABLE', params: { requestId, ...params } }, ...more] });
+  const adapted = (record: SessionRecord, changes: readonly string[], extra: readonly Reason[], traced: readonly Reason[]): StartDecision => {
+    // Défense en profondeur : jamais une séance adaptée qui sollicite encore une zone exclue.
+    const left = hitsOf(record.session);
+    if (left.length > 0) return postponed([], { cause: 'excluded_area_still_loaded', exercises: left.map((x) => x.exerciseId) });
+    if (changes.length === 0) return { kind: 'unchanged', reasons: [...base, ...extra, { code: 'KAIRO.CHECKIN_NO_CHANGE', params: { requestId, readiness: ev.readiness } }, ...traced.slice(0, SHOWN_MAX)] };
+    return { kind: 'adapted', adaptation: { record: toEnvelope('session_record', record), changes, reasons: [...extra, ...traced].slice(0, ADAPTATION_REASONS_MAX) }, reasons: [...base, ...extra, { code: 'KAIRO.CHECKIN_SESSION_ADAPTED', params: { requestId, changes: changes.length } }] };
+  };
+  /** Adaptation de la séance PERSISTÉE par le CORE ; la dose selon l'état n'y est jamais appliquée (tracée). */
+  const persisted = (cause: string): StartDecision | null => {
+    const a = adaptPersistedSession(state, requestId, ev, env);
+    if (a.status !== 'adapted') return null;
+    const readinessNote = ev.readiness === 'caution' || ev.readiness === 'reduce' ? [{ code: 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED', params: { requestId, cause: 'readiness_requires_reproducible_session', readiness: ev.readiness } }] : [];
+    return adapted(a.record, a.changes, [{ code: 'KAIRO.CHECKIN_PERSISTED_ADAPTED', params: { requestId, cause } }, ...readinessNote], a.reasons);
+  };
+  const regen = regenerateSession(state, requestId, coreStateOf(ev.readiness, ev.reports), env);
   if (regen.status === 'not_regenerable') {
-    // Séance non régénérable : gardée seulement si aucune zone restreinte (exclusion) n'est sollicitée.
-    const hit = hits;
-    if (hit.length > 0 || ev.safety.suspendHighIntensity) return { kind: 'postponed', reasons: [...base, { code: 'KAIRO.CHECKIN_SESSION_NOT_ADAPTABLE', params: { requestId, cause: regen.cause, exercises: hit.map((x) => x.exerciseId) } }] };
-    return { kind: 'unchanged', reasons: [...base, { code: 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED', params: { requestId, cause: regen.cause, readiness: ev.readiness } }] };
+    // Séance non régénérable (non placée, HYROX) : adaptation de la séance persistée si une zone l'impose, sinon gardée.
+    if (!mustChange) return notApplied(regen.cause);
+    return persisted(regen.cause) ?? postponed([], { cause: regen.cause, exercises: hits.map((x) => x.exerciseId) });
   }
-  const changes = sessionChanges(planned, regen.record.session);
-  const traced = regen.reasons.filter((x) => SHOWN.test(x.code));
-  if (changes.length === 0) return { kind: 'unchanged', reasons: [...base, { code: 'KAIRO.CHECKIN_NO_CHANGE', params: { requestId, readiness: ev.readiness } }, ...traced.slice(0, SHOWN_MAX)] };
-  return { kind: 'adapted', adaptation: { record: toEnvelope('session_record', regen.record), changes, reasons: [...recomposed, ...traced].slice(0, ADAPTATION_REASONS_MAX) }, reasons: [...base, ...recomposed, { code: 'KAIRO.CHECKIN_SESSION_ADAPTED', params: { requestId, changes: changes.length } }] };
+  const baseline = regenerateSession(state, requestId, UNKNOWN_CORE_STATE, env);
+  const reproducible = baseline.status === 'planned' && sessionChanges(planned, baseline.record.session).length === 0;
+  if (reproducible) {
+    if (regen.status === 'refused') return postponed(regen.reasons.filter((x) => SHOWN.test(x.code) || /REFUSED|NO_VALID|UNAVAILABLE|BLOCKING_NEED/.test(x.code)).slice(0, SHOWN_MAX));
+    return adapted(regen.record, sessionChanges(planned, regen.record.session), [], regen.reasons.filter((x) => SHOWN.test(x.code)));
+  }
+  // Non reproductible : jamais de changement attribué à tort. Adaptation de la séance persistée (CORE) ; sinon, si
+  // aucune zone exclue n'est sollicitée, séance gardée ; sinon recomposition SIGNALÉE, ou report.
+  const p = persisted('session_not_reproducible');
+  if (p) return p;
+  if (!mustChange) return notApplied('session_not_reproducible');
+  const recomposed = [{ code: 'KAIRO.CHECKIN_SESSION_RECOMPOSED', params: { requestId, cause: 'session_not_reproducible' } }];
+  if (regen.status === 'refused') return postponed(regen.reasons.filter((x) => SHOWN.test(x.code) || /REFUSED|NO_VALID|UNAVAILABLE|BLOCKING_NEED/.test(x.code)).slice(0, SHOWN_MAX));
+  return adapted(regen.record, sessionChanges(planned, regen.record.session), recomposed, regen.reasons.filter((x) => SHOWN.test(x.code)));
 }

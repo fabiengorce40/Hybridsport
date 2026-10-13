@@ -54,15 +54,15 @@ describe('reproductibilité — semaine en cours (code intégré)', () => {
     expect(faithful(done, b) && faithful(done, c)).toBe(false);
   });
 
-  it('RP-2. fatigue élevée sur une séance non reproductible : séance PLANIFIÉE gardée telle quelle, raison tracée (aucun changement attribué à tort)', () => {
+  it('RP-2. fatigue élevée sur une séance non reproductible : séance PLANIFIÉE gardée telle quelle, dose non ajustée et tracée (aucun changement attribué à tort)', () => {
     const s = startProgrammeSession(done, at(T('2026-10-06')), b, env, TIRED);
     expect(s.checkIns.at(-1)).toMatchObject({ decision: 'unchanged', readiness: 'caution' });
-    expect(s.checkIns.at(-1)?.reasons).toContainEqual({ code: 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED', params: expect.objectContaining({ cause: 'session_not_reproducible' }) });
+    expect(s.checkIns.at(-1)?.reasons).toContainEqual({ code: 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED', params: expect.objectContaining({ cause: 'readiness_requires_reproducible_session' }) });
     expect(s.programmeLogs[b]?.adaptation).toBeUndefined();
     expect(exercisesOf(s, b)).toEqual(exercisesOf(done, b));
   });
 
-  it('RP-3. genou P2 sur une séance non reproductible qui sollicite le genou : sécurité d’abord (aucun exercice genou), recomposition signalée', () => {
+  it('RP-3. genou P2 sur une séance non reproductible qui sollicite le genou : séance PERSISTÉE adaptée par le CORE (seuls les exercices genou changent), aucune recomposition', () => {
     const kneeIn = (id: string) => exercisesOf(done, id).some((e) => areasOf(e).includes('knee'));
     const id = [b, c].find(kneeIn) ?? '';
     expect(id).not.toBe('');
@@ -71,8 +71,29 @@ describe('reproductibilité — semaine en cours (code intégré)', () => {
     expect(['adapted', 'postponed']).toContain(d);
     if (d === 'adapted') {
       expect(exercisesOf(s, id).filter((e) => areasOf(e).includes('knee'))).toEqual([]);
-      expect(codes(s)).toContain('KAIRO.CHECKIN_SESSION_RECOMPOSED');
+      expect(codes(s)).toContain('KAIRO.CHECKIN_PERSISTED_ADAPTED');
+      expect(codes(s)).not.toContain('KAIRO.CHECKIN_SESSION_RECOMPOSED');
+      // Seuls les exercices sollicitant le genou sont retirés ou remplacés : le reste de la séance planifiée est intact.
+      const before = exercisesOf(done, id);
+      const removed = (s.programmeLogs[id]?.adaptation?.changes ?? []).filter((c) => c.startsWith('removed:')).map((c) => c.slice('removed:'.length));
+      for (const e of removed) expect(areasOf(e)).toContain('knee');
+      for (const e of before.filter((x) => !areasOf(x).includes('knee'))) expect(exercisesOf(s, id)).toContain(e);
     }
+  });
+
+  it('RP-5. fidélité : les historiques sont lus tels qu’à la planification (expositions, empreintes) — séances de la semaine 2 reproductibles après réalisations', () => {
+    let s = ensureBeta0Week(done, at('2026-10-12T07:30:00.000Z'));
+    const ids2 = strengthIds(s, '2026-10-12');
+    const first2 = ids2[0] ?? '';
+    s = doStrength(s, first2, selectProgrammeSession(s, first2)?.date ?? '2026-10-12');
+    for (const id of ids2.slice(1)) expect(faithful(s, id)).toBe(true);
+  });
+
+  it('RP-6. séance commencée jamais modifiée : la reprise ignore le contrôle, même avec une douleur déclarée', () => {
+    let s = startProgrammeSession(done, at(T('2026-10-06')), b, env, { painAnswer: 'no' });
+    const before = JSON.stringify(s.programmeLogs[b]);
+    s = startProgrammeSession(s, at(T('2026-10-06', '18:30')), b, env, KNEE);
+    expect(JSON.stringify(s.programmeLogs[b])).toBe(before);
   });
 
   it('RP-4. séance reproductible (semaine neuve) : l’adaptation reste précise (effort seulement pour la fatigue)', () => {
