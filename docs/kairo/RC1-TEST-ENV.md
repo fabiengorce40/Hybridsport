@@ -171,9 +171,22 @@ L'état a été relevé avant et après le travail.
 
 | référence | avant | après |
 |---|---|---|
-| `gh-pages` | `7bf4a77`, « KAIRO PWA f9f7e2e… », 2026-10-11 22:13 UTC | voir le compte rendu de fin |
-| `claude/crosstraining-c1-c2-spike-vbg8dv` | `f9f7e2e`, 2026-10-11 22:10 UTC | voir le compte rendu de fin |
-| dernière exécution de `kairo-pages.yml` | run 38179370211 (f9f7e2e, succès, 2026-10-11) | voir le compte rendu de fin |
+| `gh-pages` | `7bf4a77`, « KAIRO PWA f9f7e2e… », 2026-10-11 22:13 UTC | `7bf4a77`, identique |
+| `claude/crosstraining-c1-c2-spike-vbg8dv` | `f9f7e2e`, 2026-10-11 22:10 UTC | `f9f7e2e`, identique |
+| dernière exécution de `kairo-pages.yml` | run 38179370211 (f9f7e2e, succès, 2026-10-11) | la même : aucune nouvelle exécution |
+| PR #2 / #3 | ouvertes, non fusionnées | ouvertes, non fusionnées |
+| `claude/kairo-rc1` | `f0b09e4` | `f0b09e4`, identique |
+
+`kairo-pages.yml` n'a aucune différence par rapport à `f0b09e4`.
+
+Sur GitHub, le workflow de test s'est exécuté pour `710106f` (run 38377842618) :
+- `pnpm check` : succès ;
+- build de test : succès ;
+- garde des secrets : absents, donc **déploiement et vérification sautés, comme prévu**.
+
+La toute première poussée (`3b17215`) avait un YAML invalide : un « : » non échappé dans une commande. L'exécution
+correspondante (run 38377697759) a échoué **avant tout job**, sans aucune action. La correction a été validée par
+actionlint avant envoi.
 
 ### 7.2 Vérifications locales
 
