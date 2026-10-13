@@ -36,7 +36,7 @@ export interface M3TestOptions {
   readonly window?: M3Window;
   readonly actions?: readonly ('MOVE' | 'SWAP' | 'RECOMPOSE')[];
   readonly protectPriority?: boolean;
-  readonly yieldOrder?: readonly ('importance' | 'rank')[];
+  readonly yieldOrder?: readonly ('importance' | 'rank' | 'later')[];
   readonly importance?: Record<string, Record<string, 'key' | 'standard'>> | null;
   readonly historyStatuses?: readonly ('executed' | 'abandoned' | 'planned' | 'missed')[];
   readonly maxPasses?: number;

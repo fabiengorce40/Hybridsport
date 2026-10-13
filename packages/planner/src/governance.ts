@@ -22,13 +22,19 @@ export const GP_PARAMETERS = {
    */
   'planner.interference.structureWindows': { governance: 'G2', schema: z.record(z.string().min(1), z.number().nonnegative()) },
 
+  /**
+   * CAPACITÉ D'ÉTUDE (RC2), absente de toute gouvernance existante : groupes de sports dont les séances sont ESPACÉES
+   * entre elles au placement initial (critère prioritaire sur l'espacement global). Absent ⇒ placement inchangé.
+   */
+  'planner.placement.spacingGroups': { governance: 'G2', schema: z.array(z.array(z.enum(['strength', 'running', 'crosstraining', 'hyrox'])).min(1)) },
+
   // ——— M3 : arbitrage multisport (TOUS absents des rulesets réels ⇒ arbitrage indisponible, tracé) ———
   /**
    * G2 — DÉTECTION par paires : deux séances de sports DIFFÉRENTS dont le niveau de demande (profil CORE) sur une
    * structure appartient à `levels` à moins de `withinHours` l'une de l'autre sont en conflit. Le niveau DÉCRIT ; seule
    * cette règle gouvernée en fait un conflit (aucun délai déduit du niveau).
    */
-  'planner.m3.pairRules': { governance: 'G2', schema: z.array(z.object({ id: z.string().min(1), structures: z.array(z.string().min(1)).min(1), levels, withinHours: hours }).strict()) },
+  'planner.m3.pairRules': { governance: 'G2', schema: z.array(z.object({ id: z.string().min(1), structures: z.array(z.string().min(1)).min(1), levels, withinHours: hours, sameSport: z.boolean().optional(), sports: z.array(z.enum(['strength', 'running', 'crosstraining', 'hyrox'])).min(1).optional() }).strict()) },
   /** G2 — DÉTECTION par accumulation : plus de `maxSessions` séances à `levels` sur `structure` dans `withinHours`. */
   'planner.m3.accumulationRules': { governance: 'G2', schema: z.array(z.object({ id: z.string().min(1), structure: z.string().min(1), levels, withinHours: hours, maxSessions: z.number().int().positive() }).strict()) },
   /** G2 — DISTANCE : fenêtre d'INTERFÉRENCE au-delà de laquelle une voisine n'est plus transmise aux moteurs. */
@@ -43,7 +49,7 @@ export const GP_PARAMETERS = {
    * liste vide ⇒ aucune séance ne cède (conflit non résolu, tracé). `protectPriority` : une séance d'un sport PLUS
    * prioritaire, ou une séance clé, n'est jamais déplacée par un SWAP (protection du sport prioritaire).
    */
-  'planner.m3.yieldPolicy': { governance: 'G2', schema: z.object({ order: z.array(z.enum(['importance', 'rank'])), protectPriority: z.boolean() }).strict() },
+  'planner.m3.yieldPolicy': { governance: 'G2', schema: z.object({ order: z.array(z.enum(['importance', 'rank', 'later'])), protectPriority: z.boolean() }).strict() },
   /** G2 — IMPORTANCE d'une séance, par sport : rôle de composition du moteur (ou archétype déclaré) → `key` | `standard`. */
   'planner.m3.sessionImportance': { governance: 'G2', schema: z.record(z.string().min(1), z.record(z.string().min(1), z.enum(['key', 'standard']))) },
   /** G2 — HISTORIQUE : statuts des séances antérieures comptés comme expositions réelles pour l'interférence. */

@@ -106,6 +106,9 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
   // M3 — fenêtre d'INTERFÉRENCE des voisines (si gouvernée) : au-delà, une voisine n'est plus transmise aux moteurs.
   const neighbourWindow = hybrid ? readNeighbourWindow(governance, input.mode) : { hours: undefined, reasons: [] };
   const m3Policy = hybrid ? readM3Policy(governance, input.mode) : undefined;
+  // Étude RC2 (inerte par défaut) : groupes de sports espacés au placement initial.
+  const spacing = hybrid ? readPlannerParam(governance, 'planner.placement.spacingGroups', input.mode) : undefined;
+  const spacingGroups: readonly (readonly PlannerSport[])[] = spacing?.ok ? spacing.value : [];
   // Importance transportée aux moteurs seulement si la politique M3 est gouvernée (sinon : contexte V2 inchangé).
   const importanceKnown = m3Policy?.ok === true && m3Policy.policy.importance !== null;
   const hoursOf = (d: string): number => Date.parse(clock.instantOf(d)) / MS_PER_HOUR;
@@ -258,8 +261,12 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     if (!port) { results.set(r.requestId, { ...base, status: 'unplaced', category: 'engine_unavailable', reasons: [gpReasons.emit(GP_CODES.ENGINE_UNAVAILABLE, { sport: r.sport })] }); continue; }
     const takenIdx = [...placed.values()].map((x) => dates.indexOf(x.date));
     const gap = (d: string): number => (takenIdx.length === 0 ? 0 : Math.min(...takenIdx.map((i) => Math.abs(i - dates.indexOf(d)))));
+    // Étude RC2 : écart aux séances du MÊME groupe de sports (critère prioritaire seulement si un groupe est gouverné).
+    const group = spacingGroups.find((g) => g.includes(r.sport));
+    const groupIdx = group ? [...placed.values()].filter((x) => group.includes(x.sport)).map((x) => dates.indexOf(x.date)) : [];
+    const groupGap = (d: string): number => (groupIdx.length === 0 ? dates.length : Math.min(...groupIdx.map((i) => Math.abs(i - dates.indexOf(d)))));
     const taken = new Set([...placed.values()].map((x) => x.date));
-    const candidates = dates.filter((d) => !taken.has(d) && (minutes.get(d) ?? 0) > 0).sort((a, b) => gap(b) - gap(a) || (a < b ? -1 : 1));
+    const candidates = dates.filter((d) => !taken.has(d) && (minutes.get(d) ?? 0) > 0).sort((a, b) => groupGap(b) - groupGap(a) || gap(b) - gap(a) || (a < b ? -1 : 1));
     if (candidates.length === 0) {
       const u = composeUnplaced(r);
       results.set(r.requestId, { ...base, status: 'unplaced', category: 'slot_unavailable', reasons: [gpReasons.emit(GP_CODES.NOT_ENOUGH_DAYS, { sport: r.sport, requestId: r.requestId }), ...u.reasons], ...(u.composed ? { composed: u.composed } : {}) });

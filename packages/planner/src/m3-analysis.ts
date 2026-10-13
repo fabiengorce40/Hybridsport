@@ -29,7 +29,11 @@ export interface M3Node {
   readonly demand: Readonly<Record<string, DemandLevel>> | null;
 }
 
-export interface PairRule { readonly id: string; readonly structures: readonly string[]; readonly levels: readonly DemandLevel[]; readonly withinHours: number }
+/**
+ * Règle de paire. `sameSport` / `sports` : CAPACITÉS D'ÉTUDE (RC2), inertes par défaut — absentes, une paire du même
+ * sport est ignorée (la discipline reste à son moteur), comme avant. Aucune gouvernance existante ne les renseigne.
+ */
+export interface PairRule { readonly id: string; readonly structures: readonly string[]; readonly levels: readonly DemandLevel[]; readonly withinHours: number; readonly sameSport?: boolean; readonly sports?: readonly PlannerSport[] }
 export interface AccumulationRule { readonly id: string; readonly structure: string; readonly levels: readonly DemandLevel[]; readonly withinHours: number; readonly maxSessions: number }
 
 export interface M3Conflict {
@@ -60,7 +64,8 @@ export function detectConflicts(nodes: readonly M3Node[], pairRules: readonly Pa
           const b = sorted[j] as M3Node;
           const delta = b.hours - a.hours;
           if (delta >= r.withinHours) break;
-          if (a.sport === b.sport || (a.origin !== 'planned' && b.origin !== 'planned')) continue;
+          if ((a.sport === b.sport && r.sameSport !== true) || (a.origin !== 'planned' && b.origin !== 'planned')) continue;
+          if (r.sports && !(r.sports.includes(a.sport) && r.sports.includes(b.sport))) continue;
           if (hit(a, s, r.levels) && hit(b, s, r.levels)) out.push({ kind: 'pair', rule: r.id, structure: s, members: [a.requestId, b.requestId], deltaHours: delta });
         }
       }
@@ -93,7 +98,7 @@ const IMPORTANCE_ORDER: Readonly<Record<M3Importance, number>> = { key: 0, stand
  * (déjà réalisé ou passé). Critère `importance` : une séance clé est préservée face à une standard. Critère `rank` : le
  * sport le MOINS prioritaire cède. Aucun critère ne départage ⇒ null (conflit non résolu, jamais un choix arbitraire).
  */
-export function yielderOf(c: M3Conflict, nodes: ReadonlyMap<string, M3Node>, order: readonly ('importance' | 'rank')[]): { readonly node: M3Node | null; readonly why: readonly string[] } {
+export function yielderOf(c: M3Conflict, nodes: ReadonlyMap<string, M3Node>, order: readonly ('importance' | 'rank' | 'later')[]): { readonly node: M3Node | null; readonly why: readonly string[] } {
   const members = c.members.map((id) => nodes.get(id)).filter((n): n is M3Node => n !== undefined && n.origin === 'planned');
   if (members.length === 0) return { node: null, why: ['NO_PLANNED_MEMBER'] };
   if (members.length === 1) return { node: members[0] as M3Node, why: ['ONLY_PLANNED_MEMBER (history is never modified)'] };
@@ -107,6 +112,12 @@ export function yielderOf(c: M3Conflict, nodes: ReadonlyMap<string, M3Node>, ord
       if (best === worst) { why.push('importance:tie'); continue; }
       pool = pool.filter((n) => IMPORTANCE_ORDER[n.importance] === worst);
       why.push('importance:standard_yields_to_key');
+    } else if (criterion === 'later') {
+      // CAPACITÉ D'ÉTUDE (RC2) : à égalité, la séance la plus TARDIVE cède (jamais utilisée par une gouvernance existante).
+      const last = Math.max(...pool.map((n) => n.hours));
+      if (pool.every((n) => n.hours === last)) { why.push('later:tie'); continue; }
+      pool = pool.filter((n) => n.hours === last);
+      why.push('later:later_session_yields');
     } else {
       const worst = Math.max(...pool.map((n) => n.rank));
       if (pool.every((n) => n.rank === worst)) { why.push('rank:tie'); continue; }
