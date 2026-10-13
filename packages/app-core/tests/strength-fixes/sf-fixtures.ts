@@ -3,7 +3,7 @@
  * Running et Cross-training ; prise de masse 4 séances/semaine ; matériel incomplet (préréglages réels).
  */
 import { createBeta0Programme, emptyState, EQUIPMENT_PRESETS, selectBeta0Week, selectProgrammeSession } from '../../src/index.js';
-import type { AppState, Clock, ProfileInput } from '../../src/index.js';
+import type { AppState, Clock, ProfileInput, ProgrammeEnvironment } from '../../src/index.js';
 
 export const at = (iso: string): Clock => ({ today: iso.slice(0, 10), now: iso });
 export const MON1 = '2026-10-05T07:30:00.000Z';
@@ -23,8 +23,8 @@ export function massProfile(o: { sessions?: number; multisport?: boolean; preset
   };
 }
 
-export function create(p: ProfileInput = massProfile(), now = MON1): AppState {
-  return createBeta0Programme(emptyState(), p, at(now), p.running.enabled ? { lastRun: { realizedDurationS: 1800, difficulty: 'AS_EXPECTED' } } : {});
+export function create(p: ProfileInput = massProfile(), now = MON1, env?: ProgrammeEnvironment): AppState {
+  return createBeta0Programme(emptyState(), p, at(now), p.running.enabled ? { lastRun: { realizedDurationS: 1800, difficulty: 'AS_EXPECTED' } } : {}, ...(env ? [env] : []));
 }
 
 export const week = (s: AppState, mon = '2026-10-05') => selectBeta0Week(s, mon);

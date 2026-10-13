@@ -14,7 +14,7 @@ import {
   beta0Environment, controlCtTimer, ensureBeta0Week, finishProgrammeSession, painReportsOf, recordProgrammeSet, regenerateSession, reportEquipmentUnavailable, selectBeta0Week, selectProgrammeSession,
   startProgrammeSession, strengthContent, strengthWeekInsights, UNKNOWN_CORE_STATE,
 } from '../../src/index.js';
-import type { AppState, CheckIn, CheckInInput, ProfileInput, SessionView } from '../../src/index.js';
+import type { AppState, CheckIn, CheckInInput, ProfileInput, ProgrammeEnvironment, SessionView } from '../../src/index.js';
 import { at, create, massProfile } from '../strength-fixes/sf-fixtures.js';
 
 export const MONS = ['2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26'];
@@ -77,7 +77,9 @@ export interface SimWeek {
   readonly planned: Record<string, { planned: number; target: number | null; high: number | null; status: string }>;
   readonly executed: Record<string, number>;
   readonly recovery: readonly string[];
-  readonly m3: { readonly status: string; readonly residual: number };
+  /** Séances non placées (composées sans jour, bloquées, refusées) de la semaine. */
+  readonly unplaced: readonly string[];
+  readonly m3: { readonly status: string; readonly residual: number; readonly decisions: readonly string[]; readonly residuals: readonly string[] };
 }
 export interface SimResult { readonly sessions: SimSession[]; readonly weeks: SimWeek[] }
 
@@ -91,9 +93,9 @@ function excludedOf(c: CheckIn | undefined): string[] {
 }
 
 /** `cfg` : profil et réponses au contrôle (défaut : profil masse de la consolidation, scénario par défaut). */
-export function simulate(cfg: { readonly profile?: ProfileInput; readonly plan?: PlanFn } = {}): SimResult {
+export function simulate(cfg: { readonly profile?: ProfileInput; readonly plan?: PlanFn; readonly env?: ProgrammeEnvironment } = {}): SimResult {
   const planOf = cfg.plan ?? plan;
-  const env = beta0Environment();
+  const env = cfg.env ?? beta0Environment();
   const content = strengthContent();
   const params = readStrengthParams(content.ruleset).values;
   const contentOf = (sport: string) => (env as unknown as Record<string, { content: { catalog: typeof content.catalog; ruleset: typeof content.ruleset } } | undefined>)[sport]?.content;
@@ -103,11 +105,11 @@ export function simulate(cfg: { readonly profile?: ProfileInput; readonly plan?:
     const e = estimateDuration(sess, c.catalog, readDurationParams(c.ruleset));
     return e.ok ? Math.round(e.estimate.p50 / S_PER_MIN) : null;
   };
-  let s = create(cfg.profile ?? PROFILE, T(MONS[0] as string, '07:30'));
+  let s = create(cfg.profile ?? PROFILE, T(MONS[0] as string, '07:30'), env);
   const sessions: SimSession[] = [];
   const weeks: SimWeek[] = [];
   for (const [w, mon] of MONS.entries()) {
-    if (w > 0) s = ensureBeta0Week(s, at(T(mon, '07:30')));
+    if (w > 0) s = ensureBeta0Week(s, at(T(mon, '07:30')), env);
     const view = selectBeta0Week(s, mon)?.sessions ?? [];
     const insights = strengthWeekInsights(s, mon);
     const executed: Record<string, number> = {};
@@ -165,12 +167,13 @@ export function simulate(cfg: { readonly profile?: ProfileInput; readonly plan?:
         for (const [gname, n] of Object.entries(row.groups)) executed[gname] = (executed[gname] ?? 0) + n;
       }
     }
-    const arb = (s.planner.weeks[mon] as unknown as { arbitration?: { status?: string; residual?: unknown[] } } | undefined)?.arbitration;
+    const arb = (s.planner.weeks[mon] as unknown as { arbitration?: { status?: string; residual?: { conflict: string; cause: string; tried?: string[] }[]; decisions?: { action: string; requestId?: string; from?: string; to?: string; partner?: string }[] } } | undefined)?.arbitration;
     weeks.push({
+      unplaced: view.filter((v) => v.placement !== 'planned').map((v) => `${v.sport}:${v.placement}`),
       planned: Object.fromEntries((insights?.volume?.groups ?? []).map((x) => [x.group, { planned: x.planned, target: x.target, high: x.high, status: x.status }])),
       executed,
       recovery: (insights?.recovery ?? []).map((r) => `${r.first.date} ${r.first.kind === 'strength' ? 'Musculation' : 'bloc force CT'} ↔ ${r.second.date} ${r.second.kind === 'strength' ? 'Musculation' : 'bloc force CT'} : ${r.groups.join(', ')}${r.sameExercises.length > 0 ? ` ; mêmes exercices : ${r.sameExercises.map((x) => x.replace('ex.', '')).join(', ')}` : ''}`),
-      m3: { status: arb?.status ?? '—', residual: arb?.residual?.length ?? 0 },
+      m3: { status: arb?.status ?? '—', residual: arb?.residual?.length ?? 0, decisions: (arb?.decisions ?? []).map((d) => `${d.action} ${d.requestId ?? ''} ${d.from ?? ''}→${d.to ?? ''}${d.partner ? ` ↔ ${d.partner}` : ''}`), residuals: (arb?.residual ?? []).map((x) => `${x.conflict} (${x.cause}; ${(x.tried ?? []).join(', ')})`) },
     });
   }
   return { sessions, weeks };

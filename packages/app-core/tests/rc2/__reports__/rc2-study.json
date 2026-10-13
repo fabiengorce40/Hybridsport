@@ -1,0 +1,7345 @@
+{
+ "A": {
+  "RC1": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 107.5,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 7,
+    "arms": 5,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 2,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7.25,
+    "arms": 15.5,
+    "chest": 4.75,
+    "shoulders": 12.625,
+    "back": 8.5,
+    "hamstrings": 5.625,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 3,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 16,
+   "ctBlockSets": 2.875,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "A-P1": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 107.5,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 7,
+    "arms": 5,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 2,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7.25,
+    "arms": 15.5,
+    "chest": 4.75,
+    "shoulders": 12.625,
+    "back": 8.5,
+    "hamstrings": 5.625,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 17,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 16,
+   "ctBlockSets": 2.875,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "A-P2": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 107.5,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 7,
+    "arms": 5,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 2,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7.25,
+    "arms": 15.5,
+    "chest": 4.75,
+    "shoulders": 12.625,
+    "back": 8.5,
+    "hamstrings": 5.625,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 35,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 16,
+   "ctBlockSets": 2.875,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "A-P3": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 107.5,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 7,
+    "arms": 5,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 2,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7.25,
+    "arms": 15.5,
+    "chest": 4.75,
+    "shoulders": 12.625,
+    "back": 8.5,
+    "hamstrings": 5.625,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 20,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 16,
+   "ctBlockSets": 2.875,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "B-P1": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 89.5,
+   "ctAdj24": 5,
+   "sharedGroups24": {
+    "glutes": 6,
+    "quads": 3,
+    "core": 8,
+    "arms": 5,
+    "shoulders": 5,
+    "back": 3,
+    "hamstrings": 3,
+    "calves": 2
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5,
+    "chest": 5.5,
+    "core": 7.625,
+    "glutes": 11.25,
+    "hamstrings": 2.75,
+    "quads": 9.25,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 10.5,
+    "quads": 6,
+    "core": 7.25,
+    "arms": 15.5,
+    "chest": 4.75,
+    "shoulders": 12.625,
+    "back": 8.5,
+    "hamstrings": 5.25,
+    "calves": 5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.25,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 15,
+   "moves": 0,
+   "swaps": 1,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 15,
+   "ctBlockSets": 3.125,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar X · mer M · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "B-P2": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 107.5,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 7,
+    "arms": 5,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 2,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7.25,
+    "arms": 15.5,
+    "chest": 4.75,
+    "shoulders": 12.625,
+    "back": 8.5,
+    "hamstrings": 5.625,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 35,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 16,
+   "ctBlockSets": 2.875,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "B-P3": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 107.5,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 7,
+    "arms": 5,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 2,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7.25,
+    "arms": 15.5,
+    "chest": 4.75,
+    "shoulders": 12.625,
+    "back": 8.5,
+    "hamstrings": 5.625,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 20,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 16,
+   "ctBlockSets": 2.875,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "C-P1": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 89.5,
+   "ctAdj24": 5,
+   "sharedGroups24": {
+    "glutes": 6,
+    "quads": 3,
+    "core": 8,
+    "arms": 5,
+    "shoulders": 5,
+    "back": 3,
+    "hamstrings": 3,
+    "calves": 2
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5,
+    "chest": 5.5,
+    "core": 7.625,
+    "glutes": 11.25,
+    "hamstrings": 2.75,
+    "quads": 9.25,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 10.5,
+    "quads": 6,
+    "core": 7.25,
+    "arms": 15.5,
+    "chest": 4.75,
+    "shoulders": 12.625,
+    "back": 8.5,
+    "hamstrings": 5.25,
+    "calves": 5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.25,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 15,
+   "moves": 0,
+   "swaps": 1,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 15,
+   "ctBlockSets": 3.125,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar X · mer M · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "C-P2": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 107.5,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 7,
+    "arms": 5,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 2,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7.25,
+    "arms": 15.5,
+    "chest": 4.75,
+    "shoulders": 12.625,
+    "back": 8.5,
+    "hamstrings": 5.625,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 35,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 16,
+   "ctBlockSets": 2.875,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "C-P3": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 107.5,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 7,
+    "arms": 5,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 2,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7.25,
+    "arms": 15.5,
+    "chest": 4.75,
+    "shoulders": 12.625,
+    "back": 8.5,
+    "hamstrings": 5.625,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 20,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 16,
+   "ctBlockSets": 2.875,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "D0": {
+   "pairs24": 6,
+   "pairs48": 14,
+   "sharedSets24": 46.5,
+   "ctAdj24": 3,
+   "sharedGroups24": {
+    "glutes": 6,
+    "core": 6,
+    "back": 3,
+    "arms": 3,
+    "shoulders": 3,
+    "hamstrings": 2
+   },
+   "planned": {
+    "arms": 17.25,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 5.5,
+    "core": 7.5,
+    "glutes": 6,
+    "hamstrings": 2,
+    "quads": 4,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 6.5,
+    "quads": 2.5,
+    "core": 6.25,
+    "arms": 15.75,
+    "chest": 4.75,
+    "shoulders": 12.125,
+    "back": 8.5,
+    "hamstrings": 4
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 230,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 0,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 10,
+   "ctBlockSets": 2.5,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C"
+   ]
+  },
+  "DB-P1": {
+   "pairs24": 7,
+   "pairs48": 14,
+   "sharedSets24": 18,
+   "ctAdj24": 7,
+   "sharedGroups24": {
+    "glutes": 5,
+    "core": 5,
+    "quads": 1,
+    "hamstrings": 1,
+    "arms": 2,
+    "shoulders": 2
+   },
+   "planned": {
+    "arms": 17.25,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 5.5,
+    "core": 8.25,
+    "glutes": 6,
+    "hamstrings": 3.5,
+    "quads": 2.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 6.25,
+    "quads": 2,
+    "core": 7.75,
+    "arms": 16.25,
+    "chest": 4.75,
+    "shoulders": 12.625,
+    "back": 8.5,
+    "hamstrings": 4.125
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 232,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 0,
+   "moves": 0,
+   "swaps": 4,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 13,
+   "ctBlockSets": 2.875,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar C · mer M · jeu X · ven M · sam C",
+    "lun M · mar C · mer M · jeu X · ven M · sam C",
+    "lun M · mar C · mer M · jeu X · ven M · sam C",
+    "lun M · mar C · mer M · jeu X · ven M · sam C"
+   ]
+  },
+  "DB-P2": {
+   "pairs24": 6,
+   "pairs48": 14,
+   "sharedSets24": 46.5,
+   "ctAdj24": 3,
+   "sharedGroups24": {
+    "glutes": 6,
+    "core": 6,
+    "back": 3,
+    "arms": 3,
+    "shoulders": 3,
+    "hamstrings": 2
+   },
+   "planned": {
+    "arms": 17.25,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 5.5,
+    "core": 7.5,
+    "glutes": 6,
+    "hamstrings": 2,
+    "quads": 4,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 6.5,
+    "quads": 2.5,
+    "core": 6.25,
+    "arms": 15.75,
+    "chest": 4.75,
+    "shoulders": 12.125,
+    "back": 8.5,
+    "hamstrings": 4
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 230,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 19,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 10,
+   "ctBlockSets": 2.5,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C"
+   ]
+  },
+  "DB-P3": {
+   "pairs24": 6,
+   "pairs48": 14,
+   "sharedSets24": 46.5,
+   "ctAdj24": 3,
+   "sharedGroups24": {
+    "glutes": 6,
+    "core": 6,
+    "back": 3,
+    "arms": 3,
+    "shoulders": 3,
+    "hamstrings": 2
+   },
+   "planned": {
+    "arms": 17.25,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 5.5,
+    "core": 7.5,
+    "glutes": 6,
+    "hamstrings": 2,
+    "quads": 4,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 6.5,
+    "quads": 2.5,
+    "core": 6.25,
+    "arms": 15.75,
+    "chest": 4.75,
+    "shoulders": 12.125,
+    "back": 8.5,
+    "hamstrings": 4
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 230,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 16,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 10,
+   "ctBlockSets": 2.5,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C"
+   ]
+  }
+ },
+ "B": {
+  "RC1": {
+   "pairs24": 4,
+   "pairs48": 7,
+   "sharedSets24": 7,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 13.75,
+    "back": 6,
+    "calves": 0,
+    "chest": 3.25,
+    "core": 7.25,
+    "glutes": 4,
+    "hamstrings": 2,
+    "quads": 2,
+    "shoulders": 11.625
+   },
+   "executed": {
+    "glutes": 4.5,
+    "quads": 1.75,
+    "core": 6.625,
+    "arms": 12.625,
+    "chest": 3.25,
+    "shoulders": 9.75,
+    "back": 5.25,
+    "hamstrings": 2.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "glutes",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [],
+   "weeklyPlannedMin": 231.75,
+   "overTarget": 0,
+   "runExecuted": 11,
+   "runMin": 333,
+   "executedCount": 22,
+   "postponed": 1,
+   "missed": 1,
+   "unplaced": 0,
+   "residual": 6,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 0,
+   "exerciseRepeats": 5,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M"
+   ]
+  },
+  "A-P1": {
+   "pairs24": 4,
+   "pairs48": 7,
+   "sharedSets24": 7,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 13.75,
+    "back": 6,
+    "calves": 0,
+    "chest": 3.25,
+    "core": 7.25,
+    "glutes": 4,
+    "hamstrings": 2,
+    "quads": 2,
+    "shoulders": 11.625
+   },
+   "executed": {
+    "glutes": 4.5,
+    "quads": 1.75,
+    "core": 6.625,
+    "arms": 12.625,
+    "chest": 3.25,
+    "shoulders": 9.75,
+    "back": 5.25,
+    "hamstrings": 2.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "glutes",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [],
+   "weeklyPlannedMin": 231.75,
+   "overTarget": 0,
+   "runExecuted": 11,
+   "runMin": 333,
+   "executedCount": 22,
+   "postponed": 1,
+   "missed": 1,
+   "unplaced": 0,
+   "residual": 6,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 0,
+   "exerciseRepeats": 5,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M"
+   ]
+  },
+  "A-P2": {
+   "pairs24": 4,
+   "pairs48": 7,
+   "sharedSets24": 7,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 13.75,
+    "back": 6,
+    "calves": 0,
+    "chest": 3.25,
+    "core": 7.25,
+    "glutes": 4,
+    "hamstrings": 2,
+    "quads": 2,
+    "shoulders": 11.625
+   },
+   "executed": {
+    "glutes": 4.5,
+    "quads": 1.75,
+    "core": 6.625,
+    "arms": 12.625,
+    "chest": 3.25,
+    "shoulders": 9.75,
+    "back": 5.25,
+    "hamstrings": 2.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "glutes",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [],
+   "weeklyPlannedMin": 231.75,
+   "overTarget": 0,
+   "runExecuted": 11,
+   "runMin": 333,
+   "executedCount": 22,
+   "postponed": 1,
+   "missed": 1,
+   "unplaced": 0,
+   "residual": 14,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 0,
+   "exerciseRepeats": 5,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M"
+   ]
+  },
+  "A-P3": {
+   "pairs24": 4,
+   "pairs48": 7,
+   "sharedSets24": 7,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 13.75,
+    "back": 6,
+    "calves": 0,
+    "chest": 3.25,
+    "core": 7.25,
+    "glutes": 4,
+    "hamstrings": 2,
+    "quads": 2,
+    "shoulders": 11.625
+   },
+   "executed": {
+    "glutes": 4.5,
+    "quads": 1.75,
+    "core": 6.625,
+    "arms": 12.625,
+    "chest": 3.25,
+    "shoulders": 9.75,
+    "back": 5.25,
+    "hamstrings": 2.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "glutes",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [],
+   "weeklyPlannedMin": 231.75,
+   "overTarget": 0,
+   "runExecuted": 11,
+   "runMin": 333,
+   "executedCount": 22,
+   "postponed": 1,
+   "missed": 1,
+   "unplaced": 0,
+   "residual": 14,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 0,
+   "exerciseRepeats": 5,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M"
+   ]
+  },
+  "B-P1": {
+   "pairs24": 4,
+   "pairs48": 7,
+   "sharedSets24": 7,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 13.75,
+    "back": 6,
+    "calves": 0,
+    "chest": 3.25,
+    "core": 7.25,
+    "glutes": 4,
+    "hamstrings": 2,
+    "quads": 2,
+    "shoulders": 11.625
+   },
+   "executed": {
+    "glutes": 4.5,
+    "quads": 1.75,
+    "core": 6.625,
+    "arms": 12.625,
+    "chest": 3.25,
+    "shoulders": 9.75,
+    "back": 5.25,
+    "hamstrings": 2.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "glutes",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [],
+   "weeklyPlannedMin": 231.75,
+   "overTarget": 0,
+   "runExecuted": 11,
+   "runMin": 333,
+   "executedCount": 22,
+   "postponed": 1,
+   "missed": 1,
+   "unplaced": 0,
+   "residual": 6,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 0,
+   "exerciseRepeats": 5,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M"
+   ]
+  },
+  "B-P2": {
+   "pairs24": 4,
+   "pairs48": 7,
+   "sharedSets24": 7,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 13.75,
+    "back": 6,
+    "calves": 0,
+    "chest": 3.25,
+    "core": 7.25,
+    "glutes": 4,
+    "hamstrings": 2,
+    "quads": 2,
+    "shoulders": 11.625
+   },
+   "executed": {
+    "glutes": 4.5,
+    "quads": 1.75,
+    "core": 6.625,
+    "arms": 12.625,
+    "chest": 3.25,
+    "shoulders": 9.75,
+    "back": 5.25,
+    "hamstrings": 2.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "glutes",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [],
+   "weeklyPlannedMin": 231.75,
+   "overTarget": 0,
+   "runExecuted": 11,
+   "runMin": 333,
+   "executedCount": 22,
+   "postponed": 1,
+   "missed": 1,
+   "unplaced": 0,
+   "residual": 14,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 0,
+   "exerciseRepeats": 5,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M"
+   ]
+  },
+  "B-P3": {
+   "pairs24": 4,
+   "pairs48": 7,
+   "sharedSets24": 7,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 13.75,
+    "back": 6,
+    "calves": 0,
+    "chest": 3.25,
+    "core": 7.25,
+    "glutes": 4,
+    "hamstrings": 2,
+    "quads": 2,
+    "shoulders": 11.625
+   },
+   "executed": {
+    "glutes": 4.5,
+    "quads": 1.75,
+    "core": 6.625,
+    "arms": 12.625,
+    "chest": 3.25,
+    "shoulders": 9.75,
+    "back": 5.25,
+    "hamstrings": 2.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "glutes",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [],
+   "weeklyPlannedMin": 231.75,
+   "overTarget": 0,
+   "runExecuted": 11,
+   "runMin": 333,
+   "executedCount": 22,
+   "postponed": 1,
+   "missed": 1,
+   "unplaced": 0,
+   "residual": 14,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 0,
+   "exerciseRepeats": 5,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M"
+   ]
+  },
+  "C-P1": {
+   "pairs24": 4,
+   "pairs48": 7,
+   "sharedSets24": 7,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 13.75,
+    "back": 6,
+    "calves": 0,
+    "chest": 3.25,
+    "core": 7.25,
+    "glutes": 4,
+    "hamstrings": 2,
+    "quads": 2,
+    "shoulders": 11.625
+   },
+   "executed": {
+    "glutes": 4.5,
+    "quads": 1.75,
+    "core": 6.625,
+    "arms": 12.625,
+    "chest": 3.25,
+    "shoulders": 9.75,
+    "back": 5.25,
+    "hamstrings": 2.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "glutes",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [],
+   "weeklyPlannedMin": 231.75,
+   "overTarget": 0,
+   "runExecuted": 11,
+   "runMin": 333,
+   "executedCount": 22,
+   "postponed": 1,
+   "missed": 1,
+   "unplaced": 0,
+   "residual": 6,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 0,
+   "exerciseRepeats": 5,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M"
+   ]
+  },
+  "C-P2": {
+   "pairs24": 4,
+   "pairs48": 7,
+   "sharedSets24": 7,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 13.75,
+    "back": 6,
+    "calves": 0,
+    "chest": 3.25,
+    "core": 7.25,
+    "glutes": 4,
+    "hamstrings": 2,
+    "quads": 2,
+    "shoulders": 11.625
+   },
+   "executed": {
+    "glutes": 4.5,
+    "quads": 1.75,
+    "core": 6.625,
+    "arms": 12.625,
+    "chest": 3.25,
+    "shoulders": 9.75,
+    "back": 5.25,
+    "hamstrings": 2.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "glutes",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [],
+   "weeklyPlannedMin": 231.75,
+   "overTarget": 0,
+   "runExecuted": 11,
+   "runMin": 333,
+   "executedCount": 22,
+   "postponed": 1,
+   "missed": 1,
+   "unplaced": 0,
+   "residual": 14,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 0,
+   "exerciseRepeats": 5,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M"
+   ]
+  },
+  "C-P3": {
+   "pairs24": 4,
+   "pairs48": 7,
+   "sharedSets24": 7,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 13.75,
+    "back": 6,
+    "calves": 0,
+    "chest": 3.25,
+    "core": 7.25,
+    "glutes": 4,
+    "hamstrings": 2,
+    "quads": 2,
+    "shoulders": 11.625
+   },
+   "executed": {
+    "glutes": 4.5,
+    "quads": 1.75,
+    "core": 6.625,
+    "arms": 12.625,
+    "chest": 3.25,
+    "shoulders": 9.75,
+    "back": 5.25,
+    "hamstrings": 2.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "glutes",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [],
+   "weeklyPlannedMin": 231.75,
+   "overTarget": 0,
+   "runExecuted": 11,
+   "runMin": 333,
+   "executedCount": 22,
+   "postponed": 1,
+   "missed": 1,
+   "unplaced": 0,
+   "residual": 14,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 0,
+   "exerciseRepeats": 5,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M",
+    "lun C · mar C · mer X · jeu M · ven C · sam M"
+   ]
+  },
+  "D0": {
+   "pairs24": 4,
+   "pairs48": 4,
+   "sharedSets24": 7,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 13.75,
+    "back": 6,
+    "calves": 0,
+    "chest": 3.25,
+    "core": 7.25,
+    "glutes": 4,
+    "hamstrings": 2,
+    "quads": 2,
+    "shoulders": 11.625
+   },
+   "executed": {
+    "glutes": 4.5,
+    "quads": 1.75,
+    "core": 6.625,
+    "arms": 12.625,
+    "chest": 3.25,
+    "shoulders": 9.75,
+    "back": 5.25,
+    "hamstrings": 2.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "glutes",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [],
+   "weeklyPlannedMin": 233.5,
+   "overTarget": 0,
+   "runExecuted": 11,
+   "runMin": 333,
+   "executedCount": 22,
+   "postponed": 1,
+   "missed": 1,
+   "unplaced": 0,
+   "residual": 3,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 0,
+   "exerciseRepeats": 5,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun C · mar X · mer M · jeu C · ven C · sam M",
+    "lun C · mar X · mer M · jeu C · ven C · sam M",
+    "lun C · mar X · mer M · jeu C · ven C · sam M",
+    "lun C · mar X · mer M · jeu C · ven C · sam M"
+   ]
+  },
+  "DB-P1": {
+   "pairs24": 4,
+   "pairs48": 4,
+   "sharedSets24": 7,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 13.75,
+    "back": 6,
+    "calves": 0,
+    "chest": 3.25,
+    "core": 7.25,
+    "glutes": 4,
+    "hamstrings": 2,
+    "quads": 2,
+    "shoulders": 11.625
+   },
+   "executed": {
+    "glutes": 4.5,
+    "quads": 1.75,
+    "core": 6.625,
+    "arms": 12.625,
+    "chest": 3.25,
+    "shoulders": 9.75,
+    "back": 5.25,
+    "hamstrings": 2.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "glutes",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [],
+   "weeklyPlannedMin": 233.5,
+   "overTarget": 0,
+   "runExecuted": 11,
+   "runMin": 333,
+   "executedCount": 22,
+   "postponed": 1,
+   "missed": 1,
+   "unplaced": 0,
+   "residual": 3,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 0,
+   "exerciseRepeats": 5,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun C · mar X · mer M · jeu C · ven C · sam M",
+    "lun C · mar X · mer M · jeu C · ven C · sam M",
+    "lun C · mar X · mer M · jeu C · ven C · sam M",
+    "lun C · mar X · mer M · jeu C · ven C · sam M"
+   ]
+  },
+  "DB-P2": {
+   "pairs24": 4,
+   "pairs48": 4,
+   "sharedSets24": 7,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 13.75,
+    "back": 6,
+    "calves": 0,
+    "chest": 3.25,
+    "core": 7.25,
+    "glutes": 4,
+    "hamstrings": 2,
+    "quads": 2,
+    "shoulders": 11.625
+   },
+   "executed": {
+    "glutes": 4.5,
+    "quads": 1.75,
+    "core": 6.625,
+    "arms": 12.625,
+    "chest": 3.25,
+    "shoulders": 9.75,
+    "back": 5.25,
+    "hamstrings": 2.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "glutes",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [],
+   "weeklyPlannedMin": 233.5,
+   "overTarget": 0,
+   "runExecuted": 11,
+   "runMin": 333,
+   "executedCount": 22,
+   "postponed": 1,
+   "missed": 1,
+   "unplaced": 0,
+   "residual": 11,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 0,
+   "exerciseRepeats": 5,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun C · mar X · mer M · jeu C · ven C · sam M",
+    "lun C · mar X · mer M · jeu C · ven C · sam M",
+    "lun C · mar X · mer M · jeu C · ven C · sam M",
+    "lun C · mar X · mer M · jeu C · ven C · sam M"
+   ]
+  },
+  "DB-P3": {
+   "pairs24": 4,
+   "pairs48": 4,
+   "sharedSets24": 7,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 13.75,
+    "back": 6,
+    "calves": 0,
+    "chest": 3.25,
+    "core": 7.25,
+    "glutes": 4,
+    "hamstrings": 2,
+    "quads": 2,
+    "shoulders": 11.625
+   },
+   "executed": {
+    "glutes": 4.5,
+    "quads": 1.75,
+    "core": 6.625,
+    "arms": 12.625,
+    "chest": 3.25,
+    "shoulders": 9.75,
+    "back": 5.25,
+    "hamstrings": 2.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "glutes",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [],
+   "weeklyPlannedMin": 233.5,
+   "overTarget": 0,
+   "runExecuted": 11,
+   "runMin": 333,
+   "executedCount": 22,
+   "postponed": 1,
+   "missed": 1,
+   "unplaced": 0,
+   "residual": 3,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 0,
+   "exerciseRepeats": 5,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun C · mar X · mer M · jeu C · ven C · sam M",
+    "lun C · mar X · mer M · jeu C · ven C · sam M",
+    "lun C · mar X · mer M · jeu C · ven C · sam M",
+    "lun C · mar X · mer M · jeu C · ven C · sam M"
+   ]
+  }
+ },
+ "C": {
+  "RC1": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 114,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 5,
+    "arms": 5,
+    "chest": 4,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 5,
+    "calves": 1
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 14.75,
+    "core": 7,
+    "glutes": 12,
+    "hamstrings": 9.5,
+    "quads": 8.5,
+    "shoulders": 15.625
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7,
+    "arms": 15.5,
+    "chest": 13.25,
+    "shoulders": 14.625,
+    "back": 8.5,
+    "hamstrings": 9.375,
+    "calves": 2
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 259.5,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 3,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 22,
+   "ctBlockSets": 2.625,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "A-P1": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 114,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 5,
+    "arms": 5,
+    "chest": 4,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 5,
+    "calves": 1
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 14.75,
+    "core": 7,
+    "glutes": 12,
+    "hamstrings": 9.5,
+    "quads": 8.5,
+    "shoulders": 15.625
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7,
+    "arms": 15.5,
+    "chest": 13.25,
+    "shoulders": 14.625,
+    "back": 8.5,
+    "hamstrings": 9.375,
+    "calves": 2
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 259.5,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 17,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 22,
+   "ctBlockSets": 2.625,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "A-P2": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 114,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 5,
+    "arms": 5,
+    "chest": 4,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 5,
+    "calves": 1
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 14.75,
+    "core": 7,
+    "glutes": 12,
+    "hamstrings": 9.5,
+    "quads": 8.5,
+    "shoulders": 15.625
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7,
+    "arms": 15.5,
+    "chest": 13.25,
+    "shoulders": 14.625,
+    "back": 8.5,
+    "hamstrings": 9.375,
+    "calves": 2
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 259.5,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 35,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 22,
+   "ctBlockSets": 2.625,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "A-P3": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 114,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 5,
+    "arms": 5,
+    "chest": 4,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 5,
+    "calves": 1
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 14.75,
+    "core": 7,
+    "glutes": 12,
+    "hamstrings": 9.5,
+    "quads": 8.5,
+    "shoulders": 15.625
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7,
+    "arms": 15.5,
+    "chest": 13.25,
+    "shoulders": 14.625,
+    "back": 8.5,
+    "hamstrings": 9.375,
+    "calves": 2
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 259.5,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 20,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 22,
+   "ctBlockSets": 2.625,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "B-P1": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 94,
+   "ctAdj24": 5,
+   "sharedGroups24": {
+    "glutes": 6,
+    "quads": 4,
+    "core": 5,
+    "arms": 5,
+    "chest": 3,
+    "shoulders": 5,
+    "back": 3,
+    "hamstrings": 4,
+    "calves": 1
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 14.75,
+    "core": 6.875,
+    "glutes": 11.25,
+    "hamstrings": 8.5,
+    "quads": 8,
+    "shoulders": 15.625
+   },
+   "executed": {
+    "glutes": 10.5,
+    "quads": 5.5,
+    "core": 6.875,
+    "arms": 15.5,
+    "chest": 13.25,
+    "shoulders": 14.625,
+    "back": 8.5,
+    "hamstrings": 8.625,
+    "calves": 2
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 258.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 15,
+   "moves": 0,
+   "swaps": 1,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 20,
+   "ctBlockSets": 2.625,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar X · mer M · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "B-P2": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 114,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 5,
+    "arms": 5,
+    "chest": 4,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 5,
+    "calves": 1
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 14.75,
+    "core": 7,
+    "glutes": 12,
+    "hamstrings": 9.5,
+    "quads": 8.5,
+    "shoulders": 15.625
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7,
+    "arms": 15.5,
+    "chest": 13.25,
+    "shoulders": 14.625,
+    "back": 8.5,
+    "hamstrings": 9.375,
+    "calves": 2
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 259.5,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 35,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 22,
+   "ctBlockSets": 2.625,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "B-P3": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 114,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 5,
+    "arms": 5,
+    "chest": 4,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 5,
+    "calves": 1
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 14.75,
+    "core": 7,
+    "glutes": 12,
+    "hamstrings": 9.5,
+    "quads": 8.5,
+    "shoulders": 15.625
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7,
+    "arms": 15.5,
+    "chest": 13.25,
+    "shoulders": 14.625,
+    "back": 8.5,
+    "hamstrings": 9.375,
+    "calves": 2
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 259.5,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 20,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 22,
+   "ctBlockSets": 2.625,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "C-P1": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 94,
+   "ctAdj24": 5,
+   "sharedGroups24": {
+    "glutes": 6,
+    "quads": 4,
+    "core": 5,
+    "arms": 5,
+    "chest": 3,
+    "shoulders": 5,
+    "back": 3,
+    "hamstrings": 4,
+    "calves": 1
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 14.75,
+    "core": 6.875,
+    "glutes": 11.25,
+    "hamstrings": 9.25,
+    "quads": 7.25,
+    "shoulders": 15.625
+   },
+   "executed": {
+    "glutes": 10.5,
+    "quads": 5.5,
+    "core": 6.875,
+    "arms": 15.5,
+    "chest": 13.25,
+    "shoulders": 14.625,
+    "back": 8.5,
+    "hamstrings": 8.625,
+    "calves": 2
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 258.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 14,
+   "moves": 0,
+   "swaps": 1,
+   "recomposes": 1,
+   "variantRepeats": 1,
+   "exerciseRepeats": 20,
+   "ctBlockSets": 2.625,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar X · mer M · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "C-P2": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 114,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 5,
+    "arms": 5,
+    "chest": 4,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 5,
+    "calves": 1
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 14.75,
+    "core": 7,
+    "glutes": 12,
+    "hamstrings": 9.5,
+    "quads": 8.5,
+    "shoulders": 15.625
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7,
+    "arms": 15.5,
+    "chest": 13.25,
+    "shoulders": 14.625,
+    "back": 8.5,
+    "hamstrings": 9.375,
+    "calves": 2
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 259.5,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 35,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 22,
+   "ctBlockSets": 2.625,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "C-P3": {
+   "pairs24": 8,
+   "pairs48": 15,
+   "sharedSets24": 114,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 5,
+    "arms": 5,
+    "chest": 4,
+    "shoulders": 5,
+    "back": 4,
+    "hamstrings": 5,
+    "calves": 1
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 14.75,
+    "core": 7,
+    "glutes": 12,
+    "hamstrings": 9.5,
+    "quads": 8.5,
+    "shoulders": 15.625
+   },
+   "executed": {
+    "glutes": 11.25,
+    "quads": 6.25,
+    "core": 7,
+    "arms": 15.5,
+    "chest": 13.25,
+    "shoulders": 14.625,
+    "back": 8.5,
+    "hamstrings": 9.375,
+    "calves": 2
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 259.5,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 20,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 22,
+   "ctBlockSets": 2.625,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "D0": {
+   "pairs24": 6,
+   "pairs48": 14,
+   "sharedSets24": 54,
+   "ctAdj24": 3,
+   "sharedGroups24": {
+    "glutes": 6,
+    "core": 6,
+    "back": 3,
+    "arms": 3,
+    "shoulders": 3,
+    "chest": 2,
+    "hamstrings": 2
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 10.25,
+    "core": 7.5,
+    "glutes": 6,
+    "hamstrings": 2,
+    "quads": 4,
+    "shoulders": 14.875
+   },
+   "executed": {
+    "glutes": 6.5,
+    "quads": 2.5,
+    "core": 7,
+    "arms": 15,
+    "chest": 9.5,
+    "shoulders": 14.5,
+    "back": 8.5,
+    "hamstrings": 4
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 235.5,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 0,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 12,
+   "ctBlockSets": 2.5,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C"
+   ]
+  },
+  "DB-P1": {
+   "pairs24": 7,
+   "pairs48": 14,
+   "sharedSets24": 16.5,
+   "ctAdj24": 7,
+   "sharedGroups24": {
+    "glutes": 5,
+    "quads": 1,
+    "hamstrings": 1,
+    "core": 2,
+    "arms": 2,
+    "shoulders": 2
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 11.75,
+    "core": 9.25,
+    "glutes": 6,
+    "hamstrings": 2.5,
+    "quads": 3.5,
+    "shoulders": 17.125
+   },
+   "executed": {
+    "glutes": 6.25,
+    "quads": 2.5,
+    "core": 8.5,
+    "arms": 15.5,
+    "chest": 10.25,
+    "shoulders": 16.125,
+    "back": 8.5,
+    "hamstrings": 3.625
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms",
+    "shoulders"
+   ],
+   "weeklyPlannedMin": 243.25,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 0,
+   "moves": 0,
+   "swaps": 4,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 17,
+   "ctBlockSets": 2.625,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar C · mer M · jeu X · ven M · sam C",
+    "lun M · mar C · mer M · jeu X · ven M · sam C",
+    "lun M · mar C · mer M · jeu X · ven M · sam C",
+    "lun M · mar C · mer M · jeu X · ven M · sam C"
+   ]
+  },
+  "DB-P2": {
+   "pairs24": 6,
+   "pairs48": 14,
+   "sharedSets24": 54,
+   "ctAdj24": 3,
+   "sharedGroups24": {
+    "glutes": 6,
+    "core": 6,
+    "back": 3,
+    "arms": 3,
+    "shoulders": 3,
+    "chest": 2,
+    "hamstrings": 2
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 10.25,
+    "core": 7.5,
+    "glutes": 6,
+    "hamstrings": 2,
+    "quads": 4,
+    "shoulders": 14.875
+   },
+   "executed": {
+    "glutes": 6.5,
+    "quads": 2.5,
+    "core": 7,
+    "arms": 15,
+    "chest": 9.5,
+    "shoulders": 14.5,
+    "back": 8.5,
+    "hamstrings": 4
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 235.5,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 19,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 12,
+   "ctBlockSets": 2.5,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C"
+   ]
+  },
+  "DB-P3": {
+   "pairs24": 6,
+   "pairs48": 14,
+   "sharedSets24": 54,
+   "ctAdj24": 3,
+   "sharedGroups24": {
+    "glutes": 6,
+    "core": 6,
+    "back": 3,
+    "arms": 3,
+    "shoulders": 3,
+    "chest": 2,
+    "hamstrings": 2
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 10.25,
+    "core": 7.5,
+    "glutes": 6,
+    "hamstrings": 2,
+    "quads": 4,
+    "shoulders": 14.875
+   },
+   "executed": {
+    "glutes": 6.5,
+    "quads": 2.5,
+    "core": 7,
+    "arms": 15,
+    "chest": 9.5,
+    "shoulders": 14.5,
+    "back": 8.5,
+    "hamstrings": 4
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 235.5,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 242,
+   "executedCount": 23,
+   "postponed": 1,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 16,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 12,
+   "ctBlockSets": 2.5,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C"
+   ]
+  }
+ },
+ "D": {
+  "RC1": {
+   "pairs24": 3,
+   "pairs48": 7,
+   "sharedSets24": 45.5,
+   "ctAdj24": 0,
+   "sharedGroups24": {
+    "glutes": 3,
+    "back": 3,
+    "arms": 3,
+    "shoulders": 3,
+    "quads": 1,
+    "core": 2,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 15,
+    "back": 10,
+    "calves": 1.75,
+    "chest": 4.75,
+    "core": 7,
+    "glutes": 7.75,
+    "hamstrings": 2.75,
+    "quads": 5,
+    "shoulders": 13.875
+   },
+   "executed": {
+    "glutes": 7.25,
+    "quads": 3.5,
+    "core": 5.75,
+    "arms": 13.875,
+    "chest": 4.75,
+    "shoulders": 12.375,
+    "back": 9.25,
+    "calves": 1.75,
+    "hamstrings": 3.75
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 189.5,
+   "overTarget": 0,
+   "runExecuted": 5,
+   "runMin": 150,
+   "executedCount": 16,
+   "postponed": 3,
+   "missed": 1,
+   "unplaced": 4,
+   "residual": 0,
+   "moves": 1,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 26,
+   "ctBlockSets": 0,
+   "violations": 0,
+   "layouts": [
+    "lun M · mer M · jeu M · ven C · sam C",
+    "lun M · mar C · mer M · jeu M · sam C",
+    "lun M · mar C · mer M · jeu M · sam C",
+    "lun M · mar C · mer M · jeu M · sam C"
+   ]
+  },
+  "A-P1": {
+   "pairs24": 1,
+   "pairs48": 7,
+   "sharedSets24": 13,
+   "ctAdj24": 0,
+   "sharedGroups24": {
+    "glutes": 1,
+    "back": 1,
+    "arms": 1,
+    "shoulders": 1,
+    "quads": 1
+   },
+   "planned": {
+    "arms": 15,
+    "back": 10,
+    "calves": 1.75,
+    "chest": 4.75,
+    "core": 7,
+    "glutes": 7.75,
+    "hamstrings": 2.75,
+    "quads": 5,
+    "shoulders": 13.875
+   },
+   "executed": {
+    "glutes": 7.25,
+    "quads": 3.5,
+    "core": 5.75,
+    "arms": 13.875,
+    "chest": 4.75,
+    "shoulders": 12.375,
+    "back": 9.25,
+    "calves": 1.75,
+    "hamstrings": 3.75
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 189.5,
+   "overTarget": 0,
+   "runExecuted": 5,
+   "runMin": 150,
+   "executedCount": 16,
+   "postponed": 3,
+   "missed": 1,
+   "unplaced": 4,
+   "residual": 2,
+   "moves": 4,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 26,
+   "ctBlockSets": 0,
+   "violations": 0,
+   "layouts": [
+    "lun M · mer M · jeu M · ven C · sam C",
+    "lun M · mar C · mer M · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C"
+   ]
+  },
+  "A-P2": {
+   "pairs24": 1,
+   "pairs48": 7,
+   "sharedSets24": 11,
+   "ctAdj24": 0,
+   "sharedGroups24": {
+    "glutes": 1,
+    "back": 1,
+    "arms": 1,
+    "shoulders": 1
+   },
+   "planned": {
+    "arms": 14.25,
+    "back": 10,
+    "calves": 1,
+    "chest": 4.75,
+    "core": 7,
+    "glutes": 7,
+    "hamstrings": 2.5,
+    "quads": 4.5,
+    "shoulders": 13.875
+   },
+   "executed": {
+    "glutes": 6.5,
+    "quads": 3,
+    "core": 5.75,
+    "arms": 13.125,
+    "chest": 4.75,
+    "shoulders": 12.375,
+    "back": 9.25,
+    "calves": 1,
+    "hamstrings": 3.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 184.75,
+   "overTarget": 0,
+   "runExecuted": 5,
+   "runMin": 150,
+   "executedCount": 16,
+   "postponed": 3,
+   "missed": 1,
+   "unplaced": 4,
+   "residual": 3,
+   "moves": 4,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 24,
+   "ctBlockSets": 0,
+   "violations": 0,
+   "layouts": [
+    "lun M · mer M · jeu M · ven C · sam C",
+    "lun M · mar C · mer M · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C"
+   ]
+  },
+  "A-P3": {
+   "pairs24": 3,
+   "pairs48": 7,
+   "sharedSets24": 43.5,
+   "ctAdj24": 0,
+   "sharedGroups24": {
+    "glutes": 3,
+    "back": 3,
+    "arms": 3,
+    "shoulders": 3,
+    "core": 2,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 14.25,
+    "back": 10,
+    "calves": 1,
+    "chest": 4.75,
+    "core": 7,
+    "glutes": 7,
+    "hamstrings": 2.5,
+    "quads": 4.5,
+    "shoulders": 13.875
+   },
+   "executed": {
+    "glutes": 6.5,
+    "quads": 3,
+    "core": 5.75,
+    "arms": 13.125,
+    "chest": 4.75,
+    "shoulders": 12.375,
+    "back": 9.25,
+    "calves": 1,
+    "hamstrings": 3.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 184.75,
+   "overTarget": 0,
+   "runExecuted": 5,
+   "runMin": 150,
+   "executedCount": 16,
+   "postponed": 3,
+   "missed": 1,
+   "unplaced": 4,
+   "residual": 17,
+   "moves": 1,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 24,
+   "ctBlockSets": 0,
+   "violations": 0,
+   "layouts": [
+    "lun M · mer M · jeu M · ven C · sam C",
+    "lun M · mar C · mer M · jeu M · sam C",
+    "lun M · mar C · mer M · jeu M · sam C",
+    "lun M · mar C · mer M · jeu M · sam C"
+   ]
+  },
+  "B-P1": {
+   "pairs24": 0,
+   "pairs48": 7,
+   "sharedSets24": 0,
+   "ctAdj24": 0,
+   "sharedGroups24": {},
+   "planned": {
+    "arms": 15,
+    "back": 10,
+    "calves": 1,
+    "chest": 4.75,
+    "core": 7,
+    "glutes": 7,
+    "hamstrings": 2.5,
+    "quads": 4.5,
+    "shoulders": 13.875
+   },
+   "executed": {
+    "glutes": 6.5,
+    "quads": 3,
+    "core": 5.75,
+    "arms": 13.875,
+    "chest": 4.75,
+    "shoulders": 12.375,
+    "back": 9.25,
+    "calves": 1,
+    "hamstrings": 3.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 186.25,
+   "overTarget": 0,
+   "runExecuted": 5,
+   "runMin": 150,
+   "executedCount": 16,
+   "postponed": 3,
+   "missed": 1,
+   "unplaced": 4,
+   "residual": 0,
+   "moves": 4,
+   "swaps": 1,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 24,
+   "ctBlockSets": 0,
+   "violations": 0,
+   "layouts": [
+    "lun M · mer M · jeu C · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C"
+   ]
+  },
+  "B-P2": {
+   "pairs24": 0,
+   "pairs48": 7,
+   "sharedSets24": 0,
+   "ctAdj24": 0,
+   "sharedGroups24": {},
+   "planned": {
+    "arms": 15,
+    "back": 10,
+    "calves": 1,
+    "chest": 4.75,
+    "core": 7,
+    "glutes": 7,
+    "hamstrings": 2.5,
+    "quads": 4.5,
+    "shoulders": 13.875
+   },
+   "executed": {
+    "glutes": 6.5,
+    "quads": 3,
+    "core": 5.75,
+    "arms": 13.875,
+    "chest": 4.75,
+    "shoulders": 12.375,
+    "back": 9.25,
+    "calves": 1,
+    "hamstrings": 3.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 186.25,
+   "overTarget": 0,
+   "runExecuted": 5,
+   "runMin": 150,
+   "executedCount": 16,
+   "postponed": 3,
+   "missed": 1,
+   "unplaced": 4,
+   "residual": 0,
+   "moves": 4,
+   "swaps": 1,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 24,
+   "ctBlockSets": 0,
+   "violations": 0,
+   "layouts": [
+    "lun M · mer M · jeu C · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C"
+   ]
+  },
+  "B-P3": {
+   "pairs24": 3,
+   "pairs48": 7,
+   "sharedSets24": 43.5,
+   "ctAdj24": 0,
+   "sharedGroups24": {
+    "glutes": 3,
+    "back": 3,
+    "arms": 3,
+    "shoulders": 3,
+    "core": 2,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 14.25,
+    "back": 10,
+    "calves": 1,
+    "chest": 4.75,
+    "core": 7,
+    "glutes": 7,
+    "hamstrings": 2.5,
+    "quads": 4.5,
+    "shoulders": 13.875
+   },
+   "executed": {
+    "glutes": 6.5,
+    "quads": 3,
+    "core": 5.75,
+    "arms": 13.125,
+    "chest": 4.75,
+    "shoulders": 12.375,
+    "back": 9.25,
+    "calves": 1,
+    "hamstrings": 3.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 184.75,
+   "overTarget": 0,
+   "runExecuted": 5,
+   "runMin": 150,
+   "executedCount": 16,
+   "postponed": 3,
+   "missed": 1,
+   "unplaced": 4,
+   "residual": 17,
+   "moves": 1,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 24,
+   "ctBlockSets": 0,
+   "violations": 0,
+   "layouts": [
+    "lun M · mer M · jeu M · ven C · sam C",
+    "lun M · mar C · mer M · jeu M · sam C",
+    "lun M · mar C · mer M · jeu M · sam C",
+    "lun M · mar C · mer M · jeu M · sam C"
+   ]
+  },
+  "C-P1": {
+   "pairs24": 0,
+   "pairs48": 7,
+   "sharedSets24": 0,
+   "ctAdj24": 0,
+   "sharedGroups24": {},
+   "planned": {
+    "arms": 15,
+    "back": 10,
+    "calves": 1,
+    "chest": 4.75,
+    "core": 7,
+    "glutes": 7,
+    "hamstrings": 2.5,
+    "quads": 4.5,
+    "shoulders": 13.875
+   },
+   "executed": {
+    "glutes": 6.5,
+    "quads": 3,
+    "core": 5.75,
+    "arms": 13.875,
+    "chest": 4.75,
+    "shoulders": 12.375,
+    "back": 9.25,
+    "calves": 1,
+    "hamstrings": 3.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 186.25,
+   "overTarget": 0,
+   "runExecuted": 5,
+   "runMin": 150,
+   "executedCount": 16,
+   "postponed": 3,
+   "missed": 1,
+   "unplaced": 4,
+   "residual": 0,
+   "moves": 4,
+   "swaps": 1,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 24,
+   "ctBlockSets": 0,
+   "violations": 0,
+   "layouts": [
+    "lun M · mer M · jeu C · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C"
+   ]
+  },
+  "C-P2": {
+   "pairs24": 0,
+   "pairs48": 7,
+   "sharedSets24": 0,
+   "ctAdj24": 0,
+   "sharedGroups24": {},
+   "planned": {
+    "arms": 15,
+    "back": 10,
+    "calves": 1,
+    "chest": 4.75,
+    "core": 7,
+    "glutes": 7,
+    "hamstrings": 2.5,
+    "quads": 4.5,
+    "shoulders": 13.875
+   },
+   "executed": {
+    "glutes": 6.5,
+    "quads": 3,
+    "core": 5.75,
+    "arms": 13.875,
+    "chest": 4.75,
+    "shoulders": 12.375,
+    "back": 9.25,
+    "calves": 1,
+    "hamstrings": 3.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 186.25,
+   "overTarget": 0,
+   "runExecuted": 5,
+   "runMin": 150,
+   "executedCount": 16,
+   "postponed": 3,
+   "missed": 1,
+   "unplaced": 4,
+   "residual": 0,
+   "moves": 4,
+   "swaps": 1,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 24,
+   "ctBlockSets": 0,
+   "violations": 0,
+   "layouts": [
+    "lun M · mer M · jeu C · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C",
+    "lun M · mar C · mer M · ven M · sam C"
+   ]
+  },
+  "C-P3": {
+   "pairs24": 3,
+   "pairs48": 7,
+   "sharedSets24": 43.5,
+   "ctAdj24": 0,
+   "sharedGroups24": {
+    "glutes": 3,
+    "back": 3,
+    "arms": 3,
+    "shoulders": 3,
+    "core": 2,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 14.25,
+    "back": 10,
+    "calves": 1,
+    "chest": 4.75,
+    "core": 7,
+    "glutes": 7,
+    "hamstrings": 2.5,
+    "quads": 4.5,
+    "shoulders": 13.875
+   },
+   "executed": {
+    "glutes": 6.5,
+    "quads": 3,
+    "core": 5.75,
+    "arms": 13.125,
+    "chest": 4.75,
+    "shoulders": 12.375,
+    "back": 9.25,
+    "calves": 1,
+    "hamstrings": 3.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 184.75,
+   "overTarget": 0,
+   "runExecuted": 5,
+   "runMin": 150,
+   "executedCount": 16,
+   "postponed": 3,
+   "missed": 1,
+   "unplaced": 4,
+   "residual": 17,
+   "moves": 1,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 24,
+   "ctBlockSets": 0,
+   "violations": 0,
+   "layouts": [
+    "lun M · mer M · jeu M · ven C · sam C",
+    "lun M · mar C · mer M · jeu M · sam C",
+    "lun M · mar C · mer M · jeu M · sam C",
+    "lun M · mar C · mer M · jeu M · sam C"
+   ]
+  },
+  "D0": {
+   "pairs24": 4,
+   "pairs48": 4,
+   "sharedSets24": 67.5,
+   "ctAdj24": 0,
+   "sharedGroups24": {
+    "glutes": 4,
+    "arms": 4,
+    "shoulders": 4,
+    "back": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 15,
+    "back": 10,
+    "calves": 4,
+    "chest": 4.75,
+    "core": 7.25,
+    "glutes": 9.25,
+    "hamstrings": 2.75,
+    "quads": 6.5,
+    "shoulders": 13.875
+   },
+   "executed": {
+    "glutes": 8.25,
+    "quads": 4.25,
+    "core": 5.875,
+    "arms": 13.875,
+    "chest": 4.75,
+    "shoulders": 12.375,
+    "back": 9.25,
+    "calves": 4,
+    "hamstrings": 4
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 197.75,
+   "overTarget": 0,
+   "runExecuted": 5,
+   "runMin": 150,
+   "executedCount": 16,
+   "postponed": 3,
+   "missed": 1,
+   "unplaced": 4,
+   "residual": 0,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 24,
+   "ctBlockSets": 0,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer C · ven M · sam C",
+    "lun M · mar M · mer C · ven M · sam C",
+    "lun M · mar M · mer C · ven M · sam C",
+    "lun M · mar M · mer C · ven M · sam C"
+   ]
+  },
+  "DB-P1": {
+   "pairs24": 4,
+   "pairs48": 4,
+   "sharedSets24": 67.5,
+   "ctAdj24": 0,
+   "sharedGroups24": {
+    "glutes": 4,
+    "arms": 4,
+    "shoulders": 4,
+    "back": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 15,
+    "back": 10,
+    "calves": 4,
+    "chest": 4.75,
+    "core": 7.25,
+    "glutes": 9.25,
+    "hamstrings": 2.75,
+    "quads": 6.5,
+    "shoulders": 13.875
+   },
+   "executed": {
+    "glutes": 8.25,
+    "quads": 4.25,
+    "core": 5.875,
+    "arms": 13.875,
+    "chest": 4.75,
+    "shoulders": 12.375,
+    "back": 9.25,
+    "calves": 4,
+    "hamstrings": 4
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 197.75,
+   "overTarget": 0,
+   "runExecuted": 5,
+   "runMin": 150,
+   "executedCount": 16,
+   "postponed": 3,
+   "missed": 1,
+   "unplaced": 4,
+   "residual": 8,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 24,
+   "ctBlockSets": 0,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer C · ven M · sam C",
+    "lun M · mar M · mer C · ven M · sam C",
+    "lun M · mar M · mer C · ven M · sam C",
+    "lun M · mar M · mer C · ven M · sam C"
+   ]
+  },
+  "DB-P2": {
+   "pairs24": 4,
+   "pairs48": 4,
+   "sharedSets24": 67.5,
+   "ctAdj24": 0,
+   "sharedGroups24": {
+    "glutes": 4,
+    "arms": 4,
+    "shoulders": 4,
+    "back": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 15,
+    "back": 10,
+    "calves": 4,
+    "chest": 4.75,
+    "core": 7.25,
+    "glutes": 9.25,
+    "hamstrings": 2.75,
+    "quads": 6.5,
+    "shoulders": 13.875
+   },
+   "executed": {
+    "glutes": 8.25,
+    "quads": 4.25,
+    "core": 5.875,
+    "arms": 13.875,
+    "chest": 4.75,
+    "shoulders": 12.375,
+    "back": 9.25,
+    "calves": 4,
+    "hamstrings": 4
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 197.75,
+   "overTarget": 0,
+   "runExecuted": 5,
+   "runMin": 150,
+   "executedCount": 16,
+   "postponed": 3,
+   "missed": 1,
+   "unplaced": 4,
+   "residual": 12,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 24,
+   "ctBlockSets": 0,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer C · ven M · sam C",
+    "lun M · mar M · mer C · ven M · sam C",
+    "lun M · mar M · mer C · ven M · sam C",
+    "lun M · mar M · mer C · ven M · sam C"
+   ]
+  },
+  "DB-P3": {
+   "pairs24": 4,
+   "pairs48": 4,
+   "sharedSets24": 67.5,
+   "ctAdj24": 0,
+   "sharedGroups24": {
+    "glutes": 4,
+    "arms": 4,
+    "shoulders": 4,
+    "back": 4,
+    "quads": 1,
+    "core": 3,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 15,
+    "back": 10,
+    "calves": 4,
+    "chest": 4.75,
+    "core": 7.25,
+    "glutes": 9.25,
+    "hamstrings": 2.75,
+    "quads": 6.5,
+    "shoulders": 13.875
+   },
+   "executed": {
+    "glutes": 8.25,
+    "quads": 4.25,
+    "core": 5.875,
+    "arms": 13.875,
+    "chest": 4.75,
+    "shoulders": 12.375,
+    "back": 9.25,
+    "calves": 4,
+    "hamstrings": 4
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 197.75,
+   "overTarget": 0,
+   "runExecuted": 5,
+   "runMin": 150,
+   "executedCount": 16,
+   "postponed": 3,
+   "missed": 1,
+   "unplaced": 4,
+   "residual": 8,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 24,
+   "ctBlockSets": 0,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer C · ven M · sam C",
+    "lun M · mar M · mer C · ven M · sam C",
+    "lun M · mar M · mer C · ven M · sam C",
+    "lun M · mar M · mer C · ven M · sam C"
+   ]
+  }
+ },
+ "E": {
+  "RC1": {
+   "pairs24": 8,
+   "pairs48": 16,
+   "sharedSets24": 106,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 8,
+    "quads": 7,
+    "core": 7,
+    "arms": 4,
+    "shoulders": 4,
+    "back": 4,
+    "hamstrings": 1,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 13,
+    "quads": 8.25,
+    "core": 8.125,
+    "arms": 16.5,
+    "chest": 5.5,
+    "shoulders": 13.25,
+    "back": 9.25,
+    "hamstrings": 5.375,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 240,
+   "executedCount": 24,
+   "postponed": 0,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 3,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 20,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "A-P1": {
+   "pairs24": 8,
+   "pairs48": 16,
+   "sharedSets24": 106,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 8,
+    "quads": 7,
+    "core": 7,
+    "arms": 4,
+    "shoulders": 4,
+    "back": 4,
+    "hamstrings": 1,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 13,
+    "quads": 8.25,
+    "core": 8.125,
+    "arms": 16.5,
+    "chest": 5.5,
+    "shoulders": 13.25,
+    "back": 9.25,
+    "hamstrings": 5.375,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 240,
+   "executedCount": 24,
+   "postponed": 0,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 17,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 20,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "A-P2": {
+   "pairs24": 8,
+   "pairs48": 16,
+   "sharedSets24": 106,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 8,
+    "quads": 7,
+    "core": 7,
+    "arms": 4,
+    "shoulders": 4,
+    "back": 4,
+    "hamstrings": 1,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 13,
+    "quads": 8.25,
+    "core": 8.125,
+    "arms": 16.5,
+    "chest": 5.5,
+    "shoulders": 13.25,
+    "back": 9.25,
+    "hamstrings": 5.375,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 240,
+   "executedCount": 24,
+   "postponed": 0,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 35,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 20,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "A-P3": {
+   "pairs24": 8,
+   "pairs48": 16,
+   "sharedSets24": 106,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 8,
+    "quads": 7,
+    "core": 7,
+    "arms": 4,
+    "shoulders": 4,
+    "back": 4,
+    "hamstrings": 1,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 13,
+    "quads": 8.25,
+    "core": 8.125,
+    "arms": 16.5,
+    "chest": 5.5,
+    "shoulders": 13.25,
+    "back": 9.25,
+    "hamstrings": 5.375,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 240,
+   "executedCount": 24,
+   "postponed": 0,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 20,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 20,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "B-P1": {
+   "pairs24": 8,
+   "pairs48": 16,
+   "sharedSets24": 72.5,
+   "ctAdj24": 6,
+   "sharedGroups24": {
+    "glutes": 6,
+    "quads": 4,
+    "core": 8,
+    "arms": 4,
+    "shoulders": 4,
+    "back": 2,
+    "hamstrings": 1,
+    "calves": 1
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 4.25,
+    "chest": 5.5,
+    "core": 7.5,
+    "glutes": 10.5,
+    "hamstrings": 4,
+    "quads": 7.25,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 11.5,
+    "quads": 8,
+    "core": 8.25,
+    "arms": 17,
+    "chest": 5.5,
+    "shoulders": 13.75,
+    "back": 9.25,
+    "hamstrings": 4.25,
+    "calves": 4.25
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 246.25,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 240,
+   "executedCount": 24,
+   "postponed": 0,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 10,
+   "moves": 0,
+   "swaps": 2,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 17,
+   "ctBlockSets": 3.75,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar X · mer M · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar X · mer M · jeu C · ven M · sam C"
+   ]
+  },
+  "B-P2": {
+   "pairs24": 8,
+   "pairs48": 16,
+   "sharedSets24": 106,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 8,
+    "quads": 7,
+    "core": 7,
+    "arms": 4,
+    "shoulders": 4,
+    "back": 4,
+    "hamstrings": 1,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 13,
+    "quads": 8.25,
+    "core": 8.125,
+    "arms": 16.5,
+    "chest": 5.5,
+    "shoulders": 13.25,
+    "back": 9.25,
+    "hamstrings": 5.375,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 240,
+   "executedCount": 24,
+   "postponed": 0,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 35,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 20,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "B-P3": {
+   "pairs24": 8,
+   "pairs48": 16,
+   "sharedSets24": 106,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 8,
+    "quads": 7,
+    "core": 7,
+    "arms": 4,
+    "shoulders": 4,
+    "back": 4,
+    "hamstrings": 1,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 13,
+    "quads": 8.25,
+    "core": 8.125,
+    "arms": 16.5,
+    "chest": 5.5,
+    "shoulders": 13.25,
+    "back": 9.25,
+    "hamstrings": 5.375,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 240,
+   "executedCount": 24,
+   "postponed": 0,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 20,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 20,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "C-P1": {
+   "pairs24": 8,
+   "pairs48": 16,
+   "sharedSets24": 72.5,
+   "ctAdj24": 6,
+   "sharedGroups24": {
+    "glutes": 6,
+    "quads": 4,
+    "core": 8,
+    "arms": 4,
+    "shoulders": 4,
+    "back": 2,
+    "hamstrings": 1,
+    "calves": 1
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 4.25,
+    "chest": 5.5,
+    "core": 7.5,
+    "glutes": 10.5,
+    "hamstrings": 4,
+    "quads": 7.25,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 11.5,
+    "quads": 8,
+    "core": 8.25,
+    "arms": 17,
+    "chest": 5.5,
+    "shoulders": 13.75,
+    "back": 9.25,
+    "hamstrings": 4.25,
+    "calves": 4.25
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 246.25,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 240,
+   "executedCount": 24,
+   "postponed": 0,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 10,
+   "moves": 0,
+   "swaps": 2,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 17,
+   "ctBlockSets": 3.75,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar X · mer M · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar X · mer M · jeu C · ven M · sam C"
+   ]
+  },
+  "C-P2": {
+   "pairs24": 8,
+   "pairs48": 16,
+   "sharedSets24": 106,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 8,
+    "quads": 7,
+    "core": 7,
+    "arms": 4,
+    "shoulders": 4,
+    "back": 4,
+    "hamstrings": 1,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 13,
+    "quads": 8.25,
+    "core": 8.125,
+    "arms": 16.5,
+    "chest": 5.5,
+    "shoulders": 13.25,
+    "back": 9.25,
+    "hamstrings": 5.375,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 240,
+   "executedCount": 24,
+   "postponed": 0,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 35,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 20,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "C-P3": {
+   "pairs24": 8,
+   "pairs48": 16,
+   "sharedSets24": 106,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 8,
+    "quads": 7,
+    "core": 7,
+    "arms": 4,
+    "shoulders": 4,
+    "back": 4,
+    "hamstrings": 1,
+    "calves": 3
+   },
+   "planned": {
+    "arms": 16.5,
+    "back": 9.25,
+    "calves": 5.5,
+    "chest": 5.5,
+    "core": 7.75,
+    "glutes": 12,
+    "hamstrings": 5.25,
+    "quads": 7.5,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 13,
+    "quads": 8.25,
+    "core": 8.125,
+    "arms": 16.5,
+    "chest": 5.5,
+    "shoulders": 13.25,
+    "back": 9.25,
+    "hamstrings": 5.375,
+    "calves": 5.5
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 249.75,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 240,
+   "executedCount": 24,
+   "postponed": 0,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 20,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 1,
+   "exerciseRepeats": 20,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C",
+    "lun M · mar M · mer X · jeu C · ven M · sam C"
+   ]
+  },
+  "D0": {
+   "pairs24": 8,
+   "pairs48": 16,
+   "sharedSets24": 60,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 8,
+    "core": 8,
+    "back": 4,
+    "arms": 4,
+    "shoulders": 4
+   },
+   "planned": {
+    "arms": 17.25,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 5.5,
+    "core": 7.5,
+    "glutes": 6,
+    "hamstrings": 2,
+    "quads": 4,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 7,
+    "quads": 4,
+    "core": 8,
+    "arms": 17.25,
+    "chest": 5.5,
+    "shoulders": 13.25,
+    "back": 9.25,
+    "hamstrings": 3
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 230,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 240,
+   "executedCount": 24,
+   "postponed": 0,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 0,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 14,
+   "ctBlockSets": 2.5,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C"
+   ]
+  },
+  "DB-P1": {
+   "pairs24": 8,
+   "pairs48": 16,
+   "sharedSets24": 13.5,
+   "ctAdj24": 8,
+   "sharedGroups24": {
+    "glutes": 8,
+    "core": 6,
+    "quads": 2,
+    "hamstrings": 1
+   },
+   "planned": {
+    "arms": 17.25,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 5.5,
+    "core": 8.25,
+    "glutes": 6,
+    "hamstrings": 4,
+    "quads": 2,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 7,
+    "quads": 2.75,
+    "core": 8.625,
+    "arms": 17.25,
+    "chest": 5.5,
+    "shoulders": 13.25,
+    "back": 9.25,
+    "hamstrings": 4.125
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 232.25,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 240,
+   "executedCount": 24,
+   "postponed": 0,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 0,
+   "moves": 0,
+   "swaps": 4,
+   "recomposes": 0,
+   "variantRepeats": 2,
+   "exerciseRepeats": 16,
+   "ctBlockSets": 2.25,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar C · mer M · jeu X · ven M · sam C",
+    "lun M · mar C · mer M · jeu X · ven M · sam C",
+    "lun M · mar C · mer M · jeu X · ven M · sam C",
+    "lun M · mar C · mer M · jeu X · ven M · sam C"
+   ]
+  },
+  "DB-P2": {
+   "pairs24": 8,
+   "pairs48": 16,
+   "sharedSets24": 60,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 8,
+    "core": 8,
+    "back": 4,
+    "arms": 4,
+    "shoulders": 4
+   },
+   "planned": {
+    "arms": 17.25,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 5.5,
+    "core": 7.5,
+    "glutes": 6,
+    "hamstrings": 2,
+    "quads": 4,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 7,
+    "quads": 4,
+    "core": 8,
+    "arms": 17.25,
+    "chest": 5.5,
+    "shoulders": 13.25,
+    "back": 9.25,
+    "hamstrings": 3
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 230,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 240,
+   "executedCount": 24,
+   "postponed": 0,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 19,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 14,
+   "ctBlockSets": 2.5,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C"
+   ]
+  },
+  "DB-P3": {
+   "pairs24": 8,
+   "pairs48": 16,
+   "sharedSets24": 60,
+   "ctAdj24": 4,
+   "sharedGroups24": {
+    "glutes": 8,
+    "core": 8,
+    "back": 4,
+    "arms": 4,
+    "shoulders": 4
+   },
+   "planned": {
+    "arms": 17.25,
+    "back": 9.25,
+    "calves": 0,
+    "chest": 5.5,
+    "core": 7.5,
+    "glutes": 6,
+    "hamstrings": 2,
+    "quads": 4,
+    "shoulders": 13.25
+   },
+   "executed": {
+    "glutes": 7,
+    "quads": 4,
+    "core": 8,
+    "arms": 17.25,
+    "chest": 5.5,
+    "shoulders": 13.25,
+    "back": 9.25,
+    "hamstrings": 3
+   },
+   "targets": {
+    "arms": {
+     "target": 6,
+     "high": 14
+    },
+    "back": {
+     "target": 10,
+     "high": 20
+    },
+    "calves": {
+     "target": 4,
+     "high": 10
+    },
+    "chest": {
+     "target": 10,
+     "high": 20
+    },
+    "core": {
+     "target": 4,
+     "high": 10
+    },
+    "glutes": {
+     "target": 6,
+     "high": 14
+    },
+    "hamstrings": {
+     "target": 8,
+     "high": 14
+    },
+    "quads": {
+     "target": 10,
+     "high": 18
+    },
+    "shoulders": {
+     "target": 8,
+     "high": 16
+    }
+   },
+   "belowFloor": [
+    "back",
+    "calves",
+    "chest",
+    "hamstrings",
+    "quads"
+   ],
+   "aboveHigh": [
+    "arms"
+   ],
+   "weeklyPlannedMin": 230,
+   "overTarget": 0,
+   "runExecuted": 8,
+   "runMin": 240,
+   "executedCount": 24,
+   "postponed": 0,
+   "missed": 0,
+   "unplaced": 0,
+   "residual": 16,
+   "moves": 0,
+   "swaps": 0,
+   "recomposes": 0,
+   "variantRepeats": 3,
+   "exerciseRepeats": 14,
+   "ctBlockSets": 2.5,
+   "violations": 0,
+   "layouts": [
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C",
+    "lun M · mar C · mer M · jeu M · ven X · sam C"
+   ]
+  }
+ }
+}
