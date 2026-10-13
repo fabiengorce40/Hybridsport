@@ -200,7 +200,11 @@ export function demandOf(session: SessionDraft, content: Content, sport: Planner
  */
 export interface CompositeDemandRule { readonly ruleId: string; readonly status: 'TEST_ONLY'; readonly delegatedDiscipline: Discipline }
 
-/** Blocs délégués d'une séance hôte : blocs `strength` prescrits en séries (unité de la discipline Strength). */
+/**
+ * Blocs délégués d'une séance hôte : blocs `strength` prescrits en séries (unité de la discipline Strength). Le moteur
+ * Cross-training n'émet AUCUN bloc `strength` natif (échauffement, conditionnement, retour au calme seulement) : seul le
+ * contrat de délégation C4.3 en produit ; un bloc `strength` qui ne serait pas entièrement en séries reste à l'hôte.
+ */
 const isDelegatedBlock = (b: SessionDraft['blocks'][number]): boolean => b.kind === 'strength' && b.items.length > 0 && b.items.every((i) => i.prescription.type === 'sets');
 
 /**
@@ -210,11 +214,8 @@ const isDelegatedBlock = (b: SessionDraft['blocks'][number]): boolean => b.kind 
  */
 export function compositeDemandOf(session: SessionDraft, content: Content, sport: PlannerSport, mode: PlannerMode, rule: CompositeDemandRule): DemandOutcome {
   const blocks = session.blocks.filter(isDelegatedBlock);
-  if (blocks.length === 0) return demandOf(session, content, sport, mode);
-  const meta = content.ruleset.parameter(DEMAND_NORMALIZATION_PARAMETER);
-  if (mode === 'PRODUCTION' && meta && !(meta.status === 'approved' && !meta.provisional)) {
-    return { status: 'unavailable', reasons: [gpReasons.emit(GP_CODES.DEMAND_PROFILE_NOT_APPROVED, { sport, parameterId: DEMAND_NORMALIZATION_PARAMETER, mode })] };
-  }
+  // Règle TEST_ONLY : jamais appliquée en PRODUCTION (comportement antérieur, demande non composite).
+  if (blocks.length === 0 || mode === 'PRODUCTION') return demandOf(session, content, sport, mode);
   const host = deriveSessionDemand({ ...session, blocks: session.blocks.filter((b) => !isDelegatedBlock(b)) }, content.catalog, content.ruleset);
   if (!host.ok) return { status: 'unavailable', reasons: host.reasons };
   const part = deriveSessionDemand({ ...session, discipline: rule.delegatedDiscipline, blocks }, content.catalog, content.ruleset);
