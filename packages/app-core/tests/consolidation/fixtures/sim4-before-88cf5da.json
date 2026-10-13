@@ -1,0 +1,1760 @@
+{
+ "sessions": [
+  {
+   "week": 1,
+   "date": "2026-10-05",
+   "sport": "strength",
+   "title": "str_full_body A",
+   "requestId": "2026-10-05.strength.1",
+   "reproducible": "oui",
+   "declared": "Non · fatigue faible · bonne récup.",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [
+    "matériel indisponible cable_lateral_raise → refus (no_declared_substitute)"
+   ],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 69,
+   "plannedEstMin": 56,
+   "executedEstMin": 56,
+   "exercises": [
+    {
+     "id": "lower_mobility_flow",
+     "block": "warmup",
+     "areas": []
+    },
+    {
+     "id": "back_squat",
+     "block": "strength",
+     "areas": [
+      "knee",
+      "lower_back",
+      "hip_groin"
+     ]
+    },
+    {
+     "id": "machine_chest_press",
+     "block": "strength",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "pull_up",
+     "block": "strength",
+     "areas": [
+      "shoulder",
+      "elbow"
+     ]
+    },
+    {
+     "id": "cable_lateral_raise",
+     "block": "accessory",
+     "areas": []
+    },
+    {
+     "id": "cable_pallof_press",
+     "block": "accessory",
+     "areas": []
+    },
+    {
+     "id": "cable_triceps_pushdown",
+     "block": "accessory",
+     "areas": []
+    },
+    {
+     "id": "lower_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {
+    "glutes": 2,
+    "quads": 2,
+    "core": 4,
+    "arms": 10,
+    "chest": 4,
+    "shoulders": 6,
+    "back": 3
+   }
+  },
+  {
+   "week": 1,
+   "date": "2026-10-06",
+   "sport": "strength",
+   "title": "str_full_body B",
+   "requestId": "2026-10-05.strength.2",
+   "reproducible": "non",
+   "declared": "Non · fatigue faible · bonne récup.",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 54,
+   "plannedEstMin": 41,
+   "executedEstMin": 41,
+   "exercises": [
+    {
+     "id": "lower_mobility_flow",
+     "block": "warmup",
+     "areas": []
+    },
+    {
+     "id": "romanian_deadlift",
+     "block": "strength",
+     "areas": [
+      "lower_back",
+      "hip_groin"
+     ]
+    },
+    {
+     "id": "seated_cable_row",
+     "block": "strength",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "db_shoulder_press",
+     "block": "strength",
+     "areas": [
+      "shoulder",
+      "elbow"
+     ]
+    },
+    {
+     "id": "cable_pallof_press",
+     "block": "accessory",
+     "areas": []
+    },
+    {
+     "id": "lower_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {
+    "glutes": 2,
+    "hamstrings": 2,
+    "core": 4,
+    "back": 3,
+    "arms": 4.5,
+    "shoulders": 4.5
+   }
+  },
+  {
+   "week": 1,
+   "date": "2026-10-07",
+   "sport": "crosstraining",
+   "title": "amrap + bloc force",
+   "requestId": "2026-10-05.crosstraining.1",
+   "reproducible": "oui",
+   "declared": "Non · fatigue faible · bonne récup.",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 73,
+   "plannedEstMin": 49,
+   "executedEstMin": 49,
+   "exercises": [
+    {
+     "id": "row_erg",
+     "block": "warmup",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "back_squat",
+     "block": "strength",
+     "areas": [
+      "knee",
+      "lower_back",
+      "hip_groin"
+     ]
+    },
+    {
+     "id": "air_squat",
+     "block": "warmup",
+     "areas": [
+      "knee"
+     ]
+    },
+    {
+     "id": "band_assisted_pull_up",
+     "block": "warmup",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "row_erg",
+     "block": "warmup",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "row_erg",
+     "block": "conditioning",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "air_squat",
+     "block": "conditioning",
+     "areas": [
+      "knee"
+     ]
+    },
+    {
+     "id": "band_assisted_pull_up",
+     "block": "conditioning",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "row_erg",
+     "block": "cooldown",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "hip_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    },
+    {
+     "id": "shoulder_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {
+    "glutes": 1,
+    "quads": 1,
+    "core": 0.5
+   }
+  },
+  {
+   "week": 1,
+   "date": "2026-10-08",
+   "sport": "running",
+   "title": "running.easy",
+   "requestId": "2026-10-05.running.2",
+   "reproducible": "oui",
+   "declared": "Non · fatigue faible · bonne récup.",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 58,
+   "plannedEstMin": 30,
+   "executedEstMin": 30,
+   "exercises": [
+    {
+     "id": "easy_run",
+     "block": "running",
+     "areas": [
+      "knee",
+      "lower_leg",
+      "ankle_foot"
+     ]
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {}
+  },
+  {
+   "week": 1,
+   "date": "2026-10-09",
+   "sport": "strength",
+   "title": "str_full_body C",
+   "requestId": "2026-10-05.strength.3",
+   "reproducible": "non",
+   "declared": "Non · fatigue faible · bonne récup.",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 69,
+   "plannedEstMin": 34,
+   "executedEstMin": 34,
+   "exercises": [
+    {
+     "id": "lower_mobility_flow",
+     "block": "warmup",
+     "areas": []
+    },
+    {
+     "id": "back_squat",
+     "block": "strength",
+     "areas": [
+      "knee",
+      "lower_back",
+      "hip_groin"
+     ]
+    },
+    {
+     "id": "bench_press",
+     "block": "strength",
+     "areas": [
+      "shoulder",
+      "elbow",
+      "wrist_hand"
+     ]
+    },
+    {
+     "id": "lat_pulldown",
+     "block": "strength",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "lower_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {
+    "glutes": 2,
+    "quads": 2,
+    "core": 1,
+    "arms": 6,
+    "chest": 3,
+    "shoulders": 1.5,
+    "back": 3
+   }
+  },
+  {
+   "week": 1,
+   "date": "2026-10-10",
+   "sport": "running",
+   "title": "running.easy",
+   "requestId": "2026-10-05.running.1",
+   "reproducible": "oui",
+   "declared": "Non · fatigue faible · bonne récup.",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 88,
+   "plannedEstMin": 30,
+   "executedEstMin": 30,
+   "exercises": [
+    {
+     "id": "easy_run",
+     "block": "running",
+     "areas": [
+      "knee",
+      "lower_leg",
+      "ankle_foot"
+     ]
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {}
+  },
+  {
+   "week": 2,
+   "date": "2026-10-12",
+   "sport": "strength",
+   "title": "str_full_body A",
+   "requestId": "2026-10-12.strength.1",
+   "reproducible": "non",
+   "declared": "Passer (état inconnu)",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 69,
+   "plannedEstMin": 38,
+   "executedEstMin": 38,
+   "exercises": [
+    {
+     "id": "lower_mobility_flow",
+     "block": "warmup",
+     "areas": []
+    },
+    {
+     "id": "romanian_deadlift",
+     "block": "strength",
+     "areas": [
+      "lower_back",
+      "hip_groin"
+     ]
+    },
+    {
+     "id": "machine_chest_press",
+     "block": "strength",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "pull_up",
+     "block": "strength",
+     "areas": [
+      "shoulder",
+      "elbow"
+     ]
+    },
+    {
+     "id": "cable_lateral_raise",
+     "block": "accessory",
+     "areas": []
+    },
+    {
+     "id": "lower_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {
+    "glutes": 2,
+    "hamstrings": 2,
+    "core": 1,
+    "arms": 6,
+    "chest": 3,
+    "shoulders": 4.5,
+    "back": 3
+   }
+  },
+  {
+   "week": 2,
+   "date": "2026-10-13",
+   "sport": "strength",
+   "title": "str_full_body B",
+   "requestId": "2026-10-12.strength.2",
+   "reproducible": "non",
+   "declared": "Non · récupération mauvaise",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [
+    "ADAPTATION_NOT_APPLIED",
+    "cause=session_not_reproducible"
+   ],
+   "execution": "réalisée",
+   "targetMin": 54,
+   "plannedEstMin": 45,
+   "executedEstMin": 45,
+   "exercises": [
+    {
+     "id": "lower_mobility_flow",
+     "block": "warmup",
+     "areas": []
+    },
+    {
+     "id": "back_squat",
+     "block": "strength",
+     "areas": [
+      "knee",
+      "lower_back",
+      "hip_groin"
+     ]
+    },
+    {
+     "id": "seated_cable_row",
+     "block": "strength",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "db_shoulder_press",
+     "block": "strength",
+     "areas": [
+      "shoulder",
+      "elbow"
+     ]
+    },
+    {
+     "id": "cable_lateral_raise",
+     "block": "accessory",
+     "areas": []
+    },
+    {
+     "id": "cable_pallof_press",
+     "block": "accessory",
+     "areas": []
+    },
+    {
+     "id": "lower_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {
+    "glutes": 2,
+    "quads": 2,
+    "core": 4,
+    "back": 3,
+    "arms": 4.5,
+    "shoulders": 7.5
+   }
+  },
+  {
+   "week": 2,
+   "date": "2026-10-14",
+   "sport": "crosstraining",
+   "title": "amrap + bloc force",
+   "requestId": "2026-10-12.crosstraining.1",
+   "reproducible": "oui",
+   "declared": "Non · fatigue élevée",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 73,
+   "plannedEstMin": 51,
+   "executedEstMin": 51,
+   "exercises": [
+    {
+     "id": "row_erg",
+     "block": "warmup",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "hip_thrust_barbell",
+     "block": "strength",
+     "areas": []
+    },
+    {
+     "id": "reverse_lunge_bw",
+     "block": "warmup",
+     "areas": [
+      "knee"
+     ]
+    },
+    {
+     "id": "pull_up",
+     "block": "warmup",
+     "areas": [
+      "shoulder",
+      "elbow"
+     ]
+    },
+    {
+     "id": "row_erg",
+     "block": "warmup",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "row_erg",
+     "block": "conditioning",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "reverse_lunge_bw",
+     "block": "conditioning",
+     "areas": [
+      "knee"
+     ]
+    },
+    {
+     "id": "pull_up",
+     "block": "conditioning",
+     "areas": [
+      "shoulder",
+      "elbow"
+     ]
+    },
+    {
+     "id": "row_erg",
+     "block": "cooldown",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "hip_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    },
+    {
+     "id": "shoulder_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {
+    "glutes": 1,
+    "hamstrings": 0.5
+   }
+  },
+  {
+   "week": 2,
+   "date": "2026-10-15",
+   "sport": "running",
+   "title": "running.easy",
+   "requestId": "2026-10-12.running.2",
+   "reproducible": "oui",
+   "declared": "Passer (état inconnu)",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 58,
+   "plannedEstMin": 30,
+   "executedEstMin": 30,
+   "exercises": [
+    {
+     "id": "easy_run",
+     "block": "running",
+     "areas": [
+      "knee",
+      "lower_leg",
+      "ankle_foot"
+     ]
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {}
+  },
+  {
+   "week": 2,
+   "date": "2026-10-16",
+   "sport": "strength",
+   "title": "str_full_body A",
+   "requestId": "2026-10-12.strength.3",
+   "reproducible": "non",
+   "declared": "Passer (état inconnu)",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 69,
+   "plannedEstMin": 38,
+   "executedEstMin": 38,
+   "exercises": [
+    {
+     "id": "lower_mobility_flow",
+     "block": "warmup",
+     "areas": []
+    },
+    {
+     "id": "romanian_deadlift",
+     "block": "strength",
+     "areas": [
+      "lower_back",
+      "hip_groin"
+     ]
+    },
+    {
+     "id": "machine_chest_press",
+     "block": "strength",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "pull_up",
+     "block": "strength",
+     "areas": [
+      "shoulder",
+      "elbow"
+     ]
+    },
+    {
+     "id": "cable_pallof_press",
+     "block": "accessory",
+     "areas": []
+    },
+    {
+     "id": "lower_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {
+    "glutes": 2,
+    "hamstrings": 2,
+    "core": 4,
+    "arms": 6,
+    "chest": 3,
+    "shoulders": 1.5,
+    "back": 3
+   }
+  },
+  {
+   "week": 2,
+   "date": "2026-10-17",
+   "sport": "running",
+   "title": "running.easy",
+   "requestId": "2026-10-12.running.1",
+   "reproducible": "oui",
+   "declared": "Passer (état inconnu)",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 88,
+   "plannedEstMin": 30,
+   "executedEstMin": 30,
+   "exercises": [
+    {
+     "id": "easy_run",
+     "block": "running",
+     "areas": [
+      "knee",
+      "lower_leg",
+      "ankle_foot"
+     ]
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {}
+  },
+  {
+   "week": 3,
+   "date": "2026-10-19",
+   "sport": "strength",
+   "title": "str_full_body A",
+   "requestId": "2026-10-19.strength.1",
+   "reproducible": "non",
+   "declared": "Oui · genou P2",
+   "decision": "adapted",
+   "adaptation": "recomposée (signalée)",
+   "changes": [
+    "removed:back_squat",
+    "added:romanian_deadlift"
+   ],
+   "reasons": [
+    "SESSION_RECOMPOSED"
+   ],
+   "execution": "réalisée",
+   "targetMin": 69,
+   "plannedEstMin": 36,
+   "executedEstMin": 36,
+   "exercises": [
+    {
+     "id": "lower_mobility_flow",
+     "block": "warmup",
+     "areas": []
+    },
+    {
+     "id": "romanian_deadlift",
+     "block": "strength",
+     "areas": [
+      "lower_back",
+      "hip_groin"
+     ]
+    },
+    {
+     "id": "seated_cable_row",
+     "block": "strength",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "db_shoulder_press",
+     "block": "strength",
+     "areas": [
+      "shoulder",
+      "elbow"
+     ]
+    },
+    {
+     "id": "lower_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [
+    "knee"
+   ],
+   "violations": [],
+   "groups": {
+    "glutes": 2,
+    "hamstrings": 2,
+    "core": 1,
+    "back": 4,
+    "arms": 5,
+    "shoulders": 5
+   }
+  },
+  {
+   "week": 3,
+   "date": "2026-10-20",
+   "sport": "strength",
+   "title": "str_full_body B",
+   "requestId": "2026-10-19.strength.2",
+   "reproducible": "non",
+   "declared": "Passer (genou P2 connu)",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [
+    "KNOWN_PAIN_KEPT",
+    "ADAPTATION_NOT_APPLIED",
+    "cause=session_not_reproducible"
+   ],
+   "execution": "réalisée",
+   "targetMin": 54,
+   "plannedEstMin": 44,
+   "executedEstMin": 44,
+   "exercises": [
+    {
+     "id": "lower_mobility_flow",
+     "block": "warmup",
+     "areas": []
+    },
+    {
+     "id": "romanian_deadlift",
+     "block": "strength",
+     "areas": [
+      "lower_back",
+      "hip_groin"
+     ]
+    },
+    {
+     "id": "machine_chest_press",
+     "block": "strength",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "pull_up",
+     "block": "strength",
+     "areas": [
+      "shoulder",
+      "elbow"
+     ]
+    },
+    {
+     "id": "cable_lateral_raise",
+     "block": "accessory",
+     "areas": []
+    },
+    {
+     "id": "cable_pallof_press",
+     "block": "accessory",
+     "areas": []
+    },
+    {
+     "id": "lower_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [
+    "knee"
+   ],
+   "violations": [],
+   "groups": {
+    "glutes": 2,
+    "hamstrings": 2,
+    "core": 4,
+    "arms": 6,
+    "chest": 3,
+    "shoulders": 4.5,
+    "back": 3
+   }
+  },
+  {
+   "week": 3,
+   "date": "2026-10-21",
+   "sport": "crosstraining",
+   "title": "amrap + bloc force",
+   "requestId": "2026-10-19.crosstraining.1",
+   "reproducible": "oui",
+   "declared": "Passer (genou P2 connu)",
+   "decision": "adapted",
+   "adaptation": "régénérée (reproductible)",
+   "changes": [
+    "removed:back_squat",
+    "removed:air_squat",
+    "added:barbell_ohp"
+   ],
+   "reasons": [
+    "KNOWN_PAIN_KEPT"
+   ],
+   "execution": "réalisée",
+   "targetMin": 73,
+   "plannedEstMin": 48,
+   "executedEstMin": 46,
+   "exercises": [
+    {
+     "id": "row_erg",
+     "block": "warmup",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "barbell_ohp",
+     "block": "strength",
+     "areas": [
+      "shoulder",
+      "lower_back"
+     ]
+    },
+    {
+     "id": "band_assisted_pull_up",
+     "block": "warmup",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "row_erg",
+     "block": "warmup",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "row_erg",
+     "block": "conditioning",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "band_assisted_pull_up",
+     "block": "conditioning",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "row_erg",
+     "block": "cooldown",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "shoulder_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [
+    "knee"
+   ],
+   "violations": [],
+   "groups": {
+    "arms": 2,
+    "shoulders": 2,
+    "core": 1
+   }
+  },
+  {
+   "week": 3,
+   "date": "2026-10-22",
+   "sport": "running",
+   "title": "running.easy",
+   "requestId": "2026-10-19.running.2",
+   "reproducible": "oui",
+   "declared": "Passer (genou P2 connu)",
+   "decision": "adapted",
+   "adaptation": "régénérée (reproductible)",
+   "changes": [
+    "removed:easy_run",
+    "added:row_erg"
+   ],
+   "reasons": [
+    "KNOWN_PAIN_KEPT"
+   ],
+   "execution": "réalisée",
+   "targetMin": 58,
+   "plannedEstMin": 30,
+   "executedEstMin": 31,
+   "exercises": [
+    {
+     "id": "row_erg",
+     "block": "running",
+     "areas": [
+      "lower_back"
+     ]
+    }
+   ],
+   "excludedAreas": [
+    "knee"
+   ],
+   "violations": [],
+   "groups": {}
+  },
+  {
+   "week": 3,
+   "date": "2026-10-23",
+   "sport": "strength",
+   "title": "str_full_body C",
+   "requestId": "2026-10-19.strength.3",
+   "reproducible": "non",
+   "declared": "Passer (genou P2 connu)",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [
+    "KNOWN_PAIN_KEPT",
+    "ADAPTATION_NOT_APPLIED",
+    "cause=session_not_reproducible"
+   ],
+   "execution": "réalisée",
+   "targetMin": 69,
+   "plannedEstMin": 39,
+   "executedEstMin": 39,
+   "exercises": [
+    {
+     "id": "lower_mobility_flow",
+     "block": "warmup",
+     "areas": []
+    },
+    {
+     "id": "romanian_deadlift",
+     "block": "strength",
+     "areas": [
+      "lower_back",
+      "hip_groin"
+     ]
+    },
+    {
+     "id": "seated_cable_row",
+     "block": "strength",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "db_shoulder_press",
+     "block": "strength",
+     "areas": [
+      "shoulder",
+      "elbow"
+     ]
+    },
+    {
+     "id": "cable_pallof_press",
+     "block": "accessory",
+     "areas": []
+    },
+    {
+     "id": "lower_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [
+    "knee"
+   ],
+   "violations": [],
+   "groups": {
+    "glutes": 2,
+    "hamstrings": 2,
+    "core": 4,
+    "back": 3,
+    "arms": 4.5,
+    "shoulders": 4.5
+   }
+  },
+  {
+   "week": 3,
+   "date": "2026-10-24",
+   "sport": "running",
+   "title": "running.easy",
+   "requestId": "2026-10-19.running.1",
+   "reproducible": "oui",
+   "declared": "Passer (genou P2 connu)",
+   "decision": "adapted",
+   "adaptation": "régénérée (reproductible)",
+   "changes": [
+    "removed:easy_run",
+    "added:row_erg"
+   ],
+   "reasons": [
+    "KNOWN_PAIN_KEPT"
+   ],
+   "execution": "réalisée",
+   "targetMin": 88,
+   "plannedEstMin": 30,
+   "executedEstMin": 31,
+   "exercises": [
+    {
+     "id": "row_erg",
+     "block": "running",
+     "areas": [
+      "lower_back"
+     ]
+    }
+   ],
+   "excludedAreas": [
+    "knee"
+   ],
+   "violations": [],
+   "groups": {}
+  },
+  {
+   "week": 4,
+   "date": "2026-10-26",
+   "sport": "strength",
+   "title": "str_full_body A",
+   "requestId": "2026-10-26.strength.1",
+   "reproducible": "non",
+   "declared": "Non (genou résolu)",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 69,
+   "plannedEstMin": 39,
+   "executedEstMin": 39,
+   "exercises": [
+    {
+     "id": "lower_mobility_flow",
+     "block": "warmup",
+     "areas": []
+    },
+    {
+     "id": "back_squat",
+     "block": "strength",
+     "areas": [
+      "knee",
+      "lower_back",
+      "hip_groin"
+     ]
+    },
+    {
+     "id": "machine_chest_press",
+     "block": "strength",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "pull_up",
+     "block": "strength",
+     "areas": [
+      "shoulder",
+      "elbow"
+     ]
+    },
+    {
+     "id": "cable_lateral_raise",
+     "block": "accessory",
+     "areas": []
+    },
+    {
+     "id": "lower_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {
+    "glutes": 2,
+    "quads": 2,
+    "core": 1,
+    "arms": 6,
+    "chest": 3,
+    "shoulders": 4.5,
+    "back": 3
+   }
+  },
+  {
+   "week": 4,
+   "date": "2026-10-27",
+   "sport": "strength",
+   "title": "str_full_body B",
+   "requestId": "2026-10-26.strength.2",
+   "reproducible": "oui",
+   "declared": "Oui · épaule P1",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 54,
+   "plannedEstMin": 33,
+   "executedEstMin": 33,
+   "exercises": [
+    {
+     "id": "lower_mobility_flow",
+     "block": "warmup",
+     "areas": []
+    },
+    {
+     "id": "romanian_deadlift",
+     "block": "strength",
+     "areas": [
+      "lower_back",
+      "hip_groin"
+     ]
+    },
+    {
+     "id": "seated_cable_row",
+     "block": "strength",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "db_shoulder_press",
+     "block": "strength",
+     "areas": [
+      "shoulder",
+      "elbow"
+     ]
+    },
+    {
+     "id": "lower_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {
+    "glutes": 2,
+    "hamstrings": 2,
+    "core": 1,
+    "back": 3,
+    "arms": 4.5,
+    "shoulders": 4.5
+   }
+  },
+  {
+   "week": 4,
+   "date": "2026-10-28",
+   "sport": "crosstraining",
+   "title": "amrap + bloc force",
+   "requestId": "2026-10-26.crosstraining.1",
+   "reproducible": "oui",
+   "declared": "Non",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 73,
+   "plannedEstMin": 48,
+   "executedEstMin": 48,
+   "exercises": [
+    {
+     "id": "row_erg",
+     "block": "warmup",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "back_squat",
+     "block": "strength",
+     "areas": [
+      "knee",
+      "lower_back",
+      "hip_groin"
+     ]
+    },
+    {
+     "id": "air_squat",
+     "block": "warmup",
+     "areas": [
+      "knee"
+     ]
+    },
+    {
+     "id": "band_assisted_pull_up",
+     "block": "warmup",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "row_erg",
+     "block": "warmup",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "row_erg",
+     "block": "conditioning",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "air_squat",
+     "block": "conditioning",
+     "areas": [
+      "knee"
+     ]
+    },
+    {
+     "id": "band_assisted_pull_up",
+     "block": "conditioning",
+     "areas": [
+      "shoulder"
+     ]
+    },
+    {
+     "id": "row_erg",
+     "block": "cooldown",
+     "areas": [
+      "lower_back"
+     ]
+    },
+    {
+     "id": "hip_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    },
+    {
+     "id": "shoulder_mobility_flow",
+     "block": "cooldown",
+     "areas": []
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {
+    "glutes": 1,
+    "quads": 1,
+    "core": 0.5
+   }
+  },
+  {
+   "week": 4,
+   "date": "2026-10-29",
+   "sport": "running",
+   "title": "running.easy",
+   "requestId": "2026-10-26.running.2",
+   "reproducible": "oui",
+   "declared": "Non",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 58,
+   "plannedEstMin": 30,
+   "executedEstMin": 30,
+   "exercises": [
+    {
+     "id": "easy_run",
+     "block": "running",
+     "areas": [
+      "knee",
+      "lower_leg",
+      "ankle_foot"
+     ]
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {}
+  },
+  {
+   "week": 4,
+   "date": "2026-10-30",
+   "sport": "strength",
+   "title": "str_full_body C",
+   "requestId": "2026-10-26.strength.3",
+   "reproducible": "non",
+   "declared": "Oui · épaule P1",
+   "decision": "postponed",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [
+    "PAIN_ESCALATED",
+    "SESSION_NOT_ADAPTABLE",
+    "BLOCKING_NEED"
+   ],
+   "execution": "non démarrée (report)",
+   "targetMin": 69,
+   "plannedEstMin": 44,
+   "executedEstMin": null,
+   "exercises": [],
+   "excludedAreas": [
+    "shoulder"
+   ],
+   "violations": [],
+   "groups": {}
+  },
+  {
+   "week": 4,
+   "date": "2026-10-31",
+   "sport": "running",
+   "title": "running.easy",
+   "requestId": "2026-10-26.running.1",
+   "reproducible": "oui",
+   "declared": "Non",
+   "decision": "unchanged",
+   "adaptation": "—",
+   "changes": [],
+   "reasons": [],
+   "execution": "réalisée",
+   "targetMin": 88,
+   "plannedEstMin": 30,
+   "executedEstMin": 30,
+   "exercises": [
+    {
+     "id": "easy_run",
+     "block": "running",
+     "areas": [
+      "knee",
+      "lower_leg",
+      "ankle_foot"
+     ]
+    }
+   ],
+   "excludedAreas": [],
+   "violations": [],
+   "groups": {}
+  }
+ ],
+ "weeks": [
+  {
+   "planned": {
+    "arms": {
+     "planned": 20.5,
+     "target": 6,
+     "high": 14,
+     "status": "achieved"
+    },
+    "back": {
+     "planned": 9,
+     "target": 10,
+     "high": 20,
+     "status": "reduced_by_constraint"
+    },
+    "calves": {
+     "planned": 0,
+     "target": 4,
+     "high": 10,
+     "status": "reduced_by_constraint"
+    },
+    "chest": {
+     "planned": 7,
+     "target": 10,
+     "high": 20,
+     "status": "reduced_by_constraint"
+    },
+    "core": {
+     "planned": 9,
+     "target": 4,
+     "high": 10,
+     "status": "achieved"
+    },
+    "glutes": {
+     "planned": 6,
+     "target": 6,
+     "high": 14,
+     "status": "achieved"
+    },
+    "hamstrings": {
+     "planned": 2,
+     "target": 8,
+     "high": 14,
+     "status": "reduced_by_constraint"
+    },
+    "quads": {
+     "planned": 4,
+     "target": 10,
+     "high": 18,
+     "status": "reduced_by_constraint"
+    },
+    "shoulders": {
+     "planned": 12,
+     "target": 8,
+     "high": 16,
+     "status": "achieved"
+    }
+   },
+   "executed": {
+    "glutes": 7,
+    "quads": 5,
+    "core": 9.5,
+    "arms": 20.5,
+    "chest": 7,
+    "shoulders": 12,
+    "back": 9,
+    "hamstrings": 2
+   },
+   "recovery": [
+    "2026-10-05 Musculation ↔ 2026-10-06 Musculation : arms, back, core, glutes, shoulders",
+    "2026-10-06 Musculation ↔ 2026-10-07 bloc force CT : core, glutes"
+   ],
+   "m3": {
+    "status": "BLOCKED",
+    "residual": 0
+   }
+  },
+  {
+   "planned": {
+    "arms": {
+     "planned": 16.5,
+     "target": 6,
+     "high": 14,
+     "status": "achieved"
+    },
+    "back": {
+     "planned": 9,
+     "target": 10,
+     "high": 20,
+     "status": "reduced_by_constraint"
+    },
+    "calves": {
+     "planned": 0,
+     "target": 4,
+     "high": 10,
+     "status": "reduced_by_constraint"
+    },
+    "chest": {
+     "planned": 6,
+     "target": 10,
+     "high": 20,
+     "status": "reduced_by_constraint"
+    },
+    "core": {
+     "planned": 9,
+     "target": 4,
+     "high": 10,
+     "status": "achieved"
+    },
+    "glutes": {
+     "planned": 6,
+     "target": 6,
+     "high": 14,
+     "status": "achieved"
+    },
+    "hamstrings": {
+     "planned": 4,
+     "target": 8,
+     "high": 14,
+     "status": "reduced_by_constraint"
+    },
+    "quads": {
+     "planned": 2,
+     "target": 10,
+     "high": 18,
+     "status": "reduced_by_constraint"
+    },
+    "shoulders": {
+     "planned": 13.5,
+     "target": 8,
+     "high": 16,
+     "status": "achieved"
+    }
+   },
+   "executed": {
+    "glutes": 7,
+    "hamstrings": 4.5,
+    "core": 9,
+    "arms": 16.5,
+    "chest": 6,
+    "shoulders": 13.5,
+    "back": 9,
+    "quads": 2
+   },
+   "recovery": [
+    "2026-10-12 Musculation ↔ 2026-10-13 Musculation : arms, back, core, glutes, shoulders",
+    "2026-10-13 Musculation ↔ 2026-10-14 bloc force CT : glutes"
+   ],
+   "m3": {
+    "status": "BLOCKED",
+    "residual": 0
+   }
+  },
+  {
+   "planned": {
+    "arms": {
+     "planned": 15.5,
+     "target": 6,
+     "high": 14,
+     "status": "achieved"
+    },
+    "back": {
+     "planned": 10,
+     "target": 10,
+     "high": 20,
+     "status": "achieved"
+    },
+    "calves": {
+     "planned": 0,
+     "target": 4,
+     "high": 10,
+     "status": "reduced_by_constraint"
+    },
+    "chest": {
+     "planned": 3,
+     "target": 10,
+     "high": 20,
+     "status": "reduced_by_constraint"
+    },
+    "core": {
+     "planned": 9,
+     "target": 4,
+     "high": 10,
+     "status": "achieved"
+    },
+    "glutes": {
+     "planned": 6,
+     "target": 6,
+     "high": 14,
+     "status": "achieved"
+    },
+    "hamstrings": {
+     "planned": 4,
+     "target": 8,
+     "high": 14,
+     "status": "reduced_by_constraint"
+    },
+    "quads": {
+     "planned": 2,
+     "target": 10,
+     "high": 18,
+     "status": "reduced_by_constraint"
+    },
+    "shoulders": {
+     "planned": 14,
+     "target": 8,
+     "high": 16,
+     "status": "achieved"
+    }
+   },
+   "executed": {
+    "glutes": 6,
+    "hamstrings": 6,
+    "core": 10,
+    "back": 10,
+    "arms": 17.5,
+    "shoulders": 16,
+    "chest": 3
+   },
+   "recovery": [
+    "2026-10-19 Musculation ↔ 2026-10-20 Musculation : arms, back, core, glutes, shoulders",
+    "2026-10-20 Musculation ↔ 2026-10-21 bloc force CT : core, glutes"
+   ],
+   "m3": {
+    "status": "BLOCKED",
+    "residual": 0
+   }
+  },
+  {
+   "planned": {
+    "arms": {
+     "planned": 16.5,
+     "target": 6,
+     "high": 14,
+     "status": "achieved"
+    },
+    "back": {
+     "planned": 9,
+     "target": 10,
+     "high": 20,
+     "status": "reduced_by_constraint"
+    },
+    "calves": {
+     "planned": 0,
+     "target": 4,
+     "high": 10,
+     "status": "reduced_by_constraint"
+    },
+    "chest": {
+     "planned": 6,
+     "target": 10,
+     "high": 20,
+     "status": "reduced_by_constraint"
+    },
+    "core": {
+     "planned": 6,
+     "target": 4,
+     "high": 10,
+     "status": "achieved"
+    },
+    "glutes": {
+     "planned": 6,
+     "target": 6,
+     "high": 14,
+     "status": "achieved"
+    },
+    "hamstrings": {
+     "planned": 4,
+     "target": 8,
+     "high": 14,
+     "status": "reduced_by_constraint"
+    },
+    "quads": {
+     "planned": 2,
+     "target": 10,
+     "high": 18,
+     "status": "reduced_by_constraint"
+    },
+    "shoulders": {
+     "planned": 13.5,
+     "target": 8,
+     "high": 16,
+     "status": "achieved"
+    }
+   },
+   "executed": {
+    "glutes": 5,
+    "quads": 3,
+    "core": 2.5,
+    "arms": 10.5,
+    "chest": 3,
+    "shoulders": 9,
+    "back": 6,
+    "hamstrings": 2
+   },
+   "recovery": [
+    "2026-10-26 Musculation ↔ 2026-10-27 Musculation : arms, back, core, glutes, shoulders",
+    "2026-10-27 Musculation ↔ 2026-10-28 bloc force CT : core, glutes"
+   ],
+   "m3": {
+    "status": "BLOCKED",
+    "residual": 0
+   }
+  }
+ ]
+}
