@@ -82,6 +82,8 @@ export function planProgrammeCurrentWeek(state: AppState, clock: Clock, env: Pro
     // Jours déjà passés (option) : aucune séance ne peut y être réalisée ⇒ indisponibles (calendrier, pas une règle sportive).
     days: p.availability.map((m, k) => { const date = addDays(weekStart, k); return { date, availableMinutes: o.pastDaysUnavailable && date < clock.today ? 0 : m }; }),
     recent: recentOf(state, p, weekStart),
+    // Étude RC2 bis : organisation imposée (jamais fournie par l'application).
+    ...(env.studyPins?.(weekStart) ? { pins: (env.studyPins(weekStart) ?? []).map((x) => ({ ...x })) } : {}),
   });
   if (!r.ok) throw new ProgrammeError('PROGRAMME_WEEK_NOT_PLANNABLE', r.reasons);
   // Écriture par la passerelle unique : jamais de remplacement d'une semaine commencée ou clôturée (refus, état inchangé).

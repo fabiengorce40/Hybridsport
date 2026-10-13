@@ -107,6 +107,8 @@ export interface PlanWeekDeps {
   readonly clock: PlannerClock;
   readonly days: PlannerInput['days'];
   readonly recent?: PlannerInput['recent'];
+  /** Étude RC2 bis (jamais fournie par l'application) : organisation imposée de la semaine. */
+  readonly pins?: PlannerInput['pins'];
 }
 
 /**
@@ -122,7 +124,7 @@ export function planProgrammeWeek(s: ProgrammeState, i: number, deps: PlanWeekDe
   if (status !== 'plannable' && !replannable) return fail(pgReasons.emit(PG_CODES.WEEK_NOT_PLANNABLE, { weekIndex: i, status }), ...(status === 'projected' ? ahead.reasons : []));
   const rotated = rotateIntents(s, i, weekIntent(s, i), deps);
   const intent = rotated.intent;
-  const week = planMultisportWeek({ weekStart: intent.weekStart, days: deps.days, demands: intent.demands, mode: deps.mode, recent: deps.recent ?? [] }, deps.ports, deps.plannerGovernance, deps.clock);
+  const week = planMultisportWeek({ weekStart: intent.weekStart, days: deps.days, demands: intent.demands, mode: deps.mode, recent: deps.recent ?? [], ...(deps.pins ? { pins: [...deps.pins] } : {}) }, deps.ports, deps.plannerGovernance, deps.clock);
   const requests = week.requests.map((r) => ({
     requestId: r.requestId, sport: r.sport, status: r.status, category: r.category, ...(r.status === 'unplaced' ? {} : { date: r.date }),
     ...(r.status === 'unplaced' && r.composed ? { composedUnplaced: true as const } : {}),

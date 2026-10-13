@@ -62,6 +62,12 @@ export const zPlannerInput = z.object({
      */
     status: z.enum(['executed', 'abandoned', 'missed', 'planned']).optional(),
   }).strict()).default([]),
+  /**
+   * CAPACITÉ D'ÉTUDE (RC2 bis), absente des chemins de l'application : organisation IMPOSÉE de la semaine (séance → jour).
+   * `minutes` : part explicite d'une journée DOUBLE (deux séances le même jour, seulement si fournie). Absent ⇒ placement
+   * inchangé.
+   */
+  pins: z.array(z.object({ requestId: z.string().min(1), date, minutes: z.number().int().positive().optional() }).strict()).optional(),
 }).strict();
 export type PlannerInput = z.input<typeof zPlannerInput>;
 export type ParsedPlannerInput = z.infer<typeof zPlannerInput>;

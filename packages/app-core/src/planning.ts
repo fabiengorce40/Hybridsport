@@ -31,6 +31,11 @@ type Content = Pick<ContentSource, 'ruleset' | 'catalog'>;
 /** Environnement d'orchestration : moteurs, contenus, gouvernance du planificateur et mode. Injecté (tests : TEST_ONLY). */
 export interface PlannerEnvironment {
   readonly mode: PlannerMode;
+  /**
+   * CAPACITÉ D'ÉTUDE (RC2 bis), jamais fournie par l'application : organisation imposée d'une semaine (séance → jour,
+   * part explicite d'une journée double). Absente ⇒ placement du planificateur inchangé.
+   */
+  readonly studyPins?: (weekStart: string) => readonly { readonly requestId: string; readonly date: string; readonly minutes?: number }[] | undefined;
   /** Autorité EXPLICITE de l'environnement, vérifiée avant toute planification (`assertEnvironment`). */
   readonly authority: EnvironmentAuthority;
   /** Identifiants des valeurs SIMULATION_ONLY injectées (tracés dans la semaine persistée) ; interdits en production. */
@@ -241,8 +246,9 @@ export function planProgrammeWeek(state: AppState, clock: Clock, env: PlannerEnv
   const programme = state.programme;
   if (!programme) throw new AppError('PROGRAMME_INTENT_MISSING');
   const days = p.availability.map((m, i) => ({ date: addDays(weekStart, i), availableMinutes: m }));
+  const pins = env.studyPins?.(weekStart);
   const week = planMultisportWeek({
-    weekStart, days, mode: env.mode, recent: recentOf(state, p, weekStart),
+    weekStart, days, mode: env.mode, recent: recentOf(state, p, weekStart), ...(pins ? { pins: [...pins] } : {}),
     demands: programme.sports.map((s) => ({ sport: s.sport, sessions: s.sessions, intent: { ...s.intent }, ...(s.station === undefined ? {} : { station: s.station }) })),
   }, buildPorts(state, p, programme, env), env.governance, clockOf());
   const plannedAt = normalizeInstant(clock.now);

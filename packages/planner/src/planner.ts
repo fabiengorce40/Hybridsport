@@ -114,6 +114,9 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
   const hoursOf = (d: string): number => Date.parse(clock.instantOf(d)) / MS_PER_HOUR;
   const dates = input.days.map((d) => d.date);
   const minutes = new Map(input.days.map((d) => [d.date, d.availableMinutes]));
+  // Étude RC2 bis (inerte par défaut) : séance épinglée à un jour ; part explicite d'une journée double.
+  const pins = new Map((input.pins ?? []).map((p) => [p.requestId, p]));
+  const minutesFor = (requestId: string, date: string): number => { const p = pins.get(requestId); return p && p.date === date && p.minutes !== undefined ? p.minutes : (minutes.get(date) ?? 0); };
 
   const unknownStructures = (sport: PlannerSport): StructuresResult => ({ ok: false, reasons: [gpReasons.emit(GP_CODES.STRUCTURES_UNAVAILABLE, { sport, cause: 'ENGINE_UNAVAILABLE' })] });
   const unknownDemand = (sport: PlannerSport): DemandOutcome => ({ status: 'unavailable', reasons: [gpReasons.emit(GP_CODES.STRUCTURES_UNAVAILABLE, { sport, cause: 'ENGINE_UNAVAILABLE' })] });
@@ -266,7 +269,10 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     const groupIdx = group ? [...placed.values()].filter((x) => group.includes(x.sport)).map((x) => dates.indexOf(x.date)) : [];
     const groupGap = (d: string): number => (groupIdx.length === 0 ? dates.length : Math.min(...groupIdx.map((i) => Math.abs(i - dates.indexOf(d)))));
     const taken = new Set([...placed.values()].map((x) => x.date));
-    const candidates = dates.filter((d) => !taken.has(d) && (minutes.get(d) ?? 0) > 0).sort((a, b) => groupGap(b) - groupGap(a) || gap(b) - gap(a) || (a < b ? -1 : 1));
+    const pin = pins.get(r.requestId);
+    const candidates = pin
+      ? (minutesFor(r.requestId, pin.date) > 0 && (!taken.has(pin.date) || pin.minutes !== undefined) ? [pin.date] : [])
+      : dates.filter((d) => !taken.has(d) && (minutes.get(d) ?? 0) > 0).sort((a, b) => groupGap(b) - groupGap(a) || gap(b) - gap(a) || (a < b ? -1 : 1));
     if (candidates.length === 0) {
       const u = composeUnplaced(r);
       results.set(r.requestId, { ...base, status: 'unplaced', category: 'slot_unavailable', reasons: [gpReasons.emit(GP_CODES.NOT_ENOUGH_DAYS, { sport: r.sport, requestId: r.requestId }), ...u.reasons], ...(u.composed ? { composed: u.composed } : {}) });
@@ -280,12 +286,12 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     // la demande (sport, intention, station, graine propre au jour) n'est jamais modifiée.
     let slotRetry: { minutes: number; trace: ReasonCode[]; last: { date: string; reasons: readonly ReasonCode[] } } | undefined;
     for (const date of candidates) {
-      if (slotRetry && (minutes.get(date) ?? 0) <= slotRetry.minutes) continue;
+      if (slotRetry && minutesFor(r.requestId, date) <= slotRetry.minutes) continue;
       tried.push(date);
-      const out = port.generate({ requestId: r.requestId, date, availableMinutes: minutes.get(date) ?? 0, hybrid, seed: `planner:${r.requestId}:${date}`, intent: r.intent, ...weekArg(r.sport, date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+      const out = port.generate({ requestId: r.requestId, date, availableMinutes: minutesFor(r.requestId, date), hybrid, seed: `planner:${r.requestId}:${date}`, intent: r.intent, ...weekArg(r.sport, date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
       if (out.status === 'refused') {
         if (classifyRefusal(out.reasons) === 'retryable_slot_constraint') {
-          const m = minutes.get(date) ?? 0;
+          const m = minutesFor(r.requestId, date);
           const note = gpReasons.emit(GP_CODES.SLOT_RETRY, { sport: r.sport, requestId: r.requestId, fromDate: date, fromMinutes: m, causes: out.reasons.map((x) => x.code) });
           slotRetry = { minutes: Math.max(m, slotRetry?.minutes ?? 0), trace: [...(slotRetry?.trace ?? []), note], last: { date, reasons: out.reasons } };
           continue;
@@ -331,7 +337,7 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     if (!own.some((r) => r.composed)) continue;
     const days = own.map((r) => {
       const p = placed.get(r.requestId) as Placed;
-      return { date: p.date, availableMinutes: minutes.get(p.date) ?? 0, requestId: r.requestId, ...(r.composed || !r.intent ? {} : { locked: r.intent }) };
+      return { date: p.date, availableMinutes: minutesFor(r.requestId, p.date), requestId: r.requestId, ...(r.composed || !r.intent ? {} : { locked: r.intent }) };
     }).sort((a, b) => (a.date < b.date ? -1 : 1));
     const res = comp.compose({ days, base: d.intent as CompositionBase, hybrid, mode: input.mode, weeklySessions: d.sessions });
     // Régénération dans l'ORDRE DES DATES : chaque séance composée connaît les séances de sa discipline placées avant elle.
@@ -348,7 +354,7 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
       r.intent = slot.intent;
       r.final = true;
       compositionOf.set(r.requestId, { applied: { authority: res.status === 'composed' ? res.authority : 'provisional', role: slot.role }, reasons: [gpReasons.emit(GP_CODES.COMPOSITION_APPLIED, { sport: r.sport, authority: res.authority, role: slot.role, archetypeId: slot.intent.archetypeId }), ...res.reasons] });
-      const out = port.generate({ requestId: r.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, seed: `planner:${r.requestId}:${p.date}`, intent: slot.intent, ...weekArg(r.sport, p.date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+      const out = port.generate({ requestId: r.requestId, date: p.date, availableMinutes: minutesFor(r.requestId, p.date), hybrid, seed: `planner:${r.requestId}:${p.date}`, intent: slot.intent, ...weekArg(r.sport, p.date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
       if (out.status === 'refused') {
         placed.delete(r.requestId);
         results.set(r.requestId, { ...base, status: 'refused', category: refusedCategory(out.reasons), date: p.date, reasons: [gpReasons.emit(GP_CODES.ENGINE_REFUSED, { sport: r.sport, requestId: r.requestId, date: p.date }), ...out.reasons] });
@@ -379,7 +385,7 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
       const port = ports[r.sport];
       if (!p || !port?.consumesNeighbours || !r.intent) continue;
       const n = neighboursOf(r.sport, p.date, r.requestId);
-      const out = port.generate({ requestId: r.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, seed: `planner:${r.requestId}:${p.date}`, intent: r.intent, neighbours: n, ...weekArg(r.sport, p.date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+      const out = port.generate({ requestId: r.requestId, date: p.date, availableMinutes: minutesFor(r.requestId, p.date), hybrid, seed: `planner:${r.requestId}:${p.date}`, intent: r.intent, neighbours: n, ...weekArg(r.sport, p.date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
       const base = { requestId: r.requestId, sport: r.sport };
       if (out.status === 'refused') {
         placed.delete(r.requestId);
@@ -546,7 +552,7 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
       if (decided.has(p.requestId) || !port?.consumesNeighbours || !r?.intent || res?.status !== 'planned') continue;
       const n = neighboursOf(p.sport, p.date, p.requestId);
       if (JSON.stringify(n) === JSON.stringify(res.neighbourContext)) continue;
-      const out1 = port.generate({ requestId: p.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, seed: `planner:${p.requestId}:${p.date}`, intent: r.intent, neighbours: n, ...weekArg(p.sport, p.date, p.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+      const out1 = port.generate({ requestId: p.requestId, date: p.date, availableMinutes: minutesFor(p.requestId, p.date), hybrid, seed: `planner:${p.requestId}:${p.date}`, intent: r.intent, neighbours: n, ...weekArg(p.sport, p.date, p.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
       const stale = (cause: string): void => { out.push({ conflict: `NEIGHBOUR_REFRESH|${p.requestId}`, cause, tried: [] }); };
       if (out1.status === 'refused') { stale('REFRESH_ENGINE_REFUSED'); continue; }
       const structures = port.structures(out1.session);
@@ -636,7 +642,7 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     const port = p ? ports[p.sport] : undefined;
     if (!p || !r?.intent || !port) return undefined;
     const n = port.consumesNeighbours ? neighboursOf(p.sport, date, requestId) : undefined;
-    const out = port.generate({ requestId, date, availableMinutes: minutes.get(date) ?? 0, hybrid, seed: `planner:${requestId}:${date}`, intent: r.intent, ...(n ? { neighbours: n } : {}), ...weekArg(p.sport, date, requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+    const out = port.generate({ requestId, date, availableMinutes: minutesFor(requestId, date), hybrid, seed: `planner:${requestId}:${date}`, intent: r.intent, ...(n ? { neighbours: n } : {}), ...weekArg(p.sport, date, requestId), ...(r.station === undefined ? {} : { station: r.station }) });
     if (out.status === 'refused') return undefined;
     const structures = port.structures(out.session);
     return { out, n, next: { ...withFingerprint(p, out.fingerprint), date, session: out.session, structures, demand: port.demand(out.session, input.mode) } };
@@ -654,7 +660,7 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     if (!port.consumesNeighbours) { tried.push('RECOMPOSE:NO_ENGINE_LEVER'); return undefined; }
     const other = c.members.find((m) => m !== n.requestId);
     const nctx = neighboursOf(n.sport, p.date, n.requestId, other);
-    const out = port.generate({ requestId: n.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, seed: `planner:${n.requestId}:${p.date}`, intent: r.intent, neighbours: nctx, ...weekArg(n.sport, p.date, n.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+    const out = port.generate({ requestId: n.requestId, date: p.date, availableMinutes: minutesFor(n.requestId, p.date), hybrid, seed: `planner:${n.requestId}:${p.date}`, intent: r.intent, neighbours: nctx, ...weekArg(n.sport, p.date, n.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
     if (out.status === 'refused') { tried.push('RECOMPOSE:ENGINE_REFUSED'); return undefined; }
     if (JSON.stringify(out.session.blocks) === JSON.stringify(p.session.blocks)) { tried.push('RECOMPOSE:NO_EFFECT'); return undefined; }
     const structures = port.structures(out.session);
