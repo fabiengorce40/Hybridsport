@@ -159,4 +159,40 @@ describe('états réels de la version déployée (f9f7e2e) chargés par le code 
     const w2 = ensureBeta0Week(s, at('2026-10-12T07:30:00.000Z'));
     expect(Object.keys(w2.planner.weeks)).toContain('2026-10-12');
   });
+
+  /** État brut chargé (avant `ensureBeta0Week`). */
+  const raw = (name: string, now: string): AppState => {
+    const st = new MemoryStorage();
+    for (const [k, v] of Object.entries(JSON.parse(readFileSync(new URL(`./fixtures/deployed-f9f7e2e-${name}.json`, import.meta.url), 'utf8')) as Record<string, string>)) st.setItem(k, v);
+    const r = loadState(st, now);
+    if (r.status !== 'ok') throw new Error(r.status);
+    return r.state;
+  };
+
+  it('DP-6. semaine DÉJÀ PLANIFIÉE héritée : jamais recomposée au chargement (séances, raisons, arbitrage identiques), avec ou sans séance commencée', () => {
+    for (const [name, now] of [['L1-inprogress', NOW], ['L3-mass4-fresh', '2026-10-05T08:00:00.000Z'], ['L2-painpause', NOW]] as const) {
+      const before = raw(name, now);
+      const after = ensureBeta0Week(before, at(now));
+      expect(JSON.stringify(after.planner.weeks['2026-10-05'])).toBe(JSON.stringify(before.planner.weeks['2026-10-05']));
+      expect(after.programmeLogs).toEqual(before.programmeLogs);
+      expect(after.profile?.equipment).toEqual(before.profile?.equipment);
+    }
+  });
+
+  it('DP-7. pause douleur héritée : tout NOUVEAU démarrage refusé (toutes disciplines) sans contrôle enregistré ; séance commencée reprise et terminée', () => {
+    const s = deployed('L2-painpause', NOW);
+    for (const id of s.planner.weeks['2026-10-05']?.requests.filter((r) => r.status === 'planned' && !s.programmeLogs[r.requestId]).map((r) => r.requestId) ?? []) {
+      expect(() => startProgrammeSession(s, at(NOW), id, env, { painAnswer: 'no' })).toThrow();
+    }
+    expect(s.checkIns).toEqual([]);
+    const started = Object.entries(s.programmeLogs).find(([, l]) => !l.finishedAt)?.[0];
+    if (started) {
+      expect(startProgrammeSession(s, at(NOW), started, env, KNEE)).toBe(s);
+      // Résultat structuré conforme au format de la séance C3 héritée (contrat de résultat CT).
+      const fmt = selectProgrammeSession(s, started)?.session.blocks.find((x) => x.kind === 'conditioning')?.format;
+      const result = fmt === 'amrap' ? { kind: 'rounds_reps', rounds: 3, reps: 0 } : fmt === 'emom' ? { kind: 'emom', minutesCompleted: 0 } : fmt === 'for_time' ? { kind: 'capped_rounds', roundsCompleted: 0, partialReps: 0 } : { kind: 'total', durationS: 60 };
+      const f = finishProgrammeSession(s, at('2026-10-06T19:00:00.000Z'), { requestId: started, completion: 'modified', pain: false, ...(started.includes('crosstraining') ? { ct: { result } } : {}) } as never);
+      expect(f.programmeState?.results.some((r) => r.requestId === started)).toBe(true);
+    }
+  });
 });

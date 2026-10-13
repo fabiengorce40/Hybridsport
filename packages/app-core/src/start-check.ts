@@ -139,6 +139,11 @@ export function adaptPersistedSession(state: AppState, requestId: string, ev: Ch
   const traced = out.trace.entries.flatMap((e) => e.reasons).filter((r) => SHOWN.test(r.code)).map(reason);
   if (out.result.status !== 'ok') return { status: 'impossible', cause: 'repair_refused', reasons: (out.result.status === 'error' ? out.result.error.reasons : out.result.reasons).map(reason) };
   const session = out.result.value;
+  // Cohérence (garde conservatrice, aucune valeur sportive) : le CORE protège le bloc PRINCIPAL ; un bloc de force
+  // secondaire vidé (ex. Full Body sans poussée ni tirage) est une séance que le moteur de la discipline refuse de
+  // composer ⇒ jamais acceptée ici ; la décision revient au moteur (recomposition signalée ou report).
+  const emptied = rec.session.blocks.filter((b) => b.kind === 'strength' && !session.blocks.some((x) => x.id === b.id && x.items.length > 0)).map((b) => b.id);
+  if (emptied.length > 0) return { status: 'impossible', cause: 'strength_block_emptied', reasons: [{ code: 'KAIRO.CHECKIN_STRENGTH_BLOCK_EMPTIED', params: { requestId, blocks: emptied } }] };
   const est = estimateDuration(session, content.catalog, readDurationParams(content.ruleset));
   const record: SessionRecord = { ...rec, session, durationEstimate: est.ok ? toRecordedDurationEstimate(est.estimate) : rec.durationEstimate };
   return { status: 'adapted', record, changes: sessionChanges(rec.session, session), reasons: traced };
@@ -205,6 +210,8 @@ export function decideStart(state: AppState, requestId: string, planned: Session
   const persisted = (cause: string): StartDecision | null => {
     const a = adaptPersistedSession(state, requestId, ev, env);
     if (a.status !== 'adapted') return null;
+    // Rien à changer (aucune zone concernée) : la séance n'est pas « adaptée » ; seul l'état non appliqué est tracé.
+    if (a.changes.length === 0) return ev.readiness === 'caution' || ev.readiness === 'reduce' ? notApplied('readiness_requires_reproducible_session') : { kind: 'unchanged', reasons: [...base, { code: 'KAIRO.CHECKIN_NO_CHANGE', params: { requestId, readiness: ev.readiness } }] };
     const readinessNote = ev.readiness === 'caution' || ev.readiness === 'reduce' ? [{ code: 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED', params: { requestId, cause: 'readiness_requires_reproducible_session', readiness: ev.readiness } }] : [];
     return adapted(a.record, a.changes, [{ code: 'KAIRO.CHECKIN_PERSISTED_ADAPTED', params: { requestId, cause } }, ...readinessNote], a.reasons);
   };
