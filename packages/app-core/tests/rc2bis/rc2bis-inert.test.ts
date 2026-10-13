@@ -49,6 +49,19 @@ describe('RC2 bis — capacité d’étude inerte, RC1 préservé', () => {
   });
 });
 
+describe('RC2 bis — fidélité des organisations imposées', () => {
+  it('F-1. une séance non épinglée ne prend jamais un jour réservé : chaque séance épinglée et placée est sur son jour', () => {
+    const S5 = SCENARIOS.find((x) => x.key === 'S5') as Scenario;
+    const layout: Layout = [['strength'], ['strength'], [], ['strength'], ['running'], ['crosstraining'], []];
+    const env = weekEnv({ layout, scenario: S5 });
+    const s = create({ ...PROFILE, availability: [...S5.availability] }, NOW, env);
+    const pins = env.studyPins?.(MON) ?? [];
+    const reqs = s.planner.weeks[MON]?.requests ?? [];
+    for (const p of pins) expect(reqs.find((r) => r.requestId === p.requestId)?.date).toBe(p.date);
+    expect(reqs.filter((r) => !pins.some((p) => p.requestId === r.requestId)).every((r) => r.status !== 'planned')).toBe(true);
+  });
+});
+
 describe('RC2 bis — séances combinées : contraintes explicites, jamais de fusion ni de retrait', () => {
   it('C-1. sans part explicite, une seconde séance n’est JAMAIS placée sur un jour déjà occupé (non placée, tracée)', () => {
     const s = create(PROFILE, NOW, withPins([{ requestId: id('strength', 1), date: '2026-10-07' }, { requestId: id('running', 1), date: '2026-10-07' }]));

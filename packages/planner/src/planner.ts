@@ -116,6 +116,8 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
   const minutes = new Map(input.days.map((d) => [d.date, d.availableMinutes]));
   // Étude RC2 bis (inerte par défaut) : séance épinglée à un jour ; part explicite d'une journée double.
   const pins = new Map((input.pins ?? []).map((p) => [p.requestId, p]));
+  // Jours réservés par une organisation imposée : jamais pris par une séance non épinglée (vide sans épingles).
+  const pinnedDates = new Set((input.pins ?? []).map((p) => p.date));
   const minutesFor = (requestId: string, date: string): number => { const p = pins.get(requestId); return p && p.date === date && p.minutes !== undefined ? p.minutes : (minutes.get(date) ?? 0); };
 
   const unknownStructures = (sport: PlannerSport): StructuresResult => ({ ok: false, reasons: [gpReasons.emit(GP_CODES.STRUCTURES_UNAVAILABLE, { sport, cause: 'ENGINE_UNAVAILABLE' })] });
@@ -272,7 +274,7 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     const pin = pins.get(r.requestId);
     const candidates = pin
       ? (minutesFor(r.requestId, pin.date) > 0 && (!taken.has(pin.date) || pin.minutes !== undefined) ? [pin.date] : [])
-      : dates.filter((d) => !taken.has(d) && (minutes.get(d) ?? 0) > 0).sort((a, b) => groupGap(b) - groupGap(a) || gap(b) - gap(a) || (a < b ? -1 : 1));
+      : dates.filter((d) => !taken.has(d) && !pinnedDates.has(d) && (minutes.get(d) ?? 0) > 0).sort((a, b) => groupGap(b) - groupGap(a) || gap(b) - gap(a) || (a < b ? -1 : 1));
     if (candidates.length === 0) {
       const u = composeUnplaced(r);
       results.set(r.requestId, { ...base, status: 'unplaced', category: 'slot_unavailable', reasons: [gpReasons.emit(GP_CODES.NOT_ENOUGH_DAYS, { sport: r.sport, requestId: r.requestId }), ...u.reasons], ...(u.composed ? { composed: u.composed } : {}) });

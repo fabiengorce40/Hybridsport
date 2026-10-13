@@ -21,7 +21,7 @@ import { simulate } from '../consolidation/sim4.js';
 import { measure } from '../rc2/metrics.js';
 import type { RunMetrics } from '../rc2/metrics.js';
 import { PARAMS, studyEnv } from '../rc2/study-env.js';
-import { enumerate, layoutLabel, pinsOf, PROFILES, profileOf, RUN_SHARE_MIN, SCENARIOS, VARIANTS, rc1Env, weekEnv } from './week-env.js';
+import { DAYS, enumerate, LETTER, layoutLabel, pinsOf, PROFILES, profileOf, RUN_SHARE_MIN, SCENARIOS, VARIANTS, rc1Env, weekEnv } from './week-env.js';
 import type { Layout, Scenario, Variant } from './week-env.js';
 import { dominates, LOWER, measureWeek, OBJECTIVES, paretoFront, signature, UPPER } from './week-metrics.js';
 import type { WeekMetrics } from './week-metrics.js';
@@ -64,7 +64,9 @@ function study(c: Profile, sc: Scenario, v: Variant) {
   const rc1Dominated = rows.some((r) => dominates(r.m, rc1));
   const unplacedFreq: Record<string, number> = {};
   for (const r of rows) for (const u of r.m.unplaced) unplacedFreq[u] = (unplacedFreq[u] ?? 0) + 1;
-  return { rc1, rc2, rows, front, groups, best, utopia, dominatingRc1, rc1Dominated, unplacedFreq };
+  const refusedPinned = rows.filter((r) => r.layout && r.m.kept < r.layout.flat().length).length;
+  for (const r of rows) if (r.layout) expect(r.m.kept).toBeLessThanOrEqual(r.layout.flat().length);
+  return { rc1, rc2, rows, front, groups, best, utopia, dominatingRc1, rc1Dominated, unplacedFreq, refusedPinned };
 }
 
 describe.skipIf(process.env.RC2BIS_STUDY !== '1')('RC2 bis — optimisation globale de la semaine (étude)', () => {
@@ -110,8 +112,8 @@ describe.skipIf(process.env.RC2BIS_STUDY !== '1')('RC2 bis — optimisation glob
         cases[`${c.key}.${sc.key}`] = r;
         for (const x of r.rows) expect(x.m.kept).toBeLessThanOrEqual(x.m.requested);
         L.push(`### ${c.key}. ${c.name} — ${sc.label}`, '',
-          `Organisations énumérées : ${String(r.rows.length)} ; non dominées : ${String(r.front.length)} (${String(r.groups.size)} profils de critères distincts). Point idéal (meilleur sur tous les critères à la fois) atteint : **${r.utopia ? 'oui' : 'non'}**. Organisations qui dominent RC1 : **${String(r.dominatingRc1.length)}**.`, '',
-          HEAD, SEP, rowOf('RC1 (référence)', r.rc1, ` — ${r.rc1.sessions.map((x) => `${x.date.slice(8)} ${x.sport[0]?.toUpperCase() ?? ''}`).join(' ')}`), ...r.rc2.map((x) => rowOf(x.label, x.m)),
+          `Organisations énumérées : ${String(r.rows.length)} ; non dominées : ${String(r.front.length)} (${String(r.groups.size)} profils de critères distincts). Point idéal (meilleur sur tous les critères à la fois) atteint : **${r.utopia ? 'oui' : 'non'}**. Organisations qui dominent RC1 : **${String(r.dominatingRc1.length)}**. Organisations dont au moins une séance prévue est refusée (moteur, durée, G4) : ${String(r.refusedPinned)}.`, '',
+          HEAD, SEP, rowOf('RC1 (référence)', r.rc1, ` — ${r.rc1.sessions.map((x) => `${DAYS[(new Date(`${x.date}T12:00:00Z`).getUTCDay() + 6) % 7] ?? '?'} ${LETTER[x.sport as keyof typeof LETTER]}`).join(' · ')}`), ...r.rc2.map((x) => rowOf(x.label, x.m)),
           `| **meilleure valeur atteinte** | ${r.best.map(n1).join(' | ')} | | |`);
         const shown = [...r.groups.values()].sort((a, b) => {
           const x = (a[0] as Row).m; const y = (b[0] as Row).m;
@@ -126,7 +128,7 @@ describe.skipIf(process.env.RC2BIS_STUDY !== '1')('RC2 bis — optimisation glob
     json.cases = Object.fromEntries(Object.entries(cases).map(([k, r]) => [k, {
       rc1: { ...r.rc1, sessions: r.rc1.sessions.map((x) => `${x.date} ${x.sport} ${String(x.role)} ${String(x.estMin)}/${String(x.allottedMin)}`) },
       rc2: r.rc2.map((x) => ({ label: x.label, ...Object.fromEntries(OBJECTIVES.map((o) => [o.key, o.of(x.m)])), unplaced: x.m.unplaced })),
-      enumerated: r.rows.length, utopia: r.utopia, best: r.best, dominatingRc1: r.dominatingRc1.map((x) => x.label), unplacedFreq: r.unplacedFreq,
+      enumerated: r.rows.length, refusedPinned: r.refusedPinned, utopia: r.utopia, best: r.best, dominatingRc1: r.dominatingRc1.map((x) => x.label), unplacedFreq: r.unplacedFreq,
       front: r.front.map((x) => ({ label: x.label, ...Object.fromEntries(OBJECTIVES.map((o) => [o.key, o.of(x.m)])), belowFloor: x.m.belowFloor, unplaced: x.m.unplaced, residuals: x.m.residuals, planned: x.m.planned })),
     }]));
 
