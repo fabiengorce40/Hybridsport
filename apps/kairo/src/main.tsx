@@ -2,14 +2,17 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.js';
 import { StoreProvider } from './store.js';
+import { IS_TEST, TEST_LABEL } from './channel.js';
 import './styles.css';
 import './design/kairo-ds.css';
 
+if (IS_TEST) { document.title = TEST_LABEL; document.documentElement.classList.add('k-test'); }
 const root = document.getElementById('root');
 if (root) {
   createRoot(root).render(
     <StrictMode>
       <StoreProvider>
+        {IS_TEST && <div className="k-test-ribbon" role="status" aria-label={TEST_LABEL}>{TEST_LABEL} · données séparées · règles expérimentales non validées</div>}
         <App />
       </StoreProvider>
     </StrictMode>,

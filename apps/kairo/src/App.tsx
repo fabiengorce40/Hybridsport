@@ -17,6 +17,7 @@ import { History } from './screens/History.js';
 import { download, Profile } from './screens/Profile.js';
 import { emptyState, isBeta0 } from '@hybridsport/app-core';
 import { UpdateBanner } from './version.js';
+import { STORAGE_NAMESPACE } from './channel.js';
 
 function LoadProblem() {
   const store = useStore();
@@ -28,7 +29,7 @@ function LoadProblem() {
     <div className="screen">
       <h1 className="screen-title">Données illisibles</h1>
       <p className="muted">Les données enregistrées n’ont pas pu être relues ({store.loadInfo}). Elles n’ont pas été effacées : une copie est conservée sur l’appareil.</p>
-      {import.meta.env.VITE_TARGET !== 'single' && <button className="btn secondary" onClick={() => { const k = /« (.+) »/.exec(store.loadInfo ?? '')?.[1]; const raw = k ? window.localStorage.getItem(k) : null; if (raw) download('kairo-donnees-illisibles.json', raw); }}>Exporter la copie</button>}
+      {import.meta.env.VITE_TARGET !== 'single' && <button className="btn secondary" onClick={() => { const k = /« (.+) »/.exec(store.loadInfo ?? '')?.[1]; const raw = k ? window.localStorage.getItem(STORAGE_NAMESPACE + k) : null; if (raw) download('kairo-donnees-illisibles.json', raw); }}>Exporter la copie</button>}
       {!confirm ? <button className="btn danger" onClick={() => setConfirm(true)}>Recommencer à zéro</button>
         : <button className="btn danger" onClick={() => store.reset(emptyState())}>Confirmer : recommencer (la copie reste conservée)</button>}
     </div>

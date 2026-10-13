@@ -15,8 +15,10 @@
     "test:mutation": "stryker run",
     "kairo:dev": "pnpm --filter @hybridsport/kairo dev",
     "kairo:build": "pnpm --filter @hybridsport/kairo build",
+    "kairo:build:rc1-test": "pnpm --filter @hybridsport/kairo build:rc1-test",
     "kairo:preview": "pnpm --filter @hybridsport/kairo preview",
-    "kairo:e2e": "node apps/kairo/scripts/e2e.mjs"
+    "kairo:e2e": "node apps/kairo/scripts/e2e.mjs",
+    "kairo:e2e:rc1-test": "node apps/kairo/scripts/e2e-rc1-test.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

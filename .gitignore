@@ -7,3 +7,5 @@ coverage/
 reports/
 dist/
 dist-single/
+dist-rc1-test/
+apps/kairo/scripts/.e2e-rc1-test.generated.mjs

@@ -273,3 +273,14 @@ details summary { cursor: pointer; min-height: 32px; display: flex; align-items:
 /* FIELD TEST P0 — bloc d'entraînement (pas une séance complète) : mention explicite, lisible, sans alarme. */
 .k-block-note { display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: var(--radius-md); border: 1px dashed var(--border-strong); font-size: 13px; line-height: 1.4; color: var(--text-2); }
 .k-block-note strong { color: var(--text-1, inherit); font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em; }
+
+/* Canal de test RC1 : bandeau d'identité FIXE, toujours visible (absent de la build de production). La page, les
+   superpositions et les éléments collants sont décalés de sa hauteur : il ne masque jamais un bouton. */
+html.k-test { --k-test-h: calc(24px + env(safe-area-inset-top)); }
+.k-test-ribbon { position: fixed; top: 0; left: 0; right: 0; height: var(--k-test-h); z-index: 1000; box-sizing: border-box; padding: env(safe-area-inset-top) 8px 0; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; background: #8A1C1C; color: #fff; font: 600 11px/1 system-ui, sans-serif; letter-spacing: .02em; }
+html.k-test body { padding-top: var(--k-test-h); }
+html.k-test .overlay { top: var(--k-test-h); }
+html.k-test .authority-banner, html.k-test .topbar { top: var(--k-test-h); }
+html.k-test .overlay .topbar { top: 0; }
+html.k-test .k-nav { top: calc(56px + var(--k-test-h)); }
+html.k-test .toast { top: calc(52px + var(--k-test-h)); }

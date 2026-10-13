@@ -7,7 +7,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "build:single": "VITE_TARGET=single vite build --outDir dist-single && node scripts/single-file.mjs dist-single/kairo-preview.html"
+    "build:single": "VITE_TARGET=single vite build --outDir dist-single && node scripts/single-file.mjs dist-single/kairo-preview.html",
+    "build:rc1-test": "VITE_KAIRO_CHANNEL=rc1-test vite build --outDir dist-rc1-test"
   },
   "dependencies": {
     "@hybridsport/app-core": "workspace:*",

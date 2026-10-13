@@ -1,0 +1,111 @@
+# KAIRO RC1 — TEST : déploiement ISOLÉ sur Cloudflare Pages (projet séparé, origine `*.pages.dev` distincte de la
+# production GitHub Pages). Ce workflow ne touche jamais la branche `gh-pages`, ni la branche de production, ni le
+# workflow `kairo-pages.yml` ; il ne demande qu'un accès en LECTURE au dépôt.
+# Prérequis (une fois, par le propriétaire du compte) : secrets du dépôt CLOUDFLARE_API_TOKEN (droit « Cloudflare
+# Pages : Edit ») et CLOUDFLARE_ACCOUNT_ID. Sans eux, la build de test est construite et vérifiée, puis le
+# déploiement est SAUTÉ (notice), sans échec ni effet de bord.
+name: KAIRO RC1 — TEST (Cloudflare Pages, isolé)
+
+on:
+  push:
+    branches: [claude/kairo-rc1-test-env]
+    paths: ['apps/kairo/**', 'packages/**', 'pnpm-lock.yaml', '.github/workflows/kairo-rc1-test-pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kairo-rc1-test
+  cancel-in-progress: false
+
+env:
+  CF_PROJECT: kairo-rc1-test
+
+jobs:
+  deploy:
+    # Garde : uniquement depuis la branche de test (un lancement manuel depuis une autre branche ne fait rien).
+    if: github.ref == 'refs/heads/claude/kairo-rc1-test-env'
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.guard.outputs.ready }}
+      url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm kairo:build:rc1-test
+      - name: Marqueur de version (canal de test)
+        run: echo "{\"commit\":\"${GITHUB_SHA}\",\"channel\":\"rc1-test\"}" > apps/kairo/dist-rc1-test/version.json
+      - name: Garde — identifiants Cloudflare présents ?
+        id: guard
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$ACCOUNT" ]; then
+            echo "::notice::Secrets CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID absents : build de test vérifiée, déploiement non effectué."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Projet Cloudflare Pages (création si absent)
+        if: steps.guard.outputs.ready == 'true'
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create ${{ env.CF_PROJECT }} --production-branch=main
+      - name: Déploiement Cloudflare Pages (projet de test)
+        id: deploy
+        if: steps.guard.outputs.ready == 'true'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy apps/kairo/dist-rc1-test --project-name=${{ env.CF_PROJECT }} --branch=main --commit-hash=${{ github.sha }}
+      - name: Adresse déployée
+        if: steps.guard.outputs.ready == 'true'
+        run: echo "::notice::KAIRO RC1 — TEST déployé : ${{ steps.deploy.outputs.deployment-url }}"
+
+  verify:
+    needs: deploy
+    if: needs.deploy.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Attente de la build déployée (version.json = ce commit, canal rc1-test)
+        env:
+          SITE_URL: ${{ needs.deploy.outputs.url }}
+        run: |
+          for i in $(seq 1 30); do
+            v=$(curl -fsS "${SITE_URL%/}/version.json?t=$(date +%s)" || true)
+            echo "essai $i : $v"
+            echo "$v" | grep -q "${GITHUB_SHA}" && echo "$v" | grep -q '"rc1-test"' && exit 0
+            sleep 10
+          done
+          exit 1
+      - run: pnpm --filter @hybridsport/kairo exec playwright install --with-deps chromium
+      - name: Isolation + E2E complet sur l'URL de test déployée
+        env:
+          SITE_URL: ${{ needs.deploy.outputs.url }}
+        run: mkdir -p shots && E2E_URL="${SITE_URL%/}/" node apps/kairo/scripts/e2e-rc1-test.mjs shots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kairo-rc1-test-e2e-captures
+          path: shots
