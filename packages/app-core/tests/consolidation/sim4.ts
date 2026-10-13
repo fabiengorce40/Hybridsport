@@ -16,6 +16,8 @@ import {
 } from '../../src/index.js';
 import type { AppState, CheckIn, CheckInInput, ProfileInput, ProgrammeEnvironment, SessionView } from '../../src/index.js';
 import { at, create, massProfile } from '../strength-fixes/sf-fixtures.js';
+import { splitVolume } from '../rc3/volume-split.js';
+import type { VolumeSplit } from '../rc3/volume-split.js';
 
 export const MONS = ['2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26'];
 const T = (d: string, hm = '18:00') => `${d}T${hm}:00.000Z`;
@@ -23,13 +25,16 @@ const T = (d: string, hm = '18:00') => `${d}T${hm}:00.000Z`;
 const KG = 40;
 // technical-constant: TEST_ONLY — durée de course saisie (30 min), illustrative
 const RUN_S = 1800;
+// technical-constant: TEST_ONLY — distance déclarée d'une course de 30 min (m), illustrative (RC3)
+const RUN_M = 5400;
 // technical-constant: secondes par minute
 const S_PER_MIN = 60;
 
 export const PROFILE = { ...massProfile({ preset: 'preset.commercial_gym' }), crosstraining: { enabled: true, sessionsPerWeek: 1, intent: 'crosstraining.strength_plus_conditioning', returnState: 'NONE' } } as ProfileInput;
 
 export interface Plan { readonly ci?: CheckInInput; readonly label: string; readonly skip?: boolean; readonly unavailable?: boolean }
-export type PlanFn = (w: number, v: SessionView, k: number) => Plan;
+/** `occ` (RC3) : rang de la séance PARMI LES SÉANCES DE SON SPORT dans la semaine (ordre des dates, 0 = première). */
+export type PlanFn = (w: number, v: SessionView, k: number, occ: number) => Plan;
 /** Réponses scénarisées par défaut (normal, fatigue, genou P2 connu, épaule P1 ×2, course manquée). */
 export function plan(w: number, v: SessionView, k: number): Plan {
   const no: CheckInInput = { painAnswer: 'no', fatigue: 'low', recovery: 'good' };
@@ -72,6 +77,10 @@ export interface SimSession {
   exercises: SimExercise[]; excludedAreas: string[]; violations: string[];
   /** Séries de travail par groupe de la séance EXÉCUTÉE (force : Musculation, bloc délégué CT ; hors conditionnement). */
   groups: Record<string, number>;
+  /** RC3 : rang dans le sport (semaine), volume PRESCRIT à la planification et RÉALISÉ (séries validées), direct / indirect. */
+  occ?: number;
+  prescribed?: VolumeSplit;
+  realized?: VolumeSplit;
 }
 export interface SimWeek {
   readonly planned: Record<string, { planned: number; target: number | null; high: number | null; status: string }>;
@@ -93,7 +102,12 @@ function excludedOf(c: CheckIn | undefined): string[] {
 }
 
 /** `cfg` : profil et réponses au contrôle (défaut : profil masse de la consolidation, scénario par défaut). */
-export function simulate(cfg: { readonly profile?: ProfileInput; readonly plan?: PlanFn; readonly env?: ProgrammeEnvironment } = {}): SimResult {
+/**
+ * `runOutcome` (RC3) : `modified_duration` (défaut, comportement historique : course « modifiée », durée seule ⇒ issue
+ * PARTIAL, aucune distance) ; `completed_distance` : course réalisée comme prescrite avec une distance déclarée (TEST :
+ * temps du test), seule saisie qui alimente l'allure observée du moteur Running.
+ */
+export function simulate(cfg: { readonly profile?: ProfileInput; readonly plan?: PlanFn; readonly env?: ProgrammeEnvironment; readonly runOutcome?: 'modified_duration' | 'completed_distance' } = {}): SimResult {
   const planOf = cfg.plan ?? plan;
   const env = cfg.env ?? beta0Environment();
   const content = strengthContent();
@@ -116,7 +130,8 @@ export function simulate(cfg: { readonly profile?: ProfileInput; readonly plan?:
     const placed = view.filter((v) => v.placement === 'planned' && v.date).sort((a, b) => ((a.date ?? '') < (b.date ?? '') ? -1 : 1));
     for (const [k, v] of placed.entries()) {
       const d = v.date ?? mon;
-      const p = planOf(w, v, k);
+      const occ = placed.slice(0, k).filter((x) => x.sport === v.sport).length;
+      const p = planOf(w, v, k, occ);
       const variant = insights?.sessions.find((x) => x.requestId === v.requestId)?.variant;
       const plannedSession = selectProgrammeSession(s, v.requestId)?.session;
       const title = v.sport === 'strength' ? `${v.archetypeId ?? ''}${variant ? ` ${variant}` : ''}` : v.sport === 'crosstraining' ? `${v.ctFormat ?? ''}${plannedSession?.blocks.some((b) => b.kind === 'strength') ? ' + bloc force' : ''}` : (v.archetypeId ?? '');
@@ -127,6 +142,7 @@ export function simulate(cfg: { readonly profile?: ProfileInput; readonly plan?:
         week: w + 1, date: d, sport: v.sport, title, requestId: v.requestId, reproducible, declared: p.label, decision: '—', adaptation: '—', changes: [], reasons: [], execution: '',
         targetMin: v.targetDurationS === null ? null : Math.round(v.targetDurationS / S_PER_MIN), plannedEstMin: estMin(v.sport, plannedSession), executedEstMin: null, exercises: [], excludedAreas: [], violations: [], groups: {},
       };
+      if (cfg.runOutcome !== undefined) { row.occ = occ; row.prescribed = v.sport === 'running' ? undefined : splitVolume(plannedSession, params, content.catalog); }
       sessions.push(row);
       if (p.skip) { row.execution = 'manquée'; continue; }
       const st = startProgrammeSession(s, at(T(d, v.sport === 'running' ? '07:00' : '18:00')), v.requestId, env, p.ci);
@@ -148,7 +164,10 @@ export function simulate(cfg: { readonly profile?: ProfileInput; readonly plan?:
           row.changes.push(`matériel indisponible ${(sw?.fromExerciseId ?? '').replace('ex.', '')} → ${sw?.substituteId ? sw.substituteId.replace('ex.', '') : `refus (${String(sw?.reasons[0]?.params.cause ?? '')})`}`);
         }
       }
-      if (v.sport === 'running') {
+      if (v.sport === 'running' && cfg.runOutcome === 'completed_distance') {
+        const test = v.archetypeId === 'running.test';
+        s = finishProgrammeSession(s, at(T(d, '07:40')), { requestId: v.requestId, completion: 'completed_as_prescribed', pain: false, difficulty: 'AS_EXPECTED', run: { realizedDurationS: RUN_S, distanceM: RUN_M, ...(test ? { testTimeS: RUN_S } : {}) } } as never);
+      } else if (v.sport === 'running') {
         s = finishProgrammeSession(s, at(T(d, '07:40')), { requestId: v.requestId, completion: 'modified', pain: false, run: { realizedDurationS: RUN_S } } as never);
       } else {
         if (v.sport === 'crosstraining') { const rt = s.programmeLogs[v.requestId]?.ct; if (rt && rt.runningSince === null) s = controlCtTimer(s, at(T(d, '18:15')), v.requestId, 'resume'); }
@@ -161,6 +180,7 @@ export function simulate(cfg: { readonly profile?: ProfileInput; readonly plan?:
       row.exercises = (session?.blocks ?? []).flatMap((b) => b.items.map((i) => ({ id: i.exerciseId.replace('ex.', ''), block: b.kind, areas: [...(cat?.exercise(i.exerciseId)?.painSensitiveAreas ?? [])] })));
       row.violations = row.exercises.filter((e) => e.areas.some((a) => row.excludedAreas.includes(a))).map((e) => `${e.id}@${e.block}`);
       row.execution = 'réalisée';
+      if (row.prescribed && session) row.realized = splitVolume(session, params, content.catalog, new Set((s.programmeLogs[v.requestId]?.sets ?? []).filter((x) => x.done).map((x) => `${x.itemId}#${String(x.setIndex)}`)));
       if (session && v.sport !== 'running') {
         // Séries de force : blocs `strength` / `accessory` seulement (l'échauffement et le conditionnement CT ne comptent pas).
         row.groups = sessionPlannedHardSets({ ...session, blocks: session.blocks.filter((b) => b.kind === 'strength' || b.kind === 'accessory') }, params, content.catalog);
