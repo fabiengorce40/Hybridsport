@@ -6,7 +6,7 @@
  * voisin ; le contexte sportif (historique, références, déclarations) est fourni par l'appelant.
  */
 import {
-  ENGINE_VERSION, DEMAND_NORMALIZATION_PARAMETER, deriveExerciseStructures, deriveSessionDemand, estimateDuration, isDerivationTable, readDurationParams,
+  ENGINE_VERSION, DEMAND_NORMALIZATION_PARAMETER, deriveDemandProfile, deriveExerciseStructures, deriveSessionDemand, estimateDuration, isDerivationTable, readDurationParams,
   readToleranceProfile, runSportSession, targetFromAvailable, toRecordedDurationEstimate, assessment, genericCriteria,
 } from '@hybridsport/engine';
 import type { CoreProfile, CorePipelineOutcome, CoreState, EngineContext, LoadedCatalog, LoadedRuleset, SportEngine, SportSessionRequest } from '@hybridsport/engine';
@@ -191,6 +191,35 @@ export function demandOf(session: SessionDraft, content: Content, sport: Planner
   }
   const d = deriveSessionDemand(session, content.catalog, content.ruleset);
   return d.ok ? { status: 'derived', levels: d.profile.levels } : { status: 'unavailable', reasons: d.reasons };
+}
+
+/**
+ * Règle (TEST_ONLY, fournie par l'environnement) d'activation de la demande COMPOSITE d'une séance hôte portant un bloc
+ * délégué (C4.3). Aucune valeur sportive : elle n'autorise que l'application, bloc par bloc, de la dérivation gouvernée
+ * du CORE (`demand.doseNormalization` de la discipline d'ORIGINE du bloc, puis `deriveDemandProfile` sur l'ensemble).
+ */
+export interface CompositeDemandRule { readonly ruleId: string; readonly status: 'TEST_ONLY'; readonly delegatedDiscipline: Discipline }
+
+/** Blocs délégués d'une séance hôte : blocs `strength` prescrits en séries (unité de la discipline Strength). */
+const isDelegatedBlock = (b: SessionDraft['blocks'][number]): boolean => b.kind === 'strength' && b.items.length > 0 && b.items.every((i) => i.prescription.type === 'sets');
+
+/**
+ * Demande d'une séance hôte avec bloc délégué : chaque partie normalisée par la table de SA discipline (hôte : la
+ * discipline de la séance ; bloc : la discipline d'origine), items additionnés et seuils appliqués par le CORE
+ * (`deriveDemandProfile`, exactement comme pour une séance d'une seule discipline). Sans bloc délégué : `demandOf`.
+ */
+export function compositeDemandOf(session: SessionDraft, content: Content, sport: PlannerSport, mode: PlannerMode, rule: CompositeDemandRule): DemandOutcome {
+  const blocks = session.blocks.filter(isDelegatedBlock);
+  if (blocks.length === 0) return demandOf(session, content, sport, mode);
+  const meta = content.ruleset.parameter(DEMAND_NORMALIZATION_PARAMETER);
+  if (mode === 'PRODUCTION' && meta && !(meta.status === 'approved' && !meta.provisional)) {
+    return { status: 'unavailable', reasons: [gpReasons.emit(GP_CODES.DEMAND_PROFILE_NOT_APPROVED, { sport, parameterId: DEMAND_NORMALIZATION_PARAMETER, mode })] };
+  }
+  const host = deriveSessionDemand({ ...session, blocks: session.blocks.filter((b) => !isDelegatedBlock(b)) }, content.catalog, content.ruleset);
+  if (!host.ok) return { status: 'unavailable', reasons: host.reasons };
+  const part = deriveSessionDemand({ ...session, discipline: rule.delegatedDiscipline, blocks }, content.catalog, content.ruleset);
+  if (!part.ok) return { status: 'unavailable', reasons: part.reasons };
+  return { status: 'derived', levels: deriveDemandProfile([...host.items, ...part.items], content.catalog, content.ruleset).levels };
 }
 
 function outcomeOf(o: CorePipelineOutcome, content: Content, seed: string, persisted?: RegExp, extra: readonly ReasonCode[] = []): PortOutcome {
@@ -468,7 +497,7 @@ const DISCIPLINE_OF: Readonly<Record<PlannerSport, 'strength' | 'running' | 'cro
  * Cross-training. `transportNeighbours` (C3) : voisines (seconde passe) et ordre de priorité DÉCLARÉ transportés dans le
  * contexte, sans interprétation ; absent ⇒ comportement C2 inchangé (aucune seconde passe).
  */
-export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossTrainingEngine; readonly baseContext: Ctx<CrossTrainingContextInput>; readonly transportNeighbours?: boolean; readonly qualityGovernance?: CtGovernance; readonly strengthBlocks?: StrengthBlockCapability & { readonly port?: SportPort; readonly rule?: StrengthBlockRule } }): SportPort {
+export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossTrainingEngine; readonly baseContext: Ctx<CrossTrainingContextInput>; readonly transportNeighbours?: boolean; readonly qualityGovernance?: CtGovernance; readonly strengthBlocks?: StrengthBlockCapability & { readonly port?: SportPort; readonly rule?: StrengthBlockRule }; readonly compositeDemand?: CompositeDemandRule }): SportPort {
   const transport = def.transportNeighbours === true;
   // C3.5 — séances CT PRÉVUES plus tôt dans la semaine (prescription lue dans la séance, stimulus de l'archétype).
   const plannedOf = (slot: SlotRequest) => (slot.weekSessions ?? []).flatMap((w) => {
@@ -502,6 +531,10 @@ export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossT
   const sb = def.strengthBlocks;
   const delegating: SportPort = {
     ...port,
+    // Consolidation R1 — séance hôte avec bloc délégué : demande composite (règle TEST_ONLY de l'environnement). Sans
+    // elle, la demande est indisponible (unité `working_set` non normalisée pour la discipline hôte) : voisinage
+    // « inconnu » pour toute la semaine et arbitrage M3 bloqué (`DEMAND_UNAVAILABLE`).
+    ...(def.compositeDemand ? { demand: (session: SessionDraft, mode: PlannerMode) => compositeDemandOf(session, def.content, 'crosstraining', mode, def.compositeDemand as CompositeDemandRule) } : {}),
     ...(sb?.port && sb.rule ? { crossSportWeek: ['strength'] as const } : {}),
     generate(slot) {
       const o = port.generate(slot);

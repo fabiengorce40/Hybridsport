@@ -12,7 +12,7 @@ import { findArchetype, readStrengthParams, StrengthEngine } from '@hybridsport/
 import type { StrengthCompositionRule } from '@hybridsport/strength';
 import { crossTrainingPort, hyroxHistoriesOf, hyroxPort, planMultisportWeek, runningPort, strengthPort } from '@hybridsport/planner';
 import type { QualityAssessment } from '@hybridsport/engine';
-import type { CrossTrainingEngine, CtGovernance, HyroxEngine, PlannedWeek, PlannerClock, PlannerMode, SlotRequest, SportPorts, StrengthBlockRule, StrengthWithinWeekVariationRule } from '@hybridsport/planner';
+import type { CompositeDemandRule, CrossTrainingEngine, CtGovernance, HyroxEngine, PlannedWeek, PlannerClock, PlannerMode, SlotRequest, SportPorts, StrengthBlockRule, StrengthWithinWeekVariationRule } from '@hybridsport/planner';
 import type { CoreState, LoadedRuleset, SportEngine } from '@hybridsport/engine';
 import { UNKNOWN_CORE_STATE } from './checkin.js';
 import { addDays, normalizeInstant, sessionInstant, weekStartOf } from './dates.js';
@@ -49,7 +49,7 @@ export interface PlannerEnvironment {
    * `transportNeighbours` : voisines (seconde passe) et priorité transportées au contexte CT (C3) ; `simulation` :
    * identifiants SIMULATION_ONLY propres au Cross-training, tracés dans les seules semaines qui en contiennent.
    */
-  readonly crosstraining?: { readonly engine: CrossTrainingEngine; readonly content: Content; readonly transportNeighbours?: boolean; readonly simulation?: readonly string[]; readonly governance?: CtGovernance; readonly strengthBlockRule?: StrengthBlockRule };
+  readonly crosstraining?: { readonly engine: CrossTrainingEngine; readonly content: Content; readonly transportNeighbours?: boolean; readonly simulation?: readonly string[]; readonly governance?: CtGovernance; readonly strengthBlockRule?: StrengthBlockRule; readonly compositeDemand?: CompositeDemandRule };
   /**
    * `transportNeighbours` (H2.5) : voisines, priorité et séances HYROX de la semaine transportées au contexte H2 ;
    * `simulation` : identifiants SIMULATION_ONLY propres à HYROX, tracés dans les seules semaines qui en contiennent.
@@ -153,6 +153,7 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
     }) : undefined;
     ports.crosstraining = crossTrainingPort({
       ...(blockPort && rule ? { strengthBlocks: { port: blockPort, rule } } : {}),
+      ...(env.crosstraining.compositeDemand ? { compositeDemand: env.crosstraining.compositeDemand } : {}),
       ...q, ...(env.crosstraining.governance ? { qualityGovernance: env.crosstraining.governance } : {}), engine: env.crosstraining.engine, content: env.crosstraining.content, profile, state: state0, history: state.fingerprints.crosstraining, clock,
       ...(env.crosstraining.transportNeighbours ? { transportNeighbours: true } : {}),
       baseContext: (slot) => ({ ...decl('crosstraining'), ...(goals.crosstraining ? { goal: { type: goals.crosstraining } } : {}), sessionHistory: state.crosstraining.realized.filter((r) => typeof r.completedAt === 'string' && r.completedAt < sessionInstant(slot.date)), mode: env.mode, capabilityRequests: [...CT_CAPABILITY_REQUESTS] }) as never,

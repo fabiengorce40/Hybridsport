@@ -96,6 +96,14 @@ export const BETA0_PLANNING_VERSION = 'beta0-m31';
  */
 export const BETA0_STRENGTH_WITHIN_WEEK_VARIATION = { ruleId: 'planner.strength.withinWeekVariation.test-0', status: 'TEST_ONLY', note: 'planned_variation' } as const;
 
+/**
+ * Consolidation R1 — demande COMPOSITE d'une séance Cross-training portant un bloc de force délégué (TEST_ONLY, Beta 0) :
+ * chaque partie normalisée par la table gouvernée de SA discipline (`demand.doseNormalization`), profil dérivé par le
+ * CORE. Aucune valeur sportive ajoutée ; sans elle, la demande de ces séances est indisponible (voisinage inconnu pour
+ * toute la semaine, arbitrage M3 bloqué). Absente en production.
+ */
+export const BETA0_CT_COMPOSITE_DEMAND = { ruleId: 'planner.crosstraining.compositeDemand.test-0', status: 'TEST_ONLY', delegatedDiscipline: 'strength' } as const;
+
 export function beta0Environment(): ProgrammeEnvironment {
   const g = beta0RunningGovernance();
   const ct = ctBeta0(simulationMark);
@@ -108,7 +116,7 @@ export function beta0Environment(): ProgrammeEnvironment {
     // C3.5 — Cross-training : moteur C3 en simulation, gouvernance TEST_ONLY ; marques SIMULATION_ONLY ajoutées aux seules
     // semaines qui contiennent une séance Cross-training (provenance exacte, jamais confondue avec APPROVED).
     // C4.3 — délégation d'un bloc de force (règle TEST_ONLY, SIMULATION_ONLY) pour le stimulus « force + conditionnement ».
-    crosstraining: { engine: ct.engine, content: ct.content, transportNeighbours: true, simulation: ct.simulation, governance: ct.governance, strengthBlockRule: ct.strengthBlockRule },
+    crosstraining: { engine: ct.engine, content: ct.content, transportNeighbours: true, simulation: ct.simulation, governance: ct.governance, strengthBlockRule: ct.strengthBlockRule, compositeDemand: BETA0_CT_COMPOSITE_DEMAND },
     mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: [...BETA0_SIMULATION], planningVersion: BETA0_PLANNING_VERSION,
     governance: m3Governance({ extra: simulationMark }),
     programmeGovernance: rotationGovernance(simulationMark),
