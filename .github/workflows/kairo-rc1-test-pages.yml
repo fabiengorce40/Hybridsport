@@ -74,7 +74,10 @@ jobs:
           command: pages deploy apps/kairo/dist-rc1-test --project-name=${{ env.CF_PROJECT }} --branch=main --commit-hash=${{ github.sha }}
       - name: Adresse déployée
         if: steps.guard.outputs.ready == 'true'
-        run: echo "::notice::KAIRO RC1 — TEST déployé : ${{ steps.deploy.outputs.deployment-url }}"
+        env:
+          URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          echo "::notice::KAIRO RC1 — TEST déployé à l'adresse ${URL}"
 
   verify:
     needs: deploy
