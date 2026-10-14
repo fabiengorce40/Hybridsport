@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from 'react';
 import {
-  approxMinutes, controlRest, startAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, reportEquipmentUnavailable, selectProgrammeSession, strengthInsightOf, toggleProgrammePainItem,
+  approxMinutes, controlRest, startAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, reportEquipmentUnavailable, runPlayerPosition, runPlayerSteps, selectProgrammeSession, strengthInsightOf, toggleProgrammePainItem,
 } from '@hybridsport/app-core';
 import type { FinishInput, ProgrammeSessionView, SessionItem, SetPrescription } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
@@ -23,6 +23,8 @@ import { ExperimentalBadge } from './common.js';
 import { DurationInput } from '../../running/DurationInput.js';
 import { durationFromParts, EMPTY_DURATION } from '../../running/duration.js';
 import type { DurationParts } from '../../running/duration.js';
+import { formatChrono, partsFromSeconds } from '../../running/duration.js';
+import { RunPlayer } from '../../running/RunPlayer.js';
 
 type Completion = FinishInput['completion'];
 const COMPLETIONS: readonly { id: Completion; label: string }[] = [
@@ -31,7 +33,18 @@ const COMPLETIONS: readonly { id: Completion; label: string }[] = [
   { id: 'abandoned', label: 'J’ai arrêté la séance' },
 ];
 
-function FinishSheet({ v, onCancel, onSubmit }: { v: ProgrammeSessionView; onCancel: () => void; onSubmit: (f: Omit<FinishInput, 'requestId'>) => void }) {
+/** RC3.5 — repères du lecteur pour la fin de séance : affichés, jamais appliqués sans geste de l'utilisateur. */
+interface PlayerSummary { readonly activeS: number; readonly skipped: number; readonly notReached: number; readonly testElapsedS: number | null }
+function playerSummary(v: ProgrammeSessionView, now: string): PlayerSummary | null {
+  const steps = runPlayerSteps(v);
+  const rp = v.log?.runPlayer;
+  if (!steps || !rp) return null;
+  const pos = runPlayerPosition(rp, steps, now);
+  const test = rp.marks.find((m) => m.end === 'distance_validated' && steps.some((x) => x.key === m.key && x.segmentKind === 'steady'));
+  return { activeS: pos.activeS, skipped: rp.marks.filter((m) => m.end === 'skipped').length, notReached: steps.length - pos.index, testElapsedS: test ? test.elapsedS : null };
+}
+
+function FinishSheet({ v, player, onCancel, onSubmit }: { v: ProgrammeSessionView; player: PlayerSummary | null; onCancel: () => void; onSubmit: (f: Omit<FinishInput, 'requestId'>) => void }) {
   const run = v.sport === 'running';
   const test = isTest(v.archetypeId);
   const [completion, setCompletion] = useState<Completion | null>(null);
@@ -60,6 +73,11 @@ function FinishSheet({ v, onCancel, onSubmit }: { v: ProgrammeSessionView; onCan
           {COMPLETIONS.map((c) => <button key={c.id} type="button" role="radio" aria-checked={completion === c.id} className={`option ${completion === c.id ? 'on' : ''}`} onClick={() => setCompletion(c.id)}><span className="t">{c.label}</span></button>)}
         </div>
         <Err k="completion" />
+        {run && player && (
+          <p className="small muted" style={{ margin: 0 }} data-finish-player>
+            Lecteur : {formatChrono(player.activeS)} de temps actif (hors pauses){player.skipped > 0 ? ` · ${String(player.skipped)} étape${player.skipped > 1 ? 's' : ''} passée${player.skipped > 1 ? 's' : ''} avant la fin` : ''}{player.notReached > 0 ? ` · ${String(player.notReached)} étape${player.notReached > 1 ? 's' : ''} non atteinte${player.notReached > 1 ? 's' : ''}` : ''}. Repère seulement : indiquez ce que vous avez réellement fait.
+          </p>
+        )}
         {run && (
           <div className="stack-3">
             <label className="field">Durée totale courue (minutes)<input type="text" inputMode="numeric" pattern="[0-9]*" value={minutes} onChange={(e) => setMinutes(e.target.value.replace(/[^0-9]/g, ''))} placeholder="ex. 35" /></label>
@@ -69,6 +87,9 @@ function FinishSheet({ v, onCancel, onSubmit }: { v: ProgrammeSessionView; onCan
             {test && (
               <div className="stack">
                 <DurationInput label="Temps du test seul" value={testTime} onChange={setTestTime} withHours error={show('test')} />
+                {player?.testElapsedS !== null && player?.testElapsedS !== undefined && player.testElapsedS > 0 && (
+                  <button type="button" className="btn secondary" onClick={() => setTestTime(partsFromSeconds(player.testElapsedS ?? 0))}>Reprendre le temps du lecteur ({formatChrono(player.testElapsedS)})</button>
+                )}
                 <div className="tiny">Sans échauffement ni retour au calme{completion === 'completed_as_prescribed' ? '' : ' · facultatif'}.</div>
               </div>
             )}
@@ -140,12 +161,14 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   const finished = result !== null;
   const editable = started && !finished && log.finishedAt === undefined;
   const now = () => store.clock().now;
+  // RC3.5 — lecteur de séance Course : étapes de la séance persistée (adaptée au contrôle avant séance le cas échéant).
+  const playerSteps = v.sport === 'running' ? runPlayerSteps(v) : null;
   const elapsed = log && !finished ? Math.max(0, Math.floor((Date.parse(now()) - Date.parse(log.startedAt)) / 1000)) : 0;
   const record = (item: SessionItem, _set: SetPrescription | undefined, index: number, x: { done: boolean; reps?: number; loadKg?: number }) =>
     store.apply((s, c) => recordProgrammeSet(s, c, requestId, { itemId: item.id, setIndex: index, ...x }));
 
   const finishSheet = finishing && (
-    <FinishSheet v={v} onCancel={() => setFinishing(false)} onSubmit={(f) => {
+    <FinishSheet v={v} player={playerSummary(v, now())} onCancel={() => setFinishing(false)} onSubmit={(f) => {
       if (store.apply((s, c) => finishProgrammeSession(s, c, { requestId, ...f }))) setFinishing(false);
     }} />
   );
@@ -195,6 +218,8 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
           {finished && <Notice><span>Séance terminée{log?.outcome?.run ? ` · ${durationLabel(log.outcome.run.realizedDurationS)}` : ''}.</span></Notice>}
         </div>
 
+        {editable && playerSteps && <RunPlayer v={v} steps={playerSteps} test={test} onFinish={() => setFinishing(true)} />}
+
         {session.blocks.map((b) => (
           <div key={b.id} className="stack-3">
             <div className="block-title"><div className="section-title">{BLOCK_LABELS[b.kind] ?? 'Bloc'}</div>{b.format === 'sets' && b.grouping !== 'straight' ? <span className="tiny">{b.grouping === 'superset' ? 'Superset' : 'Circuit'}</span> : null}</div>
@@ -225,7 +250,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
         ))}
 
         {!started && !finished && <button className="btn primary block" onClick={() => flow.start(requestId)}>{startLabel(v)}</button>}
-        {editable && <button className="btn primary block" onClick={() => setFinishing(true)}>Terminer la séance</button>}
+        {editable && !playerSteps && <button className="btn primary block" onClick={() => setFinishing(true)}>Terminer la séance</button>}
       </div>
       {timer}
       {finishSheet}

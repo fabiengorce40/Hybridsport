@@ -740,7 +740,12 @@ export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishI
     ? recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'strength', completion: f.completion, pain, sets: log.sets, painItems: log.painItems })
     : recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'running', completion: f.completion, pain, ...(f.run ? { run: f.run } : {}) });
   const outcome = { completion: f.completion, pain: f.pain || log.painItems.length > 0, ...(f.run ? { run: { ...f.run } } : {}) };
-  return withLog(recorded, { ...log, rest: null, finishedAt: normalizeInstant(clock.now), outcome });
+  // RC3.5 — lecteur Course figé à la fin (temps actif conservé, jamais relancé) ; il n'a rien enregistré lui-même.
+  const rp = log.runPlayer;
+  const runPlayer = rp && rp.runningSince !== null
+    ? { runPlayer: { ...rp, runningSince: null, accumulatedS: rp.accumulatedS + Math.max(0, (Date.parse(clock.now) - Date.parse(rp.runningSince)) / MS_PER_S) } }
+    : {};
+  return withLog(recorded, { ...log, ...runPlayer, rest: null, finishedAt: normalizeInstant(clock.now), outcome });
 }
 
 // ——— Historique

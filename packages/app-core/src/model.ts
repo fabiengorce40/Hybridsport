@@ -337,6 +337,22 @@ export const zHrRuntime = z.object({
 export type HrRuntime = z.infer<typeof zHrRuntime>;
 
 /**
+ * RC3.5 — lecteur de séance Course EN COURS : chrono HORODATÉ (jamais un compteur écrit chaque seconde). La position
+ * (étape, temps dans l'étape) est DÉRIVÉE de l'horloge à partir de l'ancre : depuis l'étape `anchorIndex`, commencée
+ * au temps actif `anchorAtS`, les étapes en DURÉE s'enchaînent seules ; une étape en DISTANCE attend toujours une
+ * validation manuelle (aucune durée déduite d'une allure). Écrit seulement sur une commande (lancer, pause, reprise,
+ * étape suivante). `marks` = fin de chaque étape quittée par l'utilisateur (validation manuelle ou étape passée).
+ */
+export const zRunPlayer = z.object({
+  runningSince: instant.nullable(),
+  accumulatedS: z.number().nonnegative(),
+  anchorIndex: z.number().int().nonnegative(),
+  anchorAtS: z.number().nonnegative(),
+  marks: z.array(z.object({ key: z.string().min(1), end: z.enum(['distance_validated', 'skipped']), elapsedS: z.number().nonnegative(), at: instant }).strict()).default([]),
+}).strict();
+export type RunPlayer = z.infer<typeof zRunPlayer>;
+
+/**
  * FIELD TEST — retour TERRAIN déclaré par l'utilisateur après une séance terminée. Observation seulement : jamais lue
  * par un moteur, jamais interprétée, aucune valeur sportive déduite. Provenance explicite et constante.
  */
@@ -373,6 +389,8 @@ export const zProgrammeLog = z.object({
   ct: zCtRuntime.optional(),
   /** HYROX : chrono, position dans la séquence, charges réelles (absent pour les autres sports). */
   hr: zHrRuntime.optional(),
+  /** RC3.5 — Course : lecteur de séance (absent tant qu'il n'a pas été lancé ; champ additif). */
+  runPlayer: zRunPlayer.optional(),
   finishedAt: instant.optional(),
   /** Issue enregistrée (copie de la saisie transmise à recordSessionExecution). */
   outcome: z.object({
