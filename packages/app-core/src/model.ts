@@ -411,6 +411,11 @@ export const zAppState = z.object({
     realized: z.array(zRealizedSession),
     /** Références de performance enregistrées par l'application (TEST réalisés). */
     references: z.array(zRunningReference).default([]),
+    /**
+     * RC3.3 — commentaire FACULTATIF d'une course libre, par identifiant de course réalisée (`free:…`). Annotation
+     * seulement : la course elle-même reste au contrat Running (`realized`), jamais dupliquée. Absent ⇒ vide.
+     */
+    notes: z.record(z.string(), z.string()).optional(),
   }).strict(),
   /**
    * Cross-training (C2) : séances réalisées, conservées TELLES QUELLES (complétion déclarée comprise). Leur contrat est

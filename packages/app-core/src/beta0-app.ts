@@ -202,7 +202,8 @@ export function resetBeta0Data(state: AppState, clock: Clock, confirmation: stri
   };
   const clean: AppState = {
     ...emptyState(), profile, safety: state.safety, crosstraining: state.crosstraining, hyrox: state.hyrox,
-    running: { realized: kept.freeRuns, references: kept.references }, revision: state.revision + 1,
+    // RC3.3 — commentaires des courses libres conservées (annotation de ces seules courses).
+    running: { realized: kept.freeRuns, references: kept.references, ...(state.running.notes ? { notes: Object.fromEntries(Object.entries(state.running.notes).filter(([id]) => kept.freeRuns.some((r) => r.sessionId === id))) } : {}) }, revision: state.revision + 1,
   };
   const next = startFromProfile(clean, clock, targetDate ? { runningTargetDate: targetDate } : {}, weekStartOf(clock.today), env);
   const nps = next.programmeState;

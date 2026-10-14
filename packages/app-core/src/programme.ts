@@ -275,7 +275,7 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
         const run = { realizedDurationS: x.run.realizedDurationS, completion: RUN_COMPLETION[x.completion], ...(x.run.distanceM !== undefined ? { distanceM: x.run.distanceM } : {}), ...(x.run.testTimeS !== undefined ? { testTimeS: x.run.testTimeS } : {}) };
         const real = { sessionId: x.requestId, archetypeId: intent.archetypeId, session, run, ...(x.difficulty ? { difficulty: x.difficulty } : {}), pain: pained, at };
         const ref = testReferenceFrom(real);
-        s = { ...s, running: { realized: [...s.running.realized, realizedRunFrom(real)], references: [...s.running.references, ...(ref ? [ref] : [])] } };
+        s = { ...s, running: { ...s.running, realized: [...s.running.realized, realizedRunFrom(real)], references: [...s.running.references, ...(ref ? [ref] : [])] } };
         evidence = { history: 'running', ref: x.requestId, ...(ref ? { measurement: ref.type } : {}) };
         break;
       }

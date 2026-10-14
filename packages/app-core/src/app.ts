@@ -126,11 +126,47 @@ export function finishSession(state: AppState, key: string, feedback: Feedback, 
 }
 
 /** Course libre déclarée (hors planning) : donnée réalisée, base de l'ancre V19 (aucune dose par défaut sinon). */
-export function logFreeRun(state: AppState, run: { realizedDurationS: number; completion: 'COMPLETED' | 'PARTIAL' | 'SKIPPED'; difficulty: Feedback['difficulty']; pain: boolean; distanceM?: number }, clock: Clock): AppState {
+// technical-constant: garde de saisie — une course déclarée tient dans une journée (s), jamais une règle sportive
+export const FREE_RUN_MAX_DURATION_S = 86400;
+// technical-constant: garde de saisie — vitesse moyenne humainement impossible (m/s, au-delà du record du 100 m)
+export const FREE_RUN_MAX_SPEED_MS = 12.5;
+// technical-constant: longueur maximale d'un commentaire de course libre (caractères, taille d'état)
+export const FREE_RUN_NOTE_MAX = 280;
+// technical-constant: millisecondes par seconde (conversion d'unité)
+const MS_PER_S = 1000;
+
+/** Intervalle [début, fin] (ms) d'une course réalisée : fin = `completedAt`, début = fin − durée réalisée. */
+const intervalOf = (r: { readonly completedAt: string; readonly realizedDurationS: number }): [number, number] => {
+  const end = Date.parse(r.completedAt);
+  return [end - r.realizedDurationS * MS_PER_S, end];
+};
+
+/**
+ * Course libre RÉALISÉE (hors programme) : une entrée au contrat Running (`running.realized`), lue par le moteur
+ * Running comme toute course réalisée (dose de départ, allure observée pour un TEST) — jamais un second historique.
+ * RC3.3 : `startedAt` (début déclaré ; défaut : fin = maintenant) et `note` facultatifs. Refus explicites : durée ou
+ * distance invalides, vitesse impossible, date invalide ou à venir, chevauchement avec une course déjà enregistrée
+ * (même course saisie deux fois, ou course du programme au même moment). Aucune séance planifiée n'est modifiée.
+ */
+export function logFreeRun(state: AppState, run: { realizedDurationS: number; completion: 'COMPLETED' | 'PARTIAL' | 'SKIPPED'; difficulty: Feedback['difficulty']; pain: boolean; distanceM?: number; startedAt?: string; note?: string }, clock: Clock): AppState {
+  if (!(Number.isFinite(run.realizedDurationS) && run.realizedDurationS > 0 && run.realizedDurationS <= FREE_RUN_MAX_DURATION_S)) throw new AppError('DURATION_INVALID');
   if (run.distanceM !== undefined && !(Number.isFinite(run.distanceM) && run.distanceM > 0)) throw new AppError('DISTANCE_INVALID');
-  const at = normalizeInstant(clock.now);
+  if (run.distanceM !== undefined && run.distanceM / run.realizedDurationS > FREE_RUN_MAX_SPEED_MS) throw new AppError('RUN_SPEED_IMPOSSIBLE');
+  const nowMs = Date.parse(normalizeInstant(clock.now));
+  let at = normalizeInstant(clock.now);
+  if (run.startedAt !== undefined) {
+    const start = Date.parse(run.startedAt);
+    if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(run.startedAt) || !Number.isFinite(start)) throw new AppError('RUN_DATE_INVALID');
+    const end = start + run.realizedDurationS * MS_PER_S;
+    if (end > nowMs) throw new AppError('RUN_IN_FUTURE');
+    at = normalizeInstant(new Date(end).toISOString());
+  }
+  const note = run.note?.trim() ?? '';
+  if (note.length > FREE_RUN_NOTE_MAX) throw new AppError('RUN_NOTE_TOO_LONG');
   const id = `free:${at}`;
   if (state.running.realized.some((r) => r.sessionId === id)) throw new AppError('DUPLICATE_RUN');
+  const [s0, e0] = intervalOf({ completedAt: at, realizedDurationS: run.realizedDurationS });
+  if (state.running.realized.some((r) => { const [s1, e1] = intervalOf(r); return s0 < e1 && s1 < e0; })) throw new AppError('DUPLICATE_RUN');
   const realized = {
     sessionId: id, archetype: 'EASY' as const, structureFamily: 'CONTINUOUS' as const, completedAt: at, realizedDurationS: run.realizedDurationS, completion: run.completion,
     ...(run.completion === 'SKIPPED' ? { skipReason: 'OTHER' as const } : {}),
@@ -138,10 +174,33 @@ export function logFreeRun(state: AppState, run: { realizedDurationS: number; co
     ...(run.distanceM !== undefined ? { distanceM: run.distanceM } : {}),
   };
   const next: AppState = {
-    ...state, running: { ...state.running, realized: [...state.running.realized, realized] }, revision: state.revision + 1,
+    ...state, running: { ...state.running, realized: [...state.running.realized, realized], ...(note !== '' ? { notes: { ...(state.running.notes ?? {}), [id]: note } } : {}) }, revision: state.revision + 1,
     safety: run.pain ? { ...state.safety, activePain: { reportedAt: at, areas: [] } } : state.safety,
   };
   return refreshSessions(next, clock);
+}
+
+/** RC3.3 — course libre telle qu'enregistrée (lecture seule) ; allure moyenne CALCULÉE seulement si la distance est connue. */
+export interface FreeRunView {
+  readonly sessionId: string;
+  readonly startedAt: string;
+  readonly completedAt: string;
+  readonly durationS: number;
+  readonly distanceM: number | null;
+  readonly paceSecPerKm: number | null;
+  readonly difficulty: Feedback['difficulty'] | 'UNKNOWN';
+  readonly note: string | null;
+}
+// technical-constant: mètres par kilomètre (conversion d'unité)
+const M_PER_KM = 1000;
+
+/** Courses libres enregistrées (les plus récentes d'abord), lues du contrat Running : aucune copie. */
+export function selectFreeRuns(state: AppState): readonly FreeRunView[] {
+  return state.running.realized.filter((r) => r.sessionId.startsWith('free:')).map((r) => ({
+    sessionId: r.sessionId, startedAt: new Date(intervalOf(r)[0]).toISOString().replace('.000Z', 'Z'), completedAt: r.completedAt, durationS: r.realizedDurationS,
+    distanceM: r.distanceM ?? null, paceSecPerKm: r.distanceM ? (r.realizedDurationS * M_PER_KM) / r.distanceM : null,
+    difficulty: r.unexpectedDifficulty, note: state.running.notes?.[r.sessionId] ?? null,
+  })).sort((a, b) => (a.completedAt < b.completedAt ? 1 : -1));
 }
 
 /**

@@ -8,6 +8,7 @@ import type { DeclaredPerformance, KeySessionAccess, ReferenceView, RunningProfi
 import { useStore } from '../store.js';
 import { formatDate, Notice } from '../ui.js';
 import { PerformanceForm } from './PerformanceForm.js';
+import { FreeRunEntry } from './FreeRunForm.js';
 import { formatChrono } from './duration.js';
 
 const TYPE_LABELS: Readonly<Record<string, string>> = {
@@ -139,6 +140,10 @@ export function RunningProfileScreen({ onBack }: { onBack?: () => void }) {
           : <button className="btn secondary" onClick={() => store.apply((s, c) => requestRunningTest(s, c))}>Je n’ai pas de chrono récent : programmer un test</button>
       )}
       {v.test && !testOpen && <div className="tiny">Dernier test : {TEST_STATUS[v.test.status] ?? v.test.status}.</div>}
+
+      <div className="section-title">Courses hors programme</div>
+      <p className="tiny" style={{ margin: 0 }}>Une course faite en dehors du programme compte dans votre historique. Avec sa distance, elle fournit l’allure observée qui permet de programmer un test chronométré.</p>
+      <FreeRunEntry />
 
       <div className="section-title">Objectif</div>
       <div className="card" style={{ gap: 4 }}>
