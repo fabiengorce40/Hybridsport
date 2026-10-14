@@ -3,7 +3,7 @@ import { approxMinutes, exerciseLabel, selectBeta0Week } from '@hybridsport/app-
 import type { AppState, Beta0WeekView, SessionView } from '@hybridsport/app-core';
 import { manualStartAssessment } from '@hybridsport/app-core';
 import { useStartFlow } from '../../precheck/PreSessionCheck.js';
-import { arbitrationText, sessionTitle, ctFormatName, isTest, manualStartText, notPlannedText, qualityShortText, roleName, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
+import { arbitrationText, sessionTitle, ctFormatName, isTest, manualStartText, notPlannedText, qualityShortText, roleName, runningTestFallbackText, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import { blockCardText, fullSessionCardText, isBlock, isFullC4 } from '../../field/BlockScope.js';
@@ -46,6 +46,12 @@ export function StatusPill({ status }: { status: DisplayStatus }) {
 export function WeekPlanningNotice({ planning }: { planning: Beta0WeekView['planning'] }) {
   const text = weekPlanningText(planning);
   return text ? <Notice tone="sim"><span role="status">{text}</span></Notice> : null;
+}
+
+/** A2 — TEST demandé non programmable : repli expliqué (la séance n'a pas disparu). */
+export function RunningTestFallbackNotice({ fallback }: { fallback: Beta0WeekView['runningTestFallback'] }) {
+  const text = runningTestFallbackText(fallback);
+  return text ? <Notice><span role="status" data-test-fallback={fallback?.cause}>{text}</span></Notice> : null;
 }
 
 export function ExperimentalBadge() {

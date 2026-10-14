@@ -2,7 +2,7 @@ import { confirmEquipment, equipmentLabel, equipmentNeedsConfirmation, EQUIPMENT
 import { useStore } from '../../store.js';
 import { formatDate, Notice, weekdayShort } from '../../ui.js';
 import { isDone, sessionName, sportName, STATUS_LABELS } from '../../present.js';
-import { nextOf, placedOf, SessionCard0, weekOf, WeekPlanningNotice } from './common.js';
+import { nextOf, placedOf, RunningTestFallbackNotice, SessionCard0, weekOf, WeekPlanningNotice } from './common.js';
 import type { DayItemView } from './common.js';
 
 export function PainPause({ onGo }: { onGo: () => void }) {
@@ -102,6 +102,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
       <EquipmentConfirm onEdit={() => onEditProgramme?.()} />
       {state.safety.activePain && <PainPause onGo={() => onGo('settings')} />}
       {week && <WeekPlanningNotice planning={week.planning} />}
+      {week && <RunningTestFallbackNotice fallback={week.runningTestFallback} />}
 
       {week && planned.length > 0 && (
         <div className="card" aria-label="Progression de la semaine">

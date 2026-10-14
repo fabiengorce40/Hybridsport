@@ -273,6 +273,12 @@ export const zPersistedWeek = z.object({
     quality: z.object({ verdict: z.enum(['ACCEPTABLE', 'ACCEPTABLE_WITH_WARNINGS', 'BLOCKED', 'UNRESOLVED']), criteria: z.array(z.string().min(1)) }).strict().optional(),
     neighbourContext: z.object({ known: z.boolean(), neighbours: z.array(z.object({ sport: z.enum(SPORTS), discipline: z.string(), stimulus: z.string(), hoursFromThisSession: z.number(), demand: z.record(z.string(), z.string()), importance: z.enum(['key', 'standard', 'unknown']).optional() }).strict()) }).strict().optional(),
     reasons: z.array(zReason),
+    /**
+     * RC3.1 A8 — cause DÉCISIVE d'une demande non planifiée : première raison de sévérité « error » d'un moteur (à
+     * défaut, du planificateur), extraite à la planification, seul moment où la sévérité des codes est connue pour
+     * tous les sports. Absente : demande planifiée, aucune erreur tracée, ou semaine antérieure à RC3.1.
+     */
+    cause: zReason.optional(),
   }).strict()),
   conflicts: z.array(zReason),
   governance: z.array(zReason),
@@ -331,6 +337,22 @@ export const zHrRuntime = z.object({
 export type HrRuntime = z.infer<typeof zHrRuntime>;
 
 /**
+ * RC3.5 — lecteur de séance Course EN COURS : chrono HORODATÉ (jamais un compteur écrit chaque seconde). La position
+ * (étape, temps dans l'étape) est DÉRIVÉE de l'horloge à partir de l'ancre : depuis l'étape `anchorIndex`, commencée
+ * au temps actif `anchorAtS`, les étapes en DURÉE s'enchaînent seules ; une étape en DISTANCE attend toujours une
+ * validation manuelle (aucune durée déduite d'une allure). Écrit seulement sur une commande (lancer, pause, reprise,
+ * étape suivante). `marks` = fin de chaque étape quittée par l'utilisateur (validation manuelle ou étape passée).
+ */
+export const zRunPlayer = z.object({
+  runningSince: instant.nullable(),
+  accumulatedS: z.number().nonnegative(),
+  anchorIndex: z.number().int().nonnegative(),
+  anchorAtS: z.number().nonnegative(),
+  marks: z.array(z.object({ key: z.string().min(1), end: z.enum(['distance_validated', 'skipped']), elapsedS: z.number().nonnegative(), at: instant }).strict()).default([]),
+}).strict();
+export type RunPlayer = z.infer<typeof zRunPlayer>;
+
+/**
  * FIELD TEST — retour TERRAIN déclaré par l'utilisateur après une séance terminée. Observation seulement : jamais lue
  * par un moteur, jamais interprétée, aucune valeur sportive déduite. Provenance explicite et constante.
  */
@@ -367,6 +389,8 @@ export const zProgrammeLog = z.object({
   ct: zCtRuntime.optional(),
   /** HYROX : chrono, position dans la séquence, charges réelles (absent pour les autres sports). */
   hr: zHrRuntime.optional(),
+  /** RC3.5 — Course : lecteur de séance (absent tant qu'il n'a pas été lancé ; champ additif). */
+  runPlayer: zRunPlayer.optional(),
   finishedAt: instant.optional(),
   /** Issue enregistrée (copie de la saisie transmise à recordSessionExecution). */
   outcome: z.object({
@@ -405,6 +429,16 @@ export const zAppState = z.object({
     realized: z.array(zRealizedSession),
     /** Références de performance enregistrées par l'application (TEST réalisés). */
     references: z.array(zRunningReference).default([]),
+    /**
+     * RC3.3 — commentaire FACULTATIF d'une course libre, par identifiant de course réalisée (`free:…`). Annotation
+     * seulement : la course elle-même reste au contrat Running (`realized`), jamais dupliquée. Absent ⇒ vide.
+     */
+    notes: z.record(z.string(), z.string()).optional(),
+    /**
+     * RC3.4 — courses libres dont seule la DATE est connue (dernière course déclarée à l'onboarding) : l'instant
+     * enregistré suit la convention de jour de l'application ; l'heure n'est jamais affichée ni présentée comme réelle.
+     */
+    timeUnknown: z.array(z.string()).optional(),
   }).strict(),
   /**
    * Cross-training (C2) : séances réalisées, conservées TELLES QUELLES (complétion déclarée comprise). Leur contrat est

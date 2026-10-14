@@ -3,9 +3,9 @@
  * priorité, matériel, durée du programme → création du programme réel (app-core `createBeta0Programme`).
  * Aussi utilisé pour créer un programme depuis un profil V0 existant, ou le recréer (workflow explicite).
  */
-import { useEffect, useState } from 'react';
-import { createBeta0Programme, strengthSupportedFrequencies, CT_INTENT_LABELS, DIFFICULTY_LABELS, HR_BALANCED_LABEL, HR_GOAL_LABELS, HR_ROLE_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
-import type { Beta0ProgrammeOptions, DeclaredPerformance, Feedback, ProfileInput } from '@hybridsport/app-core';
+import { useEffect, useMemo, useState } from 'react';
+import { createBeta0Programme, ctIntentFeasibility, strengthSupportedFrequencies, CT_INTENT_LABELS, DIFFICULTY_LABELS, HR_BALANCED_LABEL, HR_GOAL_LABELS, HR_ROLE_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
+import type { Beta0ProgrammeOptions, CtIntentFeasibility, DeclaredPerformance, Feedback, ProfileInput } from '@hybridsport/app-core';
 import { PerformanceForm } from '../../running/PerformanceForm.js';
 import { performanceText } from '../../running/RunningProfile.js';
 
@@ -87,19 +87,60 @@ function HrSection({ p, set }: { p: ProfileInput; set: (f: (x: ProfileInput) => 
 }
 
 /** Déclarations Cross-training : intention (archétypes que C3 sait composer), fréquence, coupure récente. */
-function CtSection({ p, set }: { p: ProfileInput; set: (f: (x: ProfileInput) => ProfileInput) => void }) {
+/** RC3.2 A3 — facteurs lus dans la trace du moteur Cross-training, en clair. */
+const CT_FACTOR_LABELS: Readonly<Record<string, string>> = { time: 'le temps disponible par jour', equipment: 'le matériel déclaré', level: 'le niveau déclaré', safety: 'la coupure déclarée' };
+const ctFactorsText = (c: CtIntentFeasibility): string => {
+  const f = c.factors.map((x) => CT_FACTOR_LABELS[x]).filter(Boolean);
+  return f.length > 0 ? `En cause : ${f.join(', ')}.` : 'Le moteur ne précise pas quel paramètre bloque : matériel, niveau ou temps disponible.';
+};
+
+/**
+ * RC3.2 A3 — intention Cross-training IRRÉALISABLE avec le profil déclaré (sonde du moteur réel) : avertissement
+ * explicite et options RÉELLEMENT réalisables pour ce profil (aucune table, aucune intention imposée).
+ */
+export function CtFeasibilityNotice({ p, set, feasibility }: { p: ProfileInput; set: (f: (x: ProfileInput) => ProfileInput) => void; feasibility: readonly CtIntentFeasibility[] | null }) {
+  const chosen = feasibility?.find((c) => c.intent === p.crosstraining.intent);
+  if (!p.crosstraining.enabled || !chosen || chosen.status !== 'infeasible') return null;
+  const options = (feasibility ?? []).filter((c) => c.status === 'feasible');
+  const title = CT_INTENT_LABELS[chosen.intent]?.title ?? chosen.intent;
+  return (
+    <Notice tone="warn">
+      <div className="stack" data-ct-infeasible-notice={chosen.intent}>
+        <span role="status">Cross-training « {title} » : le moteur ne peut composer aucune séance avec votre profil actuel. {ctFactorsText(chosen)} Aucune séance de Cross-training ne serait proposée.</span>
+        {options.length > 0
+          ? (
+            <>
+              <span>Options réalisables avec ce profil :</span>
+              <div className="row wrap" role="group" aria-label="Intentions Cross-training réalisables">
+                {options.map((c) => (
+                  <button key={c.intent} type="button" className="btn secondary" onClick={() => set((y) => ({ ...y, crosstraining: { ...y.crosstraining, intent: c.intent } }))}>Choisir « {CT_INTENT_LABELS[c.intent]?.title ?? c.intent} »</button>
+                ))}
+              </div>
+              <span className="tiny">Vous pouvez aussi modifier votre matériel{p.crosstraining.intent === 'crosstraining.strength_plus_conditioning' ? ' (matériel à charges)' : ''}, votre niveau ou vos disponibilités.</span>
+            </>
+          )
+          : <span>Aucune intention Cross-training n’est réalisable avec ce profil pour l’instant : modifiez le matériel, le niveau ou les disponibilités, ou retirez le Cross-training.</span>}
+      </div>
+    </Notice>
+  );
+}
+
+function CtSection({ p, set, feasibility }: { p: ProfileInput; set: (f: (x: ProfileInput) => ProfileInput) => void; feasibility: readonly CtIntentFeasibility[] | null }) {
   const ct = p.crosstraining;
   const upd = (x: Partial<ProfileInput['crosstraining']>) => set((y) => ({ ...y, crosstraining: { ...y.crosstraining, ...x } }));
+  const statusOf = (k: string) => feasibility?.find((c) => c.intent === k)?.status;
   return (
     <div className="card">
       <h3>Cross-training</h3>
       <div className="stack" role="radiogroup" aria-label="Intention Cross-training">
         {Object.entries(CT_INTENT_LABELS).map(([k, v]) => (
-          <button key={k} type="button" role="radio" aria-checked={ct.intent === k} className={`option ${ct.intent === k ? 'on' : ''}`} onClick={() => upd({ intent: k })}>
-            <div><div className="t">{v.title}</div><div className="tiny">{v.detail}</div></div>
+          <button key={k} type="button" role="radio" aria-checked={ct.intent === k} className={`option ${ct.intent === k ? 'on' : ''}`} onClick={() => upd({ intent: k })} data-ct-feasibility={statusOf(k) ?? 'unchecked'}>
+            <div><div className="t">{v.title}</div><div className="tiny">{v.detail}</div>{statusOf(k) === 'infeasible' && <div className="tiny"><b>Irréalisable avec votre profil actuel</b></div>}</div>
           </button>
         ))}
       </div>
+      <CtFeasibilityNotice p={p} set={set} feasibility={feasibility} />
+      {!feasibility && <p className="tiny" style={{ margin: 0 }} data-ct-feasibility-pending>La faisabilité de l’intention sera vérifiée par le moteur dès que votre matériel sera choisi (dernière étape).</p>}
       <label className="field">Séances de Cross-training par semaine
         <select value={ct.sessionsPerWeek ?? ''} onChange={(e) => upd({ sessionsPerWeek: Number(e.target.value) })}>
           {CT_SESSION_CHOICES.map((n) => <option key={n} value={n}>{n}</option>)}
@@ -129,6 +170,8 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const [runMin, setRunMin] = useState('');
   const [runKm, setRunKm] = useState('');
   const [runFeel, setRunFeel] = useState<Feedback['difficulty']>('AS_EXPECTED');
+  // RC3.4 — date RÉELLE de la dernière course, facultative (absente : comportement antérieur, aucune date inventée).
+  const [runDate, setRunDate] = useState('');
   const [perfs, setPerfs] = useState<DeclaredPerformance[]>([]);
   const [addingPerf, setAddingPerf] = useState(false);
   const [noChrono, setNoChrono] = useState(false);
@@ -136,20 +179,41 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const set = (f: (x: ProfileInput) => ProfileInput) => setP(f);
   const first = p.priorities[0] === 'running' ? 'running' : 'strength';
   const km = runKm === '' ? undefined : Number(runKm);
-  const lastRunOk = runMin === '' ? runKm === '' : Number(runMin) > 0 && (km === undefined || (Number.isFinite(km) && km > 0));
+  const runDateOk = runDate === '' || (/^\d{4}-\d{2}-\d{2}$/.test(runDate) && runDate <= store.clock().today);
+  const lastRunOk = (runMin === '' ? runKm === '' && runDate === '' : Number(runMin) > 0 && (km === undefined || (Number.isFinite(km) && km > 0))) && runDateOk;
   const dateOk = targetDate === '' || (/^\d{4}-\d{2}-\d{2}$/.test(targetDate) && targetDate >= store.clock().today);
   const dated = p.running.enabled && p.running.goal !== 'GENERAL_RUNNING' && targetDate !== '' && dateOk;
   const ctOk = !p.crosstraining.enabled || (p.crosstraining.intent !== undefined && p.crosstraining.sessionsPerWeek !== undefined && p.crosstraining.returnState !== undefined);
   const hrOk = !p.hyrox.enabled || ((p.hyrox.focus === 'balanced' || p.hyrox.role !== undefined) && p.hyrox.goal !== undefined && p.hyrox.sessionsPerWeek !== undefined && p.hyrox.returnState !== undefined);
   const strengthOk = !p.strength.enabled || strengthSupportedFrequencies().includes(p.strength.sessionsPerWeek);
   const canNext = step === 0 ? accepted : step === 1 ? choice !== null : step === 2 ? lastRunOk && dateOk && ctOk && hrOk && strengthOk : step === 3 ? p.availability.some((m) => m > 0) : true;
+  // RC3.2 A3 — faisabilité des intentions Cross-training, sondée auprès du moteur réel dès que le matériel est connu
+  // (recalculée quand le niveau, le matériel ou les disponibilités changent ; coupure déclarée : avis dédié).
+  const ctProbeKey = p.crosstraining.enabled && equipmentChosen(p) && (p.crosstraining.returnState ?? 'NONE') === 'NONE' ? JSON.stringify([p.level, p.equipment.items, p.availability]) : null;
+  const ctFeasibility = useMemo(() => (ctProbeKey ? ctIntentFeasibility(p, store.clock()) : null), [ctProbeKey]);
+  // RC3.2 — bouton désactivé : TOUJOURS expliqué (ce qui manque, où le saisir).
+  const missing = (label: string, fields: readonly [boolean, string][]) => { const m = fields.filter(([ok]) => !ok).map(([, f]) => f); return m.length > 0 ? [`${label} : ${m.join(', ')}.`] : []; };
+  const blockers: string[] = step === 0 ? (accepted ? [] : ['Cochez « J’ai compris » pour commencer.'])
+    : step === 1 ? (choice === null ? ['Choisissez au moins un sport.'] : [])
+      : step === 2 ? [
+        ...(lastRunOk ? [] : [runDateOk ? 'Dernière course : indiquez la durée en minutes (la distance ou la date seules ne suffisent pas), ou videz ces champs.' : 'Dernière course : la date ne peut pas être dans le futur.']),
+        ...(dateOk ? [] : ['Date de l’objectif : choisissez une date à venir, ou laissez le champ vide.']),
+        ...(strengthOk ? [] : ['Musculation : choisissez un nombre de séances pris en charge.']),
+        ...(p.crosstraining.enabled ? missing('Cross-training', [[p.crosstraining.intent !== undefined, 'choisissez une intention'], [p.crosstraining.sessionsPerWeek !== undefined, 'le nombre de séances par semaine'], [p.crosstraining.returnState !== undefined, 'indiquez une éventuelle coupure récente']]) : []),
+        ...(p.hyrox.enabled ? missing('HYROX', [[p.hyrox.focus === 'balanced' || p.hyrox.role !== undefined, 'choisissez un type de séance'], [p.hyrox.goal !== undefined, 'choisissez un objectif'], [p.hyrox.sessionsPerWeek !== undefined, 'le nombre de séances par semaine'], [p.hyrox.returnState !== undefined, 'indiquez une éventuelle coupure récente']]) : []),
+      ]
+        : step === 3 ? (p.availability.some((m) => m > 0) ? [] : ['Indiquez au moins un jour disponible.'])
+          : [
+            ...(preview?.sessionInProgress != null ? ['Une séance est en cours : terminez-la ou abandonnez-la avant de recréer le programme.'] : []),
+            ...(needsEquipment(p) && !equipmentChosen(p) ? ['Matériel : choisissez votre lieu d’entraînement.'] : []),
+          ];
 
   const create = () => {
     const o: Beta0ProgrammeOptions = {
       ...(p.running.enabled && perfs.length > 0 ? { performances: perfs } : {}),
       ...(p.running.enabled && perfs.length === 0 && noChrono ? { requestTest: true } : {}),
       ...(p.running.enabled && targetDate && p.running.goal !== 'GENERAL_RUNNING' ? { runningTargetDate: targetDate } : {}),
-      ...(p.running.enabled && runMin !== '' ? { lastRun: { realizedDurationS: Number(runMin) * 60, ...(km !== undefined ? { distanceM: km * 1000 } : {}), difficulty: runFeel } } : {}),
+      ...(p.running.enabled && runMin !== '' ? { lastRun: { realizedDurationS: Number(runMin) * 60, ...(km !== undefined ? { distanceM: km * 1000 } : {}), difficulty: runFeel, ...(runDate !== '' ? { date: runDate } : {}) } } : {}),
     };
     // P1 — matériel : choix explicite CONFIRMÉ (horodaté) ; sans sport à matériel et sans choix, aucun matériel supposé.
     const withEquipment = (c: { now: string }): ProfileInput => needsEquipment(p)
@@ -210,7 +274,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
         <>
           <label className="field">Prénom (facultatif)<input type="text" value={p.displayName} maxLength={40} onChange={(e) => setP({ ...p, displayName: e.target.value })} /></label>
           <GoalsSection p={p} set={set} beta0 />
-          {p.crosstraining.enabled && <CtSection p={p} set={set} />}
+          {p.crosstraining.enabled && <CtSection p={p} set={set} feasibility={ctFeasibility} />}
           {p.hyrox.enabled && <HrSection p={p} set={set} />}
           {p.running.enabled && (
             <div className="card">
@@ -240,12 +304,16 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
               {perfs.length === 0 && (
                 <label className="check"><input type="checkbox" checked={noChrono} onChange={(e) => setNoChrono(e.target.checked)} />Je n’ai pas de chrono récent : programmer un test chronométré</label>
               )}
+              {perfs.length === 0 && noChrono && (runMin === '' || runKm === '') && (
+                <p className="tiny" data-test-needs-distance style={{ margin: 0 }}>Le test a besoin d’une course récente AVEC sa distance (ci-dessous). Sans elle, une course facile sera prévue à la place et vous pourrez redemander le test plus tard.</p>
+              )}
               <h3>Votre dernière course</h3>
               <p className="tiny" style={{ margin: 0 }}>Les séances de course reprennent ce que vous avez réellement couru. Sans course récente, elles ne pourront pas être proposées.</p>
               <div className="row">
                 <label className="field">Durée (min)<input inputMode="numeric" value={runMin} placeholder="ex. 30" onChange={(e) => setRunMin(e.target.value.replace(/[^0-9]/g, ''))} /></label>
                 <label className="field">Distance (km)<input inputMode="decimal" value={runKm} placeholder="facultatif" onChange={(e) => setRunKm(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))} /></label>
               </div>
+              <label className="field">Date de cette course (facultatif)<input type="date" max={store.clock().today} value={runDate} onChange={(e) => setRunDate(e.target.value)} /></label>
               {runMin !== '' && (
                 <label className="field">Ressenti
                   <select value={runFeel} onChange={(e) => setRunFeel(e.target.value as Feedback['difficulty'])}>
@@ -278,6 +346,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
             </div>
           )}
           {(p.strength.enabled || p.crosstraining.enabled || p.hyrox.enabled) && <><div className="section-title">Matériel</div><EquipmentSection p={p} set={set} /></>}
+          <CtFeasibilityNotice p={p} set={set} feasibility={ctFeasibility} />
           <div className="card">
             <h3>Récapitulatif</h3>
             <div className="small muted">
@@ -291,12 +360,20 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
         </>
       )}
 
+      {blockers.length > 0 && (
+        <div className="notice warn" role="status" id="next-blockers" data-next-blockers>
+          <div className="stack">
+            <strong>Pour continuer :</strong>
+            <ul style={{ margin: 0, paddingLeft: 18 }}>{blockers.map((b) => <li key={b}>{b}</li>)}</ul>
+          </div>
+        </div>
+      )}
       <div className="wizard-actions" role="group" aria-label="Navigation de l’assistant">
         {(step > (existing ? 1 : 0)) && <button className="btn secondary" onClick={() => setStep(step - 1)}>Retour</button>}
         {step === (existing ? 1 : 0) && onCancel && <button className="btn secondary" onClick={onCancel}>Annuler</button>}
         {step < STEPS.length - 1
-          ? <button className="btn primary block" disabled={!canNext} onClick={() => setStep(step + 1)}>{step === 0 ? 'Commencer' : 'Continuer'}</button>
-          : <button className="btn primary block" disabled={preview?.sessionInProgress != null || (needsEquipment(p) && !equipmentChosen(p))} onClick={create}>{mode === 'recreate' ? 'Recréer mon programme' : 'Créer mon programme'}</button>}
+          ? <button className="btn primary block" disabled={!canNext} aria-describedby={blockers.length > 0 ? 'next-blockers' : undefined} onClick={() => setStep(step + 1)}>{step === 0 ? 'Commencer' : 'Continuer'}</button>
+          : <button className="btn primary block" disabled={blockers.length > 0} onClick={create}>{mode === 'recreate' ? 'Recréer mon programme' : 'Créer mon programme'}</button>}
       </div>
     </div>
   );

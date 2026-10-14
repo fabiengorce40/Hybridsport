@@ -35,6 +35,21 @@ export function weekPlanningText(p: Beta0WeekView['planning']): string | null {
   return null;
 }
 
+/**
+ * A2 — TEST chronométré demandé mais refusé par le moteur Running : la séance habituelle (course facile) a été gardée.
+ * Cause lue du moteur ; le texte dit quoi faire pour que le test devienne possible.
+ */
+export function runningTestFallbackText(f: Beta0WeekView['runningTestFallback']): string | null {
+  if (!f) return null;
+  const why = f.cause === 'OBSERVED_PACE_UNAVAILABLE'
+    ? 'aucune course récente avec sa distance n’est enregistrée (elle sert à estimer la durée du test).'
+    : `le moteur de course ne peut pas le prescrire pour l’instant (${f.cause}).`;
+  const next = f.cause === 'OBSERVED_PACE_UNAVAILABLE'
+    ? ' Notez la distance de vos prochaines courses, puis redemandez le test depuis le profil Course.'
+    : ' Vous pourrez le redemander depuis le profil Course.';
+  return `Test chronométré non programmé cette semaine : ${why} Votre séance de course est conservée en course facile, sans allure imposée.${next}`;
+}
+
 /** Rôle de la séance dans la semaine Running (composition du moteur), libellé lisible. */
 export const roleName = (role: string | null): string | null => (role && role !== 'LOCKED' && role !== 'EASY' ? RUNNING_ROLE_LABELS[role] ?? null : null);
 
@@ -63,10 +78,21 @@ export const NOT_PLANNED_MESSAGES: Readonly<Record<string, string>> = {
   invalid_intent: 'Cette séance n’a pas pu être construite à partir de votre programme.',
   engine_unavailable: 'Ce sport n’est pas disponible.',
   programme_intent_incomplete: 'Le programme ne décrit pas encore cette séance.',
+  // RC3.1 A8 — une SAISIE manque (jamais présenté comme une règle absente).
+  missing_data: 'Une information manque pour construire cette séance.',
 };
 /** Précisions connues pour certaines raisons (aucun code affiché). */
 const REASON_HINTS: Readonly<Record<string, string>> = {
   'DOSE.RUNNING.DOSE_ANCHOR_UNAVAILABLE': 'Enregistrez une course réalisée : la course reprend ce que vous avez réellement fait.',
+  'DOSE.RUNNING.TEST_REFUSED': 'Enregistrez une course récente avec sa distance : elle sert à estimer la durée du test.',
+  'DOSE.RUNNING.STRUCTURE_UNAVAILABLE': 'La structure de votre dernière séance de ce type n’a pas été enregistrée : elle ne peut pas être reprise.',
+  'DOSE.RUNNING.FIRST_EXPOSURE_REFUSED': 'Un test récent est d’abord nécessaire : demandez-le depuis le profil Course.',
+  'FEASIBILITY.TIME_EXCEEDED': 'La séance dépasse le temps disponible ce jour-là : elle n’est jamais raccourcie.',
+  'PLAN.RUNNING.TIME_EXCEEDED': 'La séance dépasse le temps disponible ce jour-là : elle n’est jamais raccourcie.',
+  'DURATION.TARGET_BELOW_ARCHETYPE_MIN': 'Le temps disponible ce jour-là est inférieur à la durée minimale de cette séance.',
+  'PLAN.PLANNER.NOT_ENOUGH_DAYS': 'Il n’y a pas assez de jours disponibles dans la semaine pour toutes les séances demandées.',
+  // RC3.2 A3 — intention Cross-training irréalisable avec le profil : où voir les options réalisables.
+  'SCOPE.CROSSTRAINING.C3_STRUCTURE_UNAVAILABLE': 'Cette intention Cross-training ne peut pas être composée avec votre profil actuel : l’onglet Programme indique les intentions réalisables (« Modifier »).',
   'SCOPE.RUNNING.NOVICE_ENTRY_UNRESOLVED': 'La séance de départ pour débutant en course n’est pas encore validée.',
   // Composition Strength non gouvernée (Beta 0 : fréquence hors des bandes de la règle candidate du moteur Strength).
   'strength:RULE.PLANNER.COMPOSITION_UNRESOLVED': 'Aucune règle validée ne répartit encore ce nombre de séances de musculation dans la semaine : réduisez la fréquence de musculation.',
@@ -123,10 +149,26 @@ export function unplacedText(v: SessionView): string {
     : 'aucun jour disponible n’était assez éloigné des séances qui sollicitent les mêmes zones du corps.';
   return `KAIRO n’a pas trouvé de créneau compatible cette semaine : ${cause} La séance reste disponible.`;
 }
+/**
+ * RC3.1 A8 — Cross-training / HYROX : aucune structure retenue. Les essais du moteur (`tried`) disent pourquoi :
+ * temps disponible, ou matériel (station / mouvement impossible). Lecture seule de la trace, aucune valeur.
+ */
+function structureHint(r: NonNullable<NonNullable<SessionView['notPlanned']>['reason']>): string | undefined {
+  if (r.code !== 'PLAN.HYROX.H2_NO_STRUCTURE' && r.code !== 'PLAN.CROSSTRAINING.C3_NO_FORMAT') return undefined;
+  const tried = Array.isArray(r.params.tried) ? r.params.tried.map(String).join(' ') : '';
+  const time = /EXCEEDS_AVAILABLE_TIME|TIME/.test(tried);
+  const equipment = /EQUIPMENT|STATIONS_UNFILLED|MOVEMENT/.test(tried);
+  if (!time && !equipment) return r.code === 'PLAN.CROSSTRAINING.C3_NO_FORMAT' ? 'Aucun format possible avec votre profil actuel : l’onglet Programme indique les intentions réalisables (« Modifier »).' : undefined;
+  if (time && !equipment) return 'Aucun format possible dans le temps disponible ce jour-là : augmentez la durée de ce jour dans vos disponibilités.';
+  if (equipment && !time) return 'Aucun format possible avec le matériel déclaré : vérifiez votre lieu d’entraînement.';
+  return time && equipment ? 'Aucun format possible avec le temps disponible et le matériel déclarés.' : undefined;
+}
+
 export function notPlannedText(v: SessionView): string {
-  const base = NOT_PLANNED_MESSAGES[v.notPlanned?.category ?? ''] ?? 'Cette séance n’a pas pu être planifiée.';
-  const code = v.notPlanned?.reason?.code;
-  const hint = code ? REASON_HINTS[`${v.sport}:${code}`] ?? REASON_HINTS[code] : undefined;
+  const np = v.notPlanned;
+  const base = NOT_PLANNED_MESSAGES[np?.display ?? np?.category ?? ''] ?? 'Cette séance n’a pas pu être planifiée.';
+  const r = np?.reason;
+  const hint = r ? REASON_HINTS[`${v.sport}:${r.code}`] ?? REASON_HINTS[r.code] ?? structureHint(r) : undefined;
   return hint ? `${base} ${hint}` : base;
 }
 
@@ -152,6 +194,7 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   CT_INTENT_UNKNOWN: 'Cross-training : intention inconnue.',
   CT_PROGRESS_INVALID: 'Valeur de progression invalide.',
   CT_BLOCK_UNKNOWN: 'Bloc inconnu dans cette séance.',
+  RUN_PLAYER_UNAVAILABLE: 'Cette séance n’a pas d’étapes de course à dérouler.',
   HR_DECLARATION_MISSING: 'HYROX : choisissez un type de séance, un objectif, un nombre de séances et indiquez une éventuelle coupure.',
   HR_ROLE_UNKNOWN: 'HYROX : type de séance inconnu.',
   HR_PROGRESS_INVALID: 'Étape hors de la séance prescrite.',
@@ -162,7 +205,15 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   EXECUTION_HR_PROGRESS_REQUIRED: 'Progression de la séance HYROX manquante.',
   EXECUTION_INVALID: 'Ce résultat ne correspond pas à la séance prévue : vérifiez-le (ou choisissez « J’ai adapté la séance »).',
   RUN_DURATION_REQUIRED: 'Indiquez la durée réellement courue.',
-  DUPLICATE_RUN: 'Cette course est déjà enregistrée.',
+  DUPLICATE_RUN: 'Cette course est déjà enregistrée (une course enregistrée occupe déjà ce moment) : elle n’est jamais comptée deux fois.',
+  // RC3.3 — course libre : saisie refusée, rien n'est enregistré.
+  DURATION_INVALID: 'Durée invalide : indiquez une durée supérieure à zéro (24 h au plus).',
+  DISTANCE_INVALID: 'Distance invalide : indiquez une distance supérieure à zéro.',
+  RUN_SPEED_IMPOSSIBLE: 'Distance et durée incompatibles (vitesse impossible) : vérifiez votre saisie.',
+  RUN_DATE_INVALID: 'Date ou heure invalide.',
+  RUN_IN_FUTURE: 'Cette course se terminerait dans le futur : vérifiez la date, l’heure de départ et la durée.',
+  RUN_NOTE_TOO_LONG: 'Commentaire trop long (280 caractères au plus).',
+  FREE_RUN_UNKNOWN: 'Cette course n’existe plus ou ne peut pas être modifiée ici (seules les courses libres le sont).',
   BETA_RESET_NOT_CONFIRMED: 'Recréation annulée : confirmation absente. Rien n’a été modifié.',
   BETA_RESET_NOT_ALLOWED: 'Cet outil de test n’est disponible que dans la Beta expérimentale. Rien n’a été modifié.',
   PROGRAMME_MISSING: 'Aucun programme à recréer.',
@@ -195,6 +246,17 @@ const NEED_LABELS: Readonly<Record<string, string>> = {
   knee_dominant: 'mouvement dominante genou (squat)', hip_dominant: 'mouvement dominante hanche', lunge: 'fente', core: 'gainage',
 };
 
+/** RC3.1 A1 — pourquoi l'effort d'un exercice n'est pas ajusté (aucun code affiché). */
+const READINESS_REFUSALS: Readonly<Record<string, string>> = {
+  load_derived_from_effort: 'sa charge est calculée à partir de l’effort : elle n’est jamais modifiée ici',
+  trace_unavailable: 'détail de la prescription indisponible',
+  trace_inconsistent: 'prescription différente de la règle du moteur',
+  dose_profile_unreadable: 'règle de dosage illisible pour cet exercice',
+  effort_floor_reached: 'effort de référence non retrouvable',
+  effort_unreadable: 'effort non indiqué',
+  readiness_already_applied: 'état déjà pris en compte à la planification',
+};
+
 /** Raisons d'une décision du contrôle, en clair (codes inconnus ignorés : jamais de code brut affiché). */
 /** Douleurs connues (« zone:niveau ») en clair. */
 export function knownPainText(areas: readonly string[]): string {
@@ -214,7 +276,14 @@ export function checkInReasonsText(reasons: readonly { readonly code: string; re
       case 'KAIRO.CHECKIN_PAIN_ESCALATED': return ['Douleur signalée à plusieurs reprises : elle est traitée avec plus de prudence.'];
       case 'KAIRO.CHECKIN_PERSISTED_ADAPTED': return ['Séance prévue conservée et ajustée à votre douleur : seuls les exercices concernés sont remplacés ou retirés.'];
       case 'KAIRO.CHECKIN_SESSION_RECOMPOSED': return ['Séance recomposée avec votre historique récent : certains changements ne sont pas liés à la douleur déclarée.'];
+      // RC3.1 A1 — état du jour appliqué à la séance prévue (effort seulement), refus expliqués exercice par exercice.
+      case 'KAIRO.CHECKIN_READINESS_PERSISTED': return [
+        `Fatigue ou récupération prise en compte : effort visé allégé sur la séance prévue (mêmes exercices, séries et charges).${Number(p.setsDeltaNotApplied) < 0 ? ' La règle prévoit aussi une série de moins : elle n’est pas appliquée à une séance déjà prévue.' : ''}`,
+      ];
+      case 'KAIRO.CHECKIN_READINESS_EXERCISE_REFUSED': return [`${exerciseLabel(s(p.exerciseId))} : effort non ajusté (${READINESS_REFUSALS[s(p.cause)] ?? 'ajustement impossible sans modifier la séance'}).`];
       case 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED': if (p.cause === 'readiness_requires_reproducible_session') return ['Fatigue ou récupération enregistrée : l’effort de cette séance n’est pas ajusté automatiquement ; écoutez vos sensations.'];
+        if (p.cause === 'readiness_not_applicable_persisted') return ['Fatigue ou récupération enregistrée : aucun exercice de cette séance ne peut être allégé sans changer sa charge ; écoutez vos sensations.'];
+        if (p.cause === 'readiness_persisted_session_unavailable' || p.cause === 'readiness_rule_unreadable') return ['Fatigue ou récupération enregistrée : l’effort de cette séance ne peut pas être ajusté automatiquement ; écoutez vos sensations.'];
         if (p.cause === 'session_not_reproducible') return ['État du jour enregistré : la séance prévue est gardée telle quelle (elle ne peut plus être recomposée à l’identique ; aucun ajustement automatique).'];
         return ['État du jour enregistré : cette séance n’est pas ajustée automatiquement (aucune règle d’adaptation pour ce type de séance).'];
       case 'KAIRO.CHECKIN_NO_CHANGE': return ['État du jour pris en compte : aucun changement nécessaire.'];
