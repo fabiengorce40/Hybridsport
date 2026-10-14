@@ -1,0 +1,26 @@
+diff --git a/.github/workflows/kairo-pages.yml b/.github/workflows/kairo-pages.yml
+index c137bbf..7b48ead 100644
+--- a/.github/workflows/kairo-pages.yml
++++ b/.github/workflows/kairo-pages.yml
+@@ -19,8 +19,21 @@ concurrency:
+ env:
+   SITE_URL: https://fabiengorce40.github.io/Hybridsport/
+ 
++# Garde de publication : SEULE la branche de production publie sur GitHub Pages. Un lancement manuel
++# (workflow_dispatch) depuis toute autre branche ou étiquette est refusé explicitement et ne publie rien.
+ jobs:
++  refuse:
++    if: github.ref != 'refs/heads/claude/crosstraining-c1-c2-spike-vbg8dv'
++    runs-on: ubuntu-latest
++    permissions: {}
++    steps:
++      - name: Publication refusée (branche non autorisée)
++        run: |
++          echo "::error::Publication refusée : seule la branche claude/crosstraining-c1-c2-spike-vbg8dv peut déployer en production (référence reçue : ${GITHUB_REF})."
++          exit 1
++
+   deploy:
++    if: github.ref == 'refs/heads/claude/crosstraining-c1-c2-spike-vbg8dv'
+     runs-on: ubuntu-latest
+     steps:
+       - uses: actions/checkout@v4
