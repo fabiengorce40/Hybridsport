@@ -91,6 +91,8 @@ const REASON_HINTS: Readonly<Record<string, string>> = {
   'PLAN.RUNNING.TIME_EXCEEDED': 'La séance dépasse le temps disponible ce jour-là : elle n’est jamais raccourcie.',
   'DURATION.TARGET_BELOW_ARCHETYPE_MIN': 'Le temps disponible ce jour-là est inférieur à la durée minimale de cette séance.',
   'PLAN.PLANNER.NOT_ENOUGH_DAYS': 'Il n’y a pas assez de jours disponibles dans la semaine pour toutes les séances demandées.',
+  // RC3.2 A3 — intention Cross-training irréalisable avec le profil : où voir les options réalisables.
+  'SCOPE.CROSSTRAINING.C3_STRUCTURE_UNAVAILABLE': 'Cette intention Cross-training ne peut pas être composée avec votre profil actuel : l’onglet Programme indique les intentions réalisables (« Modifier »).',
   'SCOPE.RUNNING.NOVICE_ENTRY_UNRESOLVED': 'La séance de départ pour débutant en course n’est pas encore validée.',
   // Composition Strength non gouvernée (Beta 0 : fréquence hors des bandes de la règle candidate du moteur Strength).
   'strength:RULE.PLANNER.COMPOSITION_UNRESOLVED': 'Aucune règle validée ne répartit encore ce nombre de séances de musculation dans la semaine : réduisez la fréquence de musculation.',
@@ -156,6 +158,7 @@ function structureHint(r: NonNullable<NonNullable<SessionView['notPlanned']>['re
   const tried = Array.isArray(r.params.tried) ? r.params.tried.map(String).join(' ') : '';
   const time = /EXCEEDS_AVAILABLE_TIME|TIME/.test(tried);
   const equipment = /EQUIPMENT|STATIONS_UNFILLED|MOVEMENT/.test(tried);
+  if (!time && !equipment) return r.code === 'PLAN.CROSSTRAINING.C3_NO_FORMAT' ? 'Aucun format possible avec votre profil actuel : l’onglet Programme indique les intentions réalisables (« Modifier »).' : undefined;
   if (time && !equipment) return 'Aucun format possible dans le temps disponible ce jour-là : augmentez la durée de ce jour dans vos disponibilités.';
   if (equipment && !time) return 'Aucun format possible avec le matériel déclaré : vérifiez votre lieu d’entraînement.';
   return time && equipment ? 'Aucun format possible avec le temps disponible et le matériel déclarés.' : undefined;
