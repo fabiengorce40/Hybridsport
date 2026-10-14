@@ -30,6 +30,7 @@ import { buildPorts } from './planning.js';
 import { portInputs } from './programme.js';
 import { coreProfile } from './generate.js';
 import type { ProgrammeEnvironment } from './programme.js';
+import { applyReadinessToPersisted } from './readiness-persisted.js';
 
 type Request = PersistedWeek['requests'][number];
 const reason = (r: { code: string; params: Readonly<Record<string, unknown>> }): Reason => ({ code: r.code, params: { ...r.params } });
@@ -174,6 +175,36 @@ export function sessionChanges(before: SessionDraft, after: SessionDraft): strin
   return out;
 }
 
+/** RC3.1 A1 — l'état du jour (prudence / réduire) concerne-t-il cette séance de Musculation ? */
+function readinessApplies(state: AppState, requestId: string, ev: CheckInEvaluation): boolean {
+  return (ev.readiness === 'caution' || ev.readiness === 'reduce') && locate(state, requestId)?.r.sport === 'strength';
+}
+
+/**
+ * RC3.1 A1 — règle d'état du moteur Strength appliquée à la séance persistée `record` (effort seulement). Null hors
+ * Musculation ou hors état « prudence / réduire ». `applied` : au moins un exercice ajusté ou déjà couvert.
+ */
+function readinessPersisted(state: AppState, requestId: string, record: SessionRecord, ev: CheckInEvaluation, env: ProgrammeEnvironment): { readonly record: SessionRecord; readonly reasons: readonly Reason[]; readonly applied: boolean } | null {
+  if (!readinessApplies(state, requestId, ev) || (ev.readiness !== 'caution' && ev.readiness !== 'reduce')) return null;
+  const at = locate(state, requestId);
+  const content = env.strength?.content;
+  const notApplied = (cause: string, more: readonly Reason[] = []) => ({ record, applied: false, reasons: [{ code: 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED', params: { requestId, cause, readiness: ev.readiness } }, ...more] });
+  if (!at || !content) return notApplied('readiness_persisted_session_unavailable');
+  const intent = at.r.intent;
+  if (!intent?.archetypeId || !intent.stimulus) return notApplied('readiness_persisted_session_unavailable');
+  const out = applyReadinessToPersisted(record.session, at.r.reasons, ev.readiness, content, { archetypeId: intent.archetypeId, stimulus: intent.stimulus });
+  if (!out) return notApplied('readiness_rule_unreadable');
+  const r = out.result;
+  const refused = r.refused.map((x): Reason => ({ code: 'KAIRO.CHECKIN_READINESS_EXERCISE_REFUSED', params: { requestId, exerciseId: x.exerciseId, cause: x.cause } }));
+  if (r.adjusted.length === 0 && r.covered.length === 0) return notApplied('readiness_not_applicable_persisted', refused);
+  const est = estimateDuration(out.session, content.catalog, readDurationParams(content.ruleset));
+  return {
+    applied: true,
+    record: { ...record, session: out.session, durationEstimate: est.ok ? toRecordedDurationEstimate(est.estimate) : record.durationEstimate },
+    reasons: [{ code: 'KAIRO.CHECKIN_READINESS_PERSISTED', params: { requestId, readiness: ev.readiness, rirDelta: r.rule.rirDelta, adjusted: r.adjusted.length, covered: r.covered.length, refused: r.refused.length, setsDeltaNotApplied: r.rule.setsDeltaNotApplied } }, ...refused],
+  };
+}
+
 export type StartDecision =
   | { readonly kind: 'unchanged'; readonly reasons: readonly Reason[] }
   | { readonly kind: 'adapted'; readonly adaptation: { readonly record: ReturnType<typeof toEnvelope>; readonly changes: readonly string[]; readonly reasons: readonly Reason[] }; readonly reasons: readonly Reason[] }
@@ -206,19 +237,29 @@ export function decideStart(state: AppState, requestId: string, planned: Session
     if (changes.length === 0) return { kind: 'unchanged', reasons: [...base, ...extra, { code: 'KAIRO.CHECKIN_NO_CHANGE', params: { requestId, readiness: ev.readiness } }, ...traced.slice(0, SHOWN_MAX)] };
     return { kind: 'adapted', adaptation: { record: toEnvelope('session_record', record), changes, reasons: [...extra, ...traced].slice(0, ADAPTATION_REASONS_MAX) }, reasons: [...base, ...extra, { code: 'KAIRO.CHECKIN_SESSION_ADAPTED', params: { requestId, changes: changes.length } }] };
   };
-  /** Adaptation de la séance PERSISTÉE par le CORE ; la dose selon l'état n'y est jamais appliquée (tracée). */
+  /**
+   * Adaptation de la séance PERSISTÉE par le CORE (douleur) puis, en Musculation, règle d'état du moteur Strength
+   * appliquée au seul effort visé (RC3.1 A1, `applyReadinessToPersisted`) ; tout refus est tracé, jamais silencieux.
+   */
   const persisted = (cause: string): StartDecision | null => {
     const a = adaptPersistedSession(state, requestId, ev, env);
     if (a.status !== 'adapted') return null;
-    // Rien à changer (aucune zone concernée) : la séance n'est pas « adaptée » ; seul l'état non appliqué est tracé.
-    if (a.changes.length === 0) return ev.readiness === 'caution' || ev.readiness === 'reduce' ? notApplied('readiness_requires_reproducible_session') : { kind: 'unchanged', reasons: [...base, { code: 'KAIRO.CHECKIN_NO_CHANGE', params: { requestId, readiness: ev.readiness } }] };
-    const readinessNote = ev.readiness === 'caution' || ev.readiness === 'reduce' ? [{ code: 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED', params: { requestId, cause: 'readiness_requires_reproducible_session', readiness: ev.readiness } }] : [];
-    return adapted(a.record, a.changes, [{ code: 'KAIRO.CHECKIN_PERSISTED_ADAPTED', params: { requestId, cause } }, ...readinessNote], a.reasons);
+    const rd = readinessPersisted(state, requestId, a.record, ev, env);
+    const record = rd?.record ?? a.record;
+    const changes = rd?.applied ? sessionChanges(planned, record.session) : a.changes;
+    const readinessReasons = rd?.reasons ?? [];
+    // Rien à changer : la séance n'est pas « adaptée » ; l'état (appliqué sans effet, ou refusé) reste tracé.
+    if (changes.length === 0) {
+      if (rd && !rd.applied) return { kind: 'unchanged', reasons: [...base, ...readinessReasons] };
+      return { kind: 'unchanged', reasons: [...base, ...readinessReasons, { code: 'KAIRO.CHECKIN_NO_CHANGE', params: { requestId, readiness: ev.readiness } }] };
+    }
+    return adapted(record, changes, [...(a.changes.length > 0 ? [{ code: 'KAIRO.CHECKIN_PERSISTED_ADAPTED', params: { requestId, cause } }] : []), ...readinessReasons], a.reasons);
   };
   const regen = regenerateSession(state, requestId, coreStateOf(ev.readiness, ev.reports), env);
   if (regen.status === 'not_regenerable') {
-    // Séance non régénérable (non placée, HYROX) : adaptation de la séance persistée si une zone l'impose, sinon gardée.
-    if (!mustChange) return notApplied(regen.cause);
+    // Séance non régénérable (non placée, HYROX) : adaptation de la séance persistée si une zone l'impose (ou, en
+    // Musculation, si l'état du jour le demande : RC3.1 A1), sinon gardée.
+    if (!mustChange) return (readinessApplies(state, requestId, ev) ? persisted(regen.cause) : null) ?? notApplied(regen.cause);
     return persisted(regen.cause) ?? postponed([], { cause: regen.cause, exercises: hits.map((x) => x.exerciseId) });
   }
   const baseline = regenerateSession(state, requestId, UNKNOWN_CORE_STATE, env);
@@ -231,7 +272,8 @@ export function decideStart(state: AppState, requestId: string, planned: Session
   // aucune zone exclue n'est sollicitée, séance gardée ; sinon recomposition SIGNALÉE, ou report.
   const p = persisted('session_not_reproducible');
   if (p) return p;
-  if (!mustChange) return notApplied('session_not_reproducible');
+  // Zone exclue sollicitée : jamais « inchangée » (recomposition signalée ou report ci-dessous), état du jour compris.
+  if (!mustChange) return notApplied(readinessApplies(state, requestId, ev) ? 'readiness_persisted_session_unavailable' : 'session_not_reproducible');
   const recomposed = [{ code: 'KAIRO.CHECKIN_SESSION_RECOMPOSED', params: { requestId, cause: 'session_not_reproducible' } }];
   if (regen.status === 'refused') return postponed(regen.reasons.filter((x) => SHOWN.test(x.code) || /REFUSED|NO_VALID|UNAVAILABLE|BLOCKING_NEED/.test(x.code)).slice(0, SHOWN_MAX));
   return adapted(regen.record, sessionChanges(planned, regen.record.session), recomposed, regen.reasons.filter((x) => SHOWN.test(x.code)));

@@ -234,6 +234,17 @@ const NEED_LABELS: Readonly<Record<string, string>> = {
   knee_dominant: 'mouvement dominante genou (squat)', hip_dominant: 'mouvement dominante hanche', lunge: 'fente', core: 'gainage',
 };
 
+/** RC3.1 A1 — pourquoi l'effort d'un exercice n'est pas ajusté (aucun code affiché). */
+const READINESS_REFUSALS: Readonly<Record<string, string>> = {
+  load_derived_from_effort: 'sa charge est calculée à partir de l’effort : elle n’est jamais modifiée ici',
+  trace_unavailable: 'détail de la prescription indisponible',
+  trace_inconsistent: 'prescription différente de la règle du moteur',
+  dose_profile_unreadable: 'règle de dosage illisible pour cet exercice',
+  effort_floor_reached: 'effort de référence non retrouvable',
+  effort_unreadable: 'effort non indiqué',
+  readiness_already_applied: 'état déjà pris en compte à la planification',
+};
+
 /** Raisons d'une décision du contrôle, en clair (codes inconnus ignorés : jamais de code brut affiché). */
 /** Douleurs connues (« zone:niveau ») en clair. */
 export function knownPainText(areas: readonly string[]): string {
@@ -253,7 +264,14 @@ export function checkInReasonsText(reasons: readonly { readonly code: string; re
       case 'KAIRO.CHECKIN_PAIN_ESCALATED': return ['Douleur signalée à plusieurs reprises : elle est traitée avec plus de prudence.'];
       case 'KAIRO.CHECKIN_PERSISTED_ADAPTED': return ['Séance prévue conservée et ajustée à votre douleur : seuls les exercices concernés sont remplacés ou retirés.'];
       case 'KAIRO.CHECKIN_SESSION_RECOMPOSED': return ['Séance recomposée avec votre historique récent : certains changements ne sont pas liés à la douleur déclarée.'];
+      // RC3.1 A1 — état du jour appliqué à la séance prévue (effort seulement), refus expliqués exercice par exercice.
+      case 'KAIRO.CHECKIN_READINESS_PERSISTED': return [
+        `Fatigue ou récupération prise en compte : effort visé allégé sur la séance prévue (mêmes exercices, séries et charges).${Number(p.setsDeltaNotApplied) < 0 ? ' La règle prévoit aussi une série de moins : elle n’est pas appliquée à une séance déjà prévue.' : ''}`,
+      ];
+      case 'KAIRO.CHECKIN_READINESS_EXERCISE_REFUSED': return [`${exerciseLabel(s(p.exerciseId))} : effort non ajusté (${READINESS_REFUSALS[s(p.cause)] ?? 'ajustement impossible sans modifier la séance'}).`];
       case 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED': if (p.cause === 'readiness_requires_reproducible_session') return ['Fatigue ou récupération enregistrée : l’effort de cette séance n’est pas ajusté automatiquement ; écoutez vos sensations.'];
+        if (p.cause === 'readiness_not_applicable_persisted') return ['Fatigue ou récupération enregistrée : aucun exercice de cette séance ne peut être allégé sans changer sa charge ; écoutez vos sensations.'];
+        if (p.cause === 'readiness_persisted_session_unavailable' || p.cause === 'readiness_rule_unreadable') return ['Fatigue ou récupération enregistrée : l’effort de cette séance ne peut pas être ajusté automatiquement ; écoutez vos sensations.'];
         if (p.cause === 'session_not_reproducible') return ['État du jour enregistré : la séance prévue est gardée telle quelle (elle ne peut plus être recomposée à l’identique ; aucun ajustement automatique).'];
         return ['État du jour enregistré : cette séance n’est pas ajustée automatiquement (aucune règle d’adaptation pour ce type de séance).'];
       case 'KAIRO.CHECKIN_NO_CHANGE': return ['État du jour pris en compte : aucun changement nécessaire.'];

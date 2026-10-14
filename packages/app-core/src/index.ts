@@ -21,5 +21,6 @@ export * from './hr-workout.js';
 export * from './field.js';
 export * from './checkin.js';
 export * from './start-check.js';
+export * from './readiness-persisted.js';
 export * from './equipment.js';
 export * from './strength-insight.js';

@@ -1,7 +1,7 @@
 /** Présentation Beta 0 : libellés des archétypes Strength composés par le moteur et refus de composition expliqué. */
 import { describe, expect, it } from 'vitest';
 import type { SessionView } from '@hybridsport/app-core';
-import { notPlannedText, roleName, sessionName } from '../src/present.js';
+import { checkInReasonsText, notPlannedText, roleName, sessionName } from '../src/present.js';
 
 describe('présentation Strength S1', () => {
   it('libellés lisibles des archétypes composés (aucun identifiant technique) ; le rôle de rotation n’est pas affiché', () => {
@@ -30,5 +30,16 @@ describe('présentation Strength S1', () => {
     const tried = (t: string) => ({ code: 'PLAN.HYROX.H2_NO_STRUCTURE', params: { role: 'x', tried: [t] } });
     expect(notPlannedText(v('hyrox', 'engine_refused', tried('run_station_alternation:3x2:EXCEEDS_AVAILABLE_TIME'), 'engine_refused'))).toMatch(/temps disponible ce jour-là : augmentez/);
     expect(notPlannedText(v('hyrox', 'engine_refused', tried('run_station_alternation:3x2:STATIONS_UNFILLED:1/2'), 'engine_refused'))).toMatch(/matériel déclaré/);
+  });
+
+  it('RC3.1 A1 — état du jour sur la séance prévue : effort allégé expliqué, série en moins non appliquée signalée, refus par exercice en clair', () => {
+    const t = checkInReasonsText([
+      { code: 'KAIRO.CHECKIN_READINESS_PERSISTED', params: { requestId: 'r', readiness: 'reduce', rirDelta: 1, adjusted: 3, covered: 0, refused: 1, setsDeltaNotApplied: -1 } },
+      { code: 'KAIRO.CHECKIN_READINESS_EXERCISE_REFUSED', params: { requestId: 'r', exerciseId: 'ex.bench_press', cause: 'load_derived_from_effort' } },
+    ]);
+    expect(t[0]).toMatch(/effort visé allégé sur la séance prévue \(mêmes exercices, séries et charges\)\. La règle prévoit aussi une série de moins : elle n’est pas appliquée/);
+    expect(t[1]).toMatch(/: effort non ajusté \(sa charge est calculée à partir de l’effort : elle n’est jamais modifiée ici\)\.$/);
+    expect(t.join(' ')).not.toMatch(/load_derived|KAIRO/);
+    expect(checkInReasonsText([{ code: 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED', params: { cause: 'readiness_not_applicable_persisted' } }])[0]).toMatch(/aucun exercice de cette séance ne peut être allégé sans changer sa charge/);
   });
 });
