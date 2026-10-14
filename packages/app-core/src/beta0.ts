@@ -35,6 +35,7 @@ import { addDays, daysBetween, weekStartOf } from './dates.js';
 import type { AppState, EnvironmentAuthority, PersistedWeek, Profile, Reason, Sport } from './model.js';
 import { STIMULUS_BY_GOAL } from './planner.js';
 import { CT_INTENT_LABELS, HR_ROLE_LABELS } from './labels.js';
+import { RUNNING_TEST_FALLBACK } from './programme.js';
 import type { ProgrammeEnvironment } from './programme.js';
 import { runningContent, strengthContent } from './provisional-content.js';
 
@@ -506,6 +507,11 @@ export interface Beta0WeekView {
   readonly planning: (WeekPlanning & { readonly replannedAt: string | null }) | null;
   /** Adhérence DESCRIPTIVE (comptes, aucun seuil) ; null si la semaine n'est pas planifiée. */
   readonly adherence: Adherence | null;
+  /**
+   * A2 — TEST Running demandé mais refusé par le moteur pour cette semaine : la séance habituelle du moteur a été gardée
+   * à la place (cause donnée par le moteur, ex. `OBSERVED_PACE_UNAVAILABLE`). Null : aucun repli.
+   */
+  readonly runningTestFallback: { readonly cause: string; readonly at: string } | null;
 }
 
 const INFORMATIVE = /^PLAN\.PLANNER\./;
@@ -656,7 +662,13 @@ export function selectBeta0Week(state: AppState, today: string, weekIndex?: numb
     authority, experimental: week ? isExperimental(authority) : true, simulation: [...(week?.simulation ?? [])],
     sessions, days, adherence: pw ? (pw.adherence?.total ?? adherenceOf(pw.requests, ps.results)) : null,
     planning: planningOf(state, start, today),
+    runningTestFallback: runningTestFallbackOf(ps, i),
   };
+}
+
+function runningTestFallbackOf(ps: ProgrammeState, i: number): Beta0WeekView['runningTestFallback'] {
+  const a = ps.audit.filter((x) => x.weekIndex === i && x.reason.code === RUNNING_TEST_FALLBACK).at(-1);
+  return a ? { cause: String(a.reason.params.cause ?? 'UNKNOWN'), at: a.at } : null;
 }
 
 function planningOf(state: AppState, weekStart: string, today: string): Beta0WeekView['planning'] {

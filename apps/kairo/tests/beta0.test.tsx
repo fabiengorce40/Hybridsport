@@ -217,6 +217,23 @@ describe('Profil Course : niveau actuel, objectif, TEST', () => {
     expect(saved(storage).running.references.map((r) => [r.type, r.values.distanceM])).toEqual([['RACE_RESULT', 5000], ['TIME_TRIAL', 3000]]);
     expect(screen.getAllByLabelText(/(Course officielle|Chrono) du/)).toHaveLength(2);
   });
+
+  it('RC3.1 A2 — test demandé SANS distance : avertissement à la saisie, puis course facile conservée et repli expliqué (aucune séance perdue)', () => {
+    const storage = new MemoryStorage();
+    onboardCourse(storage, () => {
+      fireEvent.change(screen.getByLabelText('Distance (km)'), { target: { value: '' } });
+      fireEvent.click(screen.getByLabelText(/Je n’ai pas de chrono récent/));
+      expect(document.querySelector('[data-test-needs-distance]')?.textContent).toMatch(/AVEC sa distance/);
+    });
+    const st = saved(storage);
+    expect(st.programmeState?.assessments).toEqual([expect.objectContaining({ sport: 'running', status: 'not_planned' })]);
+    const w = selectBeta0Week(st, MONDAY);
+    expect(w?.sessions.filter((x) => x.sport === 'running' && x.status !== 'planned')).toEqual([]);
+    expect(document.querySelector('[data-test-fallback]')?.textContent).toMatch(/Test chronométré non programmé cette semaine : aucune course récente avec sa distance.*course facile, sans allure imposée/);
+    click('Planning');
+    expect(screen.queryAllByText('TEST')).toHaveLength(0);
+    expect(document.querySelector('[data-test-fallback="OBSERVED_PACE_UNAVAILABLE"]')).not.toBeNull();
+  });
 });
 
 describe('durée du programme', () => {

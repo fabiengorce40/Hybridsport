@@ -240,6 +240,9 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
               {perfs.length === 0 && (
                 <label className="check"><input type="checkbox" checked={noChrono} onChange={(e) => setNoChrono(e.target.checked)} />Je n’ai pas de chrono récent : programmer un test chronométré</label>
               )}
+              {perfs.length === 0 && noChrono && (runMin === '' || runKm === '') && (
+                <p className="tiny" data-test-needs-distance style={{ margin: 0 }}>Le test a besoin d’une course récente AVEC sa distance (ci-dessous). Sans elle, une course facile sera prévue à la place et vous pourrez redemander le test plus tard.</p>
+              )}
               <h3>Votre dernière course</h3>
               <p className="tiny" style={{ margin: 0 }}>Les séances de course reprennent ce que vous avez réellement couru. Sans course récente, elles ne pourront pas être proposées.</p>
               <div className="row">

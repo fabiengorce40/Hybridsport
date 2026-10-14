@@ -35,6 +35,21 @@ export function weekPlanningText(p: Beta0WeekView['planning']): string | null {
   return null;
 }
 
+/**
+ * A2 — TEST chronométré demandé mais refusé par le moteur Running : la séance habituelle (course facile) a été gardée.
+ * Cause lue du moteur ; le texte dit quoi faire pour que le test devienne possible.
+ */
+export function runningTestFallbackText(f: Beta0WeekView['runningTestFallback']): string | null {
+  if (!f) return null;
+  const why = f.cause === 'OBSERVED_PACE_UNAVAILABLE'
+    ? 'aucune course récente avec sa distance n’est enregistrée (elle sert à estimer la durée du test).'
+    : `le moteur de course ne peut pas le prescrire pour l’instant (${f.cause}).`;
+  const next = f.cause === 'OBSERVED_PACE_UNAVAILABLE'
+    ? ' Notez la distance de vos prochaines courses, puis redemandez le test depuis le profil Course.'
+    : ' Vous pourrez le redemander depuis le profil Course.';
+  return `Test chronométré non programmé cette semaine : ${why} Votre séance de course est conservée en course facile, sans allure imposée.${next}`;
+}
+
 /** Rôle de la séance dans la semaine Running (composition du moteur), libellé lisible. */
 export const roleName = (role: string | null): string | null => (role && role !== 'LOCKED' && role !== 'EASY' ? RUNNING_ROLE_LABELS[role] ?? null : null);
 
