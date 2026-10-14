@@ -50,7 +50,11 @@ export interface Beta0ProgrammeOptions {
    */
   readonly runningTargetDate?: string;
   /** Dernière course réelle déclarée (base de la dose Running : aucune dose de départ n'est validée). */
-  readonly lastRun?: { readonly realizedDurationS: number; readonly distanceM?: number; readonly difficulty: Feedback['difficulty'] };
+  readonly lastRun?: {
+    readonly realizedDurationS: number; readonly distanceM?: number; readonly difficulty: Feedback['difficulty'];
+    /** RC3.4 — date RÉELLE de cette course (AAAA-MM-JJ), facultative ; absente ⇒ comportement antérieur (jamais inventée). */
+    readonly date?: string;
+  };
   /** Performances récentes OBSERVÉES (profil Course) : références du moteur Running, jamais l'objectif. */
   readonly performances?: readonly DeclaredPerformance[];
   /** « Je n'ai pas de chrono récent » : TEST demandé au programme dès la première semaine (mécanisme d'évaluation). */
@@ -102,7 +106,7 @@ export function createBeta0Programme(state: AppState, input: ProfileInput, clock
   const profile = beta0Profile(input);
   let s: AppState = { ...state, profile };
   if (o.lastRun && profile.running.enabled) {
-    s = logFreeRun(s, { realizedDurationS: o.lastRun.realizedDurationS, completion: 'COMPLETED', difficulty: o.lastRun.difficulty, pain: false, ...(o.lastRun.distanceM !== undefined ? { distanceM: o.lastRun.distanceM } : {}) }, clock);
+    s = logFreeRun(s, { realizedDurationS: o.lastRun.realizedDurationS, completion: 'COMPLETED', difficulty: o.lastRun.difficulty, pain: false, ...(o.lastRun.distanceM !== undefined ? { distanceM: o.lastRun.distanceM } : {}), ...(o.lastRun.date !== undefined ? { completedOn: o.lastRun.date } : {}) }, clock);
   }
   if (profile.running.enabled) for (const x of o.performances ?? []) s = declareRunningPerformance(s, clock, x);
   return startFromProfile(s, clock, o, weekStartOf(clock.today), env);

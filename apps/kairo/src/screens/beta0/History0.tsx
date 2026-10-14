@@ -35,7 +35,8 @@ export function History0({ onOpen }: { onOpen: (id: string) => void }) {
   return (
     <div className="screen">
       <h1 className="screen-title">Historique</h1>
-      {state.profile?.running.enabled && <FreeRunEntry />}
+      {/* RC3.4 — aussi pour un profil HYROX sans Course : historique de course seulement, sans effet sur HYROX. */}
+      {(state.profile?.running.enabled || state.profile?.hyrox.enabled) && <FreeRunEntry />}
       {entries.length === 0 && freeRuns.length === 0 && <div className="empty">Aucune séance terminée pour l’instant.</div>}
       {items.map(({ e, r }) => (r ? <FreeRunCard key={r.sessionId} r={r} /> : e && (
         <button key={e.requestId} className="card button-card" onClick={() => onOpen(e.requestId)}>

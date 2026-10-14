@@ -212,6 +212,7 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   RUN_DATE_INVALID: 'Date ou heure invalide.',
   RUN_IN_FUTURE: 'Cette course se terminerait dans le futur : vérifiez la date, l’heure de départ et la durée.',
   RUN_NOTE_TOO_LONG: 'Commentaire trop long (280 caractères au plus).',
+  FREE_RUN_UNKNOWN: 'Cette course n’existe plus ou ne peut pas être modifiée ici (seules les courses libres le sont).',
   BETA_RESET_NOT_CONFIRMED: 'Recréation annulée : confirmation absente. Rien n’a été modifié.',
   BETA_RESET_NOT_ALLOWED: 'Cet outil de test n’est disponible que dans la Beta expérimentale. Rien n’a été modifié.',
   PROGRAMME_MISSING: 'Aucun programme à recréer.',

@@ -416,6 +416,11 @@ export const zAppState = z.object({
      * seulement : la course elle-même reste au contrat Running (`realized`), jamais dupliquée. Absent ⇒ vide.
      */
     notes: z.record(z.string(), z.string()).optional(),
+    /**
+     * RC3.4 — courses libres dont seule la DATE est connue (dernière course déclarée à l'onboarding) : l'instant
+     * enregistré suit la convention de jour de l'application ; l'heure n'est jamais affichée ni présentée comme réelle.
+     */
+    timeUnknown: z.array(z.string()).optional(),
   }).strict(),
   /**
    * Cross-training (C2) : séances réalisées, conservées TELLES QUELLES (complétion déclarée comprise). Leur contrat est

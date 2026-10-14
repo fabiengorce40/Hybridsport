@@ -170,6 +170,8 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const [runMin, setRunMin] = useState('');
   const [runKm, setRunKm] = useState('');
   const [runFeel, setRunFeel] = useState<Feedback['difficulty']>('AS_EXPECTED');
+  // RC3.4 — date RÉELLE de la dernière course, facultative (absente : comportement antérieur, aucune date inventée).
+  const [runDate, setRunDate] = useState('');
   const [perfs, setPerfs] = useState<DeclaredPerformance[]>([]);
   const [addingPerf, setAddingPerf] = useState(false);
   const [noChrono, setNoChrono] = useState(false);
@@ -177,7 +179,8 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const set = (f: (x: ProfileInput) => ProfileInput) => setP(f);
   const first = p.priorities[0] === 'running' ? 'running' : 'strength';
   const km = runKm === '' ? undefined : Number(runKm);
-  const lastRunOk = runMin === '' ? runKm === '' : Number(runMin) > 0 && (km === undefined || (Number.isFinite(km) && km > 0));
+  const runDateOk = runDate === '' || (/^\d{4}-\d{2}-\d{2}$/.test(runDate) && runDate <= store.clock().today);
+  const lastRunOk = (runMin === '' ? runKm === '' && runDate === '' : Number(runMin) > 0 && (km === undefined || (Number.isFinite(km) && km > 0))) && runDateOk;
   const dateOk = targetDate === '' || (/^\d{4}-\d{2}-\d{2}$/.test(targetDate) && targetDate >= store.clock().today);
   const dated = p.running.enabled && p.running.goal !== 'GENERAL_RUNNING' && targetDate !== '' && dateOk;
   const ctOk = !p.crosstraining.enabled || (p.crosstraining.intent !== undefined && p.crosstraining.sessionsPerWeek !== undefined && p.crosstraining.returnState !== undefined);
@@ -193,7 +196,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const blockers: string[] = step === 0 ? (accepted ? [] : ['Cochez « J’ai compris » pour commencer.'])
     : step === 1 ? (choice === null ? ['Choisissez au moins un sport.'] : [])
       : step === 2 ? [
-        ...(lastRunOk ? [] : ['Dernière course : indiquez la durée en minutes (la distance seule ne suffit pas), ou videz les deux champs.']),
+        ...(lastRunOk ? [] : [runDateOk ? 'Dernière course : indiquez la durée en minutes (la distance ou la date seules ne suffisent pas), ou videz ces champs.' : 'Dernière course : la date ne peut pas être dans le futur.']),
         ...(dateOk ? [] : ['Date de l’objectif : choisissez une date à venir, ou laissez le champ vide.']),
         ...(strengthOk ? [] : ['Musculation : choisissez un nombre de séances pris en charge.']),
         ...(p.crosstraining.enabled ? missing('Cross-training', [[p.crosstraining.intent !== undefined, 'choisissez une intention'], [p.crosstraining.sessionsPerWeek !== undefined, 'le nombre de séances par semaine'], [p.crosstraining.returnState !== undefined, 'indiquez une éventuelle coupure récente']]) : []),
@@ -210,7 +213,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
       ...(p.running.enabled && perfs.length > 0 ? { performances: perfs } : {}),
       ...(p.running.enabled && perfs.length === 0 && noChrono ? { requestTest: true } : {}),
       ...(p.running.enabled && targetDate && p.running.goal !== 'GENERAL_RUNNING' ? { runningTargetDate: targetDate } : {}),
-      ...(p.running.enabled && runMin !== '' ? { lastRun: { realizedDurationS: Number(runMin) * 60, ...(km !== undefined ? { distanceM: km * 1000 } : {}), difficulty: runFeel } } : {}),
+      ...(p.running.enabled && runMin !== '' ? { lastRun: { realizedDurationS: Number(runMin) * 60, ...(km !== undefined ? { distanceM: km * 1000 } : {}), difficulty: runFeel, ...(runDate !== '' ? { date: runDate } : {}) } } : {}),
     };
     // P1 — matériel : choix explicite CONFIRMÉ (horodaté) ; sans sport à matériel et sans choix, aucun matériel supposé.
     const withEquipment = (c: { now: string }): ProfileInput => needsEquipment(p)
@@ -310,6 +313,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
                 <label className="field">Durée (min)<input inputMode="numeric" value={runMin} placeholder="ex. 30" onChange={(e) => setRunMin(e.target.value.replace(/[^0-9]/g, ''))} /></label>
                 <label className="field">Distance (km)<input inputMode="decimal" value={runKm} placeholder="facultatif" onChange={(e) => setRunKm(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))} /></label>
               </div>
+              <label className="field">Date de cette course (facultatif)<input type="date" max={store.clock().today} value={runDate} onChange={(e) => setRunDate(e.target.value)} /></label>
               {runMin !== '' && (
                 <label className="field">Ressenti
                   <select value={runFeel} onChange={(e) => setRunFeel(e.target.value as Feedback['difficulty'])}>
