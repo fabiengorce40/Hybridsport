@@ -16,12 +16,12 @@
  * refusées par les lecteurs gouvernés (fail-closed) et un environnement `production` qui en porte est refusé.
  */
 import { strengthWeekInsights } from './strength-insight.js';
-import { CURRENT_RUNNING_GOVERNANCE, ARCHETYPE_INTENT_IDS, createRunningEngine, withProductDecisions } from '@hybridsport/running';
+import { CURRENT_RUNNING_GOVERNANCE, ARCHETYPE_INTENT_IDS, createRunningEngine, runningReasons, withProductDecisions } from '@hybridsport/running';
 import type { RunningGovernance } from '@hybridsport/running';
-import { requirePlannerProvenance } from '@hybridsport/planner';
-import { StrengthEngine, STRENGTH_WEEKLY_COMPOSITION_CANDIDATE, goalKey, readStrengthParams } from '@hybridsport/strength';
+import { gpReasons, requirePlannerProvenance } from '@hybridsport/planner';
+import { StrengthEngine, STRENGTH_WEEKLY_COMPOSITION_CANDIDATE, goalKey, readStrengthParams, strengthReasons } from '@hybridsport/strength';
 import type { SportEngine } from '@hybridsport/engine';
-import { adherenceOf, weekIndexOf, weekStartAt, weekStatus, withinProgramme } from '@hybridsport/programme';
+import { adherenceOf, pgReasons, weekIndexOf, weekStartAt, weekStatus, withinProgramme } from '@hybridsport/programme';
 import type { Adherence, ProgrammeDefinition, ProgrammeDefinitionInput, ProgrammeResult, ProgrammeState, WeekStatus } from '@hybridsport/programme';
 import { withDemand } from '../../planner/tests/simulation.js';
 import { M3_SIMULATION_IDS, m3Governance } from '../../planner/tests/m3-governance.js';
@@ -334,7 +334,14 @@ export interface SessionView {
    * Séance non planifiée : catégorie, raison principale (codes) et jour ESSAYÉ (information seulement : la séance
    * n'est placée sur aucun jour, `date` est null).
    */
-  readonly notPlanned: { readonly category: string; readonly reason: Reason | null; readonly triedDate: string | null } | null;
+  readonly notPlanned: {
+    /** Catégorie du planificateur (tracée telle quelle). */
+    readonly category: string;
+    /** RC3.1 A8 — catégorie à AFFICHER, déduite de la cause décisive (`missing_data` : une saisie manque). */
+    readonly display: string;
+    readonly reason: Reason | null;
+    readonly triedDate: string | null;
+  } | null;
   readonly pain: boolean;
   /**
    * M3 — arbitrage multisport lisible : séance déplacée (`moved`, jour d'origine), jour échangé (`swapped`), recomposée
@@ -515,7 +522,48 @@ export interface Beta0WeekView {
 }
 
 const INFORMATIVE = /^PLAN\.PLANNER\./;
-const mainReason = (rs: readonly Reason[]): Reason | null => rs.find((r) => !INFORMATIVE.test(r.code)) ?? rs[0] ?? null;
+/** Registres des moteurs accessibles à app-core (Running, Strength, planificateur, programme ; CORE inclus). */
+const REGISTRIES = [runningReasons, strengthReasons, gpReasons, pgReasons];
+const severityOf = (code: string): string | null => REGISTRIES.map((r) => r.definition(code)).find((d) => d !== undefined)?.severity ?? null;
+/** Valeur candidate utilisée : AVERTISSEMENT de maturité (tous sports), jamais une cause de refus. */
+const CANDIDATE_VALUE = /\.CANDIDATE_VALUE_USED$/;
+/**
+ * Semaine antérieure à RC3.1 (aucune cause persistée) : cause la plus probable, d'après la sévérité des registres
+ * accessibles — erreur d'un moteur, puis code de sévérité inconnue (Cross-training, HYROX) hors valeur candidate, puis
+ * erreur du planificateur ; jamais un avertissement s'il existe mieux.
+ */
+const LEGACY_RANK = ['engine_error', 'unknown', 'planner_error', 'other'] as const;
+function legacyMainReason(rs: readonly Reason[]): Reason | null {
+  const rank = (r: Reason): number => {
+    const sev = severityOf(r.code);
+    if (sev === 'error') return LEGACY_RANK.indexOf(INFORMATIVE.test(r.code) ? 'planner_error' : 'engine_error');
+    return LEGACY_RANK.indexOf(sev === null && !CANDIDATE_VALUE.test(r.code) && !INFORMATIVE.test(r.code) ? 'unknown' : 'other');
+  };
+  return [...rs].map((r, k) => ({ r, k })).sort((a, b) => rank(a.r) - rank(b.r) || a.k - b.k)[0]?.r ?? null;
+}
+
+/** Causes résolues par une SAISIE de l'utilisateur (course réalisée, distance, test) : jamais des règles absentes. */
+const MISSING_DATA = new Set(['DOSE.RUNNING.DOSE_ANCHOR_UNAVAILABLE', 'DOSE.RUNNING.TEST_REFUSED', 'DOSE.RUNNING.STRUCTURE_UNAVAILABLE']);
+const isMissingData = (r: Reason): boolean => MISSING_DATA.has(r.code) || (r.code === 'DOSE.RUNNING.FIRST_EXPOSURE_REFUSED' && r.params.cause === 'RECENT_TEST_REQUIRED');
+/** Mêmes familles que le classement du planificateur (refusal.ts), appliquées à la SEULE cause décisive. */
+const GOVERNANCE = /HYBRID_PLANNER_UNAVAILABLE|CAPABILITY_DISABLED|G1_POLICY_UNSIGNED|^RULE\./;
+const SAFETY = /^SAFETY\.|^REPAIR\./;
+/**
+ * RC3.1 A8 — catégorie AFFICHÉE d'une séance non planifiée. Le planificateur classe « gouvernance » tout refus portant
+ * un code `RULE.*`, y compris un simple avertissement de valeur candidate : la catégorie affichée suit la cause
+ * décisive. Donnée manquante ⇒ `missing_data` (dire quoi saisir). La catégorie du planificateur reste tracée telle quelle.
+ */
+function displayCategory(category: string, cause: Reason | null): string {
+  if (!cause) return category;
+  if (isMissingData(cause)) return 'missing_data';
+  if (category === 'governance_blocked' && !GOVERNANCE.test(cause.code)) return SAFETY.test(cause.code) ? 'safety_blocked' : 'engine_refused';
+  return category;
+}
+
+function notPlannedOf(r: PersistedWeek['requests'][number]): NonNullable<SessionView['notPlanned']> {
+  const reason = r.cause ?? legacyMainReason(r.reasons);
+  return { category: r.category, display: displayCategory(r.category, reason), reason, triedDate: r.date ?? null };
+}
 
 /**
  * Archétype réellement PRESCRIT d'une demande persistée : celui du session_record canonique (empreinte de la séance
@@ -584,7 +632,7 @@ export function sessionView(r: PersistedWeek['requests'][number], result: Progra
     role: r.composition?.role ?? null, ctFormat: prescribed && r.sport === 'crosstraining' ? ctFormatOf(session?.blocks) : null,
     hrTimeCapS: prescribed && r.sport === 'hyrox' ? hrTimeCapOf(session?.blocks) : null, compositionAuthority: r.composition?.authority ?? null,
     compositionRule: typeof composition?.rule === 'string' ? `${composition.rule}${typeof composition.version === 'string' ? `@${composition.version}` : ''}` : null,
-    notPlanned: planned ? null : { category: r.category, reason: mainReason(r.reasons), triedDate: r.date ?? null },
+    notPlanned: planned ? null : notPlannedOf(r),
     pain: result?.pain ?? false,
     arbitration: planned ? arbitrationOf(r, sportOf) : null,
     placement: planned ? 'planned' : composed ? 'composed_unplaced' : 'blocked',

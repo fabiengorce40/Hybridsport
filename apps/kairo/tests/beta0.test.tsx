@@ -135,7 +135,8 @@ describe('cohérence Accueil / Planning / selector', () => {
     click('Planning');
     const tuesday = [...document.querySelectorAll('.week .day')].find((d) => d.textContent?.includes('Mar'));
     expect(tuesday?.textContent).toContain('Disponible, aucune séance');
-    expect(screen.getByText('Cette séance n’a pas pu être placée dans vos disponibilités.')).toBeTruthy();
+    // RC3.1 A8 : la cause décisive (temps du créneau dépassé) précise le motif.
+    expect(screen.getByText('Cette séance n’a pas pu être placée dans vos disponibilités. La séance dépasse le temps disponible ce jour-là : elle n’est jamais raccourcie.')).toBeTruthy();
   });
 
   it('états visuels : séance adaptée et course réalisée restent sur leur jour, avec leur état', () => {

@@ -78,10 +78,19 @@ export const NOT_PLANNED_MESSAGES: Readonly<Record<string, string>> = {
   invalid_intent: 'Cette séance n’a pas pu être construite à partir de votre programme.',
   engine_unavailable: 'Ce sport n’est pas disponible.',
   programme_intent_incomplete: 'Le programme ne décrit pas encore cette séance.',
+  // RC3.1 A8 — une SAISIE manque (jamais présenté comme une règle absente).
+  missing_data: 'Une information manque pour construire cette séance.',
 };
 /** Précisions connues pour certaines raisons (aucun code affiché). */
 const REASON_HINTS: Readonly<Record<string, string>> = {
   'DOSE.RUNNING.DOSE_ANCHOR_UNAVAILABLE': 'Enregistrez une course réalisée : la course reprend ce que vous avez réellement fait.',
+  'DOSE.RUNNING.TEST_REFUSED': 'Enregistrez une course récente avec sa distance : elle sert à estimer la durée du test.',
+  'DOSE.RUNNING.STRUCTURE_UNAVAILABLE': 'La structure de votre dernière séance de ce type n’a pas été enregistrée : elle ne peut pas être reprise.',
+  'DOSE.RUNNING.FIRST_EXPOSURE_REFUSED': 'Un test récent est d’abord nécessaire : demandez-le depuis le profil Course.',
+  'FEASIBILITY.TIME_EXCEEDED': 'La séance dépasse le temps disponible ce jour-là : elle n’est jamais raccourcie.',
+  'PLAN.RUNNING.TIME_EXCEEDED': 'La séance dépasse le temps disponible ce jour-là : elle n’est jamais raccourcie.',
+  'DURATION.TARGET_BELOW_ARCHETYPE_MIN': 'Le temps disponible ce jour-là est inférieur à la durée minimale de cette séance.',
+  'PLAN.PLANNER.NOT_ENOUGH_DAYS': 'Il n’y a pas assez de jours disponibles dans la semaine pour toutes les séances demandées.',
   'SCOPE.RUNNING.NOVICE_ENTRY_UNRESOLVED': 'La séance de départ pour débutant en course n’est pas encore validée.',
   // Composition Strength non gouvernée (Beta 0 : fréquence hors des bandes de la règle candidate du moteur Strength).
   'strength:RULE.PLANNER.COMPOSITION_UNRESOLVED': 'Aucune règle validée ne répartit encore ce nombre de séances de musculation dans la semaine : réduisez la fréquence de musculation.',
@@ -138,10 +147,25 @@ export function unplacedText(v: SessionView): string {
     : 'aucun jour disponible n’était assez éloigné des séances qui sollicitent les mêmes zones du corps.';
   return `KAIRO n’a pas trouvé de créneau compatible cette semaine : ${cause} La séance reste disponible.`;
 }
+/**
+ * RC3.1 A8 — Cross-training / HYROX : aucune structure retenue. Les essais du moteur (`tried`) disent pourquoi :
+ * temps disponible, ou matériel (station / mouvement impossible). Lecture seule de la trace, aucune valeur.
+ */
+function structureHint(r: NonNullable<NonNullable<SessionView['notPlanned']>['reason']>): string | undefined {
+  if (r.code !== 'PLAN.HYROX.H2_NO_STRUCTURE' && r.code !== 'PLAN.CROSSTRAINING.C3_NO_FORMAT') return undefined;
+  const tried = Array.isArray(r.params.tried) ? r.params.tried.map(String).join(' ') : '';
+  const time = /EXCEEDS_AVAILABLE_TIME|TIME/.test(tried);
+  const equipment = /EQUIPMENT|STATIONS_UNFILLED|MOVEMENT/.test(tried);
+  if (time && !equipment) return 'Aucun format possible dans le temps disponible ce jour-là : augmentez la durée de ce jour dans vos disponibilités.';
+  if (equipment && !time) return 'Aucun format possible avec le matériel déclaré : vérifiez votre lieu d’entraînement.';
+  return time && equipment ? 'Aucun format possible avec le temps disponible et le matériel déclarés.' : undefined;
+}
+
 export function notPlannedText(v: SessionView): string {
-  const base = NOT_PLANNED_MESSAGES[v.notPlanned?.category ?? ''] ?? 'Cette séance n’a pas pu être planifiée.';
-  const code = v.notPlanned?.reason?.code;
-  const hint = code ? REASON_HINTS[`${v.sport}:${code}`] ?? REASON_HINTS[code] : undefined;
+  const np = v.notPlanned;
+  const base = NOT_PLANNED_MESSAGES[np?.display ?? np?.category ?? ''] ?? 'Cette séance n’a pas pu être planifiée.';
+  const r = np?.reason;
+  const hint = r ? REASON_HINTS[`${v.sport}:${r.code}`] ?? REASON_HINTS[r.code] ?? structureHint(r) : undefined;
   return hint ? `${base} ${hint}` : base;
 }
 

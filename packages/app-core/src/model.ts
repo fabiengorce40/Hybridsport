@@ -273,6 +273,12 @@ export const zPersistedWeek = z.object({
     quality: z.object({ verdict: z.enum(['ACCEPTABLE', 'ACCEPTABLE_WITH_WARNINGS', 'BLOCKED', 'UNRESOLVED']), criteria: z.array(z.string().min(1)) }).strict().optional(),
     neighbourContext: z.object({ known: z.boolean(), neighbours: z.array(z.object({ sport: z.enum(SPORTS), discipline: z.string(), stimulus: z.string(), hoursFromThisSession: z.number(), demand: z.record(z.string(), z.string()), importance: z.enum(['key', 'standard', 'unknown']).optional() }).strict()) }).strict().optional(),
     reasons: z.array(zReason),
+    /**
+     * RC3.1 A8 — cause DÉCISIVE d'une demande non planifiée : première raison de sévérité « error » d'un moteur (à
+     * défaut, du planificateur), extraite à la planification, seul moment où la sévérité des codes est connue pour
+     * tous les sports. Absente : demande planifiée, aucune erreur tracée, ou semaine antérieure à RC3.1.
+     */
+    cause: zReason.optional(),
   }).strict()),
   conflicts: z.array(zReason),
   governance: z.array(zReason),
