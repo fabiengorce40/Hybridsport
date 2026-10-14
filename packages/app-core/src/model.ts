@@ -299,6 +299,11 @@ export const zRest = z.object({
   exerciseId: z.string().min(1),
   /** En pause : secondes restantes figées. */
   pausedRemainingS: z.number().nonnegative().optional(),
+  /**
+   * Nature de la série validée qui a déclenché ce repos (affichage seulement) : `rampup` = série de montée en charge,
+   * `working` = série de travail. Absent dans les états enregistrés avant ce champ.
+   */
+  setKind: z.enum(['rampup', 'working']).optional(),
 }).strict();
 export type Rest = z.infer<typeof zRest>;
 

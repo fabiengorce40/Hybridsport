@@ -124,6 +124,10 @@ export function ExerciseCard({ number, item, block, log, editable, current, onRe
   const working = sets.filter((s) => s.kind !== 'rampup');
   const warmups = sets.length - working.length;
   const first = working[0] ?? sets[0];
+  // Repos PRESCRITS par le moteur (jamais recalculés) : la montée en charge a son propre repos, affiché à part.
+  const rampRest = sets.find((s) => s.kind === 'rampup')?.restAfterS ?? 0;
+  const workRest = working[0]?.restAfterS ?? 0;
+  const splitRest = warmups > 0 && rampRest > 0 && rampRest !== workRest;
   const labels = setLabels(sets);
   const saved = (i: number) => log?.sets.find((x) => x.itemId === item.id && x.setIndex === i);
   const complete = sets.every((_, i) => saved(i)?.done === true);
@@ -152,9 +156,15 @@ export function ExerciseCard({ number, item, block, log, editable, current, onRe
           <h2 className="k-ex-name">{name}</h2>
           <div className="k-ex-sub">
             {BLOCK_LABELS[block.kind] ?? 'Bloc'}<span className="sep">·</span>{working.length} série{working.length > 1 ? 's' : ''}
-            {first && first.restAfterS > 0 ? <><span className="sep">·</span>repos {clockOf(first.restAfterS)}</> : null}
+            {!splitRest && first && first.restAfterS > 0 ? <><span className="sep">·</span>repos {clockOf(first.restAfterS)}</> : null}
             {block.format === 'sets' && block.grouping !== 'straight' ? <><span className="sep">·</span>{block.grouping === 'superset' ? 'superset' : 'circuit'}</> : null}
           </div>
+          {splitRest && (
+            <div className="k-ex-sub" data-rest-split>
+              <div data-rest="rampup">Repos montée en charge : {clockOf(rampRest)}</div>
+              {workRest > 0 ? <div data-rest="working">Repos séries de travail : {clockOf(workRest)}</div> : null}
+            </div>
+          )}
         </div>
       </div>
       {swap?.substituteId && <div className="small" data-swap="substituted">Remplace {exerciseLabel(swap.fromExerciseId)} (matériel indisponible) · même séries et répétitions, charge à choisir selon l’effort indiqué.</div>}

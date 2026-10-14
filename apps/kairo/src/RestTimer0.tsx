@@ -40,7 +40,7 @@ export function RestTimer0({ rest, now, onAction }: { rest: Rest | null; now: ()
           <svg viewBox="0 0 76 76"><circle className="track" cx="38" cy="38" r={R} /><circle className="value" cx="38" cy="38" r={R} strokeDasharray={CIRC} strokeDashoffset={over ? 0 : CIRC * (1 - frac)} /></svg>
         </div>
         <div style={{ minWidth: 0, flex: 1 }}>
-          <div className="k-rest-label">{paused ? 'Repos en pause' : over ? 'Repos terminé' : 'REPOS'}</div>
+          <div className="k-rest-label">{paused ? 'Repos en pause' : over ? 'Repos terminé' : rest.setKind === 'rampup' ? 'REPOS MONTÉE EN CHARGE' : rest.setKind === 'working' ? 'REPOS SÉRIE DE TRAVAIL' : 'REPOS'}</div>
           <div className={`k-rest-time ${over ? 'over' : ''}`} aria-label={`${over ? 'Dépassé de' : 'Reste'} ${mm} min ${ss} s`}>{over ? '+' : ''}{mm}:{ss}</div>
           <div className="k-rest-ex">{exerciseLabel(rest.exerciseId)}</div>
         </div>

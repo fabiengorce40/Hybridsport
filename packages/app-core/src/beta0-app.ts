@@ -603,7 +603,8 @@ export function recordCtBlock(state: AppState, requestId: string, blockId: strin
 
 /**
  * Série RÉELLEMENT faite (répétitions et charge saisies) cochée ou décochée. Cochée : chrono de repos démarré sur
- * le repos PRESCRIT par le moteur pour cette série (échéance horodatée). Jamais de série supposée faite.
+ * le repos PRESCRIT par le moteur pour CETTE série (échéance horodatée) : repos de montée en charge après une série
+ * de montée, repos de travail après une série de travail. Jamais de série supposée faite.
  */
 export function recordProgrammeSet(state: AppState, clock: Clock, requestId: string, set: SetLog): AppState {
   const log = openLog(state, requestId);
@@ -617,7 +618,7 @@ export function recordProgrammeSet(state: AppState, clock: Clock, requestId: str
     .sort((a, b) => (a.itemId < b.itemId ? -1 : a.itemId > b.itemId ? 1 : a.setIndex - b.setIndex));
   const now = Date.parse(clock.now);
   const rest: Rest | null = set.done && prescribed.restAfterS > 0
-    ? { endsAt: normalizeInstant(new Date(now + prescribed.restAfterS * MS_PER_S).toISOString()), totalS: prescribed.restAfterS, exerciseId: item.exerciseId }
+    ? { endsAt: normalizeInstant(new Date(now + prescribed.restAfterS * MS_PER_S).toISOString()), totalS: prescribed.restAfterS, exerciseId: item.exerciseId, setKind: prescribed.kind === 'rampup' ? 'rampup' : 'working' }
     : log.rest;
   return withLog(state, { ...log, sets, rest });
 }
