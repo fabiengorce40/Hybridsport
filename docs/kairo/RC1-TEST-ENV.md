@@ -10,6 +10,19 @@
 - **Ce qui est ajouté :** un **canal de distribution** de l'interface, actif seulement à la construction de la
   version de test.
 
+## Adresse de l'environnement de test (déployé le 2026-10-14)
+
+- **Adresse stable :** https://kairo-rc1-test.pages.dev (projet Cloudflare Pages `kairo-rc1-test`, branche `main`).
+- **Adresse de ce déploiement :** https://103f5fcb.kairo-rc1-test.pages.dev (commit `849ccee`).
+- **Exécution :** run GitHub Actions 38528201782.
+  - Job `deploy` : `pnpm check`, build de test, création du projet, déploiement.
+  - Job `verify` : `version.json` = ce commit, canal `rc1-test` ; isolation et E2E complet **sur l'adresse HTTPS
+    déployée**, « E2E RC1 TEST OK ».
+- **Production inchangée après le déploiement :**
+  - `gh-pages` toujours `7bf4a77` ;
+  - branche de production toujours `f9f7e2e` ;
+  - aucune nouvelle exécution de `kairo-pages.yml`.
+
 ## 1. Hébergement
 
 ### 1.1 Options étudiées
