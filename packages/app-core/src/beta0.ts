@@ -36,6 +36,7 @@ import type { AppState, EnvironmentAuthority, PersistedWeek, Profile, Reason, Sp
 import { STIMULUS_BY_GOAL } from './planner.js';
 import { CT_INTENT_LABELS, HR_ROLE_LABELS } from './labels.js';
 import { RUNNING_TEST_FALLBACK } from './programme.js';
+import { HISTORY_COMPACTED } from './history.js';
 import type { ProgrammeEnvironment } from './programme.js';
 import { runningContent, strengthContent } from './provisional-content.js';
 
@@ -532,9 +533,11 @@ const CANDIDATE_VALUE = /\.CANDIDATE_VALUE_USED$/;
  * accessibles — erreur d'un moteur, puis code de sévérité inconnue (Cross-training, HYROX) hors valeur candidate, puis
  * erreur du planificateur ; jamais un avertissement s'il existe mieux.
  */
-const LEGACY_RANK = ['engine_error', 'unknown', 'planner_error', 'other'] as const;
+const LEGACY_RANK = ['engine_error', 'unknown', 'planner_error', 'other', 'compaction_marker'] as const;
 function legacyMainReason(rs: readonly Reason[]): Reason | null {
   const rank = (r: Reason): number => {
+    // Marqueur de compactage de l'historique : trace de stockage, jamais un motif (dernier recours seulement).
+    if (r.code === HISTORY_COMPACTED) return LEGACY_RANK.indexOf('compaction_marker');
     const sev = severityOf(r.code);
     if (sev === 'error') return LEGACY_RANK.indexOf(INFORMATIVE.test(r.code) ? 'planner_error' : 'engine_error');
     return LEGACY_RANK.indexOf(sev === null && !CANDIDATE_VALUE.test(r.code) && !INFORMATIVE.test(r.code) ? 'unknown' : 'other');

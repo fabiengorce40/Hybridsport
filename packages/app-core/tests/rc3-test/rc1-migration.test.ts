@@ -175,6 +175,13 @@ describe('RC1 TEST → RC3 : vues RC3.1–RC3.4 sur des données RC1', () => {
     expect((selectBeta0Week(next, '2026-10-12')?.sessions ?? []).filter((x) => x.sport === 'running' && x.status === 'planned').length).toBeGreaterThan(0);
   });
 
+  it('D5 : sur les anciennes semaines compactées, le motif affiché n’est jamais le marqueur de compactage', () => {
+    const s0 = decode('hybrid-4-weeks');
+    const shown = Object.keys(s0.planner.weeks).flatMap((w) => (selectBeta0Week(s0, w)?.sessions ?? []).flatMap((x) => (x.notPlanned?.reason ? [x.notPlanned.reason.code] : [])));
+    expect(shown.length).toBeGreaterThan(0);
+    expect(shown).not.toContain('KAIRO.HISTORY_COMPACTED');
+  });
+
   it('Courses : la dernière course de l’onboarding RC1 apparaît comme course libre (heure connue), profil Course relu', () => {
     const s0 = decode('running-week2-threshold');
     expect(selectFreeRuns(s0)).toEqual([expect.objectContaining({ timeKnown: true, distanceM: 5000 })]);
