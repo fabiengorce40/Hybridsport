@@ -10,7 +10,7 @@
 | B. Profil hybride (Course prioritaire 3×, Musculation 2×, CT 1×) | 24 | 22 | 1 | 1 | 5 / 0 / 0 | 0 | 7 / 8 | 0 | PARTIAL / PARTIAL / ADMISSIBLE / PARTIAL | 4 |
 | C. Salle complète | 24 | 23 | 1 | 0 | 7 / 0 / 0 | 0 | 9 / 12 | 0 | PARTIAL / ADMISSIBLE / PARTIAL / PARTIAL | 8 |
 | D. Matériel limité (haltères seulement) | 20 | 16 | 3 | 1 | 2 / 0 / 0 | 0 | 11 / 12 | 0 | RESOLVED / ADMISSIBLE / ADMISSIBLE / ADMISSIBLE | 4 |
-| E. Récupération dégradée à chaque séance | 24 | 24 | 0 | 0 | 12 / 0 / 0 | 0 | 8 / 12 | 0 | PARTIAL / ADMISSIBLE / PARTIAL / PARTIAL | 8 |
+| E. Récupération dégradée à chaque séance | 24 | 24 | 0 | 0 | 7 / 0 / 0 | 5 | 8 / 12 | 0 | PARTIAL / ADMISSIBLE / PARTIAL / PARTIAL | 8 |
 
 ## Volumes planifiés par groupe (moyenne des 4 semaines, séries de travail / plancher expérimental ; ⚠ sous le plancher, ▲ au-dessus du haut)
 
@@ -48,7 +48,12 @@
   - S3 10-20 running (Passer (genou P2 connu)) : postponed — KNOWN_PAIN_KEPT, SESSION_NOT_ADAPTABLE
   - S3 10-24 running (Passer (genou P2 connu)) : postponed — KNOWN_PAIN_KEPT, SESSION_NOT_ADAPTABLE
   - S4 10-29 strength (Oui · épaule P1) : postponed — PAIN_ESCALATED, SESSION_NOT_ADAPTABLE, BLOCKING_NEED
-- **E** : aucun
+- **E** : 
+  - S1 10-05 strength (Non · fatigue élevée · récupération mauvaise) : unchanged — ADAPTATION_NOT_APPLIED, cause=readiness_requires_reproducible_session
+  - S1 10-06 strength (Non · fatigue élevée · récupération mauvaise) : unchanged — ADAPTATION_NOT_APPLIED, cause=readiness_requires_reproducible_session
+  - S1 10-09 strength (Non · fatigue élevée · récupération mauvaise) : unchanged — ADAPTATION_NOT_APPLIED, cause=readiness_requires_reproducible_session
+  - S3 10-19 strength (Non · fatigue élevée · récupération mauvaise) : unchanged — ADAPTATION_NOT_APPLIED, cause=readiness_requires_reproducible_session
+  - S4 10-26 strength (Non · fatigue élevée · récupération mauvaise) : unchanged — ADAPTATION_NOT_APPLIED, cause=readiness_requires_reproducible_session
 
 ## Qualité des séances — semaine 2, exercices de force/accessoires exécutés (relecture humaine)
 

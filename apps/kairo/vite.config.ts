@@ -10,7 +10,7 @@ import react from '@vitejs/plugin-react';
  * de production est produite à l'identique (aucune transformation).
  */
 const TEST = process.env.VITE_KAIRO_CHANNEL === 'rc1-test';
-const TEST_LABEL = 'KAIRO RC3 — TEST';
+const TEST_LABEL = 'KAIRO RC1 — TEST';
 const TEST_COLOR = '#8A1C1C';
 function rc1TestChannel(): Plugin {
   let outDir = 'dist';

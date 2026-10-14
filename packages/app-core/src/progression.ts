@@ -264,7 +264,7 @@ export function applyCompletion(state: AppState, key: string, at: ISODateTime): 
   return {
     ...state,
     strength: g.sport === 'strength' ? applyStrength(state, g, log, at) : state.strength,
-    running: run ? { ...state.running, realized: [...state.running.realized, run], references: [...state.running.references, ...(ref ? [ref] : [])] } : state.running,
+    running: run ? { realized: [...state.running.realized, run], references: [...state.running.references, ...(ref ? [ref] : [])] } : state.running,
     fingerprints: { ...state.fingerprints, [g.sport]: [...state.fingerprints[g.sport], ...entry] },
     safety: pain ? { ...state.safety, activePain: { reportedAt: at, areas: log.feedback?.painAreas ?? [], sessionKey: key } } : state.safety,
     revision: state.revision + 1,

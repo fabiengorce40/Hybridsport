@@ -3,7 +3,7 @@
  * KAIRO RC1 — TEST : vérification de l'ISOLATION de la build de test (`pnpm kairo:build:rc1-test`), puis parcours E2E
  * complet de l'application sur cette build.
  *
- *   1. Identité : bandeau « KAIRO RC3 — TEST », titre, manifeste (nom, identifiant, couleur), service worker de test.
+ *   1. Identité : bandeau « KAIRO RC1 — TEST », titre, manifeste (nom, identifiant, couleur), service worker de test.
  *   2. Stockage : même sur une origine PARTAGÉE avec des données « production » (clé `kairo.state` et cache
  *      `kairo-beta0-2` préexistants), la build de test ne lit ni n'écrit aucune clé hors de son préfixe et ne supprime
  *      aucun cache de production.
@@ -22,7 +22,7 @@ const URL_ = process.env.E2E_URL ?? 'http://localhost:4174/';
 const PROD_URL = process.env.E2E_PROD_URL;
 const shots = process.argv[2];
 const PREFIX = 'kairo-rc1-test:';
-const LABEL = 'KAIRO RC3 — TEST';
+const LABEL = 'KAIRO RC1 — TEST';
 const SENTINEL = JSON.stringify({ sentinel: 'PRODUCTION — ne jamais modifier', schemaVersion: 0 });
 const fail = (m) => { console.error(`ÉCHEC : ${m}`); process.exit(1); };
 const check = (cond, m) => { if (!cond) fail(m); console.log(`ok  ${m}`); };

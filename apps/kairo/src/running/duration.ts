@@ -32,9 +32,3 @@ export function formatChrono(seconds: number): string {
   const ss = String(s).padStart(2, '0');
   return h > 0 ? `${String(h)}:${String(m).padStart(2, '0')}:${ss}` : `${String(m)}:${ss}`;
 }
-
-/** Composants (h, min, s) d'une durée en secondes entières : pré-remplissage EXPLICITE d'un champ (jamais implicite). */
-export function partsFromSeconds(seconds: number): DurationParts {
-  const t = Math.max(0, Math.round(seconds));
-  return { h: String(Math.floor(t / 3600)), m: String(Math.floor((t % 3600) / 60)), s: String(t % 60) };
-}

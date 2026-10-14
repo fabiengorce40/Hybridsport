@@ -54,14 +54,12 @@ describe('reproductibilité — semaine en cours (code intégré)', () => {
     expect(faithful(done, b) && faithful(done, c)).toBe(false);
   });
 
-  it('RP-2. fatigue élevée sur une séance non reproductible : séance PLANIFIÉE gardée (mêmes exercices, séries, charges), seul l’effort visé suit la règle d’état (RC3.1 A1)', () => {
+  it('RP-2. fatigue élevée sur une séance non reproductible : séance PLANIFIÉE gardée telle quelle, dose non ajustée et tracée (aucun changement attribué à tort)', () => {
     const s = startProgrammeSession(done, at(T('2026-10-06')), b, env, TIRED);
-    expect(s.checkIns.at(-1)).toMatchObject({ decision: 'adapted', readiness: 'caution' });
-    expect(codes(s)).not.toContain('KAIRO.CHECKIN_SESSION_RECOMPOSED');
+    expect(s.checkIns.at(-1)).toMatchObject({ decision: 'unchanged', readiness: 'caution' });
+    expect(s.checkIns.at(-1)?.reasons).toContainEqual({ code: 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED', params: expect.objectContaining({ cause: 'readiness_requires_reproducible_session' }) });
+    expect(s.programmeLogs[b]?.adaptation).toBeUndefined();
     expect(exercisesOf(s, b)).toEqual(exercisesOf(done, b));
-    // Avant RC3.1 : « effort non ajusté » ; après : changements d'effort SEULEMENT.
-    expect((s.programmeLogs[b]?.adaptation?.changes ?? []).every((c) => c.startsWith('rir:'))).toBe(true);
-    expect(s.programmeLogs[b]?.adaptation?.changes.length).toBeGreaterThan(0);
   });
 
   it('RP-3. genou P2 sur une séance non reproductible qui sollicite le genou : séance PERSISTÉE adaptée par le CORE (seuls les exercices genou changent), aucune recomposition', () => {
@@ -138,11 +136,7 @@ describe('états réels de la version déployée (f9f7e2e) chargés par le code 
     const s = deployed('L1-inprogress', NOW);
     expect(faithful(s, C)).toBe(false);
     const tired = startProgrammeSession(s, at(T('2026-10-09')), C, env, TIRED);
-    // RC3.1 A1 : état du jour appliqué à la séance PERSISTÉE (effort seulement), jamais un changement de moteur.
-    expect(tired.checkIns.at(-1)?.decision).toBe('adapted');
-    expect(codes(tired)).toContain('KAIRO.CHECKIN_READINESS_PERSISTED');
-    expect(codes(tired)).not.toContain('KAIRO.CHECKIN_SESSION_RECOMPOSED');
-    expect((tired.programmeLogs[C]?.adaptation?.changes ?? []).every((c) => c.startsWith('rir:'))).toBe(true);
+    expect(tired.checkIns.at(-1)?.decision).toBe('unchanged');
     expect(exercisesOf(tired, C)).toEqual(exercisesOf(s, C));
     const knee = startProgrammeSession(s, at(T('2026-10-09')), C, env, KNEE);
     if (knee.checkIns.at(-1)?.decision === 'adapted') {

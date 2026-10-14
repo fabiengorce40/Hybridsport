@@ -1,5 +1,4 @@
-import { CT_INTENT_LABELS, ctIntentFeasibility, HR_GOAL_LABELS, HR_ROLE_LABELS, programmeStatusAt, programmeTargetDate, programmeWeekIndex, RUNNING_GOAL_LABELS, selectBeta0Week, STRENGTH_GOAL_LABELS, strengthSupportedFrequencies } from '@hybridsport/app-core';
-import { useMemo } from 'react';
+import { CT_INTENT_LABELS, HR_GOAL_LABELS, HR_ROLE_LABELS, programmeStatusAt, programmeTargetDate, programmeWeekIndex, RUNNING_GOAL_LABELS, selectBeta0Week, STRENGTH_GOAL_LABELS, strengthSupportedFrequencies } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import { sessionName, sportName } from '../../present.js';
@@ -40,7 +39,6 @@ export function Programme0({ onEdit }: { onEdit: () => void }) {
             <div className="small muted">Objectif : {goal ? goalText(goal) : '—'}{goal && 'targetDate' in goal && goal.targetDate ? ` · le ${formatDate(goal.targetDate)}` : ''}</div>
             <div className="small muted">{String(plan?.sessionsPerWeek ?? 0)} séance{(plan?.sessionsPerWeek ?? 0) > 1 ? 's' : ''} par semaine{plan?.composition === 'engine' ? ` · composition de la semaine par le moteur ${sportName(sp)}` : ''}</div>
             {sp === 'hyrox' && <HyroxMode />}
-            {sp === 'crosstraining' && <CtIntentCheck />}
             {sp === 'strength' && !strengthSupportedFrequencies().includes(plan?.sessionsPerWeek ?? 0) && (
               <Notice tone="warn"><span data-strength-frequency-unsupported>KAIRO ne sait pas encore composer {String(plan?.sessionsPerWeek ?? 0)} séances de musculation par semaine : aucune séance n’est inventée. Choisissez {String(Math.max(...strengthSupportedFrequencies()))} séances ou moins dans « Modifier ».</span></Notice>
             )}
@@ -72,27 +70,5 @@ function HyroxMode() {
         : <div className="small"><b>Type de séance : {HR_ROLE_LABELS[hr.role ?? '']?.title ?? '—'}</b></div>}
       {types.length > 0 && <div className="small muted">Cette semaine : {types.join(', ')}</div>}
     </div>
-  );
-}
-
-/**
- * RC3.2 A3 — profil EXISTANT : l'intention Cross-training enregistrée est-elle réalisable avec le profil actuel ? Sonde
- * du moteur réel (aucune table) ; irréalisable ⇒ avis et intentions réalisables, à choisir dans « Modifier ».
- */
-function CtIntentCheck() {
-  const { state, clock } = useStore();
-  const p = state.profile;
-  const key = p && (p.crosstraining.returnState ?? 'NONE') === 'NONE' ? JSON.stringify([p.level, p.equipment.items, p.availability, p.crosstraining.intent]) : null;
-  const feasibility = useMemo(() => (key && p ? ctIntentFeasibility(p, clock()) : null), [key]);
-  const chosen = feasibility?.find((c) => c.intent === p?.crosstraining.intent);
-  if (!chosen || chosen.status !== 'infeasible') return null;
-  const options = (feasibility ?? []).filter((c) => c.status === 'feasible').map((c) => `« ${CT_INTENT_LABELS[c.intent]?.title ?? c.intent} »`);
-  return (
-    <Notice tone="warn">
-      <span data-ct-infeasible-programme={chosen.intent}>
-        L’intention « {CT_INTENT_LABELS[chosen.intent]?.title ?? chosen.intent} » ne peut pas être composée avec votre profil actuel : aucune séance de Cross-training n’est proposée.{' '}
-        {options.length > 0 ? `Réalisables avec ce profil : ${options.join(', ')} — à choisir dans « Modifier ».` : 'Aucune intention n’est réalisable avec ce profil : modifiez le matériel, le niveau ou les disponibilités dans « Modifier ».'}
-      </span>
-    </Notice>
   );
 }

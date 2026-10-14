@@ -47,9 +47,57 @@ export function migrateV1toV2(data: unknown): unknown {
   return { ...data, schemaVersion: 2, sessions, ...(planner === undefined ? {} : { planner }) };
 }
 
+/**
+ * Repli RC1 TEST après un essai RC3 TEST. RC3 n'ajoute au schéma (même version 2) que QUATRE champs facultatifs,
+ * inconnus du schéma strict de RC1 ; ils sont retirés À LA LECTURE, et seulement eux :
+ * - `planner.weeks.*.requests.*.cause` (motif persisté d'une séance non planifiée) ;
+ * - `programmeLogs.*.runPlayer` (lecteur de séance Course : progression, étapes validées) ;
+ * - `running.notes` (commentaires des courses libres) ;
+ * - `running.timeUnknown` (courses dont seule la date est connue).
+ * Tout autre champ inconnu laisse la donnée « illisible » (aucune réparation silencieuse). Le texte RC3 d'origine est
+ * conservé sous `RC3_ORIGINAL_KEY` avant toute réécriture.
+ */
+export const RC3_ORIGINAL_KEY = 'kairo.rc3-original';
+export const RC3_ANNEXES = ['planner.weeks.*.requests.*.cause', 'programmeLogs.*.runPlayer', 'running.notes', 'running.timeUnknown'] as const;
+export type Rc3Annex = (typeof RC3_ANNEXES)[number];
+
+export function withoutRc3Annexes(data: unknown): { data: unknown; removed: Readonly<Partial<Record<Rc3Annex, number>>> } {
+  if (!isObj(data)) return { data, removed: {} };
+  const removed: Partial<Record<Rc3Annex, number>> = {};
+  const count = (k: Rc3Annex) => { removed[k] = (removed[k] ?? 0) + 1; };
+  const out: Obj = { ...data };
+  if (isObj(data.planner) && isObj(data.planner.weeks)) {
+    const weeks = Object.fromEntries(Object.entries(data.planner.weeks).map(([k, w]) => {
+      if (!isObj(w) || !Array.isArray(w.requests)) return [k, w];
+      return [k, { ...w, requests: w.requests.map((r: unknown) => {
+        if (!isObj(r) || !('cause' in r)) return r;
+        count('planner.weeks.*.requests.*.cause');
+        const { cause: _cause, ...rest } = r;
+        return rest;
+      }) }];
+    }));
+    out.planner = { ...data.planner, weeks };
+  }
+  if (isObj(data.programmeLogs)) {
+    out.programmeLogs = Object.fromEntries(Object.entries(data.programmeLogs).map(([k, l]) => {
+      if (!isObj(l) || !('runPlayer' in l)) return [k, l];
+      count('programmeLogs.*.runPlayer');
+      const { runPlayer: _runPlayer, ...rest } = l;
+      return [k, rest];
+    }));
+  }
+  if (isObj(data.running)) {
+    const { notes, timeUnknown, ...running } = data.running;
+    if (notes !== undefined) removed['running.notes'] = isObj(notes) ? Object.keys(notes).length : 1;
+    if (timeUnknown !== undefined) removed['running.timeUnknown'] = Array.isArray(timeUnknown) ? timeUnknown.length : 1;
+    out.running = running;
+  }
+  return { data: out, removed };
+}
+
 export type LoadResult =
   | { readonly status: 'empty'; readonly state: AppState }
-  | { readonly status: 'ok'; readonly state: AppState; readonly migratedFrom?: number }
+  | { readonly status: 'ok'; readonly state: AppState; readonly migratedFrom?: number; readonly rc3AnnexesRemoved?: Readonly<Partial<Record<Rc3Annex, number>>> }
   | { readonly status: 'unreadable'; readonly state: AppState; readonly backupKey: string; readonly problem: string }
   | { readonly status: 'newer_version'; readonly state: AppState; readonly version: number };
 
@@ -66,7 +114,7 @@ function migrate(raw: unknown): { data: unknown; from: number } {
 }
 
 /** Décode une sauvegarde (JSON) : état validé, ou description exacte du problème. */
-export function decodeState(text: string): { ok: true; state: AppState; from: number } | { ok: false; problem: string; newer?: number } {
+export function decodeState(text: string): { ok: true; state: AppState; from: number; rc3AnnexesRemoved?: Readonly<Partial<Record<Rc3Annex, number>>> } | { ok: false; problem: string; newer?: number } {
   let raw: unknown;
   try { raw = JSON.parse(text); } catch { return { ok: false, problem: 'JSON invalide' }; }
   const version = (raw as { schemaVersion?: unknown } | null)?.schemaVersion;
@@ -74,8 +122,14 @@ export function decodeState(text: string): { ok: true; state: AppState; from: nu
   let migrated: { data: unknown; from: number };
   try { migrated = migrate(raw); } catch (e) { return { ok: false, problem: (e as Error).message }; }
   const parsed = zAppState.safeParse(migrated.data);
-  // technical-constant: nombre de problèmes rapportés (lisibilité du message)
-  if (!parsed.success) return { ok: false, problem: parsed.error.issues.slice(0, 3).map((i) => `${i.path.join('.')}: ${i.message}`).join(' ; ') };
+  if (!parsed.success) {
+    // Repli RC1 compatible RC3 : seuls les 4 champs additifs de RC3 sont retirés ; sinon, le refus d'origine.
+    const down = withoutRc3Annexes(migrated.data);
+    const again = Object.keys(down.removed).length > 0 ? zAppState.safeParse(down.data) : undefined;
+    if (again?.success) return { ok: true, state: again.data, from: migrated.from, rc3AnnexesRemoved: down.removed };
+    // technical-constant: nombre de problèmes rapportés (lisibilité du message)
+    return { ok: false, problem: parsed.error.issues.slice(0, 3).map((i) => `${i.path.join('.')}: ${i.message}`).join(' ; ') };
+  }
   return { ok: true, state: parsed.data, from: migrated.from };
 }
 
@@ -83,6 +137,11 @@ export function loadState(storage: KeyValueStorage, now: string): LoadResult {
   const text = storage.getItem(STORAGE_KEY);
   if (text === null) return { status: 'empty', state: emptyState() };
   const d = decodeState(text);
+  if (d.ok && d.rc3AnnexesRemoved) {
+    // Texte RC3 d'origine conservé (annexes comprises) AVANT que l'état relu ne soit réécrit sans elles.
+    storage.setItem(RC3_ORIGINAL_KEY, text);
+    return { status: 'ok', state: d.state, rc3AnnexesRemoved: d.rc3AnnexesRemoved };
+  }
   if (d.ok) return d.from === CURRENT_SCHEMA_VERSION ? { status: 'ok', state: d.state } : { status: 'ok', state: d.state, migratedFrom: d.from };
   if (d.newer !== undefined) return { status: 'newer_version', state: emptyState(), version: d.newer };
   const backupKey = `${BACKUP_PREFIX}${now}`;

@@ -174,15 +174,6 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
 
 const reason = (r: ReasonCode): Reason => ({ code: r.code, params: { ...r.params } });
 
-/**
- * RC3.1 A8 — cause décisive d'un refus : la première raison de sévérité « error » émise par un MOTEUR (cause précise),
- * sinon la première du planificateur (ex. jours insuffisants). Un avertissement ou une information n'est jamais une cause.
- */
-export function decisiveReason(reasons: readonly ReasonCode[]): ReasonCode | undefined {
-  const errors = reasons.filter((r) => r.severity === 'error');
-  return errors.find((r) => !r.code.startsWith('PLAN.PLANNER.')) ?? errors[0];
-}
-
 /** Q1 — diagnostic compact : verdict et `critère|statut|base` (ordre stable du diagnostic). */
 export const compactQuality = (q: QualityAssessment): { verdict: QualityAssessment['verdict']; criteria: string[] } => ({ verdict: q.verdict, criteria: q.criteria.map((c) => `${c.id}|${c.status}|${c.basis}`) });
 
@@ -197,7 +188,6 @@ export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOri
     requests: w.requests.map((r) => ({
       requestId: r.requestId, sport: r.sport, status: r.status, category: r.category, reasons: r.reasons.map(reason),
       ...(r.status === 'unplaced' ? {} : { date: r.date }),
-      ...(r.status !== 'planned' && decisiveReason(r.reasons) ? { cause: reason(decisiveReason(r.reasons) as ReasonCode) } : {}),
       ...(r.intent ? { intent: { ...r.intent } } : {}), ...(r.composition ? { composition: { ...r.composition } } : {}),
       ...(r.status === 'planned' ? {
         record: toEnvelope('session_record', r.record),

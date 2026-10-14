@@ -1009,8 +1009,7 @@ async function mobileFit(p, tag) {
   await p.reload();
   await nav('Historique');
   const h2 = await body();
-  // RC3.3 : l'historique liste aussi les courses libres (leur propre « Ressenti ») ; on compte les retours terrain des séances.
-  check(await p.locator('[data-history-feedback]').count() === 4 && h2.includes('Faite hors planning'), `${tag} rechargement : historique, 4 retours, séance hors planning`);
+  check((h2.match(/Ressenti :/g) ?? []).length === 4 && h2.includes('Faite hors planning'), `${tag} rechargement : historique, 4 retours, séance hors planning`);
   const after = await st();
   check(JSON.stringify(after.programmeLogs) === JSON.stringify(JSON.parse(saved).programmeLogs) && after.programmeState.results.length === 4, `${tag} rechargement : séances, retours et résultats intacts`);
   check(perrors.length === 0, `${tag} aucune erreur de page (${perrors.join(' | ')})`);

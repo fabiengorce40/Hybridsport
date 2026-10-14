@@ -67,48 +67,13 @@ export function portInputs(ps: ProgrammeState): { intent: ProgrammeIntent; goals
 
 /** Planifie la semaine du programme (par défaut la semaine courante) et persiste semaine et état. */
 export function planProgrammeCurrentWeek(state: AppState, clock: Clock, env: ProgrammeEnvironment = appPlannerEnvironment(), weekIndex?: number, o: { readonly pastDaysUnavailable?: boolean } = {}): AppState {
-  const i = weekIndex ?? weekIndexOf(requireProgramme(state), clock.today);
-  const first = planWeekOnce(state, clock, env, i, o);
-  // A2 — TEST Running (évaluation) refusé par le moteur : la séance ne disparaît jamais. L'évaluation, désormais
-  // « non planifiée » dans le programme, n'est plus imposée : la semaine est replanifiée UNE fois et le moteur Running
-  // compose sa séance habituelle (aucune allure inventée). Le repli est tracé (audit du programme).
-  const fallbacks = refusedRunningTests(state, first, i);
-  const planned = fallbacks.length === 0 ? first : withAudit(planWeekOnce(first, clock, env, i, o), clock, i,
-    fallbacks.map((f) => ({ code: RUNNING_TEST_FALLBACK, params: { weekIndex: i, assessmentId: f.assessmentId, cause: f.cause } })));
-  return withStrengthVolumeAudit(planned, clock, i);
-}
-
-/** Code d'audit du repli A2 (TEST refusé ⇒ composition habituelle du moteur Running). */
-export const RUNNING_TEST_FALLBACK = 'KAIRO.RUNNING_TEST_FALLBACK';
-
-/**
- * Évaluations Running de la semaine i passées à « non planifiée » par CETTE planification parce que le moteur Running a
- * refusé le TEST (`DOSE.RUNNING.TEST_REFUSED`), avec la cause donnée par le moteur.
- */
-function refusedRunningTests(before: AppState, after: AppState, i: number): { assessmentId: string; cause: string }[] {
-  const wasOpen = new Set((before.programmeState?.assessments ?? []).filter((a) => a.status === 'requested' || a.status === 'scheduled').map((a) => a.assessmentId));
-  const pw = after.programmeState?.weeks.find((w) => w.weekIndex === i);
-  const refusal = (pw ? after.planner.weeks[pw.plannerRef]?.requests ?? [] : [])
-    .filter((r) => r.sport === 'running' && r.status !== 'planned')
-    .flatMap((r) => r.reasons.filter((x) => x.code === 'DOSE.RUNNING.TEST_REFUSED'))[0];
-  if (!refusal) return [];
-  return (after.programmeState?.assessments ?? [])
-    .filter((a) => a.sport === 'running' && a.scheduledWeek === i && a.status === 'not_planned' && wasOpen.has(a.assessmentId))
-    .map((a) => ({ assessmentId: a.assessmentId, cause: String(refusal.params.cause ?? 'UNKNOWN') }));
-}
-
-function withAudit(s: AppState, clock: Clock, i: number, reasons: readonly { code: string; params: Record<string, string | number> }[]): AppState {
-  if (!s.programmeState || reasons.length === 0) return s;
-  return { ...s, programmeState: { ...s.programmeState, audit: [...s.programmeState.audit, ...reasons.map((reason) => ({ at: normalizeInstant(clock.now), weekIndex: i, reason }))] } };
-}
-
-function planWeekOnce(state: AppState, clock: Clock, env: ProgrammeEnvironment, i: number, o: { readonly pastDaysUnavailable?: boolean }): AppState {
   const p = state.profile;
   if (!p) throw new AppError('PROFILE_MISSING');
   const ps = requireProgramme(state);
   assertEnvironment(env);
   // Douleur active : garde COMMUNE à tous les chemins de planification (weeks.ts).
   assertPlanningAllowed(state);
+  const i = weekIndex ?? weekIndexOf(ps, clock.today);
   const weekStart = addDays(ps.definition.startWeek, i * p.availability.length);
   const { intent, goals } = portInputs(ps);
   const r = planProgrammeWeek(ps, i, {
@@ -121,14 +86,7 @@ function planWeekOnce(state: AppState, clock: Clock, env: ProgrammeEnvironment, 
   if (!r.ok) throw new ProgrammeError('PROGRAMME_WEEK_NOT_PLANNABLE', r.reasons);
   // Écriture par la passerelle unique : jamais de remplacement d'une semaine commencée ou clôturée (refus, état inchangé).
   const written = writePlannedWeek(state, persistWeek(r.value.week, normalizeInstant(clock.now), ps.definition.origin, env), 'programme');
-  return { ...written, programmeState: r.value.state };
-}
-
-function withStrengthVolumeAudit(planned: AppState, clock: Clock, i: number): AppState {
-  const ps = planned.programmeState;
-  const p = planned.profile;
-  if (!ps || !p) return planned;
-  const weekStart = addDays(ps.definition.startWeek, i * p.availability.length);
+  const planned: AppState = { ...written, programmeState: r.value.state };
   // S4 — bilan de volume Strength de la semaine planifiée (cible / prévu / contraintes), audité une fois par semaine.
   const v = strengthWeekVolume(planned, weekStart);
   // technical-constant: affichage au dixième de série (E1 pondéré)
@@ -275,7 +233,7 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
         const run = { realizedDurationS: x.run.realizedDurationS, completion: RUN_COMPLETION[x.completion], ...(x.run.distanceM !== undefined ? { distanceM: x.run.distanceM } : {}), ...(x.run.testTimeS !== undefined ? { testTimeS: x.run.testTimeS } : {}) };
         const real = { sessionId: x.requestId, archetypeId: intent.archetypeId, session, run, ...(x.difficulty ? { difficulty: x.difficulty } : {}), pain: pained, at };
         const ref = testReferenceFrom(real);
-        s = { ...s, running: { ...s.running, realized: [...s.running.realized, realizedRunFrom(real)], references: [...s.running.references, ...(ref ? [ref] : [])] } };
+        s = { ...s, running: { realized: [...s.running.realized, realizedRunFrom(real)], references: [...s.running.references, ...(ref ? [ref] : [])] } };
         evidence = { history: 'running', ref: x.requestId, ...(ref ? { measurement: ref.type } : {}) };
         break;
       }

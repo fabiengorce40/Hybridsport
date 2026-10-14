@@ -55,6 +55,17 @@ export const ERROR_MESSAGES: Readonly<Record<string, string>> = ERROR_TEXT;
 export function openWeek(state: AppState, clock: Clock): AppState {
   return isBeta0(state) ? ensureBeta0Week(state, clock) : ensureCurrentWeek(state, clock);
 }
+/** Repli après un essai RC3 TEST : ce qui a été mis de côté, en clair (rien d'autre n'est perdu). */
+const RC3_ANNEX_LABELS: Readonly<Record<string, string>> = {
+  'running.notes': 'commentaires de courses libres',
+  'running.timeUnknown': 'mention « heure non renseignée »',
+  'programmeLogs.*.runPlayer': 'progression du lecteur de séance Course',
+  'planner.weeks.*.requests.*.cause': 'motif enregistré des séances non planifiées',
+};
+export function rc3AnnexesText(removed: Readonly<Record<string, number | undefined>>): string {
+  const what = Object.keys(removed).map((k) => RC3_ANNEX_LABELS[k] ?? k).join(', ');
+  return `Données de l’essai RC3 relues : séances, historique, références, profil et douleurs conservés. Mis de côté (non affichés dans cette version) : ${what}. Copie complète gardée sur l’appareil.`;
+}
 const errorCode = (e: unknown): string => (e instanceof AppError ? e.code : (e as Error).message);
 
 export function StoreProvider({ children, storage: injected, clock = realClock }: { children: ReactNode; storage?: KeyValueStorage; clock?: () => Clock }) {
@@ -72,7 +83,12 @@ export function StoreProvider({ children, storage: injected, clock = realClock }
   const [state, setState] = useState<AppState>(initial.current.state);
   const [load, setLoad] = useState<LoadResult['status']>(initial.current.result.status);
   const [saveError, setSaveError] = useState<string>();
-  const [toast, setToast] = useState<string | undefined>(() => { const c = initial.current?.openError; return c ? ERROR_MESSAGES[c] ?? 'La semaine n’a pas pu être préparée.' : undefined; });
+  const [toast, setToast] = useState<string | undefined>(() => {
+    const c = initial.current?.openError;
+    if (c) return ERROR_MESSAGES[c] ?? 'La semaine n’a pas pu être préparée.';
+    const r = initial.current?.result;
+    return r?.status === 'ok' && r.rc3AnnexesRemoved ? rc3AnnexesText(r.rc3AnnexesRemoved) : undefined;
+  });
   const stateRef = useRef(state);
 
   const commit = useCallback((next: AppState) => {

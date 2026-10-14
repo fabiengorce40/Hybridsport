@@ -9,11 +9,8 @@ import type { KeyValueStorage } from '@hybridsport/app-core';
 export type Channel = 'production' | 'rc1-test';
 export const CHANNEL: Channel = import.meta.env.VITE_KAIRO_CHANNEL === 'rc1-test' ? 'rc1-test' : 'production';
 export const IS_TEST = CHANNEL === 'rc1-test';
-/**
- * Identité VISIBLE de la build de test (titre, bandeau, nom du manifeste). RC3 TEST réutilise le canal `rc1-test` :
- * préfixe de stockage, identifiant PWA et cache du service worker INCHANGÉS, pour relire les données déjà présentes.
- */
-export const TEST_LABEL = 'KAIRO RC3 — TEST';
+/** Identité visible de la build de test. */
+export const TEST_LABEL = 'KAIRO RC1 — TEST';
 /** Préfixe des clés de l'environnement de test (vide en production : clés historiques). */
 export const STORAGE_NAMESPACE = IS_TEST ? 'kairo-rc1-test:' : '';
 

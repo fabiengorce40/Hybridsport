@@ -12,9 +12,9 @@ const rpeLabel = (r: { min: number; max: number }): string => (r.min === r.max ?
 
 type RunPrescription = Extract<SessionItem['prescription'], { type: 'run_structure' }>;
 type RunSeg = RunPrescription['segments'][number];
-export const RECOVERY_MODES: Record<string, string> = { jog: 'trottinée', walk: 'marchée', standing: 'à l’arrêt' };
+const RECOVERY_MODES: Record<string, string> = { jog: 'trottinée', walk: 'marchée', standing: 'à l’arrêt' };
 
-export function targetLine(t: RunSeg['target'], test: boolean): string {
+function targetLine(t: RunSeg['target'], test: boolean): string {
   const rpe = t.effort && 'rpe' in t.effort ? t.effort.rpe : undefined;
   const effort = rpe ? (test ? `Effort maximal (${rpeLabel(rpe)}/10)` : rpe.min === rpe.max ? `Effort ≤ ${String(rpe.max)}/10` : `Effort ${rpeLabel(rpe)}/10`) : '';
   // Allure affichée SEULEMENT quand elle est la cible prescrite (priorité allure) ; jamais la borne d'estimation d'un test.

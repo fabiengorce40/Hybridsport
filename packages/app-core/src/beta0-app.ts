@@ -50,11 +50,7 @@ export interface Beta0ProgrammeOptions {
    */
   readonly runningTargetDate?: string;
   /** Dernière course réelle déclarée (base de la dose Running : aucune dose de départ n'est validée). */
-  readonly lastRun?: {
-    readonly realizedDurationS: number; readonly distanceM?: number; readonly difficulty: Feedback['difficulty'];
-    /** RC3.4 — date RÉELLE de cette course (AAAA-MM-JJ), facultative ; absente ⇒ comportement antérieur (jamais inventée). */
-    readonly date?: string;
-  };
+  readonly lastRun?: { readonly realizedDurationS: number; readonly distanceM?: number; readonly difficulty: Feedback['difficulty'] };
   /** Performances récentes OBSERVÉES (profil Course) : références du moteur Running, jamais l'objectif. */
   readonly performances?: readonly DeclaredPerformance[];
   /** « Je n'ai pas de chrono récent » : TEST demandé au programme dès la première semaine (mécanisme d'évaluation). */
@@ -106,7 +102,7 @@ export function createBeta0Programme(state: AppState, input: ProfileInput, clock
   const profile = beta0Profile(input);
   let s: AppState = { ...state, profile };
   if (o.lastRun && profile.running.enabled) {
-    s = logFreeRun(s, { realizedDurationS: o.lastRun.realizedDurationS, completion: 'COMPLETED', difficulty: o.lastRun.difficulty, pain: false, ...(o.lastRun.distanceM !== undefined ? { distanceM: o.lastRun.distanceM } : {}), ...(o.lastRun.date !== undefined ? { completedOn: o.lastRun.date } : {}) }, clock);
+    s = logFreeRun(s, { realizedDurationS: o.lastRun.realizedDurationS, completion: 'COMPLETED', difficulty: o.lastRun.difficulty, pain: false, ...(o.lastRun.distanceM !== undefined ? { distanceM: o.lastRun.distanceM } : {}) }, clock);
   }
   if (profile.running.enabled) for (const x of o.performances ?? []) s = declareRunningPerformance(s, clock, x);
   return startFromProfile(s, clock, o, weekStartOf(clock.today), env);
@@ -206,8 +202,7 @@ export function resetBeta0Data(state: AppState, clock: Clock, confirmation: stri
   };
   const clean: AppState = {
     ...emptyState(), profile, safety: state.safety, crosstraining: state.crosstraining, hyrox: state.hyrox,
-    // RC3.3 — commentaires des courses libres conservées (annotation de ces seules courses).
-    running: { realized: kept.freeRuns, references: kept.references, ...(state.running.notes ? { notes: Object.fromEntries(Object.entries(state.running.notes).filter(([id]) => kept.freeRuns.some((r) => r.sessionId === id))) } : {}) }, revision: state.revision + 1,
+    running: { realized: kept.freeRuns, references: kept.references }, revision: state.revision + 1,
   };
   const next = startFromProfile(clean, clock, targetDate ? { runningTargetDate: targetDate } : {}, weekStartOf(clock.today), env);
   const nps = next.programmeState;
@@ -740,12 +735,7 @@ export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishI
     ? recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'strength', completion: f.completion, pain, sets: log.sets, painItems: log.painItems })
     : recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'running', completion: f.completion, pain, ...(f.run ? { run: f.run } : {}) });
   const outcome = { completion: f.completion, pain: f.pain || log.painItems.length > 0, ...(f.run ? { run: { ...f.run } } : {}) };
-  // RC3.5 — lecteur Course figé à la fin (temps actif conservé, jamais relancé) ; il n'a rien enregistré lui-même.
-  const rp = log.runPlayer;
-  const runPlayer = rp && rp.runningSince !== null
-    ? { runPlayer: { ...rp, runningSince: null, accumulatedS: rp.accumulatedS + Math.max(0, (Date.parse(clock.now) - Date.parse(rp.runningSince)) / MS_PER_S) } }
-    : {};
-  return withLog(recorded, { ...log, ...runPlayer, rest: null, finishedAt: normalizeInstant(clock.now), outcome });
+  return withLog(recorded, { ...log, rest: null, finishedAt: normalizeInstant(clock.now), outcome });
 }
 
 // ——— Historique
