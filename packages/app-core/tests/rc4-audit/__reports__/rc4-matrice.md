@@ -22,11 +22,11 @@ Volume Musculation prévu (séries de travail / semaine, moyenne S1–S6 ; cible
 Course (structure prescrite par semaine) :
 
 - S1 : easy steady:30min ; test warmup:10min + steady:10km + cooldown:5min
-- S2 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
-- S3 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
-- S4 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
-- S5 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
-- S6 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
+- S2 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:31min
+- S3 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:31min
+- S4 : threshold warmup:10min + 4×5min/60s + cooldown:5min ; easy steady:32min
+- S5 : threshold warmup:10min + 4×5min/60s + cooldown:5min ; easy steady:32min
+- S6 : threshold warmup:10min + 5×5min/60s + cooldown:5min ; easy steady:33min
 
 Contrôles avant séance scénarisés :
 
@@ -53,11 +53,11 @@ Volume Musculation prévu (séries de travail / semaine, moyenne S1–S6 ; cible
 Course (structure prescrite par semaine) :
 
 - S1 : easy steady:30min ; test warmup:10min + steady:10km + cooldown:5min
-- S2 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
-- S3 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
-- S4 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
-- S5 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
-- S6 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
+- S2 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:31min
+- S3 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:31min
+- S4 : threshold warmup:10min + 4×5min/60s + cooldown:5min ; easy steady:32min
+- S5 : threshold warmup:10min + 4×5min/60s + cooldown:5min ; easy steady:32min
+- S6 : threshold warmup:10min + 5×5min/60s + cooldown:5min ; easy steady:33min
 
 ## P2 — Musculation 3× (masse) + Cross-training 2×
 
@@ -142,11 +142,11 @@ Cross-training / HYROX :
 Course (structure prescrite par semaine) :
 
 - S1 : test warmup:10min + steady:5km + cooldown:5min ; easy steady:30min ; easy steady:30min
-- S2 : threshold warmup:10min + 4×5min/60s + cooldown:5min ; easy steady:30min ; easy steady:30min
-- S3 : threshold warmup:10min + 4×5min/60s + cooldown:5min ; easy steady:30min ; easy steady:30min
+- S2 : threshold warmup:10min + 4×5min/60s + cooldown:5min ; easy steady:31min ; easy steady:31min
+- S3 : threshold warmup:10min + 4×5min/60s + cooldown:5min ; easy steady:32min ; easy steady:32min
 - S4 : easy steady:80min ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED
-- S5 : easy steady:80min ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED
-- S6 : easy steady:80min ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED
+- S5 : easy steady:81min ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED
+- S6 : easy steady:81min ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED
 
 Cross-training / HYROX :
 
@@ -183,11 +183,11 @@ Volume Musculation prévu (séries de travail / semaine, moyenne S1–S6 ; cible
 Course (structure prescrite par semaine) :
 
 - S1 : easy steady:30min ; test warmup:10min + steady:10km + cooldown:5min
-- S2 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
-- S3 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
-- S4 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
-- S5 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
-- S6 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:30min
+- S2 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:31min
+- S3 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:31min
+- S4 : threshold warmup:10min + 4×5min/60s + cooldown:5min ; easy steady:32min
+- S5 : threshold warmup:10min + 4×5min/60s + cooldown:5min ; easy steady:32min
+- S6 : threshold warmup:10min + 5×5min/60s + cooldown:5min ; easy steady:33min
 
 Cross-training / HYROX :
 

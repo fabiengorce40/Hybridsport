@@ -15,7 +15,7 @@ import { beta0Environment, compositionScopeOf, ctDeclarations, hrDeclarations, l
 import { STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } from '@hybridsport/strength';
 import { addDays, dateOf, normalizeInstant, weekStartOf } from './dates.js';
 import { AppError } from './errors.js';
-import { emptyState, zProfile } from './model.js';
+import { DIFFICULTIES, emptyState, zProfile } from './model.js';
 import type { CompositionScope } from './beta0.js';
 import type { AppState, CtRuntime, Feedback, HrRuntime, PersistedWeek, ProfileInput, ProgrammeLog, Reason, Rest, SetLog } from './model.js';
 import { hrStationsOf, hrWorkoutOf } from './hr-workout.js';
@@ -693,6 +693,11 @@ export interface FinishInput {
   /** Course : saisies réelles (durée exigée ; distance facultative ; temps du TEST seul). */
   readonly run?: { readonly realizedDurationS: number; readonly distanceM?: number; readonly testTimeS?: number };
   /**
+   * RC4.1 — Course : difficulté RESSENTIE déclarée (facultative). Transmise telle quelle au contrat Running
+   * (`unexpectedDifficulty` de la séance réalisée) ; absente ⇒ `UNKNOWN`, jamais une valeur supposée.
+   */
+  readonly difficulty?: Feedback['difficulty'];
+  /**
    * Cross-training : résultat STRUCTURÉ du format (contrat de résultat CT ; absent si abandon) et charges réellement
    * utilisées. Validé par le moteur ; un refus laisse l'état inchangé.
    */
@@ -706,8 +711,11 @@ export interface FinishInput {
  * `recordSessionExecution` (validation par le contrat du moteur, historique, programme). Refus ⇒ état inchangé.
  */
 export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishInput): AppState {
+  // RC4.1 — ressenti Course : une valeur du vocabulaire du contrat, ou rien ; refusé pour un autre sport (jamais ignoré en silence).
+  if (f.difficulty !== undefined && !(DIFFICULTIES as readonly string[]).includes(f.difficulty)) throw new AppError('RUN_DIFFICULTY_INVALID');
   const s0 = state.programmeLogs[f.requestId] ? state : startWithoutCheck(state, clock, f.requestId);
   const log = openLog(s0, f.requestId);
+  if (f.difficulty !== undefined && log.sport !== 'running') throw new AppError('RUN_DIFFICULTY_INVALID');
   const pain = f.pain ? 'REPORTED' as const : 'NONE' as const;
   if (log.sport === 'hyrox') {
     const rt = log.hr ?? { runningSince: null, accumulatedS: 0, steps: 0, loads: [] };
@@ -738,7 +746,7 @@ export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishI
   }
   const recorded = log.sport === 'strength'
     ? recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'strength', completion: f.completion, pain, sets: log.sets, painItems: log.painItems })
-    : recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'running', completion: f.completion, pain, ...(f.run ? { run: f.run } : {}) });
+    : recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'running', completion: f.completion, pain, ...(f.run ? { run: f.run } : {}), ...(f.difficulty !== undefined ? { difficulty: f.difficulty } : {}) });
   const outcome = { completion: f.completion, pain: f.pain || log.painItems.length > 0, ...(f.run ? { run: { ...f.run } } : {}) };
   // RC3.5 — lecteur Course figé à la fin (temps actif conservé, jamais relancé) ; il n'a rien enregistré lui-même.
   const rp = log.runPlayer;

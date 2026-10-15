@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 // Simulations de 4 à 6 semaines par le chemin réel : délai par test élargi.
 vi.setConfig({ testTimeout: 120_000 });
 import {
-  createBeta0Programme, emptyState, ensureBeta0Week, EQUIPMENT_PRESETS, finishProgrammeSession, recordSessionExecution, selectBeta0Week, selectProgrammeSession, startProgrammeSession,
+  createBeta0Programme, emptyState, ensureBeta0Week, EQUIPMENT_PRESETS, finishProgrammeSession, hyroxRoleFeasibility, selectBeta0Week, selectProgrammeSession, startProgrammeSession,
 } from '../../src/index.js';
 import type { AppState, Clock, ProfileInput } from '../../src/index.js';
 import { MONS, PROFILES, simulate } from './rc4-sim.js';
@@ -25,10 +25,11 @@ const runStructures = (s: AppState, mon: string) => (selectBeta0Week(s, mon)?.se
   return p.segments.map((g) => (g.kind === 'repeat' ? `${String(g.reps)}×${'durationS' in g.work ? String(g.work.durationS) : '?'}s` : `${g.kind}:${'durationS' in g.dose ? String(g.dose.durationS) : `${String(g.dose.distanceM)}m`}`)).join('+');
 });
 
-describe('F1 — Course : progression jamais déclenchée en Beta 0 (ressenti non transmis)', () => {
+describe('F1 (RC4.1) — Course : le ressenti déclaré en fin de séance pilote la progression', () => {
   const p = spec('P4').profile;
-  /** 4 semaines : toutes les courses faites comme prévu ; `difficulty` transmis ou non au contrat Running. */
-  function run4(withDifficulty: boolean): AppState {
+  type Difficulty = 'EASIER' | 'AS_EXPECTED' | 'HARDER' | 'MUCH_HARDER';
+  /** 4 semaines par le chemin Beta 0 réel (`finishProgrammeSession`) : toutes les courses faites comme prévu. */
+  function run4(difficulty: Difficulty | null): AppState {
     let s = createBeta0Programme(emptyState(), p, ck(MONS[0], '07:00'), { lastRun: { realizedDurationS: 1800, difficulty: 'AS_EXPECTED', distanceM: 5000 }, requestTest: true });
     for (const [w, mon] of MONS.slice(0, 4).entries()) {
       if (w > 0) s = ensureBeta0Week(s, ck(mon, '06:00'));
@@ -37,23 +38,33 @@ describe('F1 — Course : progression jamais déclenchée en Beta 0 (ressenti no
         s = startProgrammeSession(s, ck(d), v.requestId, undefined, { painAnswer: 'no' });
         const test = v.archetypeId === 'running.test';
         const run = { realizedDurationS: v.targetDurationS ?? 1800, distanceM: 6000, ...(test ? { testTimeS: 1500 } : {}) };
-        s = withDifficulty
-          ? recordSessionExecution(s, ck(d, '09:00'), { requestId: v.requestId, sport: 'running', completion: 'completed_as_prescribed', pain: 'NONE', run, difficulty: 'AS_EXPECTED' })
-          : finishProgrammeSession(s, ck(d, '09:00'), { requestId: v.requestId, completion: 'completed_as_prescribed', pain: false, run });
+        s = finishProgrammeSession(s, ck(d, '09:00'), { requestId: v.requestId, completion: 'completed_as_prescribed', pain: false, run, ...(difficulty ? { difficulty } : {}) });
       }
     }
     return ensureBeta0Week(s, ck(MONS[4], '06:00'));
   }
+  const programmeRuns = (s: AppState) => s.running.realized.filter((x) => !x.sessionId.startsWith('free:'));
 
-  it('chemin Beta 0 réel : toute course est enregistrée « ressenti inconnu » ; seuil et footings identiques 4 semaines après', () => {
-    const s = run4(false);
-    expect(s.running.realized.filter((x) => !x.sessionId.startsWith('free:')).every((x) => x.unexpectedDifficulty === 'UNKNOWN')).toBe(true);
+  it('« comme prévu » : valeur persistée au contrat Running ; seuil et footings progressent après deux séances bien tolérées', () => {
+    const s = run4('AS_EXPECTED');
+    expect(programmeRuns(s).every((x) => x.unexpectedDifficulty === 'AS_EXPECTED')).toBe(true);
+    expect(runStructures(s, MONS[4])).not.toEqual(runStructures(s, MONS[1]));
+  });
+
+  it('« plus facile que prévu » : même progression (séance tolérée)', () => {
+    expect(runStructures(run4('EASIER'), MONS[4])).toEqual(runStructures(run4('AS_EXPECTED'), MONS[4]));
+  });
+
+  it('question ignorée : ressenti INCONNU, aucune progression artificielle (comportement antérieur conservé)', () => {
+    const s = run4(null);
+    expect(programmeRuns(s).every((x) => x.unexpectedDifficulty === 'UNKNOWN')).toBe(true);
     expect(runStructures(s, MONS[4])).toEqual(runStructures(s, MONS[1]));
   });
 
-  it('contre-épreuve : même parcours avec le ressenti « comme prévu » transmis ⇒ le moteur Running progresse', () => {
-    const s = run4(true);
-    expect(runStructures(s, MONS[4])).not.toEqual(runStructures(run4(false), MONS[4]));
+  it('« plus difficile » : aucune progression (séance non tolérée)', () => {
+    const s = run4('HARDER');
+    expect(programmeRuns(s).every((x) => x.unexpectedDifficulty === 'HARDER')).toBe(true);
+    expect(runStructures(s, MONS[4])).not.toEqual(runStructures(run4('AS_EXPECTED'), MONS[4]));
   });
 });
 
@@ -140,19 +151,25 @@ describe('F9 / F10 / F11 — Organisation de la semaine multisport', () => {
   });
 });
 
-describe('F12 — HYROX : faisabilité selon le niveau, sans avertissement', () => {
+describe('F12 (RC4.2) — HYROX : restrictions de niveau, de matériel et de temps annoncées par la sonde du moteur', () => {
   const hyroxProfile = (level: ProfileInput['level']): ProfileInput => ({
     ...spec('P3').profile, level, priorities: ['hyrox'], strength: { enabled: false, goal: 'general', sessionsPerWeek: 2 },
     hyrox: { enabled: true, sessionsPerWeek: 3, focus: 'balanced', goal: 'RACE_PREPARATION', returnState: 'NONE' } as ProfileInput['hyrox'],
     equipment: { presetId: 'preset.hybrid_race_gym', items: [...(EQUIPMENT_PRESETS.find((x) => x.id === 'preset.hybrid_race_gym')?.equipment ?? [])], confirmedAt: '2026-10-04T10:00:00Z' },
   });
-  it('débutant : aucune séance HYROX (LEVEL_NOT_ELIGIBLE), quel que soit le matériel', () => {
+  it('débutant : moteur inchangé (aucune séance, LEVEL_NOT_ELIGIBLE) ET la sonde l’annonce pour chaque type, attribué au niveau', () => {
     const s = createBeta0Programme(emptyState(), hyroxProfile('beginner'), ck(MONS[0], '07:00'), {});
     expect((selectBeta0Week(s, MONS[0])?.sessions ?? []).map((x) => x.notPlanned?.reason?.code)).toEqual(['SAFETY.HYROX.LEVEL_NOT_ELIGIBLE', 'SAFETY.HYROX.LEVEL_NOT_ELIGIBLE', 'SAFETY.HYROX.LEVEL_NOT_ELIGIBLE']);
+    const f = hyroxRoleFeasibility(hyroxProfile('beginner'), ck(MONS[0]));
+    expect(f.every((c) => c.status === 'infeasible' && c.factors.join() === 'level')).toBe(true);
   });
-  it('avancé : un rôle sur trois jamais composable (H2_NO_STRUCTURE), salle de course hybride comprise', () => {
+  it('avancé : un rôle sur trois toujours refusé par le moteur (inchangé) ; la sonde annonce les types impossibles et leur restriction', () => {
     const s = createBeta0Programme(emptyState(), hyroxProfile('advanced'), ck(MONS[0], '07:00'), {});
-    expect((selectBeta0Week(s, MONS[0])?.sessions ?? []).filter((x) => x.notPlanned?.reason?.code === 'PLAN.HYROX.H2_NO_STRUCTURE')).toHaveLength(1);
+    const blocked = (selectBeta0Week(s, MONS[0])?.sessions ?? []).filter((x) => x.notPlanned?.reason?.code === 'PLAN.HYROX.H2_NO_STRUCTURE');
+    expect(blocked).toHaveLength(1);
+    const ko = hyroxRoleFeasibility(hyroxProfile('advanced'), ck(MONS[0])).filter((c) => c.status === 'infeasible');
+    expect(ko.map((c) => `${c.role.split('.').pop() ?? ''}:${c.factors.join('+')}`)).toEqual(['mixed_station_conditioning:equipment', 'compromised_running:time']);
+    expect(ko.map((c) => c.role)).toContain(`hybrid_race.h2.${String(blocked[0]?.notPlanned?.reason?.params.role)}`);
   });
 });
 

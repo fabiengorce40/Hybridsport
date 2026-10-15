@@ -1,10 +1,11 @@
-import { CT_INTENT_LABELS, ctIntentFeasibility, HR_GOAL_LABELS, HR_ROLE_LABELS, programmeStatusAt, programmeTargetDate, programmeWeekIndex, RUNNING_GOAL_LABELS, selectBeta0Week, STRENGTH_GOAL_LABELS, strengthSupportedFrequencies } from '@hybridsport/app-core';
+import { CT_INTENT_LABELS, ctIntentFeasibility, HR_GOAL_LABELS, HR_ROLE_LABELS, hyroxRoleFeasibility, programmeStatusAt, programmeTargetDate, programmeWeekIndex, RUNNING_GOAL_LABELS, selectBeta0Week, STRENGTH_GOAL_LABELS, strengthSupportedFrequencies } from '@hybridsport/app-core';
 import { useMemo } from 'react';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import { sessionName, sportName } from '../../present.js';
 import { ExperimentalBadge } from './common.js';
 import { StrengthWeekCard } from '../../strength/StrengthInsight.js';
+import { hrRestrictionText } from './HrFeasibility.js';
 
 /**
  * Programme. « Modifier » ouvre l'assistant en PLEIN ÉCRAN (géré par l'App, sans barre de navigation) : il n'est jamais
@@ -39,7 +40,7 @@ export function Programme0({ onEdit }: { onEdit: () => void }) {
             <div className="row between"><h3>{sportName(sp)}</h3>{d.priorities.length > 1 && <span className="badge neutral">Priorité {String(k + 1)}</span>}</div>
             <div className="small muted">Objectif : {goal ? goalText(goal) : '—'}{goal && 'targetDate' in goal && goal.targetDate ? ` · le ${formatDate(goal.targetDate)}` : ''}</div>
             <div className="small muted">{String(plan?.sessionsPerWeek ?? 0)} séance{(plan?.sessionsPerWeek ?? 0) > 1 ? 's' : ''} par semaine{plan?.composition === 'engine' ? ` · composition de la semaine par le moteur ${sportName(sp)}` : ''}</div>
-            {sp === 'hyrox' && <HyroxMode />}
+            {sp === 'hyrox' && <><HyroxMode /><HrRoleCheck /></>}
             {sp === 'crosstraining' && <CtIntentCheck />}
             {sp === 'strength' && !strengthSupportedFrequencies().includes(plan?.sessionsPerWeek ?? 0) && (
               <Notice tone="warn"><span data-strength-frequency-unsupported>KAIRO ne sait pas encore composer {String(plan?.sessionsPerWeek ?? 0)} séances de musculation par semaine : aucune séance n’est inventée. Choisissez {String(Math.max(...strengthSupportedFrequencies()))} séances ou moins dans « Modifier ».</span></Notice>
@@ -93,6 +94,33 @@ function CtIntentCheck() {
         L’intention « {CT_INTENT_LABELS[chosen.intent]?.title ?? chosen.intent} » ne peut pas être composée avec votre profil actuel : aucune séance de Cross-training n’est proposée.{' '}
         {options.length > 0 ? `Réalisables avec ce profil : ${options.join(', ')} — à choisir dans « Modifier ».` : 'Aucune intention n’est réalisable avec ce profil : modifiez le matériel, le niveau ou les disponibilités dans « Modifier ».'}
       </span>
+    </Notice>
+  );
+}
+
+/**
+ * RC4.2 — profil EXISTANT : types de séance HYROX réalisables avec le profil actuel (sonde du moteur réel, aucune
+ * table). Affiché seulement si le moteur refuse au moins un type : types impossibles et leur restriction, impact sur
+ * le type choisi ou le mode Équilibré ; les changements se font dans « Modifier ».
+ */
+function HrRoleCheck() {
+  const { state, clock } = useStore();
+  const p = state.profile;
+  const key = p?.hyrox.enabled && (p.hyrox.returnState ?? 'NONE') === 'NONE' ? JSON.stringify([p.level, p.equipment.items, p.availability, p.hyrox.goal, p.hyrox.role, p.hyrox.focus]) : null;
+  const feasibility = useMemo(() => (key && p ? hyroxRoleFeasibility(p, clock()) : null), [key]);
+  const ko = (feasibility ?? []).filter((r) => r.status === 'infeasible');
+  if (!p || ko.length === 0) return null;
+  const ok = (feasibility ?? []).filter((r) => r.status === 'feasible').map((r) => `« ${HR_ROLE_LABELS[r.role]?.title ?? r.role} »`);
+  const balanced = p.hyrox.focus === 'balanced';
+  const chosenKo = !balanced && ko.some((r) => r.role === p.hyrox.role);
+  return (
+    <Notice tone="warn">
+      <div className="stack" style={{ gap: 4 }} data-hr-infeasible-programme={chosenKo ? 'chosen' : balanced ? 'balanced' : 'other'}>
+        <span>{ok.length > 0 ? `Types de séance HYROX réalisables avec votre profil : ${ok.join(', ')}.` : 'Aucun type de séance HYROX n’est réalisable avec votre profil actuel : aucune séance HYROX n’est proposée.'}</span>
+        <span className="tiny">Impossibles : {ko.map((r) => `« ${HR_ROLE_LABELS[r.role]?.title ?? r.role} » (${hrRestrictionText(r)})`).join(' ; ')}.</span>
+        {chosenKo && <span>Le type choisi ne peut pas être composé : aucune séance HYROX n’est proposée. Choisissez un type réalisable dans « Modifier ».</span>}
+        {balanced && ok.length > 0 && <span>Mode « Équilibré » : les semaines où le programme retient un type impossible, cette séance HYROX n’est pas proposée.</span>}
+      </div>
     </Notice>
   );
 }

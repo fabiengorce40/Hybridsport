@@ -24,8 +24,11 @@ export interface CtIntentFeasibility {
   readonly cause: Reason | null;
 }
 
-/** Facteurs lus dans la trace du moteur (essais de format, cause de délégation), sans interprétation sportive. */
-function factorsOf(cause: Reason | null): CtFeasibilityFactor[] {
+/**
+ * Facteurs lus dans la trace du moteur (essais de format ou de structure, cause de délégation, refus de niveau), sans
+ * interprétation sportive. Partagé avec la sonde HYROX (RC4.2).
+ */
+export function feasibilityFactors(cause: Reason | null): CtFeasibilityFactor[] {
   if (!cause) return [];
   const text = [cause.code, String(cause.params.cause ?? ''), ...(Array.isArray(cause.params.tried) ? cause.params.tried.map(String) : [])].join(' ');
   const out: CtFeasibilityFactor[] = [];
@@ -52,7 +55,7 @@ function probe(input: ProfileInput, intent: string, clock: Clock, env: Programme
     if (v.length === 0) return { intent, status: 'unknown', factors: [], cause: null };
     if (v.some((x) => x.placement !== 'blocked')) return { intent, status: 'feasible', factors: [], cause: null };
     const cause = v[0]?.notPlanned?.reason ?? null;
-    return { intent, status: 'infeasible', factors: factorsOf(cause), cause };
+    return { intent, status: 'infeasible', factors: feasibilityFactors(cause), cause };
   } catch {
     return { intent, status: 'unknown', factors: [], cause: null };
   }

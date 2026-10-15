@@ -4,8 +4,9 @@
  * Aussi utilisé pour créer un programme depuis un profil V0 existant, ou le recréer (workflow explicite).
  */
 import { useEffect, useMemo, useState } from 'react';
-import { createBeta0Programme, ctIntentFeasibility, strengthSupportedFrequencies, CT_INTENT_LABELS, DIFFICULTY_LABELS, HR_BALANCED_LABEL, HR_GOAL_LABELS, HR_ROLE_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
-import type { Beta0ProgrammeOptions, CtIntentFeasibility, DeclaredPerformance, Feedback, ProfileInput } from '@hybridsport/app-core';
+import { createBeta0Programme, ctIntentFeasibility, hyroxRoleFeasibility, strengthSupportedFrequencies, CT_INTENT_LABELS, DIFFICULTY_LABELS, HR_BALANCED_LABEL, HR_GOAL_LABELS, HR_ROLE_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
+import type { Beta0ProgrammeOptions, CtIntentFeasibility, DeclaredPerformance, Feedback, HrRoleFeasibility, ProfileInput } from '@hybridsport/app-core';
+import { HrFeasibilityNotice } from './HrFeasibility.js';
 import { PerformanceForm } from '../../running/PerformanceForm.js';
 import { performanceText } from '../../running/RunningProfile.js';
 
@@ -46,8 +47,9 @@ function withChoice(p: ProfileInput, c: Choice, first: 'strength' | 'running', c
 }
 
 /** Déclarations HYROX : type de séance (rôles que H2 sait composer), objectif, fréquence, coupure récente. */
-function HrSection({ p, set }: { p: ProfileInput; set: (f: (x: ProfileInput) => ProfileInput) => void }) {
+function HrSection({ p, set, feasibility }: { p: ProfileInput; set: (f: (x: ProfileInput) => ProfileInput) => void; feasibility: readonly HrRoleFeasibility[] | null }) {
   const hr = p.hyrox;
+  const statusOf = (k: string) => feasibility?.find((r) => r.role === k)?.status;
   const upd = (x: Partial<ProfileInput['hyrox']>) => set((y) => ({ ...y, hyrox: { ...y.hyrox, ...x } }));
   const balanced = hr.focus === 'balanced';
   return (
@@ -59,11 +61,13 @@ function HrSection({ p, set }: { p: ProfileInput; set: (f: (x: ProfileInput) => 
           <div><div className="t">{HR_BALANCED_LABEL.title}{hr.goal === 'RACE_PREPARATION' ? ' · recommandé' : ''}</div><div className="tiny">{HR_BALANCED_LABEL.detail}</div></div>
         </button>
         {Object.entries(HR_ROLE_LABELS).map(([k, v]) => (
-          <button key={k} type="button" role="radio" aria-checked={!balanced && hr.role === k} className={`option ${!balanced && hr.role === k ? 'on' : ''}`} onClick={() => upd({ role: k, focus: 'specialized' })}>
-            <div><div className="t">{v.title}</div><div className="tiny">{v.detail}</div></div>
+          <button key={k} type="button" role="radio" aria-checked={!balanced && hr.role === k} className={`option ${!balanced && hr.role === k ? 'on' : ''}`} onClick={() => upd({ role: k, focus: 'specialized' })} data-hr-feasibility={statusOf(k) ?? 'unchecked'}>
+            <div><div className="t">{v.title}</div><div className="tiny">{v.detail}</div>{statusOf(k) === 'infeasible' && <div className="tiny"><b>Irréalisable avec votre profil actuel</b></div>}</div>
           </button>
         ))}
       </div>
+      <HrFeasibilityNotice p={p} set={set} feasibility={feasibility} />
+      {!feasibility && (hr.returnState ?? 'NONE') === 'NONE' && <p className="tiny" style={{ margin: 0 }} data-hr-feasibility-pending>Les types de séance réalisables seront vérifiés par le moteur HYROX dès que votre matériel sera choisi (dernière étape).</p>}
       <div className="stack" role="radiogroup" aria-label="Objectif HYROX">
         {Object.entries(HR_GOAL_LABELS).map(([k, v]) => (
           // Préparer une course : Équilibré proposé par défaut tant qu'aucun type n'a été choisi (jamais un choix écrasé).
@@ -191,6 +195,9 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   // (recalculée quand le niveau, le matériel ou les disponibilités changent ; coupure déclarée : avis dédié).
   const ctProbeKey = p.crosstraining.enabled && equipmentChosen(p) && (p.crosstraining.returnState ?? 'NONE') === 'NONE' ? JSON.stringify([p.level, p.equipment.items, p.availability]) : null;
   const ctFeasibility = useMemo(() => (ctProbeKey ? ctIntentFeasibility(p, store.clock()) : null), [ctProbeKey]);
+  // RC4.2 — HYROX : même sonde du moteur réel, par type de séance (niveau, matériel, disponibilités déclarés).
+  const hrProbeKey = p.hyrox.enabled && equipmentChosen(p) && (p.hyrox.returnState ?? 'NONE') === 'NONE' ? JSON.stringify([p.level, p.equipment.items, p.availability, p.hyrox.goal]) : null;
+  const hrFeasibility = useMemo(() => (hrProbeKey ? hyroxRoleFeasibility(p, store.clock()) : null), [hrProbeKey]);
   // RC3.2 — bouton désactivé : TOUJOURS expliqué (ce qui manque, où le saisir).
   const missing = (label: string, fields: readonly [boolean, string][]) => { const m = fields.filter(([ok]) => !ok).map(([, f]) => f); return m.length > 0 ? [`${label} : ${m.join(', ')}.`] : []; };
   const blockers: string[] = step === 0 ? (accepted ? [] : ['Cochez « J’ai compris » pour commencer.'])
@@ -275,7 +282,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
           <label className="field">Prénom (facultatif)<input type="text" value={p.displayName} maxLength={40} onChange={(e) => setP({ ...p, displayName: e.target.value })} /></label>
           <GoalsSection p={p} set={set} beta0 />
           {p.crosstraining.enabled && <CtSection p={p} set={set} feasibility={ctFeasibility} />}
-          {p.hyrox.enabled && <HrSection p={p} set={set} />}
+          {p.hyrox.enabled && <HrSection p={p} set={set} feasibility={hrFeasibility} />}
           {p.running.enabled && (
             <div className="card">
               {p.running.goal !== 'GENERAL_RUNNING' && (
@@ -347,6 +354,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
           )}
           {(p.strength.enabled || p.crosstraining.enabled || p.hyrox.enabled) && <><div className="section-title">Matériel</div><EquipmentSection p={p} set={set} /></>}
           <CtFeasibilityNotice p={p} set={set} feasibility={ctFeasibility} />
+          <HrFeasibilityNotice p={p} set={set} feasibility={hrFeasibility} />
           <div className="card">
             <h3>Récapitulatif</h3>
             <div className="small muted">

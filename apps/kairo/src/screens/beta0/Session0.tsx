@@ -44,6 +44,15 @@ function playerSummary(v: ProgrammeSessionView, now: string): PlayerSummary | nu
   return { activeS: pos.activeS, skipped: rp.marks.filter((m) => m.end === 'skipped').length, notReached: steps.length - pos.index, testElapsedS: test ? test.elapsedS : null };
 }
 
+/** RC4.1 — difficulté ressentie (Course), vocabulaire du contrat Running ; facultative (absente ⇒ inconnue). */
+type RunDifficulty = NonNullable<FinishInput['difficulty']>;
+const RUN_DIFFICULTIES: readonly { id: RunDifficulty; label: string }[] = [
+  { id: 'EASIER', label: 'Plus facile que prévu' },
+  { id: 'AS_EXPECTED', label: 'Comme prévu' },
+  { id: 'HARDER', label: 'Plus difficile que prévu' },
+  { id: 'MUCH_HARDER', label: 'Beaucoup plus difficile' },
+];
+
 function FinishSheet({ v, player, onCancel, onSubmit }: { v: ProgrammeSessionView; player: PlayerSummary | null; onCancel: () => void; onSubmit: (f: Omit<FinishInput, 'requestId'>) => void }) {
   const run = v.sport === 'running';
   const test = isTest(v.archetypeId);
@@ -52,6 +61,7 @@ function FinishSheet({ v, player, onCancel, onSubmit }: { v: ProgrammeSessionVie
   const [minutes, setMinutes] = useState('');
   const [km, setKm] = useState('');
   const [testTime, setTestTime] = useState<DurationParts>(EMPTY_DURATION);
+  const [difficulty, setDifficulty] = useState<RunDifficulty | null>(null);
   const [tried, setTried] = useState(false);
   const distanceM = km === '' ? undefined : Number(km) * 1000;
   // Temps du TEST : exigé si la séance s'est passée comme prévu, facultatif sinon (validé dès qu'il est saisi).
@@ -84,6 +94,13 @@ function FinishSheet({ v, player, onCancel, onSubmit }: { v: ProgrammeSessionVie
             <Err k="minutes" />
             <label className="field">Distance (km, facultatif)<input inputMode="decimal" value={km} onChange={(e) => setKm(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))} placeholder="ex. 5.2" /></label>
             <Err k="km" />
+            <div className="stack" role="radiogroup" aria-label="Difficulté ressentie (facultatif)" data-run-difficulty>
+              <div className="small">Difficulté ressentie <span className="muted">· facultatif</span></div>
+              {RUN_DIFFICULTIES.map((d) => (
+                <button key={d.id} type="button" role="radio" aria-checked={difficulty === d.id} className={`option ${difficulty === d.id ? 'on' : ''}`} onClick={() => setDifficulty(difficulty === d.id ? null : d.id)}><span className="t">{d.label}</span></button>
+              ))}
+              <div className="tiny">Sans réponse, la séance est enregistrée « ressenti inconnu » : la course ne progresse pas tant que deux séances ne sont pas déclarées bien tolérées.</div>
+            </div>
             {test && (
               <div className="stack">
                 <DurationInput label="Temps du test seul" value={testTime} onChange={setTestTime} withHours error={show('test')} />
@@ -102,6 +119,7 @@ function FinishSheet({ v, player, onCancel, onSubmit }: { v: ProgrammeSessionVie
           <button className="btn primary block" onClick={() => { setTried(true); if (Object.keys(errors).length === 0 && completion) onSubmit({
             completion, pain,
             ...(run ? { run: { realizedDurationS: Number(minutes) * 60, ...(distanceM !== undefined ? { distanceM } : {}), ...(testTimeS !== undefined ? { testTimeS } : {}) } } : {}),
+            ...(run && difficulty !== null ? { difficulty } : {}),
           }); }}>Enregistrer</button>
         </div>
       </div>

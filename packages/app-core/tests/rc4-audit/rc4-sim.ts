@@ -38,6 +38,8 @@ export interface ProfileSpec {
   readonly checkIn?: (w: number, k: number, v: SessionView) => CheckInInput;
   /** Effort déclaré = effort prescrit + décalage (1 : séries plus faciles que prévu, athlète qui progresse). */
   readonly rirOffset?: number;
+  /** RC4.1 — difficulté ressentie déclarée en fin de course ; `null` : question ignorée (défaut : « comme prévu »). */
+  readonly runDifficulty?: 'EASIER' | 'AS_EXPECTED' | 'HARDER' | 'MUCH_HARDER' | null;
 }
 
 const base = (o: Partial<ProfileInput>): ProfileInput => ({
@@ -194,7 +196,8 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length): SimOut
           const durS = hasDistance ? (v.estimatedDurationS ?? 3600) : prescribedS || (v.targetDurationS ?? 1800);
           const testSeg = runP?.type === 'run_structure' ? runP.segments.find((x) => x.id === 'test') : undefined;
           const testDist = testSeg && testSeg.kind === 'steady' && 'distanceM' in testSeg.dose ? testSeg.dose.distanceM : null;
-          finish = { ...finish, run: { realizedDurationS: Math.round(durS), distanceM: Math.round((durS / SIM_PACE) * 1000), ...(testDist ? { testTimeS: Math.round((testDist / 1000) * TEST_PACE) } : {}) } };
+          const difficulty = spec.runDifficulty === undefined ? 'AS_EXPECTED' : spec.runDifficulty;
+          finish = { ...finish, run: { realizedDurationS: Math.round(durS), distanceM: Math.round((durS / SIM_PACE) * 1000), ...(testDist ? { testTimeS: Math.round((testDist / 1000) * TEST_PACE) } : {}) }, ...(difficulty !== null ? { difficulty } : {}) };
         }
         if (v.sport === 'crosstraining') {
           const rt = s.programmeLogs[v.requestId]?.ct;
