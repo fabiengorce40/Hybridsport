@@ -37,6 +37,11 @@ export const zRunningContext = z.object({
   }).strict().optional(),
   /** Séances réalisées (vague 2 : ancre de dose V19). Absentes ⇒ aucune ancre ⇒ aucune dose (jamais une dose par défaut). */
   sessionHistory: z.array(zRealizedSession).default([]),
+  /**
+   * RC4.3 (R2) — identifiants des séances de `sessionHistory` réalisées HORS programme (courses libres déclarées) :
+   * l'origine est FOURNIE, jamais déduite. Lue seulement si V19 porte `freeRunPolicy` (sinon comportement antérieur).
+   */
+  freeSessionIds: z.array(z.string().min(1)).default([]),
   sensors: z.object({ wearable: z.boolean(), heartRate: z.boolean() }).strict(),
   /** Terrain DÉCLARÉ (§N : une séance de côtes exige une côte déclarée praticable). Absent ⇒ aucune côte. */
   terrain: z.object({ hills: z.boolean() }).strict().optional(),

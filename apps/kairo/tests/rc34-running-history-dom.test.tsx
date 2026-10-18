@@ -78,7 +78,7 @@ describe('RC3.4 — douleur, HYROX, date de la dernière course', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter une course' }));
     const f = within(screen.getByRole('form', { name: 'Ajouter une course' }));
     fireEvent.change(f.getByLabelText('Date'), { target: { value: '2026-10-04' } });
-    fireEvent.change(f.getByLabelText('Heure de départ'), { target: { value: '08:00' } });
+    fireEvent.change(f.getByLabelText('Heure de départ (facultative)'), { target: { value: '08:00' } });
     fireEvent.change(f.getByLabelText('Durée : minutes'), { target: { value: '30' } });
     fireEvent.change(f.getByLabelText('Ressenti'), { target: { value: 'HARDER' } });
     fireEvent.click(f.getByLabelText('Douleur pendant ou après cette course'));
@@ -90,7 +90,7 @@ describe('RC3.4 — douleur, HYROX, date de la dernière course', () => {
     expect(screen.getByText(/La planification automatique est suspendue car une douleur a été signalée/)).toBeTruthy();
   });
 
-  it('profil HYROX sans Course : entrée disponible, avertissement « sans effet sur vos séances HYROX », course enregistrée', () => {
+  it('profil HYROX sans Course : entrée disponible, course comptée dans la récupération (RC4.3), semaine déjà composée inchangée', () => {
     const p = runner({ priorities: ['hyrox'], running: { ...runner().running, enabled: false }, hyrox: { enabled: true, sessionsPerWeek: 2, focus: 'balanced', goal: 'RACE_PREPARATION', returnState: 'NONE' } as ProfileInput['hyrox'],
       equipment: { presetId: 'preset.hybrid_race_gym', items: [...(EQUIPMENT_PRESETS.find((x) => x.id === 'preset.hybrid_race_gym')?.equipment ?? []), ...fullGym], confirmedAt: '2026-10-04T10:00:00Z' } });
     const storage = new MemoryStorage();
@@ -99,10 +99,10 @@ describe('RC3.4 — douleur, HYROX, date de la dernière course', () => {
     mount(storage);
     toHistory();
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter une course' }));
-    expect(document.querySelector('[data-free-run-no-running]')?.textContent).toMatch(/sans effet sur vos séances HYROX/);
+    expect(document.querySelector('[data-free-run-no-running]')?.textContent).toMatch(/compte dans la récupération de vos autres séances/);
     const f = within(screen.getByRole('form', { name: 'Ajouter une course' }));
     fireEvent.change(f.getByLabelText('Date'), { target: { value: '2026-10-04' } });
-    fireEvent.change(f.getByLabelText('Heure de départ'), { target: { value: '08:00' } });
+    fireEvent.change(f.getByLabelText('Heure de départ (facultative)'), { target: { value: '08:00' } });
     fireEvent.change(f.getByLabelText('Durée : minutes'), { target: { value: '40' } });
     fireEvent.change(f.getByLabelText('Distance (km)'), { target: { value: '8' } });
     fireEvent.change(f.getByLabelText('Ressenti'), { target: { value: 'AS_EXPECTED' } });

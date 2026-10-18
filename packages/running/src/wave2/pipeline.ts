@@ -26,7 +26,7 @@ import { sortDegradations } from '../degradation.js';
 import type { Degradation } from '../degradation.js';
 import type { RunningWave1Analysis, SessionAssessment } from '../analysis.js';
 import type { RunningContext } from '../context.js';
-import { historyAnchor } from './history.js';
+import { historyAnchor, programmeFirst } from './history.js';
 import type { RealizedSession, StructureFamily } from './history.js';
 import { WAVE3_ARCHETYPES, WAVE3_STRUCTURE_FAMILIES } from './candidate.js';
 import { qualityGuards, QUALITY_ARCHETYPES, returnLifted } from '../wave3/guards.js';
@@ -210,6 +210,7 @@ function evaluate(a: RunningSessionArchetype, family: StructureFamily, env: Eval
   const anchor = historyAnchor({
     archetype: a, structureFamily: family, history: ctx.sessionHistory, now: input.context.now as ISODateTime, mode: ctx.mode, parameters: params, returning,
     ...(ctx.recentLoad?.returnStartedAt !== undefined ? { returnStartedAt: ctx.recentLoad.returnStartedAt } : {}),
+    freeSessionIds: ctx.freeSessionIds,
   });
   if (anchor.status === 'unavailable') {
     // D2 : branche « sinon » de V19 (aucune dose réalisée récente) ⇒ première exposition gouvernée, après un TEST récent.
@@ -291,6 +292,12 @@ function evaluate(a: RunningSessionArchetype, family: StructureFamily, env: Eval
   return { candidate, built: { structure, exercise } };
 }
 
+/** RC4.3 (R2) — la politique d'ancre V19 porte-t-elle PROGRAMME_FIRST ? */
+function freeRunPolicyOn(params: readonly RunningParameter[], mode: RunningContext['mode']): boolean {
+  const r = resolveParameter(params, 'running.dose.historyAnchorPolicy', mode);
+  return r.status === 'resolved' && programmeFirst(r.value);
+}
+
 /** Pas de progression (D1) pour l'ancre retenue : capacité de vague 1, reprise levée, tolérance démontrée. */
 function stepFor(a: RunningSessionArchetype, family: StructureFamily, anchor: Extract<ReturnType<typeof historyAnchor>, { status: 'anchored' }>, e: {
   readonly ctx: RunningContext; readonly analysis: RunningWave1Analysis; readonly params: readonly RunningParameter[]; readonly now: string; readonly lifted: boolean; readonly capability: 'longRunProgression' | 'progressionBeyondHistory';
@@ -300,6 +307,8 @@ function stepFor(a: RunningSessionArchetype, family: StructureFamily, anchor: Ex
     capabilityEnabled: e.analysis.capabilities.find((c) => c.capability === e.capability)?.enabled === true, returnLifted: e.lifted,
     ...(e.ctx.returnState.state !== 'NONE' && e.ctx.recentLoad?.returnStartedAt !== undefined ? { returnStartedAt: e.ctx.recentLoad.returnStartedAt } : {}),
     parameters: e.params, mode: e.ctx.mode,
+    // RC4.3 (R2) : origine des courses libres transmise seulement sous la politique PROGRAMME_FIRST (V19).
+    ...(freeRunPolicyOn(e.params, e.ctx.mode) ? { freeSessionIds: e.ctx.freeSessionIds } : {}),
   });
 }
 

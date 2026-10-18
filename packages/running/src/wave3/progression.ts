@@ -34,6 +34,12 @@ export interface StepInput {
   readonly returnStartedAt?: string;
   readonly parameters: readonly RunningParameter[];
   readonly mode: RunningMode;
+  /**
+   * RC4.3 (R2, A′) — courses libres (FOURNIES) : si l'ancre est une séance du programme, une course libre ne compte que
+   * si sa dose est celle de l'ancre ET sa tolérance favorable est connue (EASIER / AS_EXPECTED) ; sinon elle est
+   * ignorée (ni preuve, ni interruption). Absent : comportement antérieur.
+   */
+  readonly freeSessionIds?: readonly string[];
 }
 
 export type StepResult =
@@ -69,7 +75,10 @@ export function progressionStep(i: StepInput): StepResult {
   if (!step) return hold('MAGNITUDE_UNDEFINED', p.reasons);
 
   // Les N dernières séances du même type (non futures, post-retour si reprise), de la plus récente à la plus ancienne.
+  const free = new Set(i.freeSessionIds ?? []);
+  const counted = (s: RealizedSession): boolean => free.has(i.anchor.sessionId) || !free.has(s.sessionId) || (sameDose(s, i.anchor) && tolerated(s));
   const sameKind = i.history
+    .filter(counted)
     .filter((s) => s.archetype === i.archetype && s.structureFamily === i.family && s.completedAt <= i.now && (i.returnStartedAt === undefined || s.completedAt >= i.returnStartedAt))
     .sort((a, b) => (a.completedAt < b.completedAt ? 1 : a.completedAt > b.completedAt ? -1 : a.sessionId < b.sessionId ? -1 : 1));
   const lastN = sameKind.slice(0, step.tolerated);

@@ -23,6 +23,10 @@ import { deriveProgramStatus, ENGINE_VERSION, estimateDuration, migrateToCurrent
 import type { CoreState, ValidationContext } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
 import type { PlannerSport, SlotRequest, WeekSession } from '@hybridsport/planner';
+import { readNeighbourWindow } from '@hybridsport/planner';
+import type { RealizedSession } from '@hybridsport/running';
+import { dateOf, sessionInstant } from './dates.js';
+import { countableFreeRuns, freeRunDraft } from './free-run-load.js';
 import type { AppState, PersistedWeek, Reason } from './model.js';
 import type { CheckInEvaluation } from './checkin.js';
 import { coreStateOf, UNKNOWN_CORE_STATE } from './checkin.js';
@@ -53,6 +57,21 @@ export type Regeneration =
   | { readonly status: 'refused'; readonly reasons: readonly Reason[] }
   | { readonly status: 'not_regenerable'; readonly cause: string };
 
+// technical-constant: millisecondes par heure (conversion d'unité)
+const MS_PER_HOUR = 3_600_000;
+
+/**
+ * RC4.3 (R3) — courses libres comptables faites APRÈS la planification de la semaine de `requestId` et au plus tard à
+ * `now` : nouvelles activités évaluées au démarrage (la semaine composée n'est jamais modifiée rétroactivement).
+ */
+export function freeRunsSincePlanning(state: AppState, requestId: string, now: string): readonly RealizedSession[] {
+  const at = locate(state, requestId);
+  if (!at) return [];
+  const since = Date.parse(at.week.plannedAt);
+  const until = Date.parse(now);
+  return countableFreeRuns(state).filter((r) => Date.parse(r.completedAt) > since && Date.parse(r.completedAt) <= until);
+}
+
 /** Sports dont le créneau est reconstructible fidèlement (HYROX : station non persistée ⇒ non régénérable). */
 const REGENERABLE: readonly PlannerSport[] = ['strength', 'running', 'crosstraining'];
 
@@ -60,7 +79,7 @@ const REGENERABLE: readonly PlannerSport[] = ['strength', 'running', 'crosstrain
  * Régénère la séance PLANIFIÉE `requestId` avec l'état CORE `coreState` sur son jour (les autres jours : inconnu).
  * Pur : n'écrit rien dans l'état.
  */
-export function regenerateSession(state0: AppState, requestId: string, coreState: CoreState, env: ProgrammeEnvironment): Regeneration {
+export function regenerateSession(state0: AppState, requestId: string, coreState: CoreState, env: ProgrammeEnvironment, freeRuns: readonly RealizedSession[] = []): Regeneration {
   const at = locate(state0, requestId);
   // Historiques tels qu'à la planification de la semaine (aucune donnée persistée en plus ; tracks : état courant).
   const state = at ? asOfPlanning(state0, at.week.plannedAt) : state0;
@@ -80,6 +99,18 @@ export function regenerateSession(state0: AppState, requestId: string, coreState
     const rec = recordOf(x);
     return rec && x.date ? { requestId: x.requestId, date: x.date, archetypeId: x.intent?.archetypeId ?? '', session: rec.session, ...(rec.fingerprint?.status === 'available' ? { fingerprint: rec.fingerprint.value } : {}) } : undefined;
   };
+  // RC4.3 (R3) — courses libres faites depuis la planification : voisines RÉALISÉES ajoutées au contexte persisté, profil
+  // de demande dérivé par le port Course (brouillon neutre), même fenêtre d'interférence M3 que le planificateur.
+  const window = readNeighbourWindow(env.governance, env.mode).hours;
+  const hoursOf = (d: string): number => Date.parse(sessionInstant(d)) / MS_PER_HOUR;
+  const withImportance = (r.neighbourContext?.neighbours ?? []).some((n) => n.importance !== undefined);
+  const extra = r.sport === 'running' || !port.consumesNeighbours ? [] : freeRuns.flatMap((fr) => {
+    const draft = freeRunDraft(fr);
+    const d = draft ? ports.running?.demand(draft, env.mode) : undefined;
+    const h = hoursOf(dateOf(fr.completedAt)) - hoursOf(date);
+    if (!d || d.status !== 'derived' || (window !== undefined && Math.abs(h) > window)) return [];
+    return [{ sport: 'running' as const, discipline: 'running', stimulus: 'history', hoursFromThisSession: h, demand: { ...d.levels }, ...(withImportance ? { importance: 'unknown' as const } : {}) }];
+  });
   const same = placed.filter((x) => x.sport === r.sport && (port.weekSessionsScope === 'generated' || (x.date ?? '') < date))
     .sort((a, b) => ((a.date ?? '') < (b.date ?? '') ? -1 : 1)).flatMap((x) => { const s = sessionOf(x); return s ? [s] : []; });
   const programmeWeek = ps.weeks.find((w) => w.plannerRef === week.weekStart);
@@ -88,7 +119,7 @@ export function regenerateSession(state0: AppState, requestId: string, coreState
   const slot: SlotRequest = {
     requestId, date, availableMinutes: week.days.find((d) => d.date === date)?.availableMinutes ?? 0, hybrid: week.hybrid, seed: `planner:${requestId}:${date}`,
     intent: { ...r.intent } as SlotRequest['intent'],
-    ...(port.consumesNeighbours && r.neighbourContext ? { neighbours: { known: r.neighbourContext.known, neighbours: r.neighbourContext.neighbours.map((n) => ({ ...n, demand: { ...n.demand } })) } as SlotRequest['neighbours'] } : {}),
+    ...(port.consumesNeighbours && (r.neighbourContext || extra.length > 0) ? { neighbours: { known: r.neighbourContext?.known ?? true, neighbours: [...(r.neighbourContext?.neighbours ?? []).map((n) => ({ ...n, demand: { ...n.demand } })), ...extra] } as SlotRequest['neighbours'] } : {}),
     ...(port.consumesWeekSessions ? { ...(same.length > 0 ? { weekSessions: same } : {}), sportSessions: week.requests.filter((x) => x.sport === r.sport).length, sportPriority } : port.consumesNeighbours ? { sportPriority } : {}),
     ...(Object.keys(cross).length > 0 ? { crossSportWeek: cross } : {}),
   };
@@ -221,9 +252,9 @@ const SHOWN = /^(SAFETY\.|REPAIR\.|DOSE\.(MODIFIED|READINESS)|DATA\.READINESS)/;
  * Décision de démarrage pour une évaluation SANS pause : séance inchangée, adaptée (régénérée) ou reportée.
  * `catalogAreas` : zones sensibles d'un exercice (catalogue de la discipline) pour les séances non régénérables.
  */
-export function decideStart(state: AppState, requestId: string, planned: SessionDraft, ev: CheckInEvaluation, env: ProgrammeEnvironment, catalogAreas: (exerciseId: string) => readonly string[]): StartDecision {
+export function decideStart(state: AppState, requestId: string, planned: SessionDraft, ev: CheckInEvaluation, env: ProgrammeEnvironment, catalogAreas: (exerciseId: string) => readonly string[], freeRuns: readonly RealizedSession[] = []): StartDecision {
   const base = ev.reasons.map(reason);
-  if (!ev.needsAdaptation) return { kind: 'unchanged', reasons: base };
+  if (!ev.needsAdaptation) return freeRuns.length === 0 ? { kind: 'unchanged', reasons: base } : freeRunRecovery(state, requestId, planned, base, env, freeRuns);
   const excludedAreas = ev.safety.areaRestrictions.filter((a) => a.action === 'exclude').map((a) => a.area);
   const hitsOf = (s: SessionDraft) => s.blocks.flatMap((b) => b.items).filter((it) => catalogAreas(it.exerciseId).some((a) => excludedAreas.includes(a)));
   const hits = hitsOf(planned);
@@ -255,7 +286,7 @@ export function decideStart(state: AppState, requestId: string, planned: Session
     }
     return adapted(record, changes, [...(a.changes.length > 0 ? [{ code: 'KAIRO.CHECKIN_PERSISTED_ADAPTED', params: { requestId, cause } }] : []), ...readinessReasons], a.reasons);
   };
-  const regen = regenerateSession(state, requestId, coreStateOf(ev.readiness, ev.reports), env);
+  const regen = regenerateSession(state, requestId, coreStateOf(ev.readiness, ev.reports), env, freeRuns);
   if (regen.status === 'not_regenerable') {
     // Séance non régénérable (non placée, HYROX) : adaptation de la séance persistée si une zone l'impose (ou, en
     // Musculation, si l'état du jour le demande : RC3.1 A1), sinon gardée.
@@ -277,4 +308,24 @@ export function decideStart(state: AppState, requestId: string, planned: Session
   const recomposed = [{ code: 'KAIRO.CHECKIN_SESSION_RECOMPOSED', params: { requestId, cause: 'session_not_reproducible' } }];
   if (regen.status === 'refused') return postponed(regen.reasons.filter((x) => SHOWN.test(x.code) || /REFUSED|NO_VALID|UNAVAILABLE|BLOCKING_NEED/.test(x.code)).slice(0, SHOWN_MAX));
   return adapted(regen.record, sessionChanges(planned, regen.record.session), recomposed, regen.reasons.filter((x) => SHOWN.test(x.code)));
+}
+
+/**
+ * RC4.3 (R3) — état du jour sans adaptation, mais course(s) libre(s) faite(s) depuis la planification : la séance est
+ * régénérée par son moteur avec ces courses comme voisines réalisées (état du jour INCONNU, comme à la planification).
+ * Appliqué seulement si la séance planifiée est reproductible (sinon aucun changement attribué à tort) ; refus du moteur
+ * ⇒ report explicite ; sport non régénérable (HYROX, séance non placée) ⇒ séance gardée, motif tracé.
+ */
+function freeRunRecovery(state: AppState, requestId: string, planned: SessionDraft, base: readonly Reason[], env: ProgrammeEnvironment, freeRuns: readonly RealizedSession[]): StartDecision {
+  const ids = freeRuns.map((r) => r.sessionId);
+  const notApplied = (cause: string): StartDecision => ({ kind: 'unchanged', reasons: [...base, { code: 'KAIRO.FREE_RUN_RECOVERY_NOT_APPLIED', params: { requestId, cause, freeRuns: ids } }] });
+  const regen = regenerateSession(state, requestId, UNKNOWN_CORE_STATE, env, freeRuns);
+  if (regen.status === 'not_regenerable') return notApplied(regen.cause);
+  const baseline = regenerateSession(state, requestId, UNKNOWN_CORE_STATE, env);
+  if (!(baseline.status === 'planned' && sessionChanges(planned, baseline.record.session).length === 0)) return notApplied('session_not_reproducible');
+  if (regen.status === 'refused') return { kind: 'postponed', reasons: [...base, { code: 'KAIRO.FREE_RUN_RECOVERY_REFUSED', params: { requestId, freeRuns: ids } }, ...regen.reasons.filter((x) => SHOWN.test(x.code) || /REFUSED|NO_VALID|UNAVAILABLE|BLOCKING_NEED/.test(x.code)).slice(0, SHOWN_MAX)] };
+  const changes = sessionChanges(planned, regen.record.session);
+  if (changes.length === 0) return { kind: 'unchanged', reasons: [...base, { code: 'KAIRO.FREE_RUN_RECOVERY_NO_CHANGE', params: { requestId, freeRuns: ids } }] };
+  const applied: Reason = { code: 'KAIRO.FREE_RUN_RECOVERY_APPLIED', params: { requestId, freeRuns: ids, changes: changes.length } };
+  return { kind: 'adapted', adaptation: { record: toEnvelope('session_record', regen.record), changes, reasons: [applied, ...regen.reasons.filter((x) => SHOWN.test(x.code))].slice(0, ADAPTATION_REASONS_MAX) }, reasons: [...base, applied] };
 }

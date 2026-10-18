@@ -195,6 +195,8 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   CT_PROGRESS_INVALID: 'Valeur de progression invalide.',
   CT_BLOCK_UNKNOWN: 'Bloc inconnu dans cette séance.',
   RUN_DIFFICULTY_INVALID: 'Difficulté ressentie inconnue.',
+  FREE_RUN_SAME_DAY_CONFIRM: 'Une course du programme est déjà enregistrée ce jour-là : confirmez qu’il s’agit d’une activité supplémentaire, ou annulez.',
+  FREE_RUN_TYPE_INVALID: 'Type de course inconnu.',
   RUN_PLAYER_UNAVAILABLE: 'Cette séance n’a pas d’étapes de course à dérouler.',
   HR_DECLARATION_MISSING: 'HYROX : choisissez un type de séance, un objectif, un nombre de séances et indiquez une éventuelle coupure.',
   HR_ROLE_UNKNOWN: 'HYROX : type de séance inconnu.',
@@ -288,6 +290,11 @@ export function checkInReasonsText(reasons: readonly { readonly code: string; re
         if (p.cause === 'session_not_reproducible') return ['État du jour enregistré : la séance prévue est gardée telle quelle (elle ne peut plus être recomposée à l’identique ; aucun ajustement automatique).'];
         return ['État du jour enregistré : cette séance n’est pas ajustée automatiquement (aucune règle d’adaptation pour ce type de séance).'];
       case 'KAIRO.CHECKIN_NO_CHANGE': return ['État du jour pris en compte : aucun changement nécessaire.'];
+      // RC4.3 (R3) — courses libres faites depuis la planification de la semaine, évaluées au démarrage.
+      case 'KAIRO.FREE_RUN_RECOVERY_APPLIED': return ['Course libre récente prise en compte : la séance est allégée pour votre récupération.'];
+      case 'KAIRO.FREE_RUN_RECOVERY_NO_CHANGE': return ['Course libre récente prise en compte : aucun changement nécessaire.'];
+      case 'KAIRO.FREE_RUN_RECOVERY_REFUSED': return ['Course libre récente : le moteur ne peut pas proposer cette séance aujourd’hui ; elle est reportée.'];
+      case 'KAIRO.FREE_RUN_RECOVERY_NOT_APPLIED': return ['Course libre récente enregistrée : cette séance ne peut pas être ajustée automatiquement ; écoutez vos sensations.'];
       default: return [];
     }
   });

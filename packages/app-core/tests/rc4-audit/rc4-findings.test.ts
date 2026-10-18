@@ -68,28 +68,36 @@ describe('F1 (RC4.1) — Course : le ressenti déclaré en fin de séance pilote
   });
 });
 
-describe('F2 — Course libre longue : elle devient la dose des footings et vide la semaine suivante', () => {
-  it('P4 : 80 min libres le dimanche ⇒ semaines suivantes : 2 courses sur 3 non planifiées (TIME_EXCEEDED), mode entretien, séance clé perdue', () => {
-    const r = simulate(spec('P4'), 5);
-    const w4 = selectBeta0Week(r.state, MONS[3])?.sessions.filter((x) => x.sport === 'running') ?? [];
-    expect(w4.filter((x) => x.notPlanned?.reason?.code === 'PLAN.RUNNING.TIME_EXCEEDED')).toHaveLength(2);
-    expect(w4.filter((x) => x.status !== 'not_planned').map((x) => x.archetypeId)).toEqual(['running.easy']);
-    const key = r.state.planner.weeks[MONS[3]]?.requests.find((q) => q.sport === 'running' && q.status === 'planned');
-    expect(key?.reasons.some((x) => x.code === 'PLAN.RUNNING.WEEK_MAINTENANCE_MODE')).toBe(true);
-    // Témoin : sans la course libre, la semaine garde ses trois courses, seuil compris.
-    const ref = simulate({ ...spec('P4'), freeRuns: [] }, 4);
-    expect((selectBeta0Week(ref.state, MONS[3])?.sessions ?? []).filter((x) => x.sport === 'running').map((x) => x.archetypeId)).toEqual(['running.threshold', 'running.easy', 'running.easy']);
+describe('F2 (RC4.3) — Course libre longue : les séances du programme restent la référence des footings', () => {
+  it('P4 : 80 min libres le dimanche de S3 ⇒ S4–S6 gardent 3 courses, le seuil et des footings qui progressent', () => {
+    const r = simulate(spec('P4'), 6);
+    for (const mon of MONS.slice(3)) {
+      const w = selectBeta0Week(r.state, mon)?.sessions.filter((x) => x.sport === 'running') ?? [];
+      expect(w.filter((x) => x.placement !== 'blocked')).toHaveLength(3);
+      expect(w.map((x) => x.archetypeId)).toContain('running.threshold');
+      const key = r.state.planner.weeks[mon]?.requests.find((q) => q.sport === 'running' && q.status === 'planned');
+      expect(key?.reasons.some((x) => x.code === 'PLAN.RUNNING.WEEK_MAINTENANCE_MODE')).toBe(false);
+    }
+    // Même semaines que le témoin sans course libre (la course libre n'écrase plus la dose).
+    const ref = simulate({ ...spec('P4'), freeRuns: [] }, 6);
+    expect(runStructures(r.state, MONS[5])).toEqual(runStructures(ref.state, MONS[5]));
   });
 });
 
-describe('F3 — Charge des courses libres ignorée par les autres sports', () => {
-  it('Musculation du lundi identique avec ou sans 90 min de course libre la veille', () => {
+describe('F3 (RC4.3) — Charge des courses libres prise en compte par les autres sports', () => {
+  it('Musculation du lundi allégée après 90 min de course libre la veille, même sans sport Course déclaré (P2)', () => {
     const base = { ...spec('P2'), checkIn: undefined };
     const a = simulate({ ...base, freeRuns: [] }, 2);
     const b = simulate({ ...base, freeRuns: [{ week: 0, day: '2026-10-11', durationS: 5400, distanceM: 15000 }] }, 2);
-    const mon = (r: ReturnType<typeof simulate>) => r.sessions.filter((x) => x.week === 2 && x.sport === 'strength').map((x) => ({ d: x.date, red: x.reductions, g: x.groups }));
+    const mon = (r: ReturnType<typeof simulate>) => r.sessions.filter((x) => x.week === 2 && x.sport === 'strength' && x.date === MONS[1]).map((x) => ({ red: x.reductions, g: x.groups }));
     expect(b.state.running.realized).toHaveLength(1);
-    expect(mon(b)).toEqual(mon(a));
+    expect(mon(a)[0]?.red).toEqual([]);
+    expect(mon(b)[0]?.red).toEqual(['running@-24h:lower_hip:full', 'running@-24h:lower_knee:full']);
+    // Les autres séances (hors fenêtre de la course) ne reçoivent aucun allègement lié à la course (pas de double
+    // comptage) ; le moteur Musculation y compense le volume hebdomadaire retiré le lundi (règle existante, inchangée).
+    const rest = (r: ReturnType<typeof simulate>) => r.sessions.filter((x) => x.week === 2 && x.sport === 'strength' && x.date !== MONS[1]).map((x) => x.reductions);
+    expect(rest(b)).toEqual(rest(a));
+    expect(rest(b).flat().some((x) => x.startsWith('running@'))).toBe(false);
   });
 });
 

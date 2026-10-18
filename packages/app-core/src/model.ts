@@ -14,6 +14,9 @@ import { zExerciseExposure, zStrengthTrack } from '@hybridsport/strength';
 import { RETURN_STATES, RUNNING_GOALS, RUNNING_LEVELS, zRealizedSession, zRunningReference } from '@hybridsport/running';
 
 export const SPORTS = ['strength', 'running', 'crosstraining', 'hyrox'] as const;
+/** RC4.3 — types DÉCLARABLES d'une course libre (absence = « Non précisé ») ; qualité : seuil, fractionné ou côtes. */
+export const FREE_RUN_TYPES = ['easy', 'long', 'threshold', 'interval', 'hills'] as const;
+export type FreeRunType = (typeof FREE_RUN_TYPES)[number];
 export type Sport = (typeof SPORTS)[number];
 /** Sports pour lesquels un moteur existe dans le dépôt. Cross-training et HYROX : aucun moteur, aucune règle validée. */
 export const ENGINE_SPORTS = ['strength', 'running'] as const satisfies readonly Sport[];
@@ -439,6 +442,14 @@ export const zAppState = z.object({
      * enregistré suit la convention de jour de l'application ; l'heure n'est jamais affichée ni présentée comme réelle.
      */
     timeUnknown: z.array(z.string()).optional(),
+    /**
+     * RC4.3 (migration M1) — métadonnées FACULTATIVES d'une course libre, par identifiant (`free:…`) :
+     * - `type` : type DÉCLARÉ (absent ⇒ « Non précisé », jamais supposé) ; la course reste enregistrée EASY / CONTINUOUS
+     *   dans `realized` (contrat inchangé) et le type n'est appliqué qu'au contexte du moteur, jamais persisté ailleurs ;
+     * - `dateUnknown` : course déclarée à l'onboarding SANS date réelle (instant conventionnel) : jamais une fatigue récente.
+     * Absent ⇒ toutes les courses « Non précisé », date réelle (états antérieurs inchangés).
+     */
+    freeRunMeta: z.record(z.string(), z.object({ type: z.enum(FREE_RUN_TYPES).optional(), dateUnknown: z.literal(true).optional() }).strict()).optional(),
   }).strict(),
   /**
    * Cross-training (C2) : séances réalisées, conservées TELLES QUELLES (complétion déclarée comprise). Leur contrat est

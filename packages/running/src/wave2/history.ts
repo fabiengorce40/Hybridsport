@@ -102,6 +102,8 @@ export interface AnchorQuery {
   /** Reprise en cours (état ≠ NONE) : seules les séances post-retour comptent. */
   readonly returning: boolean;
   readonly returnStartedAt?: string;
+  /** RC4.3 (R2) — séances réalisées hors programme (courses libres), FOURNIES par l'appelant. */
+  readonly freeSessionIds?: readonly string[];
 }
 
 const V19 = 'running.dose.historyAnchorPolicy';
@@ -117,6 +119,23 @@ function readV19(v: unknown): boolean {
 
 /** Règle après un retour négatif plus récent : REFUS (V19 d'origine) ou repli sur la dernière dose réussie (décision D5). */
 const fallbackAfterNegative = (v: unknown): boolean => (v as { afterNegativeResponse?: unknown }).afterNegativeResponse === 'LAST_SUCCESSFUL_DOSE';
+
+/** RC4.3 (R2) — priorité aux séances du programme sur les courses libres (option A′), si la politique la porte. */
+export const programmeFirst = (v: unknown): boolean => v !== null && typeof v === 'object' && (v as { freeRunPolicy?: unknown }).freeRunPolicy === 'PROGRAMME_FIRST';
+
+/**
+ * RC4.3 (R2) — séances candidates à l'ancre sous PROGRAMME_FIRST : les séances du programme du même type si l'une est
+ * exploitable (terminée, sans retour négatif) ; sinon, pour un footing (EASY) seulement, toutes (ancre initiale : course
+ * déclarée à l'onboarding, profil sans historique programme). Une course libre longue ou de qualité n'est JAMAIS une
+ * référence de durée ou de structure. Sans la politique : liste inchangée (comportement antérieur).
+ */
+export function anchorCandidates(sameKind: readonly RealizedSession[], archetype: RunningSessionArchetype, policy: unknown, freeSessionIds: readonly string[] | undefined): readonly RealizedSession[] {
+  if (!programmeFirst(policy) || freeSessionIds === undefined) return sameKind;
+  const free = new Set(freeSessionIds);
+  const programme = sameKind.filter((s) => !free.has(s.sessionId));
+  const usable = programme.some((s) => s.completion === 'COMPLETED' && !sessionNegativeResponse(s));
+  return usable || archetype !== 'EASY' ? programme : sameKind;
+}
 
 /** Ancre de dose V19. Pure et déterministe ; toute incertitude conduit à `unavailable`, jamais à une dose par défaut. */
 export function historyAnchor(q: AnchorQuery): HistoryAnchor {
@@ -137,10 +156,10 @@ export function historyAnchor(q: AnchorQuery): HistoryAnchor {
 
   const nowMs = toEpochMs(q.now);
   const at = (s: RealizedSession): number => toEpochMs(s.completedAt as ISODateTime);
-  const sameKind = q.history
+  const sameKind = anchorCandidates(q.history
     .filter((s) => s.archetype === q.archetype && s.structureFamily === q.structureFamily)
     // Une séance future ou antérieure au retour n'est pas un niveau démontré actuel.
-    .filter((s) => at(s) <= nowMs && (!q.returning || q.returnStartedAt === undefined || at(s) >= toEpochMs(q.returnStartedAt as ISODateTime)));
+    .filter((s) => at(s) <= nowMs && (!q.returning || q.returnStartedAt === undefined || at(s) >= toEpochMs(q.returnStartedAt as ISODateTime))), q.archetype, policy.value, q.freeSessionIds);
   const realized = sameKind.filter((s) => s.completion === 'COMPLETED' && !sessionNegativeResponse(s));
   if (realized.length === 0) return unavailable('NO_REALIZED_SESSION');
   const latest = Math.max(...realized.map(at));

@@ -18,7 +18,7 @@ const ACCEPTED_BASELINE = '1d37a50';
  * … SAUF la liste FERMÉE de l'évolution CORE autorisée pour C2 (empreinte à dimensions explicites, session_record v5)
  * et pour HYROX H1 (charge générique facultative hors séries, session_record v6),
  * ses tests, et l'empreinte de sources F20 de Strength qui la constate, plus les lots Strength S1 (composition hebdomadaire) et S2 (contrat de substitution).
- * Running `src` : aucun changement.
+ * Running `src` : aucun changement, hors lot RC4.3 R2 (liste fermée ci-dessous).
  * Toute autre modification de ces paquets échoue ici.
  */
 /**
@@ -96,6 +96,19 @@ const STRENGTH_S5_CHANGES = [
   'packages/strength/tests/longitudinal/evidence-longitudinal.test.ts',
   'packages/strength/tests/longitudinal/__reports__/evidence-longitudinal.md',
 ];
+/**
+ * Lot Running RC4.3 — décision R2 (option A′) validée le 2026-10-18 (liste FERMÉE) : politique `freeRunPolicy`
+ * PROGRAMME_FIRST de V19 (surcouche des décisions produit), origine des courses libres FOURNIE au contexte, ancre et
+ * preuve de tolérance (V23) selon cette politique ; test dédié. Aucune autre modification de Running n'est admise.
+ */
+const RUNNING_RC43_R2_CHANGES = [
+  'packages/running/src/context.ts',
+  'packages/running/src/governance/product-decisions.ts',
+  'packages/running/src/wave2/history.ts',
+  'packages/running/src/wave2/pipeline.ts',
+  'packages/running/src/wave3/progression.ts',
+  'packages/running/tests/unit/rc43-free-run-policy.test.ts',
+];
 const CT_C2_AUTHORIZED_CORE_CHANGES = [
   'packages/domain/src/duplicate.ts',
   'packages/domain/src/serialization.ts',
@@ -132,6 +145,7 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   ...STRENGTH_S4_CHANGES,
   ...STRENGTH_S5_CHANGES,
   ...STRENGTH_C42_A2_CHANGES,
+  ...RUNNING_RC43_R2_CHANGES,
 ];
 
 describe('frontières', () => {
@@ -160,7 +174,7 @@ describe('frontières', () => {
     }
     const changed = diff.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
     expect(changed.filter((f) => !CT_C2_AUTHORIZED_CORE_CHANGES.includes(f))).toEqual([]);
-    expect(changed.filter((f) => f.startsWith('packages/running/') || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f) && !STRENGTH_C42_A2_CHANGES.includes(f)))).toEqual([]);
+    expect(changed.filter((f) => (f.startsWith('packages/running/') && !RUNNING_RC43_R2_CHANGES.includes(f)) || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f) && !STRENGTH_C42_A2_CHANGES.includes(f)))).toEqual([]);
   });
 });
 

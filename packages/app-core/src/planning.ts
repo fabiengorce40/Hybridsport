@@ -26,6 +26,7 @@ import type { ContentSource } from './provisional-content.js';
 import type { Clock } from './app.js';
 import { AppError } from './app.js';
 import { assertPlanningAllowed, writePlannedWeek } from './weeks.js';
+import { freeRunRecent } from './free-run-load.js';
 
 type Content = Pick<ContentSource, 'ruleset' | 'catalog'>;
 /** Environnement d'orchestration : moteurs, contenus, gouvernance du planificateur et mode. Injecté (tests : TEST_ONLY). */
@@ -226,7 +227,12 @@ export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOri
  * jamais présentée comme réalisée ; la politique gouvernée du planificateur décide lesquelles comptent.
  */
 export function recentOf(state: AppState, p: Profile, weekStart: string): { date: string; sport: Sport; session: SessionDraft; status: 'executed' | 'abandoned' | 'missed' | 'planned' }[] {
-  const prev = state.planner.weeks[addDays(weekStart, -p.availability.length)];
+  const from = addDays(weekStart, -p.availability.length);
+  // RC4.3 (R3) — courses libres datées et effectuées de la semaine précédente : voisines RÉALISÉES (charge réelle).
+  return [...programmeRecentOf(state, state.planner.weeks[from]), ...freeRunRecent(state, from, weekStart)];
+}
+
+function programmeRecentOf(state: AppState, prev: AppState['planner']['weeks'][string] | undefined): { date: string; sport: Sport; session: SessionDraft; status: 'executed' | 'abandoned' | 'missed' | 'planned' }[] {
   const results = new Map((state.programmeState?.results ?? []).map((x) => [x.requestId, x]));
   const STATUS = { completed_as_prescribed: 'executed', modified: 'executed', abandoned: 'abandoned', missed: 'missed' } as const;
   return (prev?.requests ?? []).flatMap((r) => {

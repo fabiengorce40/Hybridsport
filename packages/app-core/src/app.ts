@@ -3,9 +3,9 @@
  * toujours injectés). L'interface n'appelle que ces fonctions ; elle ne décide rien de sportif.
  */
 import { zFingerprintHistoryEntry } from '@hybridsport/domain';
-import { normalizeInstant, sessionInstant, weekStartOf } from './dates.js';
+import { dateOf, normalizeInstant, sessionInstant, weekStartOf } from './dates.js';
 import { generateSession, isStale } from './generate.js';
-import type { AppState, Feedback, GeneratedSession, PlanEntry, ProfileInput, SessionLog, SetLog } from './model.js';
+import type { AppState, Feedback, FreeRunType, GeneratedSession, PlanEntry, ProfileInput, SessionLog, SetLog } from './model.js';
 import { zFeedback, zProfile } from './model.js';
 import { planWeek } from './planner.js';
 import { applyCompletion } from './progression.js';
@@ -154,6 +154,22 @@ export interface FreeRunInput {
   readonly note?: string;
   /** RC3.4 — zones douloureuses déclarées (facultatives), ajoutées à la pause douleur existante. */
   readonly painAreas?: readonly string[];
+  /** RC4.3 — type DÉCLARÉ (facultatif) ; absent ⇒ « Non précisé » (aucune intensité supposée). */
+  readonly type?: FreeRunType;
+  /**
+   * RC4.3 — confirmation EXPLICITE d'une activité supplémentaire : course sans heure précise déclarée le même jour
+   * qu'une course du programme déjà réalisée. Sans elle, la saisie est refusée (`FREE_RUN_SAME_DAY_CONFIRM`) : jamais de
+   * fusion automatique, jamais de double comptage silencieux.
+   */
+  readonly confirmedExtra?: boolean;
+}
+
+/**
+ * RC4.3 — courses du PROGRAMME déjà réalisées le jour `date` (identifiants) : base de l'avertissement « même jour »
+ * pour une course libre sans heure précise. Les chevauchements horaires restent refusés (`DUPLICATE_RUN`).
+ */
+export function programmeRunsOn(state: AppState, date: string, exceptId?: string): readonly string[] {
+  return state.running.realized.filter((r) => r.sessionId !== exceptId && !r.sessionId.startsWith('free:') && r.completion !== 'SKIPPED' && dateOf(r.completedAt) === date).map((r) => r.sessionId);
 }
 
 /**
@@ -184,6 +200,9 @@ function checkedFreeRun(state: AppState, run: FreeRunInput, clock: Clock, except
   }
   const note = run.note?.trim() ?? '';
   if (note.length > FREE_RUN_NOTE_MAX) throw new AppError('RUN_NOTE_TOO_LONG');
+  if (run.type !== undefined && !(FREE_RUN_TYPE_LIST as readonly string[]).includes(run.type)) throw new AppError('FREE_RUN_TYPE_INVALID');
+  // RC4.3 — même jour qu'une course du programme réalisée, sans heure précise : confirmation explicite exigée.
+  if (run.startedAt === undefined && run.completedOn !== undefined && run.confirmedExtra !== true && programmeRunsOn(state, run.completedOn).length > 0) throw new AppError('FREE_RUN_SAME_DAY_CONFIRM');
   const id = `free:${at}`;
   const others = state.running.realized.filter((r) => r.sessionId !== exceptId);
   if (others.some((r) => r.sessionId === id)) throw new AppError('DUPLICATE_RUN');
@@ -192,15 +211,24 @@ function checkedFreeRun(state: AppState, run: FreeRunInput, clock: Clock, except
   return { at, note, timeKnown };
 }
 
-/** Annexes (commentaire, heure inconnue) d'une course libre, recalculées pour l'identifiant `id`. */
-function withAnnexes(running: AppState['running'], removeId: string | null, id: string | null, note: string, timeKnown: boolean): AppState['running'] {
+type FreeRunMeta = NonNullable<AppState['running']['freeRunMeta']>[string];
+const FREE_RUN_TYPE_LIST: readonly FreeRunType[] = ['easy', 'long', 'threshold', 'interval', 'hills'];
+
+/**
+ * Annexes (commentaire, heure inconnue, métadonnées RC4.3) d'une course libre, recalculées pour l'identifiant `id` ;
+ * `removeId` : ancien identifiant (correction) ou course supprimée — ses annexes sont retirées. Annexe vide ⇒ absente.
+ */
+function withAnnexes(running: AppState['running'], removeId: string | null, id: string | null, note: string, timeKnown: boolean, meta: FreeRunMeta = {}): AppState['running'] {
   const notes = Object.fromEntries(Object.entries(running.notes ?? {}).filter(([k]) => k !== removeId && k !== id));
   const unknown = (running.timeUnknown ?? []).filter((k) => k !== removeId && k !== id);
-  const { notes: _n, timeUnknown: _t, ...rest } = running;
+  const metas = Object.fromEntries(Object.entries(running.freeRunMeta ?? {}).filter(([k]) => k !== removeId && k !== id));
+  const { notes: _n, timeUnknown: _t, freeRunMeta: _m, ...rest } = running;
   const nextNotes = id !== null && note !== '' ? { ...notes, [id]: note } : notes;
   const nextUnknown = id !== null && !timeKnown ? [...unknown, id] : unknown;
-  return { ...rest, ...(Object.keys(nextNotes).length > 0 ? { notes: nextNotes } : {}), ...(nextUnknown.length > 0 ? { timeUnknown: nextUnknown } : {}) };
+  const nextMeta = id !== null && Object.keys(meta).length > 0 ? { ...metas, [id]: meta } : metas;
+  return { ...rest, ...(Object.keys(nextNotes).length > 0 ? { notes: nextNotes } : {}), ...(nextUnknown.length > 0 ? { timeUnknown: nextUnknown } : {}), ...(Object.keys(nextMeta).length > 0 ? { freeRunMeta: nextMeta } : {}) };
 }
+const metaOf = (type: FreeRunType | undefined, dateUnknown: boolean): FreeRunMeta => ({ ...(type !== undefined ? { type } : {}), ...(dateUnknown ? { dateUnknown: true as const } : {}) });
 
 /**
  * Course libre RÉALISÉE (hors programme) : une entrée au contrat Running (`running.realized`), lue par le moteur
@@ -209,7 +237,7 @@ function withAnnexes(running: AppState['running'], removeId: string | null, id: 
  * RC3.3 : `startedAt` et `note` ; RC3.4 : `completedOn` (date seule) et zones de douleur. Douleur déclarée ⇒ pause
  * douleur EXISTANTE (zones ajoutées à une pause déjà active, jamais remplacées) ; aucune douleur ⇒ sécurité inchangée.
  */
-export function logFreeRun(state: AppState, run: FreeRunInput, clock: Clock): AppState {
+export function logFreeRun(state: AppState, run: FreeRunInput, clock: Clock, o: { readonly dateUnknown?: boolean } = {}): AppState {
   const { at, note, timeKnown } = checkedFreeRun(state, run, clock);
   const id = `free:${at}`;
   const realized = {
@@ -220,7 +248,7 @@ export function logFreeRun(state: AppState, run: FreeRunInput, clock: Clock): Ap
   };
   const active = state.safety.activePain;
   const next: AppState = {
-    ...state, running: withAnnexes({ ...state.running, realized: [...state.running.realized, realized] }, null, id, note, timeKnown), revision: state.revision + 1,
+    ...state, running: withAnnexes({ ...state.running, realized: [...state.running.realized, realized] }, null, id, note, timeKnown, metaOf(run.type, o.dateUnknown === true)), revision: state.revision + 1,
     safety: run.pain ? { ...state.safety, activePain: { reportedAt: active?.reportedAt ?? normalizeInstant(clock.now), areas: [...new Set([...(active?.areas ?? []), ...(run.painAreas ?? [])])].sort(), ...(active?.sessionKey ? { sessionKey: active.sessionKey } : {}) } } : state.safety,
   };
   return refreshSessions(next, clock);
@@ -239,13 +267,23 @@ const freeRunOf = (state: AppState, id: string) => {
  */
 export function updateFreeRun(state: AppState, id: string, edit: Omit<FreeRunInput, 'completion' | 'pain' | 'painAreas'>, clock: Clock): AppState {
   const old = freeRunOf(state, id);
-  const input: FreeRunInput = { ...edit, completion: old.completion === 'UNKNOWN' ? 'COMPLETED' : old.completion, pain: old.intoleranceOrPainSignal };
-  const { at, note, timeKnown } = checkedFreeRun(state, input, clock, id);
+  const oldMeta = state.running.freeRunMeta?.[id] ?? {};
+  // RC4.3 — date inconnue (onboarding) conservée tant qu'aucune date ni heure réelle n'est saisie : l'instant
+  // conventionnel reste celui d'origine (jamais déplacé à « maintenant ») ; une date saisie devient la date réelle.
+  const dateUnknown = oldMeta.dateUnknown === true && edit.completedOn === undefined && edit.startedAt === undefined;
+  const keepInstant = dateUnknown ? { startedAt: new Date(Date.parse(old.completedAt) - edit.realizedDurationS * MS_PER_S).toISOString() } : {};
+  // Même jour déjà accepté (date inchangée) : la confirmation d'activité supplémentaire n'est pas redemandée.
+  const sameDay = edit.completedOn !== undefined && edit.completedOn === dateOf(old.completedAt) ? { confirmedExtra: true } : {};
+  const input: FreeRunInput = { ...edit, ...keepInstant, ...sameDay, completion: old.completion === 'UNKNOWN' ? 'COMPLETED' : old.completion, pain: old.intoleranceOrPainSignal };
+  const checked = checkedFreeRun(state, input, clock, id);
+  const { at, note } = checked;
+  // L'heure d'une course d'onboarding sans date n'est jamais présentée comme réelle.
+  const timeKnown = dateUnknown ? !(state.running.timeUnknown ?? []).includes(id) : checked.timeKnown;
   const nextId = `free:${at}`;
   const { distanceM: _d, ...base } = old;
   const updated = { ...base, sessionId: nextId, completedAt: at, realizedDurationS: edit.realizedDurationS, unexpectedDifficulty: edit.difficulty, ...(edit.distanceM !== undefined ? { distanceM: edit.distanceM } : {}) };
   const realized = state.running.realized.map((x) => (x.sessionId === id ? updated : x));
-  return { ...state, running: withAnnexes({ ...state.running, realized }, id, nextId, note, timeKnown), revision: state.revision + 1 };
+  return { ...state, running: withAnnexes({ ...state.running, realized }, id, nextId, note, timeKnown, metaOf(edit.type, dateUnknown)), revision: state.revision + 1 };
 }
 
 /**
@@ -271,6 +309,10 @@ export interface FreeRunView {
   readonly timeKnown: boolean;
   /** Douleur déclarée avec la course. */
   readonly pain: boolean;
+  /** RC4.3 — type déclaré ; `null` : « Non précisé ». */
+  readonly type: FreeRunType | null;
+  /** RC4.3 — course d'onboarding sans date réelle (instant conventionnel, jamais une fatigue récente). */
+  readonly dateUnknown: boolean;
 }
 // technical-constant: mètres par kilomètre (conversion d'unité)
 const M_PER_KM = 1000;
@@ -282,6 +324,7 @@ export function selectFreeRuns(state: AppState): readonly FreeRunView[] {
     distanceM: r.distanceM ?? null, paceSecPerKm: r.distanceM ? (r.realizedDurationS * M_PER_KM) / r.distanceM : null,
     difficulty: r.unexpectedDifficulty, note: state.running.notes?.[r.sessionId] ?? null,
     timeKnown: !(state.running.timeUnknown ?? []).includes(r.sessionId), pain: r.intoleranceOrPainSignal,
+    type: state.running.freeRunMeta?.[r.sessionId]?.type ?? null, dateUnknown: state.running.freeRunMeta?.[r.sessionId]?.dateUnknown === true,
   })).sort((a, b) => (a.completedAt < b.completedAt ? 1 : -1));
 }
 

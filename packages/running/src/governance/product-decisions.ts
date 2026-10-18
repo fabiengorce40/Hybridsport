@@ -62,9 +62,12 @@ export const PRODUCT_DECISION_VALUES: Readonly<Record<string, { readonly value: 
   // D2 §2.4 : HILLS — première exposition BLOQUÉE par décision (protocoles Barnes 2013 / Ferley 2013 non lus, §N : aucune pente universelle).
   'running.firstExposure.hills': { decisionId: 'D2', value: { policy: 'BLOCKED_PENDING_SOURCES', sources: ['RS-BARNES-2013-HILLS', 'RS-FERLEY-2013-HILLS'] } },
   // D5 : après un retour négatif plus récent, repli sur la dernière dose réussie (jamais supérieure).
+  // RC4.3 (décision R2, option A′) : `freeRunPolicy` PROGRAMME_FIRST — les séances du programme priment ; une course
+  // libre n'ancre qu'un footing (EASY) et seulement sans séance programme exploitable ; elle ne compte comme preuve de
+  // tolérance que si sa dose est celle de l'ancre ET sa tolérance favorable est CONNUE.
   'running.dose.historyAnchorPolicy': {
     decisionId: 'D5',
-    value: { anchor: 'LAST_REALIZED_DOSE', sameArchetype: true, sameStructureFamily: true, recencyBand: 'RECENT', recencyParameter: 'running.reference.recencyBands', requiresNoNegativeResponse: true, otherwise: 'FIRST_EXPOSURE_PARAMETER', afterNegativeResponse: 'LAST_SUCCESSFUL_DOSE' },
+    value: { anchor: 'LAST_REALIZED_DOSE', sameArchetype: true, sameStructureFamily: true, recencyBand: 'RECENT', recencyParameter: 'running.reference.recencyBands', requiresNoNegativeResponse: true, otherwise: 'FIRST_EXPOSURE_PARAMETER', afterNegativeResponse: 'LAST_SUCCESSFUL_DOSE', freeRunPolicy: 'PROGRAMME_FIRST' },
   },
 };
 

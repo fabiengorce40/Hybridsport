@@ -94,7 +94,9 @@ describe('E2E multisport TEST_ONLY : profil → semaine persistée', () => {
     expect(week.hybrid).toBe(true);
     // 7. contexte voisin transmis à Strength, semaine connue
     const str = planned.filter((r) => r.sport === 'strength');
-    expect(str.every((r) => r.neighbourContext?.known === true && r.neighbourContext.neighbours.length === 4)).toBe(true);
+    // RC4.3 (R3) : + la course libre datée de la semaine précédente (2026-10-01), voisine RÉALISÉE (historique).
+    expect(str.every((r) => r.neighbourContext?.known === true && r.neighbourContext.neighbours.length === 5
+      && r.neighbourContext.neighbours.filter((n) => n.stimulus === 'history').map((n) => n.sport).join() === 'running')).toBe(true);
     // 9. persistées en session_record courant
     for (const r of planned) {
       const back = migrateToCurrent<SessionRecord>(r.record);

@@ -31,7 +31,7 @@ import type { ProgrammeEnvironment } from './programme.js';
 import { activePainPause } from './weeks.js';
 import { CHECKIN_HISTORY_MAX, evaluateCheckIn, painAnswerOf, zCheckInInput } from './checkin.js';
 import type { CheckIn, CheckInInput } from './checkin.js';
-import { decideStart } from './start-check.js';
+import { decideStart, freeRunsSincePlanning } from './start-check.js';
 import { applySwaps, equipmentSwap } from './equipment.js';
 import { strengthContent } from './provisional-content.js';
 import type { LoadedCatalog, LoadedRuleset } from '@hybridsport/engine';
@@ -106,7 +106,7 @@ export function createBeta0Programme(state: AppState, input: ProfileInput, clock
   const profile = beta0Profile(input);
   let s: AppState = { ...state, profile };
   if (o.lastRun && profile.running.enabled) {
-    s = logFreeRun(s, { realizedDurationS: o.lastRun.realizedDurationS, completion: 'COMPLETED', difficulty: o.lastRun.difficulty, pain: false, ...(o.lastRun.distanceM !== undefined ? { distanceM: o.lastRun.distanceM } : {}), ...(o.lastRun.date !== undefined ? { completedOn: o.lastRun.date } : {}) }, clock);
+    s = logFreeRun(s, { realizedDurationS: o.lastRun.realizedDurationS, completion: 'COMPLETED', difficulty: o.lastRun.difficulty, pain: false, ...(o.lastRun.distanceM !== undefined ? { distanceM: o.lastRun.distanceM } : {}), ...(o.lastRun.date !== undefined ? { completedOn: o.lastRun.date } : {}) }, clock, { dateUnknown: o.lastRun.date === undefined });
   }
   if (profile.running.enabled) for (const x of o.performances ?? []) s = declareRunningPerformance(s, clock, x);
   return startFromProfile(s, clock, o, weekStartOf(clock.today), env);
@@ -471,7 +471,9 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
     const reasons = [...ev.reasons.map((x) => ({ code: x.code, params: { ...x.params } })), { code: 'KAIRO.CHECKIN_SAFETY_PAUSE', params: { requestId, ...(ev.safety.messageKey ? { messageKey: ev.safety.messageKey } : {}) } }];
     return { ...withCheckIn(state, record('paused', reasons)), safety: { ...state.safety, activePain: { reportedAt: now, areas, sessionKey: requestId } } };
   }
-  const d = decideStart(state, requestId, v.session, ev, env, (ex) => content?.catalog.exercise(ex)?.painSensitiveAreas ?? []);
+  // RC4.3 (R3) — courses libres faites depuis la planification : évaluées au démarrage des séances des AUTRES sports.
+  const freeRuns = v.sport === 'running' ? [] : freeRunsSincePlanning(state, requestId, now);
+  const d = decideStart(state, requestId, v.session, ev, env, (ex) => content?.catalog.exercise(ex)?.painSensitiveAreas ?? [], freeRuns);
   if (d.kind === 'postponed') return withCheckIn(state, record('postponed', d.reasons));
   const adaptation = d.kind === 'adapted' ? { checkInId: id, record: d.adaptation.record, changes: [...d.adaptation.changes], reasons: d.adaptation.reasons.map((x) => ({ code: x.code, params: { ...x.params } })) } : undefined;
   const s1 = withCheckIn(state, record(d.kind === 'adapted' ? 'adapted' : 'unchanged', d.reasons));

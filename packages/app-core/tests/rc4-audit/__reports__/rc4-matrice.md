@@ -135,18 +135,18 @@ Cross-training / HYROX :
 | S1 | C:test ; — ; C:easy ; C:easy ; — ; HX:strength_endurance ; HX:station_capacity | 2 | 2 | 1 | — |
 | S2 | C:threshold ; — ; C:easy ; C:easy ; — ; HX:compromised_running ; HX:mixed_station_conditioning | 2 | 2 | 1 | — |
 | S3 | C:threshold ; — ; C:easy ; C:easy ; — ; HX:station_capacity ; HX:partial_simulation | 2 | 2 | 1 | — |
-| S4 | — ; — ; HX:mixed_station_conditioning ; HX:strength_endurance ; — ; C:easy ; — | 4 | 2 | 1 | slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED, slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED |
-| S5 | HX:compromised_running ; — ; HX:station_capacity ; — ; — ; C:easy ; — | 4 | 1 | 0 | slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED, slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED |
-| S6 | HX:partial_simulation ; — ; HX:strength_endurance ; — ; — ; C:easy ; — | 4 | 1 | 0 | slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED, slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED |
+| S4 | C:threshold ; HX:mixed_station_conditioning ; C:easy ; C:easy ; — ; — ; HX:strength_endurance | 2 | 4 | 1 | — |
+| S5 | C:threshold ; HX:station_capacity ; C:easy ; C:easy ; — ; — ; HX:compromised_running | 2 | 4 | 1 | — |
+| S6 | C:threshold ; — ; C:easy ; C:easy ; — ; HX:strength_endurance ; HX:partial_simulation | 2 | 2 | 1 | — |
 
 Course (structure prescrite par semaine) :
 
 - S1 : test warmup:10min + steady:5km + cooldown:5min ; easy steady:30min ; easy steady:30min
 - S2 : threshold warmup:10min + 4×5min/60s + cooldown:5min ; easy steady:31min ; easy steady:31min
 - S3 : threshold warmup:10min + 4×5min/60s + cooldown:5min ; easy steady:32min ; easy steady:32min
-- S4 : easy steady:80min ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED
-- S5 : easy steady:81min ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED
-- S6 : easy steady:81min ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED ; non planifiée slot_unavailable:PLAN.RUNNING.TIME_EXCEEDED
+- S4 : threshold warmup:10min + 5×5min/60s + cooldown:5min ; easy steady:33min ; easy steady:33min
+- S5 : threshold warmup:10min + 5×5min/60s + cooldown:5min ; easy steady:34min ; easy steady:34min
+- S6 : threshold warmup:10min + 6×5min/60s + cooldown:5min ; easy steady:35min ; easy steady:35min
 
 Cross-training / HYROX :
 
@@ -156,12 +156,12 @@ Cross-training / HYROX :
 - S2 2026-10-18 HX:mixed_station_conditioning (55 min) : station_circuit 4×[skierg,sandbag_lunge] cap 31min
 - S3 2026-10-24 HX:station_capacity (85 min) : station_repeats 5×[wall_ball] cap 13min
 - S3 2026-10-25 HX:partial_simulation (55 min) : partial_sequence 1×[run,farmers_carry,run,row_erg,run,sandbag_lunge,run,skierg] cap 35min
-- S4 2026-10-28 HX:mixed_station_conditioning (70 min) : station_circuit 4×[burpee_broad_jump,skierg] cap 35min
-- S4 2026-10-29 HX:strength_endurance (55 min) : station_circuit 4×[sled_pull,farmers_carry] cap 22min
-- S5 2026-11-02 HX:compromised_running (70 min) : run_station_alternation 3×[row_erg,run,sandbag_lunge,run] cap 55min
-- S5 2026-11-04 HX:station_capacity (70 min) : station_repeats 5×[skierg] cap 15min
-- S6 2026-11-09 HX:partial_simulation (70 min) : partial_sequence 1×[run,burpee_broad_jump,run,farmers_carry,run,row_erg,run,sandbag_lunge] cap 37min
-- S6 2026-11-11 HX:strength_endurance (70 min) : station_circuit 4×[wall_ball,farmers_carry] cap 20min
+- S4 2026-10-27 HX:mixed_station_conditioning (55 min) : station_circuit 4×[burpee_broad_jump,skierg] cap 35min
+- S4 2026-11-01 HX:strength_endurance (55 min) : station_circuit 4×[farmers_carry,sandbag_lunge] cap 28min
+- S5 2026-11-03 HX:station_capacity (55 min) : station_repeats 5×[skierg] cap 15min
+- S5 2026-11-08 HX:compromised_running (55 min) : run_station_alternation 3×[farmers_carry,run,row_erg,run] cap 48min
+- S6 2026-11-14 HX:strength_endurance (85 min) : station_circuit 4×[wall_ball,farmers_carry] cap 20min
+- S6 2026-11-15 HX:partial_simulation (55 min) : partial_sequence 1×[run,row_erg,run,sandbag_lunge,run,skierg,run,sled_pull] cap 36min
 
 ## P5 — Quatre sports : Musculation 3×, Course 2×, Cross-training 1×, HYROX 1×
 

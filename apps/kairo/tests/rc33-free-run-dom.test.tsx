@@ -31,7 +31,7 @@ const form = () => within(screen.getByRole('form', { name: 'Ajouter une course' 
 function fill(o: { date?: string; time?: string; km?: string; h?: string; m?: string; s?: string; feel?: string; note?: string }) {
   const f = form();
   if (o.date !== undefined) fireEvent.change(f.getByLabelText('Date'), { target: { value: o.date } });
-  if (o.time !== undefined) fireEvent.change(f.getByLabelText('Heure de départ'), { target: { value: o.time } });
+  if (o.time !== undefined) fireEvent.change(f.getByLabelText('Heure de départ (facultative)'), { target: { value: o.time } });
   if (o.km !== undefined) fireEvent.change(f.getByLabelText('Distance (km)'), { target: { value: o.km } });
   if (o.h !== undefined) fireEvent.change(f.getByLabelText('Durée : heures'), { target: { value: o.h } });
   if (o.m !== undefined) fireEvent.change(f.getByLabelText('Durée : minutes'), { target: { value: o.m } });
@@ -50,7 +50,8 @@ describe('RC3.3 — Ajouter une course', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Ajouter une course' }));
     expect(save().disabled).toBe(true);
     const blockers = () => document.querySelector('[data-free-run-blockers]')?.textContent ?? '';
-    expect(blockers()).toMatch(/Indiquez la date et l’heure de départ/);
+    // RC4.3 : l'heure est facultative (date du jour préremplie) ; la date seule suffit.
+    expect(blockers()).not.toMatch(/Indiquez la date/);
     expect(blockers()).toMatch(/Indiquez la durée/);
     expect(blockers()).toMatch(/Choisissez votre ressenti/);
     fill({ ...VALID, note: 'Bords de Seine' });
@@ -107,11 +108,12 @@ describe('RC3.3 — Ajouter une course', () => {
     expect((selectBeta0Week(saved(storage), MONDAY)?.sessions ?? []).some((x) => x.archetypeId === 'running.test' && x.status === 'planned')).toBe(true);
   });
 
-  it('profil sans course (Musculation seule) : aucune entrée « Ajouter une course » dans l’Historique', () => {
+  // RC4.3 (R3) : une course libre compte dans la récupération même sans sport Course — l'entrée est désormais proposée.
+  it('profil sans course (Musculation seule) : entrée « Ajouter une course » proposée dans l’Historique (RC4.3)', () => {
     const storage = new MemoryStorage();
     saveState(storage, createBeta0Programme(emptyState(), base({ priorities: ['strength'], strength: { enabled: true, goal: 'general', sessionsPerWeek: 2 }, running: { ...base().running, enabled: false } }), clock(), {}));
     mount(storage);
     fireEvent.click(screen.getByRole('button', { name: 'Historique' }));
-    expect(screen.queryByRole('button', { name: 'Ajouter une course' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Ajouter une course' })).not.toBeNull();
   });
 });

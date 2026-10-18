@@ -14,9 +14,9 @@ import type { FingerprintHistoryEntry, ISODateTime, SessionDraft } from '@hybrid
 import { findArchetype, groupsOf, readStrengthParams, StrengthEngine } from '@hybridsport/strength';
 import type { Env, StrengthContextInput } from '@hybridsport/strength';
 import { createRunningEngine, CURRENT_RUNNING_GOVERNANCE, withProductDecisions } from '@hybridsport/running';
-import type { CapabilityId, RunningContextInput } from '@hybridsport/running';
+import type { CapabilityId, RealizedSession, RunningContextInput } from '@hybridsport/running';
 import { dateOf, daysBetween, sessionInstant, weekStartOf } from './dates.js';
-import type { AppState, Authority, GeneratedSession, PlanEntry, Profile, Reason } from './model.js';
+import type { AppState, Authority, FreeRunType, GeneratedSession, PlanEntry, Profile, Reason } from './model.js';
 import { STIMULUS_BY_GOAL } from './planner.js';
 import { anchorsToDeclare } from './progression.js';
 import { UNKNOWN_CORE_STATE } from './checkin.js';
@@ -120,6 +120,22 @@ export const BETA0_STRENGTH_CONTINUITY = 'keep_incumbent' as const;
  */
 export const RUNNING_CAPABILITY_REQUESTS: readonly CapabilityId[] = ['progressionBeyondHistory', 'longRunProgression', 'firstThresholdExposure', 'firstSevereExposure', 'paceTargets'];
 
+/**
+ * RC4.3 (R2) — catégorie MOTEUR d'une course libre selon son type DÉCLARÉ, appliquée au contexte seulement : « longue »
+ * ⇒ LONG continue ; qualité ⇒ archétype de qualité (seuil, fractionné VO₂, côtes) en famille fractionnée SANS structure.
+ * Effet : la course compte dans les séances à forte demande (V10/V11, semaine) ; elle n'est jamais une référence de
+ * durée ou de structure (politique PROGRAMME_FIRST de V19 : une course libre n'ancre qu'un footing) ; aucune intensité
+ * n'est déduite de la durée. « Footing facile » et « Non précisé » : inchangée (EASY continue, comme enregistrée).
+ */
+const FREE_RUN_ENGINE: Readonly<Record<FreeRunType, { archetype: RealizedSession['archetype']; structureFamily: RealizedSession['structureFamily'] } | null>> = {
+  easy: null, long: { archetype: 'LONG', structureFamily: 'CONTINUOUS' },
+  threshold: { archetype: 'THRESHOLD', structureFamily: 'INTERVALS' }, interval: { archetype: 'SEVERE', structureFamily: 'INTERVALS' }, hills: { archetype: 'HILLS', structureFamily: 'INTERVALS' },
+};
+export function typedFreeRun(r: RealizedSession, type: FreeRunType | undefined): RealizedSession {
+  const m = type === undefined || !r.sessionId.startsWith('free:') ? null : FREE_RUN_ENGINE[type];
+  return m ? { ...r, ...m } : r;
+}
+
 export function runningContext(state: AppState, p: Profile, entry: Pick<PlanEntry, 'date'>): RunningContextInput {
   const now = sessionInstant(entry.date);
   const realized = state.running.realized.filter((s) => s.completedAt <= now);
@@ -138,7 +154,9 @@ export function runningContext(state: AppState, p: Profile, entry: Pick<PlanEntr
     references: state.running.references.filter((r) => r.date <= now),
     exposures: [...byArch].map(([archetype, v]) => ({ archetype: archetype as 'EASY', lastAt: v.lastAt, count: v.count })),
     ...(returning && returnAt ? { recentLoad: { returnStartedAt: returnAt, dimensions: [] } } : {}),
-    sessionHistory: realized,
+    // RC4.3 — courses libres : origine FOURNIE au moteur (A′) et type déclaré appliqué au seul contexte (jamais persisté).
+    sessionHistory: realized.map((r) => typedFreeRun(r, state.running.freeRunMeta?.[r.sessionId]?.type)),
+    freeSessionIds: realized.filter((r) => r.sessionId.startsWith('free:')).map((r) => r.sessionId),
     sensors: { wearable: p.running.wearable, heartRate: false },
     terrain: { hills: p.running.hills },
     mode: 'CANDIDATE',

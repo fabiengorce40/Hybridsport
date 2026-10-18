@@ -24,6 +24,7 @@ export * from './checkin.js';
 export * from './ct-feasibility.js';
 export * from './hr-feasibility.js';
 export * from './start-check.js';
+export * from './free-run-load.js';
 export * from './readiness-persisted.js';
 export * from './equipment.js';
 export * from './strength-insight.js';

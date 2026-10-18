@@ -30,7 +30,7 @@ describe('RC3.3 — saisie d’une course libre', () => {
     const s = logFreeRun(s0, { ...RUN, startedAt: '2026-10-03T08:15:00Z', note: '  Bords de Seine  ' }, at(W1, '07:30:00'));
     expect(s.running.realized.length).toBe(s0.running.realized.length + 1);
     expect(s.running.realized.at(-1)).toMatchObject({ sessionId: 'free:2026-10-03T08:45:00Z', completedAt: '2026-10-03T08:45:00Z', realizedDurationS: 1800, distanceM: 5000, structureFamily: 'CONTINUOUS', completion: 'COMPLETED' });
-    expect(selectFreeRuns(s)).toEqual([{ sessionId: 'free:2026-10-03T08:45:00Z', startedAt: '2026-10-03T08:15:00Z', completedAt: '2026-10-03T08:45:00Z', durationS: 1800, distanceM: 5000, paceSecPerKm: 360, difficulty: 'AS_EXPECTED', note: 'Bords de Seine', timeKnown: true, pain: false }]);
+    expect(selectFreeRuns(s)).toEqual([{ sessionId: 'free:2026-10-03T08:45:00Z', startedAt: '2026-10-03T08:15:00Z', completedAt: '2026-10-03T08:45:00Z', durationS: 1800, distanceM: 5000, paceSecPerKm: 360, difficulty: 'AS_EXPECTED', note: 'Bords de Seine', timeKnown: true, pain: false, type: null, dateUnknown: false }]);
     // Sans distance : aucune allure inventée.
     const t = logFreeRun(s, { ...RUN, distanceM: undefined, startedAt: '2026-10-04T08:00:00Z' }, at(W1, '07:30:00'));
     expect(selectFreeRuns(t)[0]).toMatchObject({ distanceM: null, paceSecPerKm: null, note: null });

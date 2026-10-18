@@ -12,7 +12,7 @@ JSON compact écrit par `saveState` (Kio). Réalisations TEST_ONLY. Compaction d
 | Strength : expositions | 10 | 28 | 60 | 120 |
 | Strength : tracks et compteurs | 3 | 4 | 4 | 4 |
 | empreintes (anti-doublon) | 23 | 69 | 149 | 298 |
-| Running : réalisé et références | 3 | 7 | 15 | 30 |
+| Running : réalisé et références | 3 | 8 | 16 | 30 |
 | autres | 1 | 1 | 1 | 1 |
 | **Total** | **278** | **765** | **1607** | **3170** |
 | séances compactées | 11 | 51 | 121 | 251 |
