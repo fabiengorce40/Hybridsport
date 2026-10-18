@@ -53,12 +53,14 @@ export function migrateV1toV2(data: unknown): unknown {
  * - `planner.weeks.*.requests.*.cause` (motif persisté d'une séance non planifiée) ;
  * - `programmeLogs.*.runPlayer` (lecteur de séance Course : progression, étapes validées) ;
  * - `running.notes` (commentaires des courses libres) ;
- * - `running.timeUnknown` (courses dont seule la date est connue).
+ * - `running.timeUnknown` (courses dont seule la date est connue) ;
+ * - RC4.3 (migration M1) : `running.freeRunMeta` (type déclaré des courses libres, date inconnue de la course déclarée
+ *   à l'onboarding). Les courses elles-mêmes restent au contrat Running (EASY continue) : RC1 les relit comme avant.
  * Tout autre champ inconnu laisse la donnée « illisible » (aucune réparation silencieuse). Le texte RC3 d'origine est
  * conservé sous `RC3_ORIGINAL_KEY` avant toute réécriture.
  */
 export const RC3_ORIGINAL_KEY = 'kairo.rc3-original';
-export const RC3_ANNEXES = ['planner.weeks.*.requests.*.cause', 'programmeLogs.*.runPlayer', 'running.notes', 'running.timeUnknown'] as const;
+export const RC3_ANNEXES = ['planner.weeks.*.requests.*.cause', 'programmeLogs.*.runPlayer', 'running.notes', 'running.timeUnknown', 'running.freeRunMeta'] as const;
 export type Rc3Annex = (typeof RC3_ANNEXES)[number];
 
 export function withoutRc3Annexes(data: unknown): { data: unknown; removed: Readonly<Partial<Record<Rc3Annex, number>>> } {
@@ -87,9 +89,10 @@ export function withoutRc3Annexes(data: unknown): { data: unknown; removed: Read
     }));
   }
   if (isObj(data.running)) {
-    const { notes, timeUnknown, ...running } = data.running;
+    const { notes, timeUnknown, freeRunMeta, ...running } = data.running;
     if (notes !== undefined) removed['running.notes'] = isObj(notes) ? Object.keys(notes).length : 1;
     if (timeUnknown !== undefined) removed['running.timeUnknown'] = Array.isArray(timeUnknown) ? timeUnknown.length : 1;
+    if (freeRunMeta !== undefined) removed['running.freeRunMeta'] = isObj(freeRunMeta) ? Object.keys(freeRunMeta).length : 1;
     out.running = running;
   }
   return { data: out, removed };
@@ -123,7 +126,7 @@ export function decodeState(text: string): { ok: true; state: AppState; from: nu
   try { migrated = migrate(raw); } catch (e) { return { ok: false, problem: (e as Error).message }; }
   const parsed = zAppState.safeParse(migrated.data);
   if (!parsed.success) {
-    // Repli RC1 compatible RC3 : seuls les 4 champs additifs de RC3 sont retirés ; sinon, le refus d'origine.
+    // Repli RC1 compatible RC3 / RC4.3 : seuls les champs additifs listés sont retirés ; sinon, le refus d'origine.
     const down = withoutRc3Annexes(migrated.data);
     const again = Object.keys(down.removed).length > 0 ? zAppState.safeParse(down.data) : undefined;
     if (again?.success) return { ok: true, state: again.data, from: migrated.from, rc3AnnexesRemoved: down.removed };

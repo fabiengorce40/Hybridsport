@@ -59,6 +59,7 @@ export function openWeek(state: AppState, clock: Clock): AppState {
 const RC3_ANNEX_LABELS: Readonly<Record<string, string>> = {
   'running.notes': 'commentaires de courses libres',
   'running.timeUnknown': 'mention « heure non renseignée »',
+  'running.freeRunMeta': 'type déclaré des courses libres et mention « date non renseignée »',
   'programmeLogs.*.runPlayer': 'progression du lecteur de séance Course',
   'planner.weeks.*.requests.*.cause': 'motif enregistré des séances non planifiées',
 };
