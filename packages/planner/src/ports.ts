@@ -397,7 +397,12 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
   });
   const comp = def.composition;
   const variation = def.withinWeekVariation;
-  const signature = (s: SessionDraft): string => s.blocks.flatMap((b) => b.items.map((i) => i.exerciseId)).join('|');
+  // RC4.5 (F6, R1/R3) — éléments des emplacements à TEMPS RÉSIDUEL (attribut gouverné du ruleset) : écartés de la
+  // signature des séances jumelles, du garde-fou de volume de la variation et des séries mesurées par la garde G5
+  // (un groupe servi seulement par un ajout résiduel ne fait jamais refuser une organisation).
+  const residualIds = (): ReadonlySet<string> => new Set(params()['strength.archetypes'].flatMap((a) => a.slots.filter((x) => x.fill === 'residual_time').map((x) => x.id)));
+  const ordinary = (s: SessionDraft): SessionDraft => { const r = residualIds(); return r.size === 0 ? s : { ...s, blocks: s.blocks.map((b) => ({ ...b, items: b.items.filter((i) => !r.has(i.refs?.slotId ?? '')) })) }; };
+  const signature = (s: SessionDraft): string => ordinary(s).blocks.flatMap((b) => b.items.map((i) => i.exerciseId)).join('|');
   const generate = (slot: SlotRequest): PortOutcome => {
     const out = port.generate(slot);
     if (!variation || out.status !== 'planned') return out;
@@ -406,7 +411,7 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
     const again = port.generate({ ...slot, plannerNotes: [...(slot.plannerNotes ?? []), variation.note] });
     // Garde-fou : la variation ne change JAMAIS le volume (séries de travail par groupe, fonction de Strength) — ni hausse
     // ni baisse ; sinon la séance initiale est conservée et le refus est tracé.
-    const volume = (s: SessionDraft): string => JSON.stringify(Object.entries(sessionPlannedHardSets(s, params(), def.content.catalog)).filter(([, n]) => n > 0).sort(([a], [b]) => (a < b ? -1 : 1)));
+    const volume = (s: SessionDraft): string => JSON.stringify(Object.entries(sessionPlannedHardSets(ordinary(s), params(), def.content.catalog)).filter(([, n]) => n > 0).sort(([a], [b]) => (a < b ? -1 : 1)));
     const differs = again.status === 'planned' && signature(again.session) !== signature(twin.session);
     const sameVolume = again.status === 'planned' && volume(again.session) === volume(out.session);
     const varied = differs && sameVolume;
@@ -415,7 +420,7 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
     return { ...chosen, reasons: [...chosen.reasons, gpReasons.emit(GP_CODES.STRENGTH_WITHIN_WEEK_VARIATION, { ruleId: variation.ruleId, requestId: slot.requestId, twin: twin.requestId, outcome, note: variation.note })] };
   };
   // RC4.4 (G5) — séries de travail prévues par groupe : la fonction du bilan hebdomadaire Strength, sans règle nouvelle.
-  const plannedGroupSets = (session: SessionDraft): Readonly<Record<string, number>> => sessionPlannedHardSets(session, params(), def.content.catalog);
+  const plannedGroupSets = (session: SessionDraft): Readonly<Record<string, number>> => sessionPlannedHardSets(ordinary(session), params(), def.content.catalog);
   const proximityBandsHours = (): readonly number[] => (params()['strength.interference.assessment']?.proximityBands ?? []).map((b) => b.maxHours);
   const withWeek = { ...port, generate, plannedGroupSets, proximityBandsHours, consumesWeekSessions: true, crossSportWeek: ['crosstraining'] as const };
   if (!comp) return withWeek;

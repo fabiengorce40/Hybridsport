@@ -1,0 +1,490 @@
+{
+ "pre-f6-consolidation-w1": {
+  "2026-10-05.strength.1|inconnu": {
+   "decision": "unchanged",
+   "codes": [],
+   "hash": "170c27c10ee06f9e",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.back_squat",
+    "ex.machine_chest_press",
+    "ex.pull_up",
+    "ex.cable_lateral_raise",
+    "ex.leg_curl",
+    "ex.bulgarian_split_squat",
+    "ex.cable_pallof_press"
+   ]
+  },
+  "2026-10-05.strength.1|fatigue": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_READINESS_PERSISTED",
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "e8e5adac9ddd8032",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.back_squat",
+    "ex.machine_chest_press",
+    "ex.pull_up",
+    "ex.cable_lateral_raise",
+    "ex.leg_curl",
+    "ex.bulgarian_split_squat",
+    "ex.cable_pallof_press"
+   ]
+  },
+  "2026-10-05.strength.1|douleur": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_SESSION_RECOMPOSED",
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "8ccd0459f4330da2",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.machine_chest_press",
+    "ex.pull_up",
+    "ex.cable_lateral_raise",
+    "ex.db_calf_raise",
+    "ex.cable_pallof_press",
+    "ex.cable_triceps_pushdown"
+   ]
+  },
+  "2026-10-05.strength.2|inconnu": {
+   "decision": "unchanged",
+   "codes": [],
+   "hash": "3c5e2c60d552415e",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.seated_cable_row",
+    "ex.db_shoulder_press",
+    "ex.db_calf_raise",
+    "ex.bulgarian_split_squat",
+    "ex.cable_pallof_press"
+   ]
+  },
+  "2026-10-05.strength.2|fatigue": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "2709ddad2aa38977",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.seated_cable_row",
+    "ex.db_shoulder_press",
+    "ex.db_calf_raise",
+    "ex.bulgarian_split_squat",
+    "ex.cable_pallof_press"
+   ]
+  },
+  "2026-10-05.strength.2|douleur": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "1875b8ac171c3589",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.seated_cable_row",
+    "ex.db_shoulder_press",
+    "ex.db_calf_raise",
+    "ex.cable_pallof_press",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-05.strength.3|inconnu": {
+   "decision": "unchanged",
+   "codes": [],
+   "hash": "4c0f9a94d305a9e8",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.back_squat",
+    "ex.bench_press",
+    "ex.lat_pulldown",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-05.strength.3|fatigue": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "dcebd13ff09bd927",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.back_squat",
+    "ex.bench_press",
+    "ex.lat_pulldown",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-05.strength.3|douleur": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "afc593c8a4c017ec",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.bench_press",
+    "ex.lat_pulldown",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-05.strength.3|course_libre": {
+   "decision": "unchanged",
+   "codes": [
+    "KAIRO.FREE_RUN_RECOVERY_NO_CHANGE"
+   ],
+   "hash": "cd0f5fc1fc89eb6f",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.back_squat",
+    "ex.bench_press",
+    "ex.lat_pulldown",
+    "ex.lower_mobility_flow"
+   ]
+  }
+ },
+ "pre-f6-consolidation-w2": {
+  "2026-10-12.strength.1|inconnu": {
+   "decision": "unchanged",
+   "codes": [],
+   "hash": "38b607507c276766",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.machine_chest_press",
+    "ex.pull_up",
+    "ex.cable_lateral_raise",
+    "ex.db_calf_raise",
+    "ex.bulgarian_split_squat",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-12.strength.1|fatigue": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_READINESS_PERSISTED",
+    "KAIRO.CHECKIN_READINESS_EXERCISE_REFUSED",
+    "KAIRO.CHECKIN_READINESS_EXERCISE_REFUSED",
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "ad1fc0be7cdc916d",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.machine_chest_press",
+    "ex.pull_up",
+    "ex.cable_lateral_raise",
+    "ex.db_calf_raise",
+    "ex.bulgarian_split_squat",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-12.strength.1|douleur": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_PERSISTED_ADAPTED",
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "e3b59edb24275762",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.machine_chest_press",
+    "ex.pull_up",
+    "ex.cable_lateral_raise",
+    "ex.db_calf_raise",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-12.strength.2|inconnu": {
+   "decision": "unchanged",
+   "codes": [],
+   "hash": "05f89795dc0e5692",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.back_squat",
+    "ex.seated_cable_row",
+    "ex.db_shoulder_press",
+    "ex.cable_lateral_raise",
+    "ex.db_calf_raise",
+    "ex.bulgarian_split_squat"
+   ]
+  },
+  "2026-10-12.strength.2|fatigue": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "91874d291c2e89b9",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.back_squat",
+    "ex.seated_cable_row",
+    "ex.db_shoulder_press",
+    "ex.cable_lateral_raise",
+    "ex.db_calf_raise",
+    "ex.bulgarian_split_squat"
+   ]
+  },
+  "2026-10-12.strength.2|douleur": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "92daff2092c5cf8b",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.seated_cable_row",
+    "ex.db_shoulder_press",
+    "ex.cable_lateral_raise",
+    "ex.db_calf_raise",
+    "ex.cable_pallof_press"
+   ]
+  },
+  "2026-10-12.strength.3|inconnu": {
+   "decision": "unchanged",
+   "codes": [],
+   "hash": "213036d5be49a05f",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.machine_chest_press",
+    "ex.pull_up",
+    "ex.cable_pallof_press",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-12.strength.3|fatigue": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "3a1d4578ba21395c",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.machine_chest_press",
+    "ex.pull_up",
+    "ex.cable_pallof_press",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-12.strength.3|douleur": {
+   "decision": "unchanged",
+   "codes": [
+    "KAIRO.CHECKIN_NO_CHANGE"
+   ],
+   "hash": "5cecc29fa3e002cb",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.machine_chest_press",
+    "ex.pull_up",
+    "ex.cable_pallof_press",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-12.strength.3|course_libre": {
+   "decision": "unchanged",
+   "codes": [
+    "KAIRO.FREE_RUN_RECOVERY_NO_CHANGE"
+   ],
+   "hash": "90cfbb11d0912205",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.machine_chest_press",
+    "ex.pull_up",
+    "ex.cable_pallof_press",
+    "ex.lower_mobility_flow"
+   ]
+  }
+ },
+ "pre-f6-p2-w1": {
+  "2026-10-05.strength.1|inconnu": {
+   "decision": "unchanged",
+   "codes": [],
+   "hash": "170c27c10ee06f9e",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.back_squat",
+    "ex.machine_chest_press",
+    "ex.pull_up",
+    "ex.machine_lateral_raise",
+    "ex.leg_curl",
+    "ex.pec_deck"
+   ]
+  },
+  "2026-10-05.strength.1|fatigue": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "550bdfd04333c183",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.back_squat",
+    "ex.machine_chest_press",
+    "ex.pull_up",
+    "ex.machine_lateral_raise",
+    "ex.leg_curl",
+    "ex.pec_deck"
+   ]
+  },
+  "2026-10-05.strength.1|douleur": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "f6a6bf0ed512217f",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.machine_chest_press",
+    "ex.pull_up",
+    "ex.machine_lateral_raise",
+    "ex.machine_calf_raise",
+    "ex.pec_deck"
+   ]
+  },
+  "2026-10-05.strength.2|inconnu": {
+   "decision": "unchanged",
+   "codes": [],
+   "hash": "e40b91c539f049d0",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.back_squat",
+    "ex.bench_press",
+    "ex.lat_pulldown",
+    "ex.pec_deck",
+    "ex.leg_extension",
+    "ex.bulgarian_split_squat"
+   ]
+  },
+  "2026-10-05.strength.2|fatigue": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "225a258095d74e55",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.back_squat",
+    "ex.bench_press",
+    "ex.lat_pulldown",
+    "ex.pec_deck",
+    "ex.leg_extension",
+    "ex.bulgarian_split_squat"
+   ]
+  },
+  "2026-10-05.strength.2|douleur": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "0dbf02f46a116b82",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.bench_press",
+    "ex.lat_pulldown",
+    "ex.pec_deck",
+    "ex.machine_calf_raise",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-05.strength.2|course_libre": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.FREE_RUN_RECOVERY_APPLIED"
+   ],
+   "hash": "9961ebd6d8b8ea17",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.back_squat",
+    "ex.bench_press",
+    "ex.lat_pulldown",
+    "ex.pec_deck",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-05.strength.3|inconnu": {
+   "decision": "unchanged",
+   "codes": [],
+   "hash": "e572abf6e21bd864",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.seated_cable_row",
+    "ex.db_shoulder_press",
+    "ex.pec_deck",
+    "ex.leg_curl",
+    "ex.bulgarian_split_squat",
+    "ex.cable_pallof_press",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-05.strength.3|fatigue": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "15585cb88839c6f6",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.seated_cable_row",
+    "ex.db_shoulder_press",
+    "ex.pec_deck",
+    "ex.leg_curl",
+    "ex.bulgarian_split_squat",
+    "ex.cable_pallof_press",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-05.strength.3|douleur": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.CHECKIN_SESSION_ADAPTED"
+   ],
+   "hash": "f12bb1dfd816bc2f",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.seated_cable_row",
+    "ex.db_shoulder_press",
+    "ex.pec_deck",
+    "ex.machine_calf_raise",
+    "ex.cable_pallof_press",
+    "ex.lower_mobility_flow"
+   ]
+  },
+  "2026-10-05.strength.3|course_libre": {
+   "decision": "adapted",
+   "codes": [
+    "KAIRO.FREE_RUN_RECOVERY_APPLIED"
+   ],
+   "hash": "4a61482e652c91b7",
+   "exercises": [
+    "ex.lower_mobility_flow",
+    "ex.romanian_deadlift",
+    "ex.seated_cable_row",
+    "ex.db_shoulder_press",
+    "ex.machine_lateral_raise",
+    "ex.cable_pallof_press",
+    "ex.pec_deck",
+    "ex.lower_mobility_flow"
+   ]
+  }
+ }
+}

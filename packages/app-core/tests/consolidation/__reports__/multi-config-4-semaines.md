@@ -18,11 +18,11 @@
 |---|---|---|---|---|---|---|
 | arms | 6 / 14 | 16.5 ▲ | 13.8 | 16.5 ▲ | 15 ▲ | 16.5 ▲ |
 | back | 10 / 20 | 9.3 ⚠ | 6 ⚠ | 9.3 ⚠ | 10 | 9.3 ⚠ |
-| calves (bas du corps) | 4 / 10 | 5.5 | 0 ⚠ | 0 ⚠ | 1.8 ⚠ | 5.5 |
+| calves (bas du corps) | 4 / 10 | 2 ⚠ | 0 ⚠ | 1 ⚠ | 1 ⚠ | 2 ⚠ |
 | chest | 10 / 20 | 5.5 ⚠ | 3.3 ⚠ | 14.8 | 4.8 ⚠ | 5.5 ⚠ |
 | core | 4 / 10 | 7.8 | 7.3 | 7 | 7 | 7.8 |
 | glutes (bas du corps) | 6 / 14 | 12 | 4 ⚠ | 12 | 7.8 | 12 |
-| hamstrings (bas du corps) | 8 / 14 | 5.3 ⚠ | 2 ⚠ | 9.5 | 2.8 ⚠ | 5.3 ⚠ |
+| hamstrings (bas du corps) | 8 / 14 | 10.5 | 2 ⚠ | 9.5 | 2.8 ⚠ | 10.5 |
 | quads (bas du corps) | 10 / 18 | 7.5 ⚠ | 2 ⚠ | 8.5 ⚠ | 5 ⚠ | 7.5 ⚠ |
 | shoulders | 8 / 16 | 13.3 | 11.6 | 15.6 | 13.9 | 13.3 |
 
@@ -30,11 +30,11 @@
 
 | config. | S1 | S2 | S3 | S4 |
 |---|---|---|---|---|
-| A | 252 | 249 | 244 | 254 |
+| A | 251 | 255 | 256 | 252 |
 | B | 226 | 234 | 234 | 233 |
-| C | 266 | 260 | 254 | 258 |
-| D | 215 | 179 | 185 | 179 |
-| E | 252 | 249 | 244 | 254 |
+| C | 266 | 268 | 254 | 258 |
+| D | 210 | 179 | 185 | 179 |
+| E | 251 | 255 | 256 | 252 |
 
 ## Reports et ajustements non appliqués
 
@@ -54,8 +54,8 @@
 
 ### A. Prise de masse prioritaire (salle commerciale)
 
-- 10-12 strength — str_full_body A — réalisée : romanian_deadlift, machine_chest_press, pull_up, cable_lateral_raise, db_calf_raise, bulgarian_split_squat
-- 10-13 strength — str_full_body B — réalisée (adaptée : rir:seated_cable_row:2>3, rir:db_shoulder_press:2>3, rir:cable_lateral_raise:1>2, rir:db_calf_raise:1>2) : back_squat, seated_cable_row, db_shoulder_press, cable_lateral_raise, db_calf_raise, bulgarian_split_squat
+- 10-12 strength — str_full_body A — réalisée : romanian_deadlift, machine_chest_press, pull_up, cable_lateral_raise, leg_curl, walking_lunge_db, db_calf_raise
+- 10-13 strength — str_full_body B — réalisée (adaptée : rir:seated_cable_row:2>3, rir:db_shoulder_press:2>3, rir:cable_lateral_raise:1>2) : back_squat, seated_cable_row, db_shoulder_press, cable_lateral_raise, leg_curl, walking_lunge_db
 - 10-14 crosstraining — amrap + bloc force — réalisée : hip_thrust_barbell, row_erg (cond.), reverse_lunge_bw (cond.), pull_up (cond.)
 - 10-15 running — running.easy — réalisée : easy_run
 - 10-16 strength — str_full_body A — réalisée : romanian_deadlift, machine_chest_press, pull_up, cable_pallof_press
@@ -72,7 +72,7 @@
 
 ### C. Salle complète
 
-- 10-12 strength — str_full_body A — réalisée : romanian_deadlift, machine_chest_press, pull_up, pec_deck, leg_curl, bulgarian_split_squat
+- 10-12 strength — str_full_body A — réalisée : romanian_deadlift, machine_chest_press, pull_up, pec_deck, leg_curl, bulgarian_split_squat, machine_calf_raise
 - 10-13 strength — str_full_body B — réalisée (adaptée : rir:seated_cable_row:2>3, rir:db_shoulder_press:2>3, rir:pec_deck:1>2) : back_squat, seated_cable_row, db_shoulder_press, pec_deck, leg_curl, bulgarian_split_squat
 - 10-14 crosstraining — amrap + bloc force — réalisée : hip_thrust_machine, row_erg (cond.), reverse_lunge_bw (cond.), pull_up (cond.)
 - 10-15 running — running.easy — réalisée : easy_run
@@ -89,8 +89,8 @@
 
 ### E. Récupération dégradée à chaque séance
 
-- 10-12 strength — str_full_body A — réalisée (adaptée : rir:machine_chest_press:2>3, rir:pull_up:2>3, rir:cable_lateral_raise:1>2, rir:db_calf_raise:1>2) : romanian_deadlift, machine_chest_press, pull_up, cable_lateral_raise, db_calf_raise, bulgarian_split_squat
-- 10-13 strength — str_full_body B — réalisée (adaptée : rir:seated_cable_row:2>3, rir:db_shoulder_press:2>3, rir:cable_lateral_raise:1>2, rir:db_calf_raise:1>2) : back_squat, seated_cable_row, db_shoulder_press, cable_lateral_raise, db_calf_raise, bulgarian_split_squat
+- 10-12 strength — str_full_body A — réalisée (adaptée : rir:machine_chest_press:2>3, rir:pull_up:2>3, rir:cable_lateral_raise:1>2, rir:db_calf_raise:3>4) : romanian_deadlift, machine_chest_press, pull_up, cable_lateral_raise, leg_curl, walking_lunge_db, db_calf_raise
+- 10-13 strength — str_full_body B — réalisée (adaptée : rir:seated_cable_row:2>3, rir:db_shoulder_press:2>3, rir:cable_lateral_raise:1>2) : back_squat, seated_cable_row, db_shoulder_press, cable_lateral_raise, leg_curl, walking_lunge_db
 - 10-14 crosstraining — amrap + bloc force — réalisée : hip_thrust_barbell, row_erg (cond.), reverse_lunge_bw (cond.), pull_up (cond.)
 - 10-15 running — running.easy — réalisée : easy_run
 - 10-16 strength — str_full_body A — réalisée (adaptée : rir:machine_chest_press:2>3, rir:pull_up:2>3, rir:cable_pallof_press:1>2) : romanian_deadlift, machine_chest_press, pull_up, cable_pallof_press

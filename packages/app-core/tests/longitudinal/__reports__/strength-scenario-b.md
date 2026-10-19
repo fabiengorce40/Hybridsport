@@ -27,9 +27,9 @@ Réalisations TEST_ONLY : Strength comme prescrit ; Running durée prescrite, 6 
 
 Séances Strength :
 
-- 2026-10-05 str_full_body #1 — graine `strength:str_full_body:strength_volume:1` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : arms, back, calves, chest, core, glutes, hamstrings, quads, shoulders ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (stimulus_preservation), i.warmup_extra (duration), i.cooldown (duration)
-- 2026-10-07 str_full_body #2 — graine `strength:str_full_body:strength_volume:2` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, core, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.iso_upper (volume)
-- 2026-10-08 str_full_body #3 — graine `strength:str_full_body:strength_volume:3` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : back, calves, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (duration), fb.iso_upper (volume), i.cooldown (duration)
+- 2026-10-05 str_full_body #1 — graine `strength:str_full_body:strength_volume:1` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : arms, back, calves, chest, core, glutes, hamstrings, quads, shoulders ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (stimulus_preservation), i.warmup_extra (duration), i.cooldown (duration), fb.calves (interference)
+- 2026-10-07 str_full_body #2 — graine `strength:str_full_body:strength_volume:2` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, core, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.iso_upper (volume), fb.calves (interference)
+- 2026-10-08 str_full_body #3 — graine `strength:str_full_body:strength_volume:3` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : back, calves, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (duration), fb.iso_upper (volume), i.cooldown (duration), fb.calves (interference)
 
 Exercices principaux (ancres) :
 
@@ -49,7 +49,7 @@ Exercices principaux (ancres) :
 | quads | 10 | 18 | 5 | 5 | reduced_by_constraint |
 | shoulders | 8 | 16 | 17 | 17 | achieved |
 
-Objectif de volume de la semaine : **partially_satisfied** (3/3 séances). Contraintes tracées : interference (lower_hip (neighbor:running:stim.running.aerobic)) ; interference (lower_knee (neighbor:running:stim.running.aerobic)) ; slot_omitted:duration (fb.trunk) ; slot_omitted:duration (i.cooldown) ; slot_omitted:duration (i.warmup_extra) ; slot_omitted:interference (fb.iso_lower) ; slot_omitted:interference (fb.single_leg) ; slot_omitted:stimulus_preservation (fb.trunk) ; slot_omitted:volume (fb.iso_upper).
+Objectif de volume de la semaine : **partially_satisfied** (3/3 séances). Contraintes tracées : interference (lower_hip (neighbor:running:stim.running.aerobic)) ; interference (lower_knee (neighbor:running:stim.running.aerobic)) ; slot_omitted:duration (fb.trunk) ; slot_omitted:duration (i.cooldown) ; slot_omitted:duration (i.warmup_extra) ; slot_omitted:interference (fb.calves) ; slot_omitted:interference (fb.iso_lower) ; slot_omitted:interference (fb.single_leg) ; slot_omitted:stimulus_preservation (fb.trunk) ; slot_omitted:volume (fb.iso_upper).
 
 Priorité déclarée (programme) : strength > running ; reçue par Strength : rang 1 ; voisines : running:2 ; politique : blocked:priority_interference_policy.
 
@@ -78,9 +78,9 @@ Priorité déclarée (programme) : strength > running ; reçue par Strength : ra
 
 Séances Strength :
 
-- 2026-10-13 str_full_body #1 — graine `strength:str_full_body:strength_volume:1` ; ancres déclarées : Tractions, Presse pectoraux machine, Soulevé de terre roumain ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.iso_upper (duration), i.warmup_extra (duration), i.cooldown (duration)
-- 2026-10-15 str_full_body #2 — graine `strength:str_full_body:strength_volume:2` ; ancres déclarées : Tirage horizontal poulie, Développé épaules haltères, Squat barre ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads, shoulders ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (duration), fb.iso_upper (duration), i.cooldown (duration)
-- 2026-10-17 str_full_body #3 — graine `strength:str_full_body:strength_volume:3` ; ancres déclarées : Soulevé de terre roumain, Tractions, Presse pectoraux machine ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference)
+- 2026-10-13 str_full_body #1 — graine `strength:str_full_body:strength_volume:1` ; ancres déclarées : Tractions, Presse pectoraux machine, Soulevé de terre roumain ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.iso_upper (duration), i.warmup_extra (duration), i.cooldown (duration), fb.calves (interference)
+- 2026-10-15 str_full_body #2 — graine `strength:str_full_body:strength_volume:2` ; ancres déclarées : Tirage horizontal poulie, Développé épaules haltères, Squat barre ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads, shoulders ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (duration), fb.iso_upper (duration), i.cooldown (duration), fb.calves (interference)
+- 2026-10-17 str_full_body #3 — graine `strength:str_full_body:strength_volume:3` ; ancres déclarées : Soulevé de terre roumain, Tractions, Presse pectoraux machine ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.calves (interference)
 
 Exercices principaux (ancres) :
 
@@ -108,7 +108,7 @@ Exercices principaux (ancres) :
 | quads | 10 | 18 | 2 | 2 | reduced_by_constraint |
 | shoulders | 8 | 16 | 15 | 15 | achieved |
 
-Objectif de volume de la semaine : **partially_satisfied** (3/3 séances). Contraintes tracées : interference (lower_hip (neighbor:running:stim.running.aerobic)) ; interference (lower_knee (neighbor:running:stim.running.aerobic)) ; slot_omitted:duration (fb.iso_upper) ; slot_omitted:duration (fb.trunk) ; slot_omitted:duration (i.cooldown) ; slot_omitted:duration (i.warmup_extra) ; slot_omitted:interference (fb.iso_lower) ; slot_omitted:interference (fb.single_leg).
+Objectif de volume de la semaine : **partially_satisfied** (3/3 séances). Contraintes tracées : interference (lower_hip (neighbor:running:stim.running.aerobic)) ; interference (lower_knee (neighbor:running:stim.running.aerobic)) ; slot_omitted:duration (fb.iso_upper) ; slot_omitted:duration (fb.trunk) ; slot_omitted:duration (i.cooldown) ; slot_omitted:duration (i.warmup_extra) ; slot_omitted:interference (fb.calves) ; slot_omitted:interference (fb.iso_lower) ; slot_omitted:interference (fb.single_leg).
 
 Priorité déclarée (programme) : strength > running ; reçue par Strength : rang 1 ; voisines : running:2 ; politique : blocked:priority_interference_policy.
 
@@ -137,9 +137,9 @@ Priorité déclarée (programme) : strength > running ; reçue par Strength : ra
 
 Séances Strength :
 
-- 2026-10-20 str_full_body #1 — graine `strength:str_full_body:strength_volume:1` ; ancres déclarées : Squat barre, Tirage horizontal poulie, Développé épaules haltères ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (duration), fb.iso_upper (volume), i.warmup_extra (duration), i.cooldown (duration)
-- 2026-10-22 str_full_body #2 — graine `strength:str_full_body:strength_volume:2` ; ancres déclarées : Soulevé de terre roumain, Tractions, Presse pectoraux machine ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (duration), fb.iso_upper (volume), i.cooldown (duration)
-- 2026-10-25 str_full_body #3 — graine `strength:str_full_body:strength_volume:3` ; ancres déclarées : Squat barre, Tirage horizontal poulie, Développé épaules haltères ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, core, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; emplacements omis : fb.iso_upper (volume)
+- 2026-10-20 str_full_body #1 — graine `strength:str_full_body:strength_volume:1` ; ancres déclarées : Squat barre, Tirage horizontal poulie, Développé épaules haltères ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (duration), fb.iso_upper (volume), i.warmup_extra (duration), i.cooldown (duration), fb.calves (interference)
+- 2026-10-22 str_full_body #2 — graine `strength:str_full_body:strength_volume:2` ; ancres déclarées : Soulevé de terre roumain, Tractions, Presse pectoraux machine ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (duration), fb.iso_upper (volume), i.cooldown (duration), fb.calves (interference)
+- 2026-10-25 str_full_body #3 — graine `strength:str_full_body:strength_volume:3` ; ancres déclarées : Squat barre, Tirage horizontal poulie, Développé épaules haltères ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, core, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; emplacements omis : fb.iso_upper (volume), fb.calves (duration)
 
 Exercices principaux (ancres) :
 
@@ -167,7 +167,7 @@ Exercices principaux (ancres) :
 | quads | 10 | 18 | 7 | 7 | reduced_by_constraint |
 | shoulders | 8 | 16 | 15.5 | 15.5 | achieved |
 
-Objectif de volume de la semaine : **partially_satisfied** (3/3 séances). Contraintes tracées : interference (lower_hip (neighbor:running:stim.running.aerobic)) ; interference (lower_knee (neighbor:running:stim.running.aerobic)) ; slot_omitted:duration (fb.trunk) ; slot_omitted:duration (i.cooldown) ; slot_omitted:duration (i.warmup_extra) ; slot_omitted:interference (fb.iso_lower) ; slot_omitted:interference (fb.single_leg) ; slot_omitted:volume (fb.iso_upper).
+Objectif de volume de la semaine : **partially_satisfied** (3/3 séances). Contraintes tracées : interference (lower_hip (neighbor:running:stim.running.aerobic)) ; interference (lower_knee (neighbor:running:stim.running.aerobic)) ; slot_omitted:duration (fb.calves) ; slot_omitted:duration (fb.trunk) ; slot_omitted:duration (i.cooldown) ; slot_omitted:duration (i.warmup_extra) ; slot_omitted:interference (fb.calves) ; slot_omitted:interference (fb.iso_lower) ; slot_omitted:interference (fb.single_leg) ; slot_omitted:volume (fb.iso_upper).
 
 Priorité déclarée (programme) : strength > running ; reçue par Strength : rang 1 ; voisines : running:2 ; politique : blocked:priority_interference_policy.
 
@@ -197,9 +197,9 @@ Décisions bloquées (après réalisation) : réussite exacte sans marge (autore
 
 Séances Strength :
 
-- 2026-10-26 str_full_body #1 — graine `strength:str_full_body:strength_volume:1` ; ancres déclarées : Soulevé de terre roumain, Tractions, Presse pectoraux machine ; sous le plancher (prévu + réalisé avant la séance) : calves, hamstrings, quads ; au haut ou au-delà : arms ; emplacements omis : fb.trunk (volume), fb.iso_upper (volume), i.cooldown (duration)
-- 2026-10-29 str_full_body #2 — graine `strength:str_full_body:strength_volume:2` ; ancres déclarées : Squat barre, Tirage horizontal poulie, Développé épaules haltères ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (volume), fb.iso_upper (volume), i.cooldown (duration)
-- 2026-10-31 str_full_body #3 — graine `strength:str_full_body:strength_volume:3` ; ancres déclarées : Soulevé de terre roumain, Tractions, Presse pectoraux machine ; sous le plancher (prévu + réalisé avant la séance) : back, calves, quads ; au haut ou au-delà : arms ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (volume), fb.iso_upper (volume)
+- 2026-10-26 str_full_body #1 — graine `strength:str_full_body:strength_volume:1` ; ancres déclarées : Soulevé de terre roumain, Tractions, Presse pectoraux machine ; sous le plancher (prévu + réalisé avant la séance) : calves, hamstrings, quads ; au haut ou au-delà : arms ; emplacements omis : fb.trunk (volume), fb.iso_upper (volume), i.cooldown (duration), fb.calves (duration)
+- 2026-10-29 str_full_body #2 — graine `strength:str_full_body:strength_volume:2` ; ancres déclarées : Squat barre, Tirage horizontal poulie, Développé épaules haltères ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, quads ; au haut ou au-delà : aucun ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (volume), fb.iso_upper (volume), i.cooldown (duration), fb.calves (interference)
+- 2026-10-31 str_full_body #3 — graine `strength:str_full_body:strength_volume:3` ; ancres déclarées : Soulevé de terre roumain, Tractions, Presse pectoraux machine ; sous le plancher (prévu + réalisé avant la séance) : back, calves, quads ; au haut ou au-delà : arms ; structures abaissées : lower_hip (neighbor:running:stim.running.aerobic), lower_knee (neighbor:running:stim.running.aerobic) ; emplacements omis : fb.iso_lower (interference), fb.single_leg (interference), fb.trunk (volume), fb.iso_upper (volume), fb.calves (interference)
 
 Exercices principaux (ancres) :
 
@@ -227,7 +227,7 @@ Exercices principaux (ancres) :
 | quads | 10 | 18 | 4 | 4 | reduced_by_constraint |
 | shoulders | 8 | 16 | 12 | 12 | achieved |
 
-Objectif de volume de la semaine : **partially_satisfied** (3/3 séances). Contraintes tracées : interference (lower_hip (neighbor:running:stim.running.aerobic)) ; interference (lower_knee (neighbor:running:stim.running.aerobic)) ; slot_omitted:duration (i.cooldown) ; slot_omitted:interference (fb.iso_lower) ; slot_omitted:interference (fb.single_leg) ; slot_omitted:volume (fb.iso_upper) ; slot_omitted:volume (fb.trunk).
+Objectif de volume de la semaine : **partially_satisfied** (3/3 séances). Contraintes tracées : interference (lower_hip (neighbor:running:stim.running.aerobic)) ; interference (lower_knee (neighbor:running:stim.running.aerobic)) ; slot_omitted:duration (fb.calves) ; slot_omitted:duration (i.cooldown) ; slot_omitted:interference (fb.calves) ; slot_omitted:interference (fb.iso_lower) ; slot_omitted:interference (fb.single_leg) ; slot_omitted:volume (fb.iso_upper) ; slot_omitted:volume (fb.trunk).
 
 Priorité déclarée (programme) : strength > running ; reçue par Strength : rang 1 ; voisines : running:2 ; politique : blocked:priority_interference_policy.
 
@@ -240,5 +240,5 @@ Décisions bloquées (après réalisation) : réussite exacte sans marge (autore
 - Preuves : réussites exactes ×37, dépassements ×0, sans preuve ×0.
 - Décisions bloquées : réussite exacte ×2 (effort observé ×2, effort inconnu ×0), poids du corps ×1.
 - Effort : expositions avec effort observé ×37, effort inconnu ×0.
-- État persisté (JSON compact, saveState) après 4 semaines : 305 Ko.
+- État persisté (JSON compact, saveState) après 4 semaines : 307 Ko.
 

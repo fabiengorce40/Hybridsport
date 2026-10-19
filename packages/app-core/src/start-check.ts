@@ -19,8 +19,8 @@
  * adaptation de la séance PERSISTÉE par la validation et la réparation du CORE (`adaptPersistedSession`), qui ne change
  * que ce que l'état déclaré impose. La recomposition signalée et le report ne sont que les derniers recours.
  */
-import { deriveProgramStatus, ENGINE_VERSION, estimateDuration, migrateToCurrent, readDurationParams, repairSession, toEnvelope, toRecordedDurationEstimate, validateSession } from '@hybridsport/engine';
-import type { CoreState, ValidationContext } from '@hybridsport/engine';
+import { deriveProgramStatus, ENGINE_VERSION, estimateDuration, loadRuleset, migrateToCurrent, readDurationParams, repairSession, toEnvelope, toRecordedDurationEstimate, validateSession } from '@hybridsport/engine';
+import type { CoreState, LoadedCatalog, LoadedRuleset, ValidationContext } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
 import type { PlannerSport, SlotRequest, WeekSession } from '@hybridsport/planner';
 import { readNeighbourWindow } from '@hybridsport/planner';
@@ -35,6 +35,7 @@ import { portInputs } from './programme.js';
 import { coreProfile } from './generate.js';
 import type { ProgrammeEnvironment } from './programme.js';
 import { applyReadinessToPersisted } from './readiness-persisted.js';
+import { strengthContent, strengthContentFor } from './provisional-content.js';
 
 type Request = PersistedWeek['requests'][number];
 const reason = (r: { code: string; params: Readonly<Record<string, unknown>> }): Reason => ({ code: r.code, params: { ...r.params } });
@@ -73,6 +74,41 @@ export function freeRunsSincePlanning(state: AppState, requestId: string, now: s
 }
 
 /**
+ * RC4.5 (F6-V) — environnement de RÉGÉNÉRATION d'une séance existante : contenu Strength de SA provenance persistée
+ * (versions du ruleset et du catalogue), jamais le contenu courant d'une version ultérieure (aucun effet rétroactif).
+ * Les surcharges de l'environnement par rapport au contenu courant (ex. normalisation de demande du planificateur)
+ * sont reportées à l'identique sur le contenu d'origine. Même version, ou version inconnue du registre :
+ * environnement inchangé (version inconnue ⇒ régénération non reproductible, chemin existant).
+ */
+const versionedCache = new Map<string, { readonly ruleset: LoadedRuleset; readonly catalog: LoadedCatalog }>();
+export function sessionEnvironment(state: AppState, requestId: string, env: ProgrammeEnvironment): ProgrammeEnvironment {
+  const at = locate(state, requestId);
+  const prov = at?.r.sport === 'strength' ? recordOf(at.r)?.provenance : undefined;
+  return prov ? strengthEnvironmentFor(env, prov.rulesetVersion, prov.catalogVersion) ?? env : env;
+}
+
+/** Environnement dont le contenu Strength est celui de la version donnée (registre versionné) ; inconnue ⇒ `undefined`. */
+export function strengthEnvironmentFor(env: ProgrammeEnvironment, rulesetVersion: string, catalogVersion: string): ProgrammeEnvironment | undefined {
+  const cur = env.strength;
+  if (!cur) return undefined;
+  if (rulesetVersion === cur.content.ruleset.version && catalogVersion === cur.content.catalog.version) return env;
+  const origin = strengthContentFor(rulesetVersion, catalogVersion);
+  if (!origin) return undefined;
+  const key = `${rulesetVersion}|${catalogVersion}|${cur.content.ruleset.version}|${cur.content.catalog.version}`;
+  let content = versionedCache.get(key);
+  if (!content) {
+    const base = new Map(strengthContent().ruleset.document.parameters.map((x) => [x.id, JSON.stringify(x)]));
+    const overrides = cur.content.ruleset.document.parameters.filter((x) => base.get(x.id) !== JSON.stringify(x));
+    const doc = origin.ruleset.document;
+    const r = loadRuleset({ ...doc, parameters: [...doc.parameters.filter((x) => !overrides.some((o) => o.id === x.id)), ...overrides] } as never);
+    if (!r.ok) return undefined;
+    content = { ruleset: r.ruleset, catalog: origin.catalog };
+    versionedCache.set(key, content);
+  }
+  return { ...env, strength: { ...cur, content: { ...cur.content, ...content } } };
+}
+
+/**
  * Sports dont le créneau est reconstructible fidèlement. RC4.4 (lot E) : HYROX compris — sa station est celle
  * RÉELLEMENT enregistrée dans l'intention de semaine du programme (jamais devinée) ; la garde de reproductibilité de
  * `decideStart` s'applique comme pour les autres sports.
@@ -83,7 +119,8 @@ const REGENERABLE: readonly PlannerSport[] = ['strength', 'running', 'crosstrain
  * Régénère la séance PLANIFIÉE `requestId` avec l'état CORE `coreState` sur son jour (les autres jours : inconnu).
  * Pur : n'écrit rien dans l'état.
  */
-export function regenerateSession(state0: AppState, requestId: string, coreState: CoreState, env: ProgrammeEnvironment, freeRuns: readonly RealizedSession[] = []): Regeneration {
+export function regenerateSession(state0: AppState, requestId: string, coreState: CoreState, env0: ProgrammeEnvironment, freeRuns: readonly RealizedSession[] = []): Regeneration {
+  const env = sessionEnvironment(state0, requestId, env0);
   const at = locate(state0, requestId);
   // Historiques tels qu'à la planification de la semaine (aucune donnée persistée en plus ; tracks : état courant).
   const state = at ? asOfPlanning(state0, at.week.plannedAt) : state0;
@@ -159,7 +196,8 @@ export type PersistedAdaptation =
  * Garde : la séance planifiée doit être VALIDE sans restriction (sinon un écart non lié à l'état serait attribué à
  * tort). La dose selon l'état (règle du moteur de la discipline) n'est PAS appliquée ici : tracée comme non appliquée.
  */
-export function adaptPersistedSession(state: AppState, requestId: string, ev: CheckInEvaluation, env: ProgrammeEnvironment): PersistedAdaptation {
+export function adaptPersistedSession(state: AppState, requestId: string, ev: CheckInEvaluation, env0: ProgrammeEnvironment): PersistedAdaptation {
+  const env = sessionEnvironment(state, requestId, env0);
   const at = locate(state, requestId);
   const rec = recordOf(at?.r);
   const p = state.profile;
@@ -225,7 +263,7 @@ function readinessApplies(state: AppState, requestId: string, ev: CheckInEvaluat
 function readinessPersisted(state: AppState, requestId: string, record: SessionRecord, ev: CheckInEvaluation, env: ProgrammeEnvironment): { readonly record: SessionRecord; readonly reasons: readonly Reason[]; readonly applied: boolean } | null {
   if (!readinessApplies(state, requestId, ev) || (ev.readiness !== 'caution' && ev.readiness !== 'reduce')) return null;
   const at = locate(state, requestId);
-  const content = env.strength?.content;
+  const content = sessionEnvironment(state, requestId, env).strength?.content;
   const notApplied = (cause: string, more: readonly Reason[] = []) => ({ record, applied: false, reasons: [{ code: 'KAIRO.CHECKIN_ADAPTATION_NOT_APPLIED', params: { requestId, cause, readiness: ev.readiness } }, ...more] });
   if (!at || !content) return notApplied('readiness_persisted_session_unavailable');
   const intent = at.r.intent;

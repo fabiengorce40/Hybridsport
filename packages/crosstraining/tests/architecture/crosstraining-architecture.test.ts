@@ -97,6 +97,18 @@ const STRENGTH_S5_CHANGES = [
   'packages/strength/tests/longitudinal/__reports__/evidence-longitudinal.md',
 ];
 /**
+ * Lot Strength RC4.5 F6 (liste FERMÉE) — validé le 2026-10-19 (F6-1, F6-2, F6-V) : attributs d'emplacement gouvernés
+ * `fill: residual_time` (R1) et `untilWeeklyTarget` (R2) du ruleset, emplacement à temps résiduel dans le moteur (ajout
+ * en dernier, hors préservation du stimulus, hors alternatives et hors vecteur d'optimisation), contenu provisoire F6
+ * en SURCOUCHE (le contenu 4F reste inchangé et reproductible) et ses tests.
+ */
+const STRENGTH_RC45_F6_CHANGES = [
+  'packages/strength/src/params.ts',
+  'packages/strength/src/engine.ts',
+  'packages/strength/tests/fixtures/f6.ts',
+  'packages/strength/tests/unit/f6-residual.test.ts',
+];
+/**
  * Lot Running RC4.3 — décision R2 (option A′) validée le 2026-10-18 (liste FERMÉE) : politique `freeRunPolicy`
  * PROGRAMME_FIRST de V19 (surcouche des décisions produit), origine des courses libres FOURNIE au contexte, ancre et
  * preuve de tolérance (V23) selon cette politique ; test dédié. Aucune autre modification de Running n'est admise.
@@ -145,6 +157,7 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   ...STRENGTH_S4_CHANGES,
   ...STRENGTH_S5_CHANGES,
   ...STRENGTH_C42_A2_CHANGES,
+  ...STRENGTH_RC45_F6_CHANGES,
   ...RUNNING_RC43_R2_CHANGES,
 ];
 
@@ -174,7 +187,7 @@ describe('frontières', () => {
     }
     const changed = diff.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
     expect(changed.filter((f) => !CT_C2_AUTHORIZED_CORE_CHANGES.includes(f))).toEqual([]);
-    expect(changed.filter((f) => (f.startsWith('packages/running/') && !RUNNING_RC43_R2_CHANGES.includes(f)) || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f) && !STRENGTH_C42_A2_CHANGES.includes(f)))).toEqual([]);
+    expect(changed.filter((f) => (f.startsWith('packages/running/') && !RUNNING_RC43_R2_CHANGES.includes(f)) || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f) && !STRENGTH_C42_A2_CHANGES.includes(f) && !STRENGTH_RC45_F6_CHANGES.includes(f)))).toEqual([]);
   });
 });
 

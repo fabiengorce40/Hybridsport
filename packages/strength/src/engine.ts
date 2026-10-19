@@ -27,7 +27,7 @@ import { computeDose, doseCell } from './dose.js';
 import { decideLoad, loadKnowledge, loadStep, pctFor } from './load.js';
 import { buildRampups } from './rampup.js';
 import { progressionModelFor } from './models.js';
-import { groupsOf, plannedHardSets, remainingShare, volumeFit, weeklyTarget } from './volume.js';
+import { groupsOf, plannedHardSets, remainingShare, volumeFit, weeklyProjection, weeklyTarget } from './volume.js';
 import { loweredStructures } from './interference.js';
 import { strengthReasons } from './codes.js';
 import { STRENGTH_CHECKS } from './checks.js';
@@ -68,12 +68,16 @@ interface Built {
   readonly anchorsUsed: readonly string[];
   /** Emplacements résolus pour CETTE séance (requis + optionnels) : base du critère B1. */
   readonly slotIds: readonly string[];
+  /** RC4.5 (F6, R1) — durée p50 de la séance avant les emplacements à temps résiduel (critère B5 inchangé). */
+  readonly coreP50: number;
 }
 
 class NoProposal extends Error {
   constructor(readonly reasons: readonly ReasonCode[], readonly blockingNeeds: readonly { slotId: string; need: string }[] = [], readonly missingData: readonly ('capacities' | 'week_context' | 'tracks' | 'catalog_coverage')[] = []) { super('no_valid_proposal'); }
 }
 
+/** RC4.5 (F6, R1) — emplacement à temps résiduel (attribut gouverné du ruleset). */
+const isResidual = (d: { readonly fill?: string }): boolean => d.fill === 'residual_time';
 const workingOf = (sets: readonly SetPrescription[]): number => sets.filter((s) => s.kind !== 'rampup' && s.optional !== true).length;
 const repsForLoad = (r: RepTarget): number => (typeof r === 'number' ? r : r.max);
 
@@ -276,6 +280,9 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
 
   const feasible = (def: SlotInstance['def']): boolean => slotCandidatesFor({ def, requirement: params['strength.needs'][def.need]?.requirement ?? {} }, env, { technicalCount: 0 }).candidates.length > 0;
   const slots = resolveSlots(env.archetype, params, env.goalKey, env.stimulus, recentNeed, (id) => env.anchorBySlot.has(id), feasible);
+  // RC4.5 (F6, R1) — emplacements à temps résiduel : écartés de la composition ordinaire (étapes 2 à 4), ajoutés en 5.
+  const residual = slots.optional.filter((s) => isResidual(s.def));
+  const ordinary = slots.optional.filter((s) => !isResidual(s.def));
   // Explication (S3) : pourquoi ce besoin dans chaque groupe de choix (ancre, déjà présent, exposition, objectif).
   for (const c of slots.choices) reasons.push(strengthReasons.emit('SELECT.CHOICE_GROUP', { group: c.group, need: c.need, cause: c.cause, others: [...c.others] }));
   const dropped = new Set([...env.lowered.keys()].flatMap((s) => params['strength.interference'].perStructure[s]?.dropOptionalNeeds ?? []));
@@ -332,7 +339,7 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
   const duration = readDurationParams(input.ruleset);
   const profile = readToleranceProfile(input.ruleset, env.archetype.toleranceProfile);
 
-  const assemble = (list: readonly Pick[], timePressure: boolean, trace: ReasonCode[] | undefined): Omit<Built, 'reasons' | 'slotIds'> & { p90: number; upper: number } => {
+  const assemble = (list: readonly Pick[], timePressure: boolean, trace: ReasonCode[] | undefined): Omit<Built, 'reasons' | 'slotIds' | 'coreP50'> & { p90: number; upper: number } => {
     const itemsByBlock = new Map<string, SessionItem[]>();
     const markers: Record<string, number> = {};
     const volumeByItem: Record<string, number> = {};
@@ -341,6 +348,7 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
     const patternRamped = new Map<string, number>();
     const local: ReasonCode[] = [];
     const counters = new Map<string, number>();
+    const residualItems = new Set<string>();
     for (const p of list) {
       const groups = groupsOf(p.exercise, env).primary;
       const shares = groups.map((g) => remainingShare(g, env)).filter((x): x is number => x !== undefined);
@@ -356,6 +364,7 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
       const n = (counters.get(p.slot.def.id) ?? 0) + 1;
       counters.set(p.slot.def.id, n);
       const itemId = `${p.slot.def.id}.${String(n)}`;
+      if (isResidual(p.slot.def)) residualItems.add(itemId);
       const anchorDeclared = p.track?.tier === 'anchor' && env.anchorBySlot.get(p.slot.def.id)?.trackId === p.track.trackId;
       if (anchorDeclared && p.track) { anchorsUsed.push(p.track.trackId); local.push(strengthReasons.emit('PROGRESSION.ANCHOR_APPLIED', { trackId: p.track.trackId, exerciseId: p.exercise.id })); }
       const candidate = !p.track && !p.substitutedFrom && p.slot.def.anchorable && !env.anchorBySlot.has(p.slot.def.id);
@@ -400,8 +409,11 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
       const items = itemsByBlock.get(b.id);
       // Un superset n'enchaîne que des séries à répétitions (contrat du CORE) : sinon, séries classiques.
       if (!items || items.length === 0) continue;
-      const grouping = b.grouping === 'superset' && items.length > 1 && items.every((it) => it.prescription.type === 'sets') ? 'superset' : 'straight';
-      blocks.push({ id: b.id, kind: b.kind, role: b.role, optional: false, format: 'sets', grouping, items, levers: grouping === 'superset' ? b.levers : b.levers.filter((l) => l.kind !== 'superset_accessories' || items.filter((it) => it.prescription.type === 'sets').length > 1) });
+      // RC4.5 (F6, R1) : regroupement et leviers décidés sur les seuls éléments ordinaires (ajout résiduel sans effet).
+      const ord = items.filter((it) => !residualItems.has(it.id));
+      const grouping = b.grouping === 'superset' && ord.length > 1 && ord.every((it) => it.prescription.type === 'sets') ? 'superset' : 'straight';
+      if (ord.length === 0) { blocks.push({ id: b.id, kind: b.kind, role: b.role, optional: false, format: 'sets', grouping: 'straight', items, levers: b.levers.filter((l) => l.kind !== 'superset_accessories') }); continue; }
+      blocks.push({ id: b.id, kind: b.kind, role: b.role, optional: false, format: 'sets', grouping, items, levers: grouping === 'superset' ? b.levers : b.levers.filter((l) => l.kind !== 'superset_accessories' || ord.filter((it) => it.prescription.type === 'sets').length > 1) });
     }
     if (cooldown) blocks.push({ id: 'b.cooldown', kind: 'cooldown', role: 'support', optional: false, format: 'continuous', items: [cooldown], levers: [] });
     if (warmup) volumeByItem[warmup.id] = 0;
@@ -454,16 +466,16 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
     durationFailures.push(slot);
   };
   const durationFailures: SlotInstance[] = [];
-  for (const s of slots.optional) addTried(s);
+  for (const s of ordinary) addTried(s);
   // 3. Exercices supplémentaires jusqu'à count.max (même ordre), toujours dans le budget.
-  for (const s of [...slots.required, ...slots.optional]) {
+  for (const s of [...slots.required, ...ordinary]) {
     const have = picks.filter((p) => p.slot.def.id === s.def.id).length;
     if (have > 0 && have < s.def.count.max) addTried(s);
   }
   // 3 bis. Préservation du stimulus (phase 4F) : un optionnel omis faute de temps peut remplacer un optionnel de
   // plus basse priorité de stimulus si son absence faisait perdre la majorité de la dose d'un groupe ciblé.
   if (params['strength.session.stimulusPreservation']) {
-    const rank = (slotId: string) => slots.optional.findIndex((x) => x.def.id === slotId);
+    const rank = (slotId: string) => ordinary.findIndex((x) => x.def.id === slotId);
     const itemGroups = (session: SessionDraft) => session.blocks.flatMap((b) => b.items).map((it) => ({ exercise: env.catalog.exercise(it.exerciseId) as Exercise, workingSets: workingSetsOf(it.prescription) }));
     for (const failed of durationFailures) {
       const before = [...picks];
@@ -516,6 +528,32 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
       else reasons.push(strengthReasons.emit('SELECT.SLOT_OMITTED', { slot: 'i.cooldown', cause: 'duration' }));
     }
   }
+  // 5. RC4.5 (F6) — emplacements à TEMPS RÉSIDUEL (R1), après toute la composition : la séance ordinaire est déjà
+  // fixée et n'est pas modifiée. Omis sous interférence, sans candidat, cible hebdomadaire atteinte (R2), volume au-
+  // dessus du haut, ou faute de temps. Jamais dans la préservation du stimulus (déjà appliquée).
+  const coreP50 = core.p50;
+  for (const s of residual) {
+    if (dropped.has(s.def.need)) { reasons.push(strengthReasons.emit('SELECT.SLOT_OMITTED', { slot: s.def.id, cause: 'interference' })); continue; }
+    const before = picks.length;
+    if (!add(s, false)) continue;
+    const added = picks[picks.length - 1] as Pick;
+    const undo = (cause: string) => {
+      const removed = picks.splice(before);
+      for (const r of removed) families.delete(r.exercise.family);
+      reasons.push(strengthReasons.emit('SELECT.SLOT_OMITTED', { slot: s.def.id, cause }));
+    };
+    if (s.def.untilWeeklyTarget === true) {
+      const thisSession = plannedHardSets(core.session.blocks.flatMap((b) => b.items).map((it) => ({ exercise: env.catalog.exercise(it.exerciseId) as Exercise, workingSets: it.prescription.type === 'sets' ? workingOf(it.prescription.sets) : 0 })), env);
+      const groups = groupsOf(added.exercise, env).primary;
+      const met = groups.length > 0 && groups.every((g) => { const pr = weeklyProjection(g, env, thisSession); return pr !== undefined && pr.total >= pr.floor; });
+      if (met) { undo('weekly_target_met'); continue; }
+    }
+    const vf = volumeFit(added.exercise, added.slot.def.role, picks.slice(0, -1).map((p) => ({ exercise: p.exercise, role: p.slot.def.role })), env);
+    if (vf.groups > 0 && vf.over === vf.groups) { undo('volume'); continue; }
+    const trial = assemble(picks, timePressure, undefined);
+    if (fits(trial)) { core = trial; continue; }
+    undo('duration');
+  }
   const trace: ReasonCode[] = [];
   const final = assemble(picks, timePressure, trace);
   // Volume hebdomadaire : plancher d'un groupe inatteignable cette semaine ⇒ signal au planificateur.
@@ -532,7 +570,7 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
   const kept = final.picks.filter((p) => p.kept).map((p) => `${p.instance}=${p.exercise.id}`);
   const decisions = reasons.filter((r) => !(r.code === 'SELECT.CONTINUITY' && r.params.outcome === 'kept'));
   if (kept.length > 0) decisions.push(strengthReasons.emit('SELECT.CONTINUITY_KEPT', { exercises: kept }));
-  return { session: final.session, picks: final.picks, reasons: [...decisions, ...trace], p50: final.p50, markers: final.markers, volumeByItem: final.volumeByItem, anchorsUsed: final.anchorsUsed, slotIds: [...slots.required, ...slots.optional].map((s) => s.def.id) };
+  return { session: final.session, picks: final.picks, reasons: [...decisions, ...trace], p50: final.p50, markers: final.markers, volumeByItem: final.volumeByItem, anchorsUsed: final.anchorsUsed, slotIds: [...slots.required, ...ordinary].map((s) => s.def.id), coreP50 };
 }
 
 /**
@@ -542,9 +580,10 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
  */
 function interferenceSignals(b: Built, env: Env, signals: readonly InterferenceAssessment[]): ReasonCode[] {
   const inter = env.params['strength.interference'];
-  const needOf = (slotId: string) => env.archetype.slots.find((s) => s.id === slotId)?.need;
+  const needOf = (slotId: string) => { const d = env.archetype.slots.find((s) => s.id === slotId); return d && !isResidual(d) ? d.need : undefined; };
   return signals.flatMap((sg) => {
-    const byExercise = b.picks.some((p) => (env.structuresOf(p.exercise)[sg.structure] ?? 0) >= inter.touchThreshold);
+    // RC4.5 (F6, R1) : un emplacement à temps résiduel (ajouté ou retiré) ne crée aucun signal.
+    const byExercise = b.picks.some((p) => !isResidual(p.slot.def) && (env.structuresOf(p.exercise)[sg.structure] ?? 0) >= inter.touchThreshold);
     const drops = inter.perStructure[sg.structure]?.dropOptionalNeeds ?? [];
     const byOmission = b.reasons.some((r) => r.code === 'SELECT.SLOT_OMITTED' && r.params.cause === 'interference' && drops.includes(needOf(String(r.params.slot)) ?? ''));
     const overlap = byExercise ? 'exercise' : byOmission ? 'omitted_slot' : 'none';
@@ -565,21 +604,23 @@ function asProposalReasons(rs: readonly ReasonCode[]): SportEngineProposalInput[
 /** Vecteur de la couche B, du point de vue du moteur (le CORE y applique ses propres pénalités). */
 function optimization(b: Built, env: Env, input: Input): SportEngineProposalInput['optimization'] {
   const needs = b.slotIds;
-  const covered = new Set(b.picks.map((p) => p.slot.def.id));
+  // RC4.5 (F6, R1) : vecteur calculé hors emplacements à temps résiduel (choix ordinaires inchangés).
+  const picks = b.picks.filter((p) => !isResidual(p.slot.def));
+  const covered = new Set(picks.map((p) => p.slot.def.id));
   const declaredAnchors = env.anchorBySlot.size;
   const prefs = input.discipline.preferences;
-  const ex = b.picks.map((p) => p.exercise.id);
+  const ex = picks.map((p) => p.exercise.id);
   const liked = ex.filter((x) => prefs.liked.includes(x)).length;
   const disliked = ex.filter((x) => prefs.disliked.includes(x)).length;
   const lastFamilies = new Set(input.history.flatMap((h) => h.fingerprint.families));
   // S4 : la « variété » B6 ne porte que sur les exercices libres (ni suivis, ni conservés par continuité déclarée).
-  const nonAnchor = b.picks.filter((p) => !p.track && !p.kept);
+  const nonAnchor = picks.filter((p) => !p.track && !p.kept);
   return {
     B1: needs.length === 0 ? 0 : needs.filter((n) => covered.has(n)).length / needs.length,
     B2: declaredAnchors === 0 ? 1 : b.anchorsUsed.length / declaredAnchors,
     B3: ex.length === 0 ? 0 : (liked - disliked + ex.length) / (ex.length + ex.length),
     B4: 0,
-    B5: Math.max(0, 1 - Math.abs(b.p50 - input.intent.targetDurationS) / input.intent.targetDurationS),
+    B5: Math.max(0, 1 - Math.abs(b.coreP50 - input.intent.targetDurationS) / input.intent.targetDurationS),
     B6: nonAnchor.length === 0 ? 1 : nonAnchor.filter((p) => !lastFamilies.has(p.exercise.family)).length / nonAnchor.length,
   };
 }
@@ -646,7 +687,8 @@ export function proposeStrength(input: Input): ProposeResult {
     const out = [proposal({ ...main, reasons: [...lr, ...main.reasons, ...interferenceSignals(main, env, inter.signals)] }, env, input, loaded, 0)];
     // Alternatives : même séance, seul un emplacement NON ancré change d'exercice (sa première alternative).
     // S4 : un exercice en place conservé (continuité déclarée) n'est jamais varié par une alternative.
-    const variable = main.picks.filter((p) => !p.track && !p.kept && p.slot.def.role === 'accessory' && p.ranked.length > 1);
+    // RC4.5 (F6, R1) : un emplacement à temps résiduel n'est jamais varié en alternative.
+    const variable = main.picks.filter((p) => !p.track && !p.kept && !isResidual(p.slot.def) && p.slot.def.role === 'accessory' && p.ranked.length > 1);
     for (const p of variable.slice(0, params['strength.proposals.max'] - 1)) {
       const alt = p.ranked[1]?.exercise.id;
       if (!alt) continue;

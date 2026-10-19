@@ -55,6 +55,14 @@ export const zStrengthArchetype = z.object({
     choiceGroup: id.optional(), count: range(int.positive()), minFamilies: int.positive().optional(),
     modalityPreference: z.enum(['load_ceiling', 'stability', 'specificity']).optional(),
     anchorable: z.boolean(), trackable: z.boolean(),
+    /**
+     * RC4.5 (F6, R1) — `residual_time` : emplacement facultatif ajouté seulement APRÈS la composition complète de la
+     * séance (optionnels, préservation du stimulus, mobilité), s'il tient dans le temps restant ; jamais varié en
+     * alternative, jamais pris en compte dans le vecteur d'optimisation. Absent : emplacement ordinaire.
+     */
+    fill: z.enum(['residual_time']).optional(),
+    /** RC4.5 (F6, R2) — omis quand la projection hebdomadaire de ses groupes atteint déjà leur cible (plancher). */
+    untilWeeklyTarget: z.boolean().optional(),
   }).strict()).min(1),
 }).strict();
 export type StrengthArchetype = z.infer<typeof zStrengthArchetype>;

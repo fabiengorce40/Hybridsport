@@ -14,27 +14,27 @@ Invariant S5 : effort inconnu ≠ RIR 0 — la preuve dit « effort inconnu », 
 | 2026-10-05 | str_upper #1 | Élévations latérales machine | 4 × 12–20 | 3 | à l’effort (calibration) | calibration | première exposition de l’emplacement | aucune track (accessoire non suivi) |
 | 2026-10-06 | str_lower #1 | Squat barre | 4 × 6 | 3 | à l’effort (calibration) | calibration | première exposition de l’emplacement | track d’ancre créée |
 | 2026-10-06 | str_lower #1 | Soulevé de terre roumain | 3 × 8–12 | 3 | à l’effort (calibration) | calibration | première exposition de l’emplacement | track d’ancre créée |
-| 2026-10-06 | str_lower #1 | Leg extension | 4 × 12–20 | 3 | à l’effort (calibration) | calibration | première exposition de l’emplacement | aucune track (accessoire non suivi) |
-| 2026-10-06 | str_lower #1 | Squat bulgare | 2 × 8–12 | 3 | à l’effort (calibration) | calibration | première exposition de l’emplacement | aucune track (accessoire non suivi) |
 | 2026-10-06 | str_lower #1 | Leg curl | 4 × 12–20 | 3 | à l’effort (calibration) | calibration | première exposition de l’emplacement | aucune track (accessoire non suivi) |
+| 2026-10-06 | str_lower #1 | Squat bulgare | 2 × 8–12 | 3 | à l’effort (calibration) | calibration | première exposition de l’emplacement | aucune track (accessoire non suivi) |
+| 2026-10-06 | str_lower #1 | Pallof press | 4 × 12–20 | 3 | à l’effort (calibration) | calibration | première exposition de l’emplacement | aucune track (accessoire non suivi) |
 | 2026-10-07 | str_upper #2 | Développé couché | 3 × 6 | 3 | à l’effort (calibration) | calibration | conservé | aucune track (accessoire non suivi) |
 | 2026-10-07 | str_upper #2 | Tirage vertical | 3 × 8–12 | 3 | à l’effort (calibration) | calibration | **changé** (était Tractions ; critère : recency) | aucune track (accessoire non suivi) |
-| 2026-10-07 | str_upper #2 | Tirage horizontal poulie | 2 × 8–12 | 3 | à l’effort (calibration) | calibration | **changé** (était Rowing machine ; critère : recency) | aucune track (accessoire non suivi) |
+| 2026-10-07 | str_upper #2 | Rowing machine | 2 × 8–12 | 3 | à l’effort (calibration) | calibration | conservé | track suivie créée |
 | 2026-10-07 | str_upper #2 | Développé épaules machine | 2 × 8–12 | 3 | à l’effort (calibration) | calibration | conservé | track suivie créée |
-| 2026-10-07 | str_upper #2 | Pec deck | 3 × 12–20 | 3 | à l’effort (calibration) | calibration | **changé** (était Élévations latérales machine ; critère : volume_fit) | aucune track (accessoire non suivi) |
-| 2026-10-07 | str_upper #2 | Pallof press | 3 × 12–20 | 3 | à l’effort (calibration) | calibration | première exposition de l’emplacement | aucune track (accessoire non suivi) |
+| 2026-10-07 | str_upper #2 | Pec deck | 3 × 12–20 | 3 | à l’effort (calibration) | calibration | ajouté (instance supplémentaire de l’emplacement ; critère : volume_fit) | aucune track (accessoire non suivi) |
+| 2026-10-07 | str_upper #2 | Élévations latérales machine | 3 × 12–20 | 3 | à l’effort (calibration) | calibration | conservé | track suivie créée |
 | 2026-10-09 | str_lower #2 | Squat barre | 3 × 6 | 3 | à l’effort (calibration) | calibration | conservé | aucune track (accessoire non suivi) |
 | 2026-10-09 | str_lower #2 | Soulevé roumain unilatéral haltère | 3 × 8–12 | 3 | à l’effort (calibration) | calibration | **changé** (était Soulevé de terre roumain ; critère : recency) | aucune track (accessoire non suivi) |
 | 2026-10-09 | str_lower #2 | Leg curl | 3 × 12–20 | 3 | à l’effort (calibration) | calibration | conservé | track suivie créée |
 | 2026-10-09 | str_lower #2 | Squat bulgare | 2 × 8–12 | 3 | à l’effort (calibration) | calibration | conservé | track suivie créée |
-| 2026-10-09 | str_lower #2 | Mollets machine | 4 × 12–20 | 3 | à l’effort (calibration) | calibration | **changé** (était Leg extension ; critère : variant) | aucune track (accessoire non suivi) |
+| 2026-10-09 | str_lower #2 | Leg extension | 3 × 12–20 | 3 | à l’effort (calibration) | calibration | ajouté (instance supplémentaire de l’emplacement ; critère : variant) | aucune track (accessoire non suivi) |
 
 Séances Strength :
 
 - 2026-10-05 str_upper #1 — graine `strength:str_upper:strength_volume:1` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : arms, back, calves, chest, core, glutes, hamstrings, quads, shoulders ; au haut ou au-delà : aucun ; emplacements omis : up.trunk (duration), up.iso_upper (duration)
-- 2026-10-06 str_lower #1 — graine `strength:str_lower:strength_volume:1` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, core, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; emplacements omis : lo.trunk (stimulus_preservation), i.cooldown (duration)
-- 2026-10-07 str_upper #2 — graine `strength:str_upper:strength_volume:2` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, core, hamstrings ; au haut ou au-delà : aucun ; emplacements omis : up.iso_upper (volume)
-- 2026-10-09 str_lower #2 — graine `strength:str_lower:strength_volume:2` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : calves, hamstrings ; au haut ou au-delà : arms ; emplacements omis : lo.trunk (volume)
+- 2026-10-06 str_lower #1 — graine `strength:str_lower:strength_volume:1` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, core, glutes, hamstrings, quads ; au haut ou au-delà : aucun ; emplacements omis : lo.iso_lower (duration), i.cooldown (duration), lo.calves (duration)
+- 2026-10-07 str_upper #2 — graine `strength:str_upper:strength_volume:2` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest, hamstrings, quads ; au haut ou au-delà : aucun ; emplacements omis : up.trunk (volume)
+- 2026-10-09 str_lower #2 — graine `strength:str_lower:strength_volume:2` ; ancres déclarées : aucune ; sous le plancher (prévu + réalisé avant la séance) : calves, hamstrings, quads ; au haut ou au-delà : arms, shoulders ; emplacements omis : lo.trunk (volume), lo.calves (duration)
 
 Exercices principaux (ancres) :
 
@@ -47,15 +47,15 @@ Exercices principaux (ancres) :
 |---|---|---|---|---|---|
 | arms | 6 | 14 | 19.5 | 19.5 | achieved |
 | back | 10 | 20 | 11 | 11 | achieved |
-| calves | 4 | 10 | 4 | 4 | achieved |
+| calves | 4 | 10 | 0 | 0 | reduced_by_constraint |
 | chest | 10 | 20 | 10 | 10 | achieved |
-| core | 4 | 10 | 8 | 8 | achieved |
+| core | 4 | 10 | 9 | 9 | achieved |
 | glutes | 6 | 14 | 17 | 17 | achieved |
 | hamstrings | 8 | 14 | 13 | 13 | achieved |
-| quads | 10 | 18 | 15 | 15 | achieved |
-| shoulders | 8 | 16 | 14 | 14 | achieved |
+| quads | 10 | 18 | 14 | 14 | achieved |
+| shoulders | 8 | 16 | 16 | 16 | achieved |
 
-Objectif de volume de la semaine : **satisfied** (4/4 séances). Contraintes tracées : slot_omitted:duration (i.cooldown) ; slot_omitted:duration (up.iso_upper) ; slot_omitted:duration (up.trunk) ; slot_omitted:stimulus_preservation (lo.trunk) ; slot_omitted:volume (lo.trunk) ; slot_omitted:volume (up.iso_upper).
+Objectif de volume de la semaine : **partially_satisfied** (4/4 séances). Contraintes tracées : slot_omitted:duration (i.cooldown) ; slot_omitted:duration (lo.calves) ; slot_omitted:duration (lo.iso_lower) ; slot_omitted:duration (up.iso_upper) ; slot_omitted:duration (up.trunk) ; slot_omitted:volume (lo.trunk) ; slot_omitted:volume (up.trunk).
 
 Priorité déclarée (programme) : strength ; reçue par Strength : rang 1 ; voisines : aucune ; politique : blocked:priority_interference_policy.
 
@@ -65,33 +65,34 @@ Priorité déclarée (programme) : strength ; reçue par Strength : rang 1 ; voi
 |---|---|---|---|---|---|---|---|---|
 | 2026-10-12 | str_upper #1 | Développé couché ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (estimate) ; réussite exacte : hausse non gouvernée (BLOCKED) |
 | 2026-10-12 | str_upper #1 | Tractions ⚓ | 3 × 8–12 | 2 | poids du corps | track | **changé** (était Tirage vertical ; critère : anchor) | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-12 | str_upper #1 | Tirage horizontal poulie | 2 × 8–12 | 2 | 40 kg | historique | conservé | track suivie créée |
+| 2026-10-12 | str_upper #1 | Rowing machine | 2 × 8–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-12 | str_upper #1 | Développé épaules machine | 2 × 8–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-12 | str_upper #1 | Pec deck | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | track suivie créée |
-| 2026-10-12 | str_upper #1 | Élévations latérales machine | 3 × 12–20 | 1 | à l’effort (calibration) | historique | ajouté (instance supplémentaire de l’emplacement ; critère : volume_fit) | aucune track (accessoire non suivi) |
+| 2026-10-12 | str_upper #1 | Élévations latérales machine | 3 × 12–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
+| 2026-10-12 | str_upper #1 | Pec deck | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
 | 2026-10-13 | str_lower #1 | Squat barre ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (estimate) ; réussite exacte : hausse non gouvernée (BLOCKED) |
 | 2026-10-13 | str_lower #1 | Soulevé de terre roumain ⚓ | 3 × 8–12 | 2 | 40 kg | track | **changé** (était Soulevé roumain unilatéral haltère ; critère : anchor) | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-13 | str_lower #1 | Leg curl | 3 × 12–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-13 | str_lower #1 | Squat bulgare | 2 × 8–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-13 | str_lower #1 | Mollets machine | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
+| 2026-10-13 | str_lower #1 | Pallof press | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
+| 2026-10-13 | str_lower #1 | Leg extension | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
 | 2026-10-14 | str_upper #2 | Développé couché ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (evidence) |
 | 2026-10-14 | str_upper #2 | Tractions ⚓ | 3 × 8–12 | 2 | poids du corps | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-14 | str_upper #2 | Tirage horizontal poulie | 2 × 8–12 | 2 | 40 kg | historique | conservé | aucune track (accessoire non suivi) |
+| 2026-10-14 | str_upper #2 | Rowing machine | 2 × 8–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-14 | str_upper #2 | Développé épaules machine | 2 × 8–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
+| 2026-10-14 | str_upper #2 | Élévations latérales machine | 3 × 12–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-14 | str_upper #2 | Pec deck | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
-| 2026-10-14 | str_upper #2 | Pallof press | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
 | 2026-10-16 | str_lower #2 | Squat barre ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (evidence) |
 | 2026-10-16 | str_lower #2 | Soulevé de terre roumain ⚓ | 3 × 8–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-16 | str_lower #2 | Leg curl | 3 × 12–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-16 | str_lower #2 | Squat bulgare | 2 × 8–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-16 | str_lower #2 | Mollets machine | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
+| 2026-10-16 | str_lower #2 | Leg extension | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
 
 Séances Strength :
 
-- 2026-10-12 str_upper #1 — graine `strength:str_upper:strength_volume:1` ; ancres déclarées : Tractions, Développé couché ; sous le plancher (prévu + réalisé avant la séance) : back, chest, shoulders ; au haut ou au-delà : glutes ; emplacements omis : up.trunk (volume)
-- 2026-10-13 str_lower #1 — graine `strength:str_lower:strength_volume:1` ; ancres déclarées : Soulevé de terre roumain, Squat barre ; sous le plancher (prévu + réalisé avant la séance) : hamstrings, quads ; au haut ou au-delà : arms ; emplacements omis : lo.trunk (volume)
-- 2026-10-14 str_upper #2 — graine `strength:str_upper:strength_volume:2` ; ancres déclarées : Développé couché, Tractions ; sous le plancher (prévu + réalisé avant la séance) : back, chest ; au haut ou au-delà : glutes ; emplacements omis : up.iso_upper (volume)
-- 2026-10-16 str_lower #2 — graine `strength:str_lower:strength_volume:2` ; ancres déclarées : Squat barre, Soulevé de terre roumain ; sous le plancher (prévu + réalisé avant la séance) : calves, hamstrings, quads ; au haut ou au-delà : arms ; emplacements omis : lo.trunk (volume)
+- 2026-10-12 str_upper #1 — graine `strength:str_upper:strength_volume:1` ; ancres déclarées : Tractions, Développé couché ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest ; au haut ou au-delà : glutes ; emplacements omis : up.trunk (volume)
+- 2026-10-13 str_lower #1 — graine `strength:str_lower:strength_volume:1` ; ancres déclarées : Soulevé de terre roumain, Squat barre ; sous le plancher (prévu + réalisé avant la séance) : calves, core, hamstrings, quads ; au haut ou au-delà : arms, shoulders ; emplacements omis : i.cooldown (duration), lo.calves (duration)
+- 2026-10-14 str_upper #2 — graine `strength:str_upper:strength_volume:2` ; ancres déclarées : Développé couché, Tractions ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest ; au haut ou au-delà : glutes ; emplacements omis : up.trunk (volume)
+- 2026-10-16 str_lower #2 — graine `strength:str_lower:strength_volume:2` ; ancres déclarées : Squat barre, Soulevé de terre roumain ; sous le plancher (prévu + réalisé avant la séance) : calves, hamstrings, quads ; au haut ou au-delà : arms, shoulders ; emplacements omis : lo.trunk (volume), lo.calves (duration)
 
 Exercices principaux (ancres) :
 
@@ -110,15 +111,15 @@ Exercices principaux (ancres) :
 |---|---|---|---|---|---|
 | arms | 6 | 14 | 18 | 18 | achieved |
 | back | 10 | 20 | 10 | 10 | achieved |
-| calves | 4 | 10 | 6 | 6 | achieved |
+| calves | 4 | 10 | 0 | 0 | reduced_by_constraint |
 | chest | 10 | 20 | 12 | 12 | achieved |
 | core | 4 | 10 | 9 | 9 | achieved |
 | glutes | 6 | 14 | 16 | 16 | achieved |
 | hamstrings | 8 | 14 | 12 | 12 | achieved |
-| quads | 10 | 18 | 10 | 10 | achieved |
-| shoulders | 8 | 16 | 15 | 15 | achieved |
+| quads | 10 | 18 | 16 | 16 | achieved |
+| shoulders | 8 | 16 | 16 | 16 | achieved |
 
-Objectif de volume de la semaine : **satisfied** (4/4 séances). Contraintes tracées : slot_omitted:volume (lo.trunk) ; slot_omitted:volume (up.iso_upper) ; slot_omitted:volume (up.trunk).
+Objectif de volume de la semaine : **partially_satisfied** (4/4 séances). Contraintes tracées : slot_omitted:duration (i.cooldown) ; slot_omitted:duration (lo.calves) ; slot_omitted:volume (lo.trunk) ; slot_omitted:volume (up.trunk).
 
 Priorité déclarée (programme) : strength ; reçue par Strength : rang 1 ; voisines : aucune ; politique : blocked:priority_interference_policy.
 
@@ -130,33 +131,34 @@ Décisions bloquées (après réalisation) : réussite exacte sans marge (autore
 |---|---|---|---|---|---|---|---|---|
 | 2026-10-19 | str_upper #1 | Développé couché ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (estimate) ; réussite exacte : hausse non gouvernée (BLOCKED) |
 | 2026-10-19 | str_upper #1 | Tractions ⚓ | 3 × 10–12 | 2 | poids du corps | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-19 | str_upper #1 | Tirage horizontal poulie | 2 × 8–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
+| 2026-10-19 | str_upper #1 | Rowing machine | 2 × 10–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-19 | str_upper #1 | Développé épaules machine | 2 × 10–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-19 | str_upper #1 | Pec deck | 3 × 12–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-19 | str_upper #1 | Élévations latérales machine | 3 × 12–20 | 1 | à l’effort (calibration) | historique | ajouté (instance supplémentaire de l’emplacement ; critère : track) | aucune track (accessoire non suivi) |
+| 2026-10-19 | str_upper #1 | Élévations latérales machine | 3 × 14–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
+| 2026-10-19 | str_upper #1 | Pec deck | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
 | 2026-10-20 | str_lower #1 | Squat barre ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (estimate) ; réussite exacte : hausse non gouvernée (BLOCKED) |
 | 2026-10-20 | str_lower #1 | Soulevé de terre roumain ⚓ | 3 × 10–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-20 | str_lower #1 | Leg curl | 3 × 14–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-20 | str_lower #1 | Squat bulgare | 2 × 10–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-20 | str_lower #1 | Mollets machine | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
+| 2026-10-20 | str_lower #1 | Pallof press | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
+| 2026-10-20 | str_lower #1 | Leg extension | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
 | 2026-10-21 | str_upper #2 | Développé couché ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (evidence) |
 | 2026-10-21 | str_upper #2 | Tractions ⚓ | 3 × 10–12 | 2 | poids du corps | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-21 | str_upper #2 | Tirage horizontal poulie | 2 × 8–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
+| 2026-10-21 | str_upper #2 | Rowing machine | 2 × 10–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-21 | str_upper #2 | Développé épaules machine | 2 × 10–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-21 | str_upper #2 | Pec deck | 3 × 12–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-21 | str_upper #2 | Pallof press | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
+| 2026-10-21 | str_upper #2 | Élévations latérales machine | 3 × 14–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
+| 2026-10-21 | str_upper #2 | Pec deck | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
 | 2026-10-23 | str_lower #2 | Squat barre ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition partial ; maintien (partial) |
 | 2026-10-23 | str_lower #2 | Soulevé de terre roumain ⚓ | 3 × 10–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-23 | str_lower #2 | Leg curl | 3 × 14–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-23 | str_lower #2 | Squat bulgare | 2 × 10–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-23 | str_lower #2 | Mollets machine | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
+| 2026-10-23 | str_lower #2 | Leg extension | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
 
 Séances Strength :
 
-- 2026-10-19 str_upper #1 — graine `strength:str_upper:strength_volume:1` ; ancres déclarées : Développé couché, Tractions ; sous le plancher (prévu + réalisé avant la séance) : back, chest, shoulders ; au haut ou au-delà : glutes ; emplacements omis : up.trunk (volume)
-- 2026-10-20 str_lower #1 — graine `strength:str_lower:strength_volume:1` ; ancres déclarées : Squat barre, Soulevé de terre roumain ; sous le plancher (prévu + réalisé avant la séance) : calves, hamstrings, quads ; au haut ou au-delà : arms ; emplacements omis : lo.trunk (volume)
-- 2026-10-21 str_upper #2 — graine `strength:str_upper:strength_volume:2` ; ancres déclarées : Développé couché, Tractions ; sous le plancher (prévu + réalisé avant la séance) : back, chest ; au haut ou au-delà : glutes ; emplacements omis : up.iso_upper (volume)
-- 2026-10-23 str_lower #2 — graine `strength:str_lower:strength_volume:2` ; ancres déclarées : Squat barre, Soulevé de terre roumain ; sous le plancher (prévu + réalisé avant la séance) : calves, hamstrings, quads ; au haut ou au-delà : arms ; emplacements omis : lo.trunk (volume) ; **réalisation : last_set_missed**
+- 2026-10-19 str_upper #1 — graine `strength:str_upper:strength_volume:1` ; ancres déclarées : Développé couché, Tractions ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest ; au haut ou au-delà : glutes ; emplacements omis : up.trunk (volume)
+- 2026-10-20 str_lower #1 — graine `strength:str_lower:strength_volume:1` ; ancres déclarées : Squat barre, Soulevé de terre roumain ; sous le plancher (prévu + réalisé avant la séance) : calves, core, hamstrings, quads ; au haut ou au-delà : arms, shoulders ; emplacements omis : i.cooldown (duration), lo.calves (duration)
+- 2026-10-21 str_upper #2 — graine `strength:str_upper:strength_volume:2` ; ancres déclarées : Développé couché, Tractions ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest ; au haut ou au-delà : glutes ; emplacements omis : up.trunk (volume)
+- 2026-10-23 str_lower #2 — graine `strength:str_lower:strength_volume:2` ; ancres déclarées : Squat barre, Soulevé de terre roumain ; sous le plancher (prévu + réalisé avant la séance) : calves, hamstrings, quads ; au haut ou au-delà : arms, shoulders ; emplacements omis : lo.trunk (volume), lo.calves (duration) ; **réalisation : last_set_missed**
 
 Exercices principaux (ancres) :
 
@@ -175,15 +177,15 @@ Exercices principaux (ancres) :
 |---|---|---|---|---|---|
 | arms | 6 | 14 | 18 | 18 | achieved |
 | back | 10 | 20 | 10 | 10 | achieved |
-| calves | 4 | 10 | 6 | 6 | achieved |
+| calves | 4 | 10 | 0 | 0 | reduced_by_constraint |
 | chest | 10 | 20 | 12 | 12 | achieved |
 | core | 4 | 10 | 9 | 8.5 | achieved |
 | glutes | 6 | 14 | 16 | 15 | achieved |
 | hamstrings | 8 | 14 | 12 | 12 | achieved |
-| quads | 10 | 18 | 10 | 9 | achieved |
-| shoulders | 8 | 16 | 15 | 15 | achieved |
+| quads | 10 | 18 | 16 | 15 | achieved |
+| shoulders | 8 | 16 | 16 | 16 | achieved |
 
-Objectif de volume de la semaine : **satisfied** (4/4 séances). Contraintes tracées : slot_omitted:volume (lo.trunk) ; slot_omitted:volume (up.iso_upper) ; slot_omitted:volume (up.trunk).
+Objectif de volume de la semaine : **partially_satisfied** (4/4 séances). Contraintes tracées : slot_omitted:duration (i.cooldown) ; slot_omitted:duration (lo.calves) ; slot_omitted:volume (lo.trunk) ; slot_omitted:volume (up.trunk).
 
 Priorité déclarée (programme) : strength ; reçue par Strength : rang 1 ; voisines : aucune ; politique : blocked:priority_interference_policy.
 
@@ -195,33 +197,34 @@ Décisions bloquées (après réalisation) : réussite exacte sans marge (autore
 |---|---|---|---|---|---|---|---|---|
 | 2026-10-26 | str_upper #1 | Développé couché ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (estimate) ; réussite exacte : hausse non gouvernée (BLOCKED) |
 | 2026-10-26 | str_upper #1 | Tractions ⚓ | 3 × 12 | 2 | poids du corps | track | conservé | exposition on_target (réussite exacte) ; haut de plage au poids du corps : méthode non gouvernée (BLOCKED) |
-| 2026-10-26 | str_upper #1 | Tirage horizontal poulie | 2 × 10–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
+| 2026-10-26 | str_upper #1 | Rowing machine | 2 × 12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (granularity_effort_unknown) |
 | 2026-10-26 | str_upper #1 | Développé épaules machine | 2 × 12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (granularity_effort_unknown) |
-| 2026-10-26 | str_upper #1 | Pec deck | 3 × 14–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-26 | str_upper #1 | Élévations latérales machine | 3 × 12–20 | 1 | à l’effort (calibration) | historique | ajouté (instance supplémentaire de l’emplacement ; critère : track) | aucune track (accessoire non suivi) |
+| 2026-10-26 | str_upper #1 | Élévations latérales machine | 3 × 16–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
+| 2026-10-26 | str_upper #1 | Pec deck | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
 | 2026-10-27 | str_lower #1 | Squat barre ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (evidence) |
 | 2026-10-27 | str_lower #1 | Soulevé de terre roumain ⚓ | 3 × 12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression charge** |
 | 2026-10-27 | str_lower #1 | Leg curl | 3 × 16–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-27 | str_lower #1 | Squat bulgare | 2 × 12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression charge** |
-| 2026-10-27 | str_lower #1 | Mollets machine | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
+| 2026-10-27 | str_lower #1 | Pallof press | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
+| 2026-10-27 | str_lower #1 | Leg extension | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
 | 2026-10-28 | str_upper #2 | Développé couché ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (evidence) |
 | 2026-10-28 | str_upper #2 | Tractions ⚓ | 3 × 12 | 2 | poids du corps | track | conservé | exposition on_target (réussite exacte) ; haut de plage au poids du corps : méthode non gouvernée (BLOCKED) |
-| 2026-10-28 | str_upper #2 | Tirage horizontal poulie | 2 × 10–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
+| 2026-10-28 | str_upper #2 | Rowing machine | 2 × 12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (granularity_effort_unknown) |
 | 2026-10-28 | str_upper #2 | Développé épaules machine | 2 × 12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (granularity_effort_unknown) |
-| 2026-10-28 | str_upper #2 | Pec deck | 3 × 14–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-28 | str_upper #2 | Pallof press | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
+| 2026-10-28 | str_upper #2 | Élévations latérales machine | 3 × 16–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
+| 2026-10-28 | str_upper #2 | Pec deck | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
 | 2026-10-30 | str_lower #2 | Squat barre ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (estimate) ; réussite exacte : hausse non gouvernée (BLOCKED) |
 | 2026-10-30 | str_lower #2 | Soulevé de terre roumain ⚓ | 3 × 12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-30 | str_lower #2 | Leg curl | 3 × 16–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-30 | str_lower #2 | Squat bulgare | 2 × 12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
-| 2026-10-30 | str_lower #2 | Mollets machine | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
+| 2026-10-30 | str_lower #2 | Leg extension | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
 
 Séances Strength :
 
-- 2026-10-26 str_upper #1 — graine `strength:str_upper:strength_volume:1` ; ancres déclarées : Développé couché, Tractions ; sous le plancher (prévu + réalisé avant la séance) : back, chest, quads, shoulders ; au haut ou au-delà : glutes ; emplacements omis : up.trunk (volume)
-- 2026-10-27 str_lower #1 — graine `strength:str_lower:strength_volume:1` ; ancres déclarées : Squat barre, Soulevé de terre roumain ; sous le plancher (prévu + réalisé avant la séance) : calves, hamstrings, quads ; au haut ou au-delà : arms ; emplacements omis : lo.trunk (volume)
-- 2026-10-28 str_upper #2 — graine `strength:str_upper:strength_volume:2` ; ancres déclarées : Développé couché, Tractions ; sous le plancher (prévu + réalisé avant la séance) : back, chest, quads ; au haut ou au-delà : glutes ; emplacements omis : up.iso_upper (volume)
-- 2026-10-30 str_lower #2 — graine `strength:str_lower:strength_volume:2` ; ancres déclarées : Squat barre, Soulevé de terre roumain ; sous le plancher (prévu + réalisé avant la séance) : calves, hamstrings, quads ; au haut ou au-delà : arms ; emplacements omis : lo.trunk (volume)
+- 2026-10-26 str_upper #1 — graine `strength:str_upper:strength_volume:1` ; ancres déclarées : Développé couché, Tractions ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest ; au haut ou au-delà : glutes ; emplacements omis : up.trunk (volume)
+- 2026-10-27 str_lower #1 — graine `strength:str_lower:strength_volume:1` ; ancres déclarées : Squat barre, Soulevé de terre roumain ; sous le plancher (prévu + réalisé avant la séance) : calves, core, hamstrings, quads ; au haut ou au-delà : arms, shoulders ; emplacements omis : i.cooldown (duration), lo.calves (duration)
+- 2026-10-28 str_upper #2 — graine `strength:str_upper:strength_volume:2` ; ancres déclarées : Développé couché, Tractions ; sous le plancher (prévu + réalisé avant la séance) : back, calves, chest ; au haut ou au-delà : glutes ; emplacements omis : up.trunk (volume)
+- 2026-10-30 str_lower #2 — graine `strength:str_lower:strength_volume:2` ; ancres déclarées : Squat barre, Soulevé de terre roumain ; sous le plancher (prévu + réalisé avant la séance) : calves, hamstrings, quads ; au haut ou au-delà : arms, shoulders ; emplacements omis : lo.trunk (volume), lo.calves (duration)
 
 Exercices principaux (ancres) :
 
@@ -240,15 +243,15 @@ Exercices principaux (ancres) :
 |---|---|---|---|---|---|
 | arms | 6 | 14 | 18 | 18 | achieved |
 | back | 10 | 20 | 10 | 10 | achieved |
-| calves | 4 | 10 | 6 | 6 | achieved |
+| calves | 4 | 10 | 0 | 0 | reduced_by_constraint |
 | chest | 10 | 20 | 12 | 12 | achieved |
 | core | 4 | 10 | 9 | 9 | achieved |
 | glutes | 6 | 14 | 16 | 16 | achieved |
 | hamstrings | 8 | 14 | 12 | 12 | achieved |
-| quads | 10 | 18 | 10 | 10 | achieved |
-| shoulders | 8 | 16 | 15 | 15 | achieved |
+| quads | 10 | 18 | 16 | 16 | achieved |
+| shoulders | 8 | 16 | 16 | 16 | achieved |
 
-Objectif de volume de la semaine : **satisfied** (4/4 séances). Contraintes tracées : slot_omitted:volume (lo.trunk) ; slot_omitted:volume (up.iso_upper) ; slot_omitted:volume (up.trunk).
+Objectif de volume de la semaine : **partially_satisfied** (4/4 séances). Contraintes tracées : slot_omitted:duration (i.cooldown) ; slot_omitted:duration (lo.calves) ; slot_omitted:volume (lo.trunk) ; slot_omitted:volume (up.trunk).
 
 Priorité déclarée (programme) : strength ; reçue par Strength : rang 1 ; voisines : aucune ; politique : blocked:priority_interference_policy.
 
@@ -256,10 +259,10 @@ Décisions bloquées (après réalisation) : réussite exacte sans marge (autore
 
 ## Récapitulatif
 
-- Continuité : 39 exercices en place conservés par la continuité déclarée (hors ancres déclarées), 4 remplacés (declared_anchor ×4).
-- Progression : répétitions ×32, charge ×2, maintiens ×16, régressions ×0.
-- Preuves : réussites exactes ×51, dépassements ×0, sans preuve ×1.
+- Continuité : 45 exercices en place conservés par la continuité déclarée (hors ancres déclarées), 4 remplacés (declared_anchor ×4).
+- Progression : répétitions ×34, charge ×2, maintiens ×18, régressions ×0.
+- Preuves : réussites exactes ×55, dépassements ×0, sans preuve ×1.
 - Décisions bloquées : réussite exacte ×6 (effort observé ×0, effort inconnu ×6), poids du corps ×2.
-- Effort : expositions avec effort observé ×0, effort inconnu ×52.
-- État persisté (JSON compact, saveState) après 4 semaines : 284 Ko.
+- Effort : expositions avec effort observé ×0, effort inconnu ×56.
+- État persisté (JSON compact, saveState) après 4 semaines : 291 Ko.
 

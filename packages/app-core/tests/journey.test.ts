@@ -36,7 +36,7 @@ describe('Strength : séances réelles, provisoires', () => {
     expect(sessions).toHaveLength(3);
     for (const g of sessions) {
       expect(g.authority).toBe('provisional');
-      expect(g.contentOrigin).toBe('fixtures:strength-lock-0.4.0');
+      expect(g.contentOrigin).toBe('fixtures:strength-f6-0.5.0');
       const d = okSession(g);
       expect(d?.blocks.length).toBeGreaterThan(1);
       expect(d?.blocks.flatMap((b) => b.items).every((i) => i.exerciseId.startsWith('ex.'))).toBe(true);

@@ -5,19 +5,26 @@
  * séries, répétitions, charges, repos et exclusions de douleur inchangés ; refus EXPLICITE par exercice sinon.
  * Preuve d'équivalence : sur les séances reproductibles, l'ajustement de la séance persistée redonne EXACTEMENT
  * l'effort que le moteur prescrit en régénérant avec le même état.
+ *
+ * RC4.5 (F6) : la preuve porte sur le contenu 4F (avant F6), fixé explicitement par le registre versionné : F6 n'ajoute
+ * aucune règle d'état du jour, et le contenu F6 ne laisse aucune séance STRICTEMENT reproductible sur ce profil (limite
+ * connue : historique propre au planificateur), ce qui priverait la preuve d'équivalence de cas comparables.
  */
 import { describe, expect, it } from 'vitest';
 import type { SessionDraft } from '@hybridsport/domain';
 import {
-  applyReadinessToPersisted, beta0Environment, coreStateOf, ensureBeta0Week, finishProgrammeSession, recordProgrammeSet, regenerateSession, selectBeta0Week,
-  selectProgrammeSession, sessionChanges, startProgrammeSession, strengthContent, UNKNOWN_CORE_STATE,
+  applyReadinessToPersisted, beta0Environment, coreStateOf, createBeta0Programme, emptyState, ensureBeta0Week, finishProgrammeSession, recordProgrammeSet, regenerateSession, selectBeta0Week,
+  selectProgrammeSession, sessionChanges, startProgrammeSession, strengthEnvironmentFor, UNKNOWN_CORE_STATE,
 } from '../../src/index.js';
 import type { AppState, CheckInInput, Reason } from '../../src/index.js';
 import { MONS, PROFILE } from '../consolidation/sim4.js';
-import { at, create } from '../strength-fixes/sf-fixtures.js';
+import { at } from '../strength-fixes/sf-fixtures.js';
 
-const env = beta0Environment();
-const content = strengthContent();
+const lock = strengthEnvironmentFor(beta0Environment(), '0.4.0-strength-science-lock', '0.2.0-strength-test');
+if (!lock?.strength) throw new Error('contenu 4F absent du registre versionné');
+const env = lock;
+const content = lock.strength.content;
+const create = (p: typeof PROFILE, now: string): AppState => createBeta0Programme(emptyState(), p, at(now), p.running.enabled ? { lastRun: { realizedDurationS: 1800, difficulty: 'AS_EXPECTED' } } : {}, env);
 const T = (d: string, hm = '18:00') => `${d}T${hm}:00.000Z`;
 const TIRED: CheckInInput = { painAnswer: 'no', fatigue: 'high', recovery: 'average' };
 // technical-constant: TEST_ONLY — charge saisie illustrative
@@ -41,7 +48,7 @@ function fourWeeks() {
   let s = create(PROFILE, T(MONS[0] as string, '07:30'));
   const rows: { week: number; id: string; reproducible: boolean; strict: boolean; planned: SessionDraft; reasons: Reason[]; intent: { archetypeId: string; stimulus: string }; engine: SessionDraft | null; decision: string; codes: string[]; causes: string[]; changes: string[]; after: SessionDraft | undefined }[] = [];
   for (const [w, mon] of MONS.entries()) {
-    if (w > 0) s = ensureBeta0Week(s, at(T(mon, '07:30')));
+    if (w > 0) s = ensureBeta0Week(s, at(T(mon, '07:30')), env);
     for (const v of (selectBeta0Week(s, mon)?.sessions ?? []).filter((x) => x.placement === 'planned' && x.date).sort((a, b) => ((a.date ?? '') < (b.date ?? '') ? -1 : 1))) {
       const d = v.date as string;
       if (v.sport !== 'strength') continue;

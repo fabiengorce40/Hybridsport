@@ -15,7 +15,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  activePainPause, beta0Environment, controlCtTimer, controlHrTimer, controlRest, controlRunPlayer, ctElapsedS, decodeState, ensureBeta0Week, finishProgrammeSession, loadState, MemoryStorage,
+  activePainPause, beta0Environment, strengthEnvironmentFor, controlCtTimer, controlHrTimer, controlRest, controlRunPlayer, ctElapsedS, decodeState, ensureBeta0Week, finishProgrammeSession, loadState, MemoryStorage,
   restRemainingS, runPlayerPosition, runPlayerSteps, saveState, selectBeta0Week, selectFreeRuns, selectHistory, selectProgrammeSession, selectRunningProfile, startProgrammeSession,
   STORAGE_KEY,
 } from '../../src/index.js';
@@ -83,12 +83,15 @@ describe('RC1 TEST → RC3 : relecture sans perte', () => {
 
     it(`${f} : semaine suivante planifiée par RC3 = planification RC1, au seul champ additif « cause » près`, () => {
       const s0 = decode(f.slice('rc1-'.length, -'.json'.length));
+      // RC4.5 (F6) : contenu Strength 4F d'origine (registre versionné) — à contenu égal, la planification reste celle
+      // de RC1 ; le contenu courant F6 n'ajoute que les mollets (banc RC4, rapport F6).
+      const lock = (e: ReturnType<typeof beta0Environment>) => strengthEnvironmentFor(e, '0.4.0-strength-science-lock', '0.2.0-strength-test') ?? e;
       // RC4.4 : second passage G5 DÉSACTIVÉ (paramètre absent) ⇒ planification strictement identique à RC1 (V0).
-      const later = ensureBeta0Week(s0, at('2026-11-09T06:00:00Z'), beta0Environment({ globalPlacement: false }));
+      const later = ensureBeta0Week(s0, at('2026-11-09T06:00:00Z'), lock(beta0Environment({ globalPlacement: false })));
       expect(hash(withoutCause(later))).toBe(REFERENCE[f]?.next);
       // G5 ACTIF (Beta 0) : aucune paire Full Body à J/J+1 dans ces états ⇒ même planification, seule la trace de
       // simulation (`planner.globalPlacement`) est ajoutée à la semaine persistée.
-      const g5 = ensureBeta0Week(s0, at('2026-11-09T06:00:00Z'));
+      const g5 = ensureBeta0Week(s0, at('2026-11-09T06:00:00Z'), lock(beta0Environment()));
       expect(hash(withoutCause(withoutG5Trace(g5)))).toBe(REFERENCE[f]?.next);
       // Séances terminées conservées. Une séance laissée EN COURS au-delà de sa semaine est retirée à la clôture : même
       // comportement en RC1 (empreinte identique ci-dessus), indépendant de la mise à jour.

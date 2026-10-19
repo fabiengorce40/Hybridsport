@@ -10,6 +10,7 @@ import { loadCatalog, loadRuleset } from '@hybridsport/engine';
 import type { LoadedCatalog, LoadedRuleset } from '@hybridsport/engine';
 import { strengthLockRulesetDocument } from '../../strength/tests/fixtures/ruleset.js';
 import { STRENGTH_PRESETS, strengthCatalogDocument } from '../../strength/tests/fixtures/catalog.js';
+import { strengthF6CatalogDocument, strengthF6RulesetDocument } from '../../strength/tests/fixtures/f6.js';
 import { testRulesetDocumentWithDuplicate } from '../../engine/tests/fixtures/ruleset.js';
 import { testCatalogDocument } from '../../engine/tests/fixtures/catalog.js';
 
@@ -30,12 +31,31 @@ function load(rulesetDoc: Parameters<typeof loadRuleset>[0], catalogDoc: Paramet
 }
 
 let strength: ContentSource | undefined;
+let strengthLock: ContentSource | undefined;
 let running: ContentSource | undefined;
 
-/** Ruleset Strength verrouillé PROVISOIREMENT (4F) et catalogue de test Strength. */
+/**
+ * Contenu Strength COURANT (planification des nouvelles semaines) : ruleset verrouillé 4F + surcouche RC4.5 F6
+ * (mollets à temps résiduel) et catalogue de test Strength F6.
+ */
 export function strengthContent(): ContentSource {
-  strength ??= load(strengthLockRulesetDocument(), strengthCatalogDocument(), 'fixtures:strength-lock-0.4.0');
+  strength ??= load(strengthF6RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-f6-0.5.0');
   return strength;
+}
+
+/** Contenu Strength ANTÉRIEUR conservé (avant F6) : ruleset verrouillé PROVISOIREMENT (4F) et catalogue de test. */
+function strengthLockContent(): ContentSource {
+  strengthLock ??= load(strengthLockRulesetDocument(), strengthCatalogDocument(), 'fixtures:strength-lock-0.4.0');
+  return strengthLock;
+}
+
+/**
+ * RC4.5 (F6-V) — REGISTRE DE CONTENU VERSIONNÉ : contenu Strength d'une version PERSISTÉE (provenance d'une séance),
+ * pour régénérer une séance existante avec ses règles d'origine (jamais rétroactivement avec le contenu courant).
+ * Version inconnue ⇒ `undefined` (la séance n'est alors pas régénérable fidèlement : chemin « non reproductible »).
+ */
+export function strengthContentFor(rulesetVersion: string, catalogVersion: string): ContentSource | undefined {
+  return [strengthContent(), strengthLockContent()].find((c) => c.ruleset.version === rulesetVersion && c.catalog.version === catalogVersion);
 }
 
 /** Ruleset de test du CORE (avec les paramètres d'anti-doublon, provisoires) et catalogue de test : ceux des tests Running. */

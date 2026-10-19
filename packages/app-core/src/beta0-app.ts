@@ -31,7 +31,7 @@ import type { ProgrammeEnvironment } from './programme.js';
 import { activePainPause } from './weeks.js';
 import { CHECKIN_HISTORY_MAX, evaluateCheckIn, painAnswerOf, zCheckInInput } from './checkin.js';
 import type { CheckIn, CheckInInput } from './checkin.js';
-import { decideStart, freeRunsSincePlanning } from './start-check.js';
+import { decideStart, freeRunsSincePlanning, sessionEnvironment } from './start-check.js';
 import { applySwaps, equipmentSwap } from './equipment.js';
 import { strengthContent } from './provisional-content.js';
 import type { LoadedCatalog, LoadedRuleset } from '@hybridsport/engine';
@@ -506,7 +506,9 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   }
   // RC4.3 (R3) — courses libres faites depuis la planification : évaluées au démarrage des séances des AUTRES sports.
   const freeRuns = v.sport === 'running' ? [] : freeRunsSincePlanning(state, requestId, now);
-  const d = decideStart(state, requestId, v.session, ev, env, (ex) => content?.catalog.exercise(ex)?.painSensitiveAreas ?? [], freeRuns);
+  // RC4.5 (F6-V) : zones sensibles lues dans le catalogue de la version d'origine de la séance.
+  const origin = sportContent(sessionEnvironment(state, requestId, env), v.sport);
+  const d = decideStart(state, requestId, v.session, ev, env, (ex) => origin?.catalog.exercise(ex)?.painSensitiveAreas ?? content?.catalog.exercise(ex)?.painSensitiveAreas ?? [], freeRuns);
   if (d.kind === 'postponed') return withCheckIn(state, record('postponed', d.reasons));
   const adaptation = d.kind === 'adapted' ? { checkInId: id, record: d.adaptation.record, changes: [...d.adaptation.changes], reasons: d.adaptation.reasons.map((x) => ({ code: x.code, params: { ...x.params } })) } : undefined;
   // Lot C — maintien volontaire tracé (séance démarrée seulement) : décision existante, aucune valeur nouvelle.

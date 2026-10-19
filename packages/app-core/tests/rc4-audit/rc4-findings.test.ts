@@ -130,8 +130,14 @@ describe('F4 / F5 / F6 — Volume Musculation (objectif prise de masse)', () => 
     expect(v?.aboveHigh).toBe(true);
     expect(v?.planned).toBe(arms?.planned);
   });
-  it('F6 : mollets jamais programmés (0 série toutes les semaines, avec ou sans autre sport)', () => {
-    for (const id of ['P1', 'P1b', 'P2', 'P3', 'P5']) expect(simulateOnce(spec(id), 3).weeks.every((w) => (w.volume.find((x) => x.group === 'calves')?.planned ?? 0) === 0)).toBe(true);
+  it('F6 (corrigé en RC4.5) : mollets programmés à temps résiduel — au moins une semaine à la cible par profil, jamais au-delà du haut, au plus une séance par semaine (R2)', () => {
+    for (const id of ['P1', 'P1b', 'P2', 'P3', 'P5']) {
+      const r = simulateOnce(spec(id));
+      const calves = r.weeks.map((w) => w.volume.find((x) => x.group === 'calves'));
+      expect(calves.some((c) => c?.target != null && c.planned >= c.target), id).toBe(true);
+      expect(calves.every((c) => c?.high == null || c.planned <= c.high), id).toBe(true);
+      for (const w of [...new Set(r.sessions.map((x) => x.week))]) expect(r.sessions.filter((x) => x.week === w && x.exercises.some((e) => e.id.includes('calf'))).length, `${id} S${String(w)}`).toBeLessThanOrEqual(1);
+    }
   }, 120_000);
 });
 
