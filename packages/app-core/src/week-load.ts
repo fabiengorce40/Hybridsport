@@ -10,6 +10,7 @@
  */
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
+import { GP_CODES } from '@hybridsport/planner';
 import { readStrengthParams, sessionPlannedHardSets } from '@hybridsport/strength';
 import { addDays, dateOf } from './dates.js';
 import { countableFreeRuns } from './free-run-load.js';
@@ -19,8 +20,6 @@ import { strengthContent } from './provisional-content.js';
 
 // technical-constant: jours par semaine (calendrier)
 const DAYS_PER_WEEK = 7;
-const GLOBAL_PLACEMENT_KEPT = 'PLAN.PLANNER.GLOBAL_PLACEMENT_KEPT';
-const M3_CONFLICT_UNRESOLVED = 'RECOVERY.PLANNER.M3_CONFLICT_UNRESOLVED';
 
 export type WeekLoadWarning =
   | { readonly kind: 'seven_days'; readonly days: number; readonly freeRuns: number }
@@ -73,10 +72,10 @@ export function weekLoadWarnings(state: AppState, weekStart: string): readonly W
   const fb = week.requests.filter((r): r is Request & { date: string } => r.status === 'planned' && r.sport === 'strength' && typeof r.date === 'string' && r.intent?.archetypeId === STRENGTH_ARCHETYPE)
     .sort((a, b) => (a.date < b.date ? -1 : 1));
   const pairs = fb.flatMap((r, i) => { const p = fb[i - 1]; return p && addDays(p.date, 1) === r.date ? [{ first: p.date, second: r.date }] : []; });
-  if (pairs.length > 0) out.push({ kind: 'full_body_consecutive', pairs, noBetterPlacement: fb.some((r) => r.reasons.some((x) => x.code === GLOBAL_PLACEMENT_KEPT)) });
+  if (pairs.length > 0) out.push({ kind: 'full_body_consecutive', pairs, noBetterPlacement: fb.some((r) => r.reasons.some((x) => x.code === GP_CODES.GLOBAL_PLACEMENT_KEPT)) });
   // Conflits multisports non résolus (raisons persistées par l'arbitrage M3), une entrée par paire.
   const seen = new Set<string>();
-  const items = week.requests.flatMap((r) => r.reasons.filter((x) => x.code === M3_CONFLICT_UNRESOLVED).flatMap((x) => {
+  const items = week.requests.flatMap((r) => r.reasons.filter((x) => x.code === GP_CODES.M3_CONFLICT_UNRESOLVED).flatMap((x) => {
     const a = String(x.params.requestId ?? r.requestId);
     const b = String(x.params.withRequestId ?? '');
     const key = [a, b].sort().join('|') + String(x.params.structure ?? '');

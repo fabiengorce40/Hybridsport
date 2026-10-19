@@ -11,6 +11,7 @@
  */
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
+import { GP_CODES } from '@hybridsport/planner';
 import { readStrengthParams, sessionPlannedHardSets, STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } from '@hybridsport/strength';
 import type { WeekVolumeAssessment } from '@hybridsport/strength';
 import type { AppState, PersistedWeek } from './model.js';
@@ -78,7 +79,7 @@ export function strengthWeekInsights(state: AppState, weekStart: string): Streng
     const variant = same.length > 1 ? String.fromCharCode('A'.charCodeAt(0) + distinct.indexOf(sig(x.session))) : null;
     const reductions = x.r.reasons.filter((q) => q.code === 'PLAN.INTERFERENCE_ASSESSED' && q.params.action !== 'none' && q.params.action !== 'trace')
       .map((q) => ({ withSport: sourceSport(q.params.source), hours: Number(q.params.hours), structure: String(q.params.structure), level: String(q.params.level), action: String(q.params.action) }));
-    const v = x.r.reasons.find((q) => q.code === 'PLAN.PLANNER.STRENGTH_WITHIN_WEEK_VARIATION');
+    const v = x.r.reasons.find((q) => q.code === GP_CODES.STRENGTH_WITHIN_WEEK_VARIATION);
     return {
       requestId: x.r.requestId, date: x.date, archetypeId, variant, variants: distinct.length,
       focus: forceBlocks(x.session).flatMap((b) => b.items.map((i) => i.exerciseId)),

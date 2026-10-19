@@ -5,9 +5,8 @@
  * chemin réel Beta 0 (app-core, tests rc4-audit et rc44).
  */
 import { describe, expect, it } from 'vitest';
-import { planMultisportWeek } from '../../src/index.js';
+import { planCore, planMultisportWeek } from '../../src/index.js';
 import type { PlannedWeek, PlannerInput, SportIntent, SportPorts } from '../../src/index.js';
-import { planCore } from '../../src/planner.js';
 import { clock, days, input } from '../fixtures.js';
 import { D, m3Ports } from '../m3-fixtures.js';
 import { G5_TEST_MAX_CANDIDATES, m3Governance } from '../m3-governance.js';

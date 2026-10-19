@@ -18,7 +18,7 @@
 import { strengthWeekInsights } from './strength-insight.js';
 import { CURRENT_RUNNING_GOVERNANCE, ARCHETYPE_INTENT_IDS, createRunningEngine, runningReasons, withProductDecisions } from '@hybridsport/running';
 import type { RunningGovernance } from '@hybridsport/running';
-import { gpReasons, requirePlannerProvenance } from '@hybridsport/planner';
+import { GP_CODES, gpReasons, requirePlannerProvenance } from '@hybridsport/planner';
 import { StrengthEngine, STRENGTH_WEEKLY_COMPOSITION_CANDIDATE, goalKey, readStrengthParams, strengthReasons } from '@hybridsport/strength';
 import type { SportEngine } from '@hybridsport/engine';
 import { adherenceOf, pgReasons, weekIndexOf, weekStartAt, weekStatus, withinProgramme } from '@hybridsport/programme';
@@ -609,7 +609,7 @@ function arbitrationOf(r: PersistedWeek['requests'][number], sportOf: (id: strin
     const kind = d.params.action === 'RECOMPOSE' ? 'recomposed' : d.params.action === 'SWAP' ? 'swapped' : 'moved';
     return { kind, fromDate: kind === 'recomposed' || why.some((w) => String(w).startsWith('swap_partner_of')) ? null : typeof d.params.from === 'string' ? d.params.from : null, withSport: sportOf(String(d.params.withRequestId)) };
   }
-  const c = r.reasons.find((x) => x.code === 'RECOVERY.PLANNER.M3_CONFLICT_UNRESOLVED');
+  const c = r.reasons.find((x) => x.code === GP_CODES.M3_CONFLICT_UNRESOLVED);
   return c ? { kind: 'conflict', fromDate: null, withSport: sportOf(String(c.params.withRequestId)) } : null;
 }
 
@@ -645,7 +645,7 @@ export function sessionView(r: PersistedWeek['requests'][number], result: Progra
     pain: result?.pain ?? false,
     arbitration: planned ? arbitrationOf(r, sportOf) : null,
     placement: planned ? 'planned' : composed ? 'composed_unplaced' : 'blocked',
-    unplacedCause: composed ? (r.reasons.some((x) => x.code === 'PLAN.PLANNER.NOT_ENOUGH_DAYS') ? 'week_full' : 'no_admissible_day') : null,
+    unplacedCause: composed ? (r.reasons.some((x) => x.code === GP_CODES.NOT_ENOUGH_DAYS) ? 'week_full' : 'no_admissible_day') : null,
     manual,
     quality: prescribed ? qualityViewOf(r.quality) : null,
     composition: prescribed ? compositionScopeOf(r) : null,
