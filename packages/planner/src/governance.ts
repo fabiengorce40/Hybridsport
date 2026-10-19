@@ -48,6 +48,13 @@ export const GP_PARAMETERS = {
   'planner.m3.sessionImportance': { governance: 'G2', schema: z.record(z.string().min(1), z.record(z.string().min(1), z.enum(['key', 'standard']))) },
   /** G2 — HISTORIQUE : statuts des séances antérieures comptés comme expositions réelles pour l'interférence. */
   'planner.m3.historyStatuses': { governance: 'G2', schema: z.array(z.enum(['executed', 'abandoned', 'planned', 'missed'])) },
+  /**
+   * G3 — RC4.4 (G5) : second passage de placement GLOBAL, déclenché SEULEMENT par des séances des archétypes
+   * `archetypeIds` (Full Body) à J/J+1. Organisations complètes énumérées (aucune séance retirée), évaluées par les
+   * règles EXISTANTES, vérifiées par replanification réelle (au plus `maxCandidates`) ; retenue seulement si les
+   * Full Body J/J+1 baissent sans dégradation mesurée. Absent ⇒ placement actuel exact.
+   */
+  'planner.globalPlacement': { governance: 'G3', schema: z.object({ trigger: z.literal('full_body_consecutive'), archetypeIds: z.array(z.string().min(1)).min(1), maxCandidates: z.number().int().positive() }).strict() },
   /** G3 — borne technique du nombre de passes d'arbitrage (arrêt garanti). */
   'planner.m3.maxPasses': { governance: 'G3', schema: z.number().int().positive() },
 } as const;

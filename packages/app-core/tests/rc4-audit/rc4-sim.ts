@@ -119,18 +119,18 @@ function rirOf(set: { intensity?: unknown }): string {
   return r === undefined ? '—' : typeof r === 'number' ? String(r) : `${String(r.min)}-${String(r.max)}`;
 }
 
-export function simulate(spec: ProfileSpec, weeks: number = MONS.length): SimOut {
-  const env = beta0Environment();
+/** `env` : environnement Beta 0 (par défaut) ; `beta0Environment({ globalPlacement: false })` rejoue V0 (RC4.4). */
+export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = beta0Environment()): SimOut {
   const content = strengthContent();
   const params = readStrengthParams(content.ruleset).values;
   const errors: string[] = [];
-  let s = createBeta0Programme(emptyState(), spec.profile, at(MONS[0], '07:00'), { ...(spec.lastRun ? { lastRun: spec.lastRun } : {}), ...(spec.requestTest ? { requestTest: true } : {}) });
+  let s = createBeta0Programme(emptyState(), spec.profile, at(MONS[0], '07:00'), { ...(spec.lastRun ? { lastRun: spec.lastRun } : {}), ...(spec.requestTest ? { requestTest: true } : {}) }, env);
   const workKg: Record<string, number> = {};
   const sessions: SessionRow[] = [];
   const out: WeekRow[] = [];
   for (let w = 0; w < weeks; w++) {
     const mon = MONS[w] as string;
-    if (w > 0) s = ensureBeta0Week(s, at(mon, '06:00'));
+    if (w > 0) s = ensureBeta0Week(s, at(mon, '06:00'), env);
     const view = [...(selectBeta0Week(s, mon)?.sessions ?? [])].sort((a, b) => ((a.date ?? 'z') < (b.date ?? 'z') ? -1 : 1));
     const ins = strengthWeekInsights(s, mon);
     let k = 0;

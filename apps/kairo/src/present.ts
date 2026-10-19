@@ -320,7 +320,7 @@ export const MUSCLE_GROUP_LABELS: Readonly<Record<string, string>> = {
   chest: 'Pectoraux', back: 'Dos', shoulders: 'Épaules', arms: 'Bras', quads: 'Quadriceps', hamstrings: 'Ischio-jambiers',
   glutes: 'Fessiers', calves: 'Mollets', core: 'Tronc',
 };
-const STRUCTURE_LABELS: Readonly<Record<string, string>> = {
+export const STRUCTURE_LABELS: Readonly<Record<string, string>> = {
   lower_knee: 'genoux / cuisses', lower_hip: 'hanches / chaîne postérieure', upper_push: 'poussées du haut du corps', upper_pull: 'tirages du haut du corps', grip: 'préhension', trunk: 'tronc', lower_back: 'bas du dos',
 };
 const SPORT_OF_SOURCE: Readonly<Record<string, string>> = { running: 'course', crosstraining: 'Cross-training', hyrox: 'HYROX', strength: 'musculation' };

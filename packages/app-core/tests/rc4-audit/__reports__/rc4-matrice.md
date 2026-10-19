@@ -7,31 +7,31 @@ Chemin réel Beta 0, 6 semaines, réalisations conformes entre les semaines (voi
 | sem. | calendrier (lun → dim) | repos | jours consécutifs max | enchaînements durs J/J+1 | non planifiées |
 |---|---|---|---|---|---|
 | S1 | M:str_full_bodyA ; — ; M:str_full_bodyB ; M:str_full_bodyC ; C:easy ; C:test ; — | 2 | 4 | 1 | — |
-| S2 | M:str_full_bodyA ; C:threshold ; M:str_full_bodyB ; M:str_full_bodyA ; — ; — ; C:easy | 2 | 4 | 3 | — |
-| S3 | M:str_full_bodyA ; C:threshold ; M:str_full_bodyB ; M:str_full_bodyA ; — ; — ; C:easy | 2 | 4 | 3 | — |
-| S4 | M:str_full_bodyA ; C:threshold ; M:str_full_bodyB ; M:str_full_bodyA ; — ; — ; C:easy | 2 | 4 | 3 | — |
-| S5 | M:str_full_bodyA ; C:threshold ; M:str_full_bodyB ; M:str_full_bodyA ; — ; — ; C:easy | 2 | 4 | 3 | — |
-| S6 | M:str_full_bodyA ; C:threshold ; M:str_full_bodyB ; M:str_full_bodyA ; — ; — ; C:easy | 2 | 4 | 3 | — |
+| S2 | C:threshold ; M:str_full_bodyA ; C:easy ; — ; M:str_full_bodyB ; — ; M:str_full_bodyA | 2 | 3 | 1 | — |
+| S3 | M:str_full_bodyA ; C:easy ; C:threshold ; — ; M:str_full_bodyB ; — ; M:str_full_bodyA | 2 | 3 | 0 | — |
+| S4 | M:str_full_bodyA ; — ; M:str_full_bodyB ; — ; M:str_full_bodyA ; C:threshold ; C:easy | 2 | 3 | 1 | — |
+| S5 | M:str_full_bodyA ; C:easy ; C:threshold ; — ; M:str_full_bodyB ; — ; M:str_full_bodyA | 2 | 3 | 0 | — |
+| S6 | M:str_full_bodyA ; — ; M:str_full_bodyB ; — ; M:str_full_bodyA ; C:threshold ; C:easy | 2 | 3 | 1 | — |
 
 Volume Musculation prévu (séries de travail / semaine, moyenne S1–S6 ; cible – borne haute) :
 
 | quads | hamstrings | glutes | calves | chest | back | shoulders | arms | core |
 |---|---|---|---|---|---|---|---|---|
-| 3.7 (10–18) | 5.3 (8–14) | 7.8 (6–14) | 0.0 (4–10) | 14.3 (10–20) | 9.3 (10–20) | 16.0 (8–16) | 16.3 (6–14) | 9.3 (4–10) |
+| 7.2 (10–18) | 8.5 (8–14) | 11.5 (6–14) | 0.0 (4–10) | 14.3 (10–20) | 9.2 (10–20) | 15.4 (8–16) | 16.8 (6–14) | 7.8 (4–10) |
 
 Course (structure prescrite par semaine) :
 
 - S1 : easy steady:30min ; test warmup:10min + steady:10km + cooldown:5min
 - S2 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:31min
-- S3 : threshold warmup:10min + 3×5min/60s + cooldown:5min ; easy steady:31min
+- S3 : easy steady:31min ; threshold warmup:10min + 3×5min/60s + cooldown:5min
 - S4 : threshold warmup:10min + 4×5min/60s + cooldown:5min ; easy steady:32min
-- S5 : threshold warmup:10min + 4×5min/60s + cooldown:5min ; easy steady:32min
+- S5 : easy steady:32min ; threshold warmup:10min + 4×5min/60s + cooldown:5min
 - S6 : threshold warmup:10min + 5×5min/60s + cooldown:5min ; easy steady:33min
 
 Contrôles avant séance scénarisés :
 
-- S3 2026-10-20 C:threshold : no/high → unchanged
-- S4 2026-10-26 M:str_full_bodyA : yes/low/knee:P2 → unchanged
+- S3 2026-10-20 C:easy : no/high → unchanged
+- S4 2026-10-26 M:str_full_bodyA : yes/low/knee:P2 → adapted [removed:leg_curl;removed:bulgarian_split_squat;added:db_calf_raise]
 
 ## P1b — Musculation 4× (masse) + Course 2× (10 km)
 
@@ -101,29 +101,29 @@ Contrôles avant séance scénarisés :
 | sem. | calendrier (lun → dim) | repos | jours consécutifs max | enchaînements durs J/J+1 | non planifiées |
 |---|---|---|---|---|---|
 | S1 | M:str_full_bodyA ; — ; M:str_full_bodyB ; M:str_full_bodyC ; — ; HX:strength_endurance ; HX:station_capacity | 2 | 2 | 2 | — |
-| S2 | M:str_full_bodyA ; HX:compromised_running ; M:str_full_bodyB ; M:str_full_bodyA ; — ; — ; HX:mixed_station_conditioning | 2 | 4 | 3 | — |
-| S3 | M:str_full_bodyA ; — ; M:str_full_bodyB ; M:str_full_bodyC ; — ; HX:station_capacity ; HX:partial_simulation | 2 | 2 | 2 | — |
+| S2 | HX:mixed_station_conditioning ; HX:compromised_running ; M:str_full_bodyA ; — ; M:str_full_bodyB ; — ; M:str_full_bodyA | 2 | 3 | 2 | — |
+| S3 | M:str_full_bodyA ; — ; M:str_full_bodyB ; M:str_full_bodyA ; — ; HX:station_capacity ; HX:partial_simulation | 2 | 2 | 2 | — |
 | S4 | M:str_full_bodyA ; — ; M:str_full_bodyB ; M:str_full_bodyA ; — ; HX:mixed_station_conditioning ; HX:strength_endurance | 2 | 2 | 2 | — |
-| S5 | M:str_full_bodyA ; — ; M:str_full_bodyB ; M:str_full_bodyA ; — ; HX:station_capacity ; HX:compromised_running | 2 | 2 | 2 | — |
+| S5 | M:str_full_bodyA ; — ; M:str_full_bodyB ; M:str_full_bodyC ; — ; HX:station_capacity ; HX:compromised_running | 2 | 2 | 2 | — |
 | S6 | M:str_full_bodyA ; — ; M:str_full_bodyB ; M:str_full_bodyA ; — ; HX:strength_endurance ; HX:partial_simulation | 2 | 2 | 2 | — |
 
 Volume Musculation prévu (séries de travail / semaine, moyenne S1–S6 ; cible – borne haute) :
 
 | quads | hamstrings | glutes | calves | chest | back | shoulders | arms | core |
 |---|---|---|---|---|---|---|---|---|
-| 8.3 (10–18) | 8.8 (8–14) | 11.3 (6–14) | 0.0 (4–10) | 14.3 (10–20) | 9.2 (10–20) | 15.5 (8–16) | 16.2 (6–14) | 7.5 (4–10) |
+| 9.3 (10–18) | 9.3 (8–14) | 12.5 (6–14) | 0.0 (4–10) | 13.8 (10–20) | 9.0 (10–20) | 15.4 (8–16) | 16.5 (6–14) | 7.8 (4–10) |
 
 Cross-training / HYROX :
 
 - S1 2026-10-10 HX:strength_endurance (85 min) : station_circuit 4×[farmers_carry,sandbag_lunge] cap 28min
 - S1 2026-10-11 HX:station_capacity (55 min) : station_repeats 5×[skierg] cap 15min
+- S2 2026-10-12 HX:mixed_station_conditioning (70 min) : station_circuit 4×[burpee_broad_jump,farmers_carry] cap 32min
 - S2 2026-10-13 HX:compromised_running (55 min) : run_station_alternation 3×[row_erg,run,sled_push,run] cap 50min
-- S2 2026-10-18 HX:mixed_station_conditioning (55 min) : station_circuit 4×[burpee_broad_jump,farmers_carry] cap 32min
 - S3 2026-10-24 HX:station_capacity (85 min) : station_repeats 5×[skierg] cap 15min
 - S3 2026-10-25 HX:partial_simulation (55 min) : partial_sequence 1×[run,burpee_broad_jump,run,farmers_carry,run,row_erg,run,sandbag_lunge] cap 37min
 - S4 2026-10-31 HX:mixed_station_conditioning (85 min) : station_circuit 4×[skierg,sled_push] cap 24min
 - S4 2026-11-01 HX:strength_endurance (55 min) : station_circuit 4×[sandbag_lunge,farmers_carry] cap 28min
-- S5 2026-11-07 HX:station_capacity (85 min) : station_repeats 5×[skierg] cap 15min
+- S5 2026-11-07 HX:station_capacity (85 min) : station_repeats 5×[row_erg] cap 14min
 - S5 2026-11-08 HX:compromised_running (55 min) : run_station_alternation 2×[burpee_broad_jump,run,sandbag_lunge,run] cap 43min
 - S6 2026-11-14 HX:strength_endurance (85 min) : station_circuit 4×[farmers_carry,sled_push] cap 21min
 - S6 2026-11-15 HX:partial_simulation (55 min) : partial_sequence 1×[run,row_erg,run,sandbag_lunge,run,skierg,run,sled_pull] cap 36min

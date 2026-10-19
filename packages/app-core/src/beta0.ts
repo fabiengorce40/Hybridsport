@@ -24,7 +24,7 @@ import type { SportEngine } from '@hybridsport/engine';
 import { adherenceOf, pgReasons, weekIndexOf, weekStartAt, weekStatus, withinProgramme } from '@hybridsport/programme';
 import type { Adherence, ProgrammeDefinition, ProgrammeDefinitionInput, ProgrammeResult, ProgrammeState, WeekStatus } from '@hybridsport/programme';
 import { withDemand } from '../../planner/tests/simulation.js';
-import { M3_SIMULATION_IDS, m3Governance } from '../../planner/tests/m3-governance.js';
+import { G5_SIMULATION_ID, M3_SIMULATION_IDS, m3Governance } from '../../planner/tests/m3-governance.js';
 import { ROTATION_SIMULATION_IDS, rotationGovernance } from '../../programme/tests/rotation-governance.js';
 import { ctBeta0 } from '../../planner/tests/ct-beta0.js';
 import { hrBeta0 } from '../../planner/tests/hr-beta0.js';
@@ -62,7 +62,7 @@ export const SIMULATION_ONLY = 'SIMULATION_ONLY — Beta 0 expérimental : valeu
  */
 export const BETA0_SIMULATION = [
   'planner.interference.structureWindows', 'demand.doseNormalization', 'running.technical.GLOBAL_PLANNER_INTEGRATION', 'running.engine.simulation',
-  ...M3_SIMULATION_IDS,
+  ...M3_SIMULATION_IDS, G5_SIMULATION_ID,
 ] as const;
 
 /** Gouvernance Running Beta 0 : décisions produit existantes + intégration planificateur déclarée (SIMULATION_ONLY). */
@@ -106,7 +106,12 @@ export const BETA0_STRENGTH_WITHIN_WEEK_VARIATION = { ruleId: 'planner.strength.
  */
 export const BETA0_CT_COMPOSITE_DEMAND = { ruleId: 'planner.crosstraining.compositeDemand.test-0', status: 'TEST_ONLY', delegatedDiscipline: 'strength' } as const;
 
-export function beta0Environment(): ProgrammeEnvironment {
+/**
+ * `globalPlacement: false` — RC4.4 : environnement SANS le second passage G5 (paramètre absent, identifiant de simulation
+ * absent), soit exactement le placement V0 ; utilisé par les comparaisons et les preuves de non-régression.
+ */
+export function beta0Environment(options: { readonly globalPlacement?: boolean } = {}): ProgrammeEnvironment {
+  const g5 = options.globalPlacement ?? true;
   const g = beta0RunningGovernance();
   const ct = ctBeta0(simulationMark);
   const hr = hrBeta0(simulationMark);
@@ -119,8 +124,9 @@ export function beta0Environment(): ProgrammeEnvironment {
     // semaines qui contiennent une séance Cross-training (provenance exacte, jamais confondue avec APPROVED).
     // C4.3 — délégation d'un bloc de force (règle TEST_ONLY, SIMULATION_ONLY) pour le stimulus « force + conditionnement ».
     crosstraining: { engine: ct.engine, content: ct.content, transportNeighbours: true, simulation: ct.simulation, governance: ct.governance, strengthBlockRule: ct.strengthBlockRule, compositeDemand: BETA0_CT_COMPOSITE_DEMAND },
-    mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: [...BETA0_SIMULATION], planningVersion: BETA0_PLANNING_VERSION,
-    governance: m3Governance({ extra: simulationMark }),
+    mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: BETA0_SIMULATION.filter((x) => g5 || x !== G5_SIMULATION_ID), planningVersion: BETA0_PLANNING_VERSION,
+    // RC4.4 (G5) — second passage de placement global (Full Body à J/J+1), TEST_ONLY, tracé SIMULATION_ONLY.
+    governance: m3Governance({ extra: simulationMark, globalPlacement: g5 }),
     programmeGovernance: rotationGovernance(simulationMark),
     // Musculation P1 — déclencheur TEST_ONLY de la variation gouvernée (note `planned_variation` du ruleset Strength)
     // quand une séance serait strictement identique à une séance du même archétype plus tôt dans la semaine.

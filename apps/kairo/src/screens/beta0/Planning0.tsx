@@ -1,7 +1,10 @@
-import { beta0Integrity, weekdayIndex } from '@hybridsport/app-core';
+import { beta0Integrity, weekdayIndex, weekLoadWarnings } from '@hybridsport/app-core';
+import type { WeekLoadWarning } from '@hybridsport/app-core';
+import { sessionName, STRUCTURE_LABELS } from '../../present.js';
 import { useStore } from '../../store.js';
 import { formatDate, Notice, weekdayShort } from '../../ui.js';
 import { ExperimentalBadge, placedOf, RunningTestFallbackNotice, SessionCard0, weekOf, WeekPlanningNotice } from './common.js';
+import type { SessionItemView } from './common.js';
 import { NoWeek, PainPause } from './Home0.js';
 
 export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo: (t: 'settings') => void }) {
@@ -21,6 +24,7 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
         <>
           <WeekPlanningNotice planning={week.planning} />
           <RunningTestFallbackNotice fallback={week.runningTestFallback} />
+          <WeekLoadNotice warnings={weekLoadWarnings(state, week.weekStart)} items={week.items} />
           <p className="small muted">Semaine {week.weekIndex + 1}{week.programme.targetDate ? ` · objectif le ${formatDate(week.programme.targetDate)}` : ''} · du {Number(week.weekStart.slice(8))}/{week.weekStart.slice(5, 7)}. Une séance par jour au plus.</p>
           <div className="week">
             {week.days.map(({ date: d, sessions: s }) => {
@@ -45,6 +49,34 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
         </>
       )}
     </div>
+  );
+}
+
+const dayLabel = (d: string): string => `${weekdayShort(weekdayIndex(d)).toLowerCase()} ${String(Number(d.slice(8)))}`;
+
+/**
+ * RC4.4 (lot B) — avertissements de charge de la semaine, calculés par app-core (aucune séance retirée). Une semaine sans
+ * repos ou avec des Full Body à J/J+1 n'est jamais présentée comme optimale.
+ */
+export function WeekLoadNotice({ warnings, items }: { warnings: readonly WeekLoadWarning[]; items: readonly SessionItemView[] }) {
+  if (warnings.length === 0) return null;
+  const nameOf = (id: string): string => { const x = items.find((i) => i.requestId === id); return x ? `${sessionName(x.sport, x.archetypeId, x.dataError)}${x.date ? ` (${dayLabel(x.date)})` : ''}` : 'séance de la semaine précédente'; };
+  const warn = warnings.some((w) => w.kind !== 'consecutive');
+  const lines = warnings.map((w) => {
+    switch (w.kind) {
+      case 'seven_days': return { key: w.kind, text: `${String(w.days)} jours d’entraînement sur 7${w.freeRuns > 0 ? ' (courses libres comprises)' : ''} : aucune journée de repos cette semaine. Cette organisation n’est pas optimale ; vous pouvez réduire le nombre de séances dans « Modifier ».` };
+      case 'consecutive': return { key: w.kind, text: `Plus longue suite : ${String(w.days)} jours d’entraînement consécutifs (du ${dayLabel(w.from)} au ${dayLabel(w.to)}${w.acrossWeeks ? ', semaine précédente comprise' : ''}).` };
+      case 'full_body_consecutive': return { key: w.kind, text: `Full Body à J et J+1 : ${w.pairs.map((p) => `${dayLabel(p.first)} et ${dayLabel(p.second)}`).join(' ; ')}${w.noBetterPlacement ? ' — aucun autre placement ne les sépare sans dégrader le reste de la semaine.' : '.'}` };
+      case 'multisport_conflict': return { key: w.kind, text: `Interférence non résolue : ${w.items.map((c) => `${nameOf(c.requestId)} et ${nameOf(c.withRequestId)} sollicitent ${STRUCTURE_LABELS[c.structure] ?? c.structure}`).join(' ; ')}.` };
+    }
+  });
+  return (
+    <Notice tone={warn ? 'warn' : 'info'}>
+      <div className="stack" data-week-warnings>
+        <strong>{warn ? 'Charge de la semaine à surveiller' : 'Charge de la semaine'}</strong>
+        <ul className="small" style={{ margin: 0, paddingLeft: 18 }}>{lines.map((l) => <li key={l.key} data-week-warning={l.key}>{l.text}</li>)}</ul>
+      </div>
+    </Notice>
   );
 }
 

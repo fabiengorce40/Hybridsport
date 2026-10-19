@@ -4,8 +4,8 @@
  *
  * Fidélité : le créneau est reconstruit depuis la semaine PERSISTÉE (date, minutes disponibles, graine du
  * planificateur, intention, contexte voisin persisté, séances de la semaine) ; seul l'état CORE du jour change. Rien
- * n'est inventé ici : aucune dose, aucun exercice, aucune règle de douleur. Séance non régénérable (non placée,
- * HYROX) : séance gardée si elle ne sollicite aucune zone restreinte, sinon report explicite.
+ * n'est inventé ici : aucune dose, aucun exercice, aucune règle de douleur. Séance non régénérable (non placée) :
+ * séance gardée si elle ne sollicite aucune zone restreinte, sinon report explicite. HYROX régénérable depuis RC4.4.
  *
  * Reproductibilité (consolidation) : la composition dépend aussi de l'historique (expositions, progression) et de la
  * version du moteur. Une séance planifiée n'est donc régénérable FIDÈLEMENT que si sa régénération à état INCONNU redonne
@@ -72,8 +72,12 @@ export function freeRunsSincePlanning(state: AppState, requestId: string, now: s
   return countableFreeRuns(state).filter((r) => Date.parse(r.completedAt) > since && Date.parse(r.completedAt) <= until);
 }
 
-/** Sports dont le créneau est reconstructible fidèlement (HYROX : station non persistée ⇒ non régénérable). */
-const REGENERABLE: readonly PlannerSport[] = ['strength', 'running', 'crosstraining'];
+/**
+ * Sports dont le créneau est reconstructible fidèlement. RC4.4 (lot E) : HYROX compris — sa station est celle
+ * RÉELLEMENT enregistrée dans l'intention de semaine du programme (jamais devinée) ; la garde de reproductibilité de
+ * `decideStart` s'applique comme pour les autres sports.
+ */
+const REGENERABLE: readonly PlannerSport[] = ['strength', 'running', 'crosstraining', 'hyrox'];
 
 /**
  * Régénère la séance PLANIFIÉE `requestId` avec l'état CORE `coreState` sur son jour (les autres jours : inconnu).
@@ -91,6 +95,8 @@ export function regenerateSession(state0: AppState, requestId: string, coreState
   if (!REGENERABLE.includes(r.sport)) return { status: 'not_regenerable', cause: `sport_not_regenerable:${r.sport}` };
   const { intent, goals } = portInputs(ps);
   const date = r.date;
+  // RC4.4 (lot E) — station HYROX : celle de l'intention de semaine persistée du programme (H1), sinon aucune (H2 par rôle).
+  const station = r.sport === 'hyrox' ? ps.weeks.find((w) => w.plannerRef === week.weekStart)?.intent.demands.find((d) => d.sport === 'hyrox')?.station : undefined;
   const ports = buildPorts(state, p, intent, env, goals, (d) => (d === date ? coreState : UNKNOWN_CORE_STATE));
   const port = ports[r.sport];
   if (!port) return { status: 'not_regenerable', cause: 'port_unavailable' };
@@ -119,6 +125,7 @@ export function regenerateSession(state0: AppState, requestId: string, coreState
   const slot: SlotRequest = {
     requestId, date, availableMinutes: week.days.find((d) => d.date === date)?.availableMinutes ?? 0, hybrid: week.hybrid, seed: `planner:${requestId}:${date}`,
     intent: { ...r.intent } as SlotRequest['intent'],
+    ...(station === undefined ? {} : { station }),
     ...(port.consumesNeighbours && (r.neighbourContext || extra.length > 0) ? { neighbours: { known: r.neighbourContext?.known ?? true, neighbours: [...(r.neighbourContext?.neighbours ?? []).map((n) => ({ ...n, demand: { ...n.demand } })), ...extra] } as SlotRequest['neighbours'] } : {}),
     ...(port.consumesWeekSessions ? { ...(same.length > 0 ? { weekSessions: same } : {}), sportSessions: week.requests.filter((x) => x.sport === r.sport).length, sportPriority } : port.consumesNeighbours ? { sportPriority } : {}),
     ...(Object.keys(cross).length > 0 ? { crossSportWeek: cross } : {}),
@@ -288,7 +295,7 @@ export function decideStart(state: AppState, requestId: string, planned: Session
   };
   const regen = regenerateSession(state, requestId, coreStateOf(ev.readiness, ev.reports), env, freeRuns);
   if (regen.status === 'not_regenerable') {
-    // Séance non régénérable (non placée, HYROX) : adaptation de la séance persistée si une zone l'impose (ou, en
+    // Séance non régénérable (non placée) : adaptation de la séance persistée si une zone l'impose (ou, en
     // Musculation, si l'état du jour le demande : RC3.1 A1), sinon gardée.
     if (!mustChange) return (readinessApplies(state, requestId, ev) ? persisted(regen.cause) : null) ?? notApplied(regen.cause);
     return persisted(regen.cause) ?? postponed([], { cause: regen.cause, exercises: hits.map((x) => x.exerciseId) });
@@ -314,7 +321,8 @@ export function decideStart(state: AppState, requestId: string, planned: Session
  * RC4.3 (R3) — état du jour sans adaptation, mais course(s) libre(s) faite(s) depuis la planification : la séance est
  * régénérée par son moteur avec ces courses comme voisines réalisées (état du jour INCONNU, comme à la planification).
  * Appliqué seulement si la séance planifiée est reproductible (sinon aucun changement attribué à tort) ; refus du moteur
- * ⇒ report explicite ; sport non régénérable (HYROX, séance non placée) ⇒ séance gardée, motif tracé.
+ * ⇒ report explicite ; séance non régénérable (non placée) ⇒ séance gardée, motif tracé. HYROX (RC4.4, lot E) : régénéré
+ * avec ses voisines, sans règle de charge H2 (la séance reste en pratique inchangée : `FREE_RUN_RECOVERY_NO_CHANGE`).
  */
 function freeRunRecovery(state: AppState, requestId: string, planned: SessionDraft, base: readonly Reason[], env: ProgrammeEnvironment, freeRuns: readonly RealizedSession[]): StartDecision {
   const ids = freeRuns.map((r) => r.sessionId);

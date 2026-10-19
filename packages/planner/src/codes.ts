@@ -58,6 +58,10 @@ export const GP_CODES = {
   M3_CONFLICT_UNRESOLVED: 'RECOVERY.PLANNER.M3_CONFLICT_UNRESOLVED',
   /** M3 — arbitrage indisponible ou bloqué (politique absente, profil de demande non dérivable…). */
   M3_ARBITRATION_BLOCKED: 'RULE.PLANNER.M3_ARBITRATION_BLOCKED',
+  /** RC4.4 (G5) — organisation de la semaine changée pour éviter des Full Body à J/J+1 : mesures avant / après. */
+  GLOBAL_PLACEMENT_APPLIED: 'PLAN.PLANNER.GLOBAL_PLACEMENT_APPLIED',
+  /** RC4.4 (G5) — Full Body à J/J+1 gardés : aucune organisation ne les réduit sans dégradation mesurée (motif). */
+  GLOBAL_PLACEMENT_KEPT: 'PLAN.PLANNER.GLOBAL_PLACEMENT_KEPT',
 } as const;
 
 export const GP_REASON_CODES: readonly ReasonCodeDefinition[] = [
@@ -85,6 +89,8 @@ export const GP_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: GP_CODES.M3_DECISION, categories: ['adaptation'], params: { action: S, requestId: S, sport: S, from: S, to: S, rule: S, structure: S, withRequestId: S, deltaHours: N, why: L }, audience: 'user', severity: 'notice' },
   { code: GP_CODES.M3_CONFLICT_UNRESOLVED, categories: ['business_hard'], params: { rule: S, structure: S, requestId: S, withRequestId: S, deltaHours: N, cause: S, tried: L }, audience: 'user', severity: 'warning' },
   { code: GP_CODES.M3_ARBITRATION_BLOCKED, categories: ['business_hard'], params: { cause: S, detail: S }, audience: 'internal', severity: 'warning' },
+  { code: GP_CODES.GLOBAL_PLACEMENT_APPLIED, categories: ['adaptation'], params: { requestId: S, from: S, to: S, fullBodyBefore: N, fullBodyAfter: N, candidates: N }, audience: 'user', severity: 'notice' },
+  { code: GP_CODES.GLOBAL_PLACEMENT_KEPT, categories: ['information'], params: { cause: S, fullBody: N, candidates: N }, audience: 'user', severity: 'notice' },
   { code: GP_CODES.DAY_EMPTY, categories: ['information'], params: { date: S, cause: S }, audience: 'internal', severity: 'info' },
 ];
 

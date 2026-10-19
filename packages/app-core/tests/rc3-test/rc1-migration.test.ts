@@ -15,7 +15,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  activePainPause, controlCtTimer, controlHrTimer, controlRest, controlRunPlayer, ctElapsedS, decodeState, ensureBeta0Week, finishProgrammeSession, loadState, MemoryStorage,
+  activePainPause, beta0Environment, controlCtTimer, controlHrTimer, controlRest, controlRunPlayer, ctElapsedS, decodeState, ensureBeta0Week, finishProgrammeSession, loadState, MemoryStorage,
   restRemainingS, runPlayerPosition, runPlayerSteps, saveState, selectBeta0Week, selectFreeRuns, selectHistory, selectProgrammeSession, selectRunningProfile, startProgrammeSession,
   STORAGE_KEY,
 } from '../../src/index.js';
@@ -46,6 +46,11 @@ const hash = (v: unknown): string => createHash('sha256').update(canon(v)).diges
 const withoutCause = (s: AppState): AppState => ({
   ...s,
   planner: { ...s.planner, weeks: Object.fromEntries(Object.entries(s.planner.weeks).map(([k, w]) => [k, { ...w, requests: w.requests.map(({ cause: _cause, ...r }) => r) }])) },
+});
+/** RC4.4 — retire la seule trace ajoutée par le placement global G5 (identifiant de simulation de la semaine). */
+const withoutG5Trace = (s: AppState): AppState => ({
+  ...s,
+  planner: { ...s.planner, weeks: Object.fromEntries(Object.entries(s.planner.weeks).map(([k, w]) => [k, { ...w, simulation: w.simulation?.filter((x) => x !== 'planner.globalPlacement') }])) },
 });
 const code = (f: () => unknown): string => { try { f(); return 'OK'; } catch (e) { return (e as { code?: string }).code ?? (e as Error).message; } };
 
@@ -78,8 +83,13 @@ describe('RC1 TEST → RC3 : relecture sans perte', () => {
 
     it(`${f} : semaine suivante planifiée par RC3 = planification RC1, au seul champ additif « cause » près`, () => {
       const s0 = decode(f.slice('rc1-'.length, -'.json'.length));
-      const later = ensureBeta0Week(s0, at('2026-11-09T06:00:00Z'));
+      // RC4.4 : second passage G5 DÉSACTIVÉ (paramètre absent) ⇒ planification strictement identique à RC1 (V0).
+      const later = ensureBeta0Week(s0, at('2026-11-09T06:00:00Z'), beta0Environment({ globalPlacement: false }));
       expect(hash(withoutCause(later))).toBe(REFERENCE[f]?.next);
+      // G5 ACTIF (Beta 0) : aucune paire Full Body à J/J+1 dans ces états ⇒ même planification, seule la trace de
+      // simulation (`planner.globalPlacement`) est ajoutée à la semaine persistée.
+      const g5 = ensureBeta0Week(s0, at('2026-11-09T06:00:00Z'));
+      expect(hash(withoutCause(withoutG5Trace(g5)))).toBe(REFERENCE[f]?.next);
       // Séances terminées conservées. Une séance laissée EN COURS au-delà de sa semaine est retirée à la clôture : même
       // comportement en RC1 (empreinte identique ci-dessus), indépendant de la mise à jour.
       const done = (s: AppState) => Object.fromEntries(Object.entries(s.programmeLogs).filter(([, l]) => l.finishedAt !== undefined));

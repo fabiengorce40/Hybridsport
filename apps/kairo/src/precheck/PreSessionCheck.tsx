@@ -11,7 +11,7 @@ import { CHECKIN_BODY_AREAS, knownPainsOf, selectProgrammeSession, startProgramm
 import type { CheckIn, CheckInInput, KnownPain } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
 import { Notice } from '../ui.js';
-import { adaptationChangesText, AREA_LABELS, checkInReasonsText, knownPainText, FATIGUE_LABELS, PAIN_LEVEL_LABELS, READINESS_LABELS, RECOVERY_LABELS } from '../present.js';
+import { adaptationChangesText, AREA_LABELS, MUSCLE_GROUP_LABELS, checkInReasonsText, knownPainText, FATIGUE_LABELS, PAIN_LEVEL_LABELS, READINESS_LABELS, RECOVERY_LABELS } from '../present.js';
 
 type Area = (typeof CHECKIN_BODY_AREAS)[number];
 type Level = 'P1' | 'P2' | 'P3';
@@ -139,7 +139,7 @@ export function useStartFlow(onStarted?: (requestId: string) => void): { start: 
 }
 
 /** Séance ADAPTÉE au démarrage : ce qui a changé et pourquoi (décision d'app-core, affichée telle quelle). */
-export function AdaptationNotice({ v }: { v: { readonly adaptation: { readonly changes: readonly string[]; readonly reasons: readonly { readonly code: string; readonly params: Readonly<Record<string, unknown>> }[] } | null; readonly checkIn: CheckIn | null } }) {
+export function AdaptationNotice({ v, deficit = null }: { v: { readonly adaptation: { readonly changes: readonly string[]; readonly reasons: readonly { readonly code: string; readonly params: Readonly<Record<string, unknown>> }[] } | null; readonly checkIn: CheckIn | null }; deficit?: readonly { readonly group: string; readonly deficit: number }[] | null }) {
   if (!v.adaptation) return null;
   const changes = adaptationChangesText(v.adaptation.changes);
   const why = checkInReasonsText([...(v.checkIn?.reasons ?? []), ...v.adaptation.reasons]);
@@ -148,6 +148,10 @@ export function AdaptationNotice({ v }: { v: { readonly adaptation: { readonly c
       <strong>Séance adaptée à votre état du jour</strong>
       <span>{v.checkIn ? READINESS_LABELS[v.checkIn.readiness] : ''}{v.checkIn && v.checkIn.pains.length > 0 ? ` · douleur : ${v.checkIn.pains.map((p) => `${(AREA_LABELS[p.area] ?? p.area).toLowerCase()} (${(PAIN_LEVEL_LABELS[p.level] ?? p.level).toLowerCase()})`).join(', ')}` : ''}{v.checkIn && v.checkIn.knownPains.length > 0 ? ` · douleur déjà signalée : ${knownPainText(v.checkIn.knownPains.map((k) => `${k.area}:${k.level}`))}` : ''}</span>
       {changes.length > 0 && <ul className="small" style={{ margin: 0 }}>{changes.map((t) => <li key={t}>{t}</li>)}</ul>}
+      {deficit && deficit.length > 0 && (
+        // RC4.4 (lot D) — séries retirées par cet allègement, par groupe (calcul du moteur Musculation), jamais redistribuées.
+        <span className="small" data-volume-deficit>Séries retirées de votre semaine par cet allègement (non redistribuées) : {deficit.map((d) => `${MUSCLE_GROUP_LABELS[d.group] ?? d.group} −${String(d.deficit).replace('.', ',')}`).join(', ')}.</span>
+      )}
       {why.length > 0 && <details className="k-details"><summary>Pourquoi</summary><ul className="small">{why.map((t) => <li key={t}>{t}</li>)}</ul></details>}
     </div>
   );

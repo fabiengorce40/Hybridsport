@@ -34,6 +34,7 @@ import type { AppliedComposition, DayResult, DeclaredIntent, DemandOutcome, M3Ar
 import { compareConflicts, conflictId, detectConflicts, unknownDemand as m3UnknownDemand, yielderOf } from './m3-analysis.js';
 import type { M3Conflict, M3Importance, M3Node, M3Origin } from './m3-analysis.js';
 import { readM3Policy, readNeighbourWindow } from './m3-policy.js';
+import { globalPlacement } from './global-placement.js';
 import type { CompositionBase, PortOutcome, SportPort, StructuresResult, WeekSession } from './ports.js';
 import { classifyRefusal } from './refusal.js';
 import type { RefusalClass } from './refusal.js';
@@ -100,6 +101,14 @@ export function manualPlacementConflicts(probe: { readonly sport: PlannerSport; 
 }
 
 export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governance: LoadedRuleset | undefined, clock: PlannerClock): PlannedWeek {
+  const v0 = planCore(raw, ports, governance, clock);
+  const param = readPlannerParam(governance, 'planner.globalPlacement', zPlannerInput.parse(raw).mode);
+  // Paramètre absent ou illisible : placement actuel EXACT (aucune trace ajoutée).
+  return param.ok ? globalPlacement(raw, ports, governance, clock, v0, param.value, param.reasons) : v0;
+}
+
+/** Planification d'une semaine ; `pins` (G5) : jour imposé par séance, essayé en premier (repli : placement normal). */
+export function planCore(raw: PlannerInput, ports: SportPorts, governance: LoadedRuleset | undefined, clock: PlannerClock, pins?: ReadonlyMap<string, string>): PlannedWeek {
   const input = zPlannerInput.parse(raw);
   const hybrid = input.demands.length > 1;
   const windows = readPlannerParam(governance, 'planner.interference.structureWindows', input.mode);
@@ -259,7 +268,11 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
     const takenIdx = [...placed.values()].map((x) => dates.indexOf(x.date));
     const gap = (d: string): number => (takenIdx.length === 0 ? 0 : Math.min(...takenIdx.map((i) => Math.abs(i - dates.indexOf(d)))));
     const taken = new Set([...placed.values()].map((x) => x.date));
-    const candidates = dates.filter((d) => !taken.has(d) && (minutes.get(d) ?? 0) > 0).sort((a, b) => gap(b) - gap(a) || (a < b ? -1 : 1));
+    const free = dates.filter((d) => !taken.has(d) && (minutes.get(d) ?? 0) > 0).sort((a, b) => gap(b) - gap(a) || (a < b ? -1 : 1));
+    // G5 : jour imposé d'abord ; jours imposés à d'AUTRES séances encore non placées essayés en dernier.
+    const pinned = pins?.get(r.requestId);
+    const reserved = new Set(pins ? [...pins].filter(([id]) => id !== r.requestId && !placed.has(id)).map(([, d]) => d) : []);
+    const candidates = pinned !== undefined && free.includes(pinned) ? [pinned, ...free.filter((d) => d !== pinned && !reserved.has(d)), ...free.filter((d) => d !== pinned && reserved.has(d))] : free;
     if (candidates.length === 0) {
       const u = composeUnplaced(r);
       results.set(r.requestId, { ...base, status: 'unplaced', category: 'slot_unavailable', reasons: [gpReasons.emit(GP_CODES.NOT_ENOUGH_DAYS, { sport: r.sport, requestId: r.requestId }), ...u.reasons], ...(u.composed ? { composed: u.composed } : {}) });

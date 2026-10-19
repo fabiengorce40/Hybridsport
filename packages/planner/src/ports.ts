@@ -125,6 +125,16 @@ export interface SportPort {
   demand(session: SessionDraft, mode: PlannerMode): DemandOutcome;
   /** Q1 — diagnostic de qualité de la prescription générée (lecture seule ; aucune modification de séance). */
   readonly quality?: QualityOf;
+  /**
+   * RC4.4 (G5) — séries de travail PRÉVUES par groupe musculaire (calcul du moteur de la discipline : même fonction que
+   * son bilan hebdomadaire). Absent ⇒ volume par groupe non mesurable (aucun placement global).
+   */
+  plannedGroupSets?(session: SessionDraft): Readonly<Record<string, number>>;
+  /**
+   * RC4.4 (G5) — bornes (heures) des bandes de proximité GOUVERNÉES de la discipline (`strength.interference.assessment`).
+   * Liste vide ⇒ aucune fenêtre de proximité mesurable (critère de proximité neutre).
+   */
+  proximityBandsHours?(): readonly number[];
 }
 
 type Content = { readonly ruleset: LoadedRuleset; readonly catalog: LoadedCatalog };
@@ -404,7 +414,10 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
     const outcome = varied ? 'varied' : differs ? 'no_governed_variation:volume_changed' : 'no_governed_variation';
     return { ...chosen, reasons: [...chosen.reasons, gpReasons.emit(GP_CODES.STRENGTH_WITHIN_WEEK_VARIATION, { ruleId: variation.ruleId, requestId: slot.requestId, twin: twin.requestId, outcome, note: variation.note })] };
   };
-  const withWeek = { ...port, generate, consumesWeekSessions: true, crossSportWeek: ['crosstraining'] as const };
+  // RC4.4 (G5) — séries de travail prévues par groupe : la fonction du bilan hebdomadaire Strength, sans règle nouvelle.
+  const plannedGroupSets = (session: SessionDraft): Readonly<Record<string, number>> => sessionPlannedHardSets(session, params(), def.content.catalog);
+  const proximityBandsHours = (): readonly number[] => (params()['strength.interference.assessment']?.proximityBands ?? []).map((b) => b.maxHours);
+  const withWeek = { ...port, generate, plannedGroupSets, proximityBandsHours, consumesWeekSessions: true, crossSportWeek: ['crosstraining'] as const };
   if (!comp) return withWeek;
   // Objectif du PROGRAMME (contrat de contexte Strength `goal.primary`), niveau du profil CORE, fréquence déclarée.
   const run = (days: readonly CompositionDay[], weeklySessions: number, mode: PlannerMode) => {

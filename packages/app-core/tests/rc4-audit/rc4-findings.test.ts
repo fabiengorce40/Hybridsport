@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 // Simulations de 4 à 6 semaines par le chemin réel : délai par test élargi.
 vi.setConfig({ testTimeout: 120_000 });
 import {
-  createBeta0Programme, emptyState, ensureBeta0Week, EQUIPMENT_PRESETS, finishProgrammeSession, hyroxRoleFeasibility, selectBeta0Week, selectProgrammeSession, startProgrammeSession,
+  beta0Environment, createBeta0Programme, emptyState, ensureBeta0Week, EQUIPMENT_PRESETS, finishProgrammeSession, hyroxRoleFeasibility, selectBeta0Week, selectProgrammeSession, startProgrammeSession,
 } from '../../src/index.js';
 import type { AppState, Clock, ProfileInput } from '../../src/index.js';
 import { MONS, PROFILES, simulate } from './rc4-sim.js';
@@ -103,13 +103,22 @@ describe('F3 (RC4.3) — Charge des courses libres prise en compte par les autre
 
 describe('F4 / F5 / F6 — Volume Musculation (objectif prise de masse)', () => {
   const avg = (r: ReturnType<typeof simulate>, g: string) => r.weeks.reduce((n, w) => n + (w.volume.find((x) => x.group === g)?.planned ?? 0), 0) / r.weeks.length;
-  it('F4 : bas du corps sacrifié par la course voisine (P1) ; sans course (P2), proche de la cible', () => {
-    const p1 = simulate(spec('P1'));
+  const kneeCut = (r: ReturnType<typeof simulate>) => r.sessions.filter((x) => x.sport === 'strength' && x.reductions.some((y) => y.startsWith('running@') && y.includes(':lower_knee:full'))).length;
+  it('F4 (V0, G5 désactivé) : bas du corps sacrifié par la course voisine (P1) ; sans course (P2), proche de la cible', () => {
+    const p1 = simulate(spec('P1'), MONS.length, beta0Environment({ globalPlacement: false }));
     const p2 = simulate(spec('P2'));
     expect(avg(p1, 'quads')).toBeLessThan(5);
     expect(avg(p2, 'quads')).toBeGreaterThan(10);
-    expect(p1.sessions.filter((x) => x.sport === 'strength' && x.reductions.some((y) => y.startsWith('running@') && y.includes(':lower_knee:full'))).length).toBeGreaterThan(10);
+    expect(kneeCut(p1)).toBeGreaterThan(10);
     expect(p1.weeks.every((w) => w.volumeStatus === 'partially_satisfied')).toBe(true);
+  });
+  it('F4 (RC4.4, placement global G5) : P1 — moins de Full Body à J/J+1, bas du corps en hausse, toutes les séances conservées', () => {
+    const v0 = simulate(spec('P1'), MONS.length, beta0Environment({ globalPlacement: false }));
+    const g5 = simulate(spec('P1'));
+    for (const g of ['quads', 'hamstrings', 'glutes']) expect(avg(g5, g)).toBeGreaterThan(avg(v0, g));
+    expect(kneeCut(g5)).toBeLessThan(kneeCut(v0));
+    const planned = (r: ReturnType<typeof simulate>) => r.sessions.filter((x) => x.placement === 'planned').length;
+    expect(planned(g5)).toBe(planned(v0));
   });
   it('F5 : bras au-dessus de la borne haute signalés « atteints » (aucun statut de dépassement)', () => {
     const p2 = simulate(spec('P2'), 2);
@@ -182,10 +191,15 @@ describe('F12 (RC4.2) — HYROX : restrictions de niveau, de matériel et de tem
 });
 
 describe('F13 — Cross-training et HYROX sans progression sur 6 semaines', () => {
-  it('mêmes contenus HYROX à rôle égal (capacité stations : 5 × SkiErg, cap 15 min en S1, S3, S5)', () => {
-    const r = simulate(spec('P3'));
-    const cap = r.sessions.filter((x) => x.archetype === 'hybrid_race.h2.station_capacity').map((x) => x.content);
-    expect(new Set(cap).size).toBe(1);
+  const cap = (r: ReturnType<typeof simulate>) => r.sessions.filter((x) => x.archetype === 'hybrid_race.h2.station_capacity').map((x) => x.content);
+  it('mêmes contenus HYROX à rôle égal (V0, G5 désactivé : capacité stations 5 × SkiErg, cap 15 min en S1, S3, S5)', () => {
+    expect(new Set(cap(simulate(spec('P3'), MONS.length, beta0Environment({ globalPlacement: false })))).size).toBe(1);
+  });
+  it('RC4.4 : aucune progression HYROX non plus — la station de S5 change seulement par l’historique (placement G5 des semaines précédentes)', () => {
+    // Constat : avec G5, la station de capacité de S5 diffère (historique différent), sans aucune règle de progression.
+    const c = cap(simulate(spec('P3')));
+    expect(c).toHaveLength(3);
+    expect(c.every((x) => /^station_repeats 5×\[[a-z_]+\] cap \d+min$/u.test(x ?? ''))).toBe(true);
   });
   it('Cross-training : le contenu du samedi est identique d’une semaine sur l’autre (for time, mêmes mouvements)', () => {
     const r = simulate(spec('P2'));
