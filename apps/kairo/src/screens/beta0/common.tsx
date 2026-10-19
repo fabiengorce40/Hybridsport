@@ -3,7 +3,7 @@ import { approxMinutes, exerciseLabel, selectBeta0Week } from '@hybridsport/app-
 import type { AppState, Beta0WeekView, SessionView } from '@hybridsport/app-core';
 import { manualStartAssessment } from '@hybridsport/app-core';
 import { useStartFlow } from '../../precheck/PreSessionCheck.js';
-import { arbitrationText, globalPlacementText, sessionTitle, ctFormatName, isTest, manualStartText, notPlannedText, qualityShortText, roleName, runningTestFallbackText, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
+import { arbitrationText, globalPlacementText, interferenceWarningText, sessionTitle, ctFormatName, isTest, manualStartText, notPlannedText, qualityShortText, roleName, runningTestFallbackText, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import { blockCardText, fullSessionCardText, isBlock, isFullC4 } from '../../field/BlockScope.js';
@@ -121,7 +121,7 @@ function UnplacedCard({ v, onOpen }: { v: SessionItemView; onOpen: (id: string) 
   const name = sessionTitle(v);
   const meta = metaOf(v);
   // Séance déjà commencée (reprise) : jamais réévaluée ; sinon contrôle métier au jour réel (app-core, aucune règle ici).
-  const startable = v.display === 'in_progress' ? { allowed: true, cause: null, conflicts: [] } : manualStartAssessment(store.state, store.clock(), v.requestId);
+  const startable = v.display === 'in_progress' ? { allowed: true, cause: null, conflicts: [], maintainable: false } : manualStartAssessment(store.state, store.clock(), v.requestId);
   return (
     <div className="card" aria-label={`${sportName(v.sport)} : ${name}, non planifiée`} data-unplaced={v.requestId}>
       <div className="row between"><span className="small muted">{sportName(v.sport)}</span><StatusPill status="not_planned" /></div>
@@ -134,9 +134,11 @@ function UnplacedCard({ v, onOpen }: { v: SessionItemView; onOpen: (id: string) 
       <div className="row" style={{ gap: 8, flexWrap: 'wrap', marginTop: 8 }}>
         <button className="btn" onClick={() => onOpen(v.requestId)}>Voir la séance</button>
         {/* Q1 / P0 — « Faire maintenant » seulement si le contrôle métier du jour réel l'autorise (qualité, douleur, semaine, interférence). */}
-        {startable.allowed && <button className="btn primary" onClick={() => flow.start(v.requestId)}>Faire maintenant</button>}
+        {/* RC4.5 (lot C) — interférence non bloquante : « Faire maintenant » ouvre d'abord l'avertissement (maintien explicite). */}
+        {(startable.allowed || startable.maintainable) && <button className="btn primary" onClick={() => flow.start(v.requestId)}>Faire maintenant</button>}
       </div>
-      {!startable.allowed && manualStartText(startable) && <div className="small" role="status" data-manual-refused={startable.cause ?? undefined}>{manualStartText(startable)}</div>}
+      {startable.maintainable && <div className="small" role="status" data-manual-maintainable>{interferenceWarningText(startable.conflicts, formatDate)}</div>}
+      {!startable.allowed && !startable.maintainable && manualStartText(startable) && <div className="small" role="status" data-manual-refused={startable.cause ?? undefined}>{manualStartText(startable)}</div>}
       {flow.sheet}
     </div>
   );

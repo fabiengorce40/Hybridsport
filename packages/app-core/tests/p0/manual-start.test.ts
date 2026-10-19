@@ -36,7 +36,7 @@ describe('P0 — démarrage manuel d’une séance non placée', () => {
     expect(manualStartAssessment(s0, D('07'), U).conflicts.map((c) => c.withSport)).toContain('crosstraining');
   });
   it('P0-M4. jour sans conflit gouverné (samedi) ⇒ autorisé ; réalisation, provenance manuelle, date réelle', () => {
-    expect(manualStartAssessment(s0, D('10'), U)).toEqual({ allowed: true, cause: null, conflicts: [] });
+    expect(manualStartAssessment(s0, D('10'), U)).toEqual({ allowed: true, cause: null, conflicts: [], maintainable: false });
     const s = run(s0, U, '10', { completion: 'completed_as_prescribed', pain: false, run: { realizedDurationS: 1500 } });
     expect(s.programmeState?.results.find((r) => r.requestId === U)).toMatchObject({ provenance: 'manual_from_unplaced', date: '2026-10-10' });
   });

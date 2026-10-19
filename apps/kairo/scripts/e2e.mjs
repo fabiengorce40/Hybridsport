@@ -962,11 +962,12 @@ async function mobileFit(p, tag) {
   await sheet.getByRole('button', { name: 'Enregistrer' }).click();
   await feedback({ tolerance: 'Moyenne', comment: 'Stations enchaînées, transitions non chronométrées : OK.' });
   await p.getByRole('button', { name: 'Retour' }).click();
-  // 18–22. Séance non placée : P0 — lundi (Musculation le même jour), « Faire maintenant » refusé avec sa raison ; samedi
+  // 18–22. Séance non placée : P0 — lundi (Musculation le même jour), interférence signalée (RC4.5 lot C : avertissement
+  // maintenable, jamais un démarrage sans confirmation ; parcours du maintien : scénario LOT C) ; samedi
   // (aucun conflit gouverné) : Voir, Faire maintenant, terminer, retour.
   await nav('Planning');
   const un0 = p.locator('[data-unplaced]').first();
-  check(await un0.getByRole('button', { name: 'Faire maintenant' }).count() === 0 && /trop proche d’une séance/.test(await un0.locator('[data-manual-refused]').innerText()), `${tag} P0 : « Faire maintenant » refusé au jour réel (interférence gouvernée), raison lisible`);
+  check(await un0.locator('[data-manual-refused]').count() === 0 && /Cette séance serait proche de votre séance/.test(await un0.locator('[data-manual-maintainable]').innerText()), `${tag} P0 : interférence gouvernée au jour réel signalée (avertissement maintenable, lot C), raison lisible`);
   await p.clock.setSystemTime(new Date('2026-10-10T09:00:00+02:00'));
   await p.reload();
   await nav('Planning');
@@ -1343,6 +1344,46 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   await snap('10-programme-volume');
   check(perrors.length === 0, `${tag} aucune erreur de page (${perrors.join(' | ')})`);
   await c.close();
+}
+
+// RC4.5 (lot C, C-9) — « Faire maintenant » avec interférence musculaire NON BLOQUANTE : avertissement ⇒ « Choisir un
+// autre jour » (rien d'écrit) ⇒ « Maintenir quand même » ⇒ contrôle avant séance ⇒ séance démarrée, maintien tracé ;
+// puis pause douleur active : aucun maintien proposé. États de départ écrits par app-core (tests rc45).
+{
+  const tag = '[LOT C]';
+  const fx = (n) => readFileSync(new URL(`../../../packages/app-core/tests/rc45/fixtures/${n}.json`, import.meta.url), 'utf8');
+  const U = '2026-10-05.running.2';
+  const { c, p } = await freshPage(fx('lotc-e2e-base'), '2026-10-05T20:00:00+02:00');
+  const perrors = [];
+  p.on('pageerror', (e) => perrors.push(e.message));
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  const card = p.locator(`[data-unplaced="${U}"]`);
+  const warn = card.locator('[data-manual-maintainable]');
+  check(await warn.isVisible() && /Cette séance serait proche de votre séance de musculation/.test(await warn.innerText()) && !/INTERFERENCE|lower_|planner\./.test(await card.innerText()), `${tag} avertissement lisible sur la carte (${(await warn.innerText()).slice(0, 120)})`);
+  const before = await p.evaluate(() => localStorage.getItem('kairo.state'));
+  await card.getByRole('button', { name: 'Faire maintenant' }).click();
+  const dlg = p.getByRole('dialog', { name: 'Interférence musculaire' });
+  check(await dlg.getByRole('button', { name: 'Maintenir quand même' }).isVisible() && await dlg.getByRole('button', { name: 'Choisir un autre jour' }).isVisible(), `${tag} deux choix explicites`);
+  await dlg.getByRole('button', { name: 'Choisir un autre jour' }).click();
+  check(await dlg.count() === 0 && await p.evaluate(() => localStorage.getItem('kairo.state')) === before, `${tag} « Choisir un autre jour » : rien d’écrit`);
+  await card.getByRole('button', { name: 'Faire maintenant' }).click();
+  await dlg.getByRole('button', { name: 'Maintenir quand même' }).click();
+  // Contrôle avant séance : passé par le gestionnaire automatique des parcours (« Passer »), sinon ici.
+  await p.getByRole('dialog', { name: 'Avant de commencer' }).getByRole('button', { name: 'Passer' }).click({ timeout: 3000 }).catch(() => {});
+  await p.locator('[data-interference-maintained]').waitFor();
+  const st = await p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+  const ci = st.checkIns.at(-1);
+  check(Boolean(st.programmeLogs[U]?.startedAt) && ci.decision === 'unchanged' && ci.reasons.some((r) => r.code === 'KAIRO.MANUAL_START_INTERFERENCE_ACCEPTED'), `${tag} maintien : séance démarrée, choix tracé dans le contrôle (décision « unchanged »)`);
+  check(/Ce n’est pas un ressenti/.test(await p.locator('[data-interference-maintained]').innerText()), `${tag} séance maintenue ≠ bien tolérée (mention distincte)`);
+  await p.reload();
+  check(await p.getByRole('dialog').count() === 0, `${tag} rechargement : reprise sans nouvel avertissement`);
+  await c.close();
+  const { c: c2, p: p2 } = await freshPage(fx('lotc-e2e-pained'), '2026-10-05T20:00:00+02:00');
+  await p2.getByRole('button', { name: 'Planning', exact: true }).click();
+  const card2 = p2.locator(`[data-unplaced="${U}"]`);
+  check(await card2.getByRole('button', { name: 'Faire maintenant' }).count() === 0 && await card2.locator('[data-manual-maintainable]').count() === 0 && /pause douleur/.test(await card2.locator('[data-manual-refused]').innerText()), `${tag} pause douleur : aucun maintien proposé`);
+  check(perrors.length === 0, `${tag} aucune erreur de page (${perrors.join(' | ')})`);
+  await c2.close();
 }
 
 // Version réellement servie : identifiant de build affiché dans Réglages = version.json publié (site déployé seulement).

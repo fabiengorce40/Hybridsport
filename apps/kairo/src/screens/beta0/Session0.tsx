@@ -5,14 +5,14 @@
  */
 import { useEffect, useState } from 'react';
 import {
-  approxMinutes, controlRest, startAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, reportEquipmentUnavailable, runPlayerPosition, runPlayerSteps, selectProgrammeSession, strengthInsightOf, toggleProgrammePainItem,
+  approxMinutes, controlRest, maintainedInterference, startAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, reportEquipmentUnavailable, runPlayerPosition, runPlayerSteps, selectProgrammeSession, strengthInsightOf, toggleProgrammePainItem,
   adaptationVolumeDeficit,
 } from '@hybridsport/app-core';
 import type { FinishInput, ProgrammeSessionView, SessionItem, SetPrescription } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { RestTimer0 } from '../../RestTimer0.js';
-import { Notice, sessionDay, startLabel, Topbar } from '../../ui.js';
-import { isTest, manualStartText, sessionTitle, qualityVerdictText, roleName, sportName, STATUS_LABELS } from '../../present.js';
+import { formatDate, Notice, sessionDay, startLabel, Topbar } from '../../ui.js';
+import { interferenceWarningText, isTest, maintainedText, manualStartText, sessionTitle, qualityVerdictText, roleName, sportName, STATUS_LABELS } from '../../present.js';
 import { FieldFeedbackCard } from '../../field/FieldFeedback.js';
 import { BLOCK_LABELS, RunStructureView, SetRow } from '../Session.js';
 import { StrengthWorkout } from '../../workout/StrengthWorkout.js';
@@ -138,13 +138,19 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
   const quality = qualityVerdictText(v?.quality ?? null);
   const done = v?.result !== null && v?.result !== undefined && v.log?.finishedAt !== undefined;
   // Séance pas encore commencée (planifiée ou non placée) : refus métier du jour réel affiché (app-core le fait respecter).
-  const refused = v && !v.log && !v.result ? manualStartText(startAssessment(store.state, store.clock(), requestId)) : null;
+  const assessment = v && !v.log && !v.result ? startAssessment(store.state, store.clock(), requestId) : null;
+  // RC4.5 (lot C) — interférence non bloquante : avertissement (maintien possible), jamais présenté comme un refus.
+  const warning = assessment?.maintainable ? interferenceWarningText(assessment.conflicts, formatDate) : null;
+  const refused = assessment && !assessment.maintainable ? manualStartText(assessment) : null;
+  const maintained = v?.log ? maintainedInterference(store.state, requestId) : null;
   return (
     <>
       <SessionBody requestId={requestId} onBack={onBack} />
-      {v && (quality || done || refused) && (
+      {v && (quality || done || refused || warning || maintained) && (
         <div className="field-after">
           {refused && <Notice tone="warn"><span role="status" data-manual-refused>{refused}</span></Notice>}
+          {warning && <Notice tone="warn"><span role="status" data-manual-maintainable>{warning}</span></Notice>}
+          {maintained && <p className="tiny" data-interference-maintained style={{ margin: 0 }}>{maintainedText(maintained)}</p>}
           {quality && <p className="tiny muted" data-quality={v.quality ?? undefined} style={{ margin: 0 }}>{quality}</p>}
           {done && <FieldFeedbackCard requestId={requestId} pain={v.log?.outcome?.pain === true} block={v.composition?.scope === 'TRAINING_BLOCK'} />}
         </div>

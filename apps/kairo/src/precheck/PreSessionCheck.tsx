@@ -7,11 +7,12 @@
  */
 import { useState } from 'react';
 import type { ReactElement } from 'react';
-import { CHECKIN_BODY_AREAS, knownPainsOf, selectProgrammeSession, startProgrammeSession } from '@hybridsport/app-core';
+import { CHECKIN_BODY_AREAS, knownPainsOf, selectProgrammeSession, startAssessment, startProgrammeSession } from '@hybridsport/app-core';
+import type { StartAssessment } from '@hybridsport/app-core';
 import type { CheckIn, CheckInInput, KnownPain } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
-import { Notice } from '../ui.js';
-import { adaptationChangesText, AREA_LABELS, MUSCLE_GROUP_LABELS, checkInReasonsText, knownPainText, FATIGUE_LABELS, PAIN_LEVEL_LABELS, READINESS_LABELS, RECOVERY_LABELS } from '../present.js';
+import { formatDate, Notice } from '../ui.js';
+import { adaptationChangesText, AREA_LABELS, interferenceWarningText, MUSCLE_GROUP_LABELS, checkInReasonsText, knownPainText, FATIGUE_LABELS, PAIN_LEVEL_LABELS, READINESS_LABELS, RECOVERY_LABELS } from '../present.js';
 
 type Area = (typeof CHECKIN_BODY_AREAS)[number];
 type Level = 'P1' | 'P2' | 'P3';
@@ -111,23 +112,49 @@ export function PreSessionSheet({ result, known = [], onSubmit, onClose }: { res
 }
 
 /**
+ * RC4.5 (lot C) — interférence musculaire NON BLOQUANTE : choix explicite avant le contrôle avant séance. « Maintenir
+ * quand même » ouvre le contrôle (douleur, état du jour : toujours appliqués) ; « Choisir un autre jour » ferme.
+ */
+export function InterferenceSheet({ a, onMaintain, onClose }: { a: StartAssessment; onMaintain: () => void; onClose: () => void }) {
+  return (
+    <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-label="Interférence musculaire">
+      <div className="sheet" data-interference-warning>
+        <h2 style={{ margin: 0 }}>Interférence musculaire</h2>
+        <Notice tone="warn"><span>{interferenceWarningText(a.conflicts, formatDate)}</span></Notice>
+        <p className="tiny muted" style={{ margin: 0 }}>Le contrôle avant séance s’applique ensuite normalement : une douleur ou un refus de sécurité empêche toujours le démarrage.</p>
+        <button type="button" className="btn primary block" data-interference-maintain onClick={onMaintain}>Maintenir quand même</button>
+        <button type="button" className="btn secondary block" data-interference-other-day onClick={onClose}>Choisir un autre jour</button>
+      </div>
+    </div>
+  );
+}
+
+/**
  * Flux de démarrage UNIQUE : séance commencée ⇒ reprise directe ; sinon feuille de contrôle, puis démarrage par
  * app-core avec l'état déclaré. `onStarted` : après un démarrage effectif (ou une reprise).
+ * RC4.5 (lot C) : interférence maintenable ⇒ feuille d'avertissement d'abord ; le maintien n'est transmis à app-core
+ * qu'après « Maintenir quand même » (jamais par défaut).
  */
 export function useStartFlow(onStarted?: (requestId: string) => void): { start: (requestId: string) => void; sheet: ReactElement | null } {
   const store = useStore();
   const [target, setTarget] = useState<string | null>(null);
   const [result, setResult] = useState<CheckIn | null>(null);
-  const close = () => { setTarget(null); setResult(null); };
+  const [warning, setWarning] = useState<StartAssessment | null>(null);
+  const [accepted, setAccepted] = useState(false);
+  const close = () => { setTarget(null); setResult(null); setWarning(null); setAccepted(false); };
   const start = (requestId: string) => {
     if (selectProgrammeSession(store.state, requestId)?.log) { onStarted?.(requestId); return; }
     setResult(null);
+    setAccepted(false);
+    const a = startAssessment(store.state, store.clock(), requestId);
+    setWarning(!a.allowed && a.maintainable ? a : null);
     setTarget(requestId);
   };
+  if (target !== null && warning && !accepted) return { start, sheet: <InterferenceSheet a={warning} onMaintain={() => setAccepted(true)} onClose={close} /> };
   const sheet = target === null ? null : (
     <PreSessionSheet result={result} known={knownPainsOf(store.state.checkIns, store.state.safety.clearedAt)} onClose={close} onSubmit={(ci) => {
       let last: CheckIn | undefined;
-      const ok = store.apply((s, c) => { const n = startProgrammeSession(s, c, target, undefined, ci); last = n.checkIns.at(-1); return n; });
+      const ok = store.apply((s, c) => { const n = startProgrammeSession(s, c, target, undefined, ci, { acceptInterference: accepted }); last = n.checkIns.at(-1); return n; });
       if (!ok) { close(); return; }
       if (last && (last.decision === 'postponed' || last.decision === 'paused')) { setResult(last); return; }
       const id = target;

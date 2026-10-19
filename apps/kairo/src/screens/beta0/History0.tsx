@@ -1,9 +1,9 @@
-import { durationLabel, exerciseLabel, fieldFeedbackText, HR_STRUCTURE_LABELS, selectFieldHistory, selectFreeRuns, selectProgrammeSession } from '@hybridsport/app-core';
+import { durationLabel, exerciseLabel, fieldFeedbackText, HR_STRUCTURE_LABELS, maintainedInterference, selectFieldHistory, selectFreeRuns, selectProgrammeSession } from '@hybridsport/app-core';
 import { FreeRunCard, FreeRunEntry } from '../../running/FreeRunForm.js';
 import type { HistoryEntry } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate } from '../../ui.js';
-import { ctFormatName, isTest, sessionName, sportName } from '../../present.js';
+import { ctFormatName, isTest, maintainedText, sessionName, sportName } from '../../present.js';
 import { ctResultText } from '../../workout/CrossTrainingWorkout.js';
 import { hrResultText } from '../../workout/HyroxWorkout.js';
 import { StatusPill } from './common.js';
@@ -66,6 +66,8 @@ export function History0({ onOpen }: { onOpen: (id: string) => void }) {
           {e.composition?.scope === 'TRAINING_BLOCK' && <div className="tiny muted" data-block-scope="TRAINING_BLOCK">Bloc d’entraînement (pas une séance complète)</div>}
           {(e.durationS !== null || e.manual) && <div className="tiny muted num" data-history-meta>{[e.durationS !== null ? `Durée réelle ${durationLabel(e.durationS)}` : null, e.manual ? 'Faite hors planning (séance non planifiée)' : null].filter(Boolean).join(' · ')}</div>}
           {e.feedback && <div className="small" data-history-feedback>Ressenti : {fieldFeedbackText(e.feedback)}</div>}
+          {/* RC4.5 (lot C) — maintien volontaire, distinct du ressenti déclaré. */}
+          {maintainedInterference(state, e.requestId) && <div className="tiny muted" data-interference-maintained>{maintainedText(maintainedInterference(state, e.requestId) ?? [])}</div>}
           {e.pain && <div className="small" style={{ color: 'var(--danger)' }}>⚠ Douleur signalée</div>}
         </button>
       )))}

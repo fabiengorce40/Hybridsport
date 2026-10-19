@@ -2,12 +2,12 @@
  * FIELD TEST — Journal Beta : ce qui a été prescrit, fait et ressenti, séance par séance (lecture de l'état persisté,
  * aucun calcul sportif), et export du journal (JSON + texte lisible) pour l'analyse après le test terrain.
  */
-import { approxMinutes, betaJournalText, durationLabel, exerciseLabel, exportBetaJournal, fieldFeedbackText, realDurationS, selectBetaJournal } from '@hybridsport/app-core';
+import { approxMinutes, betaJournalText, durationLabel, exerciseLabel, exportBetaJournal, fieldFeedbackText, maintainedInterference, realDurationS, selectBetaJournal } from '@hybridsport/app-core';
 import type { BetaJournalEntry } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
 import { download } from '../screens/Profile.js';
 import { BUILD_DATE, BUILD_ID } from '../version.js';
-import { arbitrationText, ctFormatName, qualityShortText, sessionName, sportName, STATUS_LABELS } from '../present.js';
+import { arbitrationText, ctFormatName, maintainedText, qualityShortText, sessionName, sportName, STATUS_LABELS } from '../present.js';
 import { formatDate, Notice, Topbar } from '../ui.js';
 
 const PLACEMENT: Readonly<Record<string, string>> = { planned: 'Planifiée', composed_unplaced: 'Non planifiée (séance disponible)', blocked: 'Non proposée' };
@@ -18,6 +18,8 @@ const NOT_PROPOSED: Readonly<Record<string, string>> = {
 
 /** Ligne lisible d'une séance du journal (aucun code interne). */
 function JournalRow({ e }: { e: BetaJournalEntry }) {
+  const { state } = useStore();
+  const maintained = maintainedInterference(state, e.requestId);
   const name = sessionName(e.sport, e.archetypeId);
   const dur = realDurationS(e.execution);
   const p = e.prescription;
@@ -33,6 +35,7 @@ function JournalRow({ e }: { e: BetaJournalEntry }) {
       {presc && <span className="tiny">{e.composition?.scope === 'TRAINING_BLOCK' ? 'Bloc prescrit : ' : 'Prescrit : '}{presc}</span>}
       {e.execution?.finishedAt && <span className="tiny">Réalisé : {status}{dur !== null ? ` · ${durationLabel(dur)}` : ''}{e.execution.pain ? ' · douleur signalée' : ''}</span>}
       {e.feedback && <span className="tiny">Ressenti : {fieldFeedbackText(e.feedback)}</span>}
+      {maintained && <span className="tiny" data-interference-maintained>{maintainedText(maintained)}</span>}
       {qualityShortText(e.quality?.verdict) && <span className="tiny muted">{qualityShortText(e.quality?.verdict)}</span>}
       {m3 && <span className="tiny muted">{m3}</span>}
     </div>

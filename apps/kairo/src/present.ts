@@ -146,6 +146,20 @@ export function manualStartText(a: { readonly cause: string | null; readonly con
   if (a.cause === 'QUALITY_BLOCKED') return 'Séance non réalisable : prescription incohérente.';
   return null;
 }
+type InterferenceConflict = { readonly withSport: string; readonly withDate: string; readonly structure: string };
+const zonesOf = (conflicts: readonly InterferenceConflict[]): string => [...new Set(conflicts.map((c) => STRUCTURE_LABELS[c.structure] ?? 'mêmes zones du corps'))].join(', ');
+/**
+ * RC4.5 (lot C) — interférence musculaire NON BLOQUANTE au démarrage : séance(s) voisine(s) et zones, en clair. Le
+ * maintien reste un choix explicite de l'athlète (deux boutons) ; les refus de sécurité n'utilisent jamais ce texte.
+ */
+export function interferenceWarningText(conflicts: readonly InterferenceConflict[], fmt: (date: string) => string): string {
+  const near = [...new Set(conflicts.map((c) => `votre séance ${OTHER_SPORT[c.withSport] ?? 'd’une autre discipline'} du ${fmt(c.withDate)}`))].join(' et ');
+  return `Cette séance serait proche de ${near}, qui sollicite aussi : ${zonesOf(conflicts)}. Vous pouvez la maintenir quand même (votre choix sera noté) ou choisir un autre jour.`;
+}
+/** RC4.5 (lot C) — séance maintenue volontairement : jamais présentée comme « bien tolérée ». */
+export function maintainedText(conflicts: readonly InterferenceConflict[]): string {
+  return `Maintenue à votre demande malgré une interférence musculaire (${zonesOf(conflicts)}). Ce n’est pas un ressenti : seul votre retour de fin de séance indique si elle a été bien tolérée.`;
+}
 /** M3.1 — séance COMPOSÉE MAIS NON PLACÉE : cause lisible (jamais un code). */
 export function unplacedText(v: SessionView): string {
   const cause = v.unplacedCause === 'week_full'
@@ -294,6 +308,8 @@ export function checkInReasonsText(reasons: readonly { readonly code: string; re
         if (p.cause === 'session_not_reproducible') return ['État du jour enregistré : la séance prévue est gardée telle quelle (elle ne peut plus être recomposée à l’identique ; aucun ajustement automatique).'];
         return ['État du jour enregistré : cette séance n’est pas ajustée automatiquement (aucune règle d’adaptation pour ce type de séance).'];
       case 'KAIRO.CHECKIN_NO_CHANGE': return ['État du jour pris en compte : aucun changement nécessaire.'];
+      // RC4.5 (lot C) — interférence non bloquante maintenue par l'athlète (choix tracé, jamais un ressenti).
+      case 'KAIRO.MANUAL_START_INTERFERENCE_ACCEPTED': return [`Séance maintenue à votre demande malgré une interférence musculaire (${zonesOf(Array.isArray(p.conflicts) ? p.conflicts.map((c) => ({ withSport: '', withDate: '', structure: s((c as Record<string, unknown>).structure) })) : [])}).`];
       // RC4.3 (R3) — courses libres faites depuis la planification de la semaine, évaluées au démarrage.
       case 'KAIRO.FREE_RUN_RECOVERY_APPLIED': return ['Course libre récente prise en compte : la séance est allégée pour votre récupération.'];
       case 'KAIRO.FREE_RUN_RECOVERY_NO_CHANGE': return ['Course libre récente prise en compte : aucun changement nécessaire.'];
@@ -325,7 +341,7 @@ export const MUSCLE_GROUP_LABELS: Readonly<Record<string, string>> = {
   glutes: 'Fessiers', calves: 'Mollets', core: 'Tronc',
 };
 export const STRUCTURE_LABELS: Readonly<Record<string, string>> = {
-  lower_knee: 'genoux / cuisses', lower_hip: 'hanches / chaîne postérieure', upper_push: 'poussées du haut du corps', upper_pull: 'tirages du haut du corps', grip: 'préhension', trunk: 'tronc', lower_back: 'bas du dos',
+  lower_knee: 'genoux / cuisses', lower_hip: 'hanches / chaîne postérieure', upper_push: 'poussées du haut du corps', upper_pull: 'tirages du haut du corps', grip: 'préhension', trunk: 'tronc', lower_back: 'bas du dos', high_intensity_systemic: 'effort intense (charge générale)',
 };
 const SPORT_OF_SOURCE: Readonly<Record<string, string>> = { running: 'course', crosstraining: 'Cross-training', hyrox: 'HYROX', strength: 'musculation' };
 

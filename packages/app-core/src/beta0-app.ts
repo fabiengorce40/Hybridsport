@@ -380,18 +380,25 @@ const withLog = (state: AppState, log: ProgrammeLog): AppState => ({ ...state, p
  * (sa saisie n'est jamais perdue) ; l'historique et les réalisations ne sont jamais modifiés.
  * Interférence (non placée) : voisines = séances prévues de la semaine (sauf manquées), réalisations manuelles de la
  * semaine, séances connues de la semaine précédente ; structures inconnues ou règle indisponible ⇒ refus (fail-closed).
+ *
+ * RC4.5 (lot C) — interférence musculaire NON BLOQUANTE : `maintainable` (conflits identifiés par la règle M3). Le
+ * démarrage reste refusé par défaut ; il n'est admis que sur confirmation explicite (`acceptInterference`), tracée dans
+ * le contrôle avant séance. Les causes de sécurité (qualité, douleur, semaine) sont évaluées AVANT et ne sont jamais
+ * maintenables ; le fail-closed (profil ou programme absent, aucun conflit identifié) non plus.
  */
 export interface StartAssessment {
   readonly allowed: boolean;
   readonly cause: 'QUALITY_BLOCKED' | 'ACTIVE_PAIN' | 'OUTSIDE_WEEK' | 'INTERFERENCE' | null;
   readonly conflicts: readonly { readonly withSport: string; readonly withDate: string; readonly structure: string; readonly rule: string }[];
+  /** RC4.5 (lot C) — refus d'interférence que l'athlète peut maintenir sur confirmation explicite. */
+  readonly maintainable: boolean;
 }
 /** Nom historique (P0) : même évaluation. */
 export type ManualStartAssessment = StartAssessment;
-const START_OK: StartAssessment = { allowed: true, cause: null, conflicts: [] };
+const START_OK: StartAssessment = { allowed: true, cause: null, conflicts: [], maintainable: false };
 export function startAssessment(state: AppState, clock: Clock, requestId: string, env: ProgrammeEnvironment = beta0Environment()): StartAssessment {
   const v = selectProgrammeSession(state, requestId);
-  const refuse = (cause: NonNullable<StartAssessment['cause']>, conflicts: StartAssessment['conflicts'] = []): StartAssessment => ({ allowed: false, cause, conflicts });
+  const refuse = (cause: NonNullable<StartAssessment['cause']>, conflicts: StartAssessment['conflicts'] = []): StartAssessment => ({ allowed: false, cause, conflicts, maintainable: cause === 'INTERFERENCE' && conflicts.length > 0 });
   if (!v || v.result) return START_OK;
   if (v.quality === 'BLOCKED') return refuse('QUALITY_BLOCKED');
   // Reprise : la séance a été démarrée quand c'était admis ; elle n'est jamais réévaluée (aucune saisie perdue).
@@ -421,6 +428,23 @@ export function startAssessment(state: AppState, clock: Clock, requestId: string
   const conflicts = manualPlacementConflicts({ sport: v.sport, date: clock.today, session: v.session }, others, buildPorts(state, p, intent, env, goals), env.governance, env.mode, clockOf());
   return conflicts.length === 0 ? START_OK : refuse('INTERFERENCE', conflicts.map((c) => ({ withSport: String(c.params.withSport), withDate: String(c.params.withDate), structure: String(c.params.structure), rule: String(c.params.rule) })));
 }
+/** RC4.5 (lot C) — raison du contrôle avant séance : interférence non bloquante maintenue par l'athlète. */
+export const INTERFERENCE_ACCEPTED = 'KAIRO.MANUAL_START_INTERFERENCE_ACCEPTED';
+/**
+ * RC4.5 (lot C) — interférences maintenues volontairement au démarrage d'une séance (contrôle avant séance démarré,
+ * lecture seule), sinon `null`. Ce n'est jamais un ressenti : la tolérance reste celle déclarée en fin de séance.
+ */
+export function maintainedInterference(state: AppState, requestId: string): StartAssessment['conflicts'] | null {
+  const c = [...state.checkIns].reverse().find((x) => x.requestId === requestId && (x.decision === 'unchanged' || x.decision === 'adapted'));
+  const r = c?.reasons.find((x) => x.code === INTERFERENCE_ACCEPTED);
+  if (!r) return null;
+  const list = Array.isArray(r.params.conflicts) ? (r.params.conflicts as unknown[]) : [];
+  return list.flatMap((x) => {
+    if (typeof x !== 'object' || x === null) return [];
+    const o = x as Record<string, unknown>;
+    return [{ withSport: String(o.withSport ?? ''), withDate: String(o.withDate ?? ''), structure: String(o.structure ?? ''), rule: String(o.rule ?? '') }];
+  });
+}
 /** Nom historique (P0) : même évaluation, quel que soit le placement. */
 export const manualStartAssessment = startAssessment;
 const START_ERROR: Readonly<Record<NonNullable<StartAssessment['cause']>, string>> = {
@@ -437,8 +461,16 @@ const START_ERROR: Readonly<Record<NonNullable<StartAssessment['cause']>, string
  *   - sinon, si l'état l'exige : séance RÉGÉNÉRÉE par son moteur avec l'état du jour (adaptée), ou REPORTÉE si le
  *     moteur / le CORE la refuse dans cet état ; sinon inchangée.
  * Une séance déjà commencée est REPRISE telle quelle (aucun contrôle, aucune donnée perdue).
+ *
+ * RC4.5 (lot C) — `options.acceptInterference` : maintien volontaire d'une interférence NON BLOQUANTE (`maintainable`),
+ * confirmé par l'athlète. Seul ce refus est levé ; le contrôle avant séance s'applique ensuite normalement (douleur,
+ * pause, refus du moteur). Le choix est tracé par la raison `KAIRO.MANUAL_START_INTERFERENCE_ACCEPTED` du contrôle,
+ * seulement si la séance démarre ; rien n'est écrit dans la tolérance, le ressenti ni la réalisation.
  */
-export function startProgrammeSession(state: AppState, clock: Clock, requestId: string, env: ProgrammeEnvironment = beta0Environment(), checkIn?: CheckInInput): AppState {
+export interface StartOptions {
+  readonly acceptInterference?: boolean;
+}
+export function startProgrammeSession(state: AppState, clock: Clock, requestId: string, env: ProgrammeEnvironment = beta0Environment(), checkIn?: CheckInInput, options: StartOptions = {}): AppState {
   const v = selectProgrammeSession(state, requestId);
   if (!v) throw new AppError('SESSION_UNAVAILABLE');
   if (v.result) throw new AppError('SESSION_FINISHED');
@@ -448,7 +480,8 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   if (v.log) return state;
   // Politique unique (planifiée ou non placée) : douleur, semaine, interférence au jour réel ; refus explicite, état inchangé.
   const a = startAssessment(state, clock, requestId, env);
-  if (!a.allowed && a.cause) throw new AppError(START_ERROR[a.cause]);
+  const accepted = !a.allowed && a.maintainable && options.acceptInterference === true;
+  if (!a.allowed && a.cause && !accepted) throw new AppError(START_ERROR[a.cause]);
   const now = normalizeInstant(clock.now);
   const input = zCheckInInput.safeParse(checkIn ?? {});
   if (!input.success) throw new AppError('CHECKIN_INVALID');
@@ -476,7 +509,9 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   const d = decideStart(state, requestId, v.session, ev, env, (ex) => content?.catalog.exercise(ex)?.painSensitiveAreas ?? [], freeRuns);
   if (d.kind === 'postponed') return withCheckIn(state, record('postponed', d.reasons));
   const adaptation = d.kind === 'adapted' ? { checkInId: id, record: d.adaptation.record, changes: [...d.adaptation.changes], reasons: d.adaptation.reasons.map((x) => ({ code: x.code, params: { ...x.params } })) } : undefined;
-  const s1 = withCheckIn(state, record(d.kind === 'adapted' ? 'adapted' : 'unchanged', d.reasons));
+  // Lot C — maintien volontaire tracé (séance démarrée seulement) : décision existante, aucune valeur nouvelle.
+  const maintained: readonly Reason[] = accepted ? [{ code: INTERFERENCE_ACCEPTED, params: { requestId, acceptedAt: now, conflicts: a.conflicts.map((c) => ({ ...c })) } }] : [];
+  const s1 = withCheckIn(state, record(d.kind === 'adapted' ? 'adapted' : 'unchanged', [...maintained, ...d.reasons]));
   return openStartedLog(s1, v, now, adaptation);
 }
 
