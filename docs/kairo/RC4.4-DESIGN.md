@@ -218,4 +218,125 @@ Statu quo (V0), mesuré sur le banc. « J/J+1 durs » : deux séances exigeantes
 | Persistance | Aucun champ nouveau sans migration validée ; repli RC1 mis à jour et testé sur un état réel si un champ est ajouté |
 | Gouvernance | Toute nouvelle valeur (repos, consécutifs, fenêtres) déclarée comme paramètre gouverné (TEST_ONLY), jamais une constante dans le code |
 
-En attente de votre validation des décisions D1 à D8 avant d'implémenter RC4.4.
+---
+
+## 8. Décisions retenues (2026-10-19)
+
+| # | Décision |
+|---|---|
+| D1 | **Avertissement** sur l'absence de repos et les longues séquences consécutives, **sans suppression** de séances. Ces semaines ne sont jamais présentées comme optimales. |
+| D2 | Éviter deux Full Body à J/J+1 **si un meilleur placement existe**, sans appliquer V1 telle quelle. |
+| D3 | Pas de charge cardiovasculaire dans M3 tant que sa normalisation n'est pas fiable ; fenêtres TEST_ONLY inchangées. |
+| D4 | Avertissements musculaires fondés sur les signaux existants du moteur Musculation ; aucun seuil arbitraire. |
+| D5 | Blocage dû à une interférence non bloquante remplacé par un avertissement avec maintien volontaire ; la sécurité reste bloquante. |
+| D6 | Pas de compensation automatique ; déficit affiché s'il est mesurable de façon fiable. |
+| D7 | Migration et compatibilité du repli présentées avant tout ajout de persistance. |
+| D8 | Recalcul HYROX au démarrage avec la station réellement enregistrée ; aucune nouvelle règle de charge HYROX. |
+
+---
+
+## 9. Étude complémentaire : placement global de la semaine (copie jetable)
+
+### 9.1 Méthode
+L'étude reprend l'approche RC2 bis (organisations hebdomadaires entières), dans le chemin Beta 0 réel. Tout a été fait dans une copie jetable du dépôt (d523eea), avec des variantes activées par variables d'environnement, non commitées ; la copie a été supprimée.
+
+1. **Placement actuel (V0)** : le planificateur place la semaine comme aujourd'hui.
+2. **Énumération** de toutes les organisations complètes de la semaine :
+   - une séance par jour disponible, les séances d'un même sport étant interchangeables ;
+   - **aucune séance retirée** ;
+   - tailles : P5, 420 organisations (7 séances, 7 jours) ; P1b, 105.
+3. **Évaluation rapide** de chaque organisation, avec les profils de demande **réels** (une génération par sport et par jour) :
+   - conflits M3 (règles gouvernées actuelles) ;
+   - Full Body à J/J+1 ;
+   - séances de Musculation à ≤ 24 h, puis ≤ 48 h, d'une séance à demande `high` genou ou hanche (bandes **existantes** de `strength.interference.assessment`) ;
+   - jours consécutifs maximaux.
+
+   Une organisation n'est candidate que si elle **domine V0** : au moins aussi bonne sur chaque critère et meilleure sur au moins un. Il n'y a **aucune pondération** et **aucune fenêtre nouvelle**.
+4. **Garde réelle** : chaque candidate est **replanifiée par le chemin complet** (composition, voisines, arbitrage M3, moteurs), puis mesurée. Elle n'est retenue que si elle n'est pire que V0 sur **aucune** mesure réelle ; sinon, on garde V0. Au plus 6 candidates par semaine.
+5. **Règles de sécurité et prescriptions** : inchangées. Seul le **jour** de chaque séance est choisi ; les moteurs prescrivent comme d'habitude.
+
+| Variante | Garde réelle |
+|---|---|
+| **G** | aucune (meilleure candidate selon l'évaluation rapide) |
+| **G2** | conflits M3 restants, Full Body J/J+1, séries de Musculation **totales**, jours consécutifs |
+| **G4** | comme G2, mais séries **par groupe musculaire** (calcul du moteur Musculation) et conflits restants comptés par séance |
+| **G5** | G4, **déclenchée seulement** si la semaine V0 contient des Full Body à J/J+1, et retenue seulement si ce nombre **baisse strictement** (D2) |
+| **V1** | rappel : préférence « même sport pas à J+1 » dans le placement glouton actuel |
+
+### 9.2 Résultats (6 profils × 6 semaines)
+
+Volume : séries de travail de Musculation par semaine, moyenne S1–S6 (cible – borne haute du moteur).
+
+| Profil | Var. | Full Body J/J+1 | J/J+1 durs | Consécutifs max. | M3 initiaux / décisions / restants | Réductions Musculation | Quadriceps (10–18) | Ischio-jambiers (8–14) | Fessiers (6–14) | Pectoraux (10–20) | Dos (10–20) | Épaules (8–16) |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| **P1** | V0 | 6 | 16 | 4 | 1 / 1 / 0 | 45 | 3,7 | 5,3 | 7,8 | 14,3 | 9,3 | 16,0 |
+| | V1 | 0 | 6 | 4 | 1 / 1 / 0 | 45 | 3,3 | 4,2 | 6,8 | **10,8** | 9,3 | 16,8 |
+| | G | 2 | 4 | 4 | 2 / 2 / 0 | 38 | 6,3 | 7,7 | 10,3 | 14,3 | 9,3 | 16,0 |
+| | **G5** | **1** | **4** | 4 | 1 / 1 / 0 | **37** | **7,2** | **8,8** | **11,3** | 14,3 | 9,2 | 15,4 |
+| **P1b** | V0 | — | 23 | 6 | 3 / 0 / 6 | 62 | 9,2 | 8,2 | 12,3 | 12,3 | 10,2 | 15,2 |
+| | V1 | — | 17 | 4 | 8 / 0 / 16 | 55 | **4,2** | **4,8** | 9,0 | 12,3 | 10,2 | 14,8 |
+| | G2 / G4 | — | 16–17 | 6 | 3 / 0 / 6 | 40 | **8,3** | **7,8** | 13,3 | 12,3–12,7 | 10,2–10,3 | 13,8–14,0 |
+| | **G5** | — | = V0 | = V0 | = V0 | = V0 | = V0 | = V0 | = V0 | = V0 | = V0 | = V0 |
+| **P2** | V0 | 6 | 12 | 2 | 30 / 6 / 0 | 0 | 10,8 | 11,2 | 14,8 | 14,3 | 9,3 | 15,5 |
+| | V1 | 0 | 12 | 2 | 9 / 0 / **18** | 12 | 10,8 | 11,2 | 14,8 | 13,8 | 9,5 | 15,6 |
+| | G | 0 | **16** | 3 | 6 / 1 / **8** | 4 | 10,5 | 10,2 | 14,5 | 13,7 | 9,5 | 14,5 |
+| | **G2 / G4 / G5** | = V0 (aucune candidate ne passe la garde) | | | | | | | | | | |
+| **P3** | V0 | 6 | 13 | 4 | 33 / 7 / 2 | 25 | 8,3 | 8,8 | 11,3 | 14,3 | 9,2 | 15,5 |
+| | V1 | 0 | 13 | 4 | 23 / 2 / **29** | 46 | 7,8 | 7,7 | 10,8 | 13,8 | 9,2 | 16,1 |
+| | G2 | 6 | 12 | 2 | 27 / 5 / 3 | 12 | 9,3 | 8,7 | 13,2 | 13,8 | 9,0 | 15,3 |
+| | **G5** | **5** | 12 | **3** | 34 / 7 / **1** | **17** | **9,3** | **9,3** | **12,5** | 13,8 | 9,0 | 15,4 |
+| **P4** | V0 | — | 6 | 4 | 46 / 4 / 11 | — | — | — | — | — | — | — |
+| | G2 / G4 | — | 6 | 3 | 52 / 5 / 10 | — | — | — | — | — | — | — |
+| | **G5** | = V0 (aucun Full Body) | | | | | | | | | | |
+| **P5** | V0 | — | 29 | 7 | 14 / 1 / 26 | 79 | 4,3 | 4,3 | 7,5 | 9,8 | 9,3 | 16,6 |
+| | G2 | — | 25 | 7 | 8 / 0 / **15** | 72 | 5,3 | 6,3 | 9,0 | 10,2 | 9,2 | 15,4 |
+| | G4 | — | 26 | 7 | 21 / 0 / **39** | 83 | 5,3 | 5,8 | 8,7 | 10,5 | 9,0 | 16,0 |
+| | **G5** | = V0 (aucun Full Body) | | | | | | | | | | |
+
+La Course est identique dans toutes les variantes : mêmes structures en S6 (P1, P1b, P4, P5). Seul l'ordre des séances change parfois dans la semaine (G, G2, G4). Aucune séance n'est non placée.
+
+**Coût mesuré :** banc complet en 15 s (V0), 25 s (G5), 31 s (G4). Le placement global ne s'exécute que dans les semaines concernées.
+
+### 9.3 Gains et régressions
+
+| Profil | G5 (recommandée) | Remarques |
+|---|---|---|
+| **P1** | **Gain net.** Full Body J/J+1 6 → 1 ; enchaînements durs 16 → 4 ; réductions d'interférence 45 → 37 ; bas du corps **+3,5 / +3,5 / +3,5** séries (quadriceps, ischio-jambiers, fessiers) ; M3 inchangé ; Course identique | Régressions résiduelles : dos 9,3 → 9,2 ; épaules 16,0 → 15,4 (retour dans la plage 8–16) |
+| P1b | Identique à V0 | G2/G4 améliorent les enchaînements, mais **baissent** quadriceps (−0,9) et ischio-jambiers (−0,4), déjà sous la cible : rejetées |
+| **P2** | Identique à V0 : **F9 subsiste** | Toute organisation sans Full Body J/J+1 rapproche la Musculation du Cross-training : conflits M3 restants 0 → 8 (G) ou 18 (V1), et enchaînements durs 12 → 16. Ce compromis demande votre décision ; à défaut, **avertissement F9** (D1/D2). |
+| **P3** | **Gain modéré.** Full Body J/J+1 6 → 5 ; consécutifs 4 → 3 ; réductions 25 → 17 ; quadriceps +1,0, ischio-jambiers +0,5, fessiers +1,2 ; conflits restants 2 → 1 | Régressions : pectoraux −0,5, dos −0,2, épaules −0,1 |
+| P4, P5 | Identiques à V0 (aucun Full Body) | G2/G4 auraient changé P4/P5 avec des résultats **instables** (P5 : conflits restants 26 → 15 avec G2, mais 26 → 39 avec G4) |
+
+**Pourquoi la garde ne suffit pas à tout éviter :** elle compare chaque semaine à V0 **de la même trajectoire**. Une semaine modifiée change l'historique des suivantes (progression, voisines, compaction). Les petites régressions de G5 (≤ 0,5 série par semaine sur un groupe) viennent de cet effet en cascade, pas de la semaine retenue. Une garde sur toute la trajectoire est impossible au moment de planifier une semaine : l'avenir n'est pas connu.
+
+**Enseignements :**
+1. Un placement global **sans garde réelle** (G) ou avec une garde globale (G2) **dégrade** certains profils (P2, P4, P1b) : les mesures rapides ne prédisent pas l'arbitrage M3 ni la recomposition.
+2. Une garde **par groupe musculaire** est indispensable pour ne pas déplacer le volume d'un groupe en déficit vers un autre (P1b).
+3. Restreint aux Full Body J/J+1 (**G5**), le placement global apporte un gain net là où F9 existe (P1, P3) **sans toucher** aux profils qui fonctionnent (P1b, P4, P5). Pour P2, **aucun meilleur placement n'existe** à règles constantes.
+
+---
+
+## 10. Proposition d'implémentation limitée (RC4.4)
+
+| Lot | Contenu | Persistance |
+|---|---|---|
+| **A. Placement Full Body (D2, G5)** | Dans le planificateur, un **second passage facultatif**, déclenché seulement si la semaine contient des Full Body à J/J+1 : énumération des organisations complètes et évaluation rapide (critères §9.1, règles et bandes existantes) ; **garde réelle** par replanification complète ; retenue seulement si les Full Body J/J+1 baissent strictement et si rien n'empire. Mesures de la garde : conflits M3 restants par séance, séries de travail **par groupe** (fournies par le moteur Musculation via son port, sans dépendance du planificateur à Strength), jours consécutifs. Paramètre gouverné d'activation (TEST_ONLY, comme M3), jamais une constante. Trace : `PLAN.PLANNER.GLOBAL_PLACEMENT` (organisation retenue et mesures) ou motif de non-application. | Aucune (raisons dans la semaine planifiée existante) |
+| **B. Avertissements de semaine (D1, D2)** | Calculés à la lecture, à partir de la semaine persistée : « 7 jours d'entraînement sur 7 », « N jours consécutifs », « Full Body à J et J+1 » (si aucun meilleur placement), conflits M3 non résolus mis en avant. Ces semaines ne sont jamais présentées comme optimales. Une course libre de la semaine en cours entre dans ce décompte. | Aucune |
+| **C. Avertissement musculaire et maintien (D4, D5)** | Source : signaux existants du moteur Musculation (`strength.interference.assessment`, actions `full` / `full_and_signal`) ; interférence d'un démarrage manuel transformée en avertissement avec « Maintenir quand même » ; douleur, refus du moteur et qualité BLOCKED toujours bloquants. | **Oui** : choix de maintien ⇒ **migration et repli présentés avant** (D7) |
+| **D. Déficit de volume (D6)** | Affichage du déficit de la semaine après un allègement au démarrage, par groupe, quand il est calculable (moteur Musculation) ; aucune compensation. | Aucune (calcul à la lecture) |
+| **E. HYROX au démarrage (D8)** | Ajout de HYROX aux sports régénérables, station lue dans l'intention de semaine du programme ; garde de reproductibilité inchangée. | Aucune |
+
+**Ordre proposé :**
+1. A, B, D et E, sans persistance nouvelle ;
+2. la migration de C, présentée séparément avant d'être codée (D7).
+
+**Critères de validation spécifiques au lot A :**
+- P1 et P3 : Full Body J/J+1 en baisse, aucun groupe musculaire en baisse dans les semaines modifiées ;
+- P1b, P2, P4, P5 : matrice RC4 **identique** à b8e312b ;
+- la Course reste identique (structures) ;
+- aucune séance non placée ;
+- toutes les séances planifiées restent produites par leur moteur ;
+- tests adverses : paramètre absent ⇒ comportement V0 exact ; refus d'un moteur sur le jour candidat ⇒ V0 ;
+- durée de planification bornée (énumération seulement si Full Body J/J+1).
+
+En attente de votre accord avant de coder RC4.4.
