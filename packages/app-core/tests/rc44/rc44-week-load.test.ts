@@ -8,8 +8,7 @@ import {
   sessionChanges, startProgrammeSession, UNKNOWN_CORE_STATE, weekLoadWarnings,
 } from '../../src/index.js';
 import type { AppState, Clock, WeekLoadWarning } from '../../src/index.js';
-import { MONS, PROFILES, simulate } from '../rc4-audit/rc4-sim.js';
-import type { SimOut } from '../rc4-audit/rc4-sim.js';
+import { MONS, PROFILES, simulateOnce } from '../rc4-audit/rc4-sim.js';
 
 // Simulations de 1 à 6 semaines par le chemin réel : délai par test élargi.
 vi.setConfig({ testTimeout: 300_000 });
@@ -22,30 +21,13 @@ const spec = (id: string) => {
 const ck = (d: string, hm = '08:00'): Clock => ({ today: d, now: `${d}T${hm}:00Z` });
 const kind = <K extends WeekLoadWarning['kind']>(w: readonly WeekLoadWarning[], k: K) => w.find((x): x is Extract<WeekLoadWarning, { kind: K }> => x.kind === k);
 const env = beta0Environment();
-/** Tout ce que le banc observe, sans l'état persisté (qui porte la trace de simulation G5). */
-const observed = (r: SimOut) => ({ sessions: r.sessions, weeks: r.weeks, errors: r.errors });
 
-describe('Lot A — placement global G5 sur le chemin Beta 0 (6 semaines)', () => {
-  for (const id of ['P1b', 'P2', 'P4', 'P5']) {
-    it(`${id} : strictement identique à V0 (G5 désactivé) — calendrier, séances, volumes, courses`, () => {
-      expect(observed(simulate(spec(id)))).toEqual(observed(simulate(spec(id), MONS.length, beta0Environment({ globalPlacement: false }))));
-    });
-  }
-  it('P3 : Full Body J/J+1 et jours consécutifs en baisse, aucune séance retirée, Course absente (inchangée)', () => {
-    const v0 = simulate(spec('P3'), MONS.length, beta0Environment({ globalPlacement: false }));
-    const g5 = simulate(spec('P3'));
-    const fb = (r: SimOut) => MONS.reduce((n, mon) => n + (kind(weekLoadWarnings(r.state, mon), 'full_body_consecutive')?.pairs.length ?? 0), 0);
-    expect(fb(g5)).toBeLessThan(fb(v0));
-    expect(g5.sessions.filter((x) => x.placement === 'planned')).toHaveLength(v0.sessions.filter((x) => x.placement === 'planned').length);
-    const moved = Object.values(g5.state.planner.weeks).flatMap((w) => w.requests).flatMap((r) => r.reasons).filter((x) => x.code === 'PLAN.PLANNER.GLOBAL_PLACEMENT_APPLIED');
-    expect(moved.length).toBeGreaterThan(0);
-    expect(moved.every((x) => Number(x.params.fullBodyAfter) < Number(x.params.fullBodyBefore))).toBe(true);
-  });
-});
+// Lot A (identité V0 de P1b, P2, P4, P5 ; gain P3) : vérifié dans rc4-audit/rc4-matrix.test.ts, qui partage ces
+// simulations de 6 semaines avec la matrice (RC4.5, C4).
 
 describe('Lot B — avertissements du planning', () => {
   it('P5 (quatre sports) : semaine à 7 jours d’entraînement, plus longue suite, conflits multisports non résolus', () => {
-    const r = simulate(spec('P5'), 2);
+    const r = simulateOnce(spec('P5'), 2);
     const w = weekLoadWarnings(r.state, MONS[1]);
     expect(kind(w, 'seven_days')?.days).toBe(7);
     // Suite de la semaine précédente comprise (7/7 la semaine 1 aussi).
@@ -56,12 +38,12 @@ describe('Lot B — avertissements du planning', () => {
     expect(kind(w, 'multisport_conflict')?.items.length).toBeGreaterThan(0);
   });
   it('P2 : Full Body à J/J+1 non évitable signalé, avec « aucun meilleur placement trouvé »', () => {
-    const r = simulate(spec('P2'), 2);
+    const r = simulateOnce(spec('P2'), 2);
     const fb = kind(weekLoadWarnings(r.state, MONS[1]), 'full_body_consecutive');
     expect(fb?.pairs).toHaveLength(1);
     expect(fb?.noBetterPlacement).toBe(true);
     // G5 désactivé : même paire, sans le motif « gardé » (rien n'a été recherché).
-    const v0 = simulate(spec('P2'), 2, beta0Environment({ globalPlacement: false }));
+    const v0 = simulateOnce(spec('P2'), 2, false);
     expect(kind(weekLoadWarnings(v0.state, MONS[1]), 'full_body_consecutive')).toEqual({ ...fb, noBetterPlacement: false });
   });
   it('course libre RÉALISÉE un jour de repos : compte comme jour d’entraînement ; la course d’onboarding (sans date) jamais', () => {

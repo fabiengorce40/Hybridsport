@@ -119,6 +119,21 @@ function rirOf(set: { intensity?: unknown }): string {
   return r === undefined ? '—' : typeof r === 'number' ? String(r) : `${String(r.min)}-${String(r.max)}`;
 }
 
+const cache = new Map<string, SimOut>();
+/**
+ * RC4.5 (C4) — même simulation qu'avec `simulate`, calculée UNE fois par fichier de test pour des entrées identiques
+ * (profil, scénarios, nombre de semaines, placement global G5 ou V0). Le résultat est un état immuable : les tests le
+ * lisent seulement. Clé : données du profil + texte des fonctions de scénario.
+ */
+export function simulateOnce(spec: ProfileSpec, weeks: number = MONS.length, globalPlacement = true): SimOut {
+  const key = `${JSON.stringify(spec)}|${String(spec.checkIn ?? '')}|${String(weeks)}|${String(globalPlacement)}`;
+  const hit = cache.get(key);
+  if (hit) return hit;
+  const r = simulate(spec, weeks, beta0Environment({ globalPlacement }));
+  cache.set(key, r);
+  return r;
+}
+
 /** `env` : environnement Beta 0 (par défaut) ; `beta0Environment({ globalPlacement: false })` rejoue V0 (RC4.4). */
 export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = beta0Environment()): SimOut {
   const content = strengthContent();

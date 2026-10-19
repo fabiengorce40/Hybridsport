@@ -1,13 +1,19 @@
 /**
  * RC4 — matrice d'audit (6 profils × 6 semaines, chemin réel) régénérée à chaque exécution :
  * `__reports__/rc4-matrice.md`. Observation seulement : aucune assertion de qualité sportive (les constats
- * reproductibles sont dans rc4-findings.test.ts).
+ * reproductibles sont dans rc4-findings.test.ts). RC4.4 (lot A) : identité V0 et gain G5 vérifiés ici, sur les mêmes
+ * simulations (calculées une fois par fichier, RC4.5 C4).
  */
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { expect, it } from 'vitest';
-import { PROFILES, simulate } from './rc4-sim.js';
+import { describe, expect, it, vi } from 'vitest';
+import { weekLoadWarnings } from '../../src/index.js';
+import type { WeekLoadWarning } from '../../src/index.js';
+import { MONS, PROFILES, simulateOnce } from './rc4-sim.js';
 import type { SessionRow, SimOut } from './rc4-sim.js';
+
+// Simulations de 6 semaines par le chemin réel : délai par test élargi.
+vi.setConfig({ testTimeout: 300_000 });
 
 const DAY_MS = 86_400_000;
 const GROUPS = ['quads', 'hamstrings', 'glutes', 'calves', 'chest', 'back', 'shoulders', 'arms', 'core'] as const;
@@ -56,7 +62,7 @@ function profileSection(r: SimOut): string[] {
 }
 
 it('RC4 — matrice 6 profils × 6 semaines (chemin réel)', () => {
-  const sims = PROFILES.map((p) => simulate(p));
+  const sims = PROFILES.map((p) => simulateOnce(p));
   const lines = [
     '# RC4 — Matrice d\'audit multisport (générée)',
     '',
@@ -67,3 +73,30 @@ it('RC4 — matrice 6 profils × 6 semaines (chemin réel)', () => {
   writeFileSync(join(import.meta.dirname, '__reports__', 'rc4-matrice.md'), `${lines.join('\n')}\n`);
   expect(sims.every((r) => r.errors.length === 0)).toBe(true);
 }, 600_000);
+
+const spec = (id: string) => {
+  const p = PROFILES.find((x) => x.id === id);
+  if (!p) throw new Error(id);
+  return p;
+};
+const kind = <K extends WeekLoadWarning['kind']>(w: readonly WeekLoadWarning[], k: K) => w.find((x): x is Extract<WeekLoadWarning, { kind: K }> => x.kind === k);
+/** Tout ce que le banc observe, sans l'état persisté (qui porte la trace de simulation G5). */
+const observed = (r: SimOut) => ({ sessions: r.sessions, weeks: r.weeks, errors: r.errors });
+
+describe('Lot A — placement global G5 sur le chemin Beta 0 (6 semaines)', () => {
+  for (const id of ['P1b', 'P2', 'P4', 'P5']) {
+    it(`${id} : strictement identique à V0 (G5 désactivé) — calendrier, séances, volumes, courses`, () => {
+      expect(observed(simulateOnce(spec(id)))).toEqual(observed(simulateOnce(spec(id), MONS.length, false)));
+    });
+  }
+  it('P3 : Full Body J/J+1 et jours consécutifs en baisse, aucune séance retirée, Course absente (inchangée)', () => {
+    const v0 = simulateOnce(spec('P3'), MONS.length, false);
+    const g5 = simulateOnce(spec('P3'));
+    const fb = (r: SimOut) => MONS.reduce((n, mon) => n + (kind(weekLoadWarnings(r.state, mon), 'full_body_consecutive')?.pairs.length ?? 0), 0);
+    expect(fb(g5)).toBeLessThan(fb(v0));
+    expect(g5.sessions.filter((x) => x.placement === 'planned')).toHaveLength(v0.sessions.filter((x) => x.placement === 'planned').length);
+    const moved = Object.values(g5.state.planner.weeks).flatMap((w) => w.requests).flatMap((r) => r.reasons).filter((x) => x.code === 'PLAN.PLANNER.GLOBAL_PLACEMENT_APPLIED');
+    expect(moved.length).toBeGreaterThan(0);
+    expect(moved.every((x) => Number(x.params.fullBodyAfter) < Number(x.params.fullBodyBefore))).toBe(true);
+  });
+});
