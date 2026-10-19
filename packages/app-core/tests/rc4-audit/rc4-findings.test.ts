@@ -8,7 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 // Simulations de 4 à 6 semaines par le chemin réel : délai par test élargi.
 vi.setConfig({ testTimeout: 120_000 });
 import {
-  createBeta0Programme, emptyState, ensureBeta0Week, EQUIPMENT_PRESETS, finishProgrammeSession, hyroxRoleFeasibility, selectBeta0Week, selectProgrammeSession, startProgrammeSession,
+  createBeta0Programme, emptyState, strengthWeekInsights, ensureBeta0Week, EQUIPMENT_PRESETS, finishProgrammeSession, hyroxRoleFeasibility, selectBeta0Week, selectProgrammeSession, startProgrammeSession,
 } from '../../src/index.js';
 import type { AppState, Clock, ProfileInput } from '../../src/index.js';
 import { MONS, PROFILES, simulateOnce } from './rc4-sim.js';
@@ -121,11 +121,14 @@ describe('F4 / F5 / F6 — Volume Musculation (objectif prise de masse)', () => 
     const planned = (r: SimOut) => r.sessions.filter((x) => x.placement === 'planned').length;
     expect(planned(g5)).toBe(planned(v0));
   });
-  it('F5 : bras au-dessus de la borne haute signalés « atteints » (aucun statut de dépassement)', () => {
+  it('F5 (RC4.5) : bras au-dessus de la borne haute — statut « atteint » inchangé, indicateur de dépassement, volume non réduit', () => {
     const p2 = simulateOnce(spec('P2'), 2);
     const arms = p2.weeks[1]?.volume.find((x) => x.group === 'arms');
     expect(arms?.planned).toBeGreaterThan(arms?.high ?? Infinity);
     expect(arms?.status).toBe('achieved');
+    const v = strengthWeekInsights(p2.state, MONS[1])?.volume?.groups.find((g) => g.group === 'arms');
+    expect(v?.aboveHigh).toBe(true);
+    expect(v?.planned).toBe(arms?.planned);
   });
   it('F6 : mollets jamais programmés (0 série toutes les semaines, avec ou sans autre sport)', () => {
     for (const id of ['P1', 'P1b', 'P2', 'P3', 'P5']) expect(simulateOnce(spec(id), 3).weeks.every((w) => (w.volume.find((x) => x.group === 'calves')?.planned ?? 0) === 0)).toBe(true);

@@ -131,6 +131,20 @@ describe('bilan de volume de la semaine', () => {
     expect(v.groups.find((g) => g.group === 'quads')?.status).toBe('reduced_by_constraint');
     expect(v.constraints.map((c) => c.cause)).toEqual(['interference', 'sessions_not_planned', 'slot_omitted:duration']);
   });
+  it('RC4.5 F5 — au-dessus de la borne haute : indicateur seul, statut « achieved » et statut de la semaine inchangés', () => {
+    // Même séance 4 fois : les groupes du haut du corps dépassent leur borne haute gouvernée.
+    const v = input({ requestedSessions: 4, sessions: [1, 2, 3, 4].map(() => ({ session: s1, reasons: [] })) });
+    const over = v.groups.filter((g) => g.aboveHigh);
+    expect(over.length).toBeGreaterThan(0);
+    for (const g of over) {
+      expect(g.high).not.toBeNull();
+      expect(g.planned).toBeGreaterThan(g.high ?? Infinity);
+      expect(g.status).toBe('achieved');
+    }
+    // Jamais signalé à la borne ou en dessous, ni sans cible gouvernée.
+    for (const g of v.groups.filter((x) => !x.aboveHigh)) expect(g.high === null || g.planned <= g.high).toBe(true);
+    expect(input({}).groups.every((g) => !g.aboveHigh || (g.high !== null && g.planned > g.high))).toBe(true);
+  });
   it('conflit insoluble : séances demandées, aucune planifiée ⇒ BLOCKED', () => {
     expect(input({ requestedSessions: 2, sessions: [], notPlanned: [{ category: 'governance_blocked' }, { category: 'slot_unavailable' }] }).status).toBe('blocked');
   });

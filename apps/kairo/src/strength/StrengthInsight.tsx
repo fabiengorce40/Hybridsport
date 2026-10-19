@@ -35,10 +35,10 @@ export function WeekVolumeCard({ volume }: { volume: WeekVolumeAssessment }) {
   return (
     <div className="card" aria-label="Volume de musculation de la semaine" data-week-volume>
       <h3>Volume de musculation de la semaine</h3>
-      <p className="tiny muted" style={{ margin: 0 }}>Séries de travail prévues par groupe, comparées à un repère expérimental (non validé). KAIRO n’augmente pas le volume automatiquement pour atteindre ce repère.</p>
+      <p className="tiny muted" style={{ margin: 0 }}>Séries de travail prévues par groupe, comparées à un repère expérimental (non validé). KAIRO n’augmente pas le volume automatiquement pour atteindre ce repère, et ne le réduit pas automatiquement au-delà de sa borne haute.</p>
       <ul className="small" style={{ margin: 0 }}>
         {rows.map((g) => (
-          <li key={g.group} data-volume-group={g.group}>{MUSCLE_GROUP_LABELS[g.group] ?? g.group} : {String(Math.round(g.planned * 10) / 10)} séries{g.target !== null ? ` · repère ${String(g.target)}` : ''}{g.target !== null && g.planned < g.target ? ' (en dessous)' : ''}</li>
+          <li key={g.group} data-volume-group={g.group}>{MUSCLE_GROUP_LABELS[g.group] ?? g.group} : {String(Math.round(g.planned * 10) / 10)} séries{g.target !== null ? ` · repère ${String(g.target)}` : ''}{g.target !== null && g.planned < g.target ? ' (en dessous)' : ''}{g.aboveHigh && g.high !== null ? <span data-volume-above-high> · au-dessus de la borne haute ({String(g.high)}), non réduit automatiquement</span> : ''}</li>
         ))}
       </ul>
     </div>

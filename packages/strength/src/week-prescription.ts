@@ -154,6 +154,8 @@ export function exerciseStillAdmissible(exerciseId: string, catalog: LoadedCatal
  *   un minimum obligatoire : il n'est donc pas « violé », il est atteint ou non, et chaque écart est expliqué ;
  * - groupe : `achieved` (prévu ≥ cible), `reduced_by_constraint` (sous la cible ET au moins une contrainte tracée dans
  *   la semaine), `unmet` (sous la cible sans contrainte tracée), `no_target` (aucune cible gouvernée) ;
+ * - RC4.5 (F5) — `aboveHigh` : prévu STRICTEMENT au-dessus de la borne haute gouvernée (`high`). Indicateur seulement :
+ *   il ne change ni le statut du groupe (`achieved`), ni celui de l'objectif, ni aucune séance ;
  * - objectif : `satisfied` (toutes les cibles atteintes), `partially_satisfied`, `not_satisfied` (aucune), `blocked`
  *   (séances demandées mais aucune planifiée). Aucun score : des comptes et des causes.
  * Les contraintes sont relevées au niveau de la SEMAINE (raisons des séances) : l'attribution fine d'une série
@@ -168,7 +170,7 @@ export interface WeekVolumeAssessment {
   readonly status: WeekGoalStatus;
   readonly requestedSessions: number;
   readonly plannedSessions: number;
-  readonly groups: readonly { readonly group: string; readonly target: number | null; readonly high: number | null; readonly planned: number; readonly status: GroupVolumeStatus }[];
+  readonly groups: readonly { readonly group: string; readonly target: number | null; readonly high: number | null; readonly planned: number; readonly status: GroupVolumeStatus; readonly aboveHigh: boolean }[];
   readonly constraints: readonly WeekVolumeConstraint[];
 }
 
@@ -207,7 +209,7 @@ export function assessStrengthWeekVolume(i: WeekVolumeInput): WeekVolumeAssessme
     const r = range[g];
     const p = planned[g] ?? 0;
     const status: GroupVolumeStatus = r === undefined ? 'no_target' : p >= r.floor ? 'achieved' : constraints.length > 0 ? 'reduced_by_constraint' : 'unmet';
-    return { group: g, target: r?.floor ?? null, high: r?.high ?? null, planned: p, status };
+    return { group: g, target: r?.floor ?? null, high: r?.high ?? null, planned: p, status, aboveHigh: r !== undefined && Number.isFinite(r.high) && p > r.high };
   });
   const targeted = groups.filter((g) => g.status !== 'no_target');
   const achieved = targeted.filter((g) => g.status === 'achieved').length;
