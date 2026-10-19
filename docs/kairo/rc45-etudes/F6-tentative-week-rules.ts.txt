@@ -1,0 +1,28 @@
+/**
+ * RC4.5 — règles de composition ACTIVES pour une semaine déjà planifiée. Une séance persistée n'est régénérée fidèlement
+ * (contrôle avant séance, courses libres) qu'avec les règles qui l'ont composée : une règle ajoutée après la
+ * planification de la semaine (absente de sa trace `simulation`) est retirée de l'environnement de régénération.
+ */
+import { loadRuleset } from '@hybridsport/engine';
+import type { LoadedRuleset } from '@hybridsport/engine';
+import type { ProgrammeEnvironment } from './programme.js';
+
+/** RC4.5 (F6) — orientation des isolations facultatives vers les groupes en déficit (Strength, TEST_ONLY, Beta 0). */
+export const DEFICIT_ORIENTATION_ID = 'strength.selection.deficitOrientation';
+
+const withoutOrientation = new WeakMap<LoadedRuleset, LoadedRuleset>();
+
+/** Environnement de régénération d'une semaine planifiée avec la trace de simulation `simulation`. */
+export function environmentForWeek(env: ProgrammeEnvironment, simulation: readonly string[]): ProgrammeEnvironment {
+  const s = env.strength;
+  if (!s || simulation.includes(DEFICIT_ORIENTATION_ID) || !s.content.ruleset.parameter(DEFICIT_ORIENTATION_ID)) return env;
+  let ruleset = withoutOrientation.get(s.content.ruleset);
+  if (!ruleset) {
+    const doc = s.content.ruleset.document;
+    const r = loadRuleset({ ...doc, parameters: doc.parameters.filter((x) => x.id !== DEFICIT_ORIENTATION_ID) });
+    if (!r.ok) throw new Error(`ruleset Strength de régénération invalide : ${JSON.stringify(r.issues)}`);
+    ruleset = r.ruleset;
+    withoutOrientation.set(s.content.ruleset, ruleset);
+  }
+  return { ...env, strength: { ...s, content: { ruleset, catalog: s.content.catalog } } };
+}

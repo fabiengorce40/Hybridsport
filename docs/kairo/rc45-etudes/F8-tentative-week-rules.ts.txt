@@ -1,0 +1,20 @@
+/**
+ * RC4.5 — règles de composition ACTIVES pour une semaine déjà planifiée. Une séance persistée n'est régénérée fidèlement
+ * (contrôle avant séance, courses libres) qu'avec les règles qui l'ont composée : une règle introduite après la
+ * planification de la semaine (absente de sa trace `simulation`) est remplacée, pour la régénération, par la version
+ * qui l'a planifiée.
+ */
+import type { ProgrammeEnvironment } from './programme.js';
+
+/** RC4.5 (F8) — déclencheur « même structure » de la variation intra-semaine Strength (TEST_ONLY, Beta 0). */
+export const STRUCTURE_VARIATION_RULE_ID = 'planner.strength.withinWeekVariation.test-1';
+/** Version antérieure (P1) : variation déclenchée seulement par une séance strictement identique. */
+export const IDENTICAL_VARIATION_RULE_ID = 'planner.strength.withinWeekVariation.test-0';
+
+/** Environnement de régénération d'une semaine planifiée avec la trace de simulation `simulation`. */
+export function environmentForWeek(env: ProgrammeEnvironment, simulation: readonly string[]): ProgrammeEnvironment {
+  const s = env.strength;
+  const v = s?.withinWeekVariation;
+  if (!s || !v || v.trigger !== 'same_structure' || simulation.includes(v.ruleId)) return env;
+  return { ...env, strength: { ...s, withinWeekVariation: { ...v, ruleId: IDENTICAL_VARIATION_RULE_ID, trigger: 'identical' } } };
+}

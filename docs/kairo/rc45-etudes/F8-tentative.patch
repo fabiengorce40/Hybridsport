@@ -1,0 +1,155 @@
+diff --git a/packages/app-core/src/beta0.ts b/packages/app-core/src/beta0.ts
+index abbda46..58d1c42 100644
+--- a/packages/app-core/src/beta0.ts
++++ b/packages/app-core/src/beta0.ts
+@@ -39,6 +39,7 @@ import { RUNNING_TEST_FALLBACK } from './programme.js';
+ import { HISTORY_COMPACTED } from './history.js';
+ import type { ProgrammeEnvironment } from './programme.js';
+ import { runningContent, strengthContent } from './provisional-content.js';
++import { IDENTICAL_VARIATION_RULE_ID, STRUCTURE_VARIATION_RULE_ID } from './week-rules.js';
+ 
+ /** Sports exposés en Beta 0 (Cross-training : C3.5 ; HYROX : H2.5, composition H2 en environnement expérimental). */
+ export const BETA0_SPORTS = ['strength', 'running', 'crosstraining', 'hyrox'] as const;
+@@ -62,7 +63,7 @@ export const SIMULATION_ONLY = 'SIMULATION_ONLY — Beta 0 expérimental : valeu
+  */
+ export const BETA0_SIMULATION = [
+   'planner.interference.structureWindows', 'demand.doseNormalization', 'running.technical.GLOBAL_PLANNER_INTEGRATION', 'running.engine.simulation',
+-  ...M3_SIMULATION_IDS, G5_SIMULATION_ID,
++  ...M3_SIMULATION_IDS, G5_SIMULATION_ID, STRUCTURE_VARIATION_RULE_ID,
+ ] as const;
+ 
+ /** Gouvernance Running Beta 0 : décisions produit existantes + intégration planificateur déclarée (SIMULATION_ONLY). */
+@@ -96,7 +97,14 @@ export const BETA0_PLANNING_VERSION = 'beta0-m31';
+  * Règle de DÉCLENCHEMENT de la variation intra-semaine (TEST_ONLY, Beta 0) : la variation elle-même est décidée par
+  * Strength selon sa politique gouvernée (`rotationReasons.plannerNotes`). Absente en production (aucun changement).
+  */
+-export const BETA0_STRENGTH_WITHIN_WEEK_VARIATION = { ruleId: 'planner.strength.withinWeekVariation.test-0', status: 'TEST_ONLY', note: 'planned_variation' } as const;
++/**
++ * RC4.5 (F8) — déclencheur « même structure » : la variation est demandée dès qu'une séance répète les exercices
++ * structurants (blocs de force) d'une séance du même archétype plus tôt dans la semaine ; acceptée seulement à volume
++ * identique par groupe, mêmes exercices structurants et durée jamais plus longue (garde du port Strength). Tracé dans les
++ * semaines planifiées (`simulation`) ; une semaine planifiée avant RC4.5 est régénérée avec le déclencheur antérieur.
++ */
++export const BETA0_STRENGTH_WITHIN_WEEK_VARIATION = { ruleId: STRUCTURE_VARIATION_RULE_ID, status: 'TEST_ONLY', note: 'planned_variation', trigger: 'same_structure' } as const;
++const BETA0_IDENTICAL_VARIATION = { ruleId: IDENTICAL_VARIATION_RULE_ID, status: 'TEST_ONLY', note: 'planned_variation', trigger: 'identical' } as const;
+ 
+ /**
+  * Consolidation R1 — demande COMPOSITE d'une séance Cross-training portant un bloc de force délégué (TEST_ONLY, Beta 0) :
+@@ -107,11 +115,13 @@ export const BETA0_STRENGTH_WITHIN_WEEK_VARIATION = { ruleId: 'planner.strength.
+ export const BETA0_CT_COMPOSITE_DEMAND = { ruleId: 'planner.crosstraining.compositeDemand.test-0', status: 'TEST_ONLY', delegatedDiscipline: 'strength' } as const;
+ 
+ /**
+- * `globalPlacement: false` — RC4.4 : environnement SANS le second passage G5 (paramètre absent, identifiant de simulation
+- * absent), soit exactement le placement V0 ; utilisé par les comparaisons et les preuves de non-régression.
++ * Options de comparaison (preuves de non-régression), chaque règle retirée avec sa trace de simulation :
++ * - `globalPlacement: false` — RC4.4 : sans le second passage G5 (placement V0) ;
++ * - `structureVariation: false` — RC4.5 (F8) : variation intra-semaine déclenchée seulement par une séance identique (P1).
+  */
+-export function beta0Environment(options: { readonly globalPlacement?: boolean } = {}): ProgrammeEnvironment {
++export function beta0Environment(options: { readonly globalPlacement?: boolean; readonly structureVariation?: boolean } = {}): ProgrammeEnvironment {
+   const g5 = options.globalPlacement ?? true;
++  const f8 = options.structureVariation ?? true;
+   const g = beta0RunningGovernance();
+   const ct = ctBeta0(simulationMark);
+   const hr = hrBeta0(simulationMark);
+@@ -124,13 +134,13 @@ export function beta0Environment(options: { readonly globalPlacement?: boolean }
+     // semaines qui contiennent une séance Cross-training (provenance exacte, jamais confondue avec APPROVED).
+     // C4.3 — délégation d'un bloc de force (règle TEST_ONLY, SIMULATION_ONLY) pour le stimulus « force + conditionnement ».
+     crosstraining: { engine: ct.engine, content: ct.content, transportNeighbours: true, simulation: ct.simulation, governance: ct.governance, strengthBlockRule: ct.strengthBlockRule, compositeDemand: BETA0_CT_COMPOSITE_DEMAND },
+-    mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: BETA0_SIMULATION.filter((x) => g5 || x !== G5_SIMULATION_ID), planningVersion: BETA0_PLANNING_VERSION,
++    mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: BETA0_SIMULATION.filter((x) => (g5 || x !== G5_SIMULATION_ID) && (f8 || x !== STRUCTURE_VARIATION_RULE_ID)), planningVersion: BETA0_PLANNING_VERSION,
+     // RC4.4 (G5) — second passage de placement global (Full Body à J/J+1), TEST_ONLY, tracé SIMULATION_ONLY.
+     governance: m3Governance({ extra: simulationMark, globalPlacement: g5 }),
+     programmeGovernance: rotationGovernance(simulationMark),
+     // Musculation P1 — déclencheur TEST_ONLY de la variation gouvernée (note `planned_variation` du ruleset Strength)
+     // quand une séance serait strictement identique à une séance du même archétype plus tôt dans la semaine.
+-    strength: { engine: StrengthEngine as SportEngine<unknown>, content: withDemand(strengthContent(), undefined, simulationMark), composition: { rule: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE }, withinWeekVariation: BETA0_STRENGTH_WITHIN_WEEK_VARIATION },
++    strength: { engine: StrengthEngine as SportEngine<unknown>, content: withDemand(strengthContent(), undefined, simulationMark), composition: { rule: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE }, withinWeekVariation: f8 ? BETA0_STRENGTH_WITHIN_WEEK_VARIATION : BETA0_IDENTICAL_VARIATION },
+     running: {
+       engine: requirePlannerProvenance(createRunningEngine({ governance: g, simulation: true }) as SportEngine<unknown>),
+       content: withDemand(runningContent(), undefined, simulationMark),
+diff --git a/packages/app-core/src/index.ts b/packages/app-core/src/index.ts
+index 1e23bb2..fef037c 100644
+--- a/packages/app-core/src/index.ts
++++ b/packages/app-core/src/index.ts
+@@ -26,6 +26,7 @@ export * from './hr-feasibility.js';
+ export * from './start-check.js';
+ export * from './free-run-load.js';
+ export * from './week-load.js';
++export * from './week-rules.js';
+ export * from './readiness-persisted.js';
+ export * from './equipment.js';
+ export * from './strength-insight.js';
+diff --git a/packages/app-core/src/start-check.ts b/packages/app-core/src/start-check.ts
+index 874394c..aad68e2 100644
+--- a/packages/app-core/src/start-check.ts
++++ b/packages/app-core/src/start-check.ts
+@@ -35,6 +35,7 @@ import { portInputs } from './programme.js';
+ import { coreProfile } from './generate.js';
+ import type { ProgrammeEnvironment } from './programme.js';
+ import { applyReadinessToPersisted } from './readiness-persisted.js';
++import { environmentForWeek } from './week-rules.js';
+ 
+ type Request = PersistedWeek['requests'][number];
+ const reason = (r: { code: string; params: Readonly<Record<string, unknown>> }): Reason => ({ code: r.code, params: { ...r.params } });
+@@ -97,7 +98,8 @@ export function regenerateSession(state0: AppState, requestId: string, coreState
+   const date = r.date;
+   // RC4.4 (lot E) — station HYROX : celle de l'intention de semaine persistée du programme (H1), sinon aucune (H2 par rôle).
+   const station = r.sport === 'hyrox' ? ps.weeks.find((w) => w.plannerRef === week.weekStart)?.intent.demands.find((d) => d.sport === 'hyrox')?.station : undefined;
+-  const ports = buildPorts(state, p, intent, env, goals, (d) => (d === date ? coreState : UNKNOWN_CORE_STATE));
++  // RC4.5 — règles de la semaine telle qu'elle a été planifiée (une règle plus récente n'altère pas la reproductibilité).
++  const ports = buildPorts(state, p, intent, environmentForWeek(env, week.simulation), goals, (d) => (d === date ? coreState : UNKNOWN_CORE_STATE));
+   const port = ports[r.sport];
+   if (!port) return { status: 'not_regenerable', cause: 'port_unavailable' };
+   const placed = week.requests.filter((x) => x.status === 'planned' && x.date && x.requestId !== requestId);
+diff --git a/packages/planner/src/ports.ts b/packages/planner/src/ports.ts
+index 5b26ae4..3b0974f 100644
+--- a/packages/planner/src/ports.ts
++++ b/packages/planner/src/ports.ts
+@@ -335,7 +335,13 @@ function ctStrengthBlocks(slot: SlotRequest): WeekSession[] {
+  * planification gouvernée par le ruleset Strength (`strength.selection.repetitionPolicy.rotationReasons.plannerNotes`).
+  * Strength décide seul de la variation ; sans variation possible, la séance initiale est conservée (tracé).
+  */
+-export interface StrengthWithinWeekVariationRule { readonly ruleId: string; readonly status: 'TEST_ONLY'; readonly note: string }
++/**
++ * Déclencheur TEST_ONLY de la variation gouvernée intra-semaine (note `planned_variation`, lue par la politique Strength).
++ * `trigger` — `identical` (défaut, comportement P1) : séance strictement identique à une séance du même archétype plus
++ * tôt dans la semaine ; `same_structure` (RC4.5, F8) : mêmes exercices STRUCTURANTS (blocs de force : principaux et
++ * secondaires, ancres) qu'une telle séance, accessoires compris ou non.
++ */
++export interface StrengthWithinWeekVariationRule { readonly ruleId: string; readonly status: 'TEST_ONLY'; readonly note: string; readonly trigger?: 'identical' | 'same_structure' }
+ 
+ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule }): SportPort {
+   const params = () => readStrengthParams(def.content.ruleset).values;
+@@ -398,20 +404,27 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
+   const comp = def.composition;
+   const variation = def.withinWeekVariation;
+   const signature = (s: SessionDraft): string => s.blocks.flatMap((b) => b.items.map((i) => i.exerciseId)).join('|');
++  // RC4.5 (F8) — exercices STRUCTURANTS : ceux des blocs de force (principaux et secondaires), jamais les accessoires.
++  const structure = (s: SessionDraft): string => s.blocks.filter((b) => b.kind === 'strength').flatMap((b) => b.items.map((i) => i.exerciseId)).join('|');
++  const sameAs = variation?.trigger === 'same_structure' ? structure : signature;
+   const generate = (slot: SlotRequest): PortOutcome => {
+     const out = port.generate(slot);
+     if (!variation || out.status !== 'planned') return out;
+-    const twin = (slot.weekSessions ?? []).find((w) => w.archetypeId === slot.intent.archetypeId && signature(w.session) === signature(out.session));
++    const twin = (slot.weekSessions ?? []).find((w) => w.archetypeId === slot.intent.archetypeId && sameAs(w.session) === sameAs(out.session));
+     if (!twin) return out;
+     const again = port.generate({ ...slot, plannerNotes: [...(slot.plannerNotes ?? []), variation.note] });
+     // Garde-fou : la variation ne change JAMAIS le volume (séries de travail par groupe, fonction de Strength) — ni hausse
+     // ni baisse ; sinon la séance initiale est conservée et le refus est tracé.
+     const volume = (s: SessionDraft): string => JSON.stringify(Object.entries(sessionPlannedHardSets(s, params(), def.content.catalog)).filter(([, n]) => n > 0).sort(([a], [b]) => (a < b ? -1 : 1)));
+-    const differs = again.status === 'planned' && signature(again.session) !== signature(twin.session);
++    const differs = again.status === 'planned' && signature(again.session) !== signature(twin.session) && signature(again.session) !== signature(out.session);
+     const sameVolume = again.status === 'planned' && volume(again.session) === volume(out.session);
+-    const varied = differs && sameVolume;
++    // RC4.5 (F8) — jamais au détriment de la qualité : mêmes exercices structurants (ancres, progression des charges) et
++    // durée estimée jamais plus longue que la séance initiale.
++    const p50 = (o: PortOutcome): number => (o.status === 'planned' && o.record.durationEstimate.availability === 'AVAILABLE' ? o.record.durationEstimate.p50 : Number.POSITIVE_INFINITY);
++    const keepsStructure = again.status === 'planned' && (variation.trigger !== 'same_structure' || (structure(again.session) === structure(out.session) && p50(again) <= p50(out)));
++    const varied = differs && sameVolume && keepsStructure;
+     const chosen = varied ? again : out;
+-    const outcome = varied ? 'varied' : differs ? 'no_governed_variation:volume_changed' : 'no_governed_variation';
++    const outcome = varied ? 'varied' : !differs ? 'no_governed_variation' : !sameVolume ? 'no_governed_variation:volume_changed' : 'no_governed_variation:structure_or_duration';
+     return { ...chosen, reasons: [...chosen.reasons, gpReasons.emit(GP_CODES.STRENGTH_WITHIN_WEEK_VARIATION, { ruleId: variation.ruleId, requestId: slot.requestId, twin: twin.requestId, outcome, note: variation.note })] };
+   };
+   // RC4.4 (G5) — séries de travail prévues par groupe : la fonction du bilan hebdomadaire Strength, sans règle nouvelle.

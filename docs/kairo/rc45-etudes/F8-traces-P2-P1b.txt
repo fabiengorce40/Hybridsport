@@ -1,0 +1,54 @@
+P2 2026-10-05
+   2026-10-05 str_full_body back_squat,machine_chest_press,pull_up,machine_lateral_raise,leg_curl,pec_deck 
+   2026-10-07 str_full_body romanian_deadlift,seated_cable_row,db_shoulder_press,pec_deck,leg_curl,bulgarian_split_squat,cable_pallof_press 
+   2026-10-08 str_full_body back_squat,bench_press,lat_pulldown,pec_deck,leg_extension,bulgarian_split_squat 
+P2 2026-10-12
+   2026-10-12 str_full_body romanian_deadlift,machine_chest_press,pull_up,pec_deck,leg_curl,bulgarian_split_squat,machine_lateral_raise 
+   2026-10-14 str_full_body back_squat,seated_cable_row,db_shoulder_press,pec_deck,leg_curl,bulgarian_split_squat,cable_pallof_press 
+   2026-10-15 str_full_body romanian_deadlift,machine_chest_press,pull_up,pec_deck,bulgarian_split_squat no_governed_variation twin=2026-10-12.strength.1
+P2 2026-10-19
+   2026-10-19 str_full_body back_squat,seated_cable_row,db_shoulder_press,pec_deck,leg_curl,bulgarian_split_squat 
+   2026-10-21 str_full_body romanian_deadlift,machine_chest_press,pull_up,pec_deck,leg_curl,bulgarian_split_squat,cable_pallof_press 
+   2026-10-22 str_full_body back_squat,seated_cable_row,db_shoulder_press,pec_deck,leg_curl,bulgarian_split_squat no_governed_variation twin=2026-10-19.strength.1
+P2 2026-10-26
+   2026-10-26 str_full_body romanian_deadlift,machine_chest_press,pull_up,pec_deck,bulgarian_split_squat,machine_lateral_raise 
+   2026-10-28 str_full_body back_squat,seated_cable_row,db_shoulder_press,pec_deck,leg_curl,bulgarian_split_squat,cable_pallof_press 
+   2026-10-29 str_full_body romanian_deadlift,machine_chest_press,pull_up,pec_deck,leg_curl,bulgarian_split_squat no_governed_variation twin=2026-10-26.strength.1
+P2 2026-11-02
+   2026-11-02 str_full_body back_squat,seated_cable_row,db_shoulder_press,pec_deck,leg_curl,bulgarian_split_squat 
+   2026-11-04 str_full_body romanian_deadlift,machine_chest_press,pull_up,pec_deck,bulgarian_split_squat,cable_pallof_press,machine_lateral_raise 
+   2026-11-05 str_full_body back_squat,seated_cable_row,db_shoulder_press,pec_deck,leg_curl,bulgarian_split_squat no_governed_variation twin=2026-11-02.strength.1
+P2 2026-11-09
+   2026-11-09 str_full_body romanian_deadlift,machine_chest_press,pull_up,pec_deck,leg_curl,bulgarian_split_squat 
+   2026-11-11 str_full_body back_squat,seated_cable_row,db_shoulder_press,pec_deck,leg_curl,bulgarian_split_squat,cable_pallof_press 
+   2026-11-12 str_full_body romanian_deadlift,machine_chest_press,pull_up,pec_deck,bulgarian_split_squat no_governed_variation twin=2026-11-09.strength.1
+P1b 2026-10-05
+   2026-10-05 str_upper bench_press,pull_up,machine_row,machine_shoulder_press,machine_lateral_raise,cable_pallof_press,pec_deck 
+   2026-10-07 str_lower back_squat,romanian_deadlift,plank 
+   2026-10-08 str_upper bench_press,lat_pulldown,seated_cable_row,machine_shoulder_press,pec_deck,cable_pallof_press 
+   2026-10-09 str_lower back_squat,single_leg_rdl_db 
+P1b 2026-10-12
+   2026-10-12 str_upper bench_press,pull_up,seated_cable_row,machine_shoulder_press,pec_deck,cable_pallof_press,machine_lateral_raise 
+   2026-10-14 str_lower back_squat,romanian_deadlift 
+   2026-10-15 str_upper bench_press,pull_up,seated_cable_row,machine_shoulder_press,pec_deck,cable_pallof_press no_governed_variation:volume_changed twin=2026-10-12.strength.1
+   2026-10-16 str_lower back_squat,romanian_deadlift,leg_extension,bulgarian_split_squat,leg_curl no_governed_variation twin=2026-10-12.strength.3
+P1b 2026-10-19
+   2026-10-19 str_upper bench_press,pull_up,seated_cable_row,machine_shoulder_press,pec_deck,machine_lateral_raise 
+   2026-10-21 str_lower back_squat,romanian_deadlift 
+   2026-10-22 str_upper bench_press,pull_up,seated_cable_row,machine_shoulder_press,pec_deck,cable_pallof_press no_governed_variation twin=2026-10-19.strength.1
+   2026-10-23 str_lower back_squat,romanian_deadlift,leg_extension,bulgarian_split_squat,leg_curl no_governed_variation:volume_changed twin=2026-10-19.strength.3
+P1b 2026-10-26
+   2026-10-26 str_upper bench_press,pull_up,seated_cable_row,machine_shoulder_press,pec_deck,machine_lateral_raise 
+   2026-10-28 str_lower back_squat,romanian_deadlift 
+   2026-10-29 str_upper bench_press,pull_up,seated_cable_row,machine_shoulder_press,pec_deck,cable_pallof_press no_governed_variation twin=2026-10-26.strength.1
+   2026-10-30 str_lower back_squat,romanian_deadlift,leg_extension,bulgarian_split_squat,leg_curl no_governed_variation:volume_changed twin=2026-10-26.strength.3
+P1b 2026-11-02
+   2026-11-02 str_upper bench_press,pull_up,seated_cable_row,machine_shoulder_press,pec_deck,machine_lateral_raise 
+   2026-11-04 str_lower back_squat,romanian_deadlift 
+   2026-11-05 str_upper bench_press,pull_up,seated_cable_row,machine_shoulder_press,pec_deck,cable_pallof_press no_governed_variation twin=2026-11-02.strength.1
+   2026-11-06 str_lower back_squat,romanian_deadlift,leg_extension,bulgarian_split_squat,leg_curl no_governed_variation:volume_changed twin=2026-11-02.strength.3
+P1b 2026-11-09
+   2026-11-09 str_upper bench_press,pull_up,seated_cable_row,machine_shoulder_press,pec_deck,machine_lateral_raise 
+   2026-11-11 str_lower back_squat,romanian_deadlift 
+   2026-11-12 str_upper bench_press,pull_up,seated_cable_row,machine_shoulder_press,pec_deck,cable_pallof_press no_governed_variation twin=2026-11-09.strength.1
+   2026-11-13 str_lower back_squat,romanian_deadlift,leg_extension,bulgarian_split_squat,leg_curl no_governed_variation:volume_changed twin=2026-11-09.strength.3

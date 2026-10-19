@@ -1,0 +1,80 @@
+== F6
+P1 quads:7.2->5.7 hamstrings:8.5->4.8 glutes:11.5->9.8 calves:0.0->3.5 chest:14.3->14.8 back:9.2->9.3 shoulders:15.4->15.8 arms:16.8->16.8 core:7.8->8.4
+   groupes-semaines sous cible 19 -> 18  au-dessus borne haute 9 -> 9
+   séries totales (somme groupes) 543.5 -> 534.0  dépassement durée 0 max est 62
+P1b quads:9.2->8.7 hamstrings:8.2->6.2 glutes:12.3->12.3 calves:0.0->3.2 chest:12.3->12.8 back:10.2->10.2 shoulders:15.2->15.2 arms:18.2->18.2 core:9.3->9.3
+   groupes-semaines sous cible 8 -> 9  au-dessus borne haute 8 -> 9
+   séries totales (somme groupes) 569.5 -> 577.0  dépassement durée 0 max est 60
+P2 quads:10.8->11.3 hamstrings:11.2->5.2 glutes:14.8->14.8 calves:0.0->7.5 chest:14.3->14.3 back:9.3->9.3 shoulders:15.5->15.5 arms:16.3->16.3 core:7.6->7.6
+   groupes-semaines sous cible 13 -> 11  au-dessus borne haute 13 -> 13
+   séries totales (somme groupes) 599.5 -> 611.5  dépassement durée 0 max est 62
+P3 quads:9.3->8.3 hamstrings:9.3->4.2 glutes:12.5->11.3 calves:0.0->4.8 chest:13.8->14.3 back:9.0->9.2 shoulders:15.4->15.5 arms:16.5->16.2 core:7.8->7.5
+   groupes-semaines sous cible 17 -> 16  au-dessus borne haute 8 -> 8
+   séries totales (somme groupes) 562.0 -> 548.0  dépassement durée 0 max est 62
+P5 quads:4.3->4.3 hamstrings:4.3->3.8 glutes:7.5->7.5 calves:0.0->0.5 chest:9.8->12.0 back:9.3->9.3 shoulders:16.6->17.7 arms:16.0->16.0 core:9.1->9.1
+   groupes-semaines sous cible 23 -> 22  au-dessus borne haute 9 -> 11
+   séries totales (somme groupes) 462.0 -> 481.5  dépassement durée 0 max est 72
+== F6b
+P1 quads:7.2->6.3 hamstrings:8.5->5.2 glutes:11.5->10.8 calves:0.0->3.8 chest:14.3->15.8 back:9.2->9.3 shoulders:15.4->16.2 arms:16.8->16.8 core:7.8->8.2
+   groupes-semaines sous cible 19 -> 18  au-dessus borne haute 9 -> 10
+   séries totales (somme groupes) 543.5 -> 556.0  dépassement durée 0 max est 62
+P1b quads:9.2->8.7 hamstrings:8.2->6.2 glutes:12.3->12.3 calves:0.0->3.2 chest:12.3->15.3 back:10.2->10.2 shoulders:15.2->14.0 arms:18.2->18.2 core:9.3->9.3
+   groupes-semaines sous cible 8 -> 9  au-dessus borne haute 8 -> 9
+   séries totales (somme groupes) 569.5 -> 584.5  dépassement durée 0 max est 60
+P2 quads:10.8->10.8 hamstrings:11.2->5.2 glutes:14.8->14.8 calves:0.0->8.0 chest:14.3->16.8 back:9.3->9.3 shoulders:15.5->16.8 arms:16.3->16.3 core:7.6->7.6
+   groupes-semaines sous cible 13 -> 12  au-dessus borne haute 13 -> 17
+   séries totales (somme groupes) 599.5 -> 634.0  dépassement durée 0 max est 63
+P3 quads:9.3->8.5 hamstrings:9.3->4.2 glutes:12.5->11.5 calves:0.0->5.3 chest:13.8->14.8 back:9.0->9.0 shoulders:15.4->15.2 arms:16.5->16.0 core:7.8->7.6
+   groupes-semaines sous cible 17 -> 15  au-dessus borne haute 8 -> 9
+   séries totales (somme groupes) 562.0 -> 553.0  dépassement durée 0 max est 62
+P5 quads:4.3->4.3 hamstrings:4.3->3.8 glutes:7.5->7.5 calves:0.0->0.5 chest:9.8->13.8 back:9.3->9.3 shoulders:16.6->17.6 arms:16.0->16.0 core:9.1->9.1
+   groupes-semaines sous cible 23 -> 21  au-dessus borne haute 9 -> 10
+   séries totales (somme groupes) 462.0 -> 492.0  dépassement durée 0 max est 72
+== F6c
+P1 quads:7.2->6.3 hamstrings:8.5->8.0 glutes:11.5->10.7 calves:0.0->0.0 chest:14.3->15.3 back:9.2->9.3 shoulders:15.4->15.5 arms:16.8->16.3 core:7.8->8.7
+   groupes-semaines sous cible 19 -> 19  au-dessus borne haute 9 -> 10
+   séries totales (somme groupes) 543.5 -> 541.0  dépassement durée 0 max est 62
+P1b quads:9.2->9.2 hamstrings:8.2->8.2 glutes:12.3->12.3 calves:0.0->0.0 chest:12.3->12.3 back:10.2->10.2 shoulders:15.2->15.2 arms:18.2->18.2 core:9.3->9.3
+   groupes-semaines sous cible 8 -> 8  au-dessus borne haute 8 -> 8
+   séries totales (somme groupes) 569.5 -> 569.5  dépassement durée 0 max est 60
+P2 quads:10.8->10.8 hamstrings:11.2->11.2 glutes:14.8->14.8 calves:0.0->1.0 chest:14.3->14.8 back:9.3->9.3 shoulders:15.5->15.8 arms:16.3->16.3 core:7.6->7.6
+   groupes-semaines sous cible 13 -> 13  au-dessus borne haute 13 -> 15
+   séries totales (somme groupes) 599.5 -> 610.0  dépassement durée 0 max est 62
+P3 quads:9.3->8.3 hamstrings:9.3->8.3 glutes:12.5->11.3 calves:0.0->0.5 chest:13.8->15.3 back:9.0->9.2 shoulders:15.4->15.5 arms:16.5->16.2 core:7.8->7.5
+   groupes-semaines sous cible 17 -> 16  au-dessus borne haute 8 -> 10
+   séries totales (somme groupes) 562.0 -> 553.0  dépassement durée 0 max est 62
+P5 quads:4.3->4.3 hamstrings:4.3->4.3 glutes:7.5->7.5 calves:0.0->0.0 chest:9.8->11.2 back:9.3->9.3 shoulders:16.6->16.2 arms:16.0->16.0 core:9.1->9.1
+   groupes-semaines sous cible 23 -> 23  au-dessus borne haute 9 -> 7
+   séries totales (somme groupes) 462.0 -> 468.0  dépassement durée 0 max est 72
+== F6d
+P1 quads:7.2->7.2 hamstrings:8.5->8.0 glutes:11.5->11.5 calves:0.0->0.5 chest:14.3->14.3 back:9.2->9.2 shoulders:15.4->15.4 arms:16.8->16.8 core:7.8->7.8
+   groupes-semaines sous cible 19 -> 19  au-dessus borne haute 9 -> 9
+   séries totales (somme groupes) 543.5 -> 543.5  dépassement durée 0 max est 62
+P1b quads:9.2->9.2 hamstrings:8.2->8.2 glutes:12.3->12.3 calves:0.0->0.0 chest:12.3->12.3 back:10.2->10.2 shoulders:15.2->15.2 arms:18.2->18.2 core:9.3->9.3
+   groupes-semaines sous cible 8 -> 8  au-dessus borne haute 8 -> 8
+   séries totales (somme groupes) 569.5 -> 569.5  dépassement durée 0 max est 60
+P2 quads:10.8->10.8 hamstrings:11.2->11.2 glutes:14.8->14.8 calves:0.0->1.0 chest:14.3->14.3 back:9.3->9.3 shoulders:15.5->15.5 arms:16.3->16.3 core:7.6->7.6
+   groupes-semaines sous cible 13 -> 13  au-dessus borne haute 13 -> 13
+   séries totales (somme groupes) 599.5 -> 605.5  dépassement durée 0 max est 62
+P3 quads:9.3->9.3 hamstrings:9.3->8.8 glutes:12.5->12.5 calves:0.0->0.5 chest:13.8->13.8 back:9.0->9.0 shoulders:15.4->15.4 arms:16.5->16.5 core:7.8->7.8
+   groupes-semaines sous cible 17 -> 17  au-dessus borne haute 8 -> 8
+   séries totales (somme groupes) 562.0 -> 562.0  dépassement durée 0 max est 62
+P5 quads:4.3->4.3 hamstrings:4.3->4.3 glutes:7.5->7.5 calves:0.0->0.0 chest:9.8->9.8 back:9.3->9.3 shoulders:16.6->16.6 arms:16.0->16.0 core:9.1->9.1
+   groupes-semaines sous cible 23 -> 23  au-dessus borne haute 9 -> 9
+   séries totales (somme groupes) 462.0 -> 462.0  dépassement durée 0 max est 72
+== F6e
+P1 quads:7.2->7.2 hamstrings:8.5->8.5 glutes:11.5->11.5 calves:0.0->0.0 chest:14.3->14.3 back:9.2->9.2 shoulders:15.4->15.4 arms:16.8->16.8 core:7.8->7.8
+   groupes-semaines sous cible 19 -> 19  au-dessus borne haute 9 -> 9
+   séries totales (somme groupes) 543.5 -> 543.5  dépassement durée 0 max est 62
+P1b quads:9.2->9.2 hamstrings:8.2->8.2 glutes:12.3->12.3 calves:0.0->0.0 chest:12.3->12.3 back:10.2->10.2 shoulders:15.2->15.2 arms:18.2->18.2 core:9.3->9.3
+   groupes-semaines sous cible 8 -> 8  au-dessus borne haute 8 -> 8
+   séries totales (somme groupes) 569.5 -> 569.5  dépassement durée 0 max est 60
+P2 quads:10.8->10.8 hamstrings:11.2->11.2 glutes:14.8->14.8 calves:0.0->0.0 chest:14.3->14.3 back:9.3->9.3 shoulders:15.5->15.5 arms:16.3->16.3 core:7.6->7.6
+   groupes-semaines sous cible 13 -> 13  au-dessus borne haute 13 -> 13
+   séries totales (somme groupes) 599.5 -> 599.5  dépassement durée 0 max est 62
+P3 quads:9.3->9.3 hamstrings:9.3->9.3 glutes:12.5->12.5 calves:0.0->0.0 chest:13.8->13.8 back:9.0->9.0 shoulders:15.4->15.4 arms:16.5->16.5 core:7.8->7.8
+   groupes-semaines sous cible 17 -> 17  au-dessus borne haute 8 -> 8
+   séries totales (somme groupes) 562.0 -> 562.0  dépassement durée 0 max est 62
+P5 quads:4.3->4.3 hamstrings:4.3->4.3 glutes:7.5->7.5 calves:0.0->0.0 chest:9.8->9.8 back:9.3->9.3 shoulders:16.6->16.6 arms:16.0->16.0 core:9.1->9.1
+   groupes-semaines sous cible 23 -> 23  au-dessus borne haute 9 -> 9
+   séries totales (somme groupes) 462.0 -> 462.0  dépassement durée 0 max est 72

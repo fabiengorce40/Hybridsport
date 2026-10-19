@@ -1,0 +1,673 @@
+diff --git a/docs/engine-impl/STRENGTH-SCIENCE-REGISTRY-V1.md b/docs/engine-impl/STRENGTH-SCIENCE-REGISTRY-V1.md
+index cf293e3..a5d2d21 100644
+--- a/docs/engine-impl/STRENGTH-SCIENCE-REGISTRY-V1.md
++++ b/docs/engine-impl/STRENGTH-SCIENCE-REGISTRY-V1.md
+@@ -3,7 +3,7 @@
+ > Document **généré** depuis `packages/strength/src/science/` par `tests/golden/science-docs.test.ts` : ne pas éditer à la main.
+ 
+ - Version du registre : **1.1.0** · ruleset : **0.4.0-strength-science-lock**
+-- Gate STRENGTH_SCIENTIFIC_V1_GATE calculé : **PASS_PROVISIONAL** ; verrou STRENGTH_SCIENTIFIC_LOCK_V1 : **LOCKED_PROVISIONAL** (anomalies : 0 ; blocages PRODUCTION : 57)
++- Gate STRENGTH_SCIENTIFIC_V1_GATE calculé : **PASS_PROVISIONAL** ; verrou STRENGTH_SCIENTIFIC_LOCK_V1 : **LOCKED_PROVISIONAL** (anomalies : 0 ; blocages PRODUCTION : 58)
+ - Vérification des sources (2026-09-27, complétée le 2026-09-28) : **identité** par recherche web (PMID, titre, auteurs, revue, DOI).
+ - **Niveaux de vérification du contenu** : `IDENTITY_ONLY` (aucun résultat extrait) < `SEARCH_SUMMARY` (résultats connus par des résumés de moteur de recherche, y compris secondaires) < `ABSTRACT_VERIFIED` (résumé officiel lu) < `FULL_TEXT_VERIFIED`.
+   - PubMed, E-utilities, Europe PMC et les sites des éditeurs restent bloqués par la politique réseau de l’environnement d’exécution (vérifié à nouveau en 4F) : **aucun résumé officiel ni texte intégral n’a été lu**, aucune source ne dépasse `SEARCH_SUMMARY`.
+@@ -35,7 +35,7 @@ Règle de non-fausse précision (contrôlée par `validateScienceRegistry`) : le
+ | `SRC.LOPEZ_2021` | 33433148 | network_meta_analysis | CONFIRMED | SEARCH_SUMMARY | P1.FORCE, P2.HYPERTROPHIE | `strength.selection.minLoadCeiling`, `strength.selection.primaryLoadRequired`, `strength.dose.base` |
+ | `SRC.ROBINSON_2024` | 38970765 | meta_analysis | CONFIRMED | SEARCH_SUMMARY | P2.HYPERTROPHIE, P4.RIR | `strength.dose.base` |
+ | `SRC.REFALO_2023` | 36334240 | meta_analysis | CONFIRMED | SEARCH_SUMMARY | P4.RIR | `strength.dose.base` |
+-| `SRC.PELLAND_2026` | 41343037 | meta_analysis | CONFIRMED | SEARCH_SUMMARY | P3.VOLUME, P6.FREQUENCE | `strength.archetypes`, `strength.volume`, `strength.session.stimulusPreservation` |
++| `SRC.PELLAND_2026` | 41343037 | meta_analysis | CONFIRMED | SEARCH_SUMMARY | P3.VOLUME, P6.FREQUENCE | `strength.archetypes`, `strength.volume`, `strength.session.stimulusPreservation`, `strength.selection.deficitOrientation` |
+ | `SRC.SINGER_2024` | 39205815 | meta_analysis | CONFIRMED | SEARCH_SUMMARY | P5.REPOS | `strength.dose.base` |
+ | `SRC.GRGIC_2018` | 28933024 | systematic_review | CONFIRMED | IDENTITY_ONLY | — | — |
+ | `SRC.HALPERIN_2022` | 34542869 | scoping_review | PARTIAL | SEARCH_SUMMARY | P4.RIR | `strength.load`, `strength.prescriptionConfidence`, `strength.load.specificObservation` |
+@@ -361,7 +361,8 @@ Règle de non-fausse précision (contrôlée par `validateScienceRegistry`) : le
+ | `C.CONC` | L’interférence dépend de la modalité, de la fréquence et de la durée d’endurance. | CONTEXT_DEPENDENT | non | SRC.WILSON_2012 | `strength.interference`, `strength.interference.assessment` |
+ | `C.CONFLICT` | Politique de conflit la plus prudente. | PRODUCT_GUARDRAIL | oui | — | `strength.dose.modifiers` |
+ | `C.DELOAD` | Ampleur de la décharge. | PROGRAMMING_HEURISTIC | oui | — | `strength.dose.modifiers` |
+-| `C.DOSE` | Relation dose–réponse du volume hebdomadaire à rendements décroissants. | SUPPORTED | non | SRC.PELLAND_2026 | `strength.volume`, `strength.session.stimulusPreservation` |
++| `C.DOSE` | Relation dose–réponse du volume hebdomadaire à rendements décroissants. | SUPPORTED | non | SRC.PELLAND_2026 | `strength.volume`, `strength.session.stimulusPreservation`, `strength.selection.deficitOrientation` |
++| `C.DO_RULE` | Critère de déficit relatif et garde-fous. | EXPERT_DESIGN_REVIEW | oui | — | `strength.selection.deficitOrientation` |
+ | `C.EPLEY` | Formule et table génériques de conversion reps → % e1RM. | PROGRAMMING_HEURISTIC | oui | — | `strength.load` |
+ | `C.FAILURE` | L’échec n’est pas supérieur à l’arrêt avant l’échec pour l’hypertrophie ; la proximité de l’échec compte. | CONTEXT_DEPENDENT | non | SRC.REFALO_2023, SRC.ROBINSON_2024 | `strength.dose.base` |
+ | `C.FRACTIONAL` | Le décompte fractionnaire (0,5) des séries indirectes est la méthode la mieux soutenue dans les méta-régressions de volume (comparaison de modèles) — base de `secondaryWeight` 0,5. | CONTEXT_DEPENDENT | oui | SRC.PELLAND_2026 | `strength.volume` |
+@@ -468,6 +469,7 @@ Règle de non-fausse précision (contrôlée par `validateScienceRegistry`) : le
+ | PROVISIONAL_VALUE | `strength.rampup.estimatedPolicy` | PROGRAMMING_HEURISTIC |
+ | PROVISIONAL_VALUE | `strength.selection.repetitionPolicy` | EXPERT_DESIGN_REVIEW |
+ | PROVISIONAL_VALUE | `strength.session.stimulusPreservation` | EXPERT_DESIGN_REVIEW |
++| PROVISIONAL_VALUE | `strength.selection.deficitOrientation` | EXPERT_DESIGN_REVIEW |
+ | PROVISIONAL_VALUE | `strength.tracks.horizon` | EXPERT_DESIGN_REVIEW |
+ | PROVISIONAL_VALUE | `strength.session.durationPriority` | PRODUCT_GUARDRAIL |
+ | SOURCE_NOT_FULL_TEXT | `SRC.CURRIER_2026_ACSM` | SEARCH_SUMMARY |
+diff --git a/docs/engine-impl/STRENGTH-SCIENTIFIC-RULESET-V1.md b/docs/engine-impl/STRENGTH-SCIENTIFIC-RULESET-V1.md
+index a761b68..435183d 100644
+--- a/docs/engine-impl/STRENGTH-SCIENTIFIC-RULESET-V1.md
++++ b/docs/engine-impl/STRENGTH-SCIENTIFIC-RULESET-V1.md
+@@ -4,8 +4,8 @@
+ 
+ - Ruleset : **0.4.0-strength-science-lock** (étend `0.2.0-strength-test` sans en modifier aucune valeur ; succède au candidat 4E `0.3.0-strength-science-candidate`, qui reste reproductible) · registre **1.1.0**
+ - Verrou STRENGTH_SCIENTIFIC_LOCK_V1 : chaque paramètre a UNE catégorie principale (colonne « Statut ») ; aucune valeur numérique n’est `SUPPORTED` parce qu’un mécanisme général l’est.
+-- 38 paramètres : EXPERT_DESIGN_REVIEW 12 · PRODUCT_GUARDRAIL 2 · PROGRAMMING_HEURISTIC 17 · SAFETY_SIGNOFF_REQUIRED 4 · TECHNICAL 3
+-- Changements : new_policy 9 · reclassified 12 · unchanged 17 (`unchanged` = valeur et statut conservés ; `reclassified` = valeur conservée, statut précisé ; `new_policy` = paramètre facultatif introduit, absent en 0.2.0)
++- 39 paramètres : EXPERT_DESIGN_REVIEW 13 · PRODUCT_GUARDRAIL 2 · PROGRAMMING_HEURISTIC 17 · SAFETY_SIGNOFF_REQUIRED 4 · TECHNICAL 3
++- Changements : new_policy 10 · reclassified 12 · unchanged 17 (`unchanged` = valeur et statut conservés ; `reclassified` = valeur conservée, statut précisé ; `new_policy` = paramètre facultatif introduit, absent en 0.2.0)
+ - **Aucune valeur existante n’est modifiée.** Les 7 écarts validés en phase 4C sont conservés. Toutes les valeurs restent **provisoires** : aucune validation formelle.
+ - Absence d’un paramètre facultatif = **sémantique du ruleset 0.2.0** (comportement historique reproduit à l’identique, testé), jamais une valeur par défaut sportive.
+ 
+@@ -47,6 +47,7 @@
+ | `strength.rampup.estimatedPolicy` | G2 | PROGRAMMING_HEURISTIC | new_policy | 1 |
+ | `strength.selection.repetitionPolicy` | G2 | EXPERT_DESIGN_REVIEW | new_policy | 1 |
+ | `strength.session.stimulusPreservation` | G2 | EXPERT_DESIGN_REVIEW | new_policy | 1 |
++| `strength.selection.deficitOrientation` | G2 | EXPERT_DESIGN_REVIEW | new_policy | 1 |
+ | `strength.tracks.horizon` | G2 | EXPERT_DESIGN_REVIEW | new_policy | 1 |
+ | `strength.session.durationPriority` | G2 | PRODUCT_GUARDRAIL | new_policy | 1 |
+ 
+@@ -778,6 +779,26 @@
+ | Revendications | `C.DOSE` SUPPORTED (principe) ; `C.SP_RULE` EXPERT_DESIGN_REVIEW (valeur) |
+ | Version du paramètre | 0.4.0 · revue 2026-09-28 |
+ 
++## `strength.selection.deficitOrientation`
++
++| Champ | Valeur |
++|---|---|
++| Ancienne valeur (0.2.0) | *absent (sémantique 0.2.0)* |
++| Valeur 4E (0.3.0) | *absent (sémantique 0.2.0)* |
++| Valeur 4F (0.4.0) | *absent (sémantique 0.2.0)* |
++| Lecture | Absent du ruleset de référence (sélection inchangée). RC4.5 (Beta 0, TEST_ONLY) : emplacements facultatifs d’isolation orientés vers le groupe primaire au plus grand déficit relatif face à sa cible hebdomadaire existante (ex. mollets jamais couverts par le créneau d’isolation du bas du corps). |
++| Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
++| Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
++| Sources | `SRC.PELLAND_2026` (type le plus fort : meta_analysis) |
++| Population | Adultes en bonne santé, majoritairement jeunes et masculins selon les sources ; transposition aux femmes, aux seniors et aux sportifs d’endurance non vérifiée |
++| Critère | Sans objet (aucune mesure d’effet) |
++| Confiance | very_low |
++| Incertitude | Critère « déficit relatif » (écart à la cible rapporté à la cible) : choix de conception ; l’accessoire suivi perd une exposition quand l’emplacement est réorienté. |
++| Justification | Correction F6 de l’audit RC4 : un groupe avec une cible gouvernée (mollets) n’était jamais servi, la continuité gardant toujours le même accessoire. La cible hebdomadaire et sa projection existent déjà (volume_fit) ; seule la comparaison des déficits relatifs est nouvelle. Aucun volume ajouté, aucun quota. |
++| Si la preuve reste insuffisante | Sans candidat admissible qui réduise un déficit plus grand sans dépasser de borne, sans charge de récupération ni série en plus : sélection ordinaire ; toute réorientation est tracée (SELECT.DEFICIT_ORIENTED). |
++| Revendications | `C.DOSE` SUPPORTED (principe) ; `C.DO_RULE` EXPERT_DESIGN_REVIEW (valeur) |
++| Version du paramètre | — · revue 2026-09-28 |
++
+ ## `strength.tracks.horizon`
+ 
+ | Champ | Valeur |
+diff --git a/packages/app-core/src/beta0.ts b/packages/app-core/src/beta0.ts
+index abbda46..92034a5 100644
+--- a/packages/app-core/src/beta0.ts
++++ b/packages/app-core/src/beta0.ts
+@@ -20,7 +20,9 @@ import { CURRENT_RUNNING_GOVERNANCE, ARCHETYPE_INTENT_IDS, createRunningEngine,
+ import type { RunningGovernance } from '@hybridsport/running';
+ import { GP_CODES, gpReasons, requirePlannerProvenance } from '@hybridsport/planner';
+ import { StrengthEngine, STRENGTH_WEEKLY_COMPOSITION_CANDIDATE, goalKey, readStrengthParams, strengthReasons } from '@hybridsport/strength';
++import { loadRuleset } from '@hybridsport/engine';
+ import type { SportEngine } from '@hybridsport/engine';
++import { param } from '../../engine/tests/fixtures/ruleset.js';
+ import { adherenceOf, pgReasons, weekIndexOf, weekStartAt, weekStatus, withinProgramme } from '@hybridsport/programme';
+ import type { Adherence, ProgrammeDefinition, ProgrammeDefinitionInput, ProgrammeResult, ProgrammeState, WeekStatus } from '@hybridsport/programme';
+ import { withDemand } from '../../planner/tests/simulation.js';
+@@ -39,6 +41,7 @@ import { RUNNING_TEST_FALLBACK } from './programme.js';
+ import { HISTORY_COMPACTED } from './history.js';
+ import type { ProgrammeEnvironment } from './programme.js';
+ import { runningContent, strengthContent } from './provisional-content.js';
++import { DEFICIT_ORIENTATION_ID } from './week-rules.js';
+ 
+ /** Sports exposés en Beta 0 (Cross-training : C3.5 ; HYROX : H2.5, composition H2 en environnement expérimental). */
+ export const BETA0_SPORTS = ['strength', 'running', 'crosstraining', 'hyrox'] as const;
+@@ -60,9 +63,16 @@ export const SIMULATION_ONLY = 'SIMULATION_ONLY — Beta 0 expérimental : valeu
+  * règle CANDIDATE du moteur Strength (`STRENGTH_WEEKLY_COMPOSITION_CANDIDATE`, citation de la spec 02 §5 ; tracée
+  * PLAN.WEEK_COMPOSITION avec son statut, autorité `provisional`, non résolue en PRODUCTION).
+  */
++/**
++ * RC4.5 (F6) — valeur TEST_ONLY de `strength.selection.deficitOrientation` (isolation du bas du corps). NON activée par
++ * défaut en Beta 0 : mesurée sur le banc RC4, elle est soit sans effet (gardes « ne pas nuire », progression, continuité),
++ * soit, sans la garde de continuité, évince durablement l'accessoire en place (scénario Strength A). Activation : décision.
++ */
++export const BETA0_DEFICIT_ORIENTATION = { needs: ['isolation_lower'] } as const;
++
+ export const BETA0_SIMULATION = [
+   'planner.interference.structureWindows', 'demand.doseNormalization', 'running.technical.GLOBAL_PLANNER_INTEGRATION', 'running.engine.simulation',
+-  ...M3_SIMULATION_IDS, G5_SIMULATION_ID,
++  ...M3_SIMULATION_IDS, G5_SIMULATION_ID, DEFICIT_ORIENTATION_ID,
+ ] as const;
+ 
+ /** Gouvernance Running Beta 0 : décisions produit existantes + intégration planificateur déclarée (SIMULATION_ONLY). */
+@@ -106,12 +116,25 @@ export const BETA0_STRENGTH_WITHIN_WEEK_VARIATION = { ruleId: 'planner.strength.
+  */
+ export const BETA0_CT_COMPOSITE_DEMAND = { ruleId: 'planner.crosstraining.compositeDemand.test-0', status: 'TEST_ONLY', delegatedDiscipline: 'strength' } as const;
+ 
++/** Contenu Strength Beta 0 : demande normalisée (M3) et, si activée, orientation F6 (paramètre TEST_ONLY marqué). */
++function beta0StrengthContent(f6: boolean) {
++  const c = withDemand(strengthContent(), undefined, simulationMark);
++  if (!f6) return c;
++  const doc = c.ruleset.document;
++  const r = loadRuleset({ ...doc, parameters: [...doc.parameters, param(DEFICIT_ORIENTATION_ID, BETA0_DEFICIT_ORIENTATION as never, 'G2', simulationMark)] } as never);
++  if (!r.ok) throw new Error(`ruleset Strength Beta 0 invalide : ${JSON.stringify(r.issues)}`);
++  return { ruleset: r.ruleset, catalog: c.catalog };
++}
++
+ /**
+- * `globalPlacement: false` — RC4.4 : environnement SANS le second passage G5 (paramètre absent, identifiant de simulation
+- * absent), soit exactement le placement V0 ; utilisé par les comparaisons et les preuves de non-régression.
++ * Options de comparaison (preuves de non-régression), chaque règle retirée avec son identifiant de simulation :
++ * - `globalPlacement: false` — RC4.4 : sans le second passage G5 (placement V0) ;
++ * - `deficitOrientation: true` — RC4.5 (F6) : AVEC l'orientation des isolations vers les groupes en déficit (étude ;
++ *   désactivée par défaut, voir `BETA0_DEFICIT_ORIENTATION`).
+  */
+-export function beta0Environment(options: { readonly globalPlacement?: boolean } = {}): ProgrammeEnvironment {
++export function beta0Environment(options: { readonly globalPlacement?: boolean; readonly deficitOrientation?: boolean } = {}): ProgrammeEnvironment {
+   const g5 = options.globalPlacement ?? true;
++  const f6 = options.deficitOrientation ?? false;
+   const g = beta0RunningGovernance();
+   const ct = ctBeta0(simulationMark);
+   const hr = hrBeta0(simulationMark);
+@@ -124,13 +147,15 @@ export function beta0Environment(options: { readonly globalPlacement?: boolean }
+     // semaines qui contiennent une séance Cross-training (provenance exacte, jamais confondue avec APPROVED).
+     // C4.3 — délégation d'un bloc de force (règle TEST_ONLY, SIMULATION_ONLY) pour le stimulus « force + conditionnement ».
+     crosstraining: { engine: ct.engine, content: ct.content, transportNeighbours: true, simulation: ct.simulation, governance: ct.governance, strengthBlockRule: ct.strengthBlockRule, compositeDemand: BETA0_CT_COMPOSITE_DEMAND },
+-    mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: BETA0_SIMULATION.filter((x) => g5 || x !== G5_SIMULATION_ID), planningVersion: BETA0_PLANNING_VERSION,
++    mode: 'CANDIDATE', authority: 'beta0_experimental', simulation: BETA0_SIMULATION.filter((x) => (g5 || x !== G5_SIMULATION_ID) && (f6 || x !== DEFICIT_ORIENTATION_ID)), planningVersion: BETA0_PLANNING_VERSION,
+     // RC4.4 (G5) — second passage de placement global (Full Body à J/J+1), TEST_ONLY, tracé SIMULATION_ONLY.
+     governance: m3Governance({ extra: simulationMark, globalPlacement: g5 }),
+     programmeGovernance: rotationGovernance(simulationMark),
+     // Musculation P1 — déclencheur TEST_ONLY de la variation gouvernée (note `planned_variation` du ruleset Strength)
+     // quand une séance serait strictement identique à une séance du même archétype plus tôt dans la semaine.
+-    strength: { engine: StrengthEngine as SportEngine<unknown>, content: withDemand(strengthContent(), undefined, simulationMark), composition: { rule: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE }, withinWeekVariation: BETA0_STRENGTH_WITHIN_WEEK_VARIATION },
++    // RC4.5 (F6) — orientation des isolations facultatives vers les groupes sous leur cible (TEST_ONLY, SIMULATION_ONLY),
++    // seulement sur demande explicite (`deficitOrientation: true`).
++    strength: { engine: StrengthEngine as SportEngine<unknown>, content: beta0StrengthContent(f6), composition: { rule: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE }, withinWeekVariation: BETA0_STRENGTH_WITHIN_WEEK_VARIATION },
+     running: {
+       engine: requirePlannerProvenance(createRunningEngine({ governance: g, simulation: true }) as SportEngine<unknown>),
+       content: withDemand(runningContent(), undefined, simulationMark),
+diff --git a/packages/app-core/src/index.ts b/packages/app-core/src/index.ts
+index 1e23bb2..fef037c 100644
+--- a/packages/app-core/src/index.ts
++++ b/packages/app-core/src/index.ts
+@@ -26,6 +26,7 @@ export * from './hr-feasibility.js';
+ export * from './start-check.js';
+ export * from './free-run-load.js';
+ export * from './week-load.js';
++export * from './week-rules.js';
+ export * from './readiness-persisted.js';
+ export * from './equipment.js';
+ export * from './strength-insight.js';
+diff --git a/packages/app-core/src/start-check.ts b/packages/app-core/src/start-check.ts
+index 874394c..aad68e2 100644
+--- a/packages/app-core/src/start-check.ts
++++ b/packages/app-core/src/start-check.ts
+@@ -35,6 +35,7 @@ import { portInputs } from './programme.js';
+ import { coreProfile } from './generate.js';
+ import type { ProgrammeEnvironment } from './programme.js';
+ import { applyReadinessToPersisted } from './readiness-persisted.js';
++import { environmentForWeek } from './week-rules.js';
+ 
+ type Request = PersistedWeek['requests'][number];
+ const reason = (r: { code: string; params: Readonly<Record<string, unknown>> }): Reason => ({ code: r.code, params: { ...r.params } });
+@@ -97,7 +98,8 @@ export function regenerateSession(state0: AppState, requestId: string, coreState
+   const date = r.date;
+   // RC4.4 (lot E) — station HYROX : celle de l'intention de semaine persistée du programme (H1), sinon aucune (H2 par rôle).
+   const station = r.sport === 'hyrox' ? ps.weeks.find((w) => w.plannerRef === week.weekStart)?.intent.demands.find((d) => d.sport === 'hyrox')?.station : undefined;
+-  const ports = buildPorts(state, p, intent, env, goals, (d) => (d === date ? coreState : UNKNOWN_CORE_STATE));
++  // RC4.5 — règles de la semaine telle qu'elle a été planifiée (une règle plus récente n'altère pas la reproductibilité).
++  const ports = buildPorts(state, p, intent, environmentForWeek(env, week.simulation), goals, (d) => (d === date ? coreState : UNKNOWN_CORE_STATE));
+   const port = ports[r.sport];
+   if (!port) return { status: 'not_regenerable', cause: 'port_unavailable' };
+   const placed = week.requests.filter((x) => x.status === 'planned' && x.date && x.requestId !== requestId);
+diff --git a/packages/app-core/tests/ct/__reports__/c35-state-size.md b/packages/app-core/tests/ct/__reports__/c35-state-size.md
+index 66b5b76..dceedef 100644
+--- a/packages/app-core/tests/ct/__reports__/c35-state-size.md
++++ b/packages/app-core/tests/ct/__reports__/c35-state-size.md
+@@ -3,8 +3,8 @@
+ | Période | Séances réalisées | Total (Kio) | Prescription | Décisions C3 | Chrono | Résultat (log) | Historique moteur | Audit programme | Empreintes |
+ |---|---|---|---|---|---|---|---|---|---|
+ | 1 séance | 1 | 45.6 | 12.1 | 22.0 | 0.1 | 0.1 | 0.5 | 0.2 | 1.3 |
+-| 4 semaines | 12 | 195.0 | 48.3 | 83.2 | 0.8 | 1.7 | 5.4 | 1.7 | 15.4 |
+-| 12 semaines | 36 | 544.3 | 144.8 | 213.3 | 2.4 | 5.1 | 16.2 | 5.9 | 46.3 |
++| 4 semaines | 12 | 195.2 | 48.3 | 83.2 | 0.8 | 1.7 | 5.4 | 1.7 | 15.4 |
++| 12 semaines | 36 | 544.7 | 144.8 | 213.3 | 2.4 | 5.1 | 16.2 | 5.9 | 46.3 |
+ 
+ - Chrono par séance : 70 o / 69 o / 69 o (horodatage + cumul + 2 compteurs ; aucune écriture par seconde).
+ - Les semaines clôturées sont compactées par `compactHistory` (décisions conservées, codes inconnus conservés).
+diff --git a/packages/app-core/tests/hr/__reports__/h25-state-size.md b/packages/app-core/tests/hr/__reports__/h25-state-size.md
+index f179274..16365a5 100644
+--- a/packages/app-core/tests/hr/__reports__/h25-state-size.md
++++ b/packages/app-core/tests/hr/__reports__/h25-state-size.md
+@@ -2,9 +2,9 @@
+ 
+ | Période | Séances réalisées | Total (Kio) | Prescription | Décisions H2 | Runtime | Résultat (log) | Réalisations H2 | Audit programme | Empreintes |
+ |---|---|---|---|---|---|---|---|---|---|
+-| 1 séance | 1 | 24.0 | 4.4 | 10.4 | 0.1 | 0.1 | 0.9 | 0.2 | — |
+-| 4 semaines | 8 | 94.9 | 17.4 | 36.8 | 0.5 | 1.1 | 7.4 | 1.7 | — |
+-| 12 semaines | 24 | 269.8 | 52.1 | 99.3 | 1.5 | 3.4 | 22.1 | 5.8 | — |
++| 1 séance | 1 | 24.1 | 4.4 | 10.4 | 0.1 | 0.1 | 0.9 | 0.2 | — |
++| 4 semaines | 8 | 95.0 | 17.4 | 36.8 | 0.5 | 1.1 | 7.4 | 1.7 | — |
++| 12 semaines | 24 | 270.2 | 52.1 | 99.3 | 1.5 | 3.4 | 22.1 | 5.8 | — |
+ 
+ - Runtime par séance : 64 o / 63 o / 63 o (horodatage + cumul + position + charges ; aucune écriture par seconde).
+ - Empreintes HYROX : non stockées côté application (anti-doublon CORE non alimenté pour HYROX ; la mémoire H2 passe par les réalisations).
+diff --git a/packages/app-core/tests/longitudinal/__reports__/state-size.md b/packages/app-core/tests/longitudinal/__reports__/state-size.md
+index 350319d..19b2f96 100644
+--- a/packages/app-core/tests/longitudinal/__reports__/state-size.md
++++ b/packages/app-core/tests/longitudinal/__reports__/state-size.md
+@@ -6,7 +6,7 @@ JSON compact écrit par `saveState` (Kio). Réalisations TEST_ONLY. Compaction d
+ |---|---|---|---|---|
+ | séances planifiées (session_record) | 85 | 254 | 549 | 1096 |
+ | raisons persistées des séances | 75 | 172 | 338 | 646 |
+-| semaines planifiées (autres champs) | 27 | 68 | 140 | 273 |
++| semaines planifiées (autres champs) | 27 | 68 | 141 | 275 |
+ | audit du programme | 29 | 100 | 218 | 438 |
+ | programme (définition, semaines, résultats) | 24 | 68 | 145 | 288 |
+ | Strength : expositions | 10 | 28 | 60 | 120 |
+@@ -14,6 +14,6 @@ JSON compact écrit par `saveState` (Kio). Réalisations TEST_ONLY. Compaction d
+ | empreintes (anti-doublon) | 23 | 69 | 149 | 298 |
+ | Running : réalisé et références | 3 | 8 | 16 | 30 |
+ | autres | 1 | 1 | 1 | 1 |
+-| **Total** | **280** | **771** | **1619** | **3195** |
++| **Total** | **280** | **771** | **1620** | **3197** |
+ | séances compactées | 11 | 51 | 121 | 251 |
+ 
+diff --git a/packages/app-core/tests/rc3-test/rc1-migration.test.ts b/packages/app-core/tests/rc3-test/rc1-migration.test.ts
+index d12a71d..4fd4ac8 100644
+--- a/packages/app-core/tests/rc3-test/rc1-migration.test.ts
++++ b/packages/app-core/tests/rc3-test/rc1-migration.test.ts
+@@ -47,10 +47,11 @@ const withoutCause = (s: AppState): AppState => ({
+   ...s,
+   planner: { ...s.planner, weeks: Object.fromEntries(Object.entries(s.planner.weeks).map(([k, w]) => [k, { ...w, requests: w.requests.map(({ cause: _cause, ...r }) => r) }])) },
+ });
+-/** RC4.4 — retire la seule trace ajoutée par le placement global G5 (identifiant de simulation de la semaine). */
++/** RC4.4 / RC4.5 — retire les seules traces ajoutées par G5 et F6 (identifiants de simulation de la semaine). */
++const RC45_TRACES = ['planner.globalPlacement', 'strength.selection.deficitOrientation'];
+ const withoutG5Trace = (s: AppState): AppState => ({
+   ...s,
+-  planner: { ...s.planner, weeks: Object.fromEntries(Object.entries(s.planner.weeks).map(([k, w]) => [k, { ...w, simulation: w.simulation?.filter((x) => x !== 'planner.globalPlacement') }])) },
++  planner: { ...s.planner, weeks: Object.fromEntries(Object.entries(s.planner.weeks).map(([k, w]) => [k, { ...w, simulation: w.simulation?.filter((x) => !RC45_TRACES.includes(x)) }])) },
+ });
+ const code = (f: () => unknown): string => { try { f(); return 'OK'; } catch (e) { return (e as { code?: string }).code ?? (e as Error).message; } };
+ 
+@@ -83,11 +84,13 @@ describe('RC1 TEST → RC3 : relecture sans perte', () => {
+ 
+     it(`${f} : semaine suivante planifiée par RC3 = planification RC1, au seul champ additif « cause » près`, () => {
+       const s0 = decode(f.slice('rc1-'.length, -'.json'.length));
+-      // RC4.4 : second passage G5 DÉSACTIVÉ (paramètre absent) ⇒ planification strictement identique à RC1 (V0).
+-      const later = ensureBeta0Week(s0, at('2026-11-09T06:00:00Z'), beta0Environment({ globalPlacement: false }));
++      // RC4.4 / RC4.5 : placement global G5 et orientation F6 DÉSACTIVÉS (paramètres absents) ⇒ planification strictement
++      // identique à RC1 (V0).
++      const later = ensureBeta0Week(s0, at('2026-11-09T06:00:00Z'), beta0Environment({ globalPlacement: false, deficitOrientation: false }));
+       expect(hash(withoutCause(later))).toBe(REFERENCE[f]?.next);
+-      // G5 ACTIF (Beta 0) : aucune paire Full Body à J/J+1 dans ces états ⇒ même planification, seule la trace de
+-      // simulation (`planner.globalPlacement`) est ajoutée à la semaine persistée.
++      // G5 et F6 ACTIFS (Beta 0) : aucune paire Full Body à J/J+1 ni isolation à réorienter dans ces états ⇒ même
++      // planification ; seules les traces de simulation (`planner.globalPlacement`, `strength.selection.deficitOrientation`)
++      // sont ajoutées à la semaine persistée.
+       const g5 = ensureBeta0Week(s0, at('2026-11-09T06:00:00Z'));
+       expect(hash(withoutCause(withoutG5Trace(g5)))).toBe(REFERENCE[f]?.next);
+       // Séances terminées conservées. Une séance laissée EN COURS au-delà de sa semaine est retirée à la clôture : même
+diff --git a/packages/app-core/tests/rc4-audit/__reports__/rc4-matrice.md b/packages/app-core/tests/rc4-audit/__reports__/rc4-matrice.md
+index f5dcd4a..133388c 100644
+--- a/packages/app-core/tests/rc4-audit/__reports__/rc4-matrice.md
++++ b/packages/app-core/tests/rc4-audit/__reports__/rc4-matrice.md
+@@ -17,7 +17,7 @@ Volume Musculation prévu (séries de travail / semaine, moyenne S1–S6 ; cible
+ 
+ | quads | hamstrings | glutes | calves | chest | back | shoulders | arms | core |
+ |---|---|---|---|---|---|---|---|---|
+-| 7.2 (10–18) | 8.5 (8–14) | 11.5 (6–14) | 0.0 (4–10) | 14.3 (10–20) | 9.2 (10–20) | 15.4 (8–16) | 16.8 (6–14) | 7.8 (4–10) |
++| 7.2 (10–18) | 8.0 (8–14) | 11.5 (6–14) | 0.5 (4–10) | 14.3 (10–20) | 9.2 (10–20) | 15.4 (8–16) | 16.8 (6–14) | 7.8 (4–10) |
+ 
+ Course (structure prescrite par semaine) :
+ 
+@@ -31,7 +31,7 @@ Course (structure prescrite par semaine) :
+ Contrôles avant séance scénarisés :
+ 
+ - S3 2026-10-20 C:easy : no/high → unchanged
+-- S4 2026-10-26 M:str_full_bodyA : yes/low/knee:P2 → adapted [removed:leg_curl;removed:bulgarian_split_squat;added:db_calf_raise]
++- S4 2026-10-26 M:str_full_bodyA : yes/low/knee:P2 → adapted [removed:leg_curl;removed:bulgarian_split_squat;added:machine_calf_raise]
+ 
+ ## P1b — Musculation 4× (masse) + Course 2× (10 km)
+ 
+@@ -74,7 +74,7 @@ Volume Musculation prévu (séries de travail / semaine, moyenne S1–S6 ; cible
+ 
+ | quads | hamstrings | glutes | calves | chest | back | shoulders | arms | core |
+ |---|---|---|---|---|---|---|---|---|
+-| 10.8 (10–18) | 11.2 (8–14) | 14.8 (6–14) | 0.0 (4–10) | 14.3 (10–20) | 9.3 (10–20) | 15.5 (8–16) | 16.3 (6–14) | 7.6 (4–10) |
++| 10.8 (10–18) | 11.2 (8–14) | 14.8 (6–14) | 1.0 (4–10) | 14.3 (10–20) | 9.3 (10–20) | 15.5 (8–16) | 16.3 (6–14) | 7.6 (4–10) |
+ 
+ Cross-training / HYROX :
+ 
+@@ -94,7 +94,7 @@ Cross-training / HYROX :
+ Contrôles avant séance scénarisés :
+ 
+ - S3 2026-10-21 M:str_full_bodyB : no/high → adapted [rir:romanian_deadlift:2>3;rir:machine_chest_press:2>3;rir:pull_up:2>3;rir:pec_deck:1>2;rir:leg_curl:1>2;rir:bulgarian_sp]
+-- S4 2026-10-26 M:str_full_bodyA : yes/low/knee:P2 → adapted [removed:bulgarian_split_squat;added:db_calf_raise]
++- S4 2026-10-26 M:str_full_bodyA : yes/low/knee:P2 → adapted [removed:bulgarian_split_squat;added:machine_calf_raise]
+ 
+ ## P3 — Musculation 3× (masse) + HYROX 2×
+ 
+@@ -111,7 +111,7 @@ Volume Musculation prévu (séries de travail / semaine, moyenne S1–S6 ; cible
+ 
+ | quads | hamstrings | glutes | calves | chest | back | shoulders | arms | core |
+ |---|---|---|---|---|---|---|---|---|
+-| 9.3 (10–18) | 9.3 (8–14) | 12.5 (6–14) | 0.0 (4–10) | 13.8 (10–20) | 9.0 (10–20) | 15.4 (8–16) | 16.5 (6–14) | 7.8 (4–10) |
++| 9.3 (10–18) | 8.8 (8–14) | 12.5 (6–14) | 0.5 (4–10) | 13.8 (10–20) | 9.0 (10–20) | 15.4 (8–16) | 16.5 (6–14) | 7.8 (4–10) |
+ 
+ Cross-training / HYROX :
+ 
+diff --git a/packages/app-core/tests/rc4-audit/rc4-findings.test.ts b/packages/app-core/tests/rc4-audit/rc4-findings.test.ts
+index 456bf09..a838713 100644
+--- a/packages/app-core/tests/rc4-audit/rc4-findings.test.ts
++++ b/packages/app-core/tests/rc4-audit/rc4-findings.test.ts
+@@ -130,8 +130,17 @@ describe('F4 / F5 / F6 — Volume Musculation (objectif prise de masse)', () =>
+     expect(v?.aboveHigh).toBe(true);
+     expect(v?.planned).toBe(arms?.planned);
+   });
+-  it('F6 : mollets jamais programmés (0 série toutes les semaines, avec ou sans autre sport)', () => {
+-    for (const id of ['P1', 'P1b', 'P2', 'P3', 'P5']) expect(simulateOnce(spec(id), 3).weeks.every((w) => (w.volume.find((x) => x.group === 'calves')?.planned ?? 0) === 0)).toBe(true);
++  const calves = (r: SimOut) => r.weeks.map((w) => w.volume.find((x) => x.group === 'calves')?.planned ?? 0);
++  const below = (r: SimOut) => r.weeks.flatMap((w) => w.volume.filter((x) => x.target !== null && x.planned < x.target).map((x) => `${String(w.week)}:${x.group}`));
++  it('F6 (V0, orientation désactivée) : mollets jamais programmés (0 série toutes les semaines, avec ou sans autre sport)', () => {
++    for (const id of ['P1', 'P1b', 'P2', 'P3', 'P5']) expect(calves(simulateOnce(spec(id), 3, true, false)).every((n) => n === 0)).toBe(true);
++  }, 120_000);
++  it('F6 (RC4.5) : mollets servis quand le bas du corps est déjà couvert dans la semaine, sans nouveau groupe sous sa cible', () => {
++    const v0 = simulateOnce(spec('P2'), MONS.length, true, false);
++    const f6 = simulateOnce(spec('P2'));
++    expect(calves(f6).some((n) => n > 0)).toBe(true);
++    // Ne pas nuire : aucun couple (semaine, groupe) sous sa cible qui ne l'était pas sans la règle.
++    expect(below(f6).filter((x) => !below(v0).includes(x))).toEqual([]);
+   }, 120_000);
+ });
+ 
+diff --git a/packages/app-core/tests/rc4-audit/rc4-sim.ts b/packages/app-core/tests/rc4-audit/rc4-sim.ts
+index 8b95a75..4b73bf4 100644
+--- a/packages/app-core/tests/rc4-audit/rc4-sim.ts
++++ b/packages/app-core/tests/rc4-audit/rc4-sim.ts
+@@ -122,14 +122,14 @@ function rirOf(set: { intensity?: unknown }): string {
+ const cache = new Map<string, SimOut>();
+ /**
+  * RC4.5 (C4) — même simulation qu'avec `simulate`, calculée UNE fois par fichier de test pour des entrées identiques
+- * (profil, scénarios, nombre de semaines, placement global G5 ou V0). Le résultat est un état immuable : les tests le
++ * (profil, scénarios, nombre de semaines, placement global G5, orientation F6). Le résultat est un état immuable : les tests le
+  * lisent seulement. Clé : données du profil + texte des fonctions de scénario.
+  */
+-export function simulateOnce(spec: ProfileSpec, weeks: number = MONS.length, globalPlacement = true): SimOut {
+-  const key = `${JSON.stringify(spec)}|${String(spec.checkIn ?? '')}|${String(weeks)}|${String(globalPlacement)}`;
++export function simulateOnce(spec: ProfileSpec, weeks: number = MONS.length, globalPlacement = true, deficitOrientation = false): SimOut {
++  const key = `${JSON.stringify(spec)}|${String(spec.checkIn ?? '')}|${String(weeks)}|${String(globalPlacement)}|${String(deficitOrientation)}`;
+   const hit = cache.get(key);
+   if (hit) return hit;
+-  const r = simulate(spec, weeks, beta0Environment({ globalPlacement }));
++  const r = simulate(spec, weeks, beta0Environment({ globalPlacement, deficitOrientation }));
+   cache.set(key, r);
+   return r;
+ }
+diff --git a/packages/app-core/tests/strength-fixes/programming.test.ts b/packages/app-core/tests/strength-fixes/programming.test.ts
+index 7ed2752..e94dc4c 100644
+--- a/packages/app-core/tests/strength-fixes/programming.test.ts
++++ b/packages/app-core/tests/strength-fixes/programming.test.ts
+@@ -74,7 +74,11 @@ describe('P1 — programmation Musculation', () => {
+         expect(reasons(s, b).some((r) => r.code === 'PLAN.PLANNER.STRENGTH_WITHIN_WEEK_VARIATION' && String(r.params.outcome).startsWith('no_governed_variation'))).toBe(true);
+       }
+     }
+-    expect(Object.values(s.planner.weeks).flatMap((w) => w.requests).some((r) => r.reasons.some((x) => x.code === 'PLAN.PLANNER.STRENGTH_WITHIN_WEEK_VARIATION'))).toBe(true);
++    // Variation tracée quand deux séances du même type seraient identiques ; RC4.5 (F6) : les isolations orientées vers les
++    // groupes en déficit peuvent déjà différencier les séances (aucune paire identique ⇒ aucune variation à demander).
++    const identicalPairs = [W1, W2].flatMap((mon) => { const ids = strengthIds(s, mon); return ids.flatMap((a, i) => ids.slice(i + 1).filter((b) => selectProgrammeSession(s, a)?.archetypeId === selectProgrammeSession(s, b)?.archetypeId && exercises(s, a) === exercises(s, b))); });
++    const traced = Object.values(s.planner.weeks).flatMap((w) => w.requests).some((r) => r.reasons.some((x) => x.code === 'PLAN.PLANNER.STRENGTH_WITHIN_WEEK_VARIATION'));
++    expect(traced || identicalPairs.length === 0).toBe(true);
+   });
+ 
+   it('6. 5 ou 6 séances : fréquence non composée ⇒ aucune séance inventée (limite exposée), 1–4 prises en charge', () => {
+diff --git a/packages/crosstraining/tests/architecture/crosstraining-architecture.test.ts b/packages/crosstraining/tests/architecture/crosstraining-architecture.test.ts
+index d27538c..0d5b6d3 100644
+--- a/packages/crosstraining/tests/architecture/crosstraining-architecture.test.ts
++++ b/packages/crosstraining/tests/architecture/crosstraining-architecture.test.ts
+@@ -109,6 +109,17 @@ const RUNNING_RC43_R2_CHANGES = [
+   'packages/running/src/wave3/progression.ts',
+   'packages/running/tests/unit/rc43-free-run-policy.test.ts',
+ ];
++/**
++ * Lot Strength RC4.5 — F5 et F6 autorisés le 2026-10-19 (liste FERMÉE) : indicateur informatif « au-dessus de la borne
++ * haute » du bilan de volume (week-prescription.ts, lot S3), politique facultative `strength.selection.deficitOrientation`
++ * (params.ts lot S2/C4.3, selection.ts lot S4, engine.ts et codes.ts lots S1/C4.2), sa provenance dans le registre
++ * scientifique et la garde du registre (paramètre absent du ruleset de référence, activé seulement en Beta 0) ; tests dédiés.
++ */
++const STRENGTH_RC45_CHANGES = [
++  'packages/strength/src/science/provenance.ts',
++  'packages/strength/tests/unit/science-lock.test.ts',
++  'packages/strength/tests/unit/rc45-deficit-orientation.test.ts',
++];
+ const CT_C2_AUTHORIZED_CORE_CHANGES = [
+   'packages/domain/src/duplicate.ts',
+   'packages/domain/src/serialization.ts',
+@@ -146,6 +157,7 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
+   ...STRENGTH_S5_CHANGES,
+   ...STRENGTH_C42_A2_CHANGES,
+   ...RUNNING_RC43_R2_CHANGES,
++  ...STRENGTH_RC45_CHANGES,
+ ];
+ 
+ describe('frontières', () => {
+@@ -174,7 +186,7 @@ describe('frontières', () => {
+     }
+     const changed = diff.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
+     expect(changed.filter((f) => !CT_C2_AUTHORIZED_CORE_CHANGES.includes(f))).toEqual([]);
+-    expect(changed.filter((f) => (f.startsWith('packages/running/') && !RUNNING_RC43_R2_CHANGES.includes(f)) || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f) && !STRENGTH_C42_A2_CHANGES.includes(f)))).toEqual([]);
++    expect(changed.filter((f) => (f.startsWith('packages/running/') && !RUNNING_RC43_R2_CHANGES.includes(f)) || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f) && !STRENGTH_C42_A2_CHANGES.includes(f) && !STRENGTH_RC45_CHANGES.includes(f)))).toEqual([]);
+   });
+ });
+ 
+diff --git a/packages/strength/src/codes.ts b/packages/strength/src/codes.ts
+index 741cc44..ff50c2c 100644
+--- a/packages/strength/src/codes.ts
++++ b/packages/strength/src/codes.ts
+@@ -59,6 +59,7 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
+   { code: 'DATA.SCIENCE_REGISTRY', categories: ['information'], params: { version: S }, audience: 'internal', severity: 'info' },
+   { code: 'SELECT.CHOICE_GROUP', categories: ['optimization'], params: { group: S, need: S, cause: S, others: L }, audience: 'internal', severity: 'info' },
+   { code: 'PROGRESSION.EXPOSURE_CLASSIFIED', categories: ['information'], params: { trackId: S, exerciseId: S, exposure: S, success: S, sets: S, repsDelta: S, loadDeltaKg: S, rirDelta: S, rir: S, kind: S, effort: S }, audience: 'internal', severity: 'info' },
++  { code: 'SELECT.DEFICIT_ORIENTED', categories: ['optimization'], params: { slot: S, from: S, to: S, group: S, projected: N, target: N, fromGroup: S }, audience: 'internal', severity: 'notice' },
+   { code: 'SELECT.CONTINUITY', categories: ['optimization'], params: { slot: S, incumbent: S, chosen: S, outcome: S, cause: S }, audience: 'internal', severity: 'info' },
+   { code: 'SELECT.CONTINUITY_KEPT', categories: ['optimization'], params: { exercises: L }, audience: 'internal', severity: 'info' },
+   { code: 'PLAN.SPORT_PRIORITY', categories: ['information'], params: { order: L, strengthRank: N, neighbours: L, policy: S }, audience: 'internal', severity: 'info' },
+diff --git a/packages/strength/src/engine.ts b/packages/strength/src/engine.ts
+index add3410..5bf42c8 100644
+--- a/packages/strength/src/engine.ts
++++ b/packages/strength/src/engine.ts
+@@ -18,7 +18,7 @@ import { buildEnv } from './model.js';
+ import type { Env } from './model.js';
+ import { firstFailingFilter, maxEffortEligible, slotCandidatesFor } from './candidates.js';
+ import type { FilterId } from './candidates.js';
+-import { decidingCriterion, rankCandidates, rotationReason } from './selection.js';
++import { decidingCriterion, deficitOrientedPick, rankCandidates, rotationReason } from './selection.js';
+ import type { Ranked, SessionSoFar } from './selection.js';
+ import type { InterferenceAssessment } from './interference.js';
+ import { findStimulusSwap, workingSetsOf } from './stimulus-preservation.js';
+@@ -56,6 +56,8 @@ interface Pick {
+   readonly kept?: boolean;
+   /** S4 — instance de l'emplacement (`slotId#k`) : un emplacement répété est varié instance par instance. */
+   readonly instance: string;
++  /** RC4.5 (F6) — exercice remplacé par l'orientation vers un déficit : ses séries allouées plafonnent celles de l'emplacement. */
++  readonly orientedFrom?: Exercise;
+ }
+ 
+ interface Built {
+@@ -146,10 +148,27 @@ function pickForSlot(slot: SlotInstance, env: Env, soFar: SessionSoFar, usedFami
+     if (cause === undefined && inRanked && (!anchor || placed(anchor.exerciseId))) { chosen = inRanked; substitutedFrom = undefined; kept = true; }
+     reasons.push(strengthReasons.emit('SELECT.CONTINUITY', { slot: slot.def.id, incumbent, chosen: chosen.exercise.id, outcome: chosen.exercise.id === incumbent ? 'kept' : 'replaced', cause: chosen.exercise.id === incumbent ? 'admissible' : (cause ?? 'outranked') }));
+   }
++  // RC4.5 (F6) — emplacement FACULTATIF d'un besoin listé : orientation vers le groupe le plus en déficit relatif,
++  // seulement si un autre candidat admissible le réduit sans dépasser de borne, sans charge de récupération ni série en plus.
++  const orientation = env.params['strength.selection.deficitOrientation'];
++  let oriented = false;
++  let orientedFrom: Exercise | undefined;
++  // Jamais au détriment d'une progression : l'exercice retenu ne porte aucune ancre ni track suivie sur l'emplacement.
++  // Ni contre la continuité déclarée (S4) : aucun exercice EN PLACE sur l'emplacement (sinon la réorientation deviendrait
++  // l'exercice en place des semaines suivantes et évincerait durablement l'accessoire d'origine).
++  const progressing = anchor?.exerciseId === chosen.exercise.id || tracked?.exerciseId === chosen.exercise.id || incumbent !== undefined;
++  if (orientation && !override && !progressing && slot.def.status === 'optional' && orientation.needs.includes(usedSlot.def.need)) {
++    const o = deficitOrientedPick(chosen, ranked, usedSlot, env, soFar);
++    if (o) {
++      reasons.push(strengthReasons.emit('SELECT.DEFICIT_ORIENTED', { slot: slot.def.id, from: chosen.exercise.id, to: o.pick.exercise.id, group: o.to.group ?? '', projected: o.to.projected, target: o.to.target, fromGroup: o.from.group ?? '' }));
++      orientedFrom = chosen.exercise;
++      chosen = o.pick; substitutedFrom = undefined; kept = false; oriented = true;
++    }
++  }
+   const ordered = [chosen, ...ranked.filter((r) => r !== chosen)];
+-  reasons.push(strengthReasons.emit('SELECT.EXERCISE.CHOSEN', { exerciseId: chosen.exercise.id, slot: slot.def.id, decidingCriterion: override ? 'variant' : kept && ranked[0] !== chosen ? 'continuity' : decidingCriterion(ordered, usedSlot, env) }));
++  reasons.push(strengthReasons.emit('SELECT.EXERCISE.CHOSEN', { exerciseId: chosen.exercise.id, slot: slot.def.id, decidingCriterion: override ? 'variant' : oriented ? 'deficit_orientation' : kept && ranked[0] !== chosen ? 'continuity' : decidingCriterion(ordered, usedSlot, env) }));
+   const track = anchor?.exerciseId === chosen.exercise.id ? anchor : tracked?.exerciseId === chosen.exercise.id ? tracked : undefined;
+-  return { slot: usedSlot, exercise: chosen.exercise, ranked: ordered, instance: `${slot.def.id}#${String(instance)}`, ...(track ? { track } : {}), ...(substitutedFrom ? { substitutedFrom } : {}), ...(kept ? { kept } : {}) };
++  return { slot: usedSlot, exercise: chosen.exercise, ranked: ordered, instance: `${slot.def.id}#${String(instance)}`, ...(track ? { track } : {}), ...(substitutedFrom ? { substitutedFrom } : {}), ...(kept ? { kept } : {}), ...(orientedFrom ? { orientedFrom } : {}) };
+ }
+ 
+ /**
+@@ -343,10 +362,17 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>):
+     const counters = new Map<string, number>();
+     for (const p of list) {
+       const groups = groupsOf(p.exercise, env).primary;
+-      const shares = groups.map((g) => remainingShare(g, env)).filter((x): x is number => x !== undefined);
+-      const need = shares.length > 0 ? Math.min(...shares) - Math.max(0, ...groups.map((g) => allocated[g] ?? 0)) : undefined;
+-      const { cell } = doseCell(p.exercise, p.slot.def.role, env);
+-      const alloc = need === undefined ? undefined : Math.min(cell.sets.max, Math.max(cell.sets.min, Math.floor(need)));
++      const allocFor = (e: Exercise): number | undefined => {
++        const gs = groupsOf(e, env).primary;
++        const shares = gs.map((g) => remainingShare(g, env)).filter((x): x is number => x !== undefined);
++        const need = shares.length > 0 ? Math.min(...shares) - Math.max(0, ...gs.map((g) => allocated[g] ?? 0)) : undefined;
++        const { cell } = doseCell(e, p.slot.def.role, env);
++        return need === undefined ? undefined : Math.min(cell.sets.max, Math.max(cell.sets.min, Math.floor(need)));
++      };
++      const own = allocFor(p.exercise);
++      // RC4.5 (F6) — emplacement réorienté : jamais plus de séries que l'exercice remplacé n'en aurait reçu.
++      const cap = p.orientedFrom ? allocFor(p.orientedFrom) ?? doseCell(p.orientedFrom, p.slot.def.role, env).cell.sets.min : undefined;
++      const alloc = cap === undefined ? own : Math.min(own ?? doseCell(p.exercise, p.slot.def.role, env).cell.sets.min, cap);
+       const before = patternRamped.get(p.exercise.patterns.primary) ?? 0;
+       const rx = prescribe(p, env, timePressure && !(keepPrimaryRest && p.slot.def.role === 'primary'), alloc, before, local);
+       if (rx.hasRampup) patternRamped.set(p.exercise.patterns.primary, before + 1);
+diff --git a/packages/strength/src/params.ts b/packages/strength/src/params.ts
+index 1dd2af2..5a0d049 100644
+--- a/packages/strength/src/params.ts
++++ b/packages/strength/src/params.ts
+@@ -199,6 +199,19 @@ export const STRENGTH_OPTIONAL_PARAMETER_SCHEMAS = {
+    * d'un groupe ciblé, sans retirer la seule couverture d'un autre groupe. Aucun quota musculaire.
+    */
+   'strength.session.stimulusPreservation': { governance: 'G2', schema: z.object({ policy: z.enum(['swap_lower_priority_optional']) }).strict() },
++  /**
++   * RC4.5 (F6) — orientation des emplacements FACULTATIFS dont le besoin est listé (`needs`, ex. isolations) vers le
++   * groupe musculaire le plus en DÉFICIT relatif face à sa cible hebdomadaire (volume : séances Strength
++   * de la semaine planifiée + cette séance). Un autre candidat de l'emplacement n'est retenu que si l'exercice retenu par
++   * les critères ordinaires ne sert que des groupes DÉJÀ à leur cible (ne pas nuire), sans dépasser la borne haute d'un groupe,
++   * sans charge supplémentaire sur les structures à ménager (critère `fatigue_fit` au moins égal), sans plus de séries et
++   * sans exercice plus lent (mise en place, temps par répétition).
++   * Jamais au détriment d'une progression (exercice retenu porteur d'une ancre ou d'une track suivie sur l'emplacement)
++   * ni de la continuité déclarée (aucun exercice en place sur l'emplacement).
++   * Ancres, emplacements requis, filtres (matériel, douleur, contexte multisport) et durée inchangés. Trace :
++   * `SELECT.DEFICIT_ORIENTED`. Absent ⇒ sélection inchangée.
++   */
++  'strength.selection.deficitOrientation': { governance: 'G2', schema: z.object({ needs: z.array(id).min(1) }).strict() },
+   /** Horizon des ancres : `review` ⇒ la durée devient un horizon de revue (jamais une clôture automatique). */
+   'strength.tracks.horizon': { governance: 'G2', schema: z.object({ policy: z.enum(['close', 'review']) }).strict() },
+   /**
+diff --git a/packages/strength/src/science/provenance.ts b/packages/strength/src/science/provenance.ts
+index 097996d..66f8290 100644
+--- a/packages/strength/src/science/provenance.ts
++++ b/packages/strength/src/science/provenance.ts
+@@ -253,6 +253,12 @@ export const PARAMETER_PROVENANCE: readonly ParameterProvenance[] = [
+     uncertainty: 'Critère « majorité de la dose » ordinal (la contribution de l’optionnel dépasse ou égale celle de tous les autres exercices sur ce groupe) : choix de conception.',
+     insufficient: 'Sans échange admissible, aucun ajout supplémentaire (le temps n’est pas forcé) ; tout échange est tracé (SELECT.STIMULUS_PRESERVED).',
+     claims: [c('C.DOSE', 'Relation dose–réponse du volume hebdomadaire à rendements décroissants.', 'SUPPORTED', ['SRC.PELLAND_2026'], false), c('C.SP_RULE', 'Critère d’échange et ordre de priorité.', 'EXPERT_DESIGN_REVIEW', [], true)] }),
++  prov({ id: 'strength.selection.deficitOrientation', status: 'EXPERT_DESIGN_REVIEW', governance: 'G2', change: 'new_policy',
++    valueNote: 'Absent du ruleset de référence (sélection inchangée). RC4.5 (Beta 0, TEST_ONLY) : emplacements facultatifs d’isolation orientés vers le groupe primaire au plus grand déficit relatif face à sa cible hebdomadaire existante (ex. mollets jamais couverts par le créneau d’isolation du bas du corps).',
++    rationale: 'Correction F6 de l’audit RC4 : un groupe avec une cible gouvernée (mollets) n’était jamais servi, la continuité gardant toujours le même accessoire. La cible hebdomadaire et sa projection existent déjà (volume_fit) ; seule la comparaison des déficits relatifs est nouvelle. Aucun volume ajouté, aucun quota.',
++    uncertainty: 'Critère « déficit relatif » (écart à la cible rapporté à la cible) : choix de conception ; l’accessoire suivi perd une exposition quand l’emplacement est réorienté.',
++    insufficient: 'Sans candidat admissible qui réduise un déficit plus grand sans dépasser de borne, sans charge de récupération ni série en plus : sélection ordinaire ; toute réorientation est tracée (SELECT.DEFICIT_ORIENTED).',
++    claims: [c('C.DOSE', 'Relation dose–réponse du volume hebdomadaire à rendements décroissants.', 'SUPPORTED', ['SRC.PELLAND_2026'], false), c('C.DO_RULE', 'Critère de déficit relatif et garde-fous.', 'EXPERT_DESIGN_REVIEW', [], true)] }),
+   prov({ id: 'strength.tracks.horizon', status: 'EXPERT_DESIGN_REVIEW', governance: 'G2', change: 'new_policy',
+     valueNote: 'Absent en 0.2.0 (clôture max_weeks) ; V1 : « review » (horizon de revue, jamais une clôture automatique).',
+     rationale: 'Une ancre ne change que pour une raison traçable (P10).', uncertainty: 'Choix de conception.', insufficient: 'La revue est signalée (PROGRESSION.REVIEW_DUE) ; la track reste active.',
+diff --git a/packages/strength/src/selection.ts b/packages/strength/src/selection.ts
+index fa2bd55..41028bf 100644
+--- a/packages/strength/src/selection.ts
++++ b/packages/strength/src/selection.ts
+@@ -13,7 +13,8 @@ import type { Criterion } from './params.js';
+ import type { Env } from './model.js';
+ import type { SlotInstance } from './archetypes.js';
+ import { compareLex } from './util.js';
+-import { volumeFit } from './volume.js';
++import { groupsOf, plannedHardSets, volumeFit, weeklyTarget } from './volume.js';
++import { doseCell } from './dose.js';
+ 
+ // technical-constant: borne haute de l'échelle ordinale 0–3 du catalogue (contrat de schéma)
+ const ORDINAL_MAX = 3;
+@@ -158,3 +159,63 @@ export function continuityMode(e: Exercise, env: Env): 'repeat' | 'avoid' | 'rot
+   if (r.stagnation && env.input.discipline.tracks.some((t) => t.exerciseId === e.id && t.status === 'active' && t.consecutiveHolds >= holds)) return 'avoid';
+   return 'repeat';
+ }
++
++/**
++ * RC4.5 (F6) — volume de la SEMAINE PLANIFIÉE par groupe : séances Strength de la semaine transmises par le planificateur
++ * (réalisées ou non, séries prévues) + cette séance jusqu'ici (séries minimales du profil, comme `volume_fit`). Jamais la
++ * fenêtre glissante de 7 jours (qui compterait la semaine précédente) : base identique à la planification et au démarrage.
++ */
++function weekVolume(env: Env, soFar: SessionSoFar): Record<string, number> {
++  const roleOf = (slotId: string) => env.archetype.slots.find((x) => x.id === slotId)?.role ?? 'accessory';
++  const out: Record<string, number> = { ...plannedHardSets(soFar.chosen.map((x) => ({ exercise: x.exercise, workingSets: doseCell(x.exercise, roleOf(x.slotId), env).cell.sets.min })), env) };
++  for (const s of env.input.discipline.week.otherStrengthSessions) for (const [g, n] of Object.entries(s.plannedHardSets)) out[g] = (out[g] ?? 0) + n;
++  return out;
++}
++
++/** RC4.5 (F6) — déficit relatif le plus grand parmi les groupes PRIMAIRES d'un candidat : (cible − semaine) / cible. */
++export function primaryDeficit(e: Exercise, env: Env, week: Readonly<Record<string, number>>): { readonly deficit: number; readonly group: string | null; readonly projected: number; readonly target: number } {
++  let best = { deficit: 0, group: null as string | null, projected: 0, target: 0 };
++  for (const g of groupsOf(e, env).primary) {
++    const t = weeklyTarget(g, env);
++    const total = week[g] ?? 0;
++    if (!t || t.floor <= 0 || total >= t.floor) continue;
++    const d = (t.floor - total) / t.floor;
++    if (d > best.deficit) best = { deficit: d, group: g, projected: total, target: t.floor };
++  }
++  return best;
++}
++
++/**
++ * RC4.5 (F6) — candidat de l'emplacement qui réduit un déficit, quand l'exercice retenu ne sert que des groupes DÉJÀ à
++ * leur cible dans la semaine (ne pas nuire), sous les garde-fous de `strength.selection.deficitOrientation` : aucun groupe (primaire ou secondaire) porté au-delà
++ * de sa borne haute, `fatigue_fit` au moins égal (structures à ménager, douleur, charge axiale), pas plus de séries au
++ * profil, pas plus lent (mise en place, temps par répétition). Parmi plusieurs, le plus grand déficit, puis l'ordre du
++ * classement. Sinon `undefined`.
++ */
++export function deficitOrientedPick(chosen: Ranked, ranked: readonly Ranked[], slot: SlotInstance, env: Env, soFar: SessionSoFar): { readonly pick: Ranked; readonly to: ReturnType<typeof primaryDeficit>; readonly from: ReturnType<typeof primaryDeficit> } | undefined {
++  const role = slot.def.role;
++  const week = weekVolume(env, soFar);
++  const from = primaryDeficit(chosen.exercise, env, week);
++  // Ne pas nuire : seuls les emplacements dont l'exercice retenu sert des groupes DÉJÀ à leur cible cette semaine sont
++  // réorientés (aucune série retirée à un groupe encore sous sa cible).
++  if (from.deficit > 0) return undefined;
++  const fatigue = (e: Exercise) => criterionValue('fatigue_fit', e, slot, env, soFar);
++  const sets = (e: Exercise) => doseCell(e, role, env).cell.sets.min;
++  const exceedsHigh = (e: Exercise): boolean => Object.entries(plannedHardSets([{ exercise: e, workingSets: sets(e) }], env))
++    .some(([g, n]) => { const t = weeklyTarget(g, env); return t !== undefined && n > 0 && (week[g] ?? 0) + n > t.high; });
++  let best: { pick: Ranked; to: ReturnType<typeof primaryDeficit> } | undefined;
++  for (const r of ranked) {
++    if (r.exercise.id === chosen.exercise.id) continue;
++    const to = primaryDeficit(r.exercise, env, week);
++    if (to.deficit <= from.deficit || (best && to.deficit <= best.to.deficit)) continue;
++    if (exceedsHigh(r.exercise)) continue;
++    if (compareLex(fatigue(r.exercise), fatigue(chosen.exercise)) < 0) continue;
++    if (sets(r.exercise) > sets(chosen.exercise)) continue;
++    // Temps disponible : jamais plus lent que l'exercice remplacé (mise en place, temps par répétition), pour ne pas
++    // évincer un autre exercice de la séance par la contrainte de durée.
++    // Temps par répétition inconnu : impossible de prouver qu'il n'est pas plus lent ⇒ candidat écarté.
++    if (r.exercise.timing.setupS > chosen.exercise.timing.setupS || (r.exercise.timing.secondsPerRep?.typical ?? Infinity) > (chosen.exercise.timing.secondsPerRep?.typical ?? 0)) continue;
++    best = { pick: r, to };
++  }
++  return best ? { ...best, from } : undefined;
++}
+diff --git a/packages/strength/tests/unit/science-lock.test.ts b/packages/strength/tests/unit/science-lock.test.ts
+index ea7a157..555216a 100644
+--- a/packages/strength/tests/unit/science-lock.test.ts
++++ b/packages/strength/tests/unit/science-lock.test.ts
+@@ -235,7 +235,10 @@ describe('registre 1.1.0 (F15–F18)', () => {
+       const p = SCIENCE_REGISTRY.parameters.find((x) => x.parameterId === id);
+       expect(p?.status, id).toBeDefined();
+     }
+-    expect(used.length).toBe(DECLARED_STRENGTH_PARAMETERS.length);
++    // RC4.5 (F6) — politique déclarée mais ABSENTE du ruleset de référence 4F : activée seulement en Beta 0 (TEST_ONLY).
++    const beta0Only = ['strength.selection.deficitOrientation'];
++    expect(used.length).toBe(DECLARED_STRENGTH_PARAMETERS.filter((d) => !beta0Only.includes(d.id)).length);
++    expect(used.some((id) => beta0Only.includes(id))).toBe(false);
+     expect(validateScienceRegistry(SCIENCE_REGISTRY, DECLARED_STRENGTH_PARAMETERS)).toEqual([]);
+   });
+ });

@@ -1,0 +1,85 @@
+/**
+ * RC4.5 (F6) — orientation des emplacements FACULTATIFS d'isolation vers le groupe au plus grand déficit relatif
+ * (`strength.selection.deficitOrientation`, absent du ruleset de référence). Garde-fous : emplacements requis
+ * inchangés, matériel et douleur respectés (filtres), aucune série en plus, aucune borne haute dépassée, trace.
+ */
+import { describe, expect, it } from 'vitest';
+import type { SessionDraft } from '@hybridsport/domain';
+import { readStrengthParams } from '../../src/index.js';
+import { run, scenario, strengthCatalog, strengthRuleset } from '../fixtures/harness.js';
+import { strengthLockRulesetDocument } from '../fixtures/ruleset.js';
+
+const LOCK = strengthRuleset(strengthLockRulesetDocument());
+const ORIENTED = strengthRuleset(strengthLockRulesetDocument({}, { 'strength.selection.deficitOrientation': { needs: ['isolation_lower', 'isolation_upper'] } }));
+const CATALOG = strengthCatalog();
+type Sc = Parameters<typeof scenario>[0];
+const outcome = (o: Sc) => {
+  const r = run(scenario({ archetype: 'str_full_body', stimulus: 'strength_volume', minutes: 75, ...o }));
+  if (r.result.status !== 'ok') throw new Error(JSON.stringify(r.result));
+  const reasons = r.trace.entries.flatMap((e) => e.reasons);
+  return { session: r.result.value, reasons };
+};
+const bySlot = (s: SessionDraft) => Object.fromEntries(s.blocks.flatMap((b) => b.items).filter((i) => i.refs?.slotId).map((i) => [i.refs?.slotId ?? '', i.exerciseId]));
+const setsOf = (s: SessionDraft, slotId: string) => s.blocks.flatMap((b) => b.items).filter((i) => i.refs?.slotId === slotId).reduce((n, i) => n + (i.prescription.type === 'sets' ? i.prescription.sets.filter((x) => x.kind !== 'rampup' && x.optional !== true).length : 0), 0);
+const calf = (id: string | undefined) => (CATALOG.exercise(id ?? '')?.muscles.primary ?? []).includes('calves');
+const oriented = (r: ReturnType<typeof outcome>) => r.reasons.filter((x) => x.code === 'SELECT.DEFICIT_ORIENTED');
+
+describe('RC4.5 F6 — orientation des isolations vers les groupes en déficit', () => {
+  it('paramètre absent (ruleset de référence) : aucune orientation, mollets jamais choisis', () => {
+    const r = outcome({ ruleset: LOCK });
+    expect(oriented(r)).toEqual([]);
+    expect(calf(bySlot(r.session)['fb.iso_lower'])).toBe(false);
+  });
+
+  // Cas réel F6 : le leg curl est EN PLACE sur l'emplacement d'isolation (continuité déclarée, exposition récente) ;
+  // une séance plus tôt dans la semaine planifiée couvre (ou non) déjà les groupes du bas du corps.
+  const YESTERDAY = '2026-10-04T08:00:00Z';
+  const week = (hardSets: Record<string, number>) => ({
+    week: { otherStrengthSessions: [{ intentId: 'plan.s1', archetypeId: 'str_full_body', plannedHardSets: hardSets, done: false }], neighbors: [], known: true },
+    recentExposures: [{ exerciseId: 'ex.leg_curl', at: YESTERDAY, slotId: 'fb.iso_lower', sets: [{ reps: 12, loadKg: 30, rir: 2 }] }],
+    continuity: 'keep_incumbent' as const,
+  });
+
+  it('ne pas nuire : ischio-jambiers encore sous leur cible dans la semaine ⇒ le leg curl reste (aucune réorientation)', () => {
+    const context = week({ hamstrings: 3 });
+    const r = outcome({ ruleset: ORIENTED, context });
+    expect(oriented(r)).toEqual([]);
+    expect(bySlot(r.session)['fb.iso_lower']).toBe('ex.leg_curl');
+    expect(bySlot(r.session)['fb.iso_lower']).toBe(bySlot(outcome({ ruleset: LOCK, context }).session)['fb.iso_lower']);
+  });
+
+  it('ischio-jambiers déjà à leur cible cette semaine, mollets à 0 : l’isolation passe aux mollets ; requis inchangés ; pas plus de séries', () => {
+    const context = week({ hamstrings: 10, quads: 12, glutes: 10 });
+    const base = outcome({ ruleset: LOCK, context });
+    const r = outcome({ ruleset: ORIENTED, context });
+    const o = oriented(r).find((x) => x.params.slot === 'fb.iso_lower');
+    expect(o?.params.group).toBe('calves');
+    // Sans la règle, la continuité garde le leg curl alors que les ischio-jambiers sont déjà couverts (cause de F6).
+    expect(bySlot(base.session)['fb.iso_lower']).toBe('ex.leg_curl');
+    expect(o?.params.from).toBe('ex.leg_curl');
+    expect(calf(bySlot(r.session)['fb.iso_lower'])).toBe(true);
+    const required = readStrengthParams(ORIENTED).values['strength.archetypes'].find((a) => a.id === 'str_full_body')?.slots.filter((x) => x.status === 'required').map((x) => x.id) ?? [];
+    for (const id of required) expect(bySlot(r.session)[id]).toBe(bySlot(base.session)[id]);
+    expect(setsOf(r.session, 'fb.iso_lower')).toBeLessThanOrEqual(setsOf(base.session, 'fb.iso_lower'));
+    expect(r.session.blocks.flatMap((b) => b.items).length).toBe(base.session.blocks.flatMap((b) => b.items).length);
+  });
+
+  it('base hebdomadaire : le réalisé des 7 derniers jours (semaine précédente) ne compte pas', () => {
+    const context = { ...week({ hamstrings: 3 }), hardSets: { d7: { hamstrings: 20, calves: 0 } } };
+    expect(oriented(outcome({ ruleset: ORIENTED, context }))).toEqual([]);
+  });
+
+  it('mollets déjà à leur cible cette semaine : sélection ordinaire, identique au ruleset de référence', () => {
+    const context = week({ hamstrings: 10, quads: 12, glutes: 10, calves: 6 });
+    expect(bySlot(outcome({ ruleset: ORIENTED, context }).session)).toEqual(bySlot(outcome({ ruleset: LOCK, context }).session));
+  });
+
+  it('matériel : sans machine à mollets ni haltères, aucun exercice de mollets n’est inventé', () => {
+    const r = outcome({ ruleset: ORIENTED, context: week({ hamstrings: 10, quads: 12, glutes: 10 }), profile: { availableEquipment: [...(scenario().profile.availableEquipment)].filter((q) => q !== 'calf_machine' && q !== 'dumbbells') } });
+    expect(calf(bySlot(r.session)['fb.iso_lower'])).toBe(false);
+  });
+
+  it('déterministe : même entrée ⇒ même séance et même trace', () => {
+    expect(outcome({ ruleset: ORIENTED, seed: 'z' })).toEqual(outcome({ ruleset: ORIENTED, seed: 'z' }));
+  });
+});
