@@ -20,7 +20,7 @@ export const M3_TEST_ACCUMULATION = { withinHours: 72, maxSessions: 2 } as const
 // technical-constant: TEST_ONLY — borne de passes d'arbitrage (arrêt garanti)
 export const M3_TEST_MAX_PASSES = 12;
 // technical-constant: TEST_ONLY — RC4.4 (G5) : nombre maximal d'organisations vérifiées par replanification réelle (borne de calcul)
-export const G5_TEST_MAX_CANDIDATES = 6;
+export const G5_TEST_MAX_CANDIDATES = 3;
 /** RC4.4 (G5) — second passage de placement global, déclenché par les Full Body à J/J+1 (TEST_ONLY, SIMULATION_ONLY en Beta 0). */
 export const G5_SIMULATION_ID = 'planner.globalPlacement';
 
