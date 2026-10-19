@@ -1,0 +1,30 @@
+## P1
+F6 (référence)                         quads:7.2 hamstrings:8.5 glutes:11.5 calves:1.3 chest:14.3 back:9.2 shoulders:15.4 arms:16.8 core:7.8 | sous cible:17
+F8-G seule (graine)                    quads:7.2 hamstrings:8.5 glutes:11.5 calves:1.3 chest:14.3 back:9.2 shoulders:15.4 arms:16.8 core:7.8 | sous cible:17
+F8 complet                             quads:7.5 hamstrings:5.5 glutes:9.7 calves:0.7 chest:13.8 back:9.0 shoulders:15.1 arms:17.2 core:8.0 | sous cible:20
+F8 + héritage exercice en place        quads:6.2 hamstrings:7.0 glutes:10.0 calves:1.3 chest:13.8 back:9.0 shoulders:14.6 arms:17.2 core:8.5 | sous cible:19
+Ancres seules par variante             quads:5.7 hamstrings:6.5 glutes:9.5 calves:0.7 chest:14.8 back:9.0 shoulders:15.6 arms:16.7 core:7.9 | sous cible:21
+## P1b
+F6 (référence)                         quads:9.2 hamstrings:8.2 glutes:12.3 calves:3.3 chest:12.3 back:10.2 shoulders:15.2 arms:18.2 core:9.3 | sous cible:3
+F8-G seule (graine)                    quads:9.2 hamstrings:8.2 glutes:12.3 calves:3.3 chest:12.3 back:10.2 shoulders:15.2 arms:18.2 core:9.3 | sous cible:3
+F8 complet                             quads:9.2 hamstrings:8.2 glutes:12.3 calves:3.3 chest:12.3 back:10.2 shoulders:14.3 arms:18.2 core:10.1 | sous cible:3
+F8 + héritage exercice en place        quads:9.2 hamstrings:8.2 glutes:12.3 calves:3.3 chest:12.3 back:10.2 shoulders:14.3 arms:18.2 core:10.1 | sous cible:3
+Ancres seules par variante             quads:9.2 hamstrings:8.2 glutes:12.3 calves:3.3 chest:12.3 back:10.2 shoulders:15.2 arms:18.2 core:10.1 | sous cible:3
+## P2
+F6 (référence)                         quads:10.8 hamstrings:11.2 glutes:14.8 calves:2.7 chest:14.3 back:9.3 shoulders:15.5 arms:16.3 core:7.6 | sous cible:9
+F8-G seule (graine)                    quads:10.8 hamstrings:11.2 glutes:14.8 calves:2.0 chest:14.3 back:9.3 shoulders:14.3 arms:16.3 core:7.6 | sous cible:10
+F8 complet                             quads:13.8 hamstrings:10.2 glutes:14.8 calves:0.0 chest:15.3 back:9.0 shoulders:14.3 arms:16.7 core:7.6 | sous cible:12
+F8 + héritage exercice en place        quads:13.8 hamstrings:10.2 glutes:14.8 calves:0.0 chest:15.3 back:9.0 shoulders:14.3 arms:16.7 core:7.6 | sous cible:12
+Ancres seules par variante             quads:17.3 hamstrings:5.2 glutes:14.8 calves:2.7 chest:15.3 back:9.0 shoulders:13.8 arms:16.7 core:7.6 | sous cible:13
+## P3
+F6 (référence)                         quads:9.3 hamstrings:9.3 glutes:12.5 calves:0.7 chest:13.8 back:9.0 shoulders:15.4 arms:16.5 core:7.8 | sous cible:16
+F8-G seule (graine)                    quads:9.3 hamstrings:9.3 glutes:12.5 calves:0.7 chest:13.8 back:9.0 shoulders:14.2 arms:16.5 core:7.8 | sous cible:16
+F8 complet                             quads:11.0 hamstrings:6.7 glutes:11.3 calves:0.0 chest:15.3 back:8.5 shoulders:14.3 arms:16.2 core:7.0 | sous cible:18
+F8 + héritage exercice en place        quads:12.0 hamstrings:7.3 glutes:12.5 calves:0.7 chest:14.3 back:8.7 shoulders:13.5 arms:16.8 core:7.8 | sous cible:18
+Ancres seules par variante             quads:13.7 hamstrings:4.2 glutes:12.2 calves:0.7 chest:14.3 back:8.7 shoulders:13.5 arms:16.8 core:7.8 | sous cible:19
+## P5
+F6 (référence)                         quads:4.3 hamstrings:4.3 glutes:7.5 calves:0.7 chest:9.8 back:9.3 shoulders:16.6 arms:16.0 core:9.1 | sous cible:22
+F8-G seule (graine)                    quads:4.3 hamstrings:4.3 glutes:7.5 calves:0.7 chest:9.8 back:9.3 shoulders:16.6 arms:16.0 core:9.1 | sous cible:22
+F8 complet                             quads:4.3 hamstrings:4.5 glutes:7.7 calves:0.7 chest:12.3 back:8.8 shoulders:14.3 arms:16.5 core:9.2 | sous cible:22
+F8 + héritage exercice en place        quads:4.3 hamstrings:4.5 glutes:7.7 calves:0.7 chest:12.3 back:8.8 shoulders:14.3 arms:16.5 core:9.2 | sous cible:22
+Ancres seules par variante             quads:4.3 hamstrings:4.5 glutes:7.7 calves:0.7 chest:15.3 back:8.8 shoulders:15.8 arms:16.5 core:9.2 | sous cible:21
