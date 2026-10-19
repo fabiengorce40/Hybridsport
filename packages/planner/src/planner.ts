@@ -34,7 +34,7 @@ import type { AppliedComposition, DayResult, DeclaredIntent, DemandOutcome, M3Ar
 import { compareConflicts, conflictId, detectConflicts, unknownDemand as m3UnknownDemand, yielderOf } from './m3-analysis.js';
 import type { M3Conflict, M3Importance, M3Node, M3Origin } from './m3-analysis.js';
 import { readM3Policy, readNeighbourWindow } from './m3-policy.js';
-import { globalPlacement } from './global-placement.js';
+import { globalPlacement, memoizedPorts } from './global-placement.js';
 import type { CompositionBase, PortOutcome, SportPort, StructuresResult, WeekSession } from './ports.js';
 import { classifyRefusal } from './refusal.js';
 import type { RefusalClass } from './refusal.js';
@@ -101,10 +101,12 @@ export function manualPlacementConflicts(probe: { readonly sport: PlannerSport; 
 }
 
 export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governance: LoadedRuleset | undefined, clock: PlannerClock): PlannedWeek {
-  const v0 = planCore(raw, ports, governance, clock);
   const param = readPlannerParam(governance, 'planner.globalPlacement', zPlannerInput.parse(raw).mode);
-  // Paramètre absent ou illisible : placement actuel EXACT (aucune trace ajoutée).
-  return param.ok ? globalPlacement(raw, ports, governance, clock, v0, param.value, param.reasons) : v0;
+  // Paramètre absent ou illisible : placement actuel EXACT (aucune trace ajoutée, ports tels quels).
+  if (!param.ok) return planCore(raw, ports, governance, clock);
+  // RC4.5 (C2) — ports mémorisés pendant cette planification : V0 et replanifications candidates partagent les séances.
+  const memo = memoizedPorts(ports);
+  return globalPlacement(raw, memo, governance, clock, planCore(raw, memo, governance, clock), param.value, param.reasons);
 }
 
 /** Planification d'une semaine ; `pins` (G5) : jour imposé par séance, essayé en premier (repli : placement normal). */

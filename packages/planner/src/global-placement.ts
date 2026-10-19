@@ -8,7 +8,8 @@ import type { DemandLevel, ReasonCode, SessionDraft } from '@hybridsport/domain'
 import type { LoadedRuleset } from '@hybridsport/engine';
 import { GP_CODES, gpReasons } from './codes.js';
 import { zPlannerInput } from './model.js';
-import type { DeclaredIntent, PlannedWeek, PlannerClock, PlannerInput } from './model.js';
+import type { DeclaredIntent, DemandOutcome, PlannedWeek, PlannerClock, PlannerInput, PlannerMode } from './model.js';
+import type { PortOutcome, SlotRequest, SportPort } from './ports.js';
 import { detectConflicts } from './m3-analysis.js';
 import type { M3Node, M3Origin } from './m3-analysis.js';
 import { readM3Policy } from './m3-policy.js';
@@ -19,6 +20,40 @@ import type { SportPorts } from './planner.js';
 const MS_PER_HOUR = 3_600_000;
 // technical-constant: heures par jour (conversion d'unité)
 const HOURS_PER_DAY = 24;
+
+/**
+ * RC4.5 (C2) — ports MÉMORISÉS pour la durée d'UNE planification de semaine avec placement global : `generate` est une
+ * fonction pure de son créneau (aucun état mutable dans les ports) ; les replanifications des organisations candidates
+ * redemandent souvent la même séance (même jour, même contexte). Résultat identique par construction, calcul évité.
+ * `demand` est mémorisé par séance (identité de l'objet, renvoyé tel quel par le cache de `generate`) et par mode.
+ */
+export function memoizedPorts(ports: SportPorts): SportPorts {
+  return Object.fromEntries(Object.entries(ports).map(([sport, port]) => {
+    if (!port) return [sport, port];
+    const generated = new Map<string, PortOutcome>();
+    const demands = new WeakMap<SessionDraft, Map<string, DemandOutcome>>();
+    return [sport, {
+      ...port,
+      generate: (slot: SlotRequest): PortOutcome => {
+        const key = JSON.stringify(slot);
+        const hit = generated.get(key);
+        if (hit) return hit;
+        const out = port.generate(slot);
+        generated.set(key, out);
+        return out;
+      },
+      demand: (session: SessionDraft, mode: PlannerMode): DemandOutcome => {
+        const byMode = demands.get(session) ?? new Map<string, DemandOutcome>();
+        demands.set(session, byMode);
+        const hit = byMode.get(mode);
+        if (hit) return hit;
+        const out = port.demand(session, mode);
+        byMode.set(mode, out);
+        return out;
+      },
+    } satisfies SportPort];
+  })) as SportPorts;
+}
 
 /** Full Body à J/J+1 d'une semaine planifiée : paires de séances des archétypes déclencheurs à un jour d'écart. */
 export function fullBodyPairs(w: PlannedWeek, archetypeIds: readonly string[], dayOf: (d: string) => number): number {
