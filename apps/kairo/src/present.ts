@@ -108,6 +108,10 @@ export function arbitrationText(v: { readonly arbitration: SessionView['arbitrat
   if (a.kind === 'recomposed') return `Adaptée par son moteur à cause d’${other} proche.`;
   return `Proche d’${other} qui sollicite les mêmes zones du corps : aucun autre jour disponible ne convenait.`;
 }
+/** RC4.5 (C1) — jour changé par le placement global (G5) : raison lisible, aucun code. */
+export function globalPlacementText(v: { readonly globalPlacement: SessionView['globalPlacement'] }, dayLabel: (date: string) => string): string | null {
+  return v.globalPlacement ? `Jour changé (prévue ${dayLabel(v.globalPlacement.fromDate)}) pour éviter deux séances Full Body à la suite.` : null;
+}
 /**
  * Q1 — qualité expérimentale (aucun code, aucun score) : le diagnostic montre seulement si la cohérence est vérifiée
  * et si des points ne sont pas validés. Null : rien à signaler (aucun diagnostic).

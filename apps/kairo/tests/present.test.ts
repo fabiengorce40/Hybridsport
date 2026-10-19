@@ -11,7 +11,7 @@ describe('présentation Strength S1', () => {
 
   it('composition Strength non gouvernée : explication compréhensible (Course : message générique inchangé)', () => {
     const v = (sport: 'strength' | 'running'): SessionView => ({
-      requestId: 'r', sport, date: null, status: 'not_planned', targetDurationS: null, estimatedDurationS: null, archetypeId: null, dataError: null, role: null, ctFormat: null, hrTimeCapS: null, compositionAuthority: null, compositionRule: null, pain: false, arbitration: null, placement: 'blocked', unplacedCause: null, manual: false, quality: null, composition: null, repeatFlagged: false, mainExercises: [],
+      requestId: 'r', sport, date: null, status: 'not_planned', targetDurationS: null, estimatedDurationS: null, archetypeId: null, dataError: null, role: null, ctFormat: null, hrTimeCapS: null, compositionAuthority: null, compositionRule: null, pain: false, arbitration: null, globalPlacement: null, placement: 'blocked', unplacedCause: null, manual: false, quality: null, composition: null, repeatFlagged: false, mainExercises: [],
       notPlanned: { category: 'governance_blocked', display: 'governance_blocked', reason: { code: 'RULE.PLANNER.COMPOSITION_UNRESOLVED', params: {} }, triedDate: null },
     });
     expect(notPlannedText(v('strength'))).toMatch(/réduisez la fréquence de musculation/);
@@ -20,7 +20,7 @@ describe('présentation Strength S1', () => {
 
   it('RC3.1 A8 — donnée manquante : « une information manque » + quoi saisir ; jamais « règles indisponibles »', () => {
     const v = (sport: 'running' | 'hyrox', display: string, reason: { code: string; params: Record<string, unknown> }, category = 'governance_blocked'): SessionView => ({
-      requestId: 'r', sport, date: null, status: 'not_planned', targetDurationS: null, estimatedDurationS: null, archetypeId: null, dataError: null, role: null, ctFormat: null, hrTimeCapS: null, compositionAuthority: null, compositionRule: null, pain: false, arbitration: null, placement: 'blocked', unplacedCause: null, manual: false, quality: null, composition: null, repeatFlagged: false, mainExercises: [],
+      requestId: 'r', sport, date: null, status: 'not_planned', targetDurationS: null, estimatedDurationS: null, archetypeId: null, dataError: null, role: null, ctFormat: null, hrTimeCapS: null, compositionAuthority: null, compositionRule: null, pain: false, arbitration: null, globalPlacement: null, placement: 'blocked', unplacedCause: null, manual: false, quality: null, composition: null, repeatFlagged: false, mainExercises: [],
       notPlanned: { category, display, reason, triedDate: null },
     });
     const anchor = notPlannedText(v('running', 'missing_data', { code: 'DOSE.RUNNING.DOSE_ANCHOR_UNAVAILABLE', params: { cause: 'NO_REALIZED_SESSION' } }));

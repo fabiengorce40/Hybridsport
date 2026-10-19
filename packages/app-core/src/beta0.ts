@@ -357,6 +357,11 @@ export interface SessionView {
    */
   readonly arbitration: { readonly kind: 'moved' | 'swapped' | 'recomposed' | 'conflict'; readonly fromDate: string | null; readonly withSport: Sport | null } | null;
   /**
+   * RC4.5 (C1) — jour changé par le placement global G5 (éviter des Full Body à J/J+1) : jour d'origine dans le placement
+   * initial. Lecture de la raison persistée `GLOBAL_PLACEMENT_APPLIED`, aucune logique sportive.
+   */
+  readonly globalPlacement: { readonly fromDate: string } | null;
+  /**
    * M3.1 — placement lu dans le CONTRAT (jamais dans un texte) : `planned` (prescription + jour), `composed_unplaced`
    * (prescription valide, aucun jour : aperçu et « Faire maintenant » admis), `blocked` (aucune prescription exécutable).
    */
@@ -603,7 +608,7 @@ function hrTimeCapOf(blocks: readonly { format?: unknown; timeCapS?: unknown }[]
 }
 
 function arbitrationOf(r: PersistedWeek['requests'][number], sportOf: (id: string) => Sport | null): SessionView['arbitration'] {
-  const d = r.reasons.find((x) => x.code === 'PLAN.PLANNER.M3_DECISION');
+  const d = r.reasons.find((x) => x.code === GP_CODES.M3_DECISION);
   if (d) {
     const why = Array.isArray(d.params.why) ? d.params.why : [];
     const kind = d.params.action === 'RECOMPOSE' ? 'recomposed' : d.params.action === 'SWAP' ? 'swapped' : 'moved';
@@ -611,6 +616,11 @@ function arbitrationOf(r: PersistedWeek['requests'][number], sportOf: (id: strin
   }
   const c = r.reasons.find((x) => x.code === GP_CODES.M3_CONFLICT_UNRESOLVED);
   return c ? { kind: 'conflict', fromDate: null, withSport: sportOf(String(c.params.withRequestId)) } : null;
+}
+
+function globalPlacementOf(r: PersistedWeek['requests'][number]): SessionView['globalPlacement'] {
+  const g = r.reasons.find((x) => x.code === GP_CODES.GLOBAL_PLACEMENT_APPLIED);
+  return g && typeof g.params.from === 'string' && g.params.from !== '' ? { fromDate: g.params.from } : null;
 }
 
 const REPEAT_FLAGGED = /^PLAN\.(CROSSTRAINING\.C3|HYROX\.H2)_REPEAT_UNAVOIDABLE$/;
@@ -644,6 +654,7 @@ export function sessionView(r: PersistedWeek['requests'][number], result: Progra
     notPlanned: planned ? null : notPlannedOf(r),
     pain: result?.pain ?? false,
     arbitration: planned ? arbitrationOf(r, sportOf) : null,
+    globalPlacement: planned ? globalPlacementOf(r) : null,
     placement: planned ? 'planned' : composed ? 'composed_unplaced' : 'blocked',
     unplacedCause: composed ? (r.reasons.some((x) => x.code === GP_CODES.NOT_ENOUGH_DAYS) ? 'week_full' : 'no_admissible_day') : null,
     manual,

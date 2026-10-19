@@ -3,7 +3,7 @@ import { approxMinutes, exerciseLabel, selectBeta0Week } from '@hybridsport/app-
 import type { AppState, Beta0WeekView, SessionView } from '@hybridsport/app-core';
 import { manualStartAssessment } from '@hybridsport/app-core';
 import { useStartFlow } from '../../precheck/PreSessionCheck.js';
-import { arbitrationText, sessionTitle, ctFormatName, isTest, manualStartText, notPlannedText, qualityShortText, roleName, runningTestFallbackText, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
+import { arbitrationText, globalPlacementText, sessionTitle, ctFormatName, isTest, manualStartText, notPlannedText, qualityShortText, roleName, runningTestFallbackText, sportName, STATUS_ICONS, STATUS_LABELS, unplacedText, weekPlanningText } from '../../present.js';
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import { blockCardText, fullSessionCardText, isBlock, isFullC4 } from '../../field/BlockScope.js';
@@ -104,6 +104,7 @@ export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemV
       {v.mainExercises.length > 0 && <div className="tiny muted" data-main-exercises>{v.mainExercises.slice(0, MAIN_SHOWN).map((x) => exerciseLabel(x)).join(' · ')}{v.mainExercises.length > MAIN_SHOWN ? ' …' : ''}</div>}
       {v.repeatFlagged && <div className="tiny" data-repeat-flagged>Identique à une séance récente : le moteur ne dispose pas d’autre option avec les règles actuelles.</div>}
       {v.arbitration && <div className="tiny muted" data-m3={v.arbitration.kind}>{arbitrationText(v, formatDate)}</div>}
+      {v.globalPlacement && <div className="tiny muted" data-g5-moved>{globalPlacementText(v, formatDate)}</div>}
       {qualityShortText(v.quality?.verdict) && <div className="tiny muted" data-quality={v.quality?.verdict}>{qualityShortText(v.quality?.verdict)}</div>}
     </button>
   );
