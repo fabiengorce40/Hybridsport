@@ -1,0 +1,345 @@
+diff --git a/packages/app-core/src/beta0.ts b/packages/app-core/src/beta0.ts
+index abbda46..201b552 100644
+--- a/packages/app-core/src/beta0.ts
++++ b/packages/app-core/src/beta0.ts
+@@ -97,6 +97,11 @@ export const BETA0_PLANNING_VERSION = 'beta0-m31';
+  * Strength selon sa politique gouvernée (`rotationReasons.plannerNotes`). Absente en production (aucun changement).
+  */
+ export const BETA0_STRENGTH_WITHIN_WEEK_VARIATION = { ruleId: 'planner.strength.withinWeekVariation.test-0', status: 'TEST_ONLY', note: 'planned_variation' } as const;
++/**
++ * RC4.5 (F8) — variantes STABLES A / B / C des séances de Musculation d'un même archétype (TEST_ONLY) : identité
++ * attribuée une fois par l'index de demande du programme, persistée dans la séance, progressions propres à chaque variante.
++ */
++export const BETA0_STRENGTH_VARIANTS = { ruleId: 'planner.strength.variants.test-0', status: 'TEST_ONLY' } as const;
+ 
+ /**
+  * Consolidation R1 — demande COMPOSITE d'une séance Cross-training portant un bloc de force délégué (TEST_ONLY, Beta 0) :
+@@ -130,7 +135,7 @@ export function beta0Environment(options: { readonly globalPlacement?: boolean }
+     programmeGovernance: rotationGovernance(simulationMark),
+     // Musculation P1 — déclencheur TEST_ONLY de la variation gouvernée (note `planned_variation` du ruleset Strength)
+     // quand une séance serait strictement identique à une séance du même archétype plus tôt dans la semaine.
+-    strength: { engine: StrengthEngine as SportEngine<unknown>, content: withDemand(strengthContent(), undefined, simulationMark), composition: { rule: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE }, withinWeekVariation: BETA0_STRENGTH_WITHIN_WEEK_VARIATION },
++    strength: { engine: StrengthEngine as SportEngine<unknown>, content: withDemand(strengthContent(), undefined, simulationMark), composition: { rule: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE }, withinWeekVariation: BETA0_STRENGTH_WITHIN_WEEK_VARIATION, variants: BETA0_STRENGTH_VARIANTS },
+     running: {
+       engine: requirePlannerProvenance(createRunningEngine({ governance: g, simulation: true }) as SportEngine<unknown>),
+       content: withDemand(runningContent(), undefined, simulationMark),
+diff --git a/packages/app-core/src/planning.ts b/packages/app-core/src/planning.ts
+index 16d92bb..ed7b71c 100644
+--- a/packages/app-core/src/planning.ts
++++ b/packages/app-core/src/planning.ts
+@@ -12,7 +12,7 @@ import { findArchetype, readStrengthParams, StrengthEngine } from '@hybridsport/
+ import type { StrengthCompositionRule } from '@hybridsport/strength';
+ import { crossTrainingPort, hyroxHistoriesOf, hyroxPort, planMultisportWeek, runningPort, strengthPort } from '@hybridsport/planner';
+ import type { QualityAssessment } from '@hybridsport/engine';
+-import type { CompositeDemandRule, CrossTrainingEngine, CtGovernance, HyroxEngine, PlannedWeek, PlannerClock, PlannerMode, SlotRequest, SportPorts, StrengthBlockRule, StrengthWithinWeekVariationRule } from '@hybridsport/planner';
++import type { CompositeDemandRule, CrossTrainingEngine, CtGovernance, HyroxEngine, PlannedWeek, PlannerClock, PlannerMode, SlotRequest, SportPorts, StrengthBlockRule, StrengthVariantsRule, StrengthWithinWeekVariationRule } from '@hybridsport/planner';
+ import type { CoreState, LoadedRuleset, SportEngine } from '@hybridsport/engine';
+ import { UNKNOWN_CORE_STATE } from './checkin.js';
+ import { addDays, normalizeInstant, sessionInstant, weekStartOf } from './dates.js';
+@@ -44,7 +44,7 @@ export interface PlannerEnvironment {
+    * `composition` : règle de composition hebdomadaire du MOTEUR Strength (archétype de chaque séance). Absente : intention
+    * déclarée exécutée telle quelle (chemin multisport existant).
+    */
+-  readonly strength?: { readonly engine: SportEngine<unknown>; readonly content: Content; readonly composition?: { readonly rule: StrengthCompositionRule | undefined }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule };
++  readonly strength?: { readonly engine: SportEngine<unknown>; readonly content: Content; readonly composition?: { readonly rule: StrengthCompositionRule | undefined }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule; readonly variants?: StrengthVariantsRule };
+   readonly running?: { readonly engine: SportEngine<unknown>; readonly content: Content; readonly composition?: { readonly parameters: readonly RunningParameter[] } };
+   /**
+    * `transportNeighbours` : voisines (seconde passe) et priorité transportées au contexte CT (C3) ; `simulation` :
+@@ -131,7 +131,7 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
+   const q = qualityEnv ? { qualityEnv } : {};
+   if (env.strength) {
+     const content = env.strength.content as ContentSource;
+-    ports.strength = strengthPort({ ...q, engine: env.strength.engine, content, profile, state: state0, history: state.fingerprints.strength, clock, ...(env.strength.withinWeekVariation ? { withinWeekVariation: env.strength.withinWeekVariation } : {}), ...(env.strength.composition ? { composition: { rule: env.strength.composition.rule, goal: { goal: goals.strength ?? p.strength.goal } } } : {}), baseContext: (slot) => { const b = strengthContextAt(state, p, slot.date, content); return goals.strength ? { ...b, goal: { primary: { goal: goals.strength } } } : b; } });
++    ports.strength = strengthPort({ ...q, engine: env.strength.engine, content, profile, state: state0, history: state.fingerprints.strength, clock, ...(env.strength.withinWeekVariation ? { withinWeekVariation: env.strength.withinWeekVariation } : {}), ...(env.strength.variants ? { variants: env.strength.variants } : {}), ...(env.strength.composition ? { composition: { rule: env.strength.composition.rule, goal: { goal: goals.strength ?? p.strength.goal } } } : {}), baseContext: (slot) => { const b = strengthContextAt(state, p, slot.date, content); return goals.strength ? { ...b, goal: { primary: { goal: goals.strength } } } : b; } });
+   }
+   if (env.running) {
+     ports.running = runningPort({
+diff --git a/packages/app-core/src/progression.ts b/packages/app-core/src/progression.ts
+index 6ef0df1..ae14d25 100644
+--- a/packages/app-core/src/progression.ts
++++ b/packages/app-core/src/progression.ts
+@@ -10,6 +10,7 @@ import { anchorReviewDue, classifyExposure, closeTrack, closureCause, createTrac
+ import type { ExecutedItem, PerformedSet, SlotRole, StrengthTrack } from '@hybridsport/strength';
+ import { archetypeFromIntentId, isV1Archetype } from '@hybridsport/running';
+ import type { RealizedSession, RealizedStructure, RunningReference, RunningSessionArchetype } from '@hybridsport/running';
++import { baseSlotId } from '@hybridsport/planner';
+ import type { AppState, GeneratedSession, SessionLog } from './model.js';
+ import { strengthContent } from './provisional-content.js';
+ import { STIMULUS_BY_GOAL } from './planner.js';
+@@ -91,7 +92,10 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
+     const performed = performedSets(it.id, it.prescription.sets, log);
+     const pain = x.sessionPain === true || log.painItems.includes(it.id);
+     const exec: ExecutedItem = { exerciseId: e.id, prescribed, performed, sessionCompleted: x.sessionCompleted ?? true, ...(x.sessionStatus ? { sessionStatus: x.sessionStatus } : {}), ...(pain ? { skipReason: 'pain' as const } : {}), ...(it.refs?.substitutedFrom ? { substitutedFrom: it.refs.substitutedFrom } : {}) };
+-    const slot = slots.find((z) => z.id === it.refs?.slotId);
++    // RC4.5 (F8) — emplacement de l'archétype (suffixe de variante retiré) ; les tracks gardent l'identifiant de la
++    // variante (`.vB`, `.vC` ; A sans suffixe) : chaque variante progresse séparément.
++    const slotKey = it.refs?.slotId;
++    const slot = slots.find((z) => z.id === baseSlotId(slotKey ?? ''));
+     const role: SlotRole = slot?.role ?? 'accessory';
+     const trackId = it.refs?.progressionTrackId;
+     const anchorOfSlot = [...tracks.values()].find((t) => t.tier === 'anchor' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === it.refs?.slotId);
+@@ -116,16 +120,17 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
+       update(anchorOfSlot, 'substituted');
+     } else if (it.refs?.anchor === 'candidate' && !anchorOfSlot && performed.length > 0 && slot && !pain) {
+       const model = progressionModelFor(e, role, p.level, performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
+-      const c = createTrack({ tier: 'anchor', archetypeId, slotId: slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role }, params);
++      const c = createTrack({ tier: 'anchor', archetypeId, slotId: slotKey ?? slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role }, params);
+       tracks.set(c.track.trackId, c.track);
+       reasons.push(...c.reasons);
+     } else if (role === 'accessory' && slot?.trackable && performed.length > 0 && !pain) {
+-      const k = `${archetypeId}/${slot.id}/${e.id}`;
++      const sid = slotKey ?? slot.id;
++      const k = `${archetypeId}/${sid}/${e.id}`;
+       counts[k] = (counts[k] ?? 0) + 1;
+-      const hasTracked = [...tracks.values()].some((t) => t.tier === 'tracked' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === slot.id);
++      const hasTracked = [...tracks.values()].some((t) => t.tier === 'tracked' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === sid);
+       if ((counts[k] ?? 0) >= params['strength.tracks'].tier2AutoCreateAfter && !hasTracked) {
+         const model = progressionModelFor(e, role, p.level, performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
+-        const c = createTrack({ tier: 'tracked', archetypeId, slotId: slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role }, params);
++        const c = createTrack({ tier: 'tracked', archetypeId, slotId: sid, exercise: e, model, prescribed, performed, at: now, stimulus, role }, params);
+         tracks.set(c.track.trackId, c.track);
+         reasons.push(...c.reasons);
+       }
+diff --git a/packages/app-core/src/start-check.ts b/packages/app-core/src/start-check.ts
+index 873d3fb..95a578d 100644
+--- a/packages/app-core/src/start-check.ts
++++ b/packages/app-core/src/start-check.ts
+@@ -23,7 +23,7 @@ import { deriveProgramStatus, ENGINE_VERSION, estimateDuration, loadRuleset, mig
+ import type { CoreState, LoadedCatalog, LoadedRuleset, ValidationContext } from '@hybridsport/engine';
+ import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
+ import type { PlannerSport, SlotRequest, WeekSession } from '@hybridsport/planner';
+-import { readNeighbourWindow } from '@hybridsport/planner';
++import { readNeighbourWindow, sessionVariant } from '@hybridsport/planner';
+ import type { RealizedSession } from '@hybridsport/running';
+ import { dateOf, sessionInstant } from './dates.js';
+ import { countableFreeRuns, freeRunDraft } from './free-run-load.js';
+@@ -157,6 +157,10 @@ export function regenerateSession(state0: AppState, requestId: string, coreState
+   const same = placed.filter((x) => x.sport === r.sport && (port.weekSessionsScope === 'generated' || (x.date ?? '') < date))
+     .sort((a, b) => ((a.date ?? '') < (b.date ?? '') ? -1 : 1)).flatMap((x) => { const s = sessionOf(x); return s ? [s] : []; });
+   const programmeWeek = ps.weeks.find((w) => w.plannerRef === week.weekStart);
++  // RC4.5 (F8) — variante PERSISTÉE de la séance (relue, jamais recalculée) : suffixe de ses emplacements ; sans suffixe,
++  // A si la graine persistée est celle du rang 1, sinon séance antérieure aux variantes (règle d'origine : rang par date).
++  const own = recordOf(r);
++  const variant = port.consumesVariant && own ? (sessionVariant(own.session) !== 'A' ? sessionVariant(own.session) : own.provenance.seed.endsWith(':1') ? 'A' : undefined) : undefined;
+   const sportPriority = programmeWeek?.intent.demands.map((d) => d.sport) ?? intent.sports.map((s) => s.sport);
+   const cross = Object.fromEntries((port.crossSportWeek ?? []).map((o) => [o, placed.filter((x) => x.sport === o).sort((a, b) => ((a.date ?? '') < (b.date ?? '') ? -1 : 1)).flatMap((x) => { const s = sessionOf(x); return s ? [s] : []; })]).filter(([, v]) => (v as WeekSession[]).length > 0));
+   const slot: SlotRequest = {
+@@ -165,6 +169,7 @@ export function regenerateSession(state0: AppState, requestId: string, coreState
+     ...(station === undefined ? {} : { station }),
+     ...(port.consumesNeighbours && (r.neighbourContext || extra.length > 0) ? { neighbours: { known: r.neighbourContext?.known ?? true, neighbours: [...(r.neighbourContext?.neighbours ?? []).map((n) => ({ ...n, demand: { ...n.demand } })), ...extra] } as SlotRequest['neighbours'] } : {}),
+     ...(port.consumesWeekSessions ? { ...(same.length > 0 ? { weekSessions: same } : {}), sportSessions: week.requests.filter((x) => x.sport === r.sport).length, sportPriority } : port.consumesNeighbours ? { sportPriority } : {}),
++    ...(variant === undefined ? {} : { variant }),
+     ...(Object.keys(cross).length > 0 ? { crossSportWeek: cross } : {}),
+   };
+   const out = port.generate(slot);
+diff --git a/packages/app-core/src/strength-insight.ts b/packages/app-core/src/strength-insight.ts
+index 6179b37..c2fb04f 100644
+--- a/packages/app-core/src/strength-insight.ts
++++ b/packages/app-core/src/strength-insight.ts
+@@ -11,7 +11,7 @@
+  */
+ import { migrateToCurrent } from '@hybridsport/engine';
+ import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
+-import { GP_CODES } from '@hybridsport/planner';
++import { GP_CODES, sessionVariant } from '@hybridsport/planner';
+ import { readStrengthParams, sessionPlannedHardSets, STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } from '@hybridsport/strength';
+ import type { WeekVolumeAssessment } from '@hybridsport/strength';
+ import type { AppState, PersistedWeek } from './model.js';
+@@ -76,12 +76,15 @@ export function strengthWeekInsights(state: AppState, weekStart: string): Streng
+     const archetypeId = x.r.intent?.archetypeId ?? '';
+     const same = strength.filter((y) => (y.r.intent?.archetypeId ?? '') === archetypeId);
+     const distinct = [...new Set(same.map((y) => sig(y.session)))];
+-    const variant = same.length > 1 ? String.fromCharCode('A'.charCodeAt(0) + distinct.indexOf(sig(x.session))) : null;
++    // RC4.5 (F8) — semaine à variantes PERSISTANTES (emplacements suffixés) : lettre relue dans la séance, jamais
++    // recalculée (une séance déplacée garde sa variante) ; sinon (semaines antérieures), regroupement par exercices.
++    const persisted = same.some((y) => sessionVariant(y.session) !== 'A');
++    const variant = same.length > 1 ? (persisted ? sessionVariant(x.session) : String.fromCharCode('A'.charCodeAt(0) + distinct.indexOf(sig(x.session)))) : null;
+     const reductions = x.r.reasons.filter((q) => q.code === 'PLAN.INTERFERENCE_ASSESSED' && q.params.action !== 'none' && q.params.action !== 'trace')
+       .map((q) => ({ withSport: sourceSport(q.params.source), hours: Number(q.params.hours), structure: String(q.params.structure), level: String(q.params.level), action: String(q.params.action) }));
+     const v = x.r.reasons.find((q) => q.code === GP_CODES.STRENGTH_WITHIN_WEEK_VARIATION);
+     return {
+-      requestId: x.r.requestId, date: x.date, archetypeId, variant, variants: distinct.length,
++      requestId: x.r.requestId, date: x.date, archetypeId, variant, variants: persisted ? new Set(same.map((y) => sessionVariant(y.session))).size : distinct.length,
+       focus: forceBlocks(x.session).flatMap((b) => b.items.map((i) => i.exerciseId)),
+       groups: Object.entries(hard(x.session)).filter(([, n]) => n > 0).map(([group, sets]) => ({ group, sets })).sort((a, b) => b.sets - a.sets || (a.group < b.group ? -1 : 1)),
+       reductions,
+diff --git a/packages/planner/src/planner.ts b/packages/planner/src/planner.ts
+index 2c0dcf5..a22621a 100644
+--- a/packages/planner/src/planner.ts
++++ b/packages/planner/src/planner.ts
+@@ -160,7 +160,20 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
+     const w = weekOf(sport, date, requestId);
+     // Fréquence DÉCLARÉE par le programme pour ce sport (nombre de demandes), transmise pour la trace du moteur.
+     const sportSessions = requests.filter((x) => x.sport === sport).length;
+-    return { ...(w.length > 0 ? { weekSessions: w } : {}), sportSessions, sportPriority };
++    const variant = ports[sport]?.consumesVariant ? variantOf(requestId) : undefined;
++    return { ...(w.length > 0 ? { weekSessions: w } : {}), sportSessions, sportPriority, ...(variant ? { variant } : {}) };
++  };
++  /**
++   * RC4.5 (F8) — variante PERSISTANTE : rang de l'index de demande `k` parmi les demandes du même sport et du même
++   * archétype (A, B, C…), JAMAIS l'ordre des dates. Déplacer une séance (G5, M3) ne change pas sa variante.
++   */
++  const indexOf = (requestId: string): number => Number(requestId.split('.').at(-1));
++  const variantOf = (requestId: string): string | undefined => {
++    const r = requests.find((x) => x.requestId === requestId);
++    const a = r?.intent?.archetypeId;
++    if (!r || a === undefined) return undefined;
++    const rank = requests.filter((x) => x.sport === r.sport && x.intent?.archetypeId === a).map((x) => indexOf(x.requestId)).sort((x, y) => x - y).indexOf(indexOf(requestId));
++    return rank < 0 ? undefined : String.fromCharCode('A'.charCodeAt(0) + rank);
+   };
+   const weekReason = (sport: PlannerSport, date: string, requestId: string): ReasonCode[] => {
+     if (!ports[sport]?.consumesWeekSessions) return [];
+@@ -342,6 +355,8 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
+       return { date: p.date, availableMinutes: minutes.get(p.date) ?? 0, requestId: r.requestId, ...(r.composed || !r.intent ? {} : { locked: r.intent }) };
+     }).sort((a, b) => (a.date < b.date ? -1 : 1));
+     const res = comp.compose({ days, base: d.intent as CompositionBase, hybrid, mode: input.mode, weeklySessions: d.sessions });
++    // RC4.5 (F8) — archétypes composés connus de TOUTES les séances avant la régénération (variante par index `k`).
++    if (ports[d.sport]?.consumesVariant && res.status === 'composed') for (const r of own.filter((x) => x.composed)) { const sl = res.days.find((x) => x.date === placed.get(r.requestId)?.date); if (sl) r.intent = sl.intent; }
+     // Régénération dans l'ORDRE DES DATES : chaque séance composée connaît les séances de sa discipline placées avant elle.
+     const dateOf = (x: Request): string => placed.get(x.requestId)?.date ?? '';
+     for (const r of own.filter((x) => x.composed).sort((a, b) => (dateOf(a) < dateOf(b) ? -1 : dateOf(a) > dateOf(b) ? 1 : 0))) {
+diff --git a/packages/planner/src/ports.ts b/packages/planner/src/ports.ts
+index 2efe4e2..92871c5 100644
+--- a/packages/planner/src/ports.ts
++++ b/packages/planner/src/ports.ts
+@@ -64,6 +64,12 @@ export interface SlotRequest {
+   readonly crossSportWeek?: Readonly<Partial<Record<PlannerSport, readonly WeekSession[]>>>;
+   /** Notes de planification transmises au moteur pour CE créneau (ex. `planned_variation`, lue par sa politique gouvernée). */
+   readonly plannerNotes?: readonly string[];
++  /**
++   * RC4.5 (F8) — variante PERSISTANTE de la séance parmi les séances du même archétype de la semaine (`A`, `B`, `C`),
++   * attribuée par le planificateur selon l'index de demande `k` (fixé avant tout placement, indépendant des dates) ;
++   * transport seul, pour les ports qui la déclarent (`consumesVariant`). Absente : comportement antérieur.
++   */
++  readonly variant?: string;
+   /** C4.3 — bloc de force délégué transporté vers le moteur hôte (Cross-training) pour la seconde composition. */
+   readonly delegatedStrength?: { readonly blocks: readonly unknown[]; readonly durationS: number; readonly excludeStructures: readonly string[]; readonly excludeExercises: readonly string[]; readonly source: { readonly engine: 'strength'; readonly archetypeId: string; readonly sessionId: string; readonly ruleId: string } };
+ }
+@@ -110,6 +116,8 @@ export interface SportPort {
+   readonly consumesNeighbours: boolean;
+   /** Le moteur consomme-t-il les séances de sa discipline placées plus tôt dans la semaine (`SlotRequest.weekSessions`) ? */
+   readonly consumesWeekSessions?: boolean;
++  /** RC4.5 (F8) — le port consomme-t-il la variante persistante de la séance (`SlotRequest.variant`) ? */
++  readonly consumesVariant?: boolean;
+   /**
+    * C3.5 — portée des séances de la semaine transmises : `before` (défaut, ordre des dates : expositions antérieures,
+    * Strength) ou `generated` (toutes les séances de la discipline DÉJÀ générées, quelle que soit leur date : variété
+@@ -337,9 +345,79 @@ function ctStrengthBlocks(slot: SlotRequest): WeekSession[] {
+  */
+ export interface StrengthWithinWeekVariationRule { readonly ruleId: string; readonly status: 'TEST_ONLY'; readonly note: string }
+ 
+-export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule }): SportPort {
++/**
++ * RC4.5 (F8) — règle de VARIANTES STABLES (TEST_ONLY, fournie par l'environnement) : chaque séance de Musculation porte
++ * une variante persistante (A, B, C) parmi les séances du même archétype, attribuée par l'index de demande `k`. Chaque
++ * variante a ses propres progressions (ancres et accessoires suivis), identifiées par le suffixe de ses emplacements
++ * (`.vB`, `.vC` ; A sans suffixe : progressions existantes). Le moteur Strength n'est pas modifié : le port lui présente
++ * les seules progressions de la variante, sous les identifiants d'emplacement de l'archétype.
++ */
++export interface StrengthVariantsRule { readonly ruleId: string; readonly status: 'TEST_ONLY' }
++const VARIANT_SUFFIX = /\.v([B-Z])$/;
++/** Identifiant d'emplacement d'une variante (A : identifiant de l'archétype). */
++export const variantSlotId = (slotId: string, variant: string | undefined): string => (variant !== undefined && variant !== 'A' ? `${slotId}.v${variant}` : slotId);
++/** Identifiant d'emplacement de l'archétype (suffixe de variante retiré). */
++export const baseSlotId = (slotId: string): string => slotId.replace(VARIANT_SUFFIX, '');
++/** Variante portée par un identifiant d'emplacement (A sans suffixe). */
++export const slotVariant = (slotId: string): string => VARIANT_SUFFIX.exec(slotId)?.[1] ?? 'A';
++/** Variante d'une séance persistée : suffixe de ses emplacements (A sans suffixe). */
++export const sessionVariant = (session: SessionDraft): string => session.blocks.flatMap((b) => b.items).map((i) => slotVariant(i.refs?.slotId ?? '')).find((v) => v !== 'A') ?? 'A';
++/** Rang (1, 2, 3…) d'une variante. */
++const variantRank = (variant: string): number => variant.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
++
++export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule; readonly variants?: StrengthVariantsRule }): SportPort {
+   const params = () => readStrengthParams(def.content.ruleset).values;
++  /**
++   * RC4.5 (F8) — contexte d'UNE variante : ses seules tracks (identifiants d'emplacement de l'archétype) ; expositions
++   * d'une autre variante gardées pour la connaissance des charges, sans leur emplacement (jamais en continuité).
++   * Sans variante (comportement antérieur) : variante A, identique tant qu'aucune progression de variante n'existe.
++   */
+   const context = (slot: SlotRequest): StrengthContextInput => {
++    const c = context0(slot);
++    const v = slot.variant ?? 'A';
++    if (process.env.F8BIS) {
++      const arch = params()['strength.archetypes'].find((a) => a.id === slot.intent.archetypeId);
++      const prio = params()['strength.goals'][c.goal.primary]?.needPriority ?? [];
++      const anch = (id: string) => { const z = arch?.slots.find((x) => x.id === id); return z?.anchorable === true && (!process.env.F8BIS_LOWER || z.choiceGroup === 'main'); };
++      const mine = c.tracks.filter((t) => (anch(baseSlotId(t.slotId)) ? slotVariant(t.slotId) === v : true)).map((t) => ({ ...t, slotId: baseSlotId(t.slotId) }));
++      // Complétude : ancres de la variante présentées pour un groupe de choix seulement si elle en a pour TOUS ses membres pertinents.
++      const complete = (slotId: string): boolean => {
++        const def0 = arch?.slots.find((z) => z.id === slotId);
++        if (!def0?.choiceGroup) return true;
++        const members = arch?.slots.filter((z) => z.choiceGroup === def0.choiceGroup && z.status === def0.status) ?? [];
++        const rel = members.filter((m) => prio.includes(m.need));
++        return (rel.length > 0 ? rel : members).every((m) => mine.some((t) => t.tier === 'anchor' && t.status === 'active' && t.slotId === m.id));
++      };
++      return {
++        ...c,
++        tracks: process.env.F8BIS_RULE === 'shared' ? (() => {
++          // Décision COMMUNE de la semaine (toutes variantes confondues) : membre retenu par groupe de choix ; la variante
++          // n'y présente que SA propre ancre sur ce membre (sinon aucune : candidat, alternance par l'exposition).
++          const pooled = c.tracks.filter((t) => t.tier === 'anchor').map((t) => ({ ...t, slotId: baseSlotId(t.slotId) }));
++          const decided = new Set(declarableAnchors(pooled, [...c.recentExposures, ...plannedExposures(slot)], slot.intent.archetypeId, params()).map((t) => t.slotId));
++          const grp = (id: string) => arch?.slots.find((z) => z.id === id)?.choiceGroup;
++          return mine.filter((t) => t.tier !== 'anchor' || !anch(t.slotId) || grp(t.slotId) === undefined || decided.has(t.slotId));
++        })() : mine.filter((t) => t.tier !== 'anchor' || complete(t.slotId)),
++        recentExposures: c.recentExposures.map((e) => {
++          if (e.slotId === undefined || !anch(baseSlotId(e.slotId))) return e;
++          if (slotVariant(e.slotId) === v) return { ...e, slotId: baseSlotId(e.slotId) };
++          const { slotId: _o, ...rest } = e; void _o; return rest;
++        }),
++      };
++    }
++    return {
++      ...c,
++      tracks: c.tracks.filter((t) => slotVariant(t.slotId) === v).map((t) => ({ ...t, slotId: baseSlotId(t.slotId) })),
++      recentExposures: c.recentExposures.map((e) => {
++        if (e.slotId === undefined) return e;
++        if (slotVariant(e.slotId) === v) return { ...e, slotId: baseSlotId(e.slotId) };
++        const { slotId: _other, ...rest } = e;
++        void _other;
++        return rest;
++      }),
++    };
++  };
++  const context0 = (slot: SlotRequest): StrengthContextInput => {
+     const resolved = resolve(def.baseContext, slot);
+     // S4 — priorité déclarée des sports, au vocabulaire du contrat Strength (sports sans discipline Strength ignorés).
+     const order = (slot.sportPriority ?? []).filter((x): x is 'strength' | 'running' | 'crosstraining' => x === 'strength' || x === 'running' || x === 'crosstraining');
+@@ -374,7 +452,8 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
+     ...def, sport: 'strength', discipline: 'strength', consumesNeighbours: true, context, quality: strengthQuality(def.content.ruleset, def.qualityEnv),
+     // S3 — graine STABLE d'une semaine à l'autre (archétype, stimulus, rang de l'occurrence de cet archétype dans la
+     // semaine) : un départage par la graine ne peut plus changer un exercice d'une semaine à la suivante.
+-    seedOf: (slot) => `strength:${slot.intent.archetypeId}:${slot.intent.stimulus}:${(slot.weekSessions ?? []).filter((w) => w.archetypeId === slot.intent.archetypeId).length + 1}`,
++    // RC4.5 (F8) : avec une variante persistante, son rang (jamais l'ordre des dates).
++    seedOf: (slot) => `strength:${slot.intent.archetypeId}:${slot.intent.stimulus}:${slot.variant !== undefined && !process.env.F8BIS_OLDSEED ? variantRank(slot.variant) : (slot.weekSessions ?? []).filter((w) => w.archetypeId === slot.intent.archetypeId).length + 1}`,
+     // S3 — ancres DÉCLARÉES (contrat CORE-EXT-4) : tracks d'ancre actives de l'archétype, une par groupe de choix.
+     repetitionIntents: (slot, c) => anchorsOf(slot, c as StrengthContextInput).map((t) => ({ kind: 'progression_anchor' as const, trackId: t.trackId })),
+     persistedDecisions: STRENGTH_PERSISTED_DECISIONS,
+@@ -401,9 +480,16 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
+   // signature des séances jumelles, du garde-fou de volume de la variation et des séries mesurées par la garde G5
+   // (un groupe servi seulement par un ajout résiduel ne fait jamais refuser une organisation).
+   const residualIds = (): ReadonlySet<string> => new Set(params()['strength.archetypes'].flatMap((a) => a.slots.filter((x) => x.fill === 'residual_time').map((x) => x.id)));
+-  const ordinary = (s: SessionDraft): SessionDraft => { const r = residualIds(); return r.size === 0 ? s : { ...s, blocks: s.blocks.map((b) => ({ ...b, items: b.items.filter((i) => !r.has(i.refs?.slotId ?? '')) })) }; };
++  const ordinary = (s: SessionDraft): SessionDraft => { const r = residualIds(); return r.size === 0 ? s : { ...s, blocks: s.blocks.map((b) => ({ ...b, items: b.items.filter((i) => !r.has(baseSlotId(i.refs?.slotId ?? ''))) })) }; };
++  /** RC4.5 (F8) — variante écrite dans la séance produite : suffixe de ses emplacements (A : inchangée). */
++  const withVariant = (out: PortOutcome, variant: string | undefined): PortOutcome => {
++    if (out.status !== 'planned' || variant === undefined || variant === 'A') return out;
++    const mark = (s: SessionDraft): SessionDraft => ({ ...s, blocks: s.blocks.map((b) => ({ ...b, items: b.items.map((i) => (i.refs?.slotId && (!process.env.F8BIS || params()['strength.archetypes'].some((a) => a.slots.some((z) => z.id === i.refs?.slotId && z.anchorable && (!process.env.F8BIS_LOWER || z.choiceGroup === 'main')))) ? { ...i, refs: { ...i.refs, slotId: variantSlotId(i.refs.slotId, variant) } } : i)) })) as SessionDraft['blocks'] });
++    return { ...out, session: mark(out.session), record: { ...out.record, session: mark(out.record.session) } };
++  };
+   const signature = (s: SessionDraft): string => ordinary(s).blocks.flatMap((b) => b.items.map((i) => i.exerciseId)).join('|');
+-  const generate = (slot: SlotRequest): PortOutcome => {
++  const generate = (slot: SlotRequest): PortOutcome => withVariant(generate0(slot), slot.variant);
++  const generate0 = (slot: SlotRequest): PortOutcome => {
+     const out = port.generate(slot);
+     if (!variation || out.status !== 'planned') return out;
+     const twin = (slot.weekSessions ?? []).find((w) => w.archetypeId === slot.intent.archetypeId && signature(w.session) === signature(out.session));
+@@ -422,7 +508,7 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
+   // RC4.4 (G5) — séries de travail prévues par groupe : la fonction du bilan hebdomadaire Strength, sans règle nouvelle.
+   const plannedGroupSets = (session: SessionDraft): Readonly<Record<string, number>> => sessionPlannedHardSets(ordinary(session), params(), def.content.catalog);
+   const proximityBandsHours = (): readonly number[] => (params()['strength.interference.assessment']?.proximityBands ?? []).map((b) => b.maxHours);
+-  const withWeek = { ...port, generate, plannedGroupSets, proximityBandsHours, consumesWeekSessions: true, crossSportWeek: ['crosstraining'] as const };
++  const withWeek = { ...port, generate, plannedGroupSets, proximityBandsHours, consumesWeekSessions: true, crossSportWeek: ['crosstraining'] as const, ...(def.variants ? { consumesVariant: true } : {}) };
+   if (!comp) return withWeek;
+   // Objectif du PROGRAMME (contrat de contexte Strength `goal.primary`), niveau du profil CORE, fréquence déclarée.
+   const run = (days: readonly CompositionDay[], weeklySessions: number, mode: PlannerMode) => {

@@ -1,0 +1,49 @@
+--- a/packages/planner/src/ports.ts
++++ b/packages/planner/src/ports.ts
+@@ -338,7 +338,8 @@
+ export interface StrengthWithinWeekVariationRule { readonly ruleId: string; readonly status: 'TEST_ONLY'; readonly note: string }
+ 
+ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule }): SportPort {
+-  const params = () => readStrengthParams(def.content.ruleset).values;
++  let cachedParams: ReturnType<typeof readStrengthParams>['values'] | undefined;
++  const params = () => (cachedParams ??= readStrengthParams(def.content.ruleset).values);
+   const context = (slot: SlotRequest): StrengthContextInput => {
+     const resolved = resolve(def.baseContext, slot);
+     // S4 — priorité déclarée des sports, au vocabulaire du contrat Strength (sports sans discipline Strength ignorés).
+@@ -400,7 +401,8 @@
+   // RC4.5 (F6, R1/R3) — éléments des emplacements à TEMPS RÉSIDUEL (attribut gouverné du ruleset) : écartés de la
+   // signature des séances jumelles, du garde-fou de volume de la variation et des séries mesurées par la garde G5
+   // (un groupe servi seulement par un ajout résiduel ne fait jamais refuser une organisation).
+-  const residualIds = (): ReadonlySet<string> => new Set(params()['strength.archetypes'].flatMap((a) => a.slots.filter((x) => x.fill === 'residual_time').map((x) => x.id)));
++  let cachedResidual: ReadonlySet<string> | undefined;
++  const residualIds = (): ReadonlySet<string> => (cachedResidual ??= new Set(params()['strength.archetypes'].flatMap((a) => a.slots.filter((x) => x.fill === 'residual_time').map((x) => x.id))));
+   const ordinary = (s: SessionDraft): SessionDraft => { const r = residualIds(); return r.size === 0 ? s : { ...s, blocks: s.blocks.map((b) => ({ ...b, items: b.items.filter((i) => !r.has(i.refs?.slotId ?? '')) })) }; };
+   const signature = (s: SessionDraft): string => ordinary(s).blocks.flatMap((b) => b.items.map((i) => i.exerciseId)).join('|');
+   const generate = (slot: SlotRequest): PortOutcome => {
+--- a/packages/strength/src/params.ts
++++ b/packages/strength/src/params.ts
+@@ -237,7 +237,15 @@
+ }
+ 
+ /** Lit et valide tous les paramètres `strength.*` (erreur explicite au premier paramètre invalide). */
++const PARAMS_CACHE = new WeakMap<LoadedRuleset, LoadedStrengthParams>();
+ export function readStrengthParams(ruleset: LoadedRuleset): LoadedStrengthParams {
++  const hit = PARAMS_CACHE.get(ruleset);
++  if (hit) return hit;
++  const out = readStrengthParams0(ruleset);
++  PARAMS_CACHE.set(ruleset, out);
++  return out;
++}
++function readStrengthParams0(ruleset: LoadedRuleset): LoadedStrengthParams {
+   const values: Record<string, unknown> = {};
+   const used: { id: string; version: string }[] = [];
+   for (const pid of Object.keys(STRENGTH_PARAMETER_SCHEMAS).sort() as StrengthParamId[]) {
+@@ -266,6 +274,8 @@
+ 
+ /** Lecture d'UN paramètre `strength.*` (utilisée par les contrôles exécutés dans le CORE). */
+ export function readStrengthParam<K extends StrengthParamId>(ruleset: LoadedRuleset, pid: K): StrengthParams[K] {
++  const hit = PARAMS_CACHE.get(ruleset);
++  if (hit) return hit.values[pid];
+   const { schema } = STRENGTH_PARAMETER_SCHEMAS[pid];
+   const meta = ruleset.parameter(pid);
+   if (!meta || meta.status === 'deprecated') throw new RulesetParameterError(pid, 'missing');

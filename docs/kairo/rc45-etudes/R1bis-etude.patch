@@ -1,0 +1,43 @@
+--- a/packages/strength/src/engine.ts
++++ b/packages/strength/src/engine.ts
+@@ -552,6 +552,29 @@
+     if (vf.groups > 0 && vf.over === vf.groups) { undo('volume'); continue; }
+     const trial = assemble(picks, timePressure, undefined);
+     if (fits(trial)) { core = trial; continue; }
++    // ÉTUDE R1-bis (jetable) : temps d'une INSTANCE SUPPLÉMENTAIRE d'un accessoire ordinaire, sans progression, dont
++    // tous les groupes primaires restent à la cible sans elle ; jamais un emplacement requis, une ancre ou une track.
++    if (process.env.R1_BIS && (!process.env.R1_BIS3 || s.def.id === 'lo.calves')) {
++      const without = (x: Pick) => picks.filter((p) => p !== x && p !== added);
++      const plannedOf = (list: readonly Pick[]) => plannedHardSets(assemble(list, timePressure, undefined).session.blocks.flatMap((b) => b.items).map((it) => ({ exercise: env.catalog.exercise(it.exerciseId) as Exercise, workingSets: it.prescription.type === 'sets' ? workingOf(it.prescription.sets) : 0 })), env);
++      const victims = picks.filter((p) => p !== added && p.slot.def.status === 'optional' && !isResidual(p.slot.def) && p.slot.def.role === 'accessory' && !p.track && (process.env.R1_BIS2 ? picks.filter((q) => q.slot.def.id === p.slot.def.id).length > 1 && !groupsOf(p.exercise, env).primary.includes('hamstrings') : Number(p.instance.split('#')[1]) > 0))
++        .filter((p) => { const pl = plannedOf(without(p)); return groupsOf(p.exercise, env).primary.every((g) => { const pr = weeklyProjection(g, env, pl); return pr !== undefined && pr.total >= pr.floor; }); });
++      const core0Planned: Record<string, number> = Object.fromEntries(core.session.blocks.flatMap((b) => b.items).map((it) => [it.exerciseId, it.prescription.type === 'sets' ? workingOf(it.prescription.sets) : 0]));
++      let swapped = false;
++      for (const v of [...victims].reverse()) {
++        const kept = picks.filter((p) => p !== v);
++        const t2 = assemble(kept, timePressure, undefined);
++        if (!fits(t2)) continue;
++        picks.splice(0, picks.length, ...kept);
++        families.clear(); for (const p of picks) families.add(p.exercise.family);
++        core = t2;
++        const vSets = (core0Planned[v.exercise.id] ?? 0);
++        reasons.push(strengthReasons.emit('SELECT.SLOT_OMITTED', { slot: v.slot.def.id, cause: `residual_swap:${groupsOf(v.exercise, env).primary.join('+')}:${String(vSets)}` }));
++        swapped = true;
++        break;
++      }
++      if (swapped) continue;
++    }
+     undo('duration');
+   }
+   const trace: ReasonCode[] = [];
+--- a/packages/planner/src/global-placement.ts
++++ b/packages/planner/src/global-placement.ts
+@@ -166,6 +166,8 @@
+     if (q.length !== planned.length) return null;
+     const groups: Record<string, number> = {};
+     for (const x of q.filter((y) => y.sport === 'strength')) for (const [g, n] of Object.entries(groupsOf(x.session)) as [string, number][]) groups[g] = (groups[g] ?? 0) + n;
++    // ÉTUDE R3' (jetable) : séries cédées au temps résiduel comptées comme présentes.
++    if (process.env.R3_PRIME) for (const x of q.filter((y) => y.sport === 'strength')) for (const r of x.reasons) { const m = /^residual_swap:([^:]*):([\d.]+)$/.exec(String(r.params.cause ?? '')); if (m) for (const g of (m[1] ?? '').split('+').filter(Boolean)) groups[g] = (groups[g] ?? 0) + Number(m[2]); }
+     const unresolved = q.reduce((n, x) => n + x.reasons.filter((y) => y.code === GP_CODES.M3_CONFLICT_UNRESOLVED).length, 0);
+     return [unresolved, fullBodyPairs(w, cfg.archetypeIds, dayOf), maxConsecutive(q.map((x) => dayOf(x.date))), ...Object.keys(groupsOf0).sort().map((g) => -(groups[g] ?? 0))];
+   };
