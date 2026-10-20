@@ -211,23 +211,35 @@ Doublons (scénario « P1 + libre dimanche », « P5 + libre ») :
 | RC4.5 | Musculation : équilibre, couverture, variation (F4–F6, F8) | R6, R7, R9 |
 | RC4.6 | Progressions Musculation, Cross-training, HYROX (F7, F13) | R8, R11 |
 | **RC4 TEST** | Branche d'intégration RC4 → TEST, libellés « REKKA », migration de libellés seulement | accord de déploiement |
-| **R5.1** | Planning Liste / Grille (n° 1) | — |
+| **R5.1** | Planning Liste / Grille, agenda à une ligne par jour (validé le 2026-10-20, prochain lot UI) | — |
 | **R5.2** | Avertissement muscles récemment sollicités (n° 2) | RC4.3 (voisines réelles), RC4.4 |
 | **R5.3** | Rotation Haut A / Haut B (n° 3) | RC4.5 (R9) |
 | **R6.x** | Strava (n° 5) | RC4.3, backend |
 | **R7.x** | Coach IA conversationnel (n° 4) | R5.2, R6, backend |
 
 ### 1. Planning hebdomadaire Liste / Grille
-- **Architecture :** interface seule, dans `apps/kairo/src/screens/beta0/Planning0.tsx` (60 lignes, liste actuelle).
-  - Composant `WeekGrid` : 7 colonnes, une carte par séance, couleur par sport.
-  - Données existantes de `selectBeta0Week` : aucun changement d'app-core.
-  - Mode mémorisé par lecteur (`localStorage` encapsulé, préférence non sportive).
-- **Dépendances :** aucune.
-- **Risques :**
-  - lisibilité à 360 px : grille horizontale défilante par jour, ou 7 colonnes compactes avec détail au toucher ;
-  - accessibilité : rôle `grid`, navigation au clavier ;
-  - non-régression des tests DOM du planning.
-- **Phase recommandée :** R5.1, juste après RC4.3. Faible risque et forte valeur terrain ; peut être menée en parallèle de RC4.4.
+
+> **Mise à jour 2026-10-20 (décision de l'utilisateur après RC4.5).** La vue grille retenue est celle **validée à partir de sa capture**. Ce n'est **pas** un calendrier classique à sept cases. Elle est prévue pour le **prochain lot UI**, sans modification des moteurs sportifs.
+
+- **Présentation validée :**
+  - agenda hebdomadaire avec **une ligne par jour** (lundi → dimanche, de haut en bas) ;
+  - **cartes de séances côte à côte** sur la ligne du jour ;
+  - **sélecteur Liste / Grille** ;
+  - **couleur par sport** (Musculation, Course, Cross-training, HYROX ; course libre distinguée) ;
+  - **séances cliquables**, qui ouvrent le détail ou le démarrage comme dans la liste actuelle.
+- **Mobile lisible :** à 360 px, la ligne d'un jour garde ses cartes côte à côte et défile horizontalement si nécessaire. Le jour reste visible en tête de ligne. Pas de 7 colonnes compressées.
+- **Interdit :** remplacer la vue par une grille calendrier 7 cases × semaines ; modifier app-core ou les moteurs pour cette vue.
+- **Architecture :**
+  - interface seule (`apps/kairo/src/screens/beta0/Planning0.tsx` et un composant `WeekAgendaGrid`) ;
+  - données existantes de `selectBeta0Week`, sans changement d'app-core : date, sport, statut, explication G5 / M3, lettre de variante actuelle ;
+  - mode mémorisé par lecteur (`localStorage` encapsulé, préférence d'affichage non sportive).
+- **Accessibilité :** une liste par jour (`role="list"`) ; cartes focusables au clavier ; libellé complet par carte (jour, sport, archétype, statut) ; contraste des couleurs de sport vérifié ; la couleur n'est jamais la seule information (texte du sport sur la carte).
+- **Tests prévus :**
+  - DOM : bascule Liste ↔ Grille, ordre des jours, cartes par jour, clic qui ouvre la séance, persistance du mode ;
+  - E2E mobile à 360 px : aucune coupure de texte, défilement horizontal limité à la ligne ;
+  - non-régression du Planning en liste.
+- **Dépendances :** aucune (lecture seule des données existantes).
+- **Phase :** R5.1, **prochain lot UI**.
 
 ### 2. Avertissement muscles récemment entraînés, maintien volontaire
 - **Architecture :**

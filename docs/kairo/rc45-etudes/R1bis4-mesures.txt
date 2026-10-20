@@ -1,0 +1,27 @@
+X60 | placements modifiés 0 | réductions modifiées 0 | échanges 1 | autres écarts 0 | sessions True
+    quads:10.7->10.2 calves:0.0->0.7
+X55 | placements modifiés 0 | réductions modifiées 0 | échanges 1 | autres écarts 5 | sessions True
+    quads:11.0->10.5 calves:0.0->0.7
+     (2, '2026-10-16', ['leg_extension:3x12-20@40 kg', 'leg_curl:3x12-20@effort'], ['leg_curl:3x12-20@40 kg', 'leg_extension:3x12-20@effort'])
+     (3, '2026-10-23', ['leg_extension:3x13-20@40 kg', 'leg_curl:3x12-20@effort'], ['leg_curl:3x13-20@40 kg', 'leg_extension:3x12-20@effort'])
+     (4, '2026-10-30', ['leg_extension:3x14-20@40 kg', 'leg_curl:3x12-20@effort'], ['leg_curl:3x14-20@40 kg', 'leg_extension:3x12-20@effort'])
+     (5, '2026-11-06', ['leg_extension:3x15-20@40 kg', 'leg_curl:3x12-20@effort'], ['leg_curl:3x15-20@40 kg', 'leg_extension:3x12-20@effort'])
+X45 | placements modifiés 0 | réductions modifiées 0 | échanges 1 | autres écarts 0 | sessions True
+    quads:8.2->7.7 calves:0.0->0.7
+X3R | placements modifiés 0 | réductions modifiées 0 | échanges 0 | autres écarts 0 | sessions True
+    
+P1 IDENTIQUE ms 2273 -> 2848
+P1b IDENTIQUE ms 914 -> 1063
+P2 IDENTIQUE ms 3954 -> 3805
+P3 IDENTIQUE ms 2177 -> 2515
+P4 IDENTIQUE ms 250 -> 203
+P5 IDENTIQUE ms 679 -> 766
+arms [19.5, 18.0, 18.0, 18.0] -> [19.5, 18.0, 18.0, 18.0] | total 73.5 -> 73.5
+back [11.0, 10.0, 10.0, 10.0] -> [11.0, 10.0, 10.0, 10.0] | total 41.0 -> 41.0
+calves [0.0, 0.0, 0.0, 0.0] -> [4.0, 4.0, 4.0, 4.0] | total 0.0 -> 16.0
+chest [10.0, 12.0, 12.0, 12.0] -> [10.0, 12.0, 12.0, 12.0] | total 46.0 -> 46.0
+core [9.0, 9.0, 9.0, 9.0] -> [9.0, 9.0, 9.0, 9.0] | total 36.0 -> 36.0
+glutes [17.0, 16.0, 16.0, 16.0] -> [17.0, 16.0, 16.0, 16.0] | total 65.0 -> 65.0
+hamstrings [13.0, 12.0, 12.0, 12.0] -> [13.0, 12.0, 12.0, 12.0] | total 49.0 -> 49.0
+quads [14.0, 16.0, 16.0, 16.0] -> [11.0, 13.0, 13.0, 13.0] | total 62.0 -> 50.0
+shoulders [16.0, 16.0, 16.0, 16.0] -> [16.0, 16.0, 16.0, 16.0] | total 64.0 -> 64.0

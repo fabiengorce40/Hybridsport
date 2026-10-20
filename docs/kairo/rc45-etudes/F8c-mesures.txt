@@ -1,0 +1,18 @@
+# F8-c — identité par rang k (lecture seule), banc RC4 6 profils x 6 semaines
+# colonnes : profil | séances Musculation à plusieurs par archétype | séances dont l'ordre d'identité diffère de l'ordre des dates | paires (même identité, semaines successives) | dont exercice principal changé | semaines où l'affichage actuel (contenu) partage une lettre
+P1 18 0 15 15 5
+P1b 24 0 20 0 10
+P2 18 18 15 15 5
+P3 18 15 15 9 4
+P4 0 0 0 0 0
+P5 18 0 15 13 5
+
+2026-10-05.strength.1 2026-10-05 str_full_body identité A lettre actuelle A ['ex.back_squat', 'ex.machine_chest_press'] strength:str_full_body:strength_volume:1
+2026-10-05.strength.2 2026-10-07 str_full_body identité B lettre actuelle B ['ex.romanian_deadlift', 'ex.seated_cable_row'] strength:str_full_body:strength_volume:2
+2026-10-05.strength.3 2026-10-08 str_full_body identité C lettre actuelle C ['ex.back_squat', 'ex.bench_press'] strength:str_full_body:strength_volume:3
+2026-10-12.strength.1 2026-10-13 str_full_body identité A lettre actuelle A ['ex.romanian_deadlift', 'ex.machine_chest_press'] strength:str_full_body:strength_volume:1
+2026-10-12.strength.2 2026-10-16 str_full_body identité B lettre actuelle B ['ex.back_squat', 'ex.seated_cable_row'] strength:str_full_body:strength_volume:2
+2026-10-12.strength.3 2026-10-18 str_full_body identité C lettre actuelle A ['ex.romanian_deadlift', 'ex.machine_chest_press'] strength:str_full_body:strength_volume:3
+2026-10-19.strength.1 2026-10-19 str_full_body identité A lettre actuelle A ['ex.back_squat', 'ex.seated_cable_row'] strength:str_full_body:strength_volume:1
+2026-10-19.strength.2 2026-10-23 str_full_body identité B lettre actuelle B ['ex.romanian_deadlift', 'ex.machine_chest_press'] strength:str_full_body:strength_volume:2
+2026-10-19.strength.3 2026-10-25 str_full_body identité C lettre actuelle A ['ex.back_squat', 'ex.seated_cable_row'] strength:str_full_body:strength_volume:3

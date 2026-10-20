@@ -1,0 +1,89 @@
+diff --git a/packages/planner/src/ports.ts b/packages/planner/src/ports.ts
+index 511aab0..9760205 100644
+--- a/packages/planner/src/ports.ts
++++ b/packages/planner/src/ports.ts
+@@ -406,7 +406,31 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
+   const residualIds = (): ReadonlySet<string> => (residualOnce ??= new Set(params()['strength.archetypes'].flatMap((a) => a.slots.filter((x) => x.fill === 'residual_time').map((x) => x.id))));
+   const ordinary = (s: SessionDraft): SessionDraft => { const r = residualIds(); return r.size === 0 ? s : { ...s, blocks: s.blocks.map((b) => ({ ...b, items: b.items.filter((i) => !r.has(i.refs?.slotId ?? '')) })) }; };
+   const signature = (s: SessionDraft): string => ordinary(s).blocks.flatMap((b) => b.items.map((i) => i.exerciseId)).join('|');
+-  const generate = (slot: SlotRequest): PortOutcome => {
++  const generate = (slot: SlotRequest): PortOutcome => r1bis4(slot, generateV(slot));
++  // ÉTUDE R1-bis-4 (jetable) : échange APRÈS le choix définitif du CORE, accepté seulement si rien d'autre ne change.
++  const r1bis4 = (slot: SlotRequest, out: PortOutcome): PortOutcome => {
++    if (!process.env.R1BIS4 || out.status !== 'planned') return out;
++    const omitted = out.reasons.some((r) => r.code === 'SELECT.SLOT_OMITTED' && r.params.slot === 'lo.calves' && r.params.cause === 'duration');
++    if (!omitted) return out;
++    const items = out.session.blocks.flatMap((b) => b.items);
++    const k = new Map<string, number>();
++    const pin = new Map<string, string>();
++    for (const it of items) { const sid = it.refs?.slotId; if (!sid) continue; const n = k.get(sid) ?? 0; k.set(sid, n + 1); pin.set(`${sid}#${String(n)}`, it.exerciseId); }
++    const g = globalThis as { __R1BIS4_PIN?: ReadonlyMap<string, string> };
++    g.__R1BIS4_PIN = pin;
++    let again: PortOutcome;
++    try { again = port.generate({ ...slot, ...(out.reasons.some((r) => r.code === GP_CODES.STRENGTH_WITHIN_WEEK_VARIATION && r.params.outcome === 'varied') && variation ? { plannerNotes: [...(slot.plannerNotes ?? []), variation.note] } : {}) }); } finally { g.__R1BIS4_PIN = undefined; }
++    if (again.status !== 'planned') return out;
++    const key = (it: { exerciseId: string; prescription: unknown; refs?: { slotId?: string } }) => `${it.refs?.slotId ?? ''}|${it.exerciseId}|${JSON.stringify(it.prescription)}`;
++    const before = items.map(key);
++    const after = again.session.blocks.flatMap((b) => b.items).map(key);
++    const removed = before.filter((x) => !after.includes(x));
++    const added = after.filter((x) => !before.includes(x));
++    const ok = removed.length === 1 && added.length === 1 && (added[0] ?? '').startsWith('lo.calves|') && after.filter((x) => !x.startsWith('lo.calves|')).join(',') === before.filter((x) => x !== removed[0]).join(',');
++    const trace = gpReasons.emit(GP_CODES.STRENGTH_WITHIN_WEEK_VARIATION, { ruleId: 'study.r1bis4', requestId: slot.requestId, twin: '', outcome: ok ? `swap:${removed[0] ?? ''}` : `rejected:${String(removed.length)}/${String(added.length)}`, note: '' });
++    return ok ? { ...again, reasons: [...again.reasons, trace] } : { ...out, reasons: [...out.reasons, trace] };
++  };
++  const generateV = (slot: SlotRequest): PortOutcome => {
+     const out = port.generate(slot);
+     if (!variation || out.status !== 'planned') return out;
+     const twin = (slot.weekSessions ?? []).find((w) => w.archetypeId === slot.intent.archetypeId && signature(w.session) === signature(out.session));
+diff --git a/packages/strength/src/engine.ts b/packages/strength/src/engine.ts
+index 3eaf748..4d15972 100644
+--- a/packages/strength/src/engine.ts
++++ b/packages/strength/src/engine.ts
+@@ -552,6 +552,29 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>):
+     if (vf.groups > 0 && vf.over === vf.groups) { undo('volume'); continue; }
+     const trial = assemble(picks, timePressure, undefined);
+     if (fits(trial)) { core = trial; continue; }
++    // ÉTUDE R1-bis (jetable) : temps d'une INSTANCE SUPPLÉMENTAIRE d'un accessoire ordinaire, sans progression, dont
++    // tous les groupes primaires restent à la cible sans elle ; jamais un emplacement requis, une ancre ou une track.
++    if ((globalThis as { __R1BIS4_SWAP?: boolean }).__R1BIS4_SWAP && s.def.id === 'lo.calves') {
++      const without = (x: Pick) => picks.filter((p) => p !== x && p !== added);
++      const plannedOf = (list: readonly Pick[]) => plannedHardSets(assemble(list, timePressure, undefined).session.blocks.flatMap((b) => b.items).map((it) => ({ exercise: env.catalog.exercise(it.exerciseId) as Exercise, workingSets: it.prescription.type === 'sets' ? workingOf(it.prescription.sets) : 0 })), env);
++      const victims = picks.filter((p) => p !== added && p.slot.def.status === 'optional' && !isResidual(p.slot.def) && p.slot.def.role === 'accessory' && !p.track && picks.filter((q) => q.slot.def.id === p.slot.def.id).length > 1 && !groupsOf(p.exercise, env).primary.includes('hamstrings'))
++        .filter((p) => { const pl = plannedOf(without(p)); return groupsOf(p.exercise, env).primary.every((g) => { const pr = weeklyProjection(g, env, pl); return pr !== undefined && pr.total >= pr.floor; }); });
++      const core0Planned: Record<string, number> = Object.fromEntries(core.session.blocks.flatMap((b) => b.items).map((it) => [it.exerciseId, it.prescription.type === 'sets' ? workingOf(it.prescription.sets) : 0]));
++      let swapped = false;
++      for (const v of [...victims].reverse()) {
++        const kept = picks.filter((p) => p !== v);
++        const t2 = assemble(kept, timePressure, undefined);
++        if (!fits(t2)) continue;
++        picks.splice(0, picks.length, ...kept);
++        families.clear(); for (const p of picks) families.add(p.exercise.family);
++        core = t2;
++        const vSets = (core0Planned[v.exercise.id] ?? 0);
++        reasons.push(strengthReasons.emit('SELECT.SLOT_OMITTED', { slot: v.slot.def.id, cause: `residual_swap:${groupsOf(v.exercise, env).primary.join('+')}:${String(vSets)}` }));
++        swapped = true;
++        break;
++      }
++      if (swapped) continue;
++    }
+     undo('duration');
+   }
+   const trace: ReasonCode[] = [];
+@@ -683,6 +706,17 @@ export function proposeStrength(input: Input): ProposeResult {
+   const lr = [...(registry !== undefined ? [strengthReasons.emit('DATA.SCIENCE_REGISTRY', { version: registry })] : []), ...priority, ...inter.reasons];
+   const env = buildEnv(input, params, archetype, goal, gk, inter.lowered, SeededRng.fromSeed(input.context.seed), inter.rirOnly);
+   try {
++    // ÉTUDE R1-bis-4 (jetable) : reconstruction de la proposition RETENUE par le CORE (tous les exercices épinglés),
++    // puis échange résiduel ; une seule proposition (aucune alternative).
++    const pin = (globalThis as { __R1BIS4_PIN?: ReadonlyMap<string, string> }).__R1BIS4_PIN;
++    if (pin) {
++      const g = globalThis as { __R1BIS4_SWAP?: boolean };
++      g.__R1BIS4_SWAP = true;
++      try {
++        const b = build(env, input, pin);
++        return { status: 'proposals', proposals: [proposal({ ...b, reasons: [...lr, ...b.reasons, ...interferenceSignals(b, env, inter.signals)] }, env, input, loaded, 0)] };
++      } finally { g.__R1BIS4_SWAP = false; }
++    }
+     const main = build(env, input, new Map());
+     const out = [proposal({ ...main, reasons: [...lr, ...main.reasons, ...interferenceSignals(main, env, inter.signals)] }, env, input, loaded, 0)];
+     // Alternatives : même séance, seul un emplacement NON ancré change d'exercice (sa première alternative).
