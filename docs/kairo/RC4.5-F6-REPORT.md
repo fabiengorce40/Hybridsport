@@ -175,3 +175,17 @@ Le surcoût vient de la sélection et de l'assemblage supplémentaires de l'empl
 4. **Alternatives proposées sur le leg curl et le leg extension :** elles ne contiennent plus de mollets (même cause, schéma).
 
 Aucune intégration avant votre accord.
+
+---
+
+## 8. Limite connue retenue : mollets en Haut / Bas (décision du 2026-10-20)
+
+**F6 est conservé tel quel.** Les pistes R1-bis, R1-bis-2, R1-bis-3 et R1-bis-4 sont **abandonnées pour le moment**. Études : `RC4.5-DECISION-R1BIS-REPRO-F8BIS-PERF.md` § 1 et `RC4.5-RAPPORT-D1-D4.md` § 3, code d'étude archivé dans `rc45-etudes/`.
+
+| | |
+|---|---|
+| **Limite** | Quand les séances **Bas du corps** sont pleines (temps disponible entièrement utilisé par les emplacements ordinaires), l'emplacement `lo.calves` est omis faute de temps (`SLOT_OMITTED … duration`). Les mollets peuvent alors rester à **0 série par semaine**, comme au scénario A (Haut / Bas 4×, hypertrophie, 4 semaines : 22 séries avant F6, 0 avec F6). |
+| **Pourquoi elle est acceptée** | R1 garantit que l'ajout résiduel ne remplace jamais un exercice, ne touche aucune progression et ne change ni la durée ni les autres groupes. Les échanges étudiés rendaient les mollets (0 → 16 séries au scénario A), mais déplaçaient dans un cas mixte la progression suivie d'un emplacement (leg extension → leg curl). Votre critère « ne jamais modifier les exercices suivis » n'était donc pas tenu partout. |
+| **Ce qui reste vrai** | Dès qu'il reste du temps, les mollets sont ajoutés en dernier jusqu'à la cible hebdomadaire (R1, R2) : banc RC4, P1b 3,3 séries par semaine, P2 2,7. L'omission est tracée dans la séance et le bilan de volume signale les mollets sous le plancher (`reduced_by_constraint`). |
+| **Ce que l'utilisateur peut faire** | Augmenter le temps disponible des jours Bas du corps, ou ajouter les mollets lui-même ; rien n'est automatisé. |
+| **Réouverture** | À reprendre avec un mécanisme qui ne déplace aucune progression suivie, par exemple : échange interdit tant que l'emplacement de la victime n'a aucune progression suivie, ou cible hebdomadaire répartie par le planificateur. À mesurer avant toute intégration. |
