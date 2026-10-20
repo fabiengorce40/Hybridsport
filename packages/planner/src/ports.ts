@@ -338,7 +338,9 @@ function ctStrengthBlocks(slot: SlotRequest): WeekSession[] {
 export interface StrengthWithinWeekVariationRule { readonly ruleId: string; readonly status: 'TEST_ONLY'; readonly note: string }
 
 export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule }): SportPort {
-  const params = () => readStrengthParams(def.content.ruleset).values;
+  // RC4.5 (O1) — paramètres et emplacements résiduels lus UNE fois par port : le contenu d'un port est fixé à sa création.
+  let paramsOnce: ReturnType<typeof readStrengthParams>['values'] | undefined;
+  const params = () => (paramsOnce ??= readStrengthParams(def.content.ruleset).values);
   const context = (slot: SlotRequest): StrengthContextInput => {
     const resolved = resolve(def.baseContext, slot);
     // S4 — priorité déclarée des sports, au vocabulaire du contrat Strength (sports sans discipline Strength ignorés).
@@ -400,7 +402,8 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
   // RC4.5 (F6, R1/R3) — éléments des emplacements à TEMPS RÉSIDUEL (attribut gouverné du ruleset) : écartés de la
   // signature des séances jumelles, du garde-fou de volume de la variation et des séries mesurées par la garde G5
   // (un groupe servi seulement par un ajout résiduel ne fait jamais refuser une organisation).
-  const residualIds = (): ReadonlySet<string> => new Set(params()['strength.archetypes'].flatMap((a) => a.slots.filter((x) => x.fill === 'residual_time').map((x) => x.id)));
+  let residualOnce: ReadonlySet<string> | undefined;
+  const residualIds = (): ReadonlySet<string> => (residualOnce ??= new Set(params()['strength.archetypes'].flatMap((a) => a.slots.filter((x) => x.fill === 'residual_time').map((x) => x.id))));
   const ordinary = (s: SessionDraft): SessionDraft => { const r = residualIds(); return r.size === 0 ? s : { ...s, blocks: s.blocks.map((b) => ({ ...b, items: b.items.filter((i) => !r.has(i.refs?.slotId ?? '')) })) }; };
   const signature = (s: SessionDraft): string => ordinary(s).blocks.flatMap((b) => b.items.map((i) => i.exerciseId)).join('|');
   const generate = (slot: SlotRequest): PortOutcome => {

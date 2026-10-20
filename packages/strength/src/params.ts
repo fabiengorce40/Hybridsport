@@ -236,8 +236,31 @@ export interface LoadedStrengthParams {
   readonly used: readonly { readonly id: string; readonly version: string }[];
 }
 
+/**
+ * RC4.5 (O2) — lecture validée MÉMORISÉE par ruleset chargé. Clé : l'IDENTITÉ de l'objet `LoadedRuleset` (immuable :
+ * document validé et copié au chargement, accès en lecture seule) ; deux contenus, deux versions ou deux profils ont
+ * deux objets distincts, donc deux entrées. Garde supplémentaire : chaque paramètre lu doit être ENCORE le même objet
+ * (métadonnées et valeur) qu'à la mise en cache, sinon la lecture est refaite. Une erreur de validation n'est JAMAIS
+ * mise en cache (elle est relevée à chaque appel). Les valeurs mémorisées sont gelées (aucune mutation partagée).
+ */
+interface CachedStrengthParams { readonly out: LoadedStrengthParams; readonly metas: readonly (readonly [string, unknown, unknown])[] }
+const PARAMS_CACHE = new WeakMap<LoadedRuleset, CachedStrengthParams>();
+const deepFreeze = <T>(v: T): T => {
+  if (v !== null && typeof v === 'object' && !Object.isFrozen(v)) { Object.freeze(v); for (const x of Object.values(v)) deepFreeze(x); }
+  return v;
+};
+const stillCurrent = (ruleset: LoadedRuleset, c: CachedStrengthParams): boolean => c.metas.every(([id, meta, value]) => { const m = ruleset.parameter(id); return m === meta && m?.value === value; });
+
 /** Lit et valide tous les paramètres `strength.*` (erreur explicite au premier paramètre invalide). */
 export function readStrengthParams(ruleset: LoadedRuleset): LoadedStrengthParams {
+  const hit = PARAMS_CACHE.get(ruleset);
+  if (hit && stillCurrent(ruleset, hit)) return hit.out;
+  const out = deepFreeze(readStrengthParamsUncached(ruleset));
+  PARAMS_CACHE.set(ruleset, { out, metas: out.used.map((u) => { const m = ruleset.parameter(u.id); return [u.id, m, m?.value] as const; }) });
+  return out;
+}
+
+function readStrengthParamsUncached(ruleset: LoadedRuleset): LoadedStrengthParams {
   const values: Record<string, unknown> = {};
   const used: { id: string; version: string }[] = [];
   for (const pid of Object.keys(STRENGTH_PARAMETER_SCHEMAS).sort() as StrengthParamId[]) {
@@ -266,6 +289,9 @@ export function readStrengthParams(ruleset: LoadedRuleset): LoadedStrengthParams
 
 /** Lecture d'UN paramètre `strength.*` (utilisée par les contrôles exécutés dans le CORE). */
 export function readStrengthParam<K extends StrengthParamId>(ruleset: LoadedRuleset, pid: K): StrengthParams[K] {
+  // RC4.5 (O2) — lecture complète déjà validée pour CE ruleset (et toujours à jour) : même valeur, sans revalidation.
+  const hit = PARAMS_CACHE.get(ruleset);
+  if (hit && stillCurrent(ruleset, hit)) return hit.out.values[pid];
   const { schema } = STRENGTH_PARAMETER_SCHEMAS[pid];
   const meta = ruleset.parameter(pid);
   if (!meta || meta.status === 'deprecated') throw new RulesetParameterError(pid, 'missing');

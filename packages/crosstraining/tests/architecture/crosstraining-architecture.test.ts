@@ -109,6 +109,15 @@ const STRENGTH_RC45_F6_CHANGES = [
   'packages/strength/tests/unit/f6-residual.test.ts',
 ];
 /**
+ * RC4.5 lot O1 + O2 — décision D4 validée le 2026-10-20 (liste FERMÉE) : lecture des paramètres `strength.*`
+ * MÉMORISÉE par ruleset chargé (identité, garde de fraîcheur, aucune erreur en cache, valeurs gelées) et ses tests.
+ * Aucune décision sportive modifiée (matrice RC4 strictement identique).
+ */
+const STRENGTH_RC45_PERF_CHANGES = [
+  'packages/strength/src/params.ts',
+  'packages/strength/tests/unit/params-cache.test.ts',
+];
+/**
  * Lot Running RC4.3 — décision R2 (option A′) validée le 2026-10-18 (liste FERMÉE) : politique `freeRunPolicy`
  * PROGRAMME_FIRST de V19 (surcouche des décisions produit), origine des courses libres FOURNIE au contexte, ancre et
  * preuve de tolérance (V23) selon cette politique ; test dédié. Aucune autre modification de Running n'est admise.
@@ -158,6 +167,7 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   ...STRENGTH_S5_CHANGES,
   ...STRENGTH_C42_A2_CHANGES,
   ...STRENGTH_RC45_F6_CHANGES,
+  ...STRENGTH_RC45_PERF_CHANGES,
   ...RUNNING_RC43_R2_CHANGES,
 ];
 
@@ -187,7 +197,7 @@ describe('frontières', () => {
     }
     const changed = diff.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
     expect(changed.filter((f) => !CT_C2_AUTHORIZED_CORE_CHANGES.includes(f))).toEqual([]);
-    expect(changed.filter((f) => (f.startsWith('packages/running/') && !RUNNING_RC43_R2_CHANGES.includes(f)) || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f) && !STRENGTH_C42_A2_CHANGES.includes(f) && !STRENGTH_RC45_F6_CHANGES.includes(f)))).toEqual([]);
+    expect(changed.filter((f) => (f.startsWith('packages/running/') && !RUNNING_RC43_R2_CHANGES.includes(f)) || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f) && !STRENGTH_C42_A2_CHANGES.includes(f) && !STRENGTH_RC45_F6_CHANGES.includes(f) && !STRENGTH_RC45_PERF_CHANGES.includes(f)))).toEqual([]);
   });
 });
 
