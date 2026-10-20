@@ -2,14 +2,17 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.js';
 import { StoreProvider } from './store.js';
+import { IS_PREVIEW, PREVIEW_LABEL } from './channel.js';
 import './styles.css';
 import './design/kairo-ds.css';
 
+if (IS_PREVIEW) { document.title = PREVIEW_LABEL; document.documentElement.classList.add('k-test'); }
 const root = document.getElementById('root');
 if (root) {
   createRoot(root).render(
     <StrictMode>
       <StoreProvider>
+        {IS_PREVIEW && <div className="k-test-ribbon" role="status" aria-label={PREVIEW_LABEL}>{PREVIEW_LABEL} · données séparées</div>}
         <App />
       </StoreProvider>
     </StrictMode>,

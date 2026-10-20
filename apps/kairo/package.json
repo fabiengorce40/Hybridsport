@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "build:r51-preview": "VITE_KAIRO_CHANNEL=r51-preview vite build --outDir dist-r51-preview",
     "build:single": "VITE_TARGET=single vite build --outDir dist-single && node scripts/single-file.mjs dist-single/kairo-preview.html"
   },
   "dependencies": {

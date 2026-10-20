@@ -11,6 +11,7 @@ import type { ExecutionStep, ProgrammeSessionView, RunPlayerPosition } from '@hy
 import { useStore } from '../store.js';
 import { formatChrono } from './duration.js';
 import { RECOVERY_MODES, targetLine } from '../screens/Session.js';
+import { STORAGE_NAMESPACE } from '../channel.js';
 
 // technical-constant: rafraîchissement de l'affichage (ms), jamais une source de temps
 const REFRESH_MS = 250;
@@ -22,7 +23,7 @@ const BEEP = { hz: 880, s: 0.25, gain: 0.2 };
 const PERCENT = 100;
 // technical-constant: mètres par kilomètre (affichage)
 const M_PER_KM = 1000;
-const SOUND_KEY = 'kairo.runPlayer.sound';
+const SOUND_KEY = `${STORAGE_NAMESPACE}kairo.runPlayer.sound`;
 
 export function doseText(d: ExecutionStep['dose']): string {
   if ('durationS' in d) return durationLabel(d.durationS);

@@ -8,10 +8,11 @@ import { ExperimentalBadge, placedOf, RunningTestFallbackNotice, SessionCard0, w
 import type { SessionItemView } from './common.js';
 import { NoWeek, PainPause } from './Home0.js';
 import { WeekAgenda } from './WeekAgenda.js';
+import { STORAGE_NAMESPACE } from '../../channel.js';
 
 /** R5.1 — mode d'affichage du Planning, mémorisé par lecteur (préférence d'interface, jamais une donnée sportive). */
 export type PlanningView = 'list' | 'grid';
-export const PLANNING_VIEW_KEY = 'kairo.planning.view';
+export const PLANNING_VIEW_KEY = `${STORAGE_NAMESPACE}kairo.planning.view`;
 const readView = (): PlanningView => { try { return localStorage.getItem(PLANNING_VIEW_KEY) === 'grid' ? 'grid' : 'list'; } catch { return 'list'; } };
 const writeView = (v: PlanningView): void => { try { localStorage.setItem(PLANNING_VIEW_KEY, v); } catch { /* préférence non conservée */ } };
 

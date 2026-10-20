@@ -1,0 +1,126 @@
+# REKKA R5.1 — PRÉVISUALISATION : déploiement ISOLÉ sur Cloudflare Pages (projet séparé `kairo-r51-preview`, origine
+# `*.pages.dev` distincte de la production GitHub Pages ET du projet TEST `kairo-rc1-test`). Ce workflow ne touche jamais
+# la branche `gh-pages`, ni les branches de production ou de TEST, ni leurs workflows ; il ne demande qu'un accès en
+# LECTURE au dépôt. Secrets utilisés (déjà configurés pour TEST) : CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID. Sans eux,
+# la build est construite et vérifiée, puis le déploiement est SAUTÉ (notice), sans échec ni effet de bord.
+name: REKKA R5.1 — PRÉVISUALISATION (Cloudflare Pages, isolé)
+
+on:
+  push:
+    branches: [claude/kairo-r51-preview]
+    paths: ['apps/kairo/**', 'packages/**', 'pnpm-lock.yaml', '.github/workflows/kairo-r51-preview-pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kairo-r51-preview
+  cancel-in-progress: false
+
+env:
+  CF_PROJECT: kairo-r51-preview
+
+jobs:
+  deploy:
+    # Garde : uniquement depuis la branche de prévisualisation (un lancement manuel depuis une autre branche ne fait rien).
+    if: github.ref == 'refs/heads/claude/kairo-r51-preview'
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.guard.outputs.ready }}
+      url: ${{ steps.deploy.outputs.deployment-url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm kairo:build:r51-preview
+      - name: Marqueur de version (canal de prévisualisation)
+        run: echo "{\"commit\":\"${GITHUB_SHA}\",\"channel\":\"r51-preview\"}" > apps/kairo/dist-r51-preview/version.json
+      - name: Garde — identifiants Cloudflare présents ?
+        id: guard
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$ACCOUNT" ]; then
+            echo "::notice::Secrets CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID absents : build de prévisualisation vérifiée, déploiement non effectué."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      # Outil Cloudflare (wrangler) exécuté par npx HORS de l'espace pnpm. Version figée.
+      - name: Projet Cloudflare Pages (création si absent)
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          npx --yes wrangler@3.90.0 pages project list > projects.txt
+          if grep -qw "${CF_PROJECT}" projects.txt; then
+            echo "Projet ${CF_PROJECT} déjà présent."
+          else
+            npx --yes wrangler@3.90.0 pages project create "${CF_PROJECT}" --production-branch=main
+          fi
+      - name: Déploiement Cloudflare Pages (projet de prévisualisation)
+        id: deploy
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DIST: ${{ github.workspace }}/apps/kairo/dist-r51-preview
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -o pipefail
+          npx --yes wrangler@3.90.0 pages deploy "${DIST}" --project-name="${CF_PROJECT}" --branch=main --commit-hash="${GITHUB_SHA}" --commit-dirty=true 2>&1 | tee deploy.log
+          url=$(grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev' deploy.log | tail -1)
+          test -n "$url"
+          echo "deployment-url=${url}" >> "$GITHUB_OUTPUT"
+      - name: Adresse déployée
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          echo "::notice::REKKA R5.1 — PRÉVISUALISATION déployée à l'adresse ${URL} (adresse stable : https://${CF_PROJECT}.pages.dev)"
+
+  verify:
+    needs: deploy
+    if: needs.deploy.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Attente de la build déployée (version.json = ce commit, canal r51-preview)
+        env:
+          SITE_URL: https://kairo-r51-preview.pages.dev
+        run: |
+          for i in $(seq 1 30); do
+            v=$(curl -fsS "${SITE_URL}/version.json?t=$(date +%s)" || true)
+            echo "essai $i : $v"
+            echo "$v" | grep -q "${GITHUB_SHA}" && echo "$v" | grep -q '"r51-preview"' && exit 0
+            sleep 10
+          done
+          exit 1
+      - run: pnpm --filter @hybridsport/kairo exec playwright install --with-deps chromium
+      - name: Isolation, état utilisateur importé, Liste / Grille et E2E complet sur l'adresse stable
+        env:
+          SITE_URL: https://kairo-r51-preview.pages.dev
+          PROD_URL: https://fabiengorce40.github.io/Hybridsport/
+        run: mkdir -p shots && E2E_URL="${SITE_URL}/" E2E_PROD_URL="${PROD_URL}" node apps/kairo/scripts/e2e-r51-preview.mjs shots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: kairo-r51-preview-e2e-captures
+          path: shots
