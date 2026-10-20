@@ -1,4 +1,4 @@
-/* global localStorage, document, fetch, navigator, window -- exécutés dans la page (page.evaluate) */
+/* global localStorage, document, fetch, navigator, window, getComputedStyle -- exécutés dans la page (page.evaluate) */
 /**
  * Parcours Beta 0 de bout en bout dans Chromium (viewport téléphone) sur la build de production servie par
  * `vite preview` : manifest + service worker → onboarding hybride → programme → planning → séance Musculation (séries
@@ -1386,6 +1386,90 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   await c2.close();
 }
 
+// R5.1 — Planning en GRILLE (agenda hebdomadaire, une ligne par jour) sur téléphone, 360 et 390 px : sélecteur
+// Liste / Grille, sept jours dans l'ordre, cartes (sport, nom, durée, statut, couleur), aucun débordement de page, défilement
+// limité à la ligne d'un jour, jour et date toujours visibles, textes lisibles, clic et clavier, mode mémorisé.
+{
+  const tag = '[R5.1]';
+  const fx = (n) => readFileSync(new URL(`../tests/fixtures/${n}.json`, import.meta.url), 'utf8');
+  const WEEK = ['2026-10-12', '2026-10-13', '2026-10-14', '2026-10-15', '2026-10-16', '2026-10-17', '2026-10-18'];
+  for (const width of [360, 390]) {
+    for (const fixture of ['r51-p5-w2', 'r51-multi-day']) {
+      const c = await browser.newContext({ viewport: { width, height: 800 }, deviceScaleFactor: 2, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+      const p = await c.newPage();
+      const perrors = [];
+      p.on('pageerror', (e) => perrors.push(e.message));
+      await p.clock.install({ time: new Date('2026-10-12T07:30:00+02:00') });
+      await p.clock.resume();
+      await p.addInitScript((s) => { if (!localStorage.getItem('kairo.state')) localStorage.setItem('kairo.state', s); }, fx(fixture));
+      await p.goto(URL_);
+      const t = `${tag} ${String(width)} px ${fixture}`;
+      await p.getByRole('button', { name: 'Planning', exact: true }).click();
+      check(await p.locator('.week').isVisible() && await p.getByRole('button', { name: 'Liste' }).getAttribute('aria-pressed') === 'true', `${t} : liste par défaut`);
+      if (shots && fixture === 'r51-p5-w2') await p.screenshot({ path: `${shots}/r51-${String(width)}-liste.png` });
+      await p.getByRole('button', { name: 'Grille' }).click();
+      await p.locator('[data-planning-grid]').waitFor();
+      const days = await p.locator('[data-agenda-day]').evaluateAll((ds) => ds.map((d) => d.getAttribute('data-agenda-day')));
+      check(JSON.stringify(days) === JSON.stringify(WEEK), `${t} : sept jours, du lundi au dimanche (${days.join(' ')})`);
+      const overflow = await p.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      check(overflow <= 0, `${t} : aucun débordement horizontal de la page (${String(overflow)} px)`);
+      const geo = await p.evaluate(() => Array.from(document.querySelectorAll('[data-agenda-day]')).map((d) => {
+        const date = d.querySelector('.agenda-date').getBoundingClientRect();
+        const row = d.querySelector('.agenda-cards');
+        const cards = Array.from(d.querySelectorAll('.agenda-card')).map((card) => {
+          const parts = Array.from(card.children).map((x) => x.getBoundingClientRect());
+          const overlap = parts.some((a, i) => parts.slice(i + 1).some((b) => a.bottom > b.top + 1 && b.bottom > a.top + 1 && a.right > b.left + 1 && b.right > a.left + 1));
+          const clipped = Array.from(card.querySelectorAll('.agenda-sport, .agenda-dur, .badge')).some((x) => x.scrollWidth > x.clientWidth + 1);
+          const name = card.querySelector('.agenda-name');
+          return { overlap, clipped, nameLines: Math.round(name.scrollHeight / parseFloat(getComputedStyle(name).lineHeight)), color: getComputedStyle(card).borderLeftColor, sport: card.getAttribute('data-sport'), w: card.getBoundingClientRect().width };
+        });
+        return { day: d.getAttribute('data-agenda-day'), dateLeft: date.left, dateRight: date.right, scrollable: row ? row.scrollWidth > row.clientWidth + 1 : false, cards };
+      }));
+      check(geo.every((g) => g.dateLeft >= 0 && g.dateRight <= width), `${t} : jour et date visibles sur chaque ligne`);
+      const cards = geo.flatMap((g) => g.cards);
+      check(cards.length >= 7 && cards.every((x) => !x.overlap && !x.clipped), `${t} : ${String(cards.length)} cartes, aucun texte superposé ni coupé`);
+      check(cards.every((x) => x.nameLines <= 2), `${t} : noms de séance sur deux lignes au plus (${cards.map((x) => x.nameLines).join(',')})`);
+      const colors = new Map(cards.map((x) => [x.sport, x.color]));
+      check(colors.size === 4 && new Set(colors.values()).size === 4, `${t} : couleur distincte par sport (${[...colors].map(([k, v]) => `${k}=${v}`).join(' ; ')})`);
+      if (fixture === 'r51-multi-day') {
+        const busy = geo.find((g) => g.cards.length === 3);
+        check(Boolean(busy) && busy.scrollable, `${t} : trois séances le même jour, côte à côte, ligne défilante (${busy?.day})`);
+        const row = p.locator(`[data-agenda-day="${busy.day}"] .agenda-cards`);
+        await row.evaluate((r) => { r.scrollLeft = r.scrollWidth; });
+        const after = await p.evaluate((d) => { const el = document.querySelector(`[data-agenda-day="${d}"] .agenda-date`).getBoundingClientRect(); return { left: el.left, right: el.right, page: document.documentElement.scrollWidth - document.documentElement.clientWidth }; }, busy.day);
+        check(after.left >= 0 && after.right <= width && after.page <= 0, `${t} : après défilement de la ligne, le jour reste visible et la page ne déborde pas`);
+        if (shots) await p.screenshot({ path: `${shots}/r51-${String(width)}-grille-multi.png` });
+        await row.evaluate((r) => { r.scrollLeft = 0; });
+      } else if (shots) await p.screenshot({ path: `${shots}/r51-${String(width)}-grille.png`, fullPage: true });
+      // Clic : même action que la liste (ouverture de la séance), puis clavier (Entrée) sur une carte.
+      const first = p.locator('.agenda-card').first();
+      const id = await first.getAttribute('data-request');
+      await first.click();
+      await p.locator('.overlay').waitFor();
+      const opened = await p.locator('.overlay').innerText();
+      await p.getByRole('button', { name: 'Retour' }).first().click();
+      await p.getByRole('button', { name: 'Liste' }).click();
+      await p.locator(`.week button[data-request="${id}"]`).click();
+      check(await p.locator('.overlay').innerText() === opened, `${t} : la carte de la grille ouvre la même séance que la liste`);
+      await p.getByRole('button', { name: 'Retour' }).first().click();
+      await p.getByRole('button', { name: 'Grille' }).click();
+      await p.locator('.agenda-card').first().focus();
+      await p.keyboard.press('Enter');
+      check(await p.locator('.overlay').isVisible(), `${t} : carte activable au clavier`);
+      await p.getByRole('button', { name: 'Retour' }).first().click();
+      // Navigation entre semaines existantes.
+      await p.getByRole('button', { name: 'Semaine précédente' }).click();
+      check(await p.locator('[data-agenda-day]').first().getAttribute('data-agenda-day') === '2026-10-05', `${t} : semaine précédente affichée en grille`);
+      await p.getByRole('button', { name: 'Revenir à la semaine en cours' }).click();
+      // Mode mémorisé après rechargement.
+      await p.reload();
+      await p.getByRole('button', { name: 'Planning', exact: true }).click();
+      check(await p.locator('[data-planning-grid]').isVisible() && await p.getByRole('button', { name: 'Grille' }).getAttribute('aria-pressed') === 'true', `${t} : mode Grille mémorisé après rechargement`);
+      check(perrors.length === 0, `${t} : aucune erreur de page (${perrors.join(' | ')})`);
+      await c.close();
+    }
+  }
+}
 // Version réellement servie : identifiant de build affiché dans Réglages = version.json publié (site déployé seulement).
 {
   const { c, p } = await freshPage(readFileSync(new URL('../../../packages/app-core/tests/fixtures/pre-s1-state.json', import.meta.url), 'utf8'));

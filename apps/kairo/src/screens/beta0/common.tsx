@@ -21,8 +21,8 @@ export interface DayItemView { readonly date: string; readonly sessions: readonl
 // technical-constant: nombre d'exercices principaux affichés sur une carte (lisibilité mobile)
 const MAIN_SHOWN = 3;
 
-export function weekOf(state: AppState, today: string): (Omit<Beta0WeekView, 'days'> & { readonly items: readonly SessionItemView[]; readonly days: readonly DayItemView[] }) | null {
-  const v = selectBeta0Week(state, today);
+export function weekOf(state: AppState, today: string, weekIndex?: number): (Omit<Beta0WeekView, 'days'> & { readonly items: readonly SessionItemView[]; readonly days: readonly DayItemView[] }) | null {
+  const v = selectBeta0Week(state, today, weekIndex);
   if (!v) return null;
   // « En cours » : séance commencée non terminée (planifiée, ou non placée réalisée maintenant — M3.1).
   const started = (x: SessionView) => (x.status === 'planned' || (x.status === 'not_planned' && x.placement === 'composed_unplaced')) && state.programmeLogs[x.requestId] !== undefined;
@@ -64,6 +64,15 @@ export function ExperimentalBadge() {
  */
 function metaOf(v: SessionItemView): string {
   const block = isBlock(v.composition);
+  const dur = durationText(v);
+  const fmt = ctFormatName(v.ctFormat);
+  const fullS = v.sport === 'crosstraining' && isFullC4(v.composition) ? v.composition?.c4?.estimatedDurationS ?? v.composition?.c4?.plannedDurationS ?? null : null;
+  return [roleName(v.role), fullS !== null ? ['Séance complète', fmt].filter(Boolean).join(' · ') : block ? [v.sport === 'hyrox' ? 'Bloc HYROX' : 'Bloc principal', fmt].filter(Boolean).join(' ') : fmt, dur].filter(Boolean).join(' · ');
+}
+
+/** Durée affichée d'une séance (mêmes sources et même priorité que la ligne descriptive de la carte). */
+export function durationText(v: SessionItemView): string | null {
+  const block = isBlock(v.composition);
   // Bloc Cross-training : durée PRESCRITE du format (exacte), jamais l'estimation du CORE ni la cible du créneau.
   const blockS = block && v.sport === 'crosstraining' ? v.composition?.blockDurationS ?? null : null;
   // C4 — séance complète : durée PLANIFIÉE de l'ensemble des blocs (valeurs gouvernées), jamais la cible du créneau.
@@ -73,8 +82,7 @@ function metaOf(v: SessionItemView): string {
     : blockS !== null ? approxMinutes(blockS)
     : v.estimatedDurationS !== null ? `≈ ${approxMinutes(v.estimatedDurationS)}`
       : !block && v.targetDurationS !== null ? `≈ ${approxMinutes(v.targetDurationS)}` : null;
-  const fmt = ctFormatName(v.ctFormat);
-  return [roleName(v.role), fullS !== null ? ['Séance complète', fmt].filter(Boolean).join(' · ') : block ? [v.sport === 'hyrox' ? 'Bloc HYROX' : 'Bloc principal', fmt].filter(Boolean).join(' ') : fmt, dur].filter(Boolean).join(' · ');
+  return dur;
 }
 
 export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemView; onOpen: (id: string) => void; highlight?: boolean }) {

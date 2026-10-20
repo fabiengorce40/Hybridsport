@@ -211,7 +211,7 @@ Doublons (scénario « P1 + libre dimanche », « P5 + libre ») :
 | RC4.5 | Musculation : équilibre, couverture, variation (F4–F6, F8) | R6, R7, R9 |
 | RC4.6 | Progressions Musculation, Cross-training, HYROX (F7, F13) | R8, R11 |
 | **RC4 TEST** | Branche d'intégration RC4 → TEST, libellés « REKKA », migration de libellés seulement | accord de déploiement |
-| **R5.1** | Planning Liste / Grille, agenda à une ligne par jour (validé le 2026-10-20, prochain lot UI) | — |
+| **R5.1** | Planning Liste / Grille, agenda à une ligne par jour : **développé** (`R5.1-PLANNING-GRILLE.md`), en attente de validation | — |
 | **R5.2** | Avertissement muscles récemment sollicités (n° 2) | RC4.3 (voisines réelles), RC4.4 |
 | **R5.3** | Rotation Haut A / Haut B (n° 3) | RC4.5 (R9) |
 | **R6.x** | Strava (n° 5) | RC4.3, backend |
