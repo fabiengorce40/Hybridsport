@@ -1,4 +1,4 @@
-/* global localStorage, document */
+/* global localStorage, document, Event -- exécutés dans la page */
 /**
  * REKKA BÊTA — MISE À JOUR sans perte de données : la BÊTA (build A) est utilisée (programme créé, état utilisateur
  * importé, préférences), puis une NOUVELLE build B est publiée (commande `E2E_REBUILD_CMD` : reconstruit `dist-beta` avec
