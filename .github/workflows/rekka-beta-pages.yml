@@ -1,0 +1,138 @@
+# REKKA BÊTA — version complète de validation utilisateur : déploiement ISOLÉ sur Cloudflare Pages (projet séparé
+# `rekka-beta`, origine `*.pages.dev` distincte de la production GitHub Pages, du projet TEST `kairo-rc1-test` et de la
+# prévisualisation `kairo-r51-preview`). Ce workflow ne touche jamais la branche `gh-pages`, ni les branches de production
+# ou de TEST, ni leurs workflows ; il ne demande qu'un accès en LECTURE au dépôt. Secrets utilisés (déjà configurés pour
+# TEST) : CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID. Sans eux, la build est construite et vérifiée, puis le déploiement
+# est SAUTÉ (notice), sans échec ni effet de bord.
+name: REKKA BÊTA (Cloudflare Pages, isolé)
+
+on:
+  push:
+    branches: [claude/rekka-beta]
+    paths: ['apps/kairo/**', 'packages/**', 'pnpm-lock.yaml', '.github/workflows/rekka-beta-pages.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rekka-beta
+  cancel-in-progress: false
+
+env:
+  CF_PROJECT: rekka-beta
+
+jobs:
+  deploy:
+    # Garde : uniquement depuis la branche BÊTA (un lancement manuel depuis une autre branche ne fait rien).
+    if: github.ref == 'refs/heads/claude/rekka-beta'
+    runs-on: ubuntu-latest
+    outputs:
+      ready: ${{ steps.guard.outputs.ready }}
+      url: ${{ steps.deploy.outputs.deployment-url }}
+      site: ${{ steps.deploy.outputs.site-url }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+      - run: pnpm kairo:build:beta
+      - name: Marqueur de version (canal BÊTA)
+        run: echo "{\"commit\":\"${GITHUB_SHA}\",\"channel\":\"beta\"}" > apps/kairo/dist-beta/version.json
+      - name: Garde — identifiants Cloudflare présents ?
+        id: guard
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$ACCOUNT" ]; then
+            echo "::notice::Secrets CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID absents : build BÊTA vérifiée, déploiement non effectué."
+            echo "ready=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+          fi
+      # Outil Cloudflare (wrangler) exécuté par npx HORS de l'espace pnpm. Version figée.
+      - name: Projet Cloudflare Pages (création si absent ; refus si un site existant n'est pas la BÊTA)
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        working-directory: ${{ runner.temp }}
+        run: |
+          npx --yes wrangler@3.90.0 pages project list > projects.txt
+          if grep -qw "${CF_PROJECT}" projects.txt; then
+            # Projet existant : on ne publie que par-dessus une BÊTA REKKA (version.json canal « beta ») ou un projet vide.
+            v=$(curl -fsS "https://${CF_PROJECT}.pages.dev/version.json?t=$(date +%s)" || true)
+            if [ -n "$v" ] && ! echo "$v" | grep -q '"channel":"beta"'; then
+              echo "::error::Le projet ${CF_PROJECT} existe et ne publie pas la BÊTA REKKA ($v) : déploiement refusé pour ne rien écraser."
+              exit 1
+            fi
+            echo "Projet ${CF_PROJECT} déjà présent (BÊTA REKKA ou vide)."
+          else
+            npx --yes wrangler@3.90.0 pages project create "${CF_PROJECT}" --production-branch=main
+          fi
+      - name: Déploiement Cloudflare Pages (projet BÊTA)
+        id: deploy
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          DIST: ${{ github.workspace }}/apps/kairo/dist-beta
+        working-directory: ${{ runner.temp }}
+        run: |
+          set -o pipefail
+          npx --yes wrangler@3.90.0 pages deploy "${DIST}" --project-name="${CF_PROJECT}" --branch=main --commit-hash="${GITHUB_SHA}" --commit-dirty=true 2>&1 | tee deploy.log
+          url=$(grep -oE 'https://[a-zA-Z0-9.-]+\.pages\.dev' deploy.log | tail -1)
+          test -n "$url"
+          # Adresse STABLE du projet : l'adresse de déploiement sans son préfixe propre au déploiement.
+          site="https://$(echo "$url" | sed -E 's#^https://[^.]+\.##')"
+          echo "deployment-url=${url}" >> "$GITHUB_OUTPUT"
+          echo "site-url=${site}" >> "$GITHUB_OUTPUT"
+      - name: Adresse déployée
+        if: steps.guard.outputs.ready == 'true'
+        env:
+          URL: ${{ steps.deploy.outputs.deployment-url }}
+          SITE: ${{ steps.deploy.outputs.site-url }}
+        run: |
+          echo "::notice::REKKA BÊTA déployée : ${URL} (adresse stable : ${SITE}) — commit ${GITHUB_SHA}"
+
+  verify:
+    needs: deploy
+    if: needs.deploy.outputs.ready == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Attente de la build déployée (version.json = ce commit, canal beta)
+        env:
+          SITE_URL: ${{ needs.deploy.outputs.site }}
+        run: |
+          for i in $(seq 1 30); do
+            v=$(curl -fsS "${SITE_URL}/version.json?t=$(date +%s)" || true)
+            echo "essai $i : $v"
+            echo "$v" | grep -q "${GITHUB_SHA}" && echo "$v" | grep -q '"beta"' && exit 0
+            sleep 10
+          done
+          exit 1
+      - run: pnpm --filter @hybridsport/kairo exec playwright install --with-deps chromium
+      - name: Identité, isolation, état utilisateur, Planning et E2E complet sur l'adresse stable
+        env:
+          SITE_URL: ${{ needs.deploy.outputs.site }}
+          PROD_URL: https://fabiengorce40.github.io/Hybridsport/
+        run: mkdir -p shots && E2E_URL="${SITE_URL}/" E2E_PROD_URL="${PROD_URL}" E2E_EXPECT_BUILD="${GITHUB_SHA}" node apps/kairo/scripts/e2e-beta.mjs shots
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rekka-beta-e2e-captures
+          path: shots

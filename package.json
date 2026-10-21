@@ -16,7 +16,10 @@
     "kairo:dev": "pnpm --filter @hybridsport/kairo dev",
     "kairo:build": "pnpm --filter @hybridsport/kairo build",
     "kairo:preview": "pnpm --filter @hybridsport/kairo preview",
-    "kairo:e2e": "node apps/kairo/scripts/e2e.mjs"
+    "kairo:e2e": "node apps/kairo/scripts/e2e.mjs",
+    "kairo:build:beta": "pnpm --filter @hybridsport/kairo build:beta",
+    "kairo:e2e:beta": "node apps/kairo/scripts/e2e-beta.mjs",
+    "kairo:e2e:beta-update": "node apps/kairo/scripts/e2e-beta-update.mjs"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.5",

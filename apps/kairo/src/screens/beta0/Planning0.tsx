@@ -10,14 +10,15 @@ import { NoWeek, PainPause } from './Home0.js';
 import { WeekAgenda } from './WeekAgenda.js';
 import { PlanningCatalog } from './PlanningCatalog.js';
 import type { CatalogPeriod } from './PlanningCatalog.js';
+import { STORAGE_NAMESPACE } from '../../channel.js';
 
 /** R5.1 — mode d'affichage du Planning, mémorisé par lecteur (préférence d'interface, jamais une donnée sportive). */
 export type PlanningView = 'list' | 'grid';
-export const PLANNING_VIEW_KEY = 'kairo.planning.view';
+export const PLANNING_VIEW_KEY = `${STORAGE_NAMESPACE}kairo.planning.view`;
 const readView = (): PlanningView => { try { return localStorage.getItem(PLANNING_VIEW_KEY) === 'grid' ? 'grid' : 'list'; } catch { return 'list'; } };
 const writeView = (v: PlanningView): void => { try { localStorage.setItem(PLANNING_VIEW_KEY, v); } catch { /* préférence non conservée */ } };
 /** R5.2 — période de la liste (cette semaine / 2 semaines), mémorisée comme le mode d'affichage. */
-export const PLANNING_PERIOD_KEY = 'kairo.planning.period';
+export const PLANNING_PERIOD_KEY = `${STORAGE_NAMESPACE}kairo.planning.period`;
 const readPeriod = (): CatalogPeriod => { try { return localStorage.getItem(PLANNING_PERIOD_KEY) === 'two_weeks' ? 'two_weeks' : 'week'; } catch { return 'week'; } };
 const writePeriod = (v: CatalogPeriod): void => { try { localStorage.setItem(PLANNING_PERIOD_KEY, v); } catch { /* préférence non conservée */ } };
 // technical-constant: jours par semaine

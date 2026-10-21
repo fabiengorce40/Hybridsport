@@ -321,3 +321,14 @@ details summary { cursor: pointer; min-height: 32px; display: flex; align-items:
 .catalog-empty { padding: var(--space-3); border: 1px dashed var(--border); border-radius: var(--radius-md); }
 .catalog-group .card[data-status='completed_as_prescribed'], .catalog-group .card[data-status='modified'] { opacity: 0.85; }
 .catalog-group .card[data-status='missed'] { border-color: rgba(255, 90, 90, 0.35); }
+
+/* Canal BÊTA : bandeau d'identité FIXE (nom, commit déployé), toujours visible (absent de la build de production). La page,
+   les superpositions et les éléments collants sont décalés de sa hauteur : il ne masque jamais un bouton. */
+html.k-test { --k-test-h: calc(24px + env(safe-area-inset-top)); }
+.k-test-ribbon { position: fixed; top: 0; left: 0; right: 0; height: var(--k-test-h); z-index: 1000; box-sizing: border-box; padding: env(safe-area-inset-top) 8px 0; display: flex; align-items: center; justify-content: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; background: #0E5E52; color: #fff; font: 600 11px/1 system-ui, sans-serif; letter-spacing: .02em; }
+html.k-test body { padding-top: var(--k-test-h); }
+html.k-test .overlay { top: var(--k-test-h); }
+html.k-test .authority-banner, html.k-test .topbar { top: var(--k-test-h); }
+html.k-test .overlay .topbar { top: 0; }
+html.k-test .k-nav { top: calc(56px + var(--k-test-h)); }
+html.k-test .toast { top: calc(52px + var(--k-test-h)); }

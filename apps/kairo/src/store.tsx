@@ -6,6 +6,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react';
 import { AppError, ensureBeta0Week, ensureCurrentWeek, isBeta0, loadState, MemoryStorage, saveState } from '@hybridsport/app-core';
 import { ERROR_TEXT } from './present.js';
+import { namespaced, STORAGE_NAMESPACE } from './channel.js';
 import type { AppState, Clock, KeyValueStorage, LoadResult } from '@hybridsport/app-core';
 
 /** Horloge réelle (l'interface est la seule couche qui lit l'heure système). */
@@ -18,10 +19,11 @@ export function realClock(): Clock {
 function browserStorage(): { storage: KeyValueStorage; persistent: boolean } {
   try {
     const ls = window.localStorage;
-    const probe = 'kairo.probe';
+    const probe = `${STORAGE_NAMESPACE}kairo.probe`;
     ls.setItem(probe, '1');
     ls.removeItem(probe);
-    return { storage: ls, persistent: true };
+    // Canal BÊTA : clés préfixées (production : stockage tel quel, clés historiques).
+    return { storage: namespaced(ls), persistent: true };
   } catch {
     return { storage: new MemoryStorage(), persistent: false };
   }
