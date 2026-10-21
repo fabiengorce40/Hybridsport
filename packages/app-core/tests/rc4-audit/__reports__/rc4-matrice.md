@@ -17,7 +17,7 @@ Volume Musculation prévu (séries de travail / semaine, moyenne S1–S6 ; cible
 
 | quads | hamstrings | glutes | calves | chest | back | shoulders | arms | core |
 |---|---|---|---|---|---|---|---|---|
-| 7.5 (10–18) | 8.5 (8–14) | 11.8 (6–14) | 1.3 (4–10) | 13.7 (10–20) | 9.2 (10–20) | 13.6 (8–16) | 16.3 (6–14) | 7.8 (4–10) |
+| 7.5 (10–18) | 8.5 (8–14) | 11.8 (6–14) | 1.3 (4–10) | 13.7 (10–20) | 10.5 (10–20) | 13.6 (8–16) | 16.9 (6–14) | 7.8 (4–10) |
 
 Course (structure prescrite par semaine) :
 
@@ -74,7 +74,7 @@ Volume Musculation prévu (séries de travail / semaine, moyenne S1–S6 ; cible
 
 | quads | hamstrings | glutes | calves | chest | back | shoulders | arms | core |
 |---|---|---|---|---|---|---|---|---|
-| 10.7 (10–18) | 11.7 (8–14) | 15.2 (6–14) | 3.3 (4–10) | 13.7 (10–20) | 9.3 (10–20) | 13.7 (8–16) | 16.3 (6–14) | 7.6 (4–10) |
+| 10.7 (10–18) | 11.7 (8–14) | 15.2 (6–14) | 3.3 (4–10) | 13.7 (10–20) | 10.5 (10–20) | 13.9 (8–16) | 16.9 (6–14) | 7.6 (4–10) |
 
 Cross-training / HYROX :
 
@@ -94,7 +94,7 @@ Cross-training / HYROX :
 Contrôles avant séance scénarisés :
 
 - S3 2026-10-21 M:str_full_bodyB : no/high → adapted [rir:romanian_deadlift:2>3;rir:machine_chest_press:2>3;rir:pull_up:2>3;rir:pec_deck:1>2;rir:bulgarian_split_squat:2>3;rir]
-- S4 2026-10-26 M:str_full_bodyA : yes/low/knee:P2 → adapted [removed:leg_curl;removed:bulgarian_split_squat]
+- S4 2026-10-26 M:str_full_bodyA : yes/low/knee:P2 → adapted [removed:leg_curl;removed:bulgarian_split_squat;added:seated_cable_row]
 
 ## P3 — Musculation 3× (masse) + HYROX 2×
 
@@ -111,7 +111,7 @@ Volume Musculation prévu (séries de travail / semaine, moyenne S1–S6 ; cible
 
 | quads | hamstrings | glutes | calves | chest | back | shoulders | arms | core |
 |---|---|---|---|---|---|---|---|---|
-| 9.2 (10–18) | 9.8 (8–14) | 12.8 (6–14) | 0.7 (4–10) | 13.2 (10–20) | 9.0 (10–20) | 13.4 (8–16) | 16.0 (6–14) | 7.8 (4–10) |
+| 9.2 (10–18) | 9.8 (8–14) | 12.8 (6–14) | 0.7 (4–10) | 13.2 (10–20) | 9.8 (10–20) | 13.3 (8–16) | 16.4 (6–14) | 7.8 (4–10) |
 
 Cross-training / HYROX :
 
@@ -178,7 +178,7 @@ Volume Musculation prévu (séries de travail / semaine, moyenne S1–S6 ; cible
 
 | quads | hamstrings | glutes | calves | chest | back | shoulders | arms | core |
 |---|---|---|---|---|---|---|---|---|
-| 4.3 (10–18) | 4.3 (8–14) | 7.5 (6–14) | 0.7 (4–10) | 13.2 (10–20) | 9.3 (10–20) | 14.3 (8–16) | 16.0 (6–14) | 9.1 (4–10) |
+| 4.3 (10–18) | 4.3 (8–14) | 7.5 (6–14) | 0.7 (4–10) | 13.2 (10–20) | 10.8 (10–20) | 14.0 (8–16) | 16.8 (6–14) | 9.1 (4–10) |
 
 Course (structure prescrite par semaine) :
 

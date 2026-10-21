@@ -30,9 +30,9 @@
     "total": 13.7
    },
    "back": {
-    "direct": 9.2,
+    "direct": 10.5,
     "indirect": 0,
-    "total": 9.2
+    "total": 10.5
    },
    "shoulders": {
     "direct": 4.7,
@@ -41,8 +41,8 @@
    },
    "arms": {
     "direct": 14.2,
-    "indirect": 2.1,
-    "total": 16.3
+    "indirect": 2.8,
+    "total": 17
    },
    "core": {
     "direct": 3.5,
@@ -94,7 +94,7 @@
    "glutes": 0,
    "calves": 4,
    "chest": 0,
-   "back": 5,
+   "back": 2,
    "shoulders": 0,
    "arms": 0,
    "core": 0
@@ -112,29 +112,29 @@
   },
   "pushPull": {
    "push": 18.3,
-   "pull": 9.2,
-   "ratio": 1.99
+   "pull": 10.5,
+   "ratio": 1.74
   },
   "variety": [
    {
     "arch": "str_full_body",
     "sessions": 18,
-    "distinctExercises": 14,
-    "distinctCompositions": 10,
+    "distinctExercises": 15,
+    "distinctCompositions": 11,
     "identicalToPrevious": 0,
-    "meanSimilarity": 0.17,
+    "meanSimilarity": 0.16,
     "distinctMains": 2
    }
   ],
   "continuity": {
-   "transitions": 88,
+   "transitions": 91,
    "exerciseSwitched": 5,
    "recalibrated": 0,
    "loadDown": 0,
    "repsDown": 0,
-   "itemsWithLoad": 66,
+   "itemsWithLoad": 69,
    "itemsBodyweight": 9,
-   "itemsEffortOnly": 24,
+   "itemsEffortOnly": 25,
    "repeatedEffortOnly": [
     "str_full_body/fb.trunk:cable_pallof_press×7"
    ]
@@ -160,7 +160,7 @@
   },
   "plannerDivergences": 0,
   "duration": {
-   "meanMin": 50,
+   "meanMin": 51,
    "maxMin": 63,
    "overAvailable": 0
   },
@@ -376,19 +376,19 @@
     "total": 13.7
    },
    "back": {
-    "direct": 9.3,
+    "direct": 10.5,
     "indirect": 0,
-    "total": 9.3
+    "total": 10.5
    },
    "shoulders": {
     "direct": 4.7,
-    "indirect": 9,
-    "total": 13.7
+    "indirect": 9.3,
+    "total": 14
    },
    "arms": {
     "direct": 14.2,
-    "indirect": 2.2,
-    "total": 16.4
+    "indirect": 2.8,
+    "total": 17
    },
    "core": {
     "direct": 3,
@@ -440,7 +440,7 @@
    "glutes": 0,
    "calves": 1,
    "chest": 0,
-   "back": 4,
+   "back": 1,
    "shoulders": 0,
    "arms": 0,
    "core": 0
@@ -458,29 +458,29 @@
   },
   "pushPull": {
    "push": 18.3,
-   "pull": 9.3,
-   "ratio": 1.97
+   "pull": 10.5,
+   "ratio": 1.74
   },
   "variety": [
    {
     "arch": "str_full_body",
     "sessions": 18,
-    "distinctExercises": 14,
-    "distinctCompositions": 12,
+    "distinctExercises": 15,
+    "distinctCompositions": 14,
     "identicalToPrevious": 0,
-    "meanSimilarity": 0.24,
+    "meanSimilarity": 0.25,
     "distinctMains": 2
    }
   ],
   "continuity": {
-   "transitions": 104,
-   "exerciseSwitched": 5,
+   "transitions": 107,
+   "exerciseSwitched": 8,
    "recalibrated": 0,
    "loadDown": 0,
    "repsDown": 0,
-   "itemsWithLoad": 81,
+   "itemsWithLoad": 84,
    "itemsBodyweight": 9,
-   "itemsEffortOnly": 25,
+   "itemsEffortOnly": 26,
    "repeatedEffortOnly": [
     "str_full_body/fb.trunk:cable_pallof_press×6"
    ]
@@ -502,7 +502,7 @@
   },
   "plannerDivergences": 0,
   "duration": {
-   "meanMin": 56,
+   "meanMin": 57,
    "maxMin": 64,
    "overAvailable": 0
   },
@@ -539,19 +539,19 @@
     "total": 13.2
    },
    "back": {
-    "direct": 9,
+    "direct": 9.8,
     "indirect": 0,
-    "total": 9
+    "total": 9.8
    },
    "shoulders": {
     "direct": 4.7,
-    "indirect": 8.8,
-    "total": 13.5
+    "indirect": 8.7,
+    "total": 13.4
    },
    "arms": {
     "direct": 13.8,
-    "indirect": 2.2,
-    "total": 16
+    "indirect": 2.6,
+    "total": 16.4
    },
    "core": {
     "direct": 3.5,
@@ -603,7 +603,7 @@
    "glutes": 0,
    "calves": 5,
    "chest": 1,
-   "back": 5,
+   "back": 3,
    "shoulders": 0,
    "arms": 0,
    "core": 0
@@ -621,29 +621,29 @@
   },
   "pushPull": {
    "push": 17.8,
-   "pull": 9,
-   "ratio": 1.98
+   "pull": 9.8,
+   "ratio": 1.82
   },
   "variety": [
    {
     "arch": "str_full_body",
     "sessions": 18,
-    "distinctExercises": 15,
-    "distinctCompositions": 14,
+    "distinctExercises": 16,
+    "distinctCompositions": 16,
     "identicalToPrevious": 0,
     "meanSimilarity": 0.18,
     "distinctMains": 3
    }
   ],
   "continuity": {
-   "transitions": 93,
+   "transitions": 95,
    "exerciseSwitched": 7,
    "recalibrated": 0,
    "loadDown": 0,
    "repsDown": 0,
-   "itemsWithLoad": 69,
+   "itemsWithLoad": 71,
    "itemsBodyweight": 9,
-   "itemsEffortOnly": 26,
+   "itemsEffortOnly": 27,
    "repeatedEffortOnly": [
     "str_full_body/fb.trunk:cable_pallof_press×7"
    ]
@@ -671,7 +671,7 @@
   "plannerDivergences": 0,
   "duration": {
    "meanMin": 51,
-   "maxMin": 63,
+   "maxMin": 64,
    "overAvailable": 0
   },
   "accountingGap": 0
@@ -859,19 +859,19 @@
     "total": 13.2
    },
    "back": {
-    "direct": 9.3,
+    "direct": 10.8,
     "indirect": 0,
-    "total": 9.3
+    "total": 10.8
    },
    "shoulders": {
     "direct": 5.2,
-    "indirect": 9.1,
-    "total": 14.3
+    "indirect": 8.8,
+    "total": 14
    },
    "arms": {
     "direct": 13.5,
-    "indirect": 2.5,
-    "total": 16
+    "indirect": 3.3,
+    "total": 16.8
    },
    "core": {
     "direct": 5.7,
@@ -923,7 +923,7 @@
    "glutes": 0,
    "calves": 5,
    "chest": 0,
-   "back": 4,
+   "back": 0,
    "shoulders": 0,
    "arms": 0,
    "core": 0
@@ -941,29 +941,29 @@
   },
   "pushPull": {
    "push": 18.3,
-   "pull": 9.3,
-   "ratio": 1.97
+   "pull": 10.8,
+   "ratio": 1.69
   },
   "variety": [
    {
     "arch": "str_full_body",
     "sessions": 18,
-    "distinctExercises": 13,
-    "distinctCompositions": 11,
+    "distinctExercises": 14,
+    "distinctCompositions": 13,
     "identicalToPrevious": 0,
-    "meanSimilarity": 0.16,
+    "meanSimilarity": 0.15,
     "distinctMains": 3
    }
   ],
   "continuity": {
-   "transitions": 77,
+   "transitions": 82,
    "exerciseSwitched": 3,
    "recalibrated": 0,
    "loadDown": 0,
    "repsDown": 0,
-   "itemsWithLoad": 52,
+   "itemsWithLoad": 57,
    "itemsBodyweight": 9,
-   "itemsEffortOnly": 27,
+   "itemsEffortOnly": 28,
    "repeatedEffortOnly": [
     "str_full_body/fb.trunk:cable_pallof_press×11"
    ]
@@ -993,7 +993,7 @@
   },
   "plannerDivergences": 0,
   "duration": {
-   "meanMin": 46,
+   "meanMin": 47,
    "maxMin": 70,
    "overAvailable": 0
   },
@@ -1030,9 +1030,9 @@
     "total": 12.8
    },
    "back": {
-    "direct": 9.5,
+    "direct": 10.2,
     "indirect": 0,
-    "total": 9.5
+    "total": 10.2
    },
    "shoulders": {
     "direct": 5.2,
@@ -1041,8 +1041,8 @@
    },
    "arms": {
     "direct": 13.7,
-    "indirect": 2.5,
-    "total": 16.2
+    "indirect": 2.8,
+    "total": 16.5
    },
    "core": {
     "direct": 2.5,
@@ -1094,7 +1094,7 @@
    "glutes": 0,
    "calves": 4,
    "chest": 0,
-   "back": 3,
+   "back": 1,
    "shoulders": 0,
    "arms": 0,
    "core": 0
@@ -1112,14 +1112,14 @@
   },
   "pushPull": {
    "push": 18,
-   "pull": 9.5,
-   "ratio": 1.89
+   "pull": 10.2,
+   "ratio": 1.76
   },
   "variety": [
    {
     "arch": "str_full_body",
     "sessions": 18,
-    "distinctExercises": 12,
+    "distinctExercises": 13,
     "distinctCompositions": 9,
     "identicalToPrevious": 0,
     "meanSimilarity": 0.24,
@@ -1127,14 +1127,14 @@
    }
   ],
   "continuity": {
-   "transitions": 99,
+   "transitions": 100,
    "exerciseSwitched": 1,
    "recalibrated": 0,
    "loadDown": 0,
    "repsDown": 0,
-   "itemsWithLoad": 76,
+   "itemsWithLoad": 77,
    "itemsBodyweight": 9,
-   "itemsEffortOnly": 25,
+   "itemsEffortOnly": 26,
    "repeatedEffortOnly": [
     "str_full_body/fb.trunk:cable_pallof_press×5"
    ]

@@ -16,25 +16,25 @@
 
 | groupe | plancher / haut | A | B | C | D | E |
 |---|---|---|---|---|---|---|
-| arms | 6 / 14 | 16.5 ▲ | 10.8 | 16.5 ▲ | 15 ▲ | 16.5 ▲ |
-| back | 10 / 20 | 9.3 ⚠ | 6 ⚠ | 9.3 ⚠ | 10 | 9.3 ⚠ |
+| arms | 6 / 14 | 17.4 ▲ | 12.5 | 17.4 ▲ | 15 ▲ | 17.4 ▲ |
+| back | 10 / 20 | 11 | 9.5 ⚠ | 11 | 10 | 11 |
 | calves (bas du corps) | 4 / 10 | 2 ⚠ | 0 ⚠ | 1 ⚠ | 1 ⚠ | 2 ⚠ |
 | chest | 10 / 20 | 5.5 ⚠ | 3.3 ⚠ | 13.8 | 4.8 ⚠ | 5.5 ⚠ |
 | core | 4 / 10 | 7.8 | 7.3 | 7 | 6.3 | 7.8 |
 | glutes (bas du corps) | 6 / 14 | 12 | 4 ⚠ | 12 | 7.8 | 12 |
 | hamstrings (bas du corps) | 8 / 14 | 10.5 | 2 ⚠ | 9.5 | 2.8 ⚠ | 10.5 |
 | quads (bas du corps) | 10 / 18 | 7.5 ⚠ | 2 ⚠ | 8.5 ⚠ | 5 ⚠ | 7.5 ⚠ |
-| shoulders | 8 / 16 | 13.3 | 11.6 | 13.6 | 12.9 | 13.3 |
+| shoulders | 8 / 16 | 13.1 | 11.6 | 13.5 | 12.9 | 13.1 |
 
 ## Durées (somme hebdomadaire estimée des séances prévues, min ; disponible : 435 min)
 
 | config. | S1 | S2 | S3 | S4 |
 |---|---|---|---|---|
-| A | 251 | 255 | 256 | 252 |
-| B | 227 | 228 | 228 | 227 |
-| C | 258 | 254 | 254 | 260 |
+| A | 256 | 259 | 257 | 256 |
+| B | 231 | 236 | 236 | 235 |
+| C | 262 | 258 | 254 | 264 |
 | D | 212 | 180 | 179 | 179 |
-| E | 251 | 255 | 256 | 252 |
+| E | 256 | 259 | 257 | 256 |
 
 ## Reports et ajustements non appliqués
 
@@ -58,7 +58,7 @@
 - 10-13 strength — str_full_body B — réalisée (adaptée : rir:seated_cable_row:2>3, rir:db_shoulder_press:2>3, rir:cable_lateral_raise:1>2) : back_squat, seated_cable_row, db_shoulder_press, cable_lateral_raise, leg_curl, walking_lunge_db
 - 10-14 crosstraining — amrap + bloc force — réalisée : hip_thrust_barbell, row_erg (cond.), reverse_lunge_bw (cond.), pull_up (cond.)
 - 10-15 running — running.easy — réalisée : easy_run
-- 10-16 strength — str_full_body A — réalisée : romanian_deadlift, machine_chest_press, pull_up, cable_pallof_press
+- 10-16 strength — str_full_body A — réalisée : romanian_deadlift, machine_chest_press, pull_up, cable_pallof_press, machine_row
 - 10-17 running — running.easy — réalisée : easy_run
 
 ### B. Profil hybride (Course prioritaire 3×, Musculation 2×, CT 1×)
@@ -66,9 +66,9 @@
 - 10-12 running — running.easy — réalisée : easy_run
 - 10-13 running — running.easy — réalisée : easy_run
 - 10-14 crosstraining — amrap + bloc force — réalisée : back_squat, row_erg (cond.), reverse_lunge_bw (cond.), pull_up (cond.)
-- 10-15 strength — str_full_body A — réalisée : romanian_deadlift, machine_chest_press, pull_up, cable_lateral_raise, cable_pallof_press
+- 10-15 strength — str_full_body A — réalisée : romanian_deadlift, machine_chest_press, pull_up, cable_lateral_raise, cable_pallof_press, machine_row
 - 10-16 running — running.easy — réalisée : easy_run
-- 10-17 strength — str_full_body B — réalisée : back_squat, seated_cable_row, db_shoulder_press, cable_lateral_raise, cable_pallof_press
+- 10-17 strength — str_full_body B — réalisée : back_squat, seated_cable_row, db_shoulder_press, cable_lateral_raise, cable_pallof_press, machine_row
 
 ### C. Salle complète
 
@@ -76,7 +76,7 @@
 - 10-13 strength — str_full_body B — réalisée (adaptée : rir:seated_cable_row:2>3, rir:db_shoulder_press:2>3, rir:pec_deck:1>2) : back_squat, seated_cable_row, db_shoulder_press, pec_deck, leg_curl, bulgarian_split_squat
 - 10-14 crosstraining — amrap + bloc force — réalisée : hip_thrust_machine, row_erg (cond.), reverse_lunge_bw (cond.), pull_up (cond.)
 - 10-15 running — running.easy — réalisée : easy_run
-- 10-16 strength — str_full_body A — réalisée : romanian_deadlift, machine_chest_press, pull_up, pec_deck
+- 10-16 strength — str_full_body A — réalisée : romanian_deadlift, machine_chest_press, pull_up, pec_deck, machine_row
 - 10-17 running — running.easy — réalisée : easy_run
 
 ### D. Matériel limité (haltères seulement)
@@ -93,5 +93,5 @@
 - 10-13 strength — str_full_body B — réalisée (adaptée : rir:seated_cable_row:2>3, rir:db_shoulder_press:2>3, rir:cable_lateral_raise:1>2) : back_squat, seated_cable_row, db_shoulder_press, cable_lateral_raise, leg_curl, walking_lunge_db
 - 10-14 crosstraining — amrap + bloc force — réalisée : hip_thrust_barbell, row_erg (cond.), reverse_lunge_bw (cond.), pull_up (cond.)
 - 10-15 running — running.easy — réalisée : easy_run
-- 10-16 strength — str_full_body A — réalisée (adaptée : rir:machine_chest_press:2>3, rir:pull_up:2>3, rir:cable_pallof_press:1>2) : romanian_deadlift, machine_chest_press, pull_up, cable_pallof_press
+- 10-16 strength — str_full_body A — réalisée (adaptée : rir:machine_chest_press:2>3, rir:pull_up:2>3, rir:cable_pallof_press:1>2, rir:machine_row:2>3) : romanian_deadlift, machine_chest_press, pull_up, cable_pallof_press, machine_row
 - 10-17 running — running.easy — réalisée : easy_run

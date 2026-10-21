@@ -125,6 +125,14 @@ const STRENGTH_RC46_L1V3_CHANGES = [
   'packages/strength/tests/fixtures/l1v3.ts',
 ];
 /**
+ * RC4.6 lot 2 (L1b-4) — décision validée le 2026-10-21 (liste FERMÉE) : contenu provisoire L1b-4 en SURCOUCHE du contenu
+ * L1-V3 (tirage complémentaire à temps résiduel, jusqu'au plancher du dos, retiré sous interférence de préhension).
+ * Attributs F6 existants (R1, R2) ; aucun code du moteur Strength modifié.
+ */
+const STRENGTH_RC46_L1B4_CHANGES = [
+  'packages/strength/tests/fixtures/l1b4.ts',
+];
+/**
  * Lot Running RC4.3 — décision R2 (option A′) validée le 2026-10-18 (liste FERMÉE) : politique `freeRunPolicy`
  * PROGRAMME_FIRST de V19 (surcouche des décisions produit), origine des courses libres FOURNIE au contexte, ancre et
  * preuve de tolérance (V23) selon cette politique ; test dédié. Aucune autre modification de Running n'est admise.
@@ -176,6 +184,7 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   ...STRENGTH_RC45_F6_CHANGES,
   ...STRENGTH_RC45_PERF_CHANGES,
   ...STRENGTH_RC46_L1V3_CHANGES,
+  ...STRENGTH_RC46_L1B4_CHANGES,
   ...RUNNING_RC43_R2_CHANGES,
 ];
 

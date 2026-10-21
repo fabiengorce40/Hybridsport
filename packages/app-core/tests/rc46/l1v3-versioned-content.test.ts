@@ -49,9 +49,10 @@ describe('RC4.6 L1-V3 — contenu versionné', () => {
     }
   });
 
-  it('registre : contenu courant L1-V3 (catalogue F6 inchangé) ; F6 conservé et relu', () => {
-    expect(CURRENT).toEqual({ ruleset: '0.6.0-strength-l1v3', catalog: F6.catalog });
+  it('registre : L1-V3 conservé (catalogue F6 inchangé) sous le contenu courant (L1b-4) ; F6 conservé et relu', () => {
+    expect(CURRENT).toEqual({ ruleset: '0.7.0-strength-l1b4', catalog: F6.catalog });
     expect(strengthContentFor(CURRENT.ruleset, CURRENT.catalog)).toBe(strengthContent());
+    expect(strengthContentFor('0.6.0-strength-l1v3', F6.catalog)?.ruleset.version).toBe('0.6.0-strength-l1v3');
     expect(strengthContentFor(F6.ruleset, F6.catalog)?.ruleset.version).toBe(F6.ruleset);
   });
 
@@ -69,7 +70,7 @@ describe('RC4.6 L1-V3 — contenu versionné', () => {
       expect(got).toEqual(REFS[n]);
     });
 
-    it(`${n} : semaine suivante planifiée avec L1-V3 (≤ 1 isolation du haut du corps), semaines antérieures intactes`, () => {
+    it(`${n} : semaine suivante planifiée avec le contenu courant (≤ 1 isolation du haut du corps, L1-V3 inclus), semaines antérieures intactes`, () => {
       const s = load(n);
       const mon = nextMonday(STATES[n]);
       const next = ensureBeta0Week(s, { today: mon, now: `${mon}T06:00:00.000Z` });

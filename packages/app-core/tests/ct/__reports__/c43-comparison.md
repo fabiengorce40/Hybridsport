@@ -128,7 +128,7 @@ Séances auditées : 33 (dont 27 planifiées, 6 refusées avec cause). Signaleme
 
 | Date | Sport | Exercices de force (séance Musculation ou bloc délégué) | Séries de travail | Conditionnement |
 |---|---|---|---|---|
-| 2026-10-05 | strength | back_squat, machine_chest_press, machine_row, walking_lunge_db, machine_lateral_raise, leg_curl, cable_pallof_press, machine_calf_raise | 17 | — |
+| 2026-10-05 | strength | back_squat, machine_chest_press, machine_row, walking_lunge_db, machine_lateral_raise, leg_curl, cable_pallof_press, machine_calf_raise, seated_cable_row | 19 | — |
 | 2026-10-06 | crosstraining | hip_thrust_machine | 1 | amrap · row_erg, reverse_lunge_bw, pull_up |
 | 2026-10-07 | strength | romanian_deadlift, pull_up, db_shoulder_press, bulgarian_split_squat, pec_deck, leg_curl, cable_pallof_press | 14 | — |
 | 2026-10-08 | crosstraining | hack_squat | 2 | amrap · row_erg, air_squat, band_assisted_pull_up |

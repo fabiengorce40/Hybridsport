@@ -12,7 +12,7 @@ Conflit `lower_knee` lundi (Strength, haut) / mardi (Running, haut) à 24 h. Run
 |---|---|---|---|---|
 | lun | 60 | strength | `HMHHH·HH` |  |
 | mar | 60 | running | `HH···HH·` |  |
-| mer | 60 | strength | `·MHHM·MM` |  |
+| mer | 60 | strength | `·MHHM·HH` |  |
 | jeu | 60 | strength | `MLHHM·MM` |  |
 | ven | 60 | running | `HH···HH·` |  |
 | sam | 90 | — | `` |  |
@@ -26,7 +26,7 @@ Conflit `lower_knee` lundi (Strength, haut) / mardi (Running, haut) à 24 h. Run
 |---|---|---|---|---|
 | lun | 60 | strength | `HMHHH·HH` | conflit résiduel ×1 |
 | mar | 60 | running | `HH···HH·` | conflit résiduel ×1 |
-| mer | 60 | strength | `·MHHM·MM` |  |
+| mer | 60 | strength | `·MHHM·HH` |  |
 | jeu | 60 | strength | `MLHHM·MM` |  |
 | ven | 60 | running | `HH···HH·` |  |
 | sam | 90 | — | `` |  |
@@ -46,7 +46,7 @@ Sans protection, la course du mardi échange son jour avec une séance Strength 
 |---|---|---|---|---|
 | lun | 60 | strength | `HMHHH·HH` |  |
 | mar | 60 | running | `HH···HH·` |  |
-| mer | 60 | strength | `·MHHM·MM` |  |
+| mer | 60 | strength | `·MHHM·HH` |  |
 | jeu | 60 | strength | `MLHHM·MM` |  |
 | ven | 60 | running | `HH···HH·` |  |
 | sam | 90 | — | `` |  |
@@ -246,7 +246,7 @@ Aucun jour libre : seul SWAP est possible. Strength lundi cède à HYROX clé (i
 |---|---|---|---|---|
 | lun | 60 | strength | `HMHHH·HH` |  |
 | mar | 60 | hyrox | `HHHHHHHH` |  |
-| mer | 60 | strength | `·MHHM·MM` |  |
+| mer | 60 | strength | `·MHHM·HH` |  |
 | jeu | 60 | crosstraining | `MLLM··ML` |  |
 | ven | 60 | running | `HH···HH·` |  |
 | sam | 90 | hyrox | `HH·HMHHH` |  |
@@ -261,9 +261,9 @@ Aucun jour libre : seul SWAP est possible. Strength lundi cède à HYROX clé (i
 | lun | 60 | crosstraining | `MLLM··ML` | SWAP |
 | mar | 60 | hyrox | `HHHHHHHH` |  |
 | mer | 60 | strength | `·MHHM·MM` |  |
-| jeu | 60 | strength | `MLHHM·MM` | SWAP |
+| jeu | 60 | strength | `MLHHM·HH` | SWAP |
 | ven | 60 | running | `HH···HH·` | conflit résiduel ×6 |
-| sam | 90 | hyrox | `HH··MHHL` | conflit résiduel ×9 |
+| sam | 90 | hyrox | `HHH·HHHL` | conflit résiduel ×9 |
 | dim | 60 | running | `HH···HH·` | conflit résiduel ×6 |
 
 - statut : **PARTIAL** · passes : 1 · politique : 0.1.0/0.1.0/0.1.0/0.1.0/0.1.0/0.1.0
@@ -429,7 +429,7 @@ Force d'abord.
 | jour | min | séance | profil KH↑↓AIsG | M3 |
 |---|---|---|---|---|
 | lun | 60 | strength | `HHHHH·HH` |  |
-| mar | 60 | strength | `·MHHM·MM` |  |
+| mar | 60 | strength | `·MHHM·HH` |  |
 | mer | 60 | running | `HH···HH·` |  |
 | jeu | 60 | crosstraining | `MLLM··ML` |  |
 | ven | 60 | — | `` |  |
@@ -443,7 +443,7 @@ Force d'abord.
 | jour | min | séance | profil KH↑↓AIsG | M3 |
 |---|---|---|---|---|
 | lun | 60 | strength | `HHHHH·HH` |  |
-| mar | 60 | strength | `·MHHM·MM` |  |
+| mar | 60 | strength | `·MHHM·HH` |  |
 | mer | 60 | running | `HH···HH·` |  |
 | jeu | 60 | crosstraining | `MLLM··ML` |  |
 | ven | 60 | — | `` |  |
@@ -499,7 +499,7 @@ Priorités déclarées : HYROX, Running (composé), Strength, CT.
 | mer | 90 | hyrox | `HH·HMHHH` |  |
 | jeu | 90 | strength | `HMHHH·HH` |  |
 | ven | 90 | running (KEY) | `HH···HH·` |  |
-| sam | 90 | strength | `·MHHM·MM` |  |
+| sam | 90 | strength | `·MHHM·MH` |  |
 | dim | 90 | running (EASY) | `HH···HH·` |  |
 
 - statut : **POLICY_UNAVAILABLE** · passes : 0 · politique : indisponible
@@ -513,7 +513,7 @@ Priorités déclarées : HYROX, Running (composé), Strength, CT.
 | mer | 90 | hyrox | `HHHH·HHH` | conflit résiduel ×2 |
 | jeu | 90 | strength | `HMHHH·HM` | conflit résiduel ×3 |
 | ven | 90 | running (KEY) | `HH···HH·` | conflit résiduel ×2 |
-| sam | 90 | strength | `·MHHM·MM` |  |
+| sam | 90 | strength | `·MHHM·HH` |  |
 | dim | 90 | running (EASY) | `HH···HH·` |  |
 
 - statut : **PARTIAL** · passes : 0 · politique : 0.1.0/0.1.0/0.1.0/0.1.0/0.1.0/0.1.0

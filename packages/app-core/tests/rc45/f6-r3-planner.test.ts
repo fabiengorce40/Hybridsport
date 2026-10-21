@@ -10,6 +10,8 @@ import { readStrengthParams } from '@hybridsport/strength';
 import { beta0Environment, buildPorts, portInputs, selectProgrammeSession, strengthContent } from '../../src/index.js';
 import { PROFILES, simulateOnce } from '../rc4-audit/rc4-sim.js';
 
+const RESIDUAL = ['fb.calves', 'lo.calves', 'fb.pull_c'];
+
 describe('RC4.5 F6 — R3 (garde G5)', () => {
   it('séance avec mollets : séries de mollets absentes de la mesure G5, autres groupes identiques', () => {
     const spec = PROFILES.find((p) => p.id === 'P2');
@@ -30,9 +32,9 @@ describe('RC4.5 F6 — R3 (garde G5)', () => {
       const g5 = port.plannedGroupSets(session);
       expect(all.calves ?? 0).toBeGreaterThan(0);
       expect(g5.calves ?? 0).toBe(0);
-      const { calves: _c, ...others } = all;
-      void _c;
-      expect(Object.fromEntries(Object.entries(g5).filter(([g]) => g !== 'calves'))).toEqual(others);
+      // Tous les emplacements à temps résiduel (mollets F6, tirage complémentaire L1b-4) sont hors de la mesure G5.
+      const ordinary = { ...session, blocks: session.blocks.map((b) => ({ ...b, items: b.items.filter((i) => !RESIDUAL.includes(i.refs?.slotId ?? '')) })) };
+      expect(g5).toEqual(Object.fromEntries(Object.entries(sessionPlannedHardSets(ordinary, params, strengthContent().catalog)).filter(([, n]) => n > 0)));
     }
   }, 120_000);
 });
