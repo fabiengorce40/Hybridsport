@@ -85,6 +85,16 @@ export interface NeighbourDemand {
 /** Contexte voisin : `known` seulement si TOUTES les voisines d'autres disciplines ont un profil dérivable. */
 export interface NeighbourContext { readonly known: boolean; readonly neighbours: readonly NeighbourDemand[] }
 
+/**
+ * RC4.6 (B4) — entrées CROISÉES réellement lues par une génération Strength, forme COMPACTE et versionnée : pour chaque
+ * séance Cross-training de la semaine lue (bloc de force délégué), les exercices de ses blocs de force et leur nombre de
+ * séries de travail — exactement ce que Strength en lit (volume hebdomadaire, expositions prévues). Jamais la séance entière.
+ */
+export interface CrossSportInputs {
+  readonly v: 1;
+  readonly crosstraining: readonly { readonly requestId: string; readonly date: string; readonly archetypeId: string; readonly items: readonly (readonly [string, number])[] }[];
+}
+
 /** Catégorie applicative d'une demande (auditable, jamais « planning failed »). */
 export const REQUEST_CATEGORIES = [
   'planned', 'engine_refused', 'governance_blocked', 'safety_blocked', 'invalid_intent', 'interference_conflict', 'slot_unavailable', 'engine_unavailable', 'programme_intent_incomplete',
@@ -112,6 +122,8 @@ export type RequestResult =
     readonly status: 'planned'; readonly date: string; readonly session: SessionDraft; readonly fingerprint?: SessionFingerprint;
     /** Record persistable (session_record courant) : séance, provenance, empreinte, estimation de durée du CORE. */
     readonly record: SessionRecord; readonly demand: DemandOutcome; readonly neighbourContext?: NeighbourContext;
+    /** RC4.6 (B4) — entrées croisées réellement lues (Strength seulement), forme compacte. */
+    readonly crossInputs?: CrossSportInputs;
     /** Q1 — diagnostic de qualité de la prescription (calculé AVANT M3, jamais modifié par M3). */
     readonly quality?: QualityAssessment;
   })

@@ -22,7 +22,7 @@
 import { deriveProgramStatus, ENGINE_VERSION, estimateDuration, loadRuleset, migrateToCurrent, readDurationParams, repairSession, toEnvelope, toRecordedDurationEstimate, validateSession } from '@hybridsport/engine';
 import type { CoreState, LoadedCatalog, LoadedRuleset, ValidationContext } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
-import type { PlannerSport, SlotRequest, WeekSession } from '@hybridsport/planner';
+import type { CrossSportInputs, PlannerSport, SlotRequest, WeekSession } from '@hybridsport/planner';
 import { readNeighbourWindow } from '@hybridsport/planner';
 import type { RealizedSession } from '@hybridsport/running';
 import { dateOf, sessionInstant } from './dates.js';
@@ -54,7 +54,11 @@ const recordOf = (r: Request | undefined): SessionRecord | undefined => {
 };
 
 export type Regeneration =
-  | { readonly status: 'planned'; readonly record: SessionRecord; readonly reasons: readonly Reason[] }
+  | {
+    readonly status: 'planned'; readonly record: SessionRecord; readonly reasons: readonly Reason[];
+    /** RC4.6 (B4) — origine des entrées croisées : persistées (lues à la génération) ou reconstruites (repli). */
+    readonly crossSource?: 'persisted' | 'rebuilt_from_week';
+  }
   | { readonly status: 'refused'; readonly reasons: readonly Reason[] }
   | { readonly status: 'not_regenerable'; readonly cause: string };
 
@@ -116,6 +120,23 @@ export function strengthEnvironmentFor(env: ProgrammeEnvironment, rulesetVersion
 const REGENERABLE: readonly PlannerSport[] = ['strength', 'running', 'crosstraining', 'hyrox'];
 
 /**
+ * RC4.6 (B4) — séances Cross-training reconstruites depuis les entrées croisées compactes persistées : un bloc de force par
+ * séance, chaque exercice avec son nombre de séries de travail. Strength n'en lit que les exercices et ces séries (volume
+ * hebdomadaire, expositions prévues) : la régénération est identique à celle faite avec les séances complètes lues alors.
+ */
+function crossFromInputs(x: CrossSportInputs): { readonly crosstraining: WeekSession[] } {
+  return {
+    crosstraining: x.crosstraining.map((w) => ({
+      requestId: w.requestId, date: w.date, archetypeId: w.archetypeId,
+      session: {
+        id: `${w.requestId}.cross_inputs`, discipline: 'crosstraining', athleteLevel: 'intermediate', availableTimeS: 0, targetDurationS: 0,
+        blocks: [{ id: 'b.cross_inputs', kind: 'strength', role: 'primary', optional: false, format: 'sets', items: w.items.map(([exerciseId, n], k) => ({ id: `i${String(k)}`, exerciseId, prescription: { type: 'sets', sets: Array.from({ length: n }, () => ({ kind: 'working', reps: 1, restAfterS: 0 })) } })), levers: [] }],
+      } as unknown as SessionDraft,
+    })),
+  };
+}
+
+/**
  * Régénère la séance PLANIFIÉE `requestId` avec l'état CORE `coreState` sur son jour (les autres jours : inconnu).
  * Pur : n'écrit rien dans l'état.
  */
@@ -158,7 +179,11 @@ export function regenerateSession(state0: AppState, requestId: string, coreState
     .sort((a, b) => ((a.date ?? '') < (b.date ?? '') ? -1 : 1)).flatMap((x) => { const s = sessionOf(x); return s ? [s] : []; });
   const programmeWeek = ps.weeks.find((w) => w.plannerRef === week.weekStart);
   const sportPriority = programmeWeek?.intent.demands.map((d) => d.sport) ?? intent.sports.map((s) => s.sport);
-  const cross = Object.fromEntries((port.crossSportWeek ?? []).map((o) => [o, placed.filter((x) => x.sport === o).sort((a, b) => ((a.date ?? '') < (b.date ?? '') ? -1 : 1)).flatMap((x) => { const s = sessionOf(x); return s ? [s] : []; })]).filter(([, v]) => (v as WeekSession[]).length > 0));
+  // RC4.6 (B4) — entrées croisées : celles RÉELLEMENT lues à la génération (persistées, forme compacte) ; à défaut (semaine
+  // antérieure à B4, autre sport), REPLI explicite : reconstruction depuis les séances de la semaine persistées.
+  const rebuilt = Object.fromEntries((port.crossSportWeek ?? []).map((o) => [o, placed.filter((x) => x.sport === o).sort((a, b) => ((a.date ?? '') < (b.date ?? '') ? -1 : 1)).flatMap((x) => { const s = sessionOf(x); return s ? [s] : []; })]).filter(([, v]) => (v as WeekSession[]).length > 0));
+  const crossSource: 'persisted' | 'rebuilt_from_week' | undefined = r.crossInputs && port.crossSportWeek?.includes('crosstraining') ? 'persisted' : Object.keys(rebuilt).length > 0 ? 'rebuilt_from_week' : undefined;
+  const cross = crossSource === 'persisted' && r.crossInputs ? crossFromInputs(r.crossInputs) : rebuilt;
   const slot: SlotRequest = {
     requestId, date, availableMinutes: week.days.find((d) => d.date === date)?.availableMinutes ?? 0, hybrid: week.hybrid, seed: `planner:${requestId}:${date}`,
     intent: { ...r.intent } as SlotRequest['intent'],
@@ -169,7 +194,7 @@ export function regenerateSession(state0: AppState, requestId: string, coreState
   };
   const out = port.generate(slot);
   if (out.status !== 'planned') return { status: 'refused', reasons: out.reasons.map(reason) };
-  return { status: 'planned', record: out.record, reasons: out.reasons.map(reason) };
+  return { status: 'planned', record: out.record, reasons: out.reasons.map(reason), ...(crossSource ? { crossSource } : {}) };
 }
 
 /** État dont les historiques AJOUTÉS (append-only) sont coupés à l'instant `cutoff` ; le reste est inchangé. */

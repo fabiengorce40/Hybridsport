@@ -56,8 +56,11 @@ describe('RC4.5 R-A — diagnostic de reproductibilité', () => {
     const by = (c: string) => steps.filter((x) => x.diag.class === c).map((x) => x.diag.requestId);
     expect(steps).toHaveLength(12);
     expect(by('history_since_planning')).toEqual(['2026-10-05.strength.2', '2026-10-05.strength.3']);
-    expect(by('progression_since_planning')).toEqual(['2026-10-12.strength.2', '2026-10-12.strength.3', '2026-10-19.strength.3', '2026-10-26.strength.3']);
-    expect(by('planner_divergence')).toEqual(['2026-10-05.strength.1', '2026-10-12.strength.1', '2026-10-19.strength.1', '2026-10-19.strength.2', '2026-10-26.strength.1', '2026-10-26.strength.2']);
+    // RC4.6 (B4) — entrées croisées persistées : les 6 divergences du planificateur d'avant B4 (blocs de force Cross-training
+    // relus dans leur version FINALE au lieu de la version lue) disparaissent ; preuve du repli : rc46/b4-cross-inputs.test.ts.
+    expect(by('identical')).toEqual(['2026-10-05.strength.1', '2026-10-12.strength.1', '2026-10-19.strength.1', '2026-10-26.strength.1']);
+    expect(by('progression_since_planning')).toEqual(['2026-10-12.strength.2', '2026-10-12.strength.3', '2026-10-19.strength.2', '2026-10-19.strength.3', '2026-10-26.strength.2', '2026-10-26.strength.3']);
+    expect(by('planner_divergence')).toEqual([]);
     // Une divergence du planificateur persiste depuis l'état de planification ; un écart d'historique non.
     for (const x of steps.filter((y) => y.diag.class === 'planner_divergence')) expect(x.diag.changesAtPlanning.length).toBeGreaterThan(0);
     for (const x of steps.filter((y) => y.diag.class === 'history_since_planning')) { expect(x.diag.changesNow.length).toBeGreaterThan(0); expect(x.diag.changesAtPlanning).toEqual([]); }

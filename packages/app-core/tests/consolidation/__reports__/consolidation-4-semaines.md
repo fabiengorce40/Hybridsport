@@ -18,13 +18,13 @@ Contrôle pré-séance scénarisé : S1 normal (+ matériel indisponible sur un 
 | 2 | 10-15 | running | running.easy | 58 / 30 | oui | Passer (état inconnu) | unchanged | — | — | réalisée |
 | 2 | 10-16 | strength | str_full_body A | 69 / 38 | oui | Passer (état inconnu) | unchanged | — | — | réalisée |
 | 2 | 10-17 | running | running.easy | 88 / 30 | oui | Passer (état inconnu) | unchanged | — | — | réalisée |
-| 3 | 10-19 | strength | str_full_body A | 69 / 63 | non | Oui · genou P2 | adapted | removed:back_squat, removed:leg_curl, removed:walking_lunge_db, removed:cable_pallof_press, added:romanian_deadlift | SESSION_RECOMPOSED | réalisée |
+| 3 | 10-19 | strength | str_full_body A | 69 / 63 | oui | Oui · genou P2 | adapted | removed:back_squat, removed:leg_curl, removed:walking_lunge_db, added:romanian_deadlift | — | réalisée |
 | 3 | 10-20 | strength | str_full_body B | 54 / 52 | oui | Passer (genou P2 connu) | adapted | removed:leg_curl, removed:walking_lunge_db | KNOWN_PAIN_KEPT | réalisée |
 | 3 | 10-21 | crosstraining | amrap + bloc force | 73 / 48 | oui | Passer (genou P2 connu) | adapted | removed:back_squat, removed:air_squat, added:barbell_ohp | KNOWN_PAIN_KEPT | réalisée |
 | 3 | 10-22 | running | running.easy | 58 / 30 | oui | Passer (genou P2 connu) | adapted | removed:easy_run, added:row_erg | KNOWN_PAIN_KEPT | réalisée |
 | 3 | 10-23 | strength | str_full_body C | 69 / 33 | oui | Passer (genou P2 connu) | unchanged | — | KNOWN_PAIN_KEPT | réalisée |
 | 3 | 10-24 | running | running.easy | 88 / 30 | oui | Passer (genou P2 connu) | adapted | removed:easy_run, added:row_erg | KNOWN_PAIN_KEPT | réalisée |
-| 4 | 10-26 | strength | str_full_body A | 69 / 58 | non | Non (genou résolu) | unchanged | — | — | réalisée |
+| 4 | 10-26 | strength | str_full_body A | 69 / 58 | oui | Non (genou résolu) | unchanged | — | — | réalisée |
 | 4 | 10-27 | strength | str_full_body B | 54 / 47 | oui | Oui · épaule P1 | unchanged | — | — | réalisée |
 | 4 | 10-28 | crosstraining | amrap + bloc force | 73 / 48 | oui | Non | unchanged | — | — | réalisée |
 | 4 | 10-29 | running | running.easy | 58 / 30 | oui | Non | unchanged | — | — | réalisée |
@@ -53,7 +53,7 @@ Contrôle pré-séance scénarisé : S1 normal (+ matériel indisponible sur un 
 
 - Séances non placées : aucune
 - Volume Musculation PLANIFIÉ (bilan Strength, séries de travail / cible) : arms 15.5/6 (achieved) · back 10/10 (achieved) · calves 4/4 (achieved) · chest 3/10 (reduced_by_constraint) · core 7/4 (achieved) · glutes 12/6 (achieved) · hamstrings 11/8 (achieved) · quads 7/10 (reduced_by_constraint) · shoulders 14/8 (achieved)
-- Volume de force EXÉCUTÉ (Musculation + blocs de force CT, séances réellement faites, adaptées comprises) : arms 17.5 · back 10 · calves 4 · chest 3 · core 5 · glutes 8 · hamstrings 8 · shoulders 16
+- Volume de force EXÉCUTÉ (Musculation + blocs de force CT, séances réellement faites, adaptées comprises) : arms 17.5 · back 10 · calves 4 · chest 3 · core 8 · glutes 8 · hamstrings 8 · shoulders 16
 - Conflits de récupération signalés (`same_discipline_recovery`, NON RÉSOLU, jamais appliqué) : 
   - 2026-10-19 Musculation ↔ 2026-10-20 Musculation : arms, back, core, glutes, hamstrings, quads, shoulders
   - 2026-10-20 Musculation ↔ 2026-10-21 bloc force CT : core, glutes, quads

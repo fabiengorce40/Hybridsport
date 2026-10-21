@@ -234,6 +234,7 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
     const archetypeId = requests.find((x) => x.requestId === r.requestId)?.intent?.archetypeId;
     return {
       ...r, status: 'planned', category: 'planned', date, session: out.session, ...(out.fingerprint ? { fingerprint: out.fingerprint } : {}), record: out.record, demand: p.demand, ...qualityOf(r.sport, archetypeId, out),
+      ...(out.crossInputs ? { crossInputs: out.crossInputs } : {}),
       ...(n ? { neighbourContext: n } : {}), ...(c ? { composition: c.applied } : {}),
       reasons: [gpReasons.emit(GP_CODES.PLACED, { sport: r.sport, requestId: r.requestId, date }), ...(c?.reasons ?? []), ...(n ? [neighbourReason(r.requestId, n)] : []), ...weekReason(r.sport, date, r.requestId), ...out.reasons],
     };

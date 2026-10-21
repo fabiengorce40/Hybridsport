@@ -27,7 +27,7 @@ import type { CtGovernance } from '@hybridsport/crosstraining';
 import { assessH2Quality, roleFromArchetype } from '@hybridsport/hyrox';
 import { basisOfParameter, governedCriterion } from '@hybridsport/engine';
 import type { QualityAssessment, QualityBasis, QualityCriterion, QualityEnvironment } from '@hybridsport/engine';
-import type { DeclaredIntent, DemandOutcome, NeighbourContext, PlannerClock, PlannerMode, PlannerSport } from './model.js';
+import type { CrossSportInputs, DeclaredIntent, DemandOutcome, NeighbourContext, PlannerClock, PlannerMode, PlannerSport } from './model.js';
 import type { NoValidProposalInput } from '@hybridsport/domain';
 
 export type { CrossTrainingContextInput, CrossTrainingEngine, CtGovernance, HyroxContextInput, HyroxEngine, RunningContextInput, StrengthContextInput };
@@ -78,7 +78,7 @@ export interface WeekSession {
 }
 
 export type PortOutcome =
-  | { readonly status: 'planned'; readonly session: SessionDraft; readonly fingerprint?: SessionFingerprint; readonly record: SessionRecord; readonly reasons: readonly ReasonCode[] }
+  | { readonly status: 'planned'; readonly session: SessionDraft; readonly fingerprint?: SessionFingerprint; readonly record: SessionRecord; readonly reasons: readonly ReasonCode[]; readonly crossInputs?: CrossSportInputs }
   | { readonly status: 'refused'; readonly reasons: readonly ReasonCode[] };
 
 export type StructuresResult = { readonly ok: true; readonly structures: readonly string[] } | { readonly ok: false; readonly reasons: readonly ReasonCode[] };
@@ -329,6 +329,17 @@ function ctStrengthBlocks(slot: SlotRequest): WeekSession[] {
   });
 }
 
+const workingSetsOf = (p: SessionDraft['blocks'][number]['items'][number]['prescription']): number => (p.type === 'sets' ? p.sets.filter((x) => x.kind !== 'rampup' && x.optional !== true).length : 0);
+
+/**
+ * RC4.6 (B4) — forme COMPACTE des blocs de force Cross-training lus par une génération Strength. `undefined` : aucune
+ * séance Cross-training transmise (rien à reproduire) ; liste vide : séances transmises, aucune avec bloc de force.
+ */
+export function compactCrossInputs(slot: SlotRequest): CrossSportInputs | undefined {
+  if (slot.crossSportWeek?.crosstraining === undefined) return undefined;
+  return { v: 1, crosstraining: ctStrengthBlocks(slot).map((w) => ({ requestId: w.requestId, date: w.date, archetypeId: w.archetypeId, items: w.session.blocks.flatMap((b) => b.items.map((i) => [i.exerciseId, workingSetsOf(i.prescription)] as const)) })) };
+}
+
 /**
  * Règle de déclenchement (TEST_ONLY, fournie par l'environnement) : une séance Strength STRICTEMENT identique (mêmes
  * exercices) à une séance du même archétype placée plus tôt dans la semaine est redemandée avec la note de
@@ -406,7 +417,14 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
   const residualIds = (): ReadonlySet<string> => (residualOnce ??= new Set(params()['strength.archetypes'].flatMap((a) => a.slots.filter((x) => x.fill === 'residual_time').map((x) => x.id))));
   const ordinary = (s: SessionDraft): SessionDraft => { const r = residualIds(); return r.size === 0 ? s : { ...s, blocks: s.blocks.map((b) => ({ ...b, items: b.items.filter((i) => !r.has(i.refs?.slotId ?? '')) })) }; };
   const signature = (s: SessionDraft): string => ordinary(s).blocks.flatMap((b) => b.items.map((i) => i.exerciseId)).join('|');
-  const generate = (slot: SlotRequest): PortOutcome => {
+  // RC4.6 (B4) — la séance générée porte les entrées croisées compactes réellement lues (persistées par app-core).
+  const withInputs = (slot: SlotRequest, o: PortOutcome): PortOutcome => {
+    if (o.status !== 'planned') return o;
+    const crossInputs = compactCrossInputs(slot);
+    return crossInputs ? { ...o, crossInputs } : o;
+  };
+  const generate = (slot: SlotRequest): PortOutcome => withInputs(slot, generateOnce(slot));
+  const generateOnce = (slot: SlotRequest): PortOutcome => {
     const out = port.generate(slot);
     if (!variation || out.status !== 'planned') return out;
     const twin = (slot.weekSessions ?? []).find((w) => w.archetypeId === slot.intent.archetypeId && signature(w.session) === signature(out.session));

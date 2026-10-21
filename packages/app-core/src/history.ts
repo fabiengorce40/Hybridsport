@@ -92,7 +92,7 @@ export function expandFoldedReasons<T extends Reason>(reasons: readonly T[]): Re
 function compactRequest(r: Request): Request {
   // Rien de nouveau à retirer (séance déjà compactée ou sans audit/debug) : séance inchangée (idempotence stricte).
   const foldable = r.reasons.filter((x) => FOLDABLE.test(x.code)).length > 1;
-  if (!r.demand && !r.neighbourContext && !foldable && !r.reasons.some((x) => DROPPABLE_CODES.has(x.code))) return r;
+  if (!r.demand && !r.neighbourContext && !r.crossInputs && !foldable && !r.reasons.some((x) => DROPPABLE_CODES.has(x.code))) return r;
   const dropped = new Map<string, number>();
   const prior = r.reasons.find((x) => x.code === HISTORY_COMPACTED);
   for (const d of (prior?.params.dropped as string[] | undefined) ?? []) {
@@ -105,10 +105,10 @@ function compactRequest(r: Request): Request {
     dropped.set(x.code, (dropped.get(x.code) ?? 0) + 1);
     return false;
   });
-  const fields = [...new Set([...((prior?.params.fields as string[] | undefined) ?? []), ...(r.demand ? ['demand'] : []), ...(r.neighbourContext ? ['neighbourContext'] : [])])].sort();
+  const fields = [...new Set([...((prior?.params.fields as string[] | undefined) ?? []), ...(r.demand ? ['demand'] : []), ...(r.neighbourContext ? ['neighbourContext'] : []), ...(r.crossInputs ? ['crossInputs'] : [])])].sort();
   const f = foldProvenance(kept);
   if (dropped.size === 0 && fields.length === 0 && f.folded.length === 0) return r;
-  const { demand: _demand, neighbourContext: _neighbours, ...rest } = r;
+  const { demand: _demand, neighbourContext: _neighbours, crossInputs: _cross, ...rest } = r;
   const folded = [...new Set([...((prior?.params.folded as string[] | undefined) ?? []), ...f.folded])].sort();
   const marker = { code: HISTORY_COMPACTED, params: { dropped: [...dropped].sort(([a], [b]) => (a < b ? -1 : 1)).map(([c, n]) => `${c}×${String(n)}`), fields, ...(folded.length > 0 ? { folded } : {}) } };
   return { ...rest, reasons: [...f.reasons, marker] };

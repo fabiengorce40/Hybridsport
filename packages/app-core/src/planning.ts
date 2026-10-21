@@ -205,6 +205,7 @@ export function persistWeek(w: PlannedWeek, plannedAt: ISODateTime, programmeOri
         demand: r.demand.status === 'derived' ? { status: 'derived' as const, levels: { ...r.demand.levels } } : { status: 'unavailable' as const, reasons: r.demand.reasons.map(reason) },
         ...(r.quality ? { quality: compactQuality(r.quality) } : {}),
         ...(r.neighbourContext ? { neighbourContext: { known: r.neighbourContext.known, neighbours: r.neighbourContext.neighbours.map((n) => ({ ...n, demand: { ...n.demand } })) } } : {}),
+        ...(r.crossInputs ? { crossInputs: { v: r.crossInputs.v, crosstraining: r.crossInputs.crosstraining.map((w) => ({ ...w, items: w.items.map(([e, n]) => [e, n] as [string, number]) })) } } : {}),
       } : {}),
       // M3.1 — composée mais non placée : la prescription du moteur est persistée telle quelle (réalisable, jamais recomposée).
       ...(r.status === 'unplaced' && r.composed ? {

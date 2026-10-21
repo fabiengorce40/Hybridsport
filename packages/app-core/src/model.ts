@@ -275,6 +275,12 @@ export const zPersistedWeek = z.object({
      */
     quality: z.object({ verdict: z.enum(['ACCEPTABLE', 'ACCEPTABLE_WITH_WARNINGS', 'BLOCKED', 'UNRESOLVED']), criteria: z.array(z.string().min(1)) }).strict().optional(),
     neighbourContext: z.object({ known: z.boolean(), neighbours: z.array(z.object({ sport: z.enum(SPORTS), discipline: z.string(), stimulus: z.string(), hoursFromThisSession: z.number(), demand: z.record(z.string(), z.string()), importance: z.enum(['key', 'standard', 'unknown']).optional() }).strict()) }).strict().optional(),
+    /**
+     * RC4.6 (B4) — entrées CROISÉES réellement lues par la génération Strength (forme compacte versionnée : blocs de force
+     * Cross-training lus, exercice et séries de travail). Absent : semaine antérieure à B4, autre sport, ou aucune séance
+     * Cross-training dans la semaine ; la régénération reconstruit alors ces entrées depuis la semaine persistée (repli).
+     */
+    crossInputs: z.object({ v: z.literal(1), crosstraining: z.array(z.object({ requestId: z.string().min(1), date, archetypeId: z.string(), items: z.array(z.tuple([z.string().min(1), z.number().int().nonnegative()])) }).strict()) }).strict().optional(),
     reasons: z.array(zReason),
     /**
      * RC3.1 A8 — cause DÉCISIVE d'une demande non planifiée : première raison de sévérité « error » d'un moteur (à

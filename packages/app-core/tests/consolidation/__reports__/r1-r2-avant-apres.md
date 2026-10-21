@@ -18,13 +18,13 @@
 | 2 | 10-15 | running | running.easy | oui | Passer (état inconnu) | unchanged | — | — | 58 / 30 / 30 | réalisée |
 | 2 | 10-16 | strength | str_full_body A | non → **oui** | Passer (état inconnu) | unchanged | — | — | 69 / 38 / 38 | réalisée |
 | 2 | 10-17 | running | running.easy | oui | Passer (état inconnu) | unchanged | — | — | 88 / 30 / 30 | réalisée |
-| 3 | 10-19 | strength | str_full_body A | non | Oui · genou P2 | adapted | recomposée (signalée) | removed:back_squat, removed:leg_curl, removed:walking_lunge_db, removed:cable_pallof_press, added:romanian_deadlift | 69 / 36 → **63** / 36 → **47** | réalisée |
+| 3 | 10-19 | strength | str_full_body A | non → **oui** | Oui · genou P2 | adapted | recomposée (signalée) → **régénérée (reproductible)** | removed:back_squat, removed:leg_curl, removed:walking_lunge_db, added:romanian_deadlift | 69 / 36 → **63** / 36 → **53** | réalisée |
 | 3 | 10-20 | strength | str_full_body B | non → **oui** | Passer (genou P2 connu) | unchanged → **adapted** | — → **régénérée (reproductible)** | removed:leg_curl, removed:walking_lunge_db | 54 / 44 → **52** / 44 → **42** | réalisée |
 | 3 | 10-21 | crosstraining | amrap + bloc force | oui | Passer (genou P2 connu) | adapted | régénérée (reproductible) | removed:back_squat, removed:air_squat, added:barbell_ohp | 73 / 48 / 46 | réalisée |
 | 3 | 10-22 | running | running.easy | oui | Passer (genou P2 connu) | adapted | régénérée (reproductible) | removed:easy_run, added:row_erg | 58 / 30 / 31 | réalisée |
 | 3 | 10-23 | strength | str_full_body C | non → **oui** | Passer (genou P2 connu) | unchanged | — | — | 69 / 39 → **33** / 39 → **33** | réalisée |
 | 3 | 10-24 | running | running.easy | oui | Passer (genou P2 connu) | adapted | régénérée (reproductible) | removed:easy_run, added:row_erg | 88 / 30 / 31 | réalisée |
-| 4 | 10-26 | strength | str_full_body A | non | Non (genou résolu) | unchanged | — | — | 69 / 39 → **58** / 39 → **58** | réalisée |
+| 4 | 10-26 | strength | str_full_body A | non → **oui** | Non (genou résolu) | unchanged | — | — | 69 / 39 → **58** / 39 → **58** | réalisée |
 | 4 | 10-27 | strength | str_full_body B | oui | Oui · épaule P1 | unchanged | — | — | 54 / 33 → **47** / 33 → **47** | réalisée |
 | 4 | 10-28 | crosstraining | amrap + bloc force | oui | Non | unchanged | — | — | 73 / 48 / 48 | réalisée |
 | 4 | 10-29 | running | running.easy | oui | Non | unchanged | — | — | 58 / 30 / 30 | réalisée |
@@ -36,7 +36,7 @@
 Zones exclues recalculées par les règles G1 du CORE à partir du contrôle (douleurs déclarées + connues reportées) ; zones de chaque exercice lues dans le catalogue de la discipline de la séance, tous blocs (échauffement, force, accessoires, conditionnement, retour au calme).
 
 - **2026-10-19 strength** (Oui · genou P2) — zones exclues : knee — réalisée — violations : aucune
-  - lower_mobility_flow [warmup] (—) · romanian_deadlift [strength] (lower_back/hip_groin) · seated_cable_row [strength] (shoulder) · db_shoulder_press [strength] (shoulder/elbow) · db_calf_raise [accessory] (—) · lower_mobility_flow [cooldown] (—)
+  - lower_mobility_flow [warmup] (—) · romanian_deadlift [strength] (lower_back/hip_groin) · seated_cable_row [strength] (shoulder) · db_shoulder_press [strength] (shoulder/elbow) · cable_pallof_press [accessory] (—) · db_calf_raise [accessory] (—) · lower_mobility_flow [cooldown] (—)
 - **2026-10-20 strength** (Passer (genou P2 connu)) — zones exclues : knee — réalisée — violations : aucune
   - lower_mobility_flow [warmup] (—) · romanian_deadlift [strength] (lower_back/hip_groin) · machine_chest_press [strength] (shoulder) · pull_up [strength] (shoulder/elbow) · cable_lateral_raise [accessory] (—) · lower_mobility_flow [cooldown] (—)
 - **2026-10-21 crosstraining** (Passer (genou P2 connu)) — zones exclues : knee — réalisée — violations : aucune
@@ -89,7 +89,7 @@ Avant comme après : **0 violation**.
 | back | 10 / 20 | 10 → **10** (achieved) | 10 → **10** |
 | calves | 4 / 10 | 0 → **4** (achieved) | 0 → **4** |
 | chest | 10 / 20 | 3 → **3** (reduced_by_constraint) | 3 → **3** |
-| core | 4 / 10 | 9 → **7** (achieved) | 10 → **5** |
+| core | 4 / 10 | 9 → **7** (achieved) | 10 → **8** |
 | glutes | 6 / 14 | 6 → **12** (achieved) | 6 → **8** |
 | hamstrings | 8 / 14 | 4 → **11** (achieved) | 6 → **8** |
 | quads | 10 / 18 | 2 → **7** (reduced_by_constraint) | 0 → **0** |
@@ -115,17 +115,17 @@ Avant comme après : **0 violation**.
 |---|---|---|
 | 1 | 240 → 251 | 240 → 251 |
 | 2 | 232 → 255 | 232 → 255 |
-| 3 | 227 → 256 | 227 → 230 |
+| 3 | 227 → 256 | 227 → 236 |
 | 4 | 224 → 252 | 180 → 213 |
 
 ## 5. Conflits, refus, adaptations
 
 | indicateur | avant | après |
 |---|---|---|
-| séances Musculation reproductibles au démarrage | 2 / 12 | 8 / 12 |
-| adaptations par régénération (reproductible) | 3 | 5 |
+| séances Musculation reproductibles au démarrage | 2 / 12 | 10 / 12 |
+| adaptations par régénération (reproductible) | 3 | 6 |
 | adaptations de la séance persistée (CORE) | 0 | 0 |
-| recompositions signalées | 1 | 1 |
+| recompositions signalées | 1 | 0 |
 | ajustement d’état non appliqué | 3 | 0 |
 | séances reportées (refus) | 1 | 1 |
 | signaux de récupération (J+1, non résolus) | 8 | 8 |
@@ -151,9 +151,9 @@ Séries de travail par groupe de chaque séance ; aucune règle appliquée (`sam
 | 2026-10-13 Musculation | 2026-10-14 bloc force CT | 24 | glutes 5/1, hamstrings 3/0.5 |
 | 2026-10-13 Musculation | 2026-10-16 Musculation | 72 | arms 4.5/6, back 3/3, core 1.5/4, glutes 5/2, hamstrings 3/2, shoulders 7.5/1.5 |
 | 2026-10-14 bloc force CT | 2026-10-16 Musculation | 48 | glutes 1/2, hamstrings 0.5/2 |
-| 2026-10-16 Musculation | 2026-10-19 Musculation | 72 | arms 6/5, back 3/4, core 4/1.5, glutes 2/3, hamstrings 2/3, shoulders 1.5/5 |
-| 2026-10-19 Musculation | 2026-10-20 Musculation | 24 | arms 5/6, back 4/3, core 1.5/1.5, glutes 3/3, hamstrings 3/3, shoulders 5/4.5 |
-| 2026-10-19 Musculation | 2026-10-21 bloc force CT | 48 | arms 5/2, core 1.5/1, shoulders 5/2 |
+| 2026-10-16 Musculation | 2026-10-19 Musculation | 72 | arms 6/5, back 3/4, core 4/4.5, glutes 2/3, hamstrings 2/3, shoulders 1.5/5 |
+| 2026-10-19 Musculation | 2026-10-20 Musculation | 24 | arms 5/6, back 4/3, core 4.5/1.5, glutes 3/3, hamstrings 3/3, shoulders 5/4.5 |
+| 2026-10-19 Musculation | 2026-10-21 bloc force CT | 48 | arms 5/2, core 4.5/1, shoulders 5/2 |
 | 2026-10-20 Musculation | 2026-10-21 bloc force CT | 24 | arms 6/2, core 1.5/1, shoulders 4.5/2 |
 | 2026-10-20 Musculation | 2026-10-23 Musculation | 72 | arms 6/4.5, back 3/3, core 1.5/1, glutes 3/2, hamstrings 3/2, shoulders 4.5/4.5 |
 | 2026-10-21 bloc force CT | 2026-10-23 Musculation | 48 | arms 2/4.5, core 1/1, shoulders 2/4.5 |

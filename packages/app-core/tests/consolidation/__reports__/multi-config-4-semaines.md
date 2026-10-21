@@ -6,11 +6,11 @@
 
 | config. | séances placées | réalisées | reportées | manquées | adaptées (régén. / persistée / recomposée) | non appliqué | Musculation reproductible | violations | arbitrage M3 | paires de force à J+1 |
 |---|---|---|---|---|---|---|---|---|---|---|
-| A. Prise de masse prioritaire (salle commerciale) | 24 | 23 | 1 | 0 | 5 / 0 / 1 | 0 | 8 / 12 | 0 | PARTIAL / ADMISSIBLE / PARTIAL / PARTIAL | 8 |
+| A. Prise de masse prioritaire (salle commerciale) | 24 | 23 | 1 | 0 | 6 / 0 / 0 | 0 | 10 / 12 | 0 | PARTIAL / ADMISSIBLE / PARTIAL / PARTIAL | 8 |
 | B. Profil hybride (Course prioritaire 3×, Musculation 2×, CT 1×) | 24 | 22 | 1 | 1 | 5 / 0 / 0 | 0 | 7 / 8 | 0 | PARTIAL / PARTIAL / ADMISSIBLE / PARTIAL | 4 |
 | C. Salle complète | 24 | 23 | 1 | 0 | 7 / 0 / 0 | 0 | 10 / 12 | 0 | PARTIAL / ADMISSIBLE / PARTIAL / PARTIAL | 8 |
 | D. Matériel limité (haltères seulement) | 20 | 16 | 3 | 1 | 2 / 0 / 0 | 0 | 11 / 12 | 0 | RESOLVED / ADMISSIBLE / ADMISSIBLE / ADMISSIBLE | 4 |
-| E. Récupération dégradée à chaque séance | 24 | 24 | 0 | 0 | 12 / 0 / 0 | 0 | 8 / 12 | 0 | PARTIAL / ADMISSIBLE / PARTIAL / PARTIAL | 8 |
+| E. Récupération dégradée à chaque séance | 24 | 24 | 0 | 0 | 12 / 0 / 0 | 0 | 10 / 12 | 0 | PARTIAL / ADMISSIBLE / PARTIAL / PARTIAL | 8 |
 
 ## Volumes planifiés par groupe (moyenne des 4 semaines, séries de travail / plancher expérimental ; ⚠ sous le plancher, ▲ au-dessus du haut)
 
