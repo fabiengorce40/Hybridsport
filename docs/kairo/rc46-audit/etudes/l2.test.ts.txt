@@ -1,0 +1,17 @@
+import { it } from 'vitest';
+import { writeFileSync } from 'node:fs';
+import { measureProfile, qualityProfiles, summarize } from '../rc46/quality-bench.js';
+import { PROFILE } from '../consolidation/sim4.js';
+
+it('L2 variant run', () => {
+  const v = process.env.L2_VARIANT ?? 'ref';
+  const g = globalThis as { L2_VARIANT?: string; L2_STATS?: Record<string, number> };
+  g.L2_VARIANT = v;
+  const out: Record<string, unknown> = {};
+  for (const spec of [...qualityProfiles(), { id: 'CONS', label: 'Consolidation (Cross-training force + conditionnement)', profile: PROFILE }]) {
+    g.L2_STATS = {};
+    const q = measureProfile(spec);
+    out[spec.id] = { q, s: summarize(q), stats: g.L2_STATS, log: (g as { L2_LOG?: unknown[] }).L2_LOG ?? [] }; (g as { L2_LOG?: unknown[] }).L2_LOG = [];
+  }
+  writeFileSync(`${process.env.L2_OUT ?? '/tmp'}/l2-${v}.json`, JSON.stringify(out));
+}, 600000);

@@ -1,0 +1,91 @@
+diff --git a/packages/app-core/tests/rc46/quality-bench.ts b/packages/app-core/tests/rc46/quality-bench.ts
+index f0683e1..1478250 100644
+--- a/packages/app-core/tests/rc46/quality-bench.ts
++++ b/packages/app-core/tests/rc46/quality-bench.ts
+@@ -35,8 +35,8 @@ export function qualityProfiles(): ProfileSpec[] {
+   return [...PROFILES, solo('S3', 3), solo('S4', 4)];
+ }
+ 
+-export interface QualityItem { readonly slot: string; readonly ex: string; readonly sets: number; readonly reps: string; readonly load: number | null; readonly mode: 'load' | 'bodyweight' | 'effort'; readonly track: boolean }
+-export interface QualitySession { readonly id: string; readonly week: string; readonly date: string; readonly arch: string; readonly items: readonly QualityItem[]; readonly direct: Record<string, number>; readonly indirect: Record<string, number>; readonly push: number; readonly pull: number; readonly estMin: number | null; readonly availMin: number | null; readonly reductions: readonly string[] }
++export interface QualityItem { readonly slot: string; readonly ex: string; readonly sets: number; readonly reps: string; readonly load: number | null; readonly mode: 'load' | 'bodyweight' | 'effort'; readonly track: boolean; readonly rir: number | null }
++export interface QualitySession { readonly id: string; readonly week: string; readonly date: string; readonly arch: string; readonly items: readonly QualityItem[]; readonly direct: Record<string, number>; readonly indirect: Record<string, number>; readonly push: number; readonly pull: number; readonly estMin: number | null; readonly availMin: number | null; readonly reductions: readonly string[]; readonly marks: readonly string[] }
+ export interface ProfileQuality {
+   readonly id: string; readonly label: string; readonly sessions: readonly QualitySession[];
+   readonly weeks: readonly { readonly week: number; readonly vol: Record<string, readonly [number, number | null, number | null]> }[];
+@@ -98,10 +98,10 @@ export function measureProfile(spec: ProfileSpec, env = beta0Environment()): Pro
+           const pat = e.patterns.primary;
+           if (pat.startsWith('push_') || (pat === 'isolation_upper' && e.muscles.primary.every((m) => PUSH_MUSCLES.has(m)))) push += n;
+           if (pat.startsWith('pull_') || (pat === 'isolation_upper' && e.muscles.primary.every((m) => PULL_MUSCLES.has(m)))) pull += n;
+-          const f = sets[0] as { reps?: unknown; intensity?: { mode?: string; kg?: number; kgRounded?: number } } | undefined;
++          const f = sets[0] as { reps?: unknown; rir?: number; intensity?: { mode?: string; kg?: number; kgRounded?: number; effort?: { rir?: number } } } | undefined;
+           const mode = f?.intensity?.mode;
+           const load = mode === 'load' ? f?.intensity?.kg ?? null : mode === 'percent_of_reference' ? f?.intensity?.kgRounded ?? null : null;
+-          items.push({ slot: it.refs?.slotId ?? '', ex: it.exerciseId.replace('ex.', ''), sets: n, reps: repsOf(f?.reps), load, mode: load !== null ? 'load' : mode === 'bodyweight' ? 'bodyweight' : 'effort', track: Boolean(it.refs?.progressionTrackId) });
++          items.push({ slot: it.refs?.slotId ?? '', ex: it.exerciseId.replace('ex.', ''), sets: n, reps: repsOf(f?.reps), load, mode: load !== null ? 'load' : mode === 'bodyweight' ? 'bodyweight' : 'effort', track: Boolean(it.refs?.progressionTrackId), rir: f?.rir ?? f?.intensity?.effort?.rir ?? null });
+         }
+       }
+       // Vérification de la comptabilisation : direct + indirect = volume du bilan Strength.
+@@ -109,7 +109,7 @@ export function measureProfile(spec: ProfileSpec, env = beta0Environment()): Pro
+       for (const g of new Set([...Object.keys(engine), ...Object.keys(direct), ...Object.keys(indirect)])) gap = Math.max(gap, Math.abs((engine[g] ?? 0) - (direct[g] ?? 0) - (indirect[g] ?? 0)));
+       const est = rec.durationEstimate.availability === 'AVAILABLE' ? Math.round(rec.durationEstimate.p50 / 60) : null;
+       const avail = w.days.find((x) => x.date === q.date)?.availableMinutes ?? null;
+-      return [{ id: q.requestId, week: ws, date: q.date ?? '', arch: q.intent?.archetypeId ?? '', items, direct, indirect, push, pull, estMin: est, availMin: avail, reductions: reductionsByDate.get(q.date ?? '') ?? [] }];
++      return [{ id: q.requestId, week: ws, date: q.date ?? '', arch: q.intent?.archetypeId ?? '', items, direct, indirect, push, pull, estMin: est, availMin: avail, reductions: reductionsByDate.get(q.date ?? '') ?? [], marks: ((q as { reasons?: readonly { code: string; params?: Record<string, unknown> }[] }).reasons ?? []).filter((x) => /GLOBAL_PLACEMENT|M3_/.test(x.code)).map((x) => `${x.code.split('.').at(-1) ?? ''}:${String(x.params?.from ?? '')}>${String(x.params?.to ?? '')}`) }];
+     }));
+   return {
+     id: spec.id, label: spec.label, sessions,
+diff --git a/packages/planner/src/planner.ts b/packages/planner/src/planner.ts
+index 2c0dcf5..a52f41f 100644
+--- a/packages/planner/src/planner.ts
++++ b/packages/planner/src/planner.ts
+@@ -413,6 +413,49 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
+   // ——— M3 : ARBITRAGE de la semaine (multisport) ———
+   const arbitration = hybrid ? arbitrate() : undefined;
+ 
++  // ——— ÉTUDE L2 (copie jetable, jamais intégrée) ———
++  const l2 = (globalThis as { L2_VARIANT?: string; L2_STATS?: Record<string, number> });
++  const L2V = l2.L2_VARIANT;
++  const stat = (k: string): void => { if (l2.L2_STATS) l2.L2_STATS[k] = (l2.L2_STATS[k] ?? 0) + 1; };
++  const ctxKey = (n: NeighbourContext | undefined): string => JSON.stringify(n ?? null);
++  if (hybrid) {
++    // Mesure (toutes variantes) : contexte voisin utilisé vs contexte final, pour chaque consommateur placé.
++    for (const p of placed.values()) {
++      const res = results.get(p.requestId);
++      if (!res || res.status !== 'planned' || !ports[p.sport]?.consumesNeighbours) continue;
++      stat(`ctx.${p.sport}.total`);
++      if (ctxKey(res.neighbourContext) !== ctxKey(neighboursOf(p.sport, p.date, p.requestId))) { stat(`ctx.${p.sport}.stale`); if (p.sport === 'strength') ((l2 as { L2_LOG?: unknown[] }).L2_LOG ??= []).push({ id: p.requestId, date: p.date, arb: arbitration?.decisions.map((d) => `${d.requestId}:${String((d as { action?: string }).action)}`) ?? [], used: res.neighbourContext?.neighbours.map((x) => `${x.sport}@${String(x.hoursFromThisSession)}:${JSON.stringify(x.demand)}`), now: neighboursOf(p.sport, p.date, p.requestId).neighbours.map((x) => `${x.sport}@${String(x.hoursFromThisSession)}:${JSON.stringify(x.demand)}`) }); }
++    }
++  }
++  if (hybrid && (L2V === 'after' || L2V === 'interf')) {
++    const at2 = (x: Request): string => placed.get(x.requestId)?.date ?? '';
++    for (const r of requests.filter((x) => x.sport === 'strength').sort((a, b) => (at2(a) < at2(b) ? -1 : at2(a) > at2(b) ? 1 : 0))) {
++      const p = placed.get(r.requestId);
++      const old = results.get(r.requestId);
++      const port = ports[r.sport];
++      if (!p || !port || !r.intent || !old || old.status !== 'planned') continue;
++      const n = neighboursOf(r.sport, p.date, r.requestId);
++      if (L2V === 'interf' && ctxKey(n) === ctxKey(old.neighbourContext)) continue;
++      stat('l2.regenerated');
++      const out = port.generate({ requestId: r.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, seed: `planner:${r.requestId}:${p.date}`, intent: r.intent, neighbours: n, ...weekArg(r.sport, p.date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
++      if (out.status === 'refused') { stat('l2.keptRefused'); continue; }
++      const structures = port.structures(out.session);
++      if (conflictsOf(r.sport, p.date, structures, r.requestId).length > 0) { stat('l2.keptConflict'); continue; }
++      if (JSON.stringify(out.session.blocks) !== JSON.stringify(p.session.blocks)) stat('l2.changed');
++      const next: Placed = { ...withFingerprint(p, out.fingerprint), session: out.session, structures, demand: port.demand(out.session, input.mode) };
++      placed.set(r.requestId, next);
++      const fresh = plannedResult({ requestId: r.requestId, sport: r.sport }, p.date, out, next, n);
++      const m3 = old.reasons.filter((x) => x.code.includes('.M3_'));
++      results.set(r.requestId, { ...fresh, reasons: [...fresh.reasons, ...m3] });
++    }
++    // Effet retour : consommateurs non-Musculation dont le contexte est désormais périmé.
++    for (const p of placed.values()) {
++      const res = results.get(p.requestId);
++      if (p.sport === 'strength' || !res || res.status !== 'planned' || !ports[p.sport]?.consumesNeighbours) continue;
++      if (ctxKey(res.neighbourContext) !== ctxKey(neighboursOf(p.sport, p.date, p.requestId))) stat(`l2.after.stale.${p.sport}`);
++    }
++  }
++
+   // Même discipline : signalement NON BLOQUANT (aucune fenêtre gouvernée), séance précédente de la discipline seulement.
+   for (const p of placed.values()) {
+     const prev = all().filter((x) => x.sport === p.sport && x.requestId !== p.requestId && x.date < p.date).sort((a, b) => (a.date < b.date ? 1 : -1))[0];

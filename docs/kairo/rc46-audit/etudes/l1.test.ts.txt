@@ -1,0 +1,11 @@
+import { it } from 'vitest';
+import { writeFileSync } from 'node:fs';
+
+it('L1 variant run', async () => {
+  const v = process.env.L1_VARIANT ?? 'ref';
+  (globalThis as { L1_VARIANT?: string }).L1_VARIANT = v;
+  const { measureProfile, qualityProfiles, summarize } = await import('../rc46/quality-bench.js');
+  const out: Record<string, unknown> = {};
+  for (const spec of qualityProfiles()) { const q = measureProfile(spec); out[spec.id] = { q, s: summarize(q) }; }
+  writeFileSync(`${process.env.L1_OUT ?? '/tmp'}/l1-${v}.json`, JSON.stringify(out));
+}, 600000);

@@ -1,0 +1,54 @@
+diff --git a/packages/app-core/src/provisional-content.ts b/packages/app-core/src/provisional-content.ts
+index 5dbf7ea..480f1db 100644
+--- a/packages/app-core/src/provisional-content.ts
++++ b/packages/app-core/src/provisional-content.ts
+@@ -39,7 +39,7 @@ let running: ContentSource | undefined;
+  * (mollets à temps résiduel) et catalogue de test Strength F6.
+  */
+ export function strengthContent(): ContentSource {
+-  strength ??= load(strengthF6RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-f6-0.5.0');
++  strength ??= load(l1Overlay(strengthF6RulesetDocument()), strengthF6CatalogDocument(), 'fixtures:strength-f6-0.5.0');
+   return strength;
+ }
+ 
+@@ -67,3 +67,40 @@ export function runningContent(): ContentSource {
+ /** Préréglages de matériel du catalogue de test (identifiants et noms fournis par le catalogue). */
+ export const EQUIPMENT_PRESETS: readonly { readonly id: string; readonly name: string; readonly equipment: readonly string[] }[] =
+   STRENGTH_PRESETS.map((p) => ({ id: p.id, name: p.name, equipment: [...p.equipment] }));
++
++// ——— ÉTUDE L1 (copie jetable, jamais intégrée) : surcouches de contenu Strength sélectionnées par globalThis.L1_VARIANT ———
++type J = Record<string, unknown>;
++function l1Overlay(doc: ReturnType<typeof strengthF6RulesetDocument>): ReturnType<typeof strengthF6RulesetDocument> {
++  const v = String((globalThis as { L1_VARIANT?: string }).L1_VARIANT ?? 'ref');
++  if (v === 'ref') return doc;
++  const has = (k: string): boolean => v.split('+').includes(k);
++  const PULL = ['pull_horizontal', 'pull_vertical'];
++  const pullFirst = (xs: string[]): string[] => { const pulls = xs.filter((x) => PULL.includes(x)); const firstPush = xs.findIndex((x) => x.startsWith('push_')); if (firstPush < 0) return xs; const rest = xs.filter((x) => !PULL.includes(x)); rest.splice(rest.findIndex((x) => x.startsWith('push_')), 0, ...pulls); return rest; };
++  return {
++    ...doc,
++    rulesetVersion: `${String(doc.rulesetVersion)}-l1-${v.replace(/\+/g, "-")}`,
++    parameters: doc.parameters.map((p) => {
++      let val: unknown = p.value;
++      if (has('prio') && p.id === 'strength.goals') val = Object.fromEntries(Object.entries(val as Record<string, J>).map(([k, g]) => [k, { ...g, needPriority: pullFirst(g.needPriority as string[]) }]));
++      if (has('prio') && p.id === 'strength.stimuli') val = Object.fromEntries(Object.entries(val as Record<string, J>).map(([k, st]) => [k, { ...st, optionalOrder: pullFirst(st.optionalOrder as string[]) }]));
++      // pull2late : besoin distinct (même exigence que pull_horizontal) servi APRÈS les accessoires du bas du corps.
++      if (has('pull2late') && p.id === 'strength.needs') val = { ...(val as J), pull_complement: { requirement: { pattern: 'pull_horizontal' } } };
++      if (has('pull2late') && p.id === 'strength.substitution.fallbackNeeds') val = { ...(val as J), pull_complement: [] };
++      if (has('pull2late') && p.id === 'strength.goals') val = Object.fromEntries(Object.entries(val as Record<string, J>).map(([k, g]) => [k, { ...g, needPriority: [...(g.needPriority as string[]).filter((x) => x !== 'calves'), 'pull_complement', ...((g.needPriority as string[]).includes('calves') ? ['calves'] : [])] }]));
++      if (has('pull2late') && p.id === 'strength.stimuli') val = Object.fromEntries(Object.entries(val as Record<string, J>).map(([k, st]) => { const o = (st.optionalOrder as string[]).filter((x) => x !== 'calves'); const i = Math.max(o.indexOf('single_leg'), o.indexOf('isolation_lower')) + 1; return [k, { ...st, optionalOrder: [...o.slice(0, i), 'pull_complement', ...o.slice(i), ...((st.optionalOrder as string[]).includes('calves') ? ['calves'] : [])] }]; }));
++      if (p.id === 'strength.archetypes' && (has('pull2') || has('pull2hv') || has('iso1') || has('pull2late'))) {
++        val = (val as J[]).map((a) => {
++          if (a.id !== 'str_full_body') return a;
++          let slots = (a.slots as J[]).map((sl) => (has('iso1') && sl.id === 'fb.iso_upper' ? { ...sl, count: { min: 1, max: 1 } } : sl));
++          const extra = (id: string, need: string, group?: string): J => ({ id, blockId: 'b.accessory', need, role: 'accessory', status: 'optional', count: { min: 1, max: 1 }, anchorable: false, trackable: true, modalityPreference: 'stability', ...(group ? { choiceGroup: group } : {}) });
++          const at = slots.findIndex((sl) => sl.id === 'fb.single_leg');
++          if (has('pull2late')) slots = [...slots.slice(0, at), extra('fb.pull_c', 'pull_complement'), ...slots.slice(at)];
++          if (has('pull2')) slots = [...slots.slice(0, at), extra('fb.pull_2h', 'pull_horizontal'), ...slots.slice(at)];
++          if (has('pull2hv')) slots = [...slots.slice(0, at), extra('fb.pull_2h', 'pull_horizontal', 'pull_2'), extra('fb.pull_2v', 'pull_vertical', 'pull_2'), ...slots.slice(at)];
++          return { ...a, slots };
++        });
++      }
++      return val === p.value ? p : { ...p, value: val as typeof p.value };
++    }),
++  };
++}
