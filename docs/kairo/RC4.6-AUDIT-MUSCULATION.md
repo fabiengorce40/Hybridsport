@@ -19,7 +19,7 @@
 |---|---|---|---|---|
 | **A1** | **P1** | **Déséquilibre poussée / tirage.** Dos sous le plancher, bras et épaules au-dessus de la borne haute. | Bras au-dessus de la borne haute (14) **6 semaines sur 6 sur tous les profils** (16 à 18 séries par semaine). Dos à 9–10 séries par semaine (plancher 10), sous le plancher 3 à 5 semaines sur 6 en Full Body. Poussée (pectoraux + épaules) ≈ **3 fois** le tirage (27–34 contre 9–11 séries). | Tous |
 | **A2** | **P1** | **Quadriceps sous le plancher en Full Body multisport.** | P1 : 7,2 séries par semaine (plancher 10), 6 semaines sur 6. P5 : 4,3 (ischio-jambiers 4,3). P3 : 4 semaines sur 6. | P1, P3, P5 |
-| **A3** | **P1** | **Divergences du planificateur dues à l'ordre de génération multisport.** La séance de Musculation est composée **avant** que ses voisines (Cross-training, HYROX, Course) soient toutes placées. Régénérée avec la semaine finale, elle reçoit l'allègement d'interférence que la règle impose (séries −1, RIR +2, accessoires retirés). **La séance persistée ignore donc une interférence connue.** | P2 et P3 : **12 / 18**. P1 : 9 / 18. P1b et P5 : 6. **S3 et S4 (Musculation seule) : 0.** | Multisport |
+| **A3** | ~~P1~~ **Retiré (correctif L0)** | ~~Divergences du planificateur dues à l'ordre de génération multisport.~~ **Mesure erronée.** Les divergences avaient été mesurées **en fin de simulation**. Mesurées **à la planification de chaque semaine**, elles sont **nulles** sur les 7 profils avec Musculation (P4 n’en a pas) : la séance persistée est exactement celle que le planificateur régénère avec la semaine placée. Voir § 6. | À la planification : **0** divergence sur tous les profils du banc. | — |
 | **A4** | **P1** | **Haut / Bas avec la course : séances Bas fortement amputées.** L'interférence course à ±24 h retire tous les accessoires. | P1b : **24 / 24** séances allégées (62 réductions). Plusieurs séances Bas réduites à **2 exercices** (squat 2 × 6, soulevé de terre roumain 2 × 8–12). | P1b, P5 |
 | **B1** | **P2** | **Haut / Bas répétitifs, sans complémentarité.** | S4 : Bas = **2 compositions distinctes sur 12 séances**, **10 / 11** identiques à la précédente (similarité 0,97). Mouvement principal **toujours le squat** en Bas et **toujours le développé couché** en Haut. Haut : 4 compositions (similarité 0,66). | S4, P1b |
 | **B2** | **P2** | **Instance supplémentaire d'un emplacement jamais suivie.** Une seule progression par emplacement : la 2ᵉ instance reste « à l'effort » indéfiniment. | S4 : leg curl (`lo.iso_lower`, 2ᵉ instance) **12 expositions sans charge**. P1b : 5. | S4, P1b |
@@ -30,7 +30,8 @@
 **Points sains (aucune action) :**
 - **Continuité des charges :** **aucun retour en calibration** après la première exposition, **aucune baisse de charge** prescrite.
 - **Variété en Full Body :** pas de séance identique à la précédente (0 / 17 hors S3, 1 / 17 pour S3), alternance genou / hanche conservée, 13 à 17 exercices distincts sur 6 semaines.
-- **Musculation seule (S3, S4) :** aucun allègement d'interférence, aucune divergence du planificateur.
+- **Musculation seule (S3, S4) :** aucun allègement d'interférence.
+- **Reproductibilité à la planification (correctif L0) :** aucune divergence du planificateur sur les 7 profils avec Musculation.
 
 ---
 
@@ -113,21 +114,28 @@ Transitions d'une séance à la suivante, par emplacement :
 - En Haut / Bas avec la course, les séances Bas tombent sous un volume utile (A4), et les quadriceps et ischio-jambiers de P5 restent loin du plancher (A2).
 - Le placement G5 / M3 ne cherche pas encore à éloigner **les séances Bas** des séances de course clés.
 
-## 6. Divergences du planificateur (diagnostic R-A)
+## 6. Divergences du planificateur (diagnostic R-A) — **corrigé après L0**
 
-| Profil | Divergences / séances Musculation | Forme typique |
+**Mesure initiale (erronée, conservée pour trace).** Diagnostic lancé **en fin de simulation** sur toutes les semaines : P2 et P3 12 / 18, P1 9 / 18, P1b et P5 6, S3 et S4 0.
+
+**Mesure corrigée (banc L0).** Diagnostic lancé **juste après la planification de chaque semaine**, avant toute séance de cette semaine :
+
+| Profil | Divergences du planificateur | Séances identiques |
 |---|---|---|
-| P2 (Cross-training) | **12 / 18** | `sets:romanian_deadlift 3>2, rir 2>4, removed: leg_curl, squat bulgare` |
-| P3 (HYROX) | **12 / 18** | idem, ou tirage 2>3 |
-| P1 (course) | 9 / 18 | squat 4>3, RIR 3>5, accessoires retirés |
-| P1b, P5 | 6 | idem |
-| S3, S4 | **0** | — |
+| P1, P1b, P2, P3, P5, S3 | **0** | 18 / 18 |
+| S4 | **0** | 24 / 24 |
+| P4 | sans Musculation | — |
 
-**Cause (A3).**
-- Les divergences n'existent **qu'en multisport**.
-- La régénération de diagnostic retrouve l'allègement d'interférence d'une voisine que la séance persistée n'avait pas : la séance de Musculation est générée avant que les voisines soient toutes placées.
-- **Effet :** le pratiquant reçoit une séance plus chargée que ce que la règle d'interférence prescrirait avec la semaine finale.
-- C'est la cause principale de la non-reproductibilité. Le correctif Fix-B (régénération en 2 passes), écarté en RC4.5 parce qu'il changeait les volumes, changeait en réalité les volumes **pour cette raison même**.
+**Origine de l'erreur.**
+- La reconstruction « à la planification » du diagnostic R-A retire seulement les progressions ouvertes après la planification.
+- L'historique réalisé ensuite reste celui de la fin : séances voisines réalisées, charges, ressentis.
+- En fin de simulation, la régénération lit donc un contexte postérieur à la planification. L'écart était attribué à tort au planificateur.
+- **Limite du diagnostic R-A, à documenter.** Une divergence lue longtemps après la planification n'est pas une preuve de défaut du planificateur. Aucune modification proposée sans décision.
+
+**Conséquences.**
+- L'hypothèse « ordre de génération multisport » **n'est pas confirmée** sur les profils du banc.
+- Les divergences à la planification observées en RC4.5 sur le profil de consolidation (Cross-training qui héberge un bloc de force) restent à expliquer. L'étude L2 les traite.
+- L2 n'est plus « la cause principale de non-reproductibilité ». Elle reste une étude sur l'usage du contexte final des voisines.
 
 ---
 
@@ -174,12 +182,12 @@ Transitions d'une séance à la suivante, par emplacement :
 |---|---|---|---|
 | **L0** | Préalable | **Banc qualité Musculation** dans le dépôt : ce script d'audit transformé en rapport de test (variété, similarité, équilibre, continuité, interactions, R-A) sur les 8 profils. Aucune règle sportive. | Rapport figé reproductible, servant de référence à L1–L5. |
 | **L1** | P1 | **Équilibre poussée / tirage** (A1) : contenu versionné (priorités de besoins, tirage horizontal facultatif, prise en compte des séries indirectes des bras). | Dos ≥ plancher sur ≥ 5 semaines sur 6 en Full Body ; bras ≤ borne haute ; aucun autre groupe en baisse > 0,5. |
-| **L2** | P1 | **Ordre de génération multisport** (A3) : composer la Musculation **après** le placement des voisines, ou une seconde passe limitée au contexte d'interférence. | Divergences R-A en multisport → 0. Variation de volume **expliquée uniquement** par l'interférence désormais appliquée, et présentée avant intégration. |
+| **L2** | P1 → à réévaluer | **Contexte multisport final** : composer la Musculation **après** le placement des voisines, ou une seconde passe limitée au contexte d'interférence. A3 retiré (§ 6) : à la planification, 0 divergence sur le banc. | Variation de volume **expliquée uniquement** par une règle d'interférence existante, et présentée avant intégration. |
 | **L3** | P1 | **Bas du corps et course** (A2, A4) : placement G5 qui éloigne les séances Bas des séances de course clés, avant toute réduction. | P1b : séances Bas ≥ 4 exercices ; quadriceps et ischio-jambiers ≥ plancher plus souvent ; Running inchangé. |
 | **L4** | P2 | **Haut A/B, Bas A/B complémentaires** (§ 7), TEST_ONLY, en étude puis en lot. | Critères du § 7.3. |
 | **L5** | P2 | **Progression des instances répétées** (B2), intégrée à L4 ou seule. | Leg curl S4 : charge prescrite dès la 3ᵉ exposition ; aucun autre changement. |
 | **L6** | P3 | Rotation des isolations non prioritaires (B3) et mollets (C1, réouverture D1). | Aucun isolement présent dans plus de 2 séances sur 3, sans baisse de volume. |
 
-**Ordre recommandé :** L0 → L2 (cause principale de non-reproductibilité, effet d'interférence) → L1 → L3 → L4 + L5 → L6.
+**Ordre recommandé :** L0 → L1 → L2 (étude seulement, A3 retiré) → L3 → L4 + L5 → L6.
 
 **Aucun moteur sportif n'a été modifié pendant cet audit. En attente de vos décisions avant toute implémentation.**

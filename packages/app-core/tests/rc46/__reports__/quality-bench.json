@@ -153,13 +153,13 @@
    }
   },
   "reproducibility": {
-   "identical": 0,
-   "progression_since_planning": 8,
-   "history_since_planning": 1,
-   "planner_divergence": 9,
+   "identical": 18,
+   "progression_since_planning": 0,
+   "history_since_planning": 0,
+   "planner_divergence": 0,
    "not_regenerable": 0
   },
-  "plannerDivergences": 9,
+  "plannerDivergences": 0,
   "duration": {
    "meanMin": 51,
    "maxMin": 62,
@@ -332,13 +332,13 @@
    }
   },
   "reproducibility": {
-   "identical": 0,
-   "progression_since_planning": 14,
-   "history_since_planning": 4,
-   "planner_divergence": 6,
+   "identical": 24,
+   "progression_since_planning": 0,
+   "history_since_planning": 0,
+   "planner_divergence": 0,
    "not_regenerable": 0
   },
-  "plannerDivergences": 6,
+  "plannerDivergences": 0,
   "duration": {
    "meanMin": 44,
    "maxMin": 60,
@@ -496,13 +496,13 @@
    }
   },
   "reproducibility": {
-   "identical": 0,
-   "progression_since_planning": 6,
+   "identical": 18,
+   "progression_since_planning": 0,
    "history_since_planning": 0,
-   "planner_divergence": 12,
+   "planner_divergence": 0,
    "not_regenerable": 0
   },
-  "plannerDivergences": 12,
+  "plannerDivergences": 0,
   "duration": {
    "meanMin": 56,
    "maxMin": 64,
@@ -665,13 +665,13 @@
    }
   },
   "reproducibility": {
-   "identical": 0,
-   "progression_since_planning": 6,
+   "identical": 18,
+   "progression_since_planning": 0,
    "history_since_planning": 0,
-   "planner_divergence": 12,
+   "planner_divergence": 0,
    "not_regenerable": 0
   },
-  "plannerDivergences": 12,
+  "plannerDivergences": 0,
   "duration": {
    "meanMin": 52,
    "maxMin": 62,
@@ -989,13 +989,13 @@
    }
   },
   "reproducibility": {
-   "identical": 0,
-   "progression_since_planning": 11,
-   "history_since_planning": 1,
-   "planner_divergence": 6,
+   "identical": 18,
+   "progression_since_planning": 0,
+   "history_since_planning": 0,
+   "planner_divergence": 0,
    "not_regenerable": 0
   },
-  "plannerDivergences": 6,
+  "plannerDivergences": 0,
   "duration": {
    "meanMin": 46,
    "maxMin": 72,
@@ -1150,9 +1150,9 @@
    "arbitrations": {}
   },
   "reproducibility": {
-   "identical": 0,
-   "progression_since_planning": 15,
-   "history_since_planning": 3,
+   "identical": 18,
+   "progression_since_planning": 0,
+   "history_since_planning": 0,
    "planner_divergence": 0,
    "not_regenerable": 0
   },
@@ -1322,9 +1322,9 @@
    "arbitrations": {}
   },
   "reproducibility": {
-   "identical": 0,
-   "progression_since_planning": 20,
-   "history_since_planning": 4,
+   "identical": 24,
+   "progression_since_planning": 0,
+   "history_since_planning": 0,
    "planner_divergence": 0,
    "not_regenerable": 0
   },

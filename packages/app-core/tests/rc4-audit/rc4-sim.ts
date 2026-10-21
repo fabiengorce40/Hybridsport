@@ -134,8 +134,12 @@ export function simulateOnce(spec: ProfileSpec, weeks: number = MONS.length, glo
   return r;
 }
 
-/** `env` : environnement Beta 0 (par défaut) ; `beta0Environment({ globalPlacement: false })` rejoue V0 (RC4.4). */
-export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = beta0Environment()): SimOut {
+/**
+ * `env` : environnement Beta 0 (par défaut) ; `beta0Environment({ globalPlacement: false })` rejoue V0 (RC4.4).
+ * `onWeekPlanned` (RC4.6 L0, observation seulement) : appelé avec l'état juste après la planification de chaque semaine,
+ * avant toute séance de cette semaine ; il ne modifie rien.
+ */
+export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = beta0Environment(), onWeekPlanned?: (state: AppState, monday: string) => void): SimOut {
   const content = strengthContent();
   const params = readStrengthParams(content.ruleset).values;
   const errors: string[] = [];
@@ -146,6 +150,7 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
   for (let w = 0; w < weeks; w++) {
     const mon = MONS[w] as string;
     if (w > 0) s = ensureBeta0Week(s, at(mon, '06:00'), env);
+    onWeekPlanned?.(s, mon);
     const view = [...(selectBeta0Week(s, mon)?.sessions ?? [])].sort((a, b) => ((a.date ?? 'z') < (b.date ?? 'z') ? -1 : 1));
     const ins = strengthWeekInsights(s, mon);
     let k = 0;

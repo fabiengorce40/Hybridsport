@@ -53,8 +53,16 @@ const repsOf = (r: unknown): string => {
 };
 
 /** Mesure d'un profil à partir d'une simulation (chemin réel). `env` : environnement à évaluer (référence par défaut). */
-export function measureProfile(spec: ProfileSpec, sim?: SimOut, env = beta0Environment()): ProfileQuality {
-  const r = sim ?? simulate(spec, QUALITY_WEEKS, env);
+export function measureProfile(spec: ProfileSpec, env = beta0Environment()): ProfileQuality {
+  // R-A mesuré À LA PLANIFICATION de chaque semaine (aucune séance de la semaine réalisée) : en fin de simulation, les
+  // progressions ont évolué depuis et ne peuvent pas être relues à leur état d'alors (écarts attribués à tort au planificateur).
+  const repro: Record<string, number> = {};
+  const divergences: string[] = [];
+  const r: SimOut = simulate(spec, QUALITY_WEEKS, env, (state, monday) => {
+    const x = weekReproducibility(state, monday, env, 'strength');
+    for (const [k, v] of Object.entries(x.counts)) repro[k] = (repro[k] ?? 0) + v;
+    divergences.push(...x.sessions.filter((y) => y.class === 'planner_divergence').map((y) => `${y.requestId}: ${y.changesAtPlanning.join(', ')}`));
+  });
   const content = strengthContent();
   const params = readStrengthParams(content.ruleset).values;
   const groups = params['strength.volume'].muscleGroups;
@@ -103,13 +111,6 @@ export function measureProfile(spec: ProfileSpec, sim?: SimOut, env = beta0Envir
       const avail = w.days.find((x) => x.date === q.date)?.availableMinutes ?? null;
       return [{ id: q.requestId, week: ws, date: q.date ?? '', arch: q.intent?.archetypeId ?? '', items, direct, indirect, push, pull, estMin: est, availMin: avail, reductions: reductionsByDate.get(q.date ?? '') ?? [] }];
     }));
-  const repro: Record<string, number> = {};
-  const divergences: string[] = [];
-  for (const ws of Object.keys(st.planner.weeks).sort()) {
-    const x = weekReproducibility(st, ws, env, 'strength');
-    for (const [k, v] of Object.entries(x.counts)) repro[k] = (repro[k] ?? 0) + v;
-    divergences.push(...x.sessions.filter((y) => y.class === 'planner_divergence').map((y) => `${y.requestId}: ${y.changesAtPlanning.join(', ')}`));
-  }
   return {
     id: spec.id, label: spec.label, sessions,
     weeks: r.weeks.map((w) => ({ week: w.week, vol: Object.fromEntries(w.volume.map((v) => [v.group, [v.planned, v.target, v.high] as const])) })),
@@ -189,7 +190,7 @@ export function renderQualityReport(all: readonly QualitySummary[]): string {
     L.push('', `Continuité : ${String(c.transitions)} transitions, exercice changé ${String(c.exerciseSwitched)}, retour en calibration ${String(c.recalibrated)}, baisse de charge ${String(c.loadDown)}, baisse de répétitions à charge égale ${String(c.repsDown)} ; items chargés ${String(c.itemsWithLoad)}, poids du corps ${String(c.itemsBodyweight)}, à l'effort ${String(c.itemsEffortOnly)}.`);
     L.push(`Emplacements toujours « à l'effort » (≥ 3 expositions) : ${c.repeatedEffortOnly.join(' ; ') || 'aucun'}.`);
     L.push(`Allègements : ${String(s.interference.sessionsReduced)} séances, ${String(s.interference.reductions)} réductions ${JSON.stringify(s.interference.byAction)} ; arbitrages ${JSON.stringify(s.interference.arbitrations)}.`);
-    L.push(`Reproductibilité (R-A, fin de simulation) : ${JSON.stringify(s.reproducibility)}.`);
+    L.push(`Reproductibilité (R-A, à la planification de chaque semaine) : ${JSON.stringify(s.reproducibility)}.`);
     L.push(`Durées : moyenne ${String(s.duration.meanMin)} min, maximum ${String(s.duration.maxMin)} min, dépassements du temps disponible ${String(s.duration.overAvailable)}.`);
   }
   return `${L.join('\n')}\n`;
