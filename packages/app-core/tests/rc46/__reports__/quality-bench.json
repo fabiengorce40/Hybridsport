@@ -5,9 +5,9 @@
   "strengthSessions": 18,
   "volume": {
    "quads": {
-    "direct": 7.2,
+    "direct": 7.5,
     "indirect": 0,
-    "total": 7.2
+    "total": 7.5
    },
    "hamstrings": {
     "direct": 8.5,
@@ -15,9 +15,9 @@
     "total": 8.5
    },
    "glutes": {
-    "direct": 11.5,
+    "direct": 11.8,
     "indirect": 0,
-    "total": 11.5
+    "total": 11.8
    },
    "calves": {
     "direct": 1.3,
@@ -25,9 +25,9 @@
     "total": 1.3
    },
    "chest": {
-    "direct": 14.3,
+    "direct": 13.7,
     "indirect": 0,
-    "total": 14.3
+    "total": 13.7
    },
    "back": {
     "direct": 9.2,
@@ -35,14 +35,14 @@
     "total": 9.2
    },
    "shoulders": {
-    "direct": 6.2,
-    "indirect": 9.3,
-    "total": 15.5
+    "direct": 4.7,
+    "indirect": 8.9,
+    "total": 13.6
    },
    "arms": {
-    "direct": 14.7,
+    "direct": 14.2,
     "indirect": 2.1,
-    "total": 16.8
+    "total": 16.3
    },
    "core": {
     "direct": 3.5,
@@ -89,7 +89,7 @@
    ]
   },
   "underFloorWeeks": {
-   "quads": 6,
+   "quads": 5,
    "hamstrings": 2,
    "glutes": 0,
    "calves": 4,
@@ -106,37 +106,36 @@
    "calves": 0,
    "chest": 0,
    "back": 0,
-   "shoulders": 3,
+   "shoulders": 0,
    "arms": 6,
    "core": 0
   },
   "pushPull": {
-   "push": 21,
+   "push": 18.3,
    "pull": 9.2,
-   "ratio": 2.28
+   "ratio": 1.99
   },
   "variety": [
    {
     "arch": "str_full_body",
     "sessions": 18,
-    "distinctExercises": 15,
-    "distinctCompositions": 11,
+    "distinctExercises": 14,
+    "distinctCompositions": 10,
     "identicalToPrevious": 0,
-    "meanSimilarity": 0.16,
+    "meanSimilarity": 0.17,
     "distinctMains": 2
    }
   ],
   "continuity": {
-   "transitions": 92,
-   "exerciseSwitched": 13,
+   "transitions": 88,
+   "exerciseSwitched": 5,
    "recalibrated": 0,
    "loadDown": 0,
    "repsDown": 0,
    "itemsWithLoad": 66,
    "itemsBodyweight": 9,
-   "itemsEffortOnly": 28,
+   "itemsEffortOnly": 24,
    "repeatedEffortOnly": [
-    "str_full_body/fb.iso_upper:machine_lateral_raise×4",
     "str_full_body/fb.trunk:cable_pallof_press×7"
    ]
   },
@@ -161,8 +160,8 @@
   },
   "plannerDivergences": 0,
   "duration": {
-   "meanMin": 51,
-   "maxMin": 62,
+   "meanMin": 50,
+   "maxMin": 63,
    "overAvailable": 0
   },
   "accountingGap": 0
@@ -352,29 +351,29 @@
   "strengthSessions": 18,
   "volume": {
    "quads": {
-    "direct": 10.8,
+    "direct": 10.7,
     "indirect": 0,
-    "total": 10.8
+    "total": 10.7
    },
    "hamstrings": {
-    "direct": 11.2,
+    "direct": 11.7,
     "indirect": 0,
-    "total": 11.2
+    "total": 11.7
    },
    "glutes": {
-    "direct": 14.8,
+    "direct": 15.2,
     "indirect": 0,
-    "total": 14.8
+    "total": 15.2
    },
    "calves": {
-    "direct": 2.7,
+    "direct": 3.3,
     "indirect": 0,
-    "total": 2.7
+    "total": 3.3
    },
    "chest": {
-    "direct": 14.3,
+    "direct": 13.7,
     "indirect": 0,
-    "total": 14.3
+    "total": 13.7
    },
    "back": {
     "direct": 9.3,
@@ -382,9 +381,9 @@
     "total": 9.3
    },
    "shoulders": {
-    "direct": 6.2,
-    "indirect": 9.3,
-    "total": 15.5
+    "direct": 4.7,
+    "indirect": 9,
+    "total": 13.7
    },
    "arms": {
     "direct": 14.2,
@@ -439,7 +438,7 @@
    "quads": 3,
    "hamstrings": 0,
    "glutes": 0,
-   "calves": 2,
+   "calves": 1,
    "chest": 0,
    "back": 4,
    "shoulders": 0,
@@ -449,41 +448,40 @@
   "overHighWeeks": {
    "quads": 0,
    "hamstrings": 0,
-   "glutes": 5,
+   "glutes": 6,
    "calves": 0,
    "chest": 0,
    "back": 0,
-   "shoulders": 2,
+   "shoulders": 0,
    "arms": 6,
    "core": 0
   },
   "pushPull": {
-   "push": 20.5,
+   "push": 18.3,
    "pull": 9.3,
-   "ratio": 2.2
+   "ratio": 1.97
   },
   "variety": [
    {
     "arch": "str_full_body",
     "sessions": 18,
-    "distinctExercises": 15,
-    "distinctCompositions": 13,
+    "distinctExercises": 14,
+    "distinctCompositions": 12,
     "identicalToPrevious": 0,
-    "meanSimilarity": 0.23,
+    "meanSimilarity": 0.24,
     "distinctMains": 2
    }
   ],
   "continuity": {
-   "transitions": 106,
-   "exerciseSwitched": 13,
+   "transitions": 104,
+   "exerciseSwitched": 5,
    "recalibrated": 0,
    "loadDown": 0,
    "repsDown": 0,
-   "itemsWithLoad": 80,
+   "itemsWithLoad": 81,
    "itemsBodyweight": 9,
-   "itemsEffortOnly": 28,
+   "itemsEffortOnly": 25,
    "repeatedEffortOnly": [
-    "str_full_body/fb.iso_upper:machine_lateral_raise×4",
     "str_full_body/fb.trunk:cable_pallof_press×6"
    ]
   },
@@ -516,19 +514,19 @@
   "strengthSessions": 18,
   "volume": {
    "quads": {
-    "direct": 9.3,
+    "direct": 9.2,
     "indirect": 0,
-    "total": 9.3
+    "total": 9.2
    },
    "hamstrings": {
-    "direct": 9.3,
+    "direct": 9.8,
     "indirect": 0,
-    "total": 9.3
+    "total": 9.8
    },
    "glutes": {
-    "direct": 12.5,
+    "direct": 12.8,
     "indirect": 0,
-    "total": 12.5
+    "total": 12.8
    },
    "calves": {
     "direct": 0.7,
@@ -536,9 +534,9 @@
     "total": 0.7
    },
    "chest": {
-    "direct": 13.8,
+    "direct": 13.2,
     "indirect": 0,
-    "total": 13.8
+    "total": 13.2
    },
    "back": {
     "direct": 9,
@@ -546,14 +544,14 @@
     "total": 9
    },
    "shoulders": {
-    "direct": 6.3,
-    "indirect": 9.1,
-    "total": 15.4
+    "direct": 4.7,
+    "indirect": 8.8,
+    "total": 13.5
    },
    "arms": {
-    "direct": 14.3,
+    "direct": 13.8,
     "indirect": 2.2,
-    "total": 16.5
+    "total": 16
    },
    "core": {
     "direct": 3.5,
@@ -613,41 +611,40 @@
   "overHighWeeks": {
    "quads": 0,
    "hamstrings": 0,
-   "glutes": 0,
+   "glutes": 1,
    "calves": 0,
    "chest": 0,
    "back": 0,
-   "shoulders": 2,
+   "shoulders": 0,
    "arms": 6,
    "core": 0
   },
   "pushPull": {
-   "push": 20.7,
+   "push": 17.8,
    "pull": 9,
-   "ratio": 2.3
+   "ratio": 1.98
   },
   "variety": [
    {
     "arch": "str_full_body",
     "sessions": 18,
-    "distinctExercises": 17,
-    "distinctCompositions": 15,
+    "distinctExercises": 15,
+    "distinctCompositions": 14,
     "identicalToPrevious": 0,
-    "meanSimilarity": 0.17,
+    "meanSimilarity": 0.18,
     "distinctMains": 3
    }
   ],
   "continuity": {
-   "transitions": 97,
-   "exerciseSwitched": 17,
+   "transitions": 93,
+   "exerciseSwitched": 7,
    "recalibrated": 0,
    "loadDown": 0,
    "repsDown": 0,
    "itemsWithLoad": 69,
    "itemsBodyweight": 9,
-   "itemsEffortOnly": 30,
+   "itemsEffortOnly": 26,
    "repeatedEffortOnly": [
-    "str_full_body/fb.iso_upper:machine_lateral_raise×4",
     "str_full_body/fb.trunk:cable_pallof_press×7"
    ]
   },
@@ -673,8 +670,8 @@
   },
   "plannerDivergences": 0,
   "duration": {
-   "meanMin": 52,
-   "maxMin": 62,
+   "meanMin": 51,
+   "maxMin": 63,
    "overAvailable": 0
   },
   "accountingGap": 0
@@ -857,9 +854,9 @@
     "total": 0.7
    },
    "chest": {
-    "direct": 9.8,
+    "direct": 13.2,
     "indirect": 0,
-    "total": 9.8
+    "total": 13.2
    },
    "back": {
     "direct": 9.3,
@@ -867,9 +864,9 @@
     "total": 9.3
    },
    "shoulders": {
-    "direct": 9.2,
-    "indirect": 7.4,
-    "total": 16.6
+    "direct": 5.2,
+    "indirect": 9.1,
+    "total": 14.3
    },
    "arms": {
     "direct": 13.5,
@@ -925,7 +922,7 @@
    "hamstrings": 5,
    "glutes": 0,
    "calves": 5,
-   "chest": 3,
+   "chest": 0,
    "back": 4,
    "shoulders": 0,
    "arms": 0,
@@ -938,37 +935,36 @@
    "calves": 0,
    "chest": 0,
    "back": 0,
-   "shoulders": 3,
+   "shoulders": 0,
    "arms": 6,
    "core": 0
   },
   "pushPull": {
-   "push": 19,
+   "push": 18.3,
    "pull": 9.3,
-   "ratio": 2.04
+   "ratio": 1.97
   },
   "variety": [
    {
     "arch": "str_full_body",
     "sessions": 18,
     "distinctExercises": 13,
-    "distinctCompositions": 12,
+    "distinctCompositions": 11,
     "identicalToPrevious": 0,
-    "meanSimilarity": 0.06,
+    "meanSimilarity": 0.16,
     "distinctMains": 3
    }
   ],
   "continuity": {
-   "transitions": 78,
-   "exerciseSwitched": 19,
+   "transitions": 77,
+   "exerciseSwitched": 3,
    "recalibrated": 0,
    "loadDown": 0,
    "repsDown": 0,
-   "itemsWithLoad": 44,
+   "itemsWithLoad": 52,
    "itemsBodyweight": 9,
-   "itemsEffortOnly": 36,
+   "itemsEffortOnly": 27,
    "repeatedEffortOnly": [
-    "str_full_body/fb.iso_upper:pec_deck×10",
     "str_full_body/fb.trunk:cable_pallof_press×11"
    ]
   },
@@ -998,7 +994,7 @@
   "plannerDivergences": 0,
   "duration": {
    "meanMin": 46,
-   "maxMin": 72,
+   "maxMin": 70,
    "overAvailable": 0
   },
   "accountingGap": 0
@@ -1009,29 +1005,29 @@
   "strengthSessions": 18,
   "volume": {
    "quads": {
-    "direct": 10.8,
+    "direct": 10.7,
     "indirect": 0,
-    "total": 10.8
+    "total": 10.7
    },
    "hamstrings": {
-    "direct": 11.2,
+    "direct": 11.7,
     "indirect": 0,
-    "total": 11.2
+    "total": 11.7
    },
    "glutes": {
-    "direct": 14.8,
+    "direct": 15.2,
     "indirect": 0,
-    "total": 14.8
+    "total": 15.2
    },
    "calves": {
-    "direct": 0.7,
+    "direct": 1.3,
     "indirect": 0,
-    "total": 0.7
+    "total": 1.3
    },
    "chest": {
-    "direct": 13.5,
+    "direct": 12.8,
     "indirect": 0,
-    "total": 13.5
+    "total": 12.8
    },
    "back": {
     "direct": 9.5,
@@ -1039,9 +1035,9 @@
     "total": 9.5
    },
    "shoulders": {
-    "direct": 5.7,
-    "indirect": 9.3,
-    "total": 15
+    "direct": 5.2,
+    "indirect": 8.9,
+    "total": 14.1
    },
    "arms": {
     "direct": 13.7,
@@ -1096,7 +1092,7 @@
    "quads": 3,
    "hamstrings": 0,
    "glutes": 0,
-   "calves": 5,
+   "calves": 4,
    "chest": 0,
    "back": 3,
    "shoulders": 0,
@@ -1106,7 +1102,7 @@
   "overHighWeeks": {
    "quads": 0,
    "hamstrings": 0,
-   "glutes": 5,
+   "glutes": 6,
    "calves": 0,
    "chest": 0,
    "back": 0,
@@ -1115,30 +1111,30 @@
    "core": 0
   },
   "pushPull": {
-   "push": 19.2,
+   "push": 18,
    "pull": 9.5,
-   "ratio": 2.02
+   "ratio": 1.89
   },
   "variety": [
    {
     "arch": "str_full_body",
     "sessions": 18,
-    "distinctExercises": 13,
-    "distinctCompositions": 10,
+    "distinctExercises": 12,
+    "distinctCompositions": 9,
     "identicalToPrevious": 0,
-    "meanSimilarity": 0.23,
+    "meanSimilarity": 0.24,
     "distinctMains": 2
    }
   ],
   "continuity": {
    "transitions": 99,
-   "exerciseSwitched": 5,
+   "exerciseSwitched": 1,
    "recalibrated": 0,
    "loadDown": 0,
    "repsDown": 0,
-   "itemsWithLoad": 79,
+   "itemsWithLoad": 76,
    "itemsBodyweight": 9,
-   "itemsEffortOnly": 22,
+   "itemsEffortOnly": 25,
    "repeatedEffortOnly": [
     "str_full_body/fb.trunk:cable_pallof_press×5"
    ]
@@ -1159,7 +1155,7 @@
   "plannerDivergences": 0,
   "duration": {
    "meanMin": 53,
-   "maxMin": 64,
+   "maxMin": 63,
    "overAvailable": 0
   },
   "accountingGap": 0

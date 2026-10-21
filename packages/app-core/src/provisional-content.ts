@@ -11,6 +11,7 @@ import type { LoadedCatalog, LoadedRuleset } from '@hybridsport/engine';
 import { strengthLockRulesetDocument } from '../../strength/tests/fixtures/ruleset.js';
 import { STRENGTH_PRESETS, strengthCatalogDocument } from '../../strength/tests/fixtures/catalog.js';
 import { strengthF6CatalogDocument, strengthF6RulesetDocument } from '../../strength/tests/fixtures/f6.js';
+import { strengthL1V3RulesetDocument } from '../../strength/tests/fixtures/l1v3.js';
 import { testRulesetDocumentWithDuplicate } from '../../engine/tests/fixtures/ruleset.js';
 import { testCatalogDocument } from '../../engine/tests/fixtures/catalog.js';
 
@@ -31,16 +32,24 @@ function load(rulesetDoc: Parameters<typeof loadRuleset>[0], catalogDoc: Paramet
 }
 
 let strength: ContentSource | undefined;
+let strengthF6: ContentSource | undefined;
 let strengthLock: ContentSource | undefined;
 let running: ContentSource | undefined;
 
 /**
  * Contenu Strength COURANT (planification des nouvelles semaines) : ruleset verrouillé 4F + surcouche RC4.5 F6
- * (mollets à temps résiduel) et catalogue de test Strength F6.
+ * (mollets à temps résiduel) + surcouche RC4.6 L1-V3 (une isolation du haut du corps en Full Body), catalogue de test
+ * Strength F6.
  */
 export function strengthContent(): ContentSource {
-  strength ??= load(strengthF6RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-f6-0.5.0');
+  strength ??= load(strengthL1V3RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-l1v3-0.6.0');
   return strength;
+}
+
+/** Contenu Strength ANTÉRIEUR conservé (RC4.5 F6, avant L1-V3) : ruleset F6 et catalogue de test F6. */
+function strengthF6Content(): ContentSource {
+  strengthF6 ??= load(strengthF6RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-f6-0.5.0');
+  return strengthF6;
 }
 
 /** Contenu Strength ANTÉRIEUR conservé (avant F6) : ruleset verrouillé PROVISOIREMENT (4F) et catalogue de test. */
@@ -55,7 +64,7 @@ function strengthLockContent(): ContentSource {
  * Version inconnue ⇒ `undefined` (la séance n'est alors pas régénérable fidèlement : chemin « non reproductible »).
  */
 export function strengthContentFor(rulesetVersion: string, catalogVersion: string): ContentSource | undefined {
-  return [strengthContent(), strengthLockContent()].find((c) => c.ruleset.version === rulesetVersion && c.catalog.version === catalogVersion);
+  return [strengthContent(), strengthF6Content(), strengthLockContent()].find((c) => c.ruleset.version === rulesetVersion && c.catalog.version === catalogVersion);
 }
 
 /** Ruleset de test du CORE (avec les paramètres d'anti-doublon, provisoires) et catalogue de test : ceux des tests Running. */

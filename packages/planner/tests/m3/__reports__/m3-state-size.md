@@ -4,8 +4,8 @@ Forme compacte persistée par app-core (`arbitration` : statut, passes, version,
 
 | semaines | arbitrage compact (Kio) | moyenne / semaine (o) | max / semaine (o) | semaine planifiée complète (Kio) | part de l’arbitrage |
 |---|---|---|---|---|---|
-| 4 | 11.6 | 2968 | 3708 | 459 | 2.52 % |
-| 12 | 23.4 | 1994 | 3708 | 1315 | 1.78 % |
-| 52 | 43.8 | 862 | 3708 | 5367 | 0.82 % |
+| 4 | 11.6 | 2968 | 3708 | 453 | 2.56 % |
+| 12 | 23.4 | 1994 | 3708 | 1294 | 1.81 % |
+| 52 | 43.8 | 862 | 3708 | 5262 | 0.83 % |
 
 Mesure applicative (Beta 0, Strength + Running, 52 semaines) : `packages/app-core/tests/longitudinal/__reports__/state-size.md` (+0,7 % avec M3).

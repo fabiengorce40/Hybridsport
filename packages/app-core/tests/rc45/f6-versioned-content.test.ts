@@ -20,7 +20,9 @@ const fx = (n: string) => readFileSync(new URL(`./fixtures/${n}.json`, import.me
 const REFS = JSON.parse(fx('pre-f6-starts')) as Record<string, ReturnType<typeof probe>>;
 const STATES = ['pre-f6-consolidation-w1', 'pre-f6-consolidation-w2', 'pre-f6-p2-w1'];
 const LOCK = { ruleset: '0.4.0-strength-science-lock', catalog: '0.2.0-strength-test' };
-const F6 = { ruleset: strengthContent().ruleset.version, catalog: strengthContent().catalog.version };
+const F6 = { ruleset: '0.5.0-strength-f6', catalog: '0.3.0-strength-test-f6' };
+// RC4.6 (L1-V3) : le contenu COURANT est désormais la surcouche L1-V3 ; F6 est conservé au registre.
+const CURRENT = { ruleset: strengthContent().ruleset.version, catalog: strengthContent().catalog.version };
 const load = (n: string) => loadText(fx(n), '2026-10-05T07:30:00.000Z');
 const provenance = (s: AppState, id: string) => {
   const r = Object.values(s.planner.weeks).flatMap((w) => w.requests).find((x) => x.requestId === id)?.record as { data?: { provenance?: { rulesetVersion: string; catalogVersion: string } } } | undefined;
@@ -29,10 +31,11 @@ const provenance = (s: AppState, id: string) => {
 const strengthIds = (s: AppState, week: string) => (s.planner.weeks[week]?.requests ?? []).filter((r) => r.sport === 'strength' && r.status === 'planned').map((r) => r.requestId);
 
 describe('RC4.5 F6 — contenu versionné : aucune régénération rétroactive', () => {
-  it('registre : contenu courant F6 et contenu 4F conservé ; version inconnue ⇒ aucun contenu', () => {
-    expect(F6).toEqual({ ruleset: '0.5.0-strength-f6', catalog: '0.3.0-strength-test-f6' });
+  it('registre : contenu courant (L1-V3), F6 et 4F conservés ; version inconnue ⇒ aucun contenu', () => {
+    expect(CURRENT).toEqual({ ruleset: '0.6.0-strength-l1v3', catalog: F6.catalog });
     expect(strengthContentFor(LOCK.ruleset, LOCK.catalog)?.ruleset.version).toBe(LOCK.ruleset);
-    expect(strengthContentFor(F6.ruleset, F6.catalog)).toBe(strengthContent());
+    expect(strengthContentFor(F6.ruleset, F6.catalog)?.ruleset.version).toBe(F6.ruleset);
+    expect(strengthContentFor(CURRENT.ruleset, CURRENT.catalog)).toBe(strengthContent());
     expect(strengthContentFor('9.9.9-inconnu', LOCK.catalog)).toBeUndefined();
   });
 
@@ -77,7 +80,7 @@ describe('RC4.5 F6 — contenu versionné : aucune régénération rétroactive'
     expect(sessionEnvironment(unknown, id, env)).toBe(env);
   });
 
-  it('semaine planifiée APRÈS F6 : provenance F6, régénérée avec le contenu courant ; semaines antérieures intactes', () => {
+  it('semaine planifiée APRÈS F6 : provenance du contenu courant, régénérée avec lui ; semaines antérieures intactes', () => {
     const s = load('pre-f6-consolidation-w2');
     const next = ensureBeta0Week(s, { today: '2026-10-19', now: '2026-10-19T07:30:00.000Z' });
     // Séances de Musculation des semaines antérieures : enregistrements persistés inchangés (aucune réécriture F6).
@@ -86,12 +89,12 @@ describe('RC4.5 F6 — contenu versionné : aucune régénération rétroactive'
     const ids = strengthIds(next, '2026-10-19');
     expect(ids.length).toBeGreaterThan(0);
     for (const id of ids) {
-      expect(provenance(next, id)).toMatchObject({ rulesetVersion: F6.ruleset, catalogVersion: F6.catalog });
-      expect(sessionEnvironment(next, id, beta0Environment()).strength?.content.ruleset.version).toBe(F6.ruleset);
+      expect(provenance(next, id)).toMatchObject({ rulesetVersion: CURRENT.ruleset, catalogVersion: CURRENT.catalog });
+      expect(sessionEnvironment(next, id, beta0Environment()).strength?.content.ruleset.version).toBe(CURRENT.ruleset);
     }
   });
 
-  it('F6-5 : « Modifier » une semaine NON commencée la replanifie avec le contenu courant F6', () => {
+  it('F6-5 : « Modifier » une semaine NON commencée la replanifie avec le contenu courant', () => {
     const s = load('pre-f6-p2-w1');
     const clock = { today: '2026-10-05', now: '2026-10-05T08:00:00.000Z' };
     expect(previewBeta0Recreation(s, clock.today).currentWeek).toBe('replanned');
@@ -100,7 +103,7 @@ describe('RC4.5 F6 — contenu versionné : aucune régénération rétroactive'
     const r = recreateBeta0Programme(s, p2.profile, clock, {});
     const ids = strengthIds(r, '2026-10-05');
     expect(ids.length).toBeGreaterThan(0);
-    for (const id of ids) expect(provenance(r, id)).toMatchObject({ rulesetVersion: F6.ruleset, catalogVersion: F6.catalog });
+    for (const id of ids) expect(provenance(r, id)).toMatchObject({ rulesetVersion: CURRENT.ruleset, catalogVersion: CURRENT.catalog });
     expect((selectBeta0Week(r, '2026-10-05')?.sessions ?? []).length).toBeGreaterThan(0);
   });
 });
