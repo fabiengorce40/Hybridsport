@@ -1,0 +1,36 @@
+import { writeFileSync } from 'node:fs';
+import { it, vi } from 'vitest';
+import { migrateToCurrent } from '@hybridsport/engine';
+import type { SessionRecord } from '@hybridsport/domain';
+import { beta0Environment, weekReproducibility } from '../../src/index.js';
+import { PROFILES, simulate } from '../rc4-audit/rc4-sim.js';
+vi.setConfig({ testTimeout: 3_600_000 });
+it('audit RC4.6', () => {
+  const env = beta0Environment();
+  const p1 = PROFILES.find((p) => p.id === 'P1');
+  if (!p1) throw new Error('P1');
+  const solo = (id: string, n: number) => ({ ...p1, id, label: `Musculation ${String(n)}× seule`, profile: { ...p1.profile, priorities: ['strength'], strength: { ...p1.profile.strength, sessionsPerWeek: n }, running: { ...p1.profile.running, enabled: false } }, lastRun: undefined, requestTest: false, freeRuns: [], checkIn: undefined });
+  const specs = [...PROFILES, solo('S3', 3), solo('S4', 4)];
+  const out: Record<string, unknown> = {};
+  for (const spec of specs) {
+    const r = simulate(spec as never, 6);
+    const st = r.state;
+    const weeks = Object.entries(st.planner.weeks).sort(([a], [b]) => (a < b ? -1 : 1));
+    const strength = weeks.flatMap(([ws, w]) => w.requests.filter((q) => q.sport === 'strength' && q.status === 'planned' && q.record).map((q) => {
+      const d = migrateToCurrent<SessionRecord>(q.record as never);
+      const s = d.ok ? d.value.session : null;
+      const items = (s?.blocks ?? []).flatMap((b) => b.items.map((it) => {
+        const sets = it.prescription.type === 'sets' ? it.prescription.sets.filter((x) => x.kind !== 'rampup') : [];
+        const f = sets[0] as { reps?: unknown; intensity?: { mode?: string; kg?: number; kgRounded?: number } } | undefined;
+        const reps = typeof f?.reps === 'number' ? String(f.reps) : f?.reps && typeof f.reps === 'object' ? `${String((f.reps as { min: number }).min)}-${String((f.reps as { max: number }).max)}` : '';
+        const load = f?.intensity?.mode === 'load' ? f.intensity.kg ?? null : f?.intensity?.mode === 'percent_of_reference' ? f.intensity.kgRounded ?? null : null;
+        return { ex: it.exerciseId.replace('ex.', ''), slot: it.refs?.slotId ?? '', block: b.kind, sets: sets.length, reps, load, track: it.refs?.progressionTrackId ?? null, source: (it.refs as { prescriptionSource?: string } | undefined)?.prescriptionSource ?? null };
+      })).filter((x) => x.sets > 0);
+      return { week: ws, id: q.requestId, date: q.date, arch: q.intent?.archetypeId ?? null, items };
+    }));
+    const repro = weeks.map(([ws]) => { const x = weekReproducibility(st, ws, env, 'strength'); return { week: ws, counts: x.counts, planner: x.sessions.filter((y) => y.class === 'planner_divergence').map((y) => `${y.requestId}:${y.changesAtPlanning.join(',')}`) }; });
+    out[spec.id] = { label: spec.label, rows: r.sessions.map((s) => ({ w: s.week, date: s.date, sport: s.sport, arch: s.archetype, status: s.status, placement: s.placement, notPlanned: s.notPlanned, arbitration: s.arbitration, red: s.reductions, groups: s.groups, ex: s.exercises.map((e) => `${e.id}:${String(e.sets)}x${e.reps}@${e.load}`) })),
+      weeks: r.weeks.map((w) => ({ w: w.week, status: w.volumeStatus, recovery: w.recovery, arbitration: w.arbitration, vol: Object.fromEntries(w.volume.map((v) => [v.group, [v.planned, v.target, v.high, v.status]])) })), strength, repro, errors: r.errors };
+  }
+  writeFileSync('/tmp/claude-0/rc46-audit.json', JSON.stringify(out));
+});

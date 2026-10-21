@@ -1,0 +1,100 @@
+## P1 Musculation 3× (masse) + Course 2× (10 km) — 18 séances Musculation
+  exercices distincts sur 6 sem : 15 ; top : pec_deck×18, back_squat×9, machine_chest_press×9, pull_up×9, romanian_deadlift×9, bulgarian_split_squat×9
+  str_full_body: 18 séances, signatures distinctes 11, identiques à la précédente 0/17, Jaccard moyen 0.16, principaux distincts 2
+  continuité (par emplacement) : 92 transitions ; changement d'exercice 13 ; retour en calibration 0 ; baisse de charge 0 ; 3 expositions identiques (stagnation) 14 ; items sans charge 37/103
+  volume moyen/sem : quads:7.2 hamstrings:8.5 glutes:11.5 calves:1.3 chest:14.3 back:9.2 shoulders:15.4 arms:16.8 core:7.8
+  sous plancher (sem×groupe) : {'back': 5, 'calves': 4, 'quads': 6, 'hamstrings': 2} ; au-dessus borne haute : {'arms': 6, 'shoulders': 3}
+  poussée/tirage par sem : [(34, 9), (30, 9), (30, 9), (27, 9), (30.5, 10), (27, 9)] ; quadriceps/ischios : [(8, 10), (7, 11), (7, 6), (7, 9), (7, 6), (7, 9)]
+  interactions : séances Muscu allégées 12/18 (37 réductions) ; arbitrages M3 {'moved/strength': 1} ; non placées {}
+  R-A : divergences planificateur 9/18 séances Musculation ; exemples ['2026-10-05.strength.1:sets:ex.back_squat:4>3,rir:ex.back_squat:3>5,removed:ex.leg_curl,added:ex.cable_pallof_press', '2026-10-05.strength.2:sets:ex.romanian_deadlift:3>2,removed:ex.leg_curl,removed:ex.bulgarian_split_squat,added:ex.machine_lateral_raise', '2026-10-12.strength.2:sets:ex.back_squat:3>2,removed:ex.leg_curl,removed:ex.bulgarian_split_squat']
+## P1b Musculation 4× (masse) + Course 2× (10 km) — 24 séances Musculation
+  exercices distincts sur 6 sem : 16 ; top : bench_press×12, machine_shoulder_press×12, pec_deck×12, back_squat×12, pull_up×11, romanian_deadlift×11
+  str_upper: 12 séances, signatures distinctes 5, identiques à la précédente 0/11, Jaccard moyen 0.69, principaux distincts 1
+  str_lower: 12 séances, signatures distinctes 3, identiques à la précédente 0/11, Jaccard moyen 0.33, principaux distincts 1
+  continuité (par emplacement) : 107 transitions ; changement d'exercice 25 ; retour en calibration 0 ; baisse de charge 0 ; 3 expositions identiques (stagnation) 14 ; items sans charge 48/118
+  volume moyen/sem : quads:9.2 hamstrings:8.2 glutes:12.3 calves:3.3 chest:12.3 back:10.2 shoulders:15.2 arms:18.2 core:9.3
+  sous plancher (sem×groupe) : {'calves': 1, 'hamstrings': 1, 'quads': 1} ; au-dessus borne haute : {'arms': 6, 'core': 2}
+  poussée/tirage par sem : [(30, 11), (27, 10), (27, 10), (27, 10), (27, 10), (27, 10)] ; quadriceps/ischios : [(5, 4), (10, 9), (10, 9), (10, 9), (10, 9), (10, 9)]
+  interactions : séances Muscu allégées 24/24 (62 réductions) ; arbitrages M3 {'conflict/strength': 2, 'conflict/running': 2} ; non placées {}
+  R-A : divergences planificateur 6/24 séances Musculation ; exemples ['2026-10-12.strength.3:sets:ex.romanian_deadlift:3>2', '2026-10-12.strength.4:sets:ex.back_squat:3>2,sets:ex.romanian_deadlift:3>2,removed:ex.leg_extension,removed:ex.bulgarian_split_squat,removed:ex.leg_curl,removed:ex.machine_calf_raise', '2026-10-19.strength.3:sets:ex.romanian_deadlift:3>2']
+## P2 Musculation 3× (masse) + Cross-training 2× — 18 séances Musculation
+  exercices distincts sur 6 sem : 15 ; top : pec_deck×18, bulgarian_split_squat×17, leg_curl×13, back_squat×9, machine_chest_press×9, pull_up×9
+  str_full_body: 18 séances, signatures distinctes 13, identiques à la précédente 0/17, Jaccard moyen 0.49, principaux distincts 2
+  continuité (par emplacement) : 106 transitions ; changement d'exercice 13 ; retour en calibration 0 ; baisse de charge 0 ; 3 expositions identiques (stagnation) 19 ; items sans charge 37/117
+  volume moyen/sem : quads:10.8 hamstrings:11.2 glutes:14.8 calves:2.7 chest:14.3 back:9.3 shoulders:15.5 arms:16.3 core:7.6
+  sous plancher (sem×groupe) : {'back': 4, 'calves': 2, 'quads': 3} ; au-dessus borne haute : {'arms': 6, 'shoulders': 2, 'glutes': 5}
+  poussée/tirage par sem : [(34, 9), (30, 9), (27.5, 10), (30, 9), (30.5, 10), (27, 9)] ; quadriceps/ischios : [(14, 10), (9, 12), (12, 12), (9, 12), (12, 9), (9, 12)]
+  interactions : séances Muscu allégées 0/18 (0 réductions) ; arbitrages M3 {'moved/strength': 6} ; non placées {}
+  R-A : divergences planificateur 12/18 séances Musculation ; exemples ['2026-10-05.strength.1:sets:ex.back_squat:4>3,rir:ex.back_squat:3>5,removed:ex.leg_curl,added:ex.cable_pallof_press', '2026-10-05.strength.3:sets:ex.romanian_deadlift:3>2,rir:ex.romanian_deadlift:3>5,removed:ex.leg_curl,removed:ex.bulgarian_split_squat,added:ex.machine_lateral_raise', '2026-10-05.strength.2:sets:ex.back_squat:3>2,rir:ex.back_squat:3>5,removed:ex.leg_extension,removed:ex.bulgarian_split_squat']
+## P3 Musculation 3× (masse) + HYROX 2× — 18 séances Musculation
+  exercices distincts sur 6 sem : 17 ; top : pec_deck×17, bulgarian_split_squat×12, leg_curl×11, back_squat×9, machine_chest_press×9, pull_up×9
+  str_full_body: 18 séances, signatures distinctes 15, identiques à la précédente 0/17, Jaccard moyen 0.34, principaux distincts 3
+  continuité (par emplacement) : 97 transitions ; changement d'exercice 17 ; retour en calibration 0 ; baisse de charge 0 ; 3 expositions identiques (stagnation) 9 ; items sans charge 39/108
+  volume moyen/sem : quads:9.3 hamstrings:9.3 glutes:12.5 calves:0.7 chest:13.8 back:9.0 shoulders:15.4 arms:16.5 core:7.8
+  sous plancher (sem×groupe) : {'back': 5, 'calves': 5, 'quads': 4, 'chest': 1, 'hamstrings': 1} ; au-dessus borne haute : {'arms': 6, 'shoulders': 2}
+  poussée/tirage par sem : [(34, 9), (31.5, 9), (22.5, 9), (30, 8), (27.5, 10), (30, 9)] ; quadriceps/ischios : [(14, 10), (7, 11), (10, 6), (7, 11), (9, 9), (9, 9)]
+  interactions : séances Muscu allégées 6/18 (17 réductions) ; arbitrages M3 {'moved/strength': 5, 'recomposed': 2} ; non placées {}
+  R-A : divergences planificateur 12/18 séances Musculation ; exemples ['2026-10-05.strength.1:sets:ex.back_squat:4>3,rir:ex.back_squat:3>5,removed:ex.leg_curl,added:ex.cable_pallof_press', '2026-10-05.strength.3:sets:ex.romanian_deadlift:3>2,rir:ex.romanian_deadlift:3>5,removed:ex.leg_curl,removed:ex.bulgarian_split_squat,added:ex.machine_lateral_raise', '2026-10-05.strength.2:sets:ex.back_squat:3>2,rir:ex.back_squat:3>5,removed:ex.leg_extension,removed:ex.bulgarian_split_squat']
+## P4 Course 3× (semi) + HYROX 2× : pas de Musculation
+  interactions : séances Muscu allégées 0/0 (0 réductions) ; arbitrages M3 {'moved/running': 4, 'conflict': 4} ; non placées {}
+  R-A : divergences planificateur 0/0 séances Musculation ; exemples []
+## P5 Quatre sports : Musculation 3×, Course 2×, Cross-training 1×, HYROX 1× — 18 séances Musculation
+  exercices distincts sur 6 sem : 13 ; top : cable_pallof_press×11, pec_deck×10, back_squat×9, machine_chest_press×9, pull_up×9, machine_lateral_raise×9
+  str_full_body: 18 séances, signatures distinctes 12, identiques à la précédente 0/17, Jaccard moyen 0.06, principaux distincts 3
+  continuité (par emplacement) : 78 transitions ; changement d'exercice 19 ; retour en calibration 0 ; baisse de charge 0 ; 3 expositions identiques (stagnation) 5 ; items sans charge 45/89
+  volume moyen/sem : quads:4.3 hamstrings:4.3 glutes:7.5 calves:0.7 chest:9.8 back:9.3 shoulders:16.6 arms:16.0 core:9.1
+  sous plancher (sem×groupe) : {'back': 4, 'calves': 5, 'chest': 3, 'hamstrings': 5, 'quads': 5} ; au-dessus borne haute : {'arms': 6, 'shoulders': 3}
+  poussée/tirage par sem : [(37, 9), (21.5, 10), (28.5, 9), (21.5, 9), (28.5, 9), (21.5, 10)] ; quadriceps/ischios : [(10, 10), (2, 4), (4, 3), (4, 2), (2, 4), (4, 3)]
+  interactions : séances Muscu allégées 18/18 (79 réductions) ; arbitrages M3 {'conflict/hyrox': 8, 'conflict/strength': 6, 'conflict/running': 2, 'conflict/crosstraining': 3, 'recomposed/strength': 1} ; non placées {}
+  R-A : divergences planificateur 6/18 séances Musculation ; exemples ['2026-10-05.strength.1:sets:ex.back_squat:4>3,removed:ex.leg_curl,removed:ex.bulgarian_split_squat', '2026-10-05.strength.2:sets:ex.romanian_deadlift:3>2,removed:ex.leg_curl,removed:ex.bulgarian_split_squat,removed:ex.machine_calf_raise', '2026-10-12.strength.2:rir:ex.pull_up:3>2']
+## S3 Musculation 3× seule — 18 séances Musculation
+  exercices distincts sur 6 sem : 13 ; top : pec_deck×17, bulgarian_split_squat×17, leg_curl×13, back_squat×9, machine_chest_press×9, pull_up×9
+  str_full_body: 18 séances, signatures distinctes 10, identiques à la précédente 1/17, Jaccard moyen 0.56, principaux distincts 2
+  continuité (par emplacement) : 99 transitions ; changement d'exercice 5 ; retour en calibration 0 ; baisse de charge 0 ; 3 expositions identiques (stagnation) 21 ; items sans charge 31/110
+  volume moyen/sem : quads:10.8 hamstrings:11.2 glutes:14.8 calves:0.7 chest:13.5 back:9.5 shoulders:14.9 arms:16.2 core:7.1
+  sous plancher (sem×groupe) : {'back': 3, 'calves': 5, 'quads': 3} ; au-dessus borne haute : {'arms': 6, 'glutes': 5}
+  poussée/tirage par sem : [(29.5, 9), (29, 10), (30, 9), (27.5, 10), (27, 9), (27.5, 10)] ; quadriceps/ischios : [(14, 10), (9, 12), (12, 12), (9, 12), (12, 9), (9, 12)]
+  interactions : séances Muscu allégées 0/18 (0 réductions) ; arbitrages M3 {} ; non placées {}
+  R-A : divergences planificateur 0/18 séances Musculation ; exemples []
+## S4 Musculation 4× seule — 24 séances Musculation
+  exercices distincts sur 6 sem : 15 ; top : bench_press×12, machine_shoulder_press×12, pec_deck×12, back_squat×12, leg_extension×12, bulgarian_split_squat×12
+  str_upper: 12 séances, signatures distinctes 4, identiques à la précédente 0/11, Jaccard moyen 0.66, principaux distincts 1
+  str_lower: 12 séances, signatures distinctes 2, identiques à la précédente 10/11, Jaccard moyen 0.97, principaux distincts 1
+  continuité (par emplacement) : 122 transitions ; changement d'exercice 39 ; retour en calibration 0 ; baisse de charge 0 ; 3 expositions identiques (stagnation) 18 ; items sans charge 52/132
+  volume moyen/sem : quads:16.3 hamstrings:12.2 glutes:16.2 calves:0.0 chest:12.3 back:10.2 shoulders:15.2 arms:18.2 core:9.0
+  sous plancher (sem×groupe) : {'calves': 6} ; au-dessus borne haute : {'arms': 6, 'glutes': 6}
+  poussée/tirage par sem : [(30, 11), (27, 10), (27, 10), (27, 10), (27, 10), (27, 10)] ; quadriceps/ischios : [(18, 13), (16, 12), (16, 12), (16, 12), (16, 12), (16, 12)]
+  interactions : séances Muscu allégées 0/24 (0 réductions) ; arbitrages M3 {} ; non placées {}
+  R-A : divergences planificateur 0/24 séances Musculation ; exemples []
+P1 jamais chargés (≥3 expositions) : ['pull_up@fb.pull_v×9', 'machine_lateral_raise@fb.iso_upper×4', 'cable_pallof_press@fb.trunk×7']
+   charges des principaux : [('back_squat', [None, None, 40, 40, 40, 40, 40, 40]), ('romanian_deadlift', [None, 40, 40, 40, 40, 40, 40, 40])]
+P1b jamais chargés (≥3 expositions) : ['pull_up@up.pull_v×11', 'machine_lateral_raise@up.iso_upper×6', 'cable_pallof_press@up.trunk×8', 'leg_curl@lo.iso_lower×5']
+   charges des principaux : [('bench_press', [None, None, 40, 40, 40, 40, 40, 40]), ('back_squat', [None, None, 40, 40, 42.5, 42.5, 42.5, 42.5])]
+S3 jamais chargés (≥3 expositions) : ['pull_up@fb.pull_v×9', 'cable_pallof_press@fb.trunk×5']
+   charges des principaux : [('back_squat', [None, None, 40, 40, 40, 40, 40, 40]), ('romanian_deadlift', [None, 40, 40, 40, 40, 40, 40, 40])]
+S4 jamais chargés (≥3 expositions) : ['pull_up@up.pull_v×11', 'machine_lateral_raise@up.iso_upper×6', 'cable_pallof_press@up.trunk×6', 'leg_curl@lo.iso_lower×12']
+   charges des principaux : [('bench_press', [None, None, 40, 40, 40, 40, 40, 40]), ('back_squat', [None, None, 40, 40, 40, 40, 40, 40])]
+P5 jamais chargés (≥3 expositions) : ['pull_up@fb.pull_v×9', 'cable_pallof_press@fb.trunk×11', 'pec_deck@fb.iso_upper×10']
+   charges des principaux : [('back_squat', [None, None, 40, 42.5, 42.5, 42.5, 42.5, 42.5]), ('romanian_deadlift', [None, 40, 40, 42.5, 42.5, 42.5, 42.5, 42.5])]
+## S4
+   2026-10-05 str_upper bench_press:4x6@None | pull_up:3x8-12@None | machine_row:3x8-12@None | machine_shoulder_press:2x8-12@None | machine_lateral_raise:4x12-20@None | cable_pallof_press:4x12-20@None | pec_deck:4x12-20@None
+   2026-10-11 str_lower back_squat:3x6@None | single_leg_rdl_db:3x8-12@None | leg_extension:3x12-20@None | bulgarian_split_squat:2x8-12@None | leg_curl:3x12-20@None
+   2026-10-08 str_upper bench_press:3x6@None | lat_pulldown:3x8-12@None | seated_cable_row:2x8-12@None | machine_shoulder_press:2x8-12@None | pec_deck:3x12-20@None
+   2026-10-06 str_lower back_squat:4x6@None | romanian_deadlift:3x8-12@None | leg_extension:4x12-20@None | bulgarian_split_squat:2x8-12@None | leg_curl:4x12-20@None
+   2026-10-12 str_upper bench_press:3x6@40 | pull_up:3x8-12@None | seated_cable_row:2x8-12@40 | machine_shoulder_press:2x8-12@40 | pec_deck:3x12-20@40 | cable_pallof_press:3x12-20@None | machine_lateral_raise:3x12-20@None
+   2026-10-18 str_lower back_squat:3x6@40 | romanian_deadlift:3x8-12@40 | leg_extension:3x12-20@40 | bulgarian_split_squat:2x8-12@40 | leg_curl:3x12-20@None
+   2026-10-15 str_upper bench_press:3x6@40 | pull_up:3x8-12@None | seated_cable_row:2x8-12@40 | machine_shoulder_press:2x8-12@40 | pec_deck:3x12-20@40
+   2026-10-13 str_lower back_squat:3x6@40 | romanian_deadlift:3x8-12@40 | leg_extension:3x12-20@40 | bulgarian_split_squat:2x8-12@40 | leg_curl:3x12-20@None
+## P1b
+   2026-10-05 str_upper bench_press:4x6@None | pull_up:3x8-12@None | machine_row:3x8-12@None | machine_shoulder_press:2x8-12@None | machine_lateral_raise:4x12-20@None | cable_pallof_press:4x12-20@None | pec_deck:4x12-20@None
+   2026-10-07 str_lower back_squat:3x6@None | romanian_deadlift:2x8-12@None
+   2026-10-08 str_upper bench_press:3x6@None | lat_pulldown:3x8-12@None | seated_cable_row:2x8-12@None | machine_shoulder_press:2x8-12@None | pec_deck:3x12-20@None | cable_pallof_press:3x12-20@None
+   2026-10-09 str_lower back_squat:2x6@None | single_leg_rdl_db:2x8-12@None
+   2026-10-12 str_upper bench_press:3x6@40 | pull_up:3x8-12@None | seated_cable_row:2x8-12@40 | machine_shoulder_press:2x8-12@40 | pec_deck:3x12-20@40 | cable_pallof_press:3x12-20@None | machine_lateral_raise:3x12-20@None
+   2026-10-15 str_upper bench_press:3x6@40 | pull_up:3x8-12@None | seated_cable_row:2x8-12@40 | machine_shoulder_press:2x8-12@40 | pec_deck:3x12-20@40 | cable_pallof_press:3x12-20@None
+   2026-10-14 str_lower back_squat:2x6@40 | romanian_deadlift:3x8-12@40
+   2026-10-16 str_lower back_squat:3x6@40 | romanian_deadlift:3x8-12@40 | leg_extension:3x12-20@None | bulgarian_split_squat:2x8-12@None | leg_curl:3x12-20@None | machine_calf_raise:4x12-20@None
+P1b réductions (action) : {'full': 19, 'rir_only': 31, 'full_and_signal': 12}  exemples : ['running@24h:lower_hip:full', 'running@24h:lower_knee:full', 'running@-24h:lower_hip:full', 'running@-24h:lower_knee:full', 'running@72h:lower_hip:rir_only']
+P5 réductions (action) : {'rir_only': 33, 'full': 35, 'full_and_signal': 11}  exemples : ['hybrid_race@24h:lower_knee:rir_only', 'hybrid_race@-24h:grip:rir_only', 'running@48h:lower_hip:rir_only', 'running@48h:lower_knee:rir_only', 'running@-24h:lower_hip:full']
+P2 ['2026-10-12.strength.1:sets:ex.romanian_deadlift:3>2,rir:ex.romanian_deadlift:2>4,removed:ex.leg_curl,removed:ex.bulgarian_split_squat', '2026-10-12.strength.3:sets:ex.back_squat:3>2,rir:ex.back_squat:2>4,removed:ex.leg_curl,removed:ex.bulgarian_split_squat', '2026-10-12.strength.2:sets:ex.romanian_deadlift:3>2,rir:ex.romanian_deadlift:2>4,removed:ex.bulgarian_split_squat', '2026-10-19.strength.1:sets:ex.back_squat:3>2,rir:ex.back_squat:2>4,removed:ex.leg_curl,removed:ex.bulgarian_split_squat,removed:ex.machine_calf_raise', '2026-10-19.strength.3:sets:ex.romanian_deadlift:3>2,rir:ex.romanian_deadlift:2>4,removed:ex.leg_curl,removed:ex.bulgarian_split_squat,added:ex.machine_lateral_raise', '2026-10-19.strength.2:sets:ex.back_squat:3>2,rir:ex.back_squat:2>4,removed:ex.leg_curl,removed:ex.bulgarian_split_squat']
+P3 ['2026-10-12.strength.1:sets:ex.pull_up:2>3,rir:ex.pull_up:3>2', '2026-10-12.strength.2:sets:ex.back_squat:3>2,removed:ex.leg_curl,removed:ex.bulgarian_split_squat', '2026-10-12.strength.3:sets:ex.romanian_deadlift:3>2,rir:ex.romanian_deadlift:2>4,removed:ex.leg_curl,removed:ex.bulgarian_split_squat', '2026-10-19.strength.1:sets:ex.back_squat:3>2,rir:ex.back_squat:2>4,removed:ex.leg_curl,removed:ex.bulgarian_split_squat,removed:ex.machine_calf_raise', '2026-10-19.strength.3:sets:ex.romanian_deadlift:3>2,rir:ex.romanian_deadlift:2>4,removed:ex.bulgarian_split_squat', '2026-10-19.strength.2:sets:ex.back_squat:3>2,rir:ex.back_squat:2>4']
