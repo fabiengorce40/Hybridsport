@@ -1,0 +1,28 @@
+import { it } from 'vitest';
+import { writeFileSync } from 'node:fs';
+import { beta0Environment, MemoryStorage, saveState, STORAGE_KEY, weekReproducibility } from '../../src/index.js';
+import { simulate } from '../rc4-audit/rc4-sim.js';
+import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
+import { qualityProfiles } from '../rc46/quality-bench.js';
+import { PROFILE } from '../consolidation/sim4.js';
+
+it('B4+ study', () => {
+  const p2 = qualityProfiles().find((p) => p.id === 'P2') as ProfileSpec;
+  const specs: ProfileSpec[] = [...qualityProfiles().filter((p) => ['P2', 'P3', 'P4', 'P5'].includes(p.id)), { id: 'CONS', label: 'Consolidation', profile: PROFILE },
+    { id: 'P2F', label: 'P2F', profile: { ...p2.profile, crosstraining: { ...p2.profile.crosstraining, intent: 'crosstraining.strength_plus_conditioning' } } as ProfileSpec['profile'] }];
+  const out: Record<string, unknown> = {};
+  for (const spec of specs) {
+    const g = globalThis as { B4P_WEEKS?: Record<string, unknown> };
+    g.B4P_WEEKS = {};
+    const env = beta0Environment();
+    const ra: Record<string, number> = {};
+    const weeks: Record<string, unknown> = {};
+    const r = simulate(spec, 6, env, (state, monday) => {
+      weeks[monday] = g.B4P_WEEKS?.[monday];
+      for (const s of weekReproducibility(state, monday, env).sessions) if (s.class === 'planner_divergence') { const k = s.requestId.split('.')[1] ?? '?'; ra[k] = (ra[k] ?? 0) + 1; }
+    });
+    const st = new MemoryStorage(); saveState(st, r.state);
+    out[spec.id] = { weeks, ra, stateSize: (st.getItem(STORAGE_KEY) ?? '').length };
+  }
+  writeFileSync(`${process.env.B4P_OUT ?? '/tmp'}/b4p.json`, JSON.stringify(out));
+}, 900000);
