@@ -1,0 +1,55 @@
+diff --git a/packages/app-core/src/provisional-content.ts b/packages/app-core/src/provisional-content.ts
+index c0673bc..ce93aef 100644
+--- a/packages/app-core/src/provisional-content.ts
++++ b/packages/app-core/src/provisional-content.ts
+@@ -42,7 +42,7 @@ let running: ContentSource | undefined;
+  * Strength F6.
+  */
+ export function strengthContent(): ContentSource {
+-  strength ??= load(strengthL1V3RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-l1v3-0.6.0');
++  strength ??= load(l1bRuleset(strengthL1V3RulesetDocument()), l1bCatalog(strengthF6CatalogDocument()), 'fixtures:strength-l1v3-0.6.0');
+   return strength;
+ }
+ 
+@@ -76,3 +76,41 @@ export function runningContent(): ContentSource {
+ /** Préréglages de matériel du catalogue de test (identifiants et noms fournis par le catalogue). */
+ export const EQUIPMENT_PRESETS: readonly { readonly id: string; readonly name: string; readonly equipment: readonly string[] }[] =
+   STRENGTH_PRESETS.map((p) => ({ id: p.id, name: p.name, equipment: [...p.equipment] }));
++
++// ——— ÉTUDE L1-bis (copie jetable, jamais intégrée) : globalThis.L1B_VARIANT = ref | res | iso | iso+res | ord ———
++type J = Record<string, unknown>;
++const l1bHas = (k: string): boolean => String((globalThis as { L1B_VARIANT?: string }).L1B_VARIANT ?? 'ref').split('+').includes(k);
++function l1bCatalog(doc: ReturnType<typeof strengthF6CatalogDocument>): ReturnType<typeof strengthF6CatalogDocument> {
++  if (!l1bHas('iso')) return doc;
++  const base = doc.exercises.find((e) => e.id === 'ex.cable_lateral_raise');
++  if (!base) throw new Error('cable_lateral_raise');
++  // Isolations de TIRAGE à la poulie (biomécanique : extension d'épaule bras tendus = grand dorsal ; tirage vers le visage = deltoïdes postérieurs + trapèzes moyens / rhomboïdes).
++  const extra = [
++    { ...base, id: 'ex.straight_arm_pulldown', canonicalName: { fr: 'ex.straight_arm_pulldown' }, family: 'fam.straight_arm_pulldown', equivalenceClass: 'eq.straight_arm_pulldown', muscles: { primary: ['lats'], secondary: ['rear_delts'] } },
++    { ...base, id: 'ex.face_pull', canonicalName: { fr: 'ex.face_pull' }, family: 'fam.face_pull', equivalenceClass: 'eq.face_pull', muscles: { primary: ['rear_delts', 'upper_back_traps'], secondary: [] } },
++  ];
++  return { ...doc, exercises: [...doc.exercises, ...extra] as typeof doc.exercises };
++}
++function l1bRuleset(doc: ReturnType<typeof strengthL1V3RulesetDocument>): ReturnType<typeof strengthL1V3RulesetDocument> {
++  const res = l1bHas('res');
++  const ord = l1bHas('ord');
++  if (!res && !ord) return doc;
++  return {
++    ...doc,
++    parameters: doc.parameters.map((p) => {
++      let val: unknown = p.value;
++      if (p.id === 'strength.needs') val = { ...(val as J), pull_complement: { requirement: { pattern: 'pull_horizontal' } } };
++      if (p.id === 'strength.substitution.fallbackNeeds') val = { ...(val as J), pull_complement: [] };
++      if (p.id === 'strength.goals') val = Object.fromEntries(Object.entries(val as Record<string, J>).map(([k, g]) => [k, { ...g, needPriority: [...(g.needPriority as string[]), 'pull_complement'] }]));
++      if (p.id === 'strength.stimuli') val = Object.fromEntries(Object.entries(val as Record<string, J>).map(([k, st]) => {
++        const o = st.optionalOrder as string[];
++        if (res) return [k, { ...st, optionalOrder: [...o, 'pull_complement'] }];
++        const c = o.filter((x) => x !== 'calves'); const i = Math.max(c.indexOf('single_leg'), c.indexOf('isolation_lower')) + 1;
++        return [k, { ...st, optionalOrder: [...c.slice(0, i), 'pull_complement', ...c.slice(i), ...(o.includes('calves') ? ['calves'] : [])] }];
++      }));
++      if (l1bHas('gd') && p.id === 'strength.interference') { const x = val as J & { perStructure: Record<string, J & { dropOptionalNeeds: string[] }> }; val = { ...x, perStructure: Object.fromEntries(Object.entries(x.perStructure).map(([k, ps]) => [k, k === 'grip' ? { ...ps, dropOptionalNeeds: [...ps.dropOptionalNeeds, 'pull_complement'] } : ps])) }; }
++      if (p.id === 'strength.archetypes') val = (val as J[]).map((a) => (a.id !== 'str_full_body' ? a : { ...a, slots: [...(a.slots as J[]), { id: 'fb.pull_c', blockId: 'b.accessory', need: 'pull_complement', role: 'accessory', status: 'optional', count: { min: 1, max: 1 }, modalityPreference: 'stability', anchorable: false, trackable: true, ...(res ? { fill: 'residual_time', untilWeeklyTarget: true } : {}) }] }));
++      return val === p.value ? p : { ...p, value: val as typeof p.value };
++    }),
++  };
++}

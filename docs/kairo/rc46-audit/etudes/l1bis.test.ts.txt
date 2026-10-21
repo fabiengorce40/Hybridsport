@@ -1,0 +1,19 @@
+import { it } from 'vitest';
+import { writeFileSync } from 'node:fs';
+
+it('L1-bis variant run', async () => {
+  const v = process.env.L1B_VARIANT ?? 'ref';
+  (globalThis as { L1B_VARIANT?: string }).L1B_VARIANT = v;
+  const { measureProfile, qualityProfiles, summarize, QUALITY_WEEKS } = await import('../rc46/quality-bench.js');
+  const { simulate } = await import('../rc4-audit/rc4-sim.js');
+  const out: Record<string, unknown> = {};
+  for (const spec of qualityProfiles()) {
+    const q = measureProfile(spec);
+    const st = simulate(spec, QUALITY_WEEKS).state;
+    const exp = new Map<string, number>();
+    for (const e of st.strength.exposures as { trackId?: string; exerciseId: string }[]) exp.set(e.trackId ?? `-${e.exerciseId}`, (exp.get(e.trackId ?? `-${e.exerciseId}`) ?? 0) + 1);
+    const tracks = st.strength.tracks.map((t) => ({ id: `${t.slotId}:${t.exerciseId}`, tier: t.tier, status: t.status, n: exp.get(t.trackId) ?? 0 }));
+    out[spec.id] = { q, s: summarize(q), tracks };
+  }
+  writeFileSync(`${process.env.L1B_OUT ?? '/tmp'}/l1b-${v}.json`, JSON.stringify(out));
+}, 900000);

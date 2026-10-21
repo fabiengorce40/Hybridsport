@@ -1,0 +1,31 @@
+import { it } from 'vitest';
+import { qualityProfiles } from '../rc46/quality-bench.js';
+import { simulate } from '../rc4-audit/rc4-sim.js';
+import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
+import { MemoryStorage, saveState, STORAGE_KEY } from '../../src/index.js';
+import { PROFILE } from '../consolidation/sim4.js';
+
+it('size', () => {
+  const p2 = qualityProfiles().find((p) => p.id === 'P2') as ProfileSpec;
+  const specs: ProfileSpec[] = [qualityProfiles().find((p) => p.id === 'P5') as ProfileSpec, { id: 'CONS', label: '', profile: PROFILE }, { id: 'P2F', label: '', profile: { ...p2.profile, crosstraining: { ...p2.profile.crosstraining, intent: 'crosstraining.strength_plus_conditioning' } } as ProfileSpec['profile'] }];
+  for (const spec of specs) {
+    const g = globalThis as { L2B_SNAP?: Record<string, { cross: Record<string, { requestId: string; date: string; session: { blocks: { kind: string; items: { exerciseId: string; prescription: unknown }[] }[] } }[]> | null; week: { requestId: string; session: { blocks: unknown[] } }[] | null }> };
+    g.L2B_SNAP = {};
+    const r = simulate(spec, 6);
+    const st = new MemoryStorage(); saveState(st, r.state);
+    const total = (st.getItem(STORAGE_KEY) ?? '').length;
+    let full = 0; let compact = 0; let refs = 0; let reducedStr = 0; let reducedCt = 0;
+    for (const [k, v] of Object.entries(g.L2B_SNAP)) {
+      const sport = k.split('.')[1];
+      const slim = (ss: { requestId: string; date: string; session: { blocks: { kind: string; items: { exerciseId: string; prescription: unknown }[] }[] } }[] | undefined, onlyStrength: boolean) => (ss ?? []).map((w) => ({ id: w.requestId, d: w.date, b: w.session.blocks.filter((b) => !onlyStrength || b.kind === 'strength').map((b) => ({ k: b.kind, i: b.items.map((i) => [i.exerciseId, ((i.prescription as { sets?: unknown[] }).sets ?? []).length]) })) })).filter((w) => w.b.length > 0);
+      if (sport === 'strength') reducedStr += JSON.stringify(slim(v.cross?.crosstraining, true)).length;
+      if (sport === 'crosstraining') reducedCt += JSON.stringify([slim(v.cross?.strength, false), slim(v.week as never, true)]).length;
+      full += JSON.stringify(v).length;
+      // compact : pour chaque séance lue, identifiant + empreinte (sha courte) de la version lue
+      const ids = [...Object.values(v.cross ?? {}).flat(), ...(v.week ?? [])];
+      refs += ids.length;
+      compact += JSON.stringify(ids.map((w) => [w.requestId, 'xxxxxxxxxxxxxxxx'])).length;
+    }
+    console.log(spec.id, 'state', total, 'snapshots', Object.keys(g.L2B_SNAP).length, 'full', full, 'compactRefs', compact, 'refs', refs, 'reducedStr', reducedStr, 'reducedCt', reducedCt);
+  }
+}, 600000);

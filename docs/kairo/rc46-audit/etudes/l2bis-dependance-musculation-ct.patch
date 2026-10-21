@@ -1,0 +1,161 @@
+diff --git a/packages/app-core/src/start-check.ts b/packages/app-core/src/start-check.ts
+index 873d3fb..2acd1c7 100644
+--- a/packages/app-core/src/start-check.ts
++++ b/packages/app-core/src/start-check.ts
+@@ -165,7 +165,17 @@ export function regenerateSession(state0: AppState, requestId: string, coreState
+     ...(station === undefined ? {} : { station }),
+     ...(port.consumesNeighbours && (r.neighbourContext || extra.length > 0) ? { neighbours: { known: r.neighbourContext?.known ?? true, neighbours: [...(r.neighbourContext?.neighbours ?? []).map((n) => ({ ...n, demand: { ...n.demand } })), ...extra] } as SlotRequest['neighbours'] } : {}),
+     ...(port.consumesWeekSessions ? { ...(same.length > 0 ? { weekSessions: same } : {}), sportSessions: week.requests.filter((x) => x.sport === r.sport).length, sportPriority } : port.consumesNeighbours ? { sportPriority } : {}),
+-    ...(Object.keys(cross).length > 0 ? { crossSportWeek: cross } : {}),
++    ...(((g) => { const k = `${r.requestId}@${date}`; const snap = (g.L2B_VARIANT === 'persist' || g.L2B_VARIANT === 'persist2' || g.L2B_VARIANT === 'persist3') && g.L2B_SNAP && k in g.L2B_SNAP ? g.L2B_SNAP[k] as { cross: unknown; week: unknown } : undefined;
++      if (snap && g.L2B_VARIANT === 'persist3' && r.sport === 'strength') {
++        // Forme RÉDUITE persistée : blocs de force des séances CT lues (exercice, nombre de séries de travail, date).
++        type W = { requestId: string; date: string; archetypeId: string; session: { blocks: { kind: string; items: { exerciseId: string; prescription: { sets?: { kind: string; optional?: boolean }[] } }[] }[] } };
++        const ct = ((snap.cross as { crosstraining?: W[] } | null)?.crosstraining ?? []).map((w) => ({ requestId: w.requestId, date: w.date, archetypeId: w.archetypeId, n: w.session.blocks.filter((bb) => bb.kind === 'strength').map((bb) => bb.items.map((i) => [i.exerciseId, (i.prescription.sets ?? []).filter((x) => x.kind !== 'rampup' && x.optional !== true).length] as const)) })).filter((w) => w.n.length > 0);
++        const rebuilt = ct.map((w) => ({ requestId: w.requestId, date: w.date, archetypeId: w.archetypeId, session: { id: w.requestId, discipline: 'crosstraining', blocks: w.n.map((items, k) => ({ id: `b${String(k)}`, kind: 'strength', role: 'primary', optional: false, format: 'sets', items: items.map(([ex, n], j) => ({ id: `i${String(j)}`, exerciseId: ex, prescription: { type: 'sets', sets: Array.from({ length: n }, () => ({ kind: 'working', reps: 1, restAfterS: 0 })) } })), levers: [] })) } }));
++        return rebuilt.length > 0 ? { crossSportWeek: { crosstraining: rebuilt } as never } : {};
++      }
++      if (!snap || g.L2B_VARIANT === 'persist3') return Object.keys(cross).length > 0 ? { crossSportWeek: cross } : {};
++      return { ...(snap.cross ? { crossSportWeek: snap.cross as never } : {}), ...(g.L2B_VARIANT === 'persist2' && port.consumesWeekSessions ? (snap.week ? { weekSessions: snap.week as never } : { weekSessions: undefined }) : {}) };
++    })(globalThis as { L2B_VARIANT?: string; L2B_SNAP?: Record<string, unknown> })),
+   };
+   const out = port.generate(slot);
+   if (out.status !== 'planned') return { status: 'refused', reasons: out.reasons.map(reason) };
+diff --git a/packages/planner/src/planner.ts b/packages/planner/src/planner.ts
+index 2c0dcf5..20c916c 100644
+--- a/packages/planner/src/planner.ts
++++ b/packages/planner/src/planner.ts
+@@ -35,7 +35,7 @@ import { compareConflicts, conflictId, detectConflicts, unknownDemand as m3Unkno
+ import type { M3Conflict, M3Importance, M3Node, M3Origin } from './m3-analysis.js';
+ import { readM3Policy, readNeighbourWindow } from './m3-policy.js';
+ import { globalPlacement, memoizedPorts } from './global-placement.js';
+-import type { CompositionBase, PortOutcome, SportPort, StructuresResult, WeekSession } from './ports.js';
++import type { CompositionBase, PortOutcome, SlotRequest, SportPort, StructuresResult, WeekSession } from './ports.js';
+ import { classifyRefusal } from './refusal.js';
+ import type { RefusalClass } from './refusal.js';
+ 
+@@ -106,11 +106,19 @@ export function planMultisportWeek(raw: PlannerInput, ports: SportPorts, governa
+   if (!param.ok) return planCore(raw, ports, governance, clock);
+   // RC4.5 (C2) — ports mémorisés pendant cette planification : V0 et replanifications candidates partagent les séances.
+   const memo = memoizedPorts(ports);
+-  return globalPlacement(raw, memo, governance, clock, planCore(raw, memo, governance, clock), param.value, param.reasons);
++  const out = globalPlacement(raw, memo, governance, clock, planCore(raw, memo, governance, clock), param.value, param.reasons);
++  const g = globalThis as { L2B_WEEKS?: Record<string, unknown> };
++  if (g.L2B_WEEKS) g.L2B_WEEKS[out.weekStart] = (out as unknown as { l2b?: unknown }).l2b;
++  const gs = globalThis as { L2B_SNAP?: Record<string, unknown> };
++  gs.L2B_SNAP = { ...(gs.L2B_SNAP ?? {}), ...((out as unknown as { l2bSnap?: Record<string, unknown> }).l2bSnap ?? {}) };
++  return out;
+ }
+ 
+ /** Planification d'une semaine ; `pins` (G5) : jour imposé par séance, essayé en premier (repli : placement normal). */
+-export function planCore(raw: PlannerInput, ports: SportPorts, governance: LoadedRuleset | undefined, clock: PlannerClock, pins?: ReadonlyMap<string, string>): PlannedWeek {
++export function planCore(raw: PlannerInput, portsIn: SportPorts, governance: LoadedRuleset | undefined, clock: PlannerClock, pins?: ReadonlyMap<string, string>): PlannedWeek {
++  // ——— ÉTUDE L2-bis (copie jetable) : entrées réellement utilisées par chaque génération retenue ———
++  const usedSlot = new WeakMap<object, SlotRequest>();
++  const ports = Object.fromEntries(Object.entries(portsIn).map(([k, p]) => [k, p === undefined ? p : { ...p, generate: (slot: SlotRequest) => { const o = p.generate(slot); if (o.status === 'planned') usedSlot.set(o.session, slot); return o; } }])) as unknown as SportPorts;
+   const input = zPlannerInput.parse(raw);
+   const hybrid = input.demands.length > 1;
+   const windows = readPlannerParam(governance, 'planner.interference.structureWindows', input.mode);
+@@ -382,7 +390,14 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
+   if (hybrid) {
+     // Ordre des dates (séquence intra-semaine) : la séance régénérée connaît les versions définitives des précédentes.
+     const at = (x: Request): string => placed.get(x.requestId)?.date ?? '';
+-    for (const r of [...requests].sort((a, b) => (at(a) < at(b) ? -1 : at(a) > at(b) ? 1 : 0))) {
++    const L2BV = (globalThis as { L2B_VARIANT?: string }).L2B_VARIANT;
++    // ÉTUDE L2-bis : rang de passe selon la variante (ctfirst : Musculation en dernier ; strfirst : Musculation d'abord).
++    const rank = (x: Request): number => (L2BV === 'ctfirst' ? (x.sport === 'strength' ? 1 : 0) : L2BV === 'strfirst' ? (x.sport === 'strength' ? 0 : 1) : 0);
++    const maxIter = L2BV === 'fixpoint' ? 4 : 1;
++    const gl = globalThis as { L2B_ITER?: number[] };
++    for (let iter = 0; iter < maxIter; iter++) {
++    let changedThisIter = 0;
++    for (const r of [...requests].sort((a, b) => rank(a) - rank(b) || (at(a) < at(b) ? -1 : at(a) > at(b) ? 1 : 0))) {
+       const p = placed.get(r.requestId);
+       const port = ports[r.sport];
+       if (!p || !port?.consumesNeighbours || !r.intent) continue;
+@@ -405,14 +420,54 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
+         continue;
+       }
+       const next: Placed = { ...withFingerprint(p, out.fingerprint), session: out.session, structures, demand: port.demand(out.session, input.mode) };
++      if (JSON.stringify(out.session.blocks) !== JSON.stringify(p.session.blocks) || JSON.stringify(n) !== JSON.stringify((results.get(r.requestId) as { neighbourContext?: unknown } | undefined)?.neighbourContext)) changedThisIter += 1;
+       placed.set(r.requestId, next);
+       results.set(r.requestId, plannedResult(base, p.date, out, next, n));
+     }
++    if (iter > 0 && changedThisIter === 0) { if (gl.L2B_ITER) gl.L2B_ITER.push(iter); break; }
++    if (iter === maxIter - 1 && maxIter > 1 && gl.L2B_ITER) gl.L2B_ITER.push(changedThisIter > 0 ? -1 : iter);
++    }
+   }
+ 
+   // ——— M3 : ARBITRAGE de la semaine (multisport) ———
+   const arbitration = hybrid ? arbitrate() : undefined;
+ 
++  // ——— ÉTUDE L2-bis : entrées périmées en fin de planification, et effet d'une régénération avec les entrées finales ———
++  const l2bSnap: Record<string, unknown> = {};
++  const l2b: { sessions: { requestId: string; sport: string; staleCross: boolean; staleNeighbours: boolean; staleWeek: boolean; matters: boolean; m3: boolean; detail: string[] }[] } = { sessions: [] };
++  {
++    const blocksKey = (s: SessionDraft, onlyStrength: boolean): string => JSON.stringify((onlyStrength ? s.blocks.filter((b) => b.kind === 'strength') : s.blocks));
++    const crossKey = (sport: PlannerSport, cross: Partial<Record<PlannerSport, readonly WeekSession[]>> | undefined): string => JSON.stringify(Object.entries(cross ?? {}).sort().map(([k, v]) => [k, (v ?? []).map((w) => [w.requestId, w.date, blocksKey(w.session, sport === 'strength' && k === 'crosstraining')]).filter((x) => x[2] !== '[]')]));
++    const weekKey = (ws: readonly WeekSession[] | undefined): string => JSON.stringify((ws ?? []).map((w) => [w.requestId, w.date, blocksKey(w.session, false)]));
++    for (const p of [...placed.values()].sort((a, b) => (a.date < b.date ? -1 : 1))) {
++      const res = results.get(p.requestId);
++      const r = requests.find((x) => x.requestId === p.requestId);
++      const port = ports[p.sport];
++      const slot = usedSlot.get(p.session);
++      if (!res || res.status !== 'planned' || !r?.intent || !port || !slot) continue;
++      const nowArg = weekArg(p.sport, p.date, p.requestId);
++      const nowN = hybrid && port.consumesNeighbours ? neighboursOf(p.sport, p.date, p.requestId) : undefined;
++      const staleCross = crossKey(p.sport, slot.crossSportWeek) !== crossKey(p.sport, nowArg.crossSportWeek);
++      const staleWeek = weekKey(slot.weekSessions) !== weekKey(nowArg.weekSessions);
++      const staleNeighbours = nowN !== undefined && JSON.stringify(slot.neighbours ?? null) !== JSON.stringify(nowN);
++      const m3 = res.reasons.some((x) => x.code.includes('.M3_DECISION'));
++      let matters = false;
++      const detail: string[] = [];
++      if (staleCross || staleWeek || staleNeighbours) {
++        const out = port.generate({ ...slot, ...nowArg, ...(nowN ? { neighbours: nowN } : {}) });
++        matters = out.status !== 'planned' || JSON.stringify(out.session.blocks) !== JSON.stringify(p.session.blocks);
++        if (out.status === 'planned' && matters) {
++          const ex = (s: SessionDraft) => s.blocks.flatMap((b) => b.items.map((i) => i.exerciseId.replace('ex.', '')));
++          const a = ex(p.session); const b = ex(out.session);
++          detail.push(...a.filter((x) => !b.includes(x)).map((x) => `-${x}`), ...b.filter((x) => !a.includes(x)).map((x) => `+${x}`));
++          if (detail.length === 0) detail.push('dose');
++        }
++      }
++      l2b.sessions.push({ requestId: p.requestId, sport: p.sport, staleCross, staleNeighbours, staleWeek, matters, m3, detail });
++      l2bSnap[`${p.requestId}@${p.date}`] = { cross: slot.crossSportWeek ?? null, week: slot.weekSessions ?? null };
++    }
++  }
++
+   // Même discipline : signalement NON BLOQUANT (aucune fenêtre gouvernée), séance précédente de la discipline seulement.
+   for (const p of placed.values()) {
+     const prev = all().filter((x) => x.sport === p.sport && x.requestId !== p.requestId && x.date < p.date).sort((a, b) => (a.date < b.date ? 1 : -1))[0];
+@@ -436,7 +491,8 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
+     requests: requests.flatMap((r) => { const x = results.get(r.requestId); return x ? [(r.final || (x.status === 'unplaced' && x.composed !== undefined)) && r.intent ? { ...x, intent: r.intent } : x] : []; }),
+     conflicts, governance: hybrid ? [...windows.reasons, ...neighbourWindow.reasons] : [],
+     ...(arbitration ? { arbitration } : {}),
+-  };
++    ...({ l2b, l2bSnap } as object),
++  } as PlannedWeek;
+ 
+   /** Importance d'une séance : table gouvernée (rôle composé, sinon archétype déclaré) ; sinon `unknown`. */
+   function importanceOf(p: Placed): M3Importance {
+diff --git a/packages/planner/src/ports.ts b/packages/planner/src/ports.ts
+index 511aab0..a610adb 100644
+--- a/packages/planner/src/ports.ts
++++ b/packages/planner/src/ports.ts
+@@ -425,7 +425,7 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
+   // RC4.4 (G5) — séries de travail prévues par groupe : la fonction du bilan hebdomadaire Strength, sans règle nouvelle.
+   const plannedGroupSets = (session: SessionDraft): Readonly<Record<string, number>> => sessionPlannedHardSets(ordinary(session), params(), def.content.catalog);
+   const proximityBandsHours = (): readonly number[] => (params()['strength.interference.assessment']?.proximityBands ?? []).map((b) => b.maxHours);
+-  const withWeek = { ...port, generate, plannedGroupSets, proximityBandsHours, consumesWeekSessions: true, crossSportWeek: ['crosstraining'] as const };
++  const withWeek = { ...port, generate, plannedGroupSets, proximityBandsHours, consumesWeekSessions: true, ...((globalThis as { L2B_VARIANT?: string }).L2B_VARIANT === 'strfirst' ? {} : { crossSportWeek: ['crosstraining'] as const }) };
+   if (!comp) return withWeek;
+   // Objectif du PROGRAMME (contrat de contexte Strength `goal.primary`), niveau du profil CORE, fréquence déclarée.
+   const run = (days: readonly CompositionDay[], weeklySessions: number, mode: PlannerMode) => {
+@@ -567,7 +567,7 @@ export function crossTrainingPort(def: Base<unknown> & { readonly engine: CrossT
+       if (!need || !sb?.port || !sb.rule) return unresolved();
+       // 2. Strength en MODE BLOC : budget du besoin, séances Strength de la semaine (volume, alternance), voisines.
+       // Volume et alternance : séances Strength de la semaine ET blocs de force des autres séances Cross-training (prévus).
+-      const strengthWeek = [...(slot.crossSportWeek?.strength ?? []), ...ctStrengthBlocks({ ...slot, crossSportWeek: { crosstraining: slot.weekSessions ?? [] } })];
++      const strengthWeek = [...((globalThis as { L2B_VARIANT?: string }).L2B_VARIANT === 'ctfirst' ? [] : (slot.crossSportWeek?.strength ?? [])), ...ctStrengthBlocks({ ...slot, crossSportWeek: { crosstraining: slot.weekSessions ?? [] } })];
+       const s = sb.port.generate({
+         requestId: `${slot.requestId}.strength_block`, date: slot.date, availableMinutes: Math.floor(need.budgetMaxS / S_PER_MIN), hybrid: slot.hybrid,
+         seed: `${slot.seed}:strength_block`, intent: sb.rule.intent, ...(strengthWeek.length > 0 ? { weekSessions: strengthWeek } : {}),

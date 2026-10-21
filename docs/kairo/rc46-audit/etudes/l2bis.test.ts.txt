@@ -1,0 +1,52 @@
+import { it } from 'vitest';
+import { writeFileSync } from 'node:fs';
+import { migrateToCurrent } from '@hybridsport/engine';
+import type { SessionRecord } from '@hybridsport/domain';
+import { beta0Environment, weekReproducibility } from '../../src/index.js';
+import type { AppState } from '../../src/index.js';
+import { simulate } from '../rc4-audit/rc4-sim.js';
+import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
+import { measureProfile, qualityProfiles, summarize, QUALITY_WEEKS } from '../rc46/quality-bench.js';
+import { PROFILE } from '../consolidation/sim4.js';
+
+it('L2-bis variant run', () => {
+  const v = process.env.L2B_VARIANT ?? 'ref';
+  const g = globalThis as { L2B_VARIANT?: string; L2B_WEEKS?: Record<string, unknown> };
+  g.L2B_VARIANT = v;
+  const p2 = qualityProfiles().find((p) => p.id === 'P2') as ProfileSpec;
+  const specs: ProfileSpec[] = [...qualityProfiles(), { id: 'CONS', label: 'Consolidation (Musculation 3×, CT force + conditionnement 1×)', profile: PROFILE },
+    { id: 'P2F', label: 'P2 avec CT force + conditionnement 2×', profile: { ...p2.profile, crosstraining: { ...p2.profile.crosstraining, intent: 'crosstraining.strength_plus_conditioning' } } as ProfileSpec['profile'] }];
+  const out: Record<string, unknown> = {};
+  for (const spec of specs) {
+    const env = beta0Environment();
+    g.L2B_WEEKS = {};
+    (globalThis as { L2B_SNAP?: unknown }).L2B_SNAP = {};
+    (globalThis as { L2B_ITER?: number[] }).L2B_ITER = [];
+    const weeks: Record<string, unknown> = {};
+    const repro: Record<string, Record<string, number>> = {};
+    const divergences: string[] = [];
+    const ct: unknown[] = [];
+    simulate(spec, QUALITY_WEEKS, env, (state: AppState, monday: string) => {
+      weeks[monday] = g.L2B_WEEKS?.[monday];
+      const x = weekReproducibility(state, monday, env);
+      for (const sv of x.sessions) {
+        const sport = sv.requestId.split('.')[1] ?? '?';
+        repro[sport] ??= {};
+        const rr = repro[sport] as Record<string, number>;
+        rr[sv.class] = (rr[sv.class] ?? 0) + 1;
+        if (sv.class === 'planner_divergence') divergences.push(`${sv.requestId}: ${sv.changesAtPlanning.join(', ')}`);
+      }
+      for (const r of state.planner.weeks[monday]?.requests ?? []) {
+        if (r.sport !== 'crosstraining' || r.status !== 'planned' || !r.record) continue;
+        const d = migrateToCurrent<SessionRecord>(r.record as never);
+        if (!d.ok) continue;
+        const s = d.value.session;
+        ct.push({ id: r.requestId, date: r.date, strength: s.blocks.filter((b) => b.kind === 'strength').flatMap((b) => b.items.map((i) => i.exerciseId.replace('ex.', ''))), other: s.blocks.filter((b) => b.kind !== 'strength' && b.kind !== 'warmup' && b.kind !== 'cooldown').flatMap((b) => b.items.map((i) => i.exerciseId.replace('ex.', ''))), estMin: d.value.durationEstimate.availability === 'AVAILABLE' ? Math.round(d.value.durationEstimate.p50 / 60) : null });
+      }
+    });
+    let q: ReturnType<typeof measureProfile> | null = null;
+    try { q = measureProfile(spec, env); } catch { q = null; }
+    out[spec.id] = { label: spec.label, iter: (globalThis as { L2B_ITER?: number[] }).L2B_ITER, weeks, repro, divergences, ct, q, s: q ? summarize(q) : null };
+  }
+  writeFileSync(`${process.env.L2B_OUT ?? '/tmp'}/l2b-${v}.json`, JSON.stringify(out));
+}, 900000);
