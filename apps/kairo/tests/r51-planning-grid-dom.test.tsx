@@ -51,11 +51,11 @@ describe('R5.1 — Planning en grille', () => {
     const g = screen.getByRole('group', { name: 'Affichage du planning' });
     expect(within(g).getByRole('button', { name: 'Liste' }).getAttribute('aria-pressed')).toBe('true');
     expect(grid()).toBeNull();
-    expect(document.querySelector('.week')).not.toBeNull();
+    expect(document.querySelector('[data-planning-catalog]')).not.toBeNull();
     toGrid();
     expect(within(g).getByRole('button', { name: 'Grille' }).getAttribute('aria-pressed')).toBe('true');
     expect(grid()).not.toBeNull();
-    expect(document.querySelector('.week')).toBeNull();
+    expect(document.querySelector('[data-planning-catalog]')).toBeNull();
   });
 
   it('sept lignes, du lundi au dimanche, dans l’ordre ; jour et date dans la colonne de gauche', () => {
@@ -138,7 +138,7 @@ describe('R5.1 — Planning en grille', () => {
   it('clic sur une carte : même action que la liste (ouverture de la séance)', () => {
     const { onOpen } = mount(STATE);
     const id = selectBeta0Week(STATE, MON)?.days.flatMap((x) => x.sessions)[0]?.requestId ?? '';
-    fireEvent.click(document.querySelector(`.week button[data-request="${id}"]`) as HTMLElement);
+    fireEvent.click(document.querySelector(`[data-planning-catalog] button[data-request="${id}"]`) as HTMLElement);
     toGrid();
     fireEvent.click(document.querySelector(`.agenda-card[data-request="${id}"]`) as HTMLElement);
     expect(onOpen.mock.calls).toEqual([[id], [id]]);
@@ -150,7 +150,7 @@ describe('R5.1 — Planning en grille', () => {
     render(<StoreProvider storage={storage} clock={clock}><App /></StoreProvider>);
     fireEvent.click(screen.getByRole('button', { name: 'Planning' }));
     const id = selectBeta0Week(STATE, MON)?.days.flatMap((x) => x.sessions)[0]?.requestId ?? '';
-    fireEvent.click(document.querySelector(`.week button[data-request="${id}"]`) as HTMLElement);
+    fireEvent.click(document.querySelector(`[data-planning-catalog] button[data-request="${id}"]`) as HTMLElement);
     const fromList = document.querySelector('.overlay')?.textContent;
     expect(fromList?.length).toBeGreaterThan(0);
     cleanup();
@@ -189,17 +189,19 @@ describe('R5.1 — Planning en grille', () => {
     expect(grid()).toBeNull();
   });
 
-  it('non-régression : la liste garde ses jours, cartes et textes ; aucune donnée modifiée par la grille', () => {
+  it('non-régression (R5.2) : la grille est rendue À L’IDENTIQUE avant et après un passage par la liste ; aucune donnée modifiée', () => {
     const { storage } = mount(STATE);
-    const listHtml = document.querySelector('.week')?.outerHTML;
-    expect(document.querySelectorAll('.week .day')).toHaveLength(7);
-    expect(screen.getByText(/Une séance par jour au plus\./)).toBeTruthy();
     const before = storage.getItem(STORAGE_KEY);
     toGrid();
+    const gridHtml = grid()?.outerHTML;
+    expect(days()).toHaveLength(7);
+    toList();
+    fireEvent.click(screen.getByRole('button', { name: '2 semaines' }));
+    fireEvent.click(screen.getByRole('button', { name: /^Catégorie Musculation/ }));
     fireEvent.click(screen.getByRole('button', { name: 'Semaine précédente' }));
     fireEvent.click(screen.getByRole('button', { name: 'Semaine suivante' }));
-    toList();
-    expect(document.querySelector('.week')?.outerHTML).toBe(listHtml);
+    toGrid();
+    expect(grid()?.outerHTML).toBe(gridHtml);
     expect(storage.getItem(STORAGE_KEY)).toBe(before);
   });
 

@@ -133,8 +133,10 @@ describe('cohérence Accueil / Planning / selector', () => {
     expect(screen.getByRole('button', { name: /^Ouvrir le planning/ }).getAttribute('aria-label')).not.toMatch(/mardi/);
     // Planning : mardi disponible sans séance ; la course refusée est listée à part, expliquée.
     click('Planning');
-    const tuesday = [...document.querySelectorAll('.week .day')].find((d) => d.textContent?.includes('Mar'));
-    expect(tuesday?.textContent).toContain('Disponible, aucune séance');
+    // R5.2 — vue chronologique = grille (la liste est un catalogue par sport).
+    click('Grille');
+    expect(document.querySelector('[data-agenda-day="2026-10-06"] [data-agenda-rest]')?.textContent).toBe('Disponible, aucune séance');
+    click('Liste');
     // RC3.1 A8 : la cause décisive (temps du créneau dépassé) précise le motif.
     expect(screen.getByText('Cette séance n’a pas pu être placée dans vos disponibilités. La séance dépasse le temps disponible ce jour-là : elle n’est jamais raccourcie.')).toBeTruthy();
   });
