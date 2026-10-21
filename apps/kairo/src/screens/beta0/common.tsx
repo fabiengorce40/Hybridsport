@@ -85,7 +85,12 @@ export function durationText(v: SessionItemView): string | null {
   return dur;
 }
 
-export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemView; onOpen: (id: string) => void; highlight?: boolean }) {
+/**
+ * Carte de séance. R5.2 — `dateLabel` (catalogue par sport) : le jour et la date prévus remplacent le nom du sport en tête
+ * de carte (le sport est donné par la catégorie) et sont annoncés aux lecteurs d'écran ; le libellé accessible reste celui
+ * de la carte (sport, nom, statut).
+ */
+export function SessionCard0({ v, onOpen, highlight = false, dateLabel }: { v: SessionItemView; onOpen: (id: string) => void; highlight?: boolean; dateLabel?: string }) {
   const name = sessionTitle(v);
   if (v.display === 'not_planned' && v.placement === 'composed_unplaced') return <UnplacedCard v={v} onOpen={onOpen} />;
   if (v.display === 'not_planned') {
@@ -97,9 +102,9 @@ export function SessionCard0({ v, onOpen, highlight = false }: { v: SessionItemV
     );
   }
   return (
-    <button className={`card button-card ${highlight ? 'accent' : ''}`} data-request={v.requestId} onClick={() => onOpen(v.requestId)} aria-label={`${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`}>
+    <button className={`card button-card ${highlight ? 'accent' : ''}`} data-request={v.requestId} data-status={v.display} onClick={() => onOpen(v.requestId)} aria-label={`${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`} {...(dateLabel ? { 'aria-describedby': `date-${v.requestId}` } : {})}>
       <div className="row between">
-        <span className="small muted">{sportName(v.sport)}</span>
+        {dateLabel ? <span className="small catalog-date" id={`date-${v.requestId}`} data-catalog-date>{dateLabel}</span> : <span className="small muted">{sportName(v.sport)}</span>}
         <span className="row">{isTest(v.archetypeId) && <span className="badge test">TEST</span>}<StatusPill status={v.display} /></span>
       </div>
       <h3>{name}</h3>

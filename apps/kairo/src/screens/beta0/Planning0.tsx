@@ -8,6 +8,8 @@ import { ExperimentalBadge, placedOf, RunningTestFallbackNotice, SessionCard0, w
 import type { SessionItemView } from './common.js';
 import { NoWeek, PainPause } from './Home0.js';
 import { WeekAgenda } from './WeekAgenda.js';
+import { PlanningCatalog } from './PlanningCatalog.js';
+import type { CatalogPeriod } from './PlanningCatalog.js';
 import { STORAGE_NAMESPACE } from '../../channel.js';
 
 /** R5.1 — mode d'affichage du Planning, mémorisé par lecteur (préférence d'interface, jamais une donnée sportive). */
@@ -15,6 +17,12 @@ export type PlanningView = 'list' | 'grid';
 export const PLANNING_VIEW_KEY = `${STORAGE_NAMESPACE}kairo.planning.view`;
 const readView = (): PlanningView => { try { return localStorage.getItem(PLANNING_VIEW_KEY) === 'grid' ? 'grid' : 'list'; } catch { return 'list'; } };
 const writeView = (v: PlanningView): void => { try { localStorage.setItem(PLANNING_VIEW_KEY, v); } catch { /* préférence non conservée */ } };
+/** R5.2 — période de la liste (cette semaine / 2 semaines), mémorisée comme le mode d'affichage. */
+export const PLANNING_PERIOD_KEY = `${STORAGE_NAMESPACE}kairo.planning.period`;
+const readPeriod = (): CatalogPeriod => { try { return localStorage.getItem(PLANNING_PERIOD_KEY) === 'two_weeks' ? 'two_weeks' : 'week'; } catch { return 'week'; } };
+const writePeriod = (v: CatalogPeriod): void => { try { localStorage.setItem(PLANNING_PERIOD_KEY, v); } catch { /* préférence non conservée */ } };
+// technical-constant: jours par semaine
+const DAYS_PER_WEEK = 7;
 
 /** Index des semaines du programme réellement planifiées (persistées), dans l'ordre. */
 const existingWeeks = (state: AppState): number[] => (state.programmeState?.weeks ?? []).filter((w) => state.planner.weeks[w.plannerRef] !== undefined).map((w) => w.weekIndex).sort((a, b) => a - b);
@@ -29,6 +37,11 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
   const week = shown === null || shown === current?.weekIndex ? current : weekOf(state, today, shown);
   const pos = week ? weeks.indexOf(week.weekIndex) : -1;
   const choose = (v: PlanningView) => { setView(v); writeView(v); };
+  const [period, setPeriod] = useState<CatalogPeriod>(readPeriod);
+  const choosePeriod = (v: CatalogPeriod) => { setPeriod(v); writePeriod(v); };
+  // Semaine suivante : seulement si elle est DÉJÀ planifiée (aucune séance inventée).
+  const nextIndex = pos >= 0 ? weeks[pos + 1] : undefined;
+  const next = nextIndex === undefined ? null : weekOf(state, today, nextIndex);
   const avail = state.profile?.availability ?? [];
   // Hors des jours : non planifiées (bloquées ou composées), y compris une non placée commencée ou réalisée hors planning.
   const onDays = new Set(placedOf(week?.days ?? []).map((x) => x.requestId));
@@ -59,23 +72,11 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
           <WeekPlanningNotice planning={week.planning} />
           <RunningTestFallbackNotice fallback={week.runningTestFallback} />
           <WeekLoadNotice warnings={weekLoadWarnings(state, week.weekStart)} items={week.items} />
-          {view === 'grid' ? <WeekAgenda days={week.days} today={today} availability={avail} onOpen={onOpen} /> : (<>
-            {/* Vue LISTE : inchangée. */}
-          <p className="small muted">Semaine {week.weekIndex + 1}{week.programme.targetDate ? ` · objectif le ${formatDate(week.programme.targetDate)}` : ''} · du {Number(week.weekStart.slice(8))}/{week.weekStart.slice(5, 7)}. Une séance par jour au plus.</p>
-          <div className="week">
-            {week.days.map(({ date: d, sessions: s }) => {
-              const wd = weekdayIndex(d);
-              return (
-                <div key={d} className={`day ${d === today ? 'today' : ''}`}>
-                  <div className="d"><span className="w">{weekdayShort(wd)}</span><span className="n num">{Number(d.slice(8))}</span></div>
-                  {s.length > 0
-                    ? <div className="stack">{s.map((x) => <SessionCard0 key={x.requestId} v={x} onOpen={onOpen} highlight={d === today} />)}</div>
-                    : <div className="rest">{(avail[wd] ?? 0) > 0 ? 'Disponible, aucune séance' : 'Repos'}</div>}
-                </div>
-              );
-            })}
-          </div>
-          </>)}
+          {view === 'list' && week.programme.targetDate && <p className="small muted">Objectif le {formatDate(week.programme.targetDate)}.</p>}
+          {view === 'grid'
+            ? <WeekAgenda days={week.days} today={today} availability={avail} onOpen={onOpen} />
+            : <PlanningCatalog state={state} weeks={period === 'two_weeks' && next ? [week, next] : [week]} period={period} onPeriod={choosePeriod}
+                nextMissing={period === 'two_weeks' && !next ? addDays(week.weekStart, DAYS_PER_WEEK) : null} onOpen={onOpen} />}
           {unplanned.length > 0 && (
             <>
               <div className="section-title">Non planifiées</div>

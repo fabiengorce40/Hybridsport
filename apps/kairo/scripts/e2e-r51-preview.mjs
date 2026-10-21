@@ -88,7 +88,7 @@ check(Boolean(imported.profile) && Object.keys(imported.planner?.weeks ?? {}).le
 
 // 3. Planning Liste / Grille avec cet état.
 await page.getByRole('button', { name: 'Planning', exact: true }).click();
-check(await page.locator('.week').isVisible() && await page.getByRole('button', { name: 'Liste' }).getAttribute('aria-pressed') === 'true', 'Planning : liste par défaut');
+check(await page.locator('[data-planning-catalog]').isVisible() && await page.getByRole('button', { name: 'Liste' }).getAttribute('aria-pressed') === 'true', 'Planning : liste par défaut (catalogue par sport)');
 await shot('preview-01-liste');
 await page.getByRole('button', { name: 'Grille' }).click();
 await page.locator('[data-planning-grid]').waitFor();
@@ -106,7 +106,7 @@ await page.locator('.overlay').waitFor();
 const opened = await page.locator('.overlay').innerText();
 await page.getByRole('button', { name: 'Retour' }).first().click();
 await page.getByRole('button', { name: 'Liste' }).click();
-await page.locator(`.week button[data-request="${id}"]`).click();
+await page.locator(`[data-planning-catalog] button[data-request="${id}"]`).click();
 check(await page.locator('.overlay').innerText() === opened, 'ouverture d’une séance : même fiche depuis la grille et depuis la liste');
 await page.getByRole('button', { name: 'Retour' }).first().click();
 await page.getByRole('button', { name: 'Grille' }).click();

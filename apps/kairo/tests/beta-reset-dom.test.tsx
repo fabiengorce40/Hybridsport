@@ -21,7 +21,10 @@ const at = (today: string) => (): Clock => ({ today, now: `${today}T07:30:00.000
 const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
 const saved = (st: MemoryStorage): AppState => JSON.parse(st.getItem(STORAGE_KEY) ?? '{}') as AppState;
 const strengthCards = () => screen.queryAllByRole('button', { name: /^Musculation : / }).map((b) => (b.getAttribute('aria-label') ?? '').replace(/^Musculation : /, '').replace(/, [^,]+$/, '').replace(/ [A-Z]$/, ''));
-const dayLabels = () => [...document.querySelectorAll('.week .day')].map((d) => `${d.querySelector('.w')?.textContent ?? ''} ${d.querySelector('.n')?.textContent ?? ''}`);
+// R5.2 — la vue chronologique (un jour par ligne) est la GRILLE ; la liste est un catalogue par sport. Lecture des jours
+// dans la grille, puis retour à la liste (mode d'affichage inchangé pour la suite du test).
+const inGrid = <T,>(read: () => T): T => { click('Grille'); const r = read(); click('Liste'); return r; };
+const dayLabels = () => inGrid(() => [...document.querySelectorAll('[data-agenda-day]')].map((d) => `${d.querySelector('.agenda-date .w')?.textContent ?? ''} ${d.querySelector('.agenda-date .n')?.textContent ?? ''}`));
 
 describe('reset Beta depuis l’état du téléphone (programme pré-S1)', () => {
   it('mercredi : semaine conservée (4 × Full body, avis, jeudi 8 unique) ; reset confirmé ⇒ séances composées par S1 dans le DOM et l’AppState', () => {
@@ -91,7 +94,6 @@ describe('reset Beta depuis l’état du téléphone (programme pré-S1)', () =>
     render(<StoreProvider storage={st} clock={at('2026-10-07')}><App /></StoreProvider>);
     click('Planning');
     expect(screen.getByText(/Incohérence de données détectée/)).toBeTruthy();
-    const thursday = [...document.querySelectorAll('.week .day')].find((d) => d.querySelector('.n')?.textContent === '8');
-    expect(thursday?.querySelectorAll('[aria-label^="Musculation"], [aria-label^="Course"]').length).toBe(2);
+    expect(inGrid(() => document.querySelectorAll('[data-agenda-day="2026-10-08"] .agenda-card[aria-label^="Musculation"], [data-agenda-day="2026-10-08"] .agenda-card[aria-label^="Course"]').length)).toBe(2);
   });
 });

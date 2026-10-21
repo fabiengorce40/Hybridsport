@@ -223,7 +223,10 @@ const strengthTitles = (p) => p.getByRole('button', { name: /^Musculation : / })
   check(st.planner?.weeks?.['2026-10-05']?.planningVersion === 'beta0-m31' && reqs.every((r) => r.composition?.authority === 'provisional' && r.reasons.some((x) => x.code === 'PLAN.WEEK_COMPOSITION')), `reset Beta : AppState recomposé par S1 (${reqs.map((r) => `${r.date} ${r.intent?.archetypeId}`).join(', ')})`);
   await p.getByRole('button', { name: 'Planning', exact: true }).click();
   const after = await strengthTitles(p);
-  const days = await p.locator('.week .day .n').allInnerTexts();
+  // R5.2 — vue chronologique = grille (la liste est un catalogue par sport).
+  await p.getByRole('button', { name: 'Grille' }).click();
+  const days = await p.locator('[data-agenda-day] .agenda-date .n').allInnerTexts();
+  await p.getByRole('button', { name: 'Liste' }).click();
   check(after.join(',') === 'Haut du corps,Bas du corps' && new Set(days).size === days.length && days.length === 7, `reset Beta : DOM recomposé, aucune date dupliquée (${after.join(', ')} ; ${days.join(' ')})`);
   await c.close();
 }
@@ -892,8 +895,11 @@ async function mobileFit(p, tag) {
   await nav('Planning');
   const plan = await body();
   check(['Musculation', 'Course', 'Cross-training', 'HYROX'].every((x) => plan.includes(x)) && !CODES.test(plan), `${tag} planning : quatre sports, aucun code interne`);
-  const days = await p.locator('.week .day .n').allInnerTexts();
-  const cards = await p.locator('.week [data-request]').evaluateAll((xs) => xs.map((x) => x.getAttribute('data-request')));
+  // R5.2 — jours uniques lus dans la grille (vue chronologique), puis retour à la liste.
+  await p.getByRole('button', { name: 'Grille' }).click();
+  const days = await p.locator('[data-agenda-day] .agenda-date .n').allInnerTexts();
+  const cards = await p.locator('[data-planning-grid] [data-request]').evaluateAll((xs) => xs.map((x) => x.getAttribute('data-request')));
+  await p.getByRole('button', { name: 'Liste' }).click();
   check(days.length === 7 && new Set(days).size === 7 && cards.length === 5 && new Set(cards).size === cards.length, `${tag} planning : 7 jours uniques, aucune séance affichée deux fois (${days.join(' ')})`);
   check(await p.locator('[data-unplaced]').count() === 1 && /non planifiée/i.test(await p.locator('[data-unplaced]').innerText()) && plan.includes('Séance expérimentale'), `${tag} séance non placée distincte (NON PLANIFIÉE + raison), qualité « Séance expérimentale »`);
   await fit('planning');
@@ -1405,7 +1411,7 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
       await p.goto(URL_);
       const t = `${tag} ${String(width)} px ${fixture}`;
       await p.getByRole('button', { name: 'Planning', exact: true }).click();
-      check(await p.locator('.week').isVisible() && await p.getByRole('button', { name: 'Liste' }).getAttribute('aria-pressed') === 'true', `${t} : liste par défaut`);
+      check(await p.locator('[data-planning-catalog]').isVisible() && await p.getByRole('button', { name: 'Liste' }).getAttribute('aria-pressed') === 'true', `${t} : liste par défaut`);
       if (shots && fixture === 'r51-p5-w2') await p.screenshot({ path: `${shots}/r51-${String(width)}-liste.png` });
       await p.getByRole('button', { name: 'Grille' }).click();
       await p.locator('[data-planning-grid]').waitFor();
@@ -1449,7 +1455,7 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
       const opened = await p.locator('.overlay').innerText();
       await p.getByRole('button', { name: 'Retour' }).first().click();
       await p.getByRole('button', { name: 'Liste' }).click();
-      await p.locator(`.week button[data-request="${id}"]`).click();
+      await p.locator(`[data-planning-catalog] button[data-request="${id}"]`).click();
       check(await p.locator('.overlay').innerText() === opened, `${t} : la carte de la grille ouvre la même séance que la liste`);
       await p.getByRole('button', { name: 'Retour' }).first().click();
       await p.getByRole('button', { name: 'Grille' }).click();
@@ -1470,6 +1476,74 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
     }
   }
 }
+// R5.2 — Planning en LISTE : catalogue par sport sur téléphone (360 et 390 px). Ordre des catégories, aucun débordement,
+// textes lisibles, catégories repliables, période « Cette semaine / 2 semaines » (aucune semaine inventée), ouverture des
+// séances identique à la grille, période mémorisée.
+{
+  const tag = '[R5.2]';
+  const fx = readFileSync(new URL('../tests/fixtures/r51-p5-w2.json', import.meta.url), 'utf8');
+  for (const width of [360, 390]) {
+    const c = await browser.newContext({ viewport: { width, height: 800 }, deviceScaleFactor: 2, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+    const p = await c.newPage();
+    const perrors = [];
+    p.on('pageerror', (e) => perrors.push(e.message));
+    await p.clock.install({ time: new Date('2026-10-12T07:30:00+02:00') });
+    await p.clock.resume();
+    await p.addInitScript((s) => { if (!localStorage.getItem('kairo.state')) localStorage.setItem('kairo.state', s); }, fx);
+    await p.goto(URL_);
+    const t = `${tag} ${String(width)} px`;
+    await p.getByRole('button', { name: 'Planning', exact: true }).click();
+    await p.locator('[data-planning-catalog]').waitFor();
+    const order = await p.locator('[data-catalog-sport]').evaluateAll((gs) => gs.map((g) => g.getAttribute('data-catalog-sport')));
+    check(order.join(',') === 'strength,crosstraining,hyrox,running', `${t} : catégories Musculation, Cross-training, HYROX, Course à pied (${order.join(', ')})`);
+    const layout = async () => p.evaluate(() => ({
+      page: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      clipped: Array.from(document.querySelectorAll('[data-planning-catalog] .card, [data-planning-catalog] .catalog-toggle')).filter((el) => el.scrollWidth > el.clientWidth + 1).length,
+      overlap: Array.from(document.querySelectorAll('[data-planning-catalog] .card .row.between')).filter((row) => { const [a, b] = Array.from(row.children).map((x) => x.getBoundingClientRect()); return a && b && a.right > b.left + 1 && a.bottom > b.top + 1 && b.bottom > a.top + 1; }).length,
+    }));
+    const l1 = await layout();
+    check(l1.page <= 0 && l1.clipped === 0 && l1.overlap === 0, `${t} : aucun débordement de page, aucun texte coupé ni superposé (${JSON.stringify(l1)})`);
+    const n = await p.locator('[data-planning-catalog] [data-request]').count();
+    const dated = await p.locator('[data-planning-catalog] [data-request] [data-catalog-date]').count();
+    check(n === 7 && dated === 7, `${t} : 7 séances de la semaine, chacune avec son jour et sa date`);
+    if (shots) await p.screenshot({ path: `${shots}/r52-${String(width)}-liste.png`, fullPage: true });
+    // Repli / dépli.
+    const toggle = p.getByRole('button', { name: /^Catégorie Musculation : / });
+    await toggle.click();
+    check(await toggle.getAttribute('aria-expanded') === 'false' && await p.locator('[data-catalog-sport="strength"] [data-request]').count() === 0, `${t} : Musculation repliée`);
+    if (shots) await p.screenshot({ path: `${shots}/r52-${String(width)}-replie.png` });
+    await toggle.click();
+    check(await p.locator('[data-catalog-sport="strength"] [data-request]').count() > 0, `${t} : Musculation dépliée`);
+    // Période : 2 semaines depuis la semaine en cours (semaine suivante non planifiée ⇒ avis, rien d'inventé).
+    await p.getByRole('button', { name: '2 semaines' }).click();
+    check(await p.locator('[data-planning-catalog] [data-request]').count() === 7 && await p.locator('[data-catalog-next-missing]').isVisible(), `${t} : 2 semaines, semaine suivante non planifiée signalée, aucune séance inventée`);
+    await p.getByRole('button', { name: 'Semaine précédente' }).click();
+    const both = await p.locator('[data-planning-catalog] [data-request]').count();
+    const sorted = await p.locator('[data-catalog-sport]').evaluateAll((gs) => gs.every((g) => { const d = Array.from(g.querySelectorAll('[data-catalog-entry]')).map((e) => e.getAttribute('data-date')); return d.join() === [...d].sort().join(); }));
+    check(both === 14 && sorted, `${t} : semaines 1 et 2 ensemble (${String(both)} séances), triées par date dans chaque sport`);
+    const l2 = await layout();
+    check(l2.page <= 0 && l2.clipped === 0 && l2.overlap === 0, `${t} : 2 semaines sans débordement ni texte coupé (${JSON.stringify(l2)})`);
+    if (shots) await p.screenshot({ path: `${shots}/r52-${String(width)}-2-semaines.png`, fullPage: true });
+    // Ouverture : même fiche que depuis la grille.
+    const first = p.locator('[data-planning-catalog] button[data-request]').first();
+    const id = await first.getAttribute('data-request');
+    await first.click();
+    await p.locator('.overlay').waitFor();
+    const opened = await p.locator('.overlay').innerText();
+    await p.getByRole('button', { name: 'Retour' }).first().click();
+    await p.getByRole('button', { name: 'Grille' }).click();
+    await p.locator(`.agenda-card[data-request="${id}"]`).click();
+    check(await p.locator('.overlay').innerText() === opened, `${t} : la liste ouvre la même fiche que la grille`);
+    await p.getByRole('button', { name: 'Retour' }).first().click();
+    await p.getByRole('button', { name: 'Liste' }).click();
+    await p.reload();
+    await p.getByRole('button', { name: 'Planning', exact: true }).click();
+    check(await p.locator('[data-planning-catalog]').getAttribute('data-period') === 'two_weeks', `${t} : période « 2 semaines » mémorisée après rechargement`);
+    check(perrors.length === 0, `${t} : aucune erreur de page (${perrors.join(' | ')})`);
+    await c.close();
+  }
+}
+
 // Version réellement servie : identifiant de build affiché dans Réglages = version.json publié (site déployé seulement).
 {
   const { c, p } = await freshPage(readFileSync(new URL('../../../packages/app-core/tests/fixtures/pre-s1-state.json', import.meta.url), 'utf8'));
