@@ -5,10 +5,11 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import { createBeta0Programme, ctIntentFeasibility, hyroxRoleFeasibility, strengthSupportedFrequencies, CT_INTENT_LABELS, DIFFICULTY_LABELS, HR_BALANCED_LABEL, HR_GOAL_LABELS, HR_ROLE_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
-import type { Beta0ProgrammeOptions, CtIntentFeasibility, DeclaredPerformance, Feedback, HrRoleFeasibility, ProfileInput } from '@hybridsport/app-core';
+import type { Beta0ProgrammeOptions, CtIntentFeasibility, Feedback, HrRoleFeasibility, ProfileInput } from '@hybridsport/app-core';
 import { HrFeasibilityNotice } from './HrFeasibility.js';
 import { PerformanceForm } from '../../running/PerformanceForm.js';
-import { performanceText } from '../../running/RunningProfile.js';
+import { entryText } from '../../running/RunningProfile.js';
+import type { PerformanceEntry } from '../../running/PerformanceForm.js';
 
 import { useStore } from '../../store.js';
 import { AvailabilitySection, defaultProfile, EquipmentSection, equipmentChosen, GoalsSection, needsEquipment } from '../../ProfileForm.js';
@@ -176,7 +177,10 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const [runFeel, setRunFeel] = useState<Feedback['difficulty']>('AS_EXPECTED');
   // RC3.4 — date RÉELLE de la dernière course, facultative (absente : comportement antérieur, aucune date inventée).
   const [runDate, setRunDate] = useState('');
-  const [perfs, setPerfs] = useState<DeclaredPerformance[]>([]);
+  const [perfs, setPerfs] = useState<PerformanceEntry[]>([]);
+  // REKKA — performances de référence (test, compétition) et sorties d'entraînement (courses réalisées), jamais confondues.
+  const refs = perfs.flatMap((x) => (x.type === 'performance' ? [x.value] : []));
+  const trainingRuns = perfs.flatMap((x) => (x.type === 'training' ? [x.value] : []));
   const [addingPerf, setAddingPerf] = useState(false);
   const [noChrono, setNoChrono] = useState(false);
   const choice = choiceOf(p);
@@ -217,8 +221,9 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
 
   const create = () => {
     const o: Beta0ProgrammeOptions = {
-      ...(p.running.enabled && perfs.length > 0 ? { performances: perfs } : {}),
-      ...(p.running.enabled && perfs.length === 0 && noChrono ? { requestTest: true } : {}),
+      ...(p.running.enabled && refs.length > 0 ? { performances: refs } : {}),
+      ...(p.running.enabled && trainingRuns.length > 0 ? { trainingRuns } : {}),
+      ...(p.running.enabled && refs.length === 0 && noChrono ? { requestTest: true } : {}),
       ...(p.running.enabled && targetDate && p.running.goal !== 'GENERAL_RUNNING' ? { runningTargetDate: targetDate } : {}),
       ...(p.running.enabled && runMin !== '' ? { lastRun: { realizedDurationS: Number(runMin) * 60, ...(km !== undefined ? { distanceM: km * 1000 } : {}), difficulty: runFeel, ...(runDate !== '' ? { date: runDate } : {}) } } : {}),
     };
@@ -298,20 +303,20 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
               <h3>Niveau actuel</h3>
               <div className="section-title" style={{ marginTop: 0 }}>Performances récentes</div>
               {mode === 'recreate' && store.state.running.references.length > 0 && <p className="tiny" style={{ margin: 0 }}>Vos {String(store.state.running.references.length)} performance{store.state.running.references.length > 1 ? 's' : ''} déjà enregistrée{store.state.running.references.length > 1 ? 's sont conservées' : ' est conservée'} (Réglages → Profil Course). Ajoutez seulement les nouvelles.</p>}
-              {perfs.length === 0 && !addingPerf && <p className="tiny" style={{ margin: 0 }}>Un chrono récent (course officielle ou chrono personnel) permet de débloquer les séances clés et des cibles d’allure.</p>}
+              {perfs.length === 0 && !addingPerf && <p className="tiny" style={{ margin: 0 }}>Une sortie d’entraînement récente suffit pour proposer des footings guidés par l’effort. Un effort maximal (test chronométré, compétition) débloque en plus les séances clés et des cibles d’allure.</p>}
               {perfs.map((x, i) => (
-                <div key={`${x.kind}${String(i)}`} className="row between small">
-                  <span>{performanceText(x)}</span>
-                  <button type="button" className="btn ghost" aria-label={`Retirer ${performanceText(x)}`} onClick={() => setPerfs(perfs.filter((_, j) => j !== i))}>Retirer</button>
+                <div key={`${x.type}${String(i)}`} className="row between small">
+                  <span>{entryText(x)}</span>
+                  <button type="button" className="btn ghost" aria-label={`Retirer ${entryText(x)}`} onClick={() => setPerfs(perfs.filter((_, j) => j !== i))}>Retirer</button>
                 </div>
               ))}
               {addingPerf
-                ? <PerformanceForm today={store.clock().today} onAdd={(x) => { setPerfs([...perfs, x]); setAddingPerf(false); setNoChrono(false); }} onCancel={() => setAddingPerf(false)} />
+                ? <PerformanceForm today={store.clock().today} onAdd={(x) => { setPerfs([...perfs, x]); setAddingPerf(false); if (x.type === 'performance') setNoChrono(false); }} onCancel={() => setAddingPerf(false)} />
                 : <button type="button" className="btn secondary" onClick={() => setAddingPerf(true)}>Ajouter une performance</button>}
-              {perfs.length === 0 && (
+              {refs.length === 0 && (
                 <label className="check"><input type="checkbox" checked={noChrono} onChange={(e) => setNoChrono(e.target.checked)} />Je n’ai pas de chrono récent : programmer un test chronométré</label>
               )}
-              {perfs.length === 0 && noChrono && (runMin === '' || runKm === '') && (
+              {refs.length === 0 && noChrono && (runMin === '' || runKm === '') && trainingRuns.every((t) => t.distanceM === undefined) && (
                 <p className="tiny" data-test-needs-distance style={{ margin: 0 }}>Le test a besoin d’une course récente AVEC sa distance (ci-dessous). Sans elle, une course facile sera prévue à la place et vous pourrez redemander le test plus tard.</p>
               )}
               <h3>Votre dernière course</h3>

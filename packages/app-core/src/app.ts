@@ -144,7 +144,8 @@ const intervalOf = (r: { readonly completedAt: string; readonly realizedDuration
 export interface FreeRunInput {
   readonly realizedDurationS: number;
   readonly completion: 'COMPLETED' | 'PARTIAL' | 'SKIPPED';
-  readonly difficulty: Feedback['difficulty'];
+  /** Ressenti déclaré ; `UNKNOWN` (REKKA : sortie ancienne requalifiée, ressenti non rappelé) n'est jamais une preuve de tolérance. */
+  readonly difficulty: Feedback['difficulty'] | 'UNKNOWN';
   readonly pain: boolean;
   readonly distanceM?: number;
   /** Début déclaré (instant ISO) ; fin = début + durée. */

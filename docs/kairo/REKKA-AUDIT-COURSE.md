@@ -164,3 +164,43 @@ Toutes ces corrections sont dans l'application (`app-core` et interface). **Aucu
 1. Accord sur la correction minimale **C1 à C5** (application seulement, moteur Running inchangé).
 2. C6 : faut-il des séances de qualité dans « Courir régulièrement » ? Décision sportive séparée.
 3. Critical Speed estimée et zones : études à mener avec validation experte. Rien n'est intégré.
+
+## 9. Corrections réalisées (après validation du diagnostic)
+
+**Données confirmées par l'athlète :** les deux chronos (5 km en 30:00 le 15/10/2026, 10 km en 1:05:00 le 14/08/2026) sont des **sorties d'entraînement ordinaires**.
+
+**Périmètre :** application seulement (`app-core`, interface). **Moteurs Running, Strength, planificateur et programme inchangés.** Rien n'est modifié dans l'historique sans **confirmation explicite** de l'athlète dans l'application.
+
+| # | Correction | Où |
+|---|---|---|
+| C1 | Saisie en **trois natures**, choix obligatoire. **Sortie d'entraînement** : course réalisée, jamais une référence. **Chrono personnel** : test chronométré, case « C'était un effort maximal » obligatoire, tracé `maximalEffortDeclared`. **Course officielle** : compétition. « Distance mesurée » n'est plus cochée par défaut. À l'onboarding, les sorties passent par l'option `trainingRuns`. | `PerformanceForm.tsx`, `Setup.tsx`, `beta0-app.ts` |
+| C2 | **Requalification confirmée** (« Ce n'était pas un effort maximal ») : la référence reste dans l'historique et n'est plus transmise au moteur (champ facultatif `running.requalified`). La sortie devient une course réalisée, à sa date réelle et avec son ressenti s'il est connu. **Sans doublon** : une course du même jour et de même durée est seulement reliée. Sans confirmation, le refus est explicite et rien n'est écrit. | `running-profile.ts`, `generate.ts`, `RunningProfile.tsx` |
+| C3 | **Nouvelle tentative ciblée** des séances de Course refusées de la semaine en cours. Elle est déclenchée après une course, une sortie, une requalification ou une performance. Seuls les jours libres à partir d'aujourd'hui sont essayés. Règles appliquées : interférence M3, composition de la semaine du moteur, graine et créneau du planificateur (régénération identique). Séances planifiées, commencées ou réalisées, et semaines passées : intactes. Tracé `KAIRO.RUNNING_SESSION_RETRIED`. | `running-retry.ts` |
+| C4 | **Message nommé** : « Il manque votre dernière course réelle… une sortie d'entraînement suffit, aucun test maximal n'est nécessaire… la séance reste en attente ». Actions directes sur la carte : **Enregistrer une course réalisée**, ou **requalifier** un chrono déclaré. | `present.ts`, `common.tsx` |
+| C5 | **Capacités affichées = séances programmées.** Les séances clés sont marquées « non prévues par l'objectif » quand la composition ne les choisit pas. L'allure VO₂ affiche sa source et sa date. Mention : sans test maximal, les séances restent guidées par l'effort perçu et progressent selon les ressentis. | `RunningProfile.tsx` |
+
+**Vérification sur votre cas** (chemin réel de l'application, test `rekka/running-recovery.test.ts`) :
+- **Avant :** 2 footings refusés (`NO_REALIZED_SESSION`) ; allure VO₂ 5:49–6:11 /km tirée de la sortie de 5 km.
+- **Après les deux requalifications confirmées :**
+  - **les 2 séances sont générées et placées dans la semaine en cours** (jours libres à partir du 21/10) ;
+  - ce sont des footings de **30 min** à l'effort facile (RPE 3, domaine `easy_low`), sans allure ;
+  - Musculation identique octet pour octet ;
+  - régénération identique ; diagnostic R-A : 2 identiques, 0 divergence.
+- **La sortie de 65 min** reste dans l'historique. Datée de plus de 8 semaines, elle n'est jamais la base de durée (`NOT_RECENT`).
+- **Profil :**
+  - aucune référence maximale ;
+  - allure VO₂ « à l'effort » ;
+  - séances clés : « test récent nécessaire » ;
+  - Critical Speed absente (jamais calculée).
+- **Progression guidée par le RPE sans performance maximale** (simulation de 4 semaines, Course 3×) : footing 30:00, puis 31:00, 32:00, 33:00, au pas minimal gouverné (V23), seulement après des séances tolérées avec un ressenti connu.
+
+**Tests ajoutés :**
+- `packages/app-core/tests/rekka/running-recovery.test.ts` (17 tests) : cas réel, absence de confirmation, absence de doublon, ancienneté, conservation et remise à zéro, séance commencée, pause douleur, chrono récent seul, chronos cohérents, discordants, anciens, aucun chrono, objectif sans date, test demandé, progression RPE.
+- `apps/kairo/tests/rekka-running.test.tsx` (2 tests d'interface).
+
+**Validation :**
+- `pnpm check` : 3 020 tests réussis, 2 ignorés ;
+- build de production ;
+- E2E de production réussi (303 vérifications).
+
+**Aucun déploiement** (BÊTA ni production) sans votre accord.

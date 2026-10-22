@@ -10,11 +10,12 @@
  */
 import type { ReasonCode } from '@hybridsport/domain';
 import {
-  analyzeRunning, firstExposure, parseRunningContext, performancePace, resolveParameter, RUNNING_CODES, severePace, zRunningReference,
+  analyzeRunning, firstExposure, KEY_PREFERENCES, parseRunningContext, performancePace, resolveParameter, RUNNING_CODES, severePace, zRunningReference,
 } from '@hybridsport/running';
-import type { ConfidenceLevel, ReferenceDecision, RunningReference } from '@hybridsport/running';
+import type { ConfidenceLevel, ReferenceDecision, RunningGoal, RunningReference, RunningSessionArchetype } from '@hybridsport/running';
 import { requestAssessment, weekIndexOf, withinProgramme } from '@hybridsport/programme';
-import type { Clock } from './app.js';
+import { logFreeRun } from './app.js';
+import type { Clock, FreeRunInput } from './app.js';
 import { beta0Environment, beta0RunningGovernance } from './beta0.js';
 import { dateOf, normalizeInstant, sessionInstant, weekStartOf } from './dates.js';
 import { AppError } from './errors.js';
@@ -40,7 +41,11 @@ interface DeclaredContext {
  * - Critical Speed MESURÉE AILLEURS (laboratoire, appareil, coach) : allure, nombre d'essais, modèle déclaré.
  */
 export type DeclaredPerformance = DeclaredContext & (
-  | { readonly kind: 'RACE_RESULT' | 'TIME_TRIAL'; readonly distanceM: number; readonly durationS: number; readonly measuredCourse: boolean }
+  | {
+    readonly kind: 'RACE_RESULT' | 'TIME_TRIAL'; readonly distanceM: number; readonly durationS: number; readonly measuredCourse: boolean;
+    /** REKKA — effort maximal CONFIRMÉ par l'athlète (jamais supposé) : tracé dans les entrées de confiance du contrat. */
+    readonly maximalEffort?: boolean;
+  }
   | { readonly kind: 'CRITICAL_SPEED_TEST'; readonly paceSecPerKm: number; readonly trials: number; readonly model: string }
 );
 
@@ -50,7 +55,10 @@ export function referenceFromDeclaration(x: DeclaredPerformance, recordedAt: str
     referenceId: `declared:${x.kind}:${normalizeInstant(recordedAt)}:${String(seq)}`,
     type: x.kind,
     date: sessionInstant(x.date),
-    confidenceInputs: { protocolDeclared: x.kind === 'CRITICAL_SPEED_TEST' ? true : x.measuredCourse, conditions: x.conditions, interruptionSince: x.interruptionSince },
+    confidenceInputs: {
+      protocolDeclared: x.kind === 'CRITICAL_SPEED_TEST' ? true : x.measuredCourse, conditions: x.conditions, interruptionSince: x.interruptionSince,
+      ...(x.kind !== 'CRITICAL_SPEED_TEST' && x.maximalEffort === true ? { maximalEffortDeclared: true } : {}),
+    },
   };
   const ref = x.kind === 'CRITICAL_SPEED_TEST'
     ? { ...base, values: { speedMps: M_PER_KM / x.paceSecPerKm, trials: x.trials }, provenance: { source: 'USER_DECLARED' as const, method: x.model } }
@@ -65,6 +73,62 @@ export function declareRunningPerformance(state: AppState, clock: Clock, x: Decl
   if (!/^\d{4}-\d{2}-\d{2}$/.test(x.date) || x.date > clock.today) throw new AppError('RUNNING_REFERENCE_DATE_INVALID');
   const ref = referenceFromDeclaration(x, clock.now, state.running.references.length + 1);
   return { ...state, running: { ...state.running, references: [...state.running.references, ref] }, revision: state.revision + 1 };
+}
+
+// ——— REKKA : sortie d'entraînement (allure observée, sans prétention de performance maximale)
+
+/** Sortie d'entraînement ordinaire : course RÉALISÉE, jamais une référence de performance (VO₂, seuil, Critical Speed). */
+export interface TrainingRunInput {
+  /** Date de la sortie (AAAA-MM-JJ), jamais dans le futur. */
+  readonly date: string;
+  readonly durationS: number;
+  readonly distanceM?: number;
+  /** Ressenti, s'il est connu ; inconnu ⇒ jamais une preuve de tolérance. */
+  readonly difficulty?: FreeRunInput['difficulty'];
+}
+/** Sortie d'entraînement → course réalisée au contrat Running (même chemin que les courses hors programme). */
+export const trainingRunOf = (x: TrainingRunInput): FreeRunInput => ({
+  realizedDurationS: x.durationS, ...(x.distanceM !== undefined ? { distanceM: x.distanceM } : {}), completion: 'COMPLETED', difficulty: x.difficulty ?? 'UNKNOWN', pain: false, completedOn: x.date,
+});
+
+// ——— REKKA : requalification d'une performance déclarée en SORTIE D'ENTRAÎNEMENT
+
+/** Types requalifiables : performances déclarées par l'athlète avec distance et chrono (jamais un TEST KAIRO). */
+const REQUALIFIABLE: readonly RunningReference['type'][] = ['RACE_RESULT', 'TIME_TRIAL'];
+
+export interface RequalifyInput {
+  /** Confirmation EXPLICITE de l'athlète dans l'application : sans elle, rien n'est écrit. */
+  readonly confirmed: boolean;
+  /** Ressenti de la sortie, s'il est connu ; inconnu ⇒ jamais une preuve de tolérance (aucune progression sur cette base). */
+  readonly difficulty?: FreeRunInput['difficulty'];
+}
+
+/**
+ * Requalifie une performance DÉCLARÉE (course officielle, chrono) en sortie d'entraînement ordinaire, sur confirmation
+ * explicite : la référence reste dans l'historique mais n'est plus transmise au moteur Running (ni allure, ni seuil,
+ * ni séance clé) ; la sortie devient une course RÉALISÉE (durée, distance, date, ressenti) — celle que le moteur lit
+ * pour doser un footing, avec son ancienneté réelle. Sans doublon : une course réalisée du même jour, de même durée
+ * (et même distance si elle est connue) est seulement reliée. Rien n'est modifié dans les semaines planifiées ici.
+ */
+export function requalifyAsTrainingRun(state: AppState, clock: Clock, referenceId: string, x: RequalifyInput): AppState {
+  if (x.confirmed !== true) throw new AppError('RUNNING_REQUALIFY_NOT_CONFIRMED');
+  const ref = state.running.references.find((r) => r.referenceId === referenceId);
+  if (!ref || ref.provenance.source !== 'USER_DECLARED' || !REQUALIFIABLE.includes(ref.type)) throw new AppError('RUNNING_REQUALIFY_UNAVAILABLE');
+  if (state.running.requalified?.[referenceId]) throw new AppError('RUNNING_ALREADY_REQUALIFIED');
+  const { distanceM, durationS } = ref.values;
+  if (distanceM === undefined || durationS === undefined) throw new AppError('RUNNING_REQUALIFY_UNAVAILABLE');
+  const day = dateOf(ref.date);
+  const same = state.running.realized.find((r) => dateOf(r.completedAt) === day && r.realizedDurationS === durationS && (r.distanceM === undefined || r.distanceM === distanceM));
+  let next = state;
+  let runId = same?.sessionId;
+  if (runId === undefined) {
+    const before = new Set(state.running.realized.map((r) => r.sessionId));
+    next = logFreeRun(state, { realizedDurationS: durationS, distanceM, completion: 'COMPLETED', difficulty: x.difficulty ?? 'UNKNOWN', pain: false, completedOn: day }, clock);
+    runId = next.running.realized.find((r) => !before.has(r.sessionId))?.sessionId;
+    if (runId === undefined) throw new AppError('RUNNING_REQUALIFY_UNAVAILABLE');
+  }
+  const entry = { at: normalizeInstant(clock.now), runId, link: same ? 'existing' as const : 'created' as const };
+  return { ...next, running: { ...next.running, requalified: { ...(next.running.requalified ?? {}), [referenceId]: entry } }, revision: next.revision + (same ? 1 : 0) };
 }
 
 // ——— Lecture : ce que le moteur Running déduit des références
@@ -84,6 +148,10 @@ export interface ReferenceView {
   readonly recency: RecencyBand;
   /** Décisions pour lesquelles le moteur a RETENU cette référence. */
   readonly selectedFor: readonly ReferenceDecision[];
+  /** REKKA — requalifiée en sortie d'entraînement (plus transmise au moteur), avec la course réalisée liée. */
+  readonly requalified: { readonly at: string; readonly runId: string } | null;
+  /** REKKA — requalification proposée (performance déclarée avec distance et chrono, pas encore requalifiée). */
+  readonly requalifiable: boolean;
 }
 export interface DecisionView {
   readonly decision: ReferenceDecision;
@@ -105,6 +173,11 @@ export interface RunningProfileView {
   readonly severePace: { readonly status: 'pace'; readonly minSecPerKm: number; readonly maxSecPerKm: number; readonly referenceId: string; readonly confidence: ConfidenceLevel } | { readonly status: 'effort'; readonly causes: readonly string[] };
   /** Accès aux premières séances clés (règle du registre : test récent exigé). */
   readonly keySessions: { readonly threshold: KeySessionAccess; readonly severe: KeySessionAccess };
+  /**
+   * REKKA — séances clés que la composition de la semaine du moteur PRÉVOIT pour l'objectif (table §R, préférence avant
+   * le footing) : « autorisées par vos données » n'est jamais présenté comme « programmées ».
+   */
+  readonly plannedByGoal: { readonly threshold: boolean; readonly severe: boolean };
   /** Repères d'effort par domaine (paramètre gouverné), uniquement s'il est résolu dans le mode. */
   readonly effortDomains: { readonly status: 'approved' | 'candidate'; readonly bands: Readonly<Record<string, { readonly min?: number; readonly max?: number }>> } | { readonly status: 'unavailable' };
   /** Bandes de récence gouvernées (semaines), si résolues. */
@@ -114,6 +187,14 @@ export interface RunningProfileView {
   /** Évaluation Running (TEST) du programme : la plus récente. */
   readonly test: { readonly status: string; readonly scheduledWeek: number | null } | null;
   readonly reasons: readonly ReasonCode[];
+}
+
+/** Archétype clé prévu par la composition pour l'objectif : présent dans la table §R AVANT le footing (EASY). */
+function plannedByGoal(goal: RunningGoal): { threshold: boolean; severe: boolean } {
+  const prefs = KEY_PREFERENCES[goal];
+  const easy = prefs.indexOf('EASY');
+  const before = (a: RunningSessionArchetype) => { const i = prefs.indexOf(a); return i >= 0 && (easy < 0 || i < easy); };
+  return { threshold: before('THRESHOLD'), severe: before('SEVERE') || before('SHORT_INTERVAL') };
 }
 
 const PROFILE_DECISIONS: readonly ReferenceDecision[] = ['INTENSITY_TARGETING', 'THRESHOLD_BOUNDARY', 'SEVERE_DOMAIN', 'RACE_SPECIFIC_PACE'];
@@ -145,6 +226,8 @@ export function selectRunningProfile(state: AppState, today: string): RunningPro
     trials: r.values.trials ?? null, method: r.provenance.method ?? null,
     recency: r.date > now ? 'FUTURE' : recencyOf(r.referenceId),
     selectedFor: PROFILE_DECISIONS.filter((d) => sel(d)?.selected?.referenceId === r.referenceId),
+    requalified: (() => { const q = state.running.requalified?.[r.referenceId]; return q ? { at: q.at, runId: q.runId } : null; })(),
+    requalifiable: state.running.requalified?.[r.referenceId] === undefined && r.provenance.source === 'USER_DECLARED' && REQUALIFIABLE.includes(r.type) && r.values.distanceM !== undefined && r.values.durationS !== undefined,
   }));
   const cs = references.find((r) => r.type === 'CRITICAL_SPEED_TEST' && r.paceSecPerKm !== null);
   const paceOn = analysis.capabilities.find((c) => c.capability === 'paceTargets')?.enabled === true;
@@ -169,6 +252,7 @@ export function selectRunningProfile(state: AppState, today: string): RunningPro
       ? { status: 'pace', minSecPerKm: pace.secPerKm.min, maxSecPerKm: pace.secPerKm.max, referenceId: pace.referenceId, confidence: pace.confidence }
       : { status: 'effort', causes: [...pace.causes] },
     keySessions: { threshold: fe('THRESHOLD'), severe: fe('SEVERE') },
+    plannedByGoal: plannedByGoal(p.running.goal),
     effortDomains: rpe.status === 'resolved' && Object.keys(bands).length > 0 ? { status: rpe.candidate ? 'candidate' : 'approved', bands } : { status: 'unavailable' },
     recencyWeeks: typeof rv?.recentMaxWeeks === 'number' && typeof rv.agingMaxWeeks === 'number' ? { recent: rv.recentMaxWeeks, aging: rv.agingMaxWeeks } : null,
     performanceModel: analysis.performanceModel.status === 'available' ? { status: 'available' } : { status: 'unavailable', cause: analysis.performanceModel.cause },

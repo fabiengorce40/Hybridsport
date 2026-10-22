@@ -60,6 +60,7 @@ describe('Profil Course : ajout d’une performance au clavier numérique', () =
   function add(distance: string, chrono: { h?: string; m: string; s: string }) {
     const f = openForm();
     fireEvent.click(f.getByRole('radio', { name: /^Chrono personnel/ }));
+    fireEvent.click(f.getByLabelText(/effort maximal/));
     fireEvent.click(f.getByRole('radio', { name: distance }));
     if (chrono.h !== undefined) fireEvent.change(f.getByLabelText('Chrono : heures'), { target: { value: chrono.h } });
     fireEvent.change(f.getByLabelText('Chrono : minutes'), { target: { value: chrono.m } });
@@ -107,6 +108,12 @@ describe('Profil Course : ajout d’une performance au clavier numérique', () =
     const f = openForm();
     fireEvent.click(f.getByRole('radio', { name: '10 km' }));
     fireEvent.click(f.getByRole('button', { name: 'Ajouter cette performance' }));
+    // REKKA — aucun type par défaut : le choix est obligatoire.
+    expect(f.getByText('Choisissez de quel type de course il s’agit.')).toBeTruthy();
+    fireEvent.click(f.getByRole('radio', { name: /^Chrono personnel/ }));
+    fireEvent.click(f.getByRole('button', { name: 'Ajouter cette performance' }));
+    expect(f.getByText(/Un chrono personnel est un effort maximal/)).toBeTruthy();
+    fireEvent.click(f.getByLabelText(/effort maximal/));
     expect(f.getByText('Indiquez le chrono.')).toBeTruthy();
     expect(f.getByText('Indiquez la date de réalisation.')).toBeTruthy();
     fireEvent.change(f.getByLabelText('Chrono : minutes'), { target: { value: '45' } });

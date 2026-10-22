@@ -24,7 +24,8 @@ describe('présentation Strength S1', () => {
       notPlanned: { category, display, reason, triedDate: null },
     });
     const anchor = notPlannedText(v('running', 'missing_data', { code: 'DOSE.RUNNING.DOSE_ANCHOR_UNAVAILABLE', params: { cause: 'NO_REALIZED_SESSION' } }));
-    expect(anchor).toBe('Une information manque pour construire cette séance. Enregistrez une course réalisée : la course reprend ce que vous avez réellement fait.');
+    // REKKA — information nommée, raison, ce qui suffit (une sortie ordinaire) et demande conservée.
+    expect(anchor).toBe('Une information manque pour construire cette séance. Il manque votre dernière course réelle (durée, et si possible distance et date) : le footing reprend ce que vous avez vraiment couru, sans durée inventée. Une sortie d’entraînement suffit, aucun test maximal n’est nécessaire. La séance reste en attente et sera planifiée dès que cette course sera enregistrée.');
     expect(anchor).not.toMatch(/règles/);
     expect(notPlannedText(v('running', 'missing_data', { code: 'DOSE.RUNNING.TEST_REFUSED', params: { cause: 'OBSERVED_PACE_UNAVAILABLE' } }))).toMatch(/course récente avec sa distance/);
     const tried = (t: string) => ({ code: 'PLAN.HYROX.H2_NO_STRUCTURE', params: { role: 'x', tried: [t] } });

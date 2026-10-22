@@ -3,11 +3,12 @@
  * Tout ce qui est affiché vient de `selectRunningProfile` (app-core → moteur) ; aucune métrique calculée ici.
  */
 import { useState } from 'react';
-import { declareRunningPerformance, paceLabel, RUNNING_GOAL_LABELS, requestRunningTest, selectRunningProfile } from '@hybridsport/app-core';
-import type { DeclaredPerformance, KeySessionAccess, ReferenceView, RunningProfileView } from '@hybridsport/app-core';
+import { declarePerformanceAndRetry, DIFFICULTY_LABELS, logTrainingRun, paceLabel, requalifyRunningPerformance, RUNNING_GOAL_LABELS, requestRunningTest, selectRunningProfile } from '@hybridsport/app-core';
+import type { DeclaredPerformance, Feedback, KeySessionAccess, ReferenceView, RunningProfileView } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
 import { formatDate, Notice } from '../ui.js';
 import { PerformanceForm } from './PerformanceForm.js';
+import type { PerformanceEntry } from './PerformanceForm.js';
 import { FreeRunEntry } from './FreeRunForm.js';
 import { formatChrono } from './duration.js';
 
@@ -40,18 +41,47 @@ export function performanceText(x: DeclaredPerformance): string {
     ? `Critical Speed ${formatChrono(x.paceSecPerKm)} /km`
     : `${x.kind === 'RACE_RESULT' ? 'course' : 'chrono'} ${km(x.distanceM)} en ${formatChrono(x.durationS)}`;
 }
+/** Résumé d'une saisie (performance ou sortie d'entraînement). */
+export function entryText(x: PerformanceEntry): string {
+  return x.type === 'performance' ? performanceText(x.value) : `sortie d’entraînement ${km(x.value.distanceM ?? 0)} en ${formatChrono(x.value.durationS)}`;
+}
 
 const km = (m: number): string => (m === 21097.5 ? 'Semi' : m === 42195 ? 'Marathon' : `${String(Math.round(m) / 1000).replace('.', ',')} km`);
 const recency = (r: ReferenceView, w: RunningProfileView['recencyWeeks']): string => ({
   RECENT: `récente${w ? ` (≤ ${String(w.recent)} sem.)` : ''}`, AGING: `vieillissante${w ? ` (≤ ${String(w.aging)} sem.)` : ''}`, STALE: 'ancienne', FUTURE: 'date future', UNKNOWN: 'fraîcheur inconnue',
 }[r.recency]);
 const keyText = (k: KeySessionAccess): string => (k.status === 'available' ? 'disponibles' : k.status === 'test_required' ? 'un test récent est nécessaire' : 'non disponibles');
+/** REKKA — ce que les données autorisent n'est jamais présenté comme programmé : la composition de l'objectif décide. */
+const plannedText = (planned: boolean, goal: string): string => (planned ? '' : ` · non prévues par l’objectif « ${goal} » (footings)`);
+
+/** REKKA — requalification CONFIRMÉE d'une performance déclarée en sortie d'entraînement (rien sans confirmation). */
+export function RequalifyAction({ r }: { r: ReferenceView }) {
+  const store = useStore();
+  const [open, setOpen] = useState(false);
+  const [feel, setFeel] = useState<Feedback['difficulty'] | 'UNKNOWN'>('UNKNOWN');
+  if (!open) return <button type="button" className="btn ghost" data-requalify={r.referenceId} onClick={() => setOpen(true)}>Ce n’était pas un effort maximal</button>;
+  return (
+    <div className="stack" role="group" aria-label="Requalifier en sortie d’entraînement" data-requalify-confirm>
+      <p className="small" style={{ margin: 0 }}>Cette course deviendra une <b>sortie d’entraînement</b> : elle restera dans votre historique, ne servira plus de référence (allure VO₂, seuil, séances clés) et servira de base aux footings selon son ancienneté. Les séances de course refusées cette semaine seront retentées.</p>
+      <label className="field">Ressenti de cette sortie
+        <select value={feel} onChange={(e) => setFeel(e.target.value as typeof feel)}>
+          <option value="UNKNOWN">Je ne sais plus</option>
+          {Object.entries(DIFFICULTY_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+        </select>
+      </label>
+      <div className="row">
+        <button type="button" className="btn secondary" onClick={() => setOpen(false)}>Annuler</button>
+        <button type="button" className="btn primary block" onClick={() => { if (store.apply((s, c) => requalifyRunningPerformance(s, c, r.referenceId, { confirmed: true, ...(feel !== 'UNKNOWN' ? { difficulty: feel } : {}) }))) setOpen(false); }}>Confirmer : c’était une sortie</button>
+      </div>
+    </div>
+  );
+}
 
 function ReferenceRow({ r, w, fresh = false }: { r: ReferenceView; w: RunningProfileView['recencyWeeks']; fresh?: boolean }) {
   return (
     <div className={`card ${fresh ? 'accent' : ''}`} style={{ gap: 4 }} aria-label={`${TYPE_LABELS[r.type] ?? r.type} du ${formatDate(r.date.slice(0, 10))}`}>
       <div className="row between">
-        <strong>{TYPE_LABELS[r.type] ?? r.type}{r.distanceM !== null ? ` · ${km(r.distanceM)}` : ''}</strong>
+        <strong>{r.requalified ? 'Sortie d’entraînement' : TYPE_LABELS[r.type] ?? r.type}{r.distanceM !== null ? ` · ${km(r.distanceM)}` : ''}</strong>
         <span className={`badge ${r.recency === 'RECENT' ? 'done' : 'neutral'}`}>{recency(r, w)}</span>
       </div>
       <div className="small num">
@@ -60,24 +90,29 @@ function ReferenceRow({ r, w, fresh = false }: { r: ReferenceView; w: RunningPro
         {r.trials !== null ? ` · ${String(r.trials)} essais` : ''}
       </div>
       <div className="tiny">{formatDate(r.date.slice(0, 10))} · {SOURCE_LABELS[r.source] ?? r.source}{r.selectedFor.length > 0 ? ` · retenue pour : ${r.selectedFor.map((d) => DECISION_LABELS[d] ?? d).join(', ')}` : ''}</div>
+      {r.requalified && <div className="tiny" data-requalified>Requalifiée en sortie d’entraînement le {formatDate(r.requalified.at.slice(0, 10))} : n’est plus une référence de performance.</div>}
+      {r.requalifiable && <RequalifyAction r={r} />}
     </div>
   );
 }
 
 /** Ce que le moteur déduit des références (uniquement ses résultats, sinon « données manquantes »). */
-export function ComputedProfile({ v }: { v: RunningProfileView }) {
+export function ComputedProfile({ v, goal }: { v: RunningProfileView; goal?: string }) {
   const pace = v.severePace;
+  const anchor = pace.status === 'pace' ? v.references.find((r) => r.referenceId === pace.referenceId) : undefined;
+  const g = goal ?? '';
   return (
     <div className="stack-3">
       <div className="card">
         <h3>Séances clés</h3>
-        <div className="small">Seuil : {keyText(v.keySessions.threshold)}</div>
-        <div className="small">VO₂ / intervalles : {keyText(v.keySessions.severe)}</div>
+        <div className="small">Seuil : {keyText(v.keySessions.threshold)}{plannedText(v.plannedByGoal.threshold, g)}</div>
+        <div className="small">VO₂ / intervalles : {keyText(v.keySessions.severe)}{plannedText(v.plannedByGoal.severe, g)}</div>
+        <div className="tiny">Sans test maximal, vos séances restent guidées par l’effort perçu et progressent selon vos ressentis.</div>
       </div>
       <div className="card">
         <h3>Allure des séances VO₂</h3>
         {pace.status === 'pace'
-          ? <div className="small num"><b>{paceLabel(pace.minSecPerKm)}–{paceLabel(pace.maxSecPerKm)} /km</b> · {CONFIDENCE_LABELS[pace.confidence]}</div>
+          ? <div className="small num"><b>{paceLabel(pace.minSecPerKm)}–{paceLabel(pace.maxSecPerKm)} /km</b> · {CONFIDENCE_LABELS[pace.confidence]}{anchor ? ` · estimée depuis votre ${(TYPE_LABELS[anchor.type] ?? anchor.type).toLowerCase()} du ${formatDate(anchor.date.slice(0, 10))}` : ''}</div>
           : <div className="small">Non calculable : {pace.causes.map((c) => PACE_CAUSES[c] ?? c).join(' ; ')}. Les séances restent guidées par l’effort.</div>}
       </div>
       <div className="card">
@@ -114,15 +149,17 @@ export function RunningProfileScreen({ onBack }: { onBack?: () => void }) {
   const p = store.state.profile;
   const goal = store.state.programmeState?.definition.goals.find((g) => g.sport === 'running');
   if (!v || !p) return <div className="screen"><h1 className="screen-title">Profil Course</h1><div className="empty">La course n’est pas activée.</div></div>;
-  const add = (x: DeclaredPerformance) => {
+  const add = (x: PerformanceEntry) => {
     const before = new Set(store.state.running.references.map((r) => r.referenceId));
     let id = '';
+    // REKKA — sortie d'entraînement : course réalisée (jamais une référence) ; dans les deux cas, refus de la semaine retentés.
     const ok = store.apply((s, c) => {
-      const next = declareRunningPerformance(s, c, x);
+      if (x.type === 'training') return logTrainingRun(s, c, x.value);
+      const next = declarePerformanceAndRetry(s, c, x.value);
       id = next.running.references.find((r) => !before.has(r.referenceId))?.referenceId ?? '';
       return next;
     });
-    if (ok) { setAdding(false); setAdded({ text: performanceText(x), id }); }
+    if (ok) { setAdding(false); setAdded({ text: entryText(x), id }); }
   };
   const testOpen = v.test?.status === 'requested' || v.test?.status === 'scheduled';
   return (
@@ -131,7 +168,7 @@ export function RunningProfileScreen({ onBack }: { onBack?: () => void }) {
 
       <div className="section-title">Niveau actuel</div>
       {v.references.length === 0 && <div className="empty small">Aucune performance enregistrée.</div>}
-      {added && <Notice><span role="status">Performance ajoutée : {added.text}.</span></Notice>}
+      {added && <Notice><span role="status">{added.id === '' ? 'Sortie ajoutée' : 'Performance ajoutée'} : {added.text}.</span></Notice>}
       {v.references.map((r) => <ReferenceRow key={r.referenceId} r={r} w={v.recencyWeeks} fresh={r.referenceId === added?.id} />)}
       {adding ? <PerformanceForm today={today} onAdd={add} onCancel={() => setAdding(false)} /> : <button className="btn secondary" onClick={() => setAdding(true)}>Ajouter une performance</button>}
       {store.state.programmeState && (
@@ -153,7 +190,7 @@ export function RunningProfileScreen({ onBack }: { onBack?: () => void }) {
       </div>
 
       <div className="section-title">Ce que KAIRO en déduit</div>
-      <ComputedProfile v={v} />
+      <ComputedProfile v={v} goal={RUNNING_GOAL_LABELS[p.running.goal]} />
     </div>
   );
 }

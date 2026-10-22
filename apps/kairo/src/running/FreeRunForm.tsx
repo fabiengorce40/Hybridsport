@@ -5,7 +5,7 @@
  * saisies ; une course n'est jamais transformée en performance de référence.
  */
 import { useState } from 'react';
-import { deleteFreeRun, DIFFICULTY_LABELS, durationLabel, FREE_RUN_NOTE_MAX, logFreeRun, PAIN_AREAS, paceLabel, programmeRunsOn, updateFreeRun } from '@hybridsport/app-core';
+import { deleteFreeRun, DIFFICULTY_LABELS, durationLabel, FREE_RUN_NOTE_MAX, logFreeRun, PAIN_AREAS, paceLabel, programmeRunsOn, retryRefusedRunning, updateFreeRun } from '@hybridsport/app-core';
 import type { Feedback, FreeRunType, FreeRunView } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
 import { formatDate } from '../ui.js';
@@ -90,9 +90,10 @@ export function FreeRunForm({ initial, onDone, onCancel }: { initial?: FreeRunVi
     if (!d.ok || feel === '' || (!start && !dateOnly && !keepUnknownDate)) return;
     const when = start ? { startedAt: start } : keepUnknownDate ? {} : { completedOn: date };
     const common = { realizedDurationS: d.seconds, difficulty: feel, ...when, ...(distanceM !== undefined ? { distanceM } : {}), ...(type !== undefined ? { type } : {}), ...(sameDay && extra ? { confirmedExtra: true } : {}) };
+    // REKKA — la course réalisée est la donnée qui manquait souvent aux footings : séances refusées retentées aussitôt.
     const ok = initial
-      ? store.apply((s, c) => updateFreeRun(s, initial.sessionId, { ...common, note }, c))
-      : store.apply((s, c) => logFreeRun(s, { ...common, completion: 'COMPLETED', pain, ...(pain ? { painAreas: areas } : {}), ...(note.trim() !== '' ? { note } : {}) }, c));
+      ? store.apply((s, c) => retryRefusedRunning(updateFreeRun(s, initial.sessionId, { ...common, note }, c), c).state)
+      : store.apply((s, c) => retryRefusedRunning(logFreeRun(s, { ...common, completion: 'COMPLETED', pain, ...(pain ? { painAreas: areas } : {}), ...(note.trim() !== '' ? { note } : {}) }, c), c).state);
     if (ok) onDone(`${initial ? 'Course corrigée' : 'Course enregistrée'} : ${durationLabel(d.seconds)}${distanceM !== undefined ? ` · ${(distanceM / M_PER_KM).toFixed(1)} km` : ''}${pace !== null ? ` · ${paceLabel(pace)} /km` : ''}.`);
   };
   const title = initial ? 'Corriger la course' : 'Ajouter une course';

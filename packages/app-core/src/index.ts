@@ -16,6 +16,7 @@ export * from './beta0.js';
 export * from './beta0-app.js';
 export * from './run-player.js';
 export * from './running-profile.js';
+export * from './running-retry.js';
 export * from './history.js';
 export * from './ct-workout.js';
 export * from './hr-workout.js';

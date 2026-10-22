@@ -25,8 +25,8 @@ import { buildPorts, clockOf, recentOf } from './planning.js';
 import { manualPlacementConflicts } from '@hybridsport/planner';
 import { strengthWeekBoundary } from './progression.js';
 import { compactHistory } from './history.js';
-import { declareRunningPerformance } from './running-profile.js';
-import type { DeclaredPerformance } from './running-profile.js';
+import { declareRunningPerformance, trainingRunOf } from './running-profile.js';
+import type { DeclaredPerformance, TrainingRunInput } from './running-profile.js';
 import type { ProgrammeEnvironment } from './programme.js';
 import { activePainPause } from './weeks.js';
 import { CHECKIN_HISTORY_MAX, evaluateCheckIn, painAnswerOf, zCheckInInput } from './checkin.js';
@@ -57,6 +57,11 @@ export interface Beta0ProgrammeOptions {
   };
   /** Performances récentes OBSERVÉES (profil Course) : références du moteur Running, jamais l'objectif. */
   readonly performances?: readonly DeclaredPerformance[];
+  /**
+   * REKKA — SORTIES D'ENTRAÎNEMENT ordinaires déclarées à l'onboarding (jamais un effort maximal) : courses RÉALISÉES
+   * (durée, distance, date, ressenti s'il est connu), lues par le moteur Running avec leur ancienneté réelle.
+   */
+  readonly trainingRuns?: readonly TrainingRunInput[];
   /** « Je n'ai pas de chrono récent » : TEST demandé au programme dès la première semaine (mécanisme d'évaluation). */
   readonly requestTest?: boolean;
 }
@@ -109,6 +114,7 @@ export function createBeta0Programme(state: AppState, input: ProfileInput, clock
     s = logFreeRun(s, { realizedDurationS: o.lastRun.realizedDurationS, completion: 'COMPLETED', difficulty: o.lastRun.difficulty, pain: false, ...(o.lastRun.distanceM !== undefined ? { distanceM: o.lastRun.distanceM } : {}), ...(o.lastRun.date !== undefined ? { completedOn: o.lastRun.date } : {}) }, clock, { dateUnknown: o.lastRun.date === undefined });
   }
   if (profile.running.enabled) for (const x of o.performances ?? []) s = declareRunningPerformance(s, clock, x);
+  if (profile.running.enabled) for (const x of o.trainingRuns ?? []) s = logFreeRun(s, trainingRunOf(x), clock);
   return startFromProfile(s, clock, o, weekStartOf(clock.today), env);
 }
 
@@ -161,6 +167,7 @@ export function recreateBeta0Programme(state: AppState, input: ProfileInput, clo
   const programmeLogs = Object.fromEntries(Object.entries(state.programmeLogs).filter(([, l]) => l.finishedAt !== undefined));
   let s: AppState = { ...state, profile, programmeLogs };
   if (profile.running.enabled) for (const x of o.performances ?? []) s = declareRunningPerformance(s, clock, x);
+  if (profile.running.enabled) for (const x of o.trainingRuns ?? []) s = logFreeRun(s, trainingRunOf(x), clock);
   const next = startFromProfile(s, clock, o, thisWeek, env, carried);
   const nps = next.programmeState;
   if (!nps) return next;
@@ -207,7 +214,7 @@ export function resetBeta0Data(state: AppState, clock: Clock, confirmation: stri
   const clean: AppState = {
     ...emptyState(), profile, safety: state.safety, crosstraining: state.crosstraining, hyrox: state.hyrox,
     // RC3.3 — commentaires des courses libres conservées (annotation de ces seules courses).
-    running: { realized: kept.freeRuns, references: kept.references, ...(state.running.notes ? { notes: Object.fromEntries(Object.entries(state.running.notes).filter(([id]) => kept.freeRuns.some((r) => r.sessionId === id))) } : {}) }, revision: state.revision + 1,
+    running: { realized: kept.freeRuns, references: kept.references, ...(state.running.requalified ? { requalified: Object.fromEntries(Object.entries(state.running.requalified).filter(([id, q]) => kept.references.some((r) => r.referenceId === id) && kept.freeRuns.some((r) => r.sessionId === q.runId))) } : {}), ...(state.running.notes ? { notes: Object.fromEntries(Object.entries(state.running.notes).filter(([id]) => kept.freeRuns.some((r) => r.sessionId === id))) } : {}) }, revision: state.revision + 1,
   };
   const next = startFromProfile(clean, clock, targetDate ? { runningTargetDate: targetDate } : {}, weekStartOf(clock.today), env);
   const nps = next.programmeState;
