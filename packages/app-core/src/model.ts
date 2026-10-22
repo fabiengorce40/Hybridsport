@@ -456,6 +456,13 @@ export const zAppState = z.object({
      * Absent ⇒ toutes les courses « Non précisé », date réelle (états antérieurs inchangés).
      */
     freeRunMeta: z.record(z.string(), z.object({ type: z.enum(FREE_RUN_TYPES).optional(), dateUnknown: z.literal(true).optional() }).strict()).optional(),
+    /**
+     * REKKA (Course) — performances déclarées REQUALIFIÉES par l'athlète en SORTIES D'ENTRAÎNEMENT, par identifiant de
+     * référence : la référence reste dans l'historique (jamais effacée) mais n'est plus transmise au moteur Running ;
+     * `runId` : course réalisée correspondante (créée, ou déjà enregistrée et seulement reliée — jamais de doublon).
+     * Écrit seulement sur confirmation explicite. Absent ⇒ aucune requalification (états antérieurs inchangés).
+     */
+    requalified: z.record(z.string(), z.object({ at: instant, runId: z.string().min(1), link: z.enum(['created', 'existing']) }).strict()).optional(),
   }).strict(),
   /**
    * Cross-training (C2) : séances réalisées, conservées TELLES QUELLES (complétion déclarée comprise). Leur contrat est

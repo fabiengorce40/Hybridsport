@@ -1,5 +1,6 @@
 /** Lectures et composants communs Beta 0 (présentation uniquement : projection de `selectBeta0Week`). */
-import { approxMinutes, exerciseLabel, selectBeta0Week } from '@hybridsport/app-core';
+import { useState } from 'react';
+import { approxMinutes, exerciseLabel, selectBeta0Week, selectRunningProfile } from '@hybridsport/app-core';
 import type { AppState, Beta0WeekView, SessionView } from '@hybridsport/app-core';
 import { manualStartAssessment } from '@hybridsport/app-core';
 import { useStartFlow } from '../../precheck/PreSessionCheck.js';
@@ -7,6 +8,8 @@ import { arbitrationText, globalPlacementText, interferenceWarningText, sessionT
 import { useStore } from '../../store.js';
 import { formatDate, Notice } from '../../ui.js';
 import { blockCardText, fullSessionCardText, isBlock, isFullC4 } from '../../field/BlockScope.js';
+import { FreeRunForm } from '../../running/FreeRunForm.js';
+import { RequalifyAction } from '../../running/RunningProfile.js';
 import type { DisplayStatus } from '../../present.js';
 
 export interface SessionItemView extends SessionView { readonly display: DisplayStatus }
@@ -98,6 +101,7 @@ export function SessionCard0({ v, onOpen, highlight = false, dateLabel }: { v: S
       <div className="card" aria-label={`${sportName(v.sport)} non planifiée`}>
         <div className="row between"><span className="small muted">{sportName(v.sport)}</span><StatusPill status="not_planned" /></div>
         <div className="small">{notPlannedText(v)}</div>
+        {v.sport === 'running' && v.notPlanned?.reason?.code === 'DOSE.RUNNING.DOSE_ANCHOR_UNAVAILABLE' && <MissingRunActions />}
       </div>
     );
   }
@@ -120,6 +124,32 @@ export function SessionCard0({ v, onOpen, highlight = false, dateLabel }: { v: S
       {v.globalPlacement && <div className="tiny muted" data-g5-moved>{globalPlacementText(v, formatDate)}</div>}
       {qualityShortText(v.quality?.verdict) && <div className="tiny muted" data-quality={v.quality?.verdict}>{qualityShortText(v.quality?.verdict)}</div>}
     </button>
+  );
+}
+
+/**
+ * REKKA — course réelle manquante : actions DIRECTES sur la carte. Enregistrer une course réalisée (sortie ordinaire),
+ * ou requalifier un chrono déclaré qui était en fait une sortie (confirmation explicite). Les refus sont retentés aussitôt.
+ */
+function MissingRunActions() {
+  const store = useStore();
+  const [adding, setAdding] = useState(false);
+  const [done, setDone] = useState<string | null>(null);
+  const requalifiable = selectRunningProfile(store.state, store.clock().today)?.references.filter((r) => r.requalifiable) ?? [];
+  return (
+    <div className="stack" data-missing-run>
+      {done && <div className="tiny" role="status">{done}</div>}
+      {adding
+        ? <FreeRunForm onDone={(t) => { setAdding(false); setDone(t); }} onCancel={() => setAdding(false)} />
+        : <button type="button" className="btn secondary" onClick={() => setAdding(true)}>Enregistrer une course réalisée</button>}
+      {requalifiable.length > 0 && <div className="tiny">Un chrono déclaré était en fait une sortie d’entraînement ? Requalifiez-le :</div>}
+      {requalifiable.map((r) => (
+        <div key={r.referenceId} className="row between wrap small">
+          <span>{r.distanceM !== null ? `${String(r.distanceM / 1000).replace('.', ',')} km` : ''} du {formatDate(r.date.slice(0, 10))}</span>
+          <RequalifyAction r={r} />
+        </div>
+      ))}
+    </div>
   );
 }
 

@@ -83,7 +83,8 @@ export const NOT_PLANNED_MESSAGES: Readonly<Record<string, string>> = {
 };
 /** Précisions connues pour certaines raisons (aucun code affiché). */
 const REASON_HINTS: Readonly<Record<string, string>> = {
-  'DOSE.RUNNING.DOSE_ANCHOR_UNAVAILABLE': 'Enregistrez une course réalisée : la course reprend ce que vous avez réellement fait.',
+  // REKKA — information nommée, raison, et ce qui suffit (une sortie ordinaire, jamais un test maximal exigé).
+  'DOSE.RUNNING.DOSE_ANCHOR_UNAVAILABLE': 'Il manque votre dernière course réelle (durée, et si possible distance et date) : le footing reprend ce que vous avez vraiment couru, sans durée inventée. Une sortie d’entraînement suffit, aucun test maximal n’est nécessaire. La séance reste en attente et sera planifiée dès que cette course sera enregistrée.',
   'DOSE.RUNNING.TEST_REFUSED': 'Enregistrez une course récente avec sa distance : elle sert à estimer la durée du test.',
   'DOSE.RUNNING.STRUCTURE_UNAVAILABLE': 'La structure de votre dernière séance de ce type n’a pas été enregistrée : elle ne peut pas être reprise.',
   'DOSE.RUNNING.FIRST_EXPOSURE_REFUSED': 'Un test récent est d’abord nécessaire : demandez-le depuis le profil Course.',

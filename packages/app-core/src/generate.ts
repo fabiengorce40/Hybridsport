@@ -151,7 +151,8 @@ export function runningContext(state: AppState, p: Profile, entry: Pick<PlanEntr
     population: { level: p.running.population, hybrid: p.strength.enabled || p.crosstraining.enabled || p.hyrox.enabled },
     goal: { type: p.running.goal },
     returnState: { state: p.running.returnState, postReturnSessions: returning && returnAt ? realized.filter((s) => s.completedAt >= returnAt).length : 0 },
-    references: state.running.references.filter((r) => r.date <= now),
+    // REKKA — une performance requalifiée en sortie d'entraînement n'est jamais une référence (elle reste dans l'historique).
+    references: state.running.references.filter((r) => r.date <= now && state.running.requalified?.[r.referenceId] === undefined),
     exposures: [...byArch].map(([archetype, v]) => ({ archetype: archetype as 'EASY', lastAt: v.lastAt, count: v.count })),
     ...(returning && returnAt ? { recentLoad: { returnStartedAt: returnAt, dimensions: [] } } : {}),
     // RC4.3 — courses libres : origine FOURNIE au moteur (A′) et type déclaré appliqué au seul contexte (jamais persisté).

@@ -180,6 +180,7 @@ describe('Profil Course : niveau actuel, objectif, TEST', () => {
     click('Ajouter une performance');
     const form = within(screen.getByLabelText('Ajouter une performance'));
     fireEvent.click(form.getByRole('radio', { name: o.kind }));
+    if (form.queryByLabelText(/effort maximal/)) fireEvent.click(form.getByLabelText(/effort maximal/));
     fireEvent.click(form.getByRole('radio', { name: o.distance }));
     if (o.chrono.h !== undefined) fireEvent.change(form.getByLabelText('Chrono : heures'), { target: { value: o.chrono.h } });
     fireEvent.change(form.getByLabelText('Chrono : minutes'), { target: { value: o.chrono.m } });
