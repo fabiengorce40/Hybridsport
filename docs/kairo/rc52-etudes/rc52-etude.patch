@@ -1,0 +1,178 @@
+diff --git a/packages/app-core/src/progression.ts b/packages/app-core/src/progression.ts
+index 6ef0df1..0eb2f2e 100644
+--- a/packages/app-core/src/progression.ts
++++ b/packages/app-core/src/progression.ts
+@@ -120,9 +120,13 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
+       tracks.set(c.track.trackId, c.track);
+       reasons.push(...c.reasons);
+     } else if (role === 'accessory' && slot?.trackable && performed.length > 0 && !pain) {
+-      const k = `${archetypeId}/${slot.id}/${e.id}`;
++      // RC5.2 C (étude) — accessoires communs A/B : compte et track PARTAGÉS par famille d'archétype et emplacement.
++      const shared = ['C', 'CA'].includes(process.env.RC52_VARIANT ?? '');
++      const fam = (a: string) => (shared ? a.replace(/_[ab]$/, '') : a);
++      const suf = (z: string) => (shared ? z.split('.').slice(1).join('.') : z);
++      const k = `${fam(archetypeId)}/${suf(slot.id)}/${e.id}`;
+       counts[k] = (counts[k] ?? 0) + 1;
+-      const hasTracked = [...tracks.values()].some((t) => t.tier === 'tracked' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === slot.id);
++      const hasTracked = [...tracks.values()].some((t) => t.tier === 'tracked' && t.status !== 'closed' && fam(t.archetypeId) === fam(archetypeId) && suf(t.slotId) === suf(slot.id));
+       if ((counts[k] ?? 0) >= params['strength.tracks'].tier2AutoCreateAfter && !hasTracked) {
+         const model = progressionModelFor(e, role, p.level, performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
+         const c = createTrack({ tier: 'tracked', archetypeId, slotId: slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role }, params);
+diff --git a/packages/app-core/src/provisional-content.ts b/packages/app-core/src/provisional-content.ts
+index 7639154..8b151b5 100644
+--- a/packages/app-core/src/provisional-content.ts
++++ b/packages/app-core/src/provisional-content.ts
+@@ -47,7 +47,7 @@ let running: ContentSource | undefined;
+  * conservés), catalogue de test Strength F6.
+  */
+ export function strengthContent(): ContentSource {
+-  strength ??= load(strengthRc51RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-rc51-0.8.0');
++  strength ??= process.env.RC52_VARIANT === 'REF' ? load(strengthL1B4RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-l1b4-0.7.0') : load(strengthRc51RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-rc51-0.8.0');
+   return strength;
+ }
+ 
+diff --git a/packages/app-core/tests/rc4-audit/rc4-sim.ts b/packages/app-core/tests/rc4-audit/rc4-sim.ts
+index 5556c02..46116fc 100644
+--- a/packages/app-core/tests/rc4-audit/rc4-sim.ts
++++ b/packages/app-core/tests/rc4-audit/rc4-sim.ts
+@@ -18,7 +18,7 @@ import {
+ import type { AppState, CheckInInput, Clock, ProfileInput, SessionView } from '../../src/index.js';
+ 
+ // technical-constant: TEST_ONLY — lundis des 6 semaines simulées
+-export const MONS = ['2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26', '2026-11-02', '2026-11-09'] as const;
++export const MONS = ['2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26', '2026-11-02', '2026-11-09', '2026-11-16', '2026-11-23', '2026-11-30', '2026-12-07', '2026-12-14', '2026-12-21'] as const;
+ const at = (d: string, hm: string): Clock => ({ today: d, now: `${d}T${hm}:00.000Z` });
+ const eq = (id: string): string[] => [...(EQUIPMENT_PRESETS.find((p) => p.id === id)?.equipment ?? [])];
+ // technical-constant: TEST_ONLY — allure fictive de saisie (s/km) pour produire une distance réalisée, et charge de départ (kg)
+diff --git a/packages/app-core/tests/rc46/quality-bench.ts b/packages/app-core/tests/rc46/quality-bench.ts
+index f0683e1..68e2d89 100644
+--- a/packages/app-core/tests/rc46/quality-bench.ts
++++ b/packages/app-core/tests/rc46/quality-bench.ts
+@@ -22,7 +22,7 @@ import { PROFILES, simulate } from '../rc4-audit/rc4-sim.js';
+ import type { ProfileSpec, SimOut } from '../rc4-audit/rc4-sim.js';
+ 
+ // technical-constant: horizon du banc (semaines)
+-export const QUALITY_WEEKS = 6;
++export const QUALITY_WEEKS = 12;
+ export const GROUPS = ['quads', 'hamstrings', 'glutes', 'calves', 'chest', 'back', 'shoulders', 'arms', 'core'] as const;
+ const PUSH_MUSCLES = new Set(['chest', 'front_delts', 'side_delts', 'triceps']);
+ const PULL_MUSCLES = new Set(['lats', 'upper_back_traps', 'rear_delts', 'biceps']);
+@@ -53,12 +53,13 @@ const repsOf = (r: unknown): string => {
+ };
+ 
+ /** Mesure d'un profil à partir d'une simulation (chemin réel). `env` : environnement à évaluer (référence par défaut). */
+-export function measureProfile(spec: ProfileSpec, env = beta0Environment()): ProfileQuality {
++export function measureProfile(spec: ProfileSpec, env = beta0Environment(), onWeek?: (state: AppState, monday: string) => void): ProfileQuality {
+   // R-A mesuré À LA PLANIFICATION de chaque semaine (aucune séance de la semaine réalisée) : en fin de simulation, les
+   // progressions ont évolué depuis et ne peuvent pas être relues à leur état d'alors (écarts attribués à tort au planificateur).
+   const repro: Record<string, number> = {};
+   const divergences: string[] = [];
+   const r: SimOut = simulate(spec, QUALITY_WEEKS, env, (state, monday) => {
++    onWeek?.(state, monday);
+     const x = weekReproducibility(state, monday, env, 'strength');
+     for (const [k, v] of Object.entries(x.counts)) repro[k] = (repro[k] ?? 0) + v;
+     divergences.push(...x.sessions.filter((y) => y.class === 'planner_divergence').map((y) => `${y.requestId}: ${y.changesAtPlanning.join(', ')}`));
+diff --git a/packages/app-core/tests/rc52/study.test.ts b/packages/app-core/tests/rc52/study.test.ts
+new file mode 100644
+index 0000000..c2aa783
+--- /dev/null
++++ b/packages/app-core/tests/rc52/study.test.ts
+@@ -0,0 +1,37 @@
++/** RC5.2 (étude jetable) — progression Haut A/B et Bas A/B : variantes REF / A / B1 / B2 / C, 12 semaines. */
++import { writeFileSync } from 'node:fs';
++import { it } from 'vitest';
++import type { AppState } from '../../src/index.js';
++import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
++import { measureProfile, summarize } from '../rc46/quality-bench.js';
++import { probe } from '../rc45/probe-starts.js';
++import { rc51Profiles } from '../rc51/rc51-bench.js';
++
++const V = process.env.RC52_VARIANT ?? 'A';
++const IDS = (process.env.RC52_PROFILES ?? 'S4,P1b,S4H,S4C,S4D').split(',');
++const count = (xs: string[]) => { const o: Record<string, number> = {}; for (const x of xs) o[x] = (o[x] ?? 0) + 1; return o; };
++it(`étude ${V}`, () => {
++  const out: Record<string, unknown> = {};
++  for (const id of IDS) for (const athlete of ['conforme', 'progressant'] as const) {
++    const base = rc51Profiles().find((p) => p.id === id) as ProfileSpec;
++    const spec: ProfileSpec = { ...base, ...(athlete === 'progressant' ? { rirOffset: 2 } : {}) };
++    const snaps: Record<string, AppState> = {};
++    const q = measureProfile(spec, undefined, (st, m) => { if (m === '2026-10-12' || m === '2026-11-16') snaps[m] = st; });
++    const seq: Record<string, { w: string; load: number | null; reps: string; sets: number; slot: string; arch: string }[]> = {};
++    for (const s of [...q.sessions].sort((a, b) => (a.date < b.date ? -1 : 1))) for (const i of s.items) (seq[`${i.ex}@${i.slot.split('.').slice(1).join('.')}`] ??= []).push({ w: s.week, load: i.load, reps: i.reps, sets: i.sets, slot: i.slot, arch: s.arch });
++    const lifts = Object.fromEntries(Object.entries(seq).map(([ex, L]) => {
++      const loads = L.map((x) => x.load);
++      let up = 0; let firstUp: string | null = null; let repsUp = 0;
++      for (let k = 1; k < L.length; k++) {
++        const a = L[k - 1]!; const b = L[k]!;
++        if (a.load !== null && b.load !== null && b.load > a.load) { up++; firstUp ??= b.w; }
++        const lo = (r: string) => Number(r.split(/[-–]/)[0]);
++        if (a.load !== null && a.load === b.load && lo(b.reps) > lo(a.reps)) repsUp++;
++      }
++      return [ex, { n: L.length, perWeek: Math.round((L.length / 12) * 100) / 100, first: loads.find((x) => x !== null) ?? null, last: loads.filter((x) => x !== null).at(-1) ?? null, loadUps: up, firstLoadUpWeek: firstUp, repsUps: repsUp, sets: L.reduce((t, x) => t + x.sets, 0), seq: L.map((x) => `${x.load ?? '-'}x${x.reps}`) }];
++    }));
++    const dec = (st?: AppState) => (st ? count(Object.entries(probe(st)).map(([k, v]) => `${k.split('|')[1]}:${v.decision}`)) : {});
++    out[`${id}/${athlete}`] = { summary: summarize(q), lifts, probes: { w2: dec(snaps['2026-10-12']), w7: dec(snaps['2026-11-16']) }, archs: count(q.sessions.map((s) => s.arch)) };
++  }
++  writeFileSync(`${process.env.RC52_OUT}/rc52-${V}.json`, JSON.stringify(out, null, 1));
++}, 3_600_000);
+diff --git a/packages/strength/src/model.ts b/packages/strength/src/model.ts
+index b4a1265..f0d4f9a 100644
+--- a/packages/strength/src/model.ts
++++ b/packages/strength/src/model.ts
+@@ -51,7 +51,13 @@ export function buildEnv(input: SportEngineInput<StrengthContext>, params: Stren
+   const declaredAnchors = new Set(input.intent.repetitionIntents.flatMap((r) => (r.kind === 'progression_anchor' ? [r.trackId] : [])));
+   const active = ctx.tracks.filter((t) => t.status === 'active' && t.archetypeId === archetype.id);
+   const anchorBySlot = new Map(active.filter((t) => t.tier === 'anchor' && declaredAnchors.has(t.trackId)).map((t) => [t.slotId, t]));
+-  const trackedBySlot = new Map(active.filter((t) => t.tier === 'tracked').map((t) => [t.slotId, t]));
++  // RC5.2 C (étude) — tracks d'accessoires PARTAGÉES entre A et B (même famille d'archétype, même emplacement).
++  const shared = ['C', 'CA'].includes(process.env.RC52_VARIANT ?? '');
++  const fam = (a: string) => a.replace(/_[ab]$/, '');
++  const prefix = archetype.slots[0]?.id.split('.')[0] ?? '';
++  const trackedBySlot = shared
++    ? new Map(ctx.tracks.filter((t) => t.status === 'active' && t.tier === 'tracked' && fam(t.archetypeId) === fam(archetype.id)).map((t) => [`${prefix}.${t.slotId.split('.').slice(1).join('.')}`, t]))
++    : new Map(active.filter((t) => t.tier === 'tracked').map((t) => [t.slotId, t]));
+   const incumbentBySlot = new Map<string, string[]>();
+   if (ctx.continuity === 'keep_incumbent') {
+     // Dernier instant d'exposition par emplacement, puis exercices de cet instant dans l'ordre de la séance.
+diff --git a/packages/strength/tests/fixtures/rc51.ts b/packages/strength/tests/fixtures/rc51.ts
+index 3ac24ee..17ac22b 100644
+--- a/packages/strength/tests/fixtures/rc51.ts
++++ b/packages/strength/tests/fixtures/rc51.ts
+@@ -20,12 +20,22 @@ const RC51_GOALS = ['hypertrophy', 'general'];
+ 
+ type Json = Record<string, unknown>;
+ /** Membre préféré par groupe de choix, pour chaque archétype ajouté (identifiant, source, préfixe d'emplacement). */
+-const VARIANTS: readonly { id: string; from: string; prefix: string; preferred: Readonly<Record<string, string>> }[] = [
++const V = process.env.RC52_VARIANT ?? 'A';
++type Pref = { id: string; from: string; prefix: string; preferred: Readonly<Record<string, string>>; loaded?: readonly string[] };
++const VARIANTS: readonly Pref[] = V === 'B1' ? [
++  // B1 — principal COMMUN (développé couché, squat) dans A et B ; A/B diffèrent par tirages et accessoires.
+   { id: 'str_upper_a', from: 'str_upper', prefix: 'ua', preferred: { main: 'push_horizontal', pull: 'pull_vertical', push_2: 'push_vertical', pull_2: 'pull_horizontal' } },
+-  { id: 'str_upper_b', from: 'str_upper', prefix: 'ub', preferred: { main: 'push_vertical', pull: 'pull_horizontal', push_2: 'push_horizontal', pull_2: 'pull_vertical' } },
++  { id: 'str_upper_b', from: 'str_upper', prefix: 'ub', preferred: { main: 'push_horizontal', pull: 'pull_horizontal', push_2: 'push_vertical', pull_2: 'pull_vertical' } },
+   { id: 'str_lower_a', from: 'str_lower', prefix: 'la', preferred: { main: 'knee_dominant', secondary: 'hip_dominant' } },
+-  { id: 'str_lower_b', from: 'str_lower', prefix: 'lb', preferred: { main: 'hip_dominant', secondary: 'knee_dominant' } },
++  { id: 'str_lower_b', from: 'str_lower', prefix: 'lb', preferred: { main: 'knee_dominant', secondary: 'hip_dominant' } },
++] : [
++  { id: 'str_upper_a', from: 'str_upper', prefix: 'ua', preferred: { main: 'push_horizontal', pull: 'pull_vertical', push_2: 'push_vertical', pull_2: 'pull_horizontal' }, loaded: ['push_2', 'pull_2'] },
++  { id: 'str_upper_b', from: 'str_upper', prefix: 'ub', preferred: { main: 'push_vertical', pull: 'pull_horizontal', push_2: 'push_horizontal', pull_2: 'pull_vertical' }, loaded: ['push_2', 'pull_2'] },
++  { id: 'str_lower_a', from: 'str_lower', prefix: 'la', preferred: { main: 'knee_dominant', secondary: 'hip_dominant' }, loaded: ['secondary'] },
++  { id: 'str_lower_b', from: 'str_lower', prefix: 'lb', preferred: { main: 'hip_dominant', secondary: 'knee_dominant' }, loaded: ['secondary'] },
+ ];
++/** B2 / C — l'autre principal en exposition SECONDAIRE chargée (rôle secondaire, préférence charge maximale, ancre). */
++const SECONDARY_LOADED = V === 'B2' || V === 'C';
+ 
+ /** Archétype dérivé : emplacements renommés (`up.x` → `ua.x`), membre préféré marqué, objectifs RC5.1. */
+ function derive(src: Json, v: (typeof VARIANTS)[number]): Json {
+@@ -33,7 +43,10 @@ function derive(src: Json, v: (typeof VARIANTS)[number]): Json {
+     ...src, id: v.id, goals: RC51_GOALS,
+     slots: (src.slots as Json[]).map((s) => {
+       const g = s.choiceGroup as string | undefined;
+-      return { ...s, id: `${v.prefix}.${String(s.id).split('.').slice(1).join('.')}`, ...(g !== undefined && v.preferred[g] === s.need ? { preferred: true } : {}) };
++      // Tous les membres du groupe : un groupe reste UN choix (jamais le préféré requis + l'autre membre en optionnel).
++      const loaded = SECONDARY_LOADED && g !== undefined && (v.loaded ?? []).includes(g)
++        ? { role: 'secondary', modalityPreference: 'load_ceiling', anchorable: true, trackable: true, status: 'required' } : {};
++      return { ...s, ...loaded, id: `${v.prefix}.${String(s.id).split('.').slice(1).join('.')}`, ...(g !== undefined && v.preferred[g] === s.need ? { preferred: true } : {}) };
+     }),
+   };
+ }

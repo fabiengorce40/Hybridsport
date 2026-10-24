@@ -1,0 +1,6662 @@
+{
+ "S4/conforme": {
+  "summary": {
+   "id": "S4",
+   "label": "Musculation 4× seule",
+   "strengthSessions": 48,
+   "volume": {
+    "quads": {
+     "direct": 16.2,
+     "indirect": 0,
+     "total": 16.2
+    },
+    "hamstrings": {
+     "direct": 12.1,
+     "indirect": 0,
+     "total": 12.1
+    },
+    "glutes": {
+     "direct": 16.1,
+     "indirect": 0,
+     "total": 16.1
+    },
+    "calves": {
+     "direct": 0,
+     "indirect": 0,
+     "total": 0
+    },
+    "chest": {
+     "direct": 12.2,
+     "indirect": 0,
+     "total": 12.2
+    },
+    "back": {
+     "direct": 10.6,
+     "indirect": 0,
+     "total": 10.6
+    },
+    "shoulders": {
+     "direct": 7.1,
+     "indirect": 7.1,
+     "total": 14.2
+    },
+    "arms": {
+     "direct": 15.1,
+     "indirect": 2.8,
+     "total": 17.9
+    },
+    "core": {
+     "direct": 3.3,
+     "indirect": 4.5,
+     "total": 7.8
+    }
+   },
+   "bounds": {
+    "quads": [
+     10,
+     18
+    ],
+    "hamstrings": [
+     8,
+     14
+    ],
+    "glutes": [
+     6,
+     14
+    ],
+    "calves": [
+     4,
+     10
+    ],
+    "chest": [
+     10,
+     20
+    ],
+    "back": [
+     10,
+     20
+    ],
+    "shoulders": [
+     8,
+     16
+    ],
+    "arms": [
+     6,
+     14
+    ],
+    "core": [
+     4,
+     10
+    ]
+   },
+   "underFloorWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 0,
+    "calves": 12,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 0,
+    "arms": 0,
+    "core": 0
+   },
+   "overHighWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 12,
+    "calves": 0,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 1,
+    "arms": 12,
+    "core": 1
+   },
+   "pushPull": {
+    "push": 19.3,
+    "pull": 10.6,
+    "ratio": 1.82
+   },
+   "variety": [
+    {
+     "arch": "str_upper_a",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.73,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_a",
+     "sessions": 12,
+     "distinctExercises": 5,
+     "distinctCompositions": 1,
+     "identicalToPrevious": 11,
+     "meanSimilarity": 1,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_upper_b",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.71,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_b",
+     "sessions": 12,
+     "distinctExercises": 5,
+     "distinctCompositions": 1,
+     "identicalToPrevious": 11,
+     "meanSimilarity": 1,
+     "distinctMains": 1
+    }
+   ],
+   "continuity": {
+    "transitions": 245,
+    "exerciseSwitched": 69,
+    "recalibrated": 0,
+    "loadDown": 0,
+    "repsDown": 0,
+    "itemsWithLoad": 183,
+    "itemsBodyweight": 12,
+    "itemsEffortOnly": 70,
+    "repeatedEffortOnly": [
+     "str_upper_a/ua.iso_upper:machine_lateral_raise×6",
+     "str_upper_a/ua.trunk:cable_pallof_press×7",
+     "str_lower_a/la.iso_lower:leg_curl×12",
+     "str_upper_b/ub.iso_upper:machine_lateral_raise×6",
+     "str_upper_b/ub.trunk:cable_pallof_press×6",
+     "str_lower_b/lb.iso_lower:leg_curl×12"
+    ]
+   },
+   "interference": {
+    "sessionsReduced": 0,
+    "reductions": 0,
+    "byAction": {},
+    "arbitrations": {}
+   },
+   "reproducibility": {
+    "identical": 48,
+    "progression_since_planning": 0,
+    "history_since_planning": 0,
+    "planner_divergence": 0,
+    "not_regenerable": 0
+   },
+   "plannerDivergences": 0,
+   "duration": {
+    "meanMin": 49,
+    "maxMin": 60,
+    "overAvailable": 0
+   },
+   "accountingGap": 0
+  },
+  "lifts": {
+   "bench_press@main_push_h": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6"
+    ]
+   },
+   "pull_up@pull_v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "-x9-12",
+     "-x10-12",
+     "-x11-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12"
+    ]
+   },
+   "seated_cable_row@pull_2h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 25,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "machine_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "pec_deck@iso_upper": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-12-21",
+    "repsUps": 8,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20",
+     "40x16-20",
+     "40x16-20",
+     "40x17-20",
+     "40x17-20",
+     "40x18-20",
+     "40x18-20",
+     "40x19-20",
+     "40x19-20",
+     "40x20-20",
+     "40x20-20",
+     "45x12-20",
+     "45x12-20"
+    ]
+   },
+   "cable_pallof_press@trunk": {
+    "n": 13,
+    "perWeek": 1.08,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 40,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_lateral_raise@iso_upper": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 37,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "back_squat@main_knee": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6"
+    ]
+   },
+   "single_leg_rdl_db@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 44,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12",
+     "44x8-12"
+    ]
+   },
+   "leg_extension@iso_lower": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-12-21",
+    "repsUps": 8,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20",
+     "40x16-20",
+     "40x16-20",
+     "40x17-20",
+     "40x17-20",
+     "40x18-20",
+     "40x18-20",
+     "40x19-20",
+     "40x19-20",
+     "40x20-20",
+     "40x20-20",
+     "45x12-20",
+     "45x12-20"
+    ]
+   },
+   "bulgarian_split_squat@single_leg": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 48,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x9-12",
+     "40x10-12",
+     "40x10-12",
+     "40x11-12",
+     "40x11-12",
+     "40x12-12",
+     "40x12-12",
+     "42x8-12",
+     "42x8-12",
+     "42x9-12",
+     "42x9-12",
+     "42x10-12",
+     "42x10-12",
+     "42x11-12",
+     "42x11-12",
+     "42x12-12",
+     "42x12-12"
+    ]
+   },
+   "leg_curl@iso_lower": {
+    "n": 24,
+    "perWeek": 2,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_row@pull_h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 42,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12",
+     "45x12-12"
+    ]
+   },
+   "db_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12"
+    ]
+   },
+   "lat_pulldown@pull_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "romanian_deadlift@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42.5x8-12",
+     "42.5x9-12",
+     "42.5x10-12",
+     "42.5x11-12",
+     "42.5x12-12",
+     "45x8-12"
+    ]
+   }
+  },
+  "probes": {
+   "w2": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 4,
+    "douleur:unchanged": 2,
+    "douleur:adapted": 2,
+    "course_libre:unchanged": 3
+   },
+   "w7": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 4,
+    "douleur:unchanged": 2,
+    "douleur:adapted": 2,
+    "course_libre:unchanged": 3
+   }
+  },
+  "archs": {
+   "str_upper_a": 12,
+   "str_lower_b": 12,
+   "str_upper_b": 12,
+   "str_lower_a": 12
+  }
+ },
+ "S4/progressant": {
+  "summary": {
+   "id": "S4",
+   "label": "Musculation 4× seule",
+   "strengthSessions": 48,
+   "volume": {
+    "quads": {
+     "direct": 16.2,
+     "indirect": 0,
+     "total": 16.2
+    },
+    "hamstrings": {
+     "direct": 12.1,
+     "indirect": 0,
+     "total": 12.1
+    },
+    "glutes": {
+     "direct": 16.1,
+     "indirect": 0,
+     "total": 16.1
+    },
+    "calves": {
+     "direct": 0,
+     "indirect": 0,
+     "total": 0
+    },
+    "chest": {
+     "direct": 12.2,
+     "indirect": 0,
+     "total": 12.2
+    },
+    "back": {
+     "direct": 10.6,
+     "indirect": 0,
+     "total": 10.6
+    },
+    "shoulders": {
+     "direct": 7.1,
+     "indirect": 7.1,
+     "total": 14.2
+    },
+    "arms": {
+     "direct": 15.1,
+     "indirect": 2.8,
+     "total": 17.9
+    },
+    "core": {
+     "direct": 3.3,
+     "indirect": 4.5,
+     "total": 7.8
+    }
+   },
+   "bounds": {
+    "quads": [
+     10,
+     18
+    ],
+    "hamstrings": [
+     8,
+     14
+    ],
+    "glutes": [
+     6,
+     14
+    ],
+    "calves": [
+     4,
+     10
+    ],
+    "chest": [
+     10,
+     20
+    ],
+    "back": [
+     10,
+     20
+    ],
+    "shoulders": [
+     8,
+     16
+    ],
+    "arms": [
+     6,
+     14
+    ],
+    "core": [
+     4,
+     10
+    ]
+   },
+   "underFloorWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 0,
+    "calves": 12,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 0,
+    "arms": 0,
+    "core": 0
+   },
+   "overHighWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 12,
+    "calves": 0,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 1,
+    "arms": 12,
+    "core": 1
+   },
+   "pushPull": {
+    "push": 19.3,
+    "pull": 10.6,
+    "ratio": 1.82
+   },
+   "variety": [
+    {
+     "arch": "str_upper_a",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.73,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_a",
+     "sessions": 12,
+     "distinctExercises": 5,
+     "distinctCompositions": 1,
+     "identicalToPrevious": 11,
+     "meanSimilarity": 1,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_upper_b",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.71,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_b",
+     "sessions": 12,
+     "distinctExercises": 5,
+     "distinctCompositions": 1,
+     "identicalToPrevious": 11,
+     "meanSimilarity": 1,
+     "distinctMains": 1
+    }
+   ],
+   "continuity": {
+    "transitions": 245,
+    "exerciseSwitched": 69,
+    "recalibrated": 0,
+    "loadDown": 0,
+    "repsDown": 0,
+    "itemsWithLoad": 183,
+    "itemsBodyweight": 12,
+    "itemsEffortOnly": 70,
+    "repeatedEffortOnly": [
+     "str_upper_a/ua.iso_upper:machine_lateral_raise×6",
+     "str_upper_a/ua.trunk:cable_pallof_press×7",
+     "str_lower_a/la.iso_lower:leg_curl×12",
+     "str_upper_b/ub.iso_upper:machine_lateral_raise×6",
+     "str_upper_b/ub.trunk:cable_pallof_press×6",
+     "str_lower_b/lb.iso_lower:leg_curl×12"
+    ]
+   },
+   "interference": {
+    "sessionsReduced": 0,
+    "reductions": 0,
+    "byAction": {},
+    "arbitrations": {}
+   },
+   "reproducibility": {
+    "identical": 48,
+    "progression_since_planning": 0,
+    "history_since_planning": 0,
+    "planner_divergence": 0,
+    "not_regenerable": 0
+   },
+   "plannerDivergences": 0,
+   "duration": {
+    "meanMin": 49,
+    "maxMin": 60,
+    "overAvailable": 0
+   },
+   "accountingGap": 0
+  },
+  "lifts": {
+   "bench_press@main_push_h": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-10-26",
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6"
+    ]
+   },
+   "pull_up@pull_v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "-x9-12",
+     "-x10-12",
+     "-x11-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12"
+    ]
+   },
+   "seated_cable_row@pull_2h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 25,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "machine_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "pec_deck@iso_upper": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-12-21",
+    "repsUps": 8,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20",
+     "40x16-20",
+     "40x16-20",
+     "40x17-20",
+     "40x17-20",
+     "40x18-20",
+     "40x18-20",
+     "40x19-20",
+     "40x19-20",
+     "40x20-20",
+     "40x20-20",
+     "45x12-20",
+     "45x12-20"
+    ]
+   },
+   "cable_pallof_press@trunk": {
+    "n": 13,
+    "perWeek": 1.08,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 40,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_lateral_raise@iso_upper": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 37,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "back_squat@main_knee": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-10-26",
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6"
+    ]
+   },
+   "single_leg_rdl_db@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 44,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12",
+     "44x8-12"
+    ]
+   },
+   "leg_extension@iso_lower": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-12-21",
+    "repsUps": 8,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20",
+     "40x16-20",
+     "40x16-20",
+     "40x17-20",
+     "40x17-20",
+     "40x18-20",
+     "40x18-20",
+     "40x19-20",
+     "40x19-20",
+     "40x20-20",
+     "40x20-20",
+     "45x12-20",
+     "45x12-20"
+    ]
+   },
+   "bulgarian_split_squat@single_leg": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 48,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x9-12",
+     "40x10-12",
+     "40x10-12",
+     "40x11-12",
+     "40x11-12",
+     "40x12-12",
+     "40x12-12",
+     "42x8-12",
+     "42x8-12",
+     "42x9-12",
+     "42x9-12",
+     "42x10-12",
+     "42x10-12",
+     "42x11-12",
+     "42x11-12",
+     "42x12-12",
+     "42x12-12"
+    ]
+   },
+   "leg_curl@iso_lower": {
+    "n": 24,
+    "perWeek": 2,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_row@pull_h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 42,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12",
+     "45x12-12"
+    ]
+   },
+   "db_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12"
+    ]
+   },
+   "lat_pulldown@pull_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "romanian_deadlift@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42.5x8-12",
+     "42.5x9-12",
+     "42.5x10-12",
+     "42.5x11-12",
+     "42.5x12-12",
+     "45x8-12"
+    ]
+   }
+  },
+  "probes": {
+   "w2": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 4,
+    "douleur:unchanged": 2,
+    "douleur:adapted": 2,
+    "course_libre:unchanged": 3
+   },
+   "w7": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 4,
+    "douleur:unchanged": 2,
+    "douleur:adapted": 2,
+    "course_libre:unchanged": 3
+   }
+  },
+  "archs": {
+   "str_upper_a": 12,
+   "str_lower_b": 12,
+   "str_upper_b": 12,
+   "str_lower_a": 12
+  }
+ },
+ "P1b/conforme": {
+  "summary": {
+   "id": "P1b",
+   "label": "Musculation 4× (masse) + Course 2× (10 km)",
+   "strengthSessions": 48,
+   "volume": {
+    "quads": {
+     "direct": 9.6,
+     "indirect": 0,
+     "total": 9.6
+    },
+    "hamstrings": {
+     "direct": 8.2,
+     "indirect": 0,
+     "total": 8.2
+    },
+    "glutes": {
+     "direct": 12.3,
+     "indirect": 0,
+     "total": 12.3
+    },
+    "calves": {
+     "direct": 3.7,
+     "indirect": 0,
+     "total": 3.7
+    },
+    "chest": {
+     "direct": 12.2,
+     "indirect": 0,
+     "total": 12.2
+    },
+    "back": {
+     "direct": 10.6,
+     "indirect": 0,
+     "total": 10.6
+    },
+    "shoulders": {
+     "direct": 7.1,
+     "indirect": 7.1,
+     "total": 14.2
+    },
+    "arms": {
+     "direct": 15.1,
+     "indirect": 2.8,
+     "total": 17.9
+    },
+    "core": {
+     "direct": 6.1,
+     "indirect": 3.8,
+     "total": 9.9
+    }
+   },
+   "bounds": {
+    "quads": [
+     10,
+     18
+    ],
+    "hamstrings": [
+     8,
+     14
+    ],
+    "glutes": [
+     6,
+     14
+    ],
+    "calves": [
+     4,
+     10
+    ],
+    "chest": [
+     10,
+     20
+    ],
+    "back": [
+     10,
+     20
+    ],
+    "shoulders": [
+     8,
+     16
+    ],
+    "arms": [
+     6,
+     14
+    ],
+    "core": [
+     4,
+     10
+    ]
+   },
+   "underFloorWeeks": {
+    "quads": 1,
+    "hamstrings": 1,
+    "glutes": 0,
+    "calves": 1,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 0,
+    "arms": 0,
+    "core": 0
+   },
+   "overHighWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 0,
+    "calves": 0,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 1,
+    "arms": 12,
+    "core": 1
+   },
+   "pushPull": {
+    "push": 19.3,
+    "pull": 10.6,
+    "ratio": 1.82
+   },
+   "variety": [
+    {
+     "arch": "str_upper_a",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.71,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_a",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.29,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_upper_b",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.73,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_b",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 1,
+     "meanSimilarity": 0.35,
+     "distinctMains": 1
+    }
+   ],
+   "continuity": {
+    "transitions": 224,
+    "exerciseSwitched": 43,
+    "recalibrated": 0,
+    "loadDown": 0,
+    "repsDown": 0,
+    "itemsWithLoad": 165,
+    "itemsBodyweight": 12,
+    "itemsEffortOnly": 71,
+    "repeatedEffortOnly": [
+     "str_upper_a/ua.iso_upper:machine_lateral_raise×6",
+     "str_upper_a/ua.trunk:cable_pallof_press×6",
+     "str_upper_b/ub.iso_upper:machine_lateral_raise×6",
+     "str_upper_b/ub.trunk:cable_pallof_press×7",
+     "str_lower_a/la.iso_lower:leg_curl×6",
+     "str_lower_a/la.trunk:cable_pallof_press×6",
+     "str_lower_b/lb.iso_lower:leg_curl×5",
+     "str_lower_b/lb.trunk:cable_pallof_press×5"
+    ]
+   },
+   "interference": {
+    "sessionsReduced": 48,
+    "reductions": 132,
+    "byAction": {
+     "full": 42,
+     "full_and_signal": 34,
+     "rir_only": 56
+    },
+    "arbitrations": {
+     "conflict/running": 7,
+     "conflict/strength": 7
+    }
+   },
+   "reproducibility": {
+    "identical": 48,
+    "progression_since_planning": 0,
+    "history_since_planning": 0,
+    "planner_divergence": 0,
+    "not_regenerable": 0
+   },
+   "plannerDivergences": 0,
+   "duration": {
+    "meanMin": 46,
+    "maxMin": 60,
+    "overAvailable": 0
+   },
+   "accountingGap": 0
+  },
+  "lifts": {
+   "bench_press@main_push_h": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6"
+    ]
+   },
+   "pull_up@pull_v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "-x9-12",
+     "-x10-12",
+     "-x11-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12"
+    ]
+   },
+   "seated_cable_row@pull_2h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 25,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "machine_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "pec_deck@iso_upper": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-12-21",
+    "repsUps": 8,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20",
+     "40x16-20",
+     "40x16-20",
+     "40x17-20",
+     "40x17-20",
+     "40x18-20",
+     "40x18-20",
+     "40x19-20",
+     "40x19-20",
+     "40x20-20",
+     "40x20-20",
+     "45x12-20",
+     "45x12-20"
+    ]
+   },
+   "cable_pallof_press@trunk": {
+    "n": 24,
+    "perWeek": 2,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_lateral_raise@iso_upper": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 37,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "back_squat@main_knee": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-10-26",
+    "repsUps": 0,
+    "sets": 60,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6"
+    ]
+   },
+   "single_leg_rdl_db@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 44,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 33,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12",
+     "44x8-12"
+    ]
+   },
+   "machine_row@pull_h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 42,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12",
+     "45x12-12"
+    ]
+   },
+   "db_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12"
+    ]
+   },
+   "lat_pulldown@pull_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "romanian_deadlift@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 32,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42.5x8-12",
+     "42.5x9-12",
+     "42.5x10-12",
+     "42.5x11-12",
+     "42.5x12-12",
+     "45x8-12"
+    ]
+   },
+   "leg_extension@iso_lower": {
+    "n": 11,
+    "perWeek": 0.92,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 3,
+    "sets": 33,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20"
+    ]
+   },
+   "bulgarian_split_squat@single_leg": {
+    "n": 11,
+    "perWeek": 0.92,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 3,
+    "sets": 22,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x9-12",
+     "40x10-12",
+     "40x10-12",
+     "40x11-12"
+    ]
+   },
+   "leg_curl@iso_lower": {
+    "n": 11,
+    "perWeek": 0.92,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 33,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_calf_raise@calves": {
+    "n": 11,
+    "perWeek": 0.92,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 3,
+    "sets": 44,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20"
+    ]
+   }
+  },
+  "probes": {
+   "w2": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 3,
+    "douleur:unchanged": 2,
+    "course_libre:unchanged": 1,
+    "fatigue:unchanged": 1,
+    "douleur:adapted": 2,
+    "course_libre:adapted": 2
+   },
+   "w7": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 3,
+    "douleur:unchanged": 2,
+    "course_libre:unchanged": 1,
+    "fatigue:unchanged": 1,
+    "douleur:adapted": 2,
+    "course_libre:adapted": 2
+   }
+  },
+  "archs": {
+   "str_upper_a": 12,
+   "str_lower_a": 12,
+   "str_upper_b": 12,
+   "str_lower_b": 12
+  }
+ },
+ "P1b/progressant": {
+  "summary": {
+   "id": "P1b",
+   "label": "Musculation 4× (masse) + Course 2× (10 km)",
+   "strengthSessions": 48,
+   "volume": {
+    "quads": {
+     "direct": 9.6,
+     "indirect": 0,
+     "total": 9.6
+    },
+    "hamstrings": {
+     "direct": 8.2,
+     "indirect": 0,
+     "total": 8.2
+    },
+    "glutes": {
+     "direct": 12.3,
+     "indirect": 0,
+     "total": 12.3
+    },
+    "calves": {
+     "direct": 3.7,
+     "indirect": 0,
+     "total": 3.7
+    },
+    "chest": {
+     "direct": 12.2,
+     "indirect": 0,
+     "total": 12.2
+    },
+    "back": {
+     "direct": 10.6,
+     "indirect": 0,
+     "total": 10.6
+    },
+    "shoulders": {
+     "direct": 7.1,
+     "indirect": 7.1,
+     "total": 14.2
+    },
+    "arms": {
+     "direct": 15.1,
+     "indirect": 2.8,
+     "total": 17.9
+    },
+    "core": {
+     "direct": 6.1,
+     "indirect": 3.8,
+     "total": 9.9
+    }
+   },
+   "bounds": {
+    "quads": [
+     10,
+     18
+    ],
+    "hamstrings": [
+     8,
+     14
+    ],
+    "glutes": [
+     6,
+     14
+    ],
+    "calves": [
+     4,
+     10
+    ],
+    "chest": [
+     10,
+     20
+    ],
+    "back": [
+     10,
+     20
+    ],
+    "shoulders": [
+     8,
+     16
+    ],
+    "arms": [
+     6,
+     14
+    ],
+    "core": [
+     4,
+     10
+    ]
+   },
+   "underFloorWeeks": {
+    "quads": 1,
+    "hamstrings": 1,
+    "glutes": 0,
+    "calves": 1,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 0,
+    "arms": 0,
+    "core": 0
+   },
+   "overHighWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 0,
+    "calves": 0,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 1,
+    "arms": 12,
+    "core": 1
+   },
+   "pushPull": {
+    "push": 19.3,
+    "pull": 10.6,
+    "ratio": 1.82
+   },
+   "variety": [
+    {
+     "arch": "str_upper_a",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.71,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_a",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.29,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_upper_b",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.73,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_b",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 1,
+     "meanSimilarity": 0.35,
+     "distinctMains": 1
+    }
+   ],
+   "continuity": {
+    "transitions": 224,
+    "exerciseSwitched": 43,
+    "recalibrated": 0,
+    "loadDown": 0,
+    "repsDown": 0,
+    "itemsWithLoad": 165,
+    "itemsBodyweight": 12,
+    "itemsEffortOnly": 71,
+    "repeatedEffortOnly": [
+     "str_upper_a/ua.iso_upper:machine_lateral_raise×6",
+     "str_upper_a/ua.trunk:cable_pallof_press×6",
+     "str_upper_b/ub.iso_upper:machine_lateral_raise×6",
+     "str_upper_b/ub.trunk:cable_pallof_press×7",
+     "str_lower_a/la.iso_lower:leg_curl×6",
+     "str_lower_a/la.trunk:cable_pallof_press×6",
+     "str_lower_b/lb.iso_lower:leg_curl×5",
+     "str_lower_b/lb.trunk:cable_pallof_press×5"
+    ]
+   },
+   "interference": {
+    "sessionsReduced": 48,
+    "reductions": 132,
+    "byAction": {
+     "full": 42,
+     "full_and_signal": 34,
+     "rir_only": 56
+    },
+    "arbitrations": {
+     "conflict/running": 7,
+     "conflict/strength": 7
+    }
+   },
+   "reproducibility": {
+    "identical": 48,
+    "progression_since_planning": 0,
+    "history_since_planning": 0,
+    "planner_divergence": 0,
+    "not_regenerable": 0
+   },
+   "plannerDivergences": 0,
+   "duration": {
+    "meanMin": 46,
+    "maxMin": 60,
+    "overAvailable": 0
+   },
+   "accountingGap": 0
+  },
+  "lifts": {
+   "bench_press@main_push_h": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-10-26",
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6"
+    ]
+   },
+   "pull_up@pull_v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "-x9-12",
+     "-x10-12",
+     "-x11-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12"
+    ]
+   },
+   "seated_cable_row@pull_2h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 25,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "machine_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "pec_deck@iso_upper": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-12-21",
+    "repsUps": 8,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20",
+     "40x16-20",
+     "40x16-20",
+     "40x17-20",
+     "40x17-20",
+     "40x18-20",
+     "40x18-20",
+     "40x19-20",
+     "40x19-20",
+     "40x20-20",
+     "40x20-20",
+     "45x12-20",
+     "45x12-20"
+    ]
+   },
+   "cable_pallof_press@trunk": {
+    "n": 24,
+    "perWeek": 2,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_lateral_raise@iso_upper": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 37,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "back_squat@main_knee": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 4,
+    "firstLoadUpWeek": "2026-10-26",
+    "repsUps": 0,
+    "sets": 60,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "42.5x6",
+     "42.5x6",
+     "40x6",
+     "42.5x6",
+     "45x6",
+     "45x6",
+     "42.5x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6"
+    ]
+   },
+   "single_leg_rdl_db@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 44,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 33,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12",
+     "44x8-12"
+    ]
+   },
+   "machine_row@pull_h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 42,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12",
+     "45x12-12"
+    ]
+   },
+   "db_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12"
+    ]
+   },
+   "lat_pulldown@pull_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "romanian_deadlift@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 32,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42.5x8-12",
+     "42.5x9-12",
+     "42.5x10-12",
+     "42.5x11-12",
+     "42.5x12-12",
+     "45x8-12"
+    ]
+   },
+   "leg_extension@iso_lower": {
+    "n": 11,
+    "perWeek": 0.92,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 3,
+    "sets": 33,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20"
+    ]
+   },
+   "bulgarian_split_squat@single_leg": {
+    "n": 11,
+    "perWeek": 0.92,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 3,
+    "sets": 22,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x9-12",
+     "40x10-12",
+     "40x10-12",
+     "40x11-12"
+    ]
+   },
+   "leg_curl@iso_lower": {
+    "n": 11,
+    "perWeek": 0.92,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 33,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_calf_raise@calves": {
+    "n": 11,
+    "perWeek": 0.92,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 3,
+    "sets": 44,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20"
+    ]
+   }
+  },
+  "probes": {
+   "w2": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 3,
+    "douleur:unchanged": 2,
+    "course_libre:unchanged": 1,
+    "fatigue:unchanged": 1,
+    "douleur:adapted": 2,
+    "course_libre:adapted": 2
+   },
+   "w7": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 3,
+    "douleur:unchanged": 2,
+    "course_libre:unchanged": 1,
+    "fatigue:unchanged": 1,
+    "douleur:adapted": 2,
+    "course_libre:adapted": 2
+   }
+  },
+  "archs": {
+   "str_upper_a": 12,
+   "str_lower_a": 12,
+   "str_upper_b": 12,
+   "str_lower_b": 12
+  }
+ },
+ "S4H/conforme": {
+  "summary": {
+   "id": "S4H",
+   "label": "Musculation 4× + HYROX 2×",
+   "strengthSessions": 48,
+   "volume": {
+    "quads": {
+     "direct": 14.4,
+     "indirect": 0,
+     "total": 14.4
+    },
+    "hamstrings": {
+     "direct": 10.8,
+     "indirect": 0,
+     "total": 10.8
+    },
+    "glutes": {
+     "direct": 14.8,
+     "indirect": 0,
+     "total": 14.8
+    },
+    "calves": {
+     "direct": 3.7,
+     "indirect": 0,
+     "total": 3.7
+    },
+    "chest": {
+     "direct": 12.2,
+     "indirect": 0,
+     "total": 12.2
+    },
+    "back": {
+     "direct": 10.6,
+     "indirect": 0,
+     "total": 10.6
+    },
+    "shoulders": {
+     "direct": 7.1,
+     "indirect": 7.1,
+     "total": 14.2
+    },
+    "arms": {
+     "direct": 15.1,
+     "indirect": 2.8,
+     "total": 17.9
+    },
+    "core": {
+     "direct": 4.6,
+     "indirect": 4.3,
+     "total": 8.9
+    }
+   },
+   "bounds": {
+    "quads": [
+     10,
+     18
+    ],
+    "hamstrings": [
+     8,
+     14
+    ],
+    "glutes": [
+     6,
+     14
+    ],
+    "calves": [
+     4,
+     10
+    ],
+    "chest": [
+     10,
+     20
+    ],
+    "back": [
+     10,
+     20
+    ],
+    "shoulders": [
+     8,
+     16
+    ],
+    "arms": [
+     6,
+     14
+    ],
+    "core": [
+     4,
+     10
+    ]
+   },
+   "underFloorWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 0,
+    "calves": 1,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 0,
+    "arms": 0,
+    "core": 0
+   },
+   "overHighWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 8,
+    "calves": 0,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 1,
+    "arms": 12,
+    "core": 3
+   },
+   "pushPull": {
+    "push": 19.3,
+    "pull": 10.6,
+    "ratio": 1.82
+   },
+   "variety": [
+    {
+     "arch": "str_upper_a",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.75,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_a",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 5,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.69,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_upper_b",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.73,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_b",
+     "sessions": 12,
+     "distinctExercises": 6,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.57,
+     "distinctMains": 1
+    }
+   ],
+   "continuity": {
+    "transitions": 246,
+    "exerciseSwitched": 61,
+    "recalibrated": 0,
+    "loadDown": 0,
+    "repsDown": 0,
+    "itemsWithLoad": 182,
+    "itemsBodyweight": 12,
+    "itemsEffortOnly": 75,
+    "repeatedEffortOnly": [
+     "str_upper_a/ua.iso_upper:machine_lateral_raise×6",
+     "str_upper_a/ua.trunk:cable_pallof_press×8",
+     "str_lower_a/la.iso_lower:leg_curl×11",
+     "str_lower_a/la.trunk:cable_pallof_press×5",
+     "str_upper_b/ub.iso_upper:machine_lateral_raise×6",
+     "str_lower_b/lb.iso_lower:leg_curl×9",
+     "str_upper_b/ub.trunk:cable_pallof_press×5"
+    ]
+   },
+   "interference": {
+    "sessionsReduced": 33,
+    "reductions": 97,
+    "byAction": {
+     "full": 22,
+     "full_and_signal": 4,
+     "rir_only": 71
+    },
+    "arbitrations": {
+     "conflict/hyrox": 8,
+     "conflict/strength": 6,
+     "moved/strength": 2,
+     "recomposed/strength": 1
+    }
+   },
+   "reproducibility": {
+    "identical": 48,
+    "progression_since_planning": 0,
+    "history_since_planning": 0,
+    "planner_divergence": 0,
+    "not_regenerable": 0
+   },
+   "plannerDivergences": 0,
+   "duration": {
+    "meanMin": 49,
+    "maxMin": 61,
+    "overAvailable": 0
+   },
+   "accountingGap": 0
+  },
+  "lifts": {
+   "bench_press@main_push_h": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6"
+    ]
+   },
+   "pull_up@pull_v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "-x9-12",
+     "-x10-12",
+     "-x11-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12"
+    ]
+   },
+   "seated_cable_row@pull_2h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 25,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "machine_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "pec_deck@iso_upper": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-12-21",
+    "repsUps": 8,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20",
+     "40x16-20",
+     "40x16-20",
+     "40x17-20",
+     "40x17-20",
+     "40x18-20",
+     "40x18-20",
+     "40x19-20",
+     "40x19-20",
+     "40x20-20",
+     "40x20-20",
+     "45x12-20",
+     "45x12-20"
+    ]
+   },
+   "cable_pallof_press@trunk": {
+    "n": 18,
+    "perWeek": 1.5,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 55,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_lateral_raise@iso_upper": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 37,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "back_squat@main_knee": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 69,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6"
+    ]
+   },
+   "single_leg_rdl_db@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 44,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 35,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12",
+     "44x8-12"
+    ]
+   },
+   "leg_extension@iso_lower": {
+    "n": 20,
+    "perWeek": 1.67,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 10,
+    "sets": 64,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x14-20",
+     "40x13-20",
+     "40x15-20",
+     "40x16-20",
+     "40x14-20",
+     "40x15-20",
+     "40x17-20",
+     "40x16-20",
+     "40x17-20",
+     "40x18-20",
+     "40x19-20",
+     "40x18-20",
+     "40x20-20"
+    ]
+   },
+   "bulgarian_split_squat@single_leg": {
+    "n": 20,
+    "perWeek": 1.67,
+    "first": 40,
+    "last": 42,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-30",
+    "repsUps": 8,
+    "sets": 40,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x9-12",
+     "40x11-12",
+     "40x12-12",
+     "40x10-12",
+     "40x11-12",
+     "42x8-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x9-12",
+     "42x11-12"
+    ]
+   },
+   "leg_curl@iso_lower": {
+    "n": 20,
+    "perWeek": 1.67,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 61,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_row@pull_h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 42,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12",
+     "45x12-12"
+    ]
+   },
+   "db_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12"
+    ]
+   },
+   "lat_pulldown@pull_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "romanian_deadlift@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 33,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42.5x8-12",
+     "42.5x9-12",
+     "42.5x10-12",
+     "42.5x11-12",
+     "42.5x12-12",
+     "45x8-12"
+    ]
+   },
+   "machine_calf_raise@calves": {
+    "n": 11,
+    "perWeek": 0.92,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 3,
+    "sets": 44,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20"
+    ]
+   }
+  },
+  "probes": {
+   "w2": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 3,
+    "douleur:unchanged": 2,
+    "course_libre:unchanged": 2,
+    "fatigue:unchanged": 1,
+    "douleur:adapted": 2,
+    "course_libre:adapted": 1
+   },
+   "w7": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 4,
+    "douleur:unchanged": 2,
+    "course_libre:unchanged": 1,
+    "douleur:adapted": 2,
+    "course_libre:adapted": 2
+   }
+  },
+  "archs": {
+   "str_upper_a": 12,
+   "str_upper_b": 12,
+   "str_lower_a": 12,
+   "str_lower_b": 12
+  }
+ },
+ "S4H/progressant": {
+  "summary": {
+   "id": "S4H",
+   "label": "Musculation 4× + HYROX 2×",
+   "strengthSessions": 48,
+   "volume": {
+    "quads": {
+     "direct": 14.4,
+     "indirect": 0,
+     "total": 14.4
+    },
+    "hamstrings": {
+     "direct": 10.8,
+     "indirect": 0,
+     "total": 10.8
+    },
+    "glutes": {
+     "direct": 14.8,
+     "indirect": 0,
+     "total": 14.8
+    },
+    "calves": {
+     "direct": 3.7,
+     "indirect": 0,
+     "total": 3.7
+    },
+    "chest": {
+     "direct": 12.2,
+     "indirect": 0,
+     "total": 12.2
+    },
+    "back": {
+     "direct": 10.6,
+     "indirect": 0,
+     "total": 10.6
+    },
+    "shoulders": {
+     "direct": 7.1,
+     "indirect": 7.1,
+     "total": 14.2
+    },
+    "arms": {
+     "direct": 15.1,
+     "indirect": 2.8,
+     "total": 17.9
+    },
+    "core": {
+     "direct": 4.6,
+     "indirect": 4.3,
+     "total": 8.9
+    }
+   },
+   "bounds": {
+    "quads": [
+     10,
+     18
+    ],
+    "hamstrings": [
+     8,
+     14
+    ],
+    "glutes": [
+     6,
+     14
+    ],
+    "calves": [
+     4,
+     10
+    ],
+    "chest": [
+     10,
+     20
+    ],
+    "back": [
+     10,
+     20
+    ],
+    "shoulders": [
+     8,
+     16
+    ],
+    "arms": [
+     6,
+     14
+    ],
+    "core": [
+     4,
+     10
+    ]
+   },
+   "underFloorWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 0,
+    "calves": 1,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 0,
+    "arms": 0,
+    "core": 0
+   },
+   "overHighWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 8,
+    "calves": 0,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 1,
+    "arms": 12,
+    "core": 3
+   },
+   "pushPull": {
+    "push": 19.3,
+    "pull": 10.6,
+    "ratio": 1.82
+   },
+   "variety": [
+    {
+     "arch": "str_upper_a",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.75,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_a",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 5,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.69,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_upper_b",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.73,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_b",
+     "sessions": 12,
+     "distinctExercises": 6,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.57,
+     "distinctMains": 1
+    }
+   ],
+   "continuity": {
+    "transitions": 246,
+    "exerciseSwitched": 61,
+    "recalibrated": 0,
+    "loadDown": 0,
+    "repsDown": 0,
+    "itemsWithLoad": 182,
+    "itemsBodyweight": 12,
+    "itemsEffortOnly": 75,
+    "repeatedEffortOnly": [
+     "str_upper_a/ua.iso_upper:machine_lateral_raise×6",
+     "str_upper_a/ua.trunk:cable_pallof_press×8",
+     "str_lower_a/la.iso_lower:leg_curl×11",
+     "str_lower_a/la.trunk:cable_pallof_press×5",
+     "str_upper_b/ub.iso_upper:machine_lateral_raise×6",
+     "str_lower_b/lb.iso_lower:leg_curl×9",
+     "str_upper_b/ub.trunk:cable_pallof_press×5"
+    ]
+   },
+   "interference": {
+    "sessionsReduced": 33,
+    "reductions": 97,
+    "byAction": {
+     "full": 22,
+     "full_and_signal": 4,
+     "rir_only": 71
+    },
+    "arbitrations": {
+     "conflict/hyrox": 8,
+     "conflict/strength": 6,
+     "moved/strength": 2,
+     "recomposed/strength": 1
+    }
+   },
+   "reproducibility": {
+    "identical": 48,
+    "progression_since_planning": 0,
+    "history_since_planning": 0,
+    "planner_divergence": 0,
+    "not_regenerable": 0
+   },
+   "plannerDivergences": 0,
+   "duration": {
+    "meanMin": 49,
+    "maxMin": 61,
+    "overAvailable": 0
+   },
+   "accountingGap": 0
+  },
+  "lifts": {
+   "bench_press@main_push_h": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-10-26",
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6"
+    ]
+   },
+   "pull_up@pull_v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "-x9-12",
+     "-x10-12",
+     "-x11-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12"
+    ]
+   },
+   "seated_cable_row@pull_2h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 25,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "machine_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "pec_deck@iso_upper": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-12-21",
+    "repsUps": 8,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20",
+     "40x16-20",
+     "40x16-20",
+     "40x17-20",
+     "40x17-20",
+     "40x18-20",
+     "40x18-20",
+     "40x19-20",
+     "40x19-20",
+     "40x20-20",
+     "40x20-20",
+     "45x12-20",
+     "45x12-20"
+    ]
+   },
+   "cable_pallof_press@trunk": {
+    "n": 18,
+    "perWeek": 1.5,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 55,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_lateral_raise@iso_upper": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 37,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "back_squat@main_knee": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 4,
+    "firstLoadUpWeek": "2026-10-26",
+    "repsUps": 0,
+    "sets": 69,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "45x6",
+     "42.5x6",
+     "42.5x6",
+     "45x6",
+     "45x6",
+     "42.5x6",
+     "42.5x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6"
+    ]
+   },
+   "single_leg_rdl_db@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 44,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 35,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12",
+     "44x8-12"
+    ]
+   },
+   "leg_extension@iso_lower": {
+    "n": 20,
+    "perWeek": 1.67,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 10,
+    "sets": 64,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x14-20",
+     "40x13-20",
+     "40x15-20",
+     "40x16-20",
+     "40x14-20",
+     "40x15-20",
+     "40x17-20",
+     "40x16-20",
+     "40x17-20",
+     "40x18-20",
+     "40x19-20",
+     "40x18-20",
+     "40x20-20"
+    ]
+   },
+   "bulgarian_split_squat@single_leg": {
+    "n": 20,
+    "perWeek": 1.67,
+    "first": 40,
+    "last": 42,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-30",
+    "repsUps": 8,
+    "sets": 40,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x9-12",
+     "40x11-12",
+     "40x12-12",
+     "40x10-12",
+     "40x11-12",
+     "42x8-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x9-12",
+     "42x11-12"
+    ]
+   },
+   "leg_curl@iso_lower": {
+    "n": 20,
+    "perWeek": 1.67,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 61,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_row@pull_h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 42,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12",
+     "45x12-12"
+    ]
+   },
+   "db_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12"
+    ]
+   },
+   "lat_pulldown@pull_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "romanian_deadlift@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 33,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42.5x8-12",
+     "42.5x9-12",
+     "42.5x10-12",
+     "42.5x11-12",
+     "42.5x12-12",
+     "45x8-12"
+    ]
+   },
+   "machine_calf_raise@calves": {
+    "n": 11,
+    "perWeek": 0.92,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 3,
+    "sets": 44,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20"
+    ]
+   }
+  },
+  "probes": {
+   "w2": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 3,
+    "douleur:unchanged": 2,
+    "course_libre:unchanged": 2,
+    "fatigue:unchanged": 1,
+    "douleur:adapted": 2,
+    "course_libre:adapted": 1
+   },
+   "w7": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 4,
+    "douleur:unchanged": 2,
+    "course_libre:unchanged": 1,
+    "douleur:adapted": 2,
+    "course_libre:adapted": 2
+   }
+  },
+  "archs": {
+   "str_upper_a": 12,
+   "str_upper_b": 12,
+   "str_lower_a": 12,
+   "str_lower_b": 12
+  }
+ },
+ "S4C/conforme": {
+  "summary": {
+   "id": "S4C",
+   "label": "Musculation 4× + Cross-training 2×",
+   "strengthSessions": 48,
+   "volume": {
+    "quads": {
+     "direct": 16.2,
+     "indirect": 0,
+     "total": 16.2
+    },
+    "hamstrings": {
+     "direct": 12.1,
+     "indirect": 0,
+     "total": 12.1
+    },
+    "glutes": {
+     "direct": 16.1,
+     "indirect": 0,
+     "total": 16.1
+    },
+    "calves": {
+     "direct": 4,
+     "indirect": 0,
+     "total": 4
+    },
+    "chest": {
+     "direct": 12.2,
+     "indirect": 0,
+     "total": 12.2
+    },
+    "back": {
+     "direct": 10.6,
+     "indirect": 0,
+     "total": 10.6
+    },
+    "shoulders": {
+     "direct": 7.1,
+     "indirect": 7.1,
+     "total": 14.2
+    },
+    "arms": {
+     "direct": 15.1,
+     "indirect": 2.8,
+     "total": 17.9
+    },
+    "core": {
+     "direct": 4.6,
+     "indirect": 4.5,
+     "total": 9.1
+    }
+   },
+   "bounds": {
+    "quads": [
+     10,
+     18
+    ],
+    "hamstrings": [
+     8,
+     14
+    ],
+    "glutes": [
+     6,
+     14
+    ],
+    "calves": [
+     4,
+     10
+    ],
+    "chest": [
+     10,
+     20
+    ],
+    "back": [
+     10,
+     20
+    ],
+    "shoulders": [
+     8,
+     16
+    ],
+    "arms": [
+     6,
+     14
+    ],
+    "core": [
+     4,
+     10
+    ]
+   },
+   "underFloorWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 0,
+    "calves": 0,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 0,
+    "arms": 0,
+    "core": 0
+   },
+   "overHighWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 12,
+    "calves": 0,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 1,
+    "arms": 12,
+    "core": 6
+   },
+   "pushPull": {
+    "push": 19.3,
+    "pull": 10.6,
+    "ratio": 1.82
+   },
+   "variety": [
+    {
+     "arch": "str_upper_a",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.73,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_a",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.71,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_upper_b",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.73,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_b",
+     "sessions": 12,
+     "distinctExercises": 6,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.83,
+     "distinctMains": 1
+    }
+   ],
+   "continuity": {
+    "transitions": 259,
+    "exerciseSwitched": 69,
+    "recalibrated": 0,
+    "loadDown": 0,
+    "repsDown": 0,
+    "itemsWithLoad": 191,
+    "itemsBodyweight": 12,
+    "itemsEffortOnly": 79,
+    "repeatedEffortOnly": [
+     "str_upper_a/ua.iso_upper:machine_lateral_raise×6",
+     "str_upper_a/ua.trunk:cable_pallof_press×7",
+     "str_lower_a/la.iso_lower:leg_curl×12",
+     "str_lower_a/la.trunk:cable_pallof_press×6",
+     "str_upper_b/ub.iso_upper:machine_lateral_raise×6",
+     "str_lower_b/lb.iso_lower:leg_curl×12",
+     "str_upper_b/ub.trunk:cable_pallof_press×5"
+    ]
+   },
+   "interference": {
+    "sessionsReduced": 6,
+    "reductions": 12,
+    "byAction": {
+     "rir_only": 12
+    },
+    "arbitrations": {
+     "swapped/strength": 2
+    }
+   },
+   "reproducibility": {
+    "identical": 48,
+    "progression_since_planning": 0,
+    "history_since_planning": 0,
+    "planner_divergence": 0,
+    "not_regenerable": 0
+   },
+   "plannerDivergences": 0,
+   "duration": {
+    "meanMin": 51,
+    "maxMin": 60,
+    "overAvailable": 0
+   },
+   "accountingGap": 0
+  },
+  "lifts": {
+   "bench_press@main_push_h": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6"
+    ]
+   },
+   "pull_up@pull_v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "-x9-12",
+     "-x10-12",
+     "-x11-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12"
+    ]
+   },
+   "seated_cable_row@pull_2h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 25,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "machine_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "pec_deck@iso_upper": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-12-21",
+    "repsUps": 8,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20",
+     "40x16-20",
+     "40x16-20",
+     "40x17-20",
+     "40x17-20",
+     "40x18-20",
+     "40x18-20",
+     "40x19-20",
+     "40x19-20",
+     "40x20-20",
+     "40x20-20",
+     "45x12-20",
+     "45x12-20"
+    ]
+   },
+   "cable_pallof_press@trunk": {
+    "n": 18,
+    "perWeek": 1.5,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 55,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_lateral_raise@iso_upper": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 37,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "back_squat@main_knee": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6"
+    ]
+   },
+   "single_leg_rdl_db@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 44,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12",
+     "44x8-12"
+    ]
+   },
+   "leg_extension@iso_lower": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-12-21",
+    "repsUps": 8,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20",
+     "40x16-20",
+     "40x16-20",
+     "40x17-20",
+     "40x17-20",
+     "40x18-20",
+     "40x18-20",
+     "40x19-20",
+     "40x19-20",
+     "40x20-20",
+     "40x20-20",
+     "45x12-20",
+     "45x12-20"
+    ]
+   },
+   "bulgarian_split_squat@single_leg": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 48,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x9-12",
+     "40x10-12",
+     "40x10-12",
+     "40x11-12",
+     "40x11-12",
+     "40x12-12",
+     "40x12-12",
+     "42x8-12",
+     "42x8-12",
+     "42x9-12",
+     "42x9-12",
+     "42x10-12",
+     "42x10-12",
+     "42x11-12",
+     "42x11-12",
+     "42x12-12",
+     "42x12-12"
+    ]
+   },
+   "leg_curl@iso_lower": {
+    "n": 24,
+    "perWeek": 2,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_row@pull_h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 42,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12",
+     "45x12-12"
+    ]
+   },
+   "db_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12"
+    ]
+   },
+   "lat_pulldown@pull_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "romanian_deadlift@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42.5x8-12",
+     "42.5x9-12",
+     "42.5x10-12",
+     "42.5x11-12",
+     "42.5x12-12",
+     "45x8-12"
+    ]
+   },
+   "machine_calf_raise@calves": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 3,
+    "sets": 48,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20"
+    ]
+   }
+  },
+  "probes": {
+   "w2": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 4,
+    "douleur:unchanged": 2,
+    "course_libre:unchanged": 1,
+    "douleur:adapted": 2,
+    "course_libre:adapted": 2
+   },
+   "w7": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 4,
+    "douleur:unchanged": 2,
+    "course_libre:unchanged": 1,
+    "douleur:adapted": 2,
+    "course_libre:adapted": 2
+   }
+  },
+  "archs": {
+   "str_upper_a": 12,
+   "str_upper_b": 12,
+   "str_lower_a": 12,
+   "str_lower_b": 12
+  }
+ },
+ "S4C/progressant": {
+  "summary": {
+   "id": "S4C",
+   "label": "Musculation 4× + Cross-training 2×",
+   "strengthSessions": 48,
+   "volume": {
+    "quads": {
+     "direct": 16.2,
+     "indirect": 0,
+     "total": 16.2
+    },
+    "hamstrings": {
+     "direct": 12.1,
+     "indirect": 0,
+     "total": 12.1
+    },
+    "glutes": {
+     "direct": 16.1,
+     "indirect": 0,
+     "total": 16.1
+    },
+    "calves": {
+     "direct": 4,
+     "indirect": 0,
+     "total": 4
+    },
+    "chest": {
+     "direct": 12.2,
+     "indirect": 0,
+     "total": 12.2
+    },
+    "back": {
+     "direct": 10.6,
+     "indirect": 0,
+     "total": 10.6
+    },
+    "shoulders": {
+     "direct": 7.1,
+     "indirect": 7.1,
+     "total": 14.2
+    },
+    "arms": {
+     "direct": 15.1,
+     "indirect": 2.8,
+     "total": 17.9
+    },
+    "core": {
+     "direct": 4.6,
+     "indirect": 4.5,
+     "total": 9.1
+    }
+   },
+   "bounds": {
+    "quads": [
+     10,
+     18
+    ],
+    "hamstrings": [
+     8,
+     14
+    ],
+    "glutes": [
+     6,
+     14
+    ],
+    "calves": [
+     4,
+     10
+    ],
+    "chest": [
+     10,
+     20
+    ],
+    "back": [
+     10,
+     20
+    ],
+    "shoulders": [
+     8,
+     16
+    ],
+    "arms": [
+     6,
+     14
+    ],
+    "core": [
+     4,
+     10
+    ]
+   },
+   "underFloorWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 0,
+    "calves": 0,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 0,
+    "arms": 0,
+    "core": 0
+   },
+   "overHighWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 12,
+    "calves": 0,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 1,
+    "arms": 12,
+    "core": 6
+   },
+   "pushPull": {
+    "push": 19.3,
+    "pull": 10.6,
+    "ratio": 1.82
+   },
+   "variety": [
+    {
+     "arch": "str_upper_a",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.73,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_a",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.71,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_upper_b",
+     "sessions": 12,
+     "distinctExercises": 7,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.73,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_b",
+     "sessions": 12,
+     "distinctExercises": 6,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.83,
+     "distinctMains": 1
+    }
+   ],
+   "continuity": {
+    "transitions": 259,
+    "exerciseSwitched": 69,
+    "recalibrated": 0,
+    "loadDown": 0,
+    "repsDown": 0,
+    "itemsWithLoad": 191,
+    "itemsBodyweight": 12,
+    "itemsEffortOnly": 79,
+    "repeatedEffortOnly": [
+     "str_upper_a/ua.iso_upper:machine_lateral_raise×6",
+     "str_upper_a/ua.trunk:cable_pallof_press×7",
+     "str_lower_a/la.iso_lower:leg_curl×12",
+     "str_lower_a/la.trunk:cable_pallof_press×6",
+     "str_upper_b/ub.iso_upper:machine_lateral_raise×6",
+     "str_lower_b/lb.iso_lower:leg_curl×12",
+     "str_upper_b/ub.trunk:cable_pallof_press×5"
+    ]
+   },
+   "interference": {
+    "sessionsReduced": 6,
+    "reductions": 12,
+    "byAction": {
+     "rir_only": 12
+    },
+    "arbitrations": {
+     "swapped/strength": 2
+    }
+   },
+   "reproducibility": {
+    "identical": 48,
+    "progression_since_planning": 0,
+    "history_since_planning": 0,
+    "planner_divergence": 0,
+    "not_regenerable": 0
+   },
+   "plannerDivergences": 0,
+   "duration": {
+    "meanMin": 51,
+    "maxMin": 60,
+    "overAvailable": 0
+   },
+   "accountingGap": 0
+  },
+  "lifts": {
+   "bench_press@main_push_h": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-10-26",
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6"
+    ]
+   },
+   "pull_up@pull_v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "-x9-12",
+     "-x10-12",
+     "-x11-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12",
+     "-x12-12"
+    ]
+   },
+   "seated_cable_row@pull_2h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 25,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "machine_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "pec_deck@iso_upper": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-12-21",
+    "repsUps": 8,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20",
+     "40x16-20",
+     "40x16-20",
+     "40x17-20",
+     "40x17-20",
+     "40x18-20",
+     "40x18-20",
+     "40x19-20",
+     "40x19-20",
+     "40x20-20",
+     "40x20-20",
+     "45x12-20",
+     "45x12-20"
+    ]
+   },
+   "cable_pallof_press@trunk": {
+    "n": 18,
+    "perWeek": 1.5,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 55,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_lateral_raise@iso_upper": {
+    "n": 12,
+    "perWeek": 1,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 37,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "back_squat@main_knee": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-10-26",
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "42.5x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6",
+     "45x6"
+    ]
+   },
+   "single_leg_rdl_db@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 44,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12",
+     "44x8-12"
+    ]
+   },
+   "leg_extension@iso_lower": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-12-21",
+    "repsUps": 8,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20",
+     "40x16-20",
+     "40x16-20",
+     "40x17-20",
+     "40x17-20",
+     "40x18-20",
+     "40x18-20",
+     "40x19-20",
+     "40x19-20",
+     "40x20-20",
+     "40x20-20",
+     "45x12-20",
+     "45x12-20"
+    ]
+   },
+   "bulgarian_split_squat@single_leg": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 48,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x9-12",
+     "40x10-12",
+     "40x10-12",
+     "40x11-12",
+     "40x11-12",
+     "40x12-12",
+     "40x12-12",
+     "42x8-12",
+     "42x8-12",
+     "42x9-12",
+     "42x9-12",
+     "42x10-12",
+     "42x10-12",
+     "42x11-12",
+     "42x11-12",
+     "42x12-12",
+     "42x12-12"
+    ]
+   },
+   "leg_curl@iso_lower": {
+    "n": 24,
+    "perWeek": 2,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20"
+    ]
+   },
+   "machine_row@pull_h": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 42,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12",
+     "45x12-12"
+    ]
+   },
+   "db_shoulder_press@push_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12"
+    ]
+   },
+   "lat_pulldown@pull_2v": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "45x8-12",
+     "45x9-12",
+     "45x10-12",
+     "45x11-12",
+     "45x12-12"
+    ]
+   },
+   "romanian_deadlift@sec_hip": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 45,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 36,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42.5x8-12",
+     "42.5x9-12",
+     "42.5x10-12",
+     "42.5x11-12",
+     "42.5x12-12",
+     "45x8-12"
+    ]
+   },
+   "machine_calf_raise@calves": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 3,
+    "sets": 48,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20"
+    ]
+   }
+  },
+  "probes": {
+   "w2": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 4,
+    "douleur:unchanged": 2,
+    "course_libre:unchanged": 1,
+    "douleur:adapted": 2,
+    "course_libre:adapted": 2
+   },
+   "w7": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 4,
+    "douleur:unchanged": 2,
+    "course_libre:unchanged": 1,
+    "douleur:adapted": 2,
+    "course_libre:adapted": 2
+   }
+  },
+  "archs": {
+   "str_upper_a": 12,
+   "str_upper_b": 12,
+   "str_lower_a": 12,
+   "str_lower_b": 12
+  }
+ },
+ "S4D/conforme": {
+  "summary": {
+   "id": "S4D",
+   "label": "Musculation 4×, haltères seuls",
+   "strengthSessions": 48,
+   "volume": {
+    "quads": {
+     "direct": 10.1,
+     "indirect": 0,
+     "total": 10.1
+    },
+    "hamstrings": {
+     "direct": 6,
+     "indirect": 0,
+     "total": 6
+    },
+    "glutes": {
+     "direct": 16.1,
+     "indirect": 0,
+     "total": 16.1
+    },
+    "calves": {
+     "direct": 4,
+     "indirect": 0,
+     "total": 4
+    },
+    "chest": {
+     "direct": 6.1,
+     "indirect": 0,
+     "total": 6.1
+    },
+    "back": {
+     "direct": 7,
+     "indirect": 0,
+     "total": 7
+    },
+    "shoulders": {
+     "direct": 10.1,
+     "indirect": 3,
+     "total": 13.1
+    },
+    "arms": {
+     "direct": 10.3,
+     "indirect": 3.5,
+     "total": 13.8
+    },
+    "core": {
+     "direct": 4.7,
+     "indirect": 3,
+     "total": 7.7
+    }
+   },
+   "bounds": {
+    "quads": [
+     10,
+     18
+    ],
+    "hamstrings": [
+     8,
+     14
+    ],
+    "glutes": [
+     6,
+     14
+    ],
+    "calves": [
+     4,
+     10
+    ],
+    "chest": [
+     10,
+     20
+    ],
+    "back": [
+     10,
+     20
+    ],
+    "shoulders": [
+     8,
+     16
+    ],
+    "arms": [
+     6,
+     14
+    ],
+    "core": [
+     4,
+     10
+    ]
+   },
+   "underFloorWeeks": {
+    "quads": 0,
+    "hamstrings": 12,
+    "glutes": 0,
+    "calves": 0,
+    "chest": 12,
+    "back": 12,
+    "shoulders": 0,
+    "arms": 0,
+    "core": 1
+   },
+   "overHighWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 12,
+    "calves": 0,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 0,
+    "arms": 1,
+    "core": 0
+   },
+   "pushPull": {
+    "push": 16.2,
+    "pull": 7.3,
+    "ratio": 2.22
+   },
+   "variety": [
+    {
+     "arch": "str_upper_a",
+     "sessions": 12,
+     "distinctExercises": 5,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 10,
+     "meanSimilarity": 0.98,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_a",
+     "sessions": 12,
+     "distinctExercises": 5,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.78,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_upper_b",
+     "sessions": 12,
+     "distinctExercises": 5,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 1,
+     "meanSimilarity": 0.82,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_b",
+     "sessions": 12,
+     "distinctExercises": 5,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.78,
+     "distinctMains": 1
+    }
+   ],
+   "continuity": {
+    "transitions": 190,
+    "exerciseSwitched": 2,
+    "recalibrated": 0,
+    "loadDown": 0,
+    "repsDown": 0,
+    "itemsWithLoad": 160,
+    "itemsBodyweight": 28,
+    "itemsEffortOnly": 21,
+    "repeatedEffortOnly": []
+   },
+   "interference": {
+    "sessionsReduced": 0,
+    "reductions": 0,
+    "byAction": {},
+    "arbitrations": {}
+   },
+   "reproducibility": {
+    "identical": 48,
+    "progression_since_planning": 0,
+    "history_since_planning": 0,
+    "planner_divergence": 0,
+    "not_regenerable": 0
+   },
+   "plannerDivergences": 0,
+   "duration": {
+    "meanMin": 40,
+    "maxMin": 55,
+    "overAvailable": 0
+   },
+   "accountingGap": 0
+  },
+  "lifts": {
+   "db_bench_press@main_push_h": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6"
+    ]
+   },
+   "db_row@pull_h": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 44,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 84,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x9-12",
+     "40x10-12",
+     "40x10-12",
+     "40x11-12",
+     "40x11-12",
+     "40x12-12",
+     "40x12-12",
+     "42x8-12",
+     "42x8-12",
+     "42x9-12",
+     "42x9-12",
+     "42x10-12",
+     "42x10-12",
+     "42x11-12",
+     "42x11-12",
+     "42x12-12",
+     "42x12-12",
+     "44x8-12",
+     "44x8-12"
+    ]
+   },
+   "db_shoulder_press@push_2v": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 48,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x9-12",
+     "40x10-12",
+     "40x10-12",
+     "40x11-12",
+     "40x11-12",
+     "40x12-12",
+     "40x12-12",
+     "42x8-12",
+     "42x8-12",
+     "42x9-12",
+     "42x9-12",
+     "42x10-12",
+     "42x10-12",
+     "42x11-12",
+     "42x11-12",
+     "42x12-12",
+     "42x12-12"
+    ]
+   },
+   "db_lateral_raise@iso_upper": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-12-21",
+    "repsUps": 8,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20",
+     "40x16-20",
+     "40x16-20",
+     "40x17-20",
+     "40x17-20",
+     "40x18-20",
+     "40x18-20",
+     "40x19-20",
+     "40x19-20",
+     "40x20-20",
+     "40x20-20",
+     "42x12-20",
+     "42x12-20"
+    ]
+   },
+   "db_curl@iso_upper": {
+    "n": 1,
+    "perWeek": 0.08,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 3,
+    "seq": [
+     "-x12-20"
+    ]
+   },
+   "goblet_squat@main_knee": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6"
+    ]
+   },
+   "single_leg_rdl_db@sec_hip": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 44,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 72,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x9-12",
+     "40x10-12",
+     "40x10-12",
+     "40x11-12",
+     "40x11-12",
+     "40x12-12",
+     "40x12-12",
+     "42x8-12",
+     "42x8-12",
+     "42x9-12",
+     "42x9-12",
+     "42x10-12",
+     "42x10-12",
+     "42x11-12",
+     "42x11-12",
+     "42x12-12",
+     "42x12-12",
+     "44x8-12",
+     "44x8-12"
+    ]
+   },
+   "walking_lunge_db@single_leg": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12"
+    ]
+   },
+   "db_calf_raise@calves": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 3,
+    "sets": 48,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20"
+    ]
+   },
+   "bulgarian_split_squat@single_leg": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12"
+    ]
+   },
+   "dead_bug@trunk": {
+    "n": 28,
+    "perWeek": 2.33,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 56,
+    "seq": [
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20"
+    ]
+   }
+  },
+  "probes": {
+   "w2": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 4,
+    "douleur:unchanged": 2,
+    "douleur:adapted": 2,
+    "course_libre:unchanged": 3
+   },
+   "w7": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 4,
+    "douleur:unchanged": 2,
+    "douleur:adapted": 2,
+    "course_libre:unchanged": 3
+   }
+  },
+  "archs": {
+   "str_upper_a": 12,
+   "str_lower_b": 12,
+   "str_upper_b": 12,
+   "str_lower_a": 12
+  }
+ },
+ "S4D/progressant": {
+  "summary": {
+   "id": "S4D",
+   "label": "Musculation 4×, haltères seuls",
+   "strengthSessions": 48,
+   "volume": {
+    "quads": {
+     "direct": 10.1,
+     "indirect": 0,
+     "total": 10.1
+    },
+    "hamstrings": {
+     "direct": 6,
+     "indirect": 0,
+     "total": 6
+    },
+    "glutes": {
+     "direct": 16.1,
+     "indirect": 0,
+     "total": 16.1
+    },
+    "calves": {
+     "direct": 4,
+     "indirect": 0,
+     "total": 4
+    },
+    "chest": {
+     "direct": 6.1,
+     "indirect": 0,
+     "total": 6.1
+    },
+    "back": {
+     "direct": 7,
+     "indirect": 0,
+     "total": 7
+    },
+    "shoulders": {
+     "direct": 10.1,
+     "indirect": 3,
+     "total": 13.1
+    },
+    "arms": {
+     "direct": 10.3,
+     "indirect": 3.5,
+     "total": 13.8
+    },
+    "core": {
+     "direct": 4.7,
+     "indirect": 3,
+     "total": 7.7
+    }
+   },
+   "bounds": {
+    "quads": [
+     10,
+     18
+    ],
+    "hamstrings": [
+     8,
+     14
+    ],
+    "glutes": [
+     6,
+     14
+    ],
+    "calves": [
+     4,
+     10
+    ],
+    "chest": [
+     10,
+     20
+    ],
+    "back": [
+     10,
+     20
+    ],
+    "shoulders": [
+     8,
+     16
+    ],
+    "arms": [
+     6,
+     14
+    ],
+    "core": [
+     4,
+     10
+    ]
+   },
+   "underFloorWeeks": {
+    "quads": 0,
+    "hamstrings": 12,
+    "glutes": 0,
+    "calves": 0,
+    "chest": 12,
+    "back": 12,
+    "shoulders": 0,
+    "arms": 0,
+    "core": 1
+   },
+   "overHighWeeks": {
+    "quads": 0,
+    "hamstrings": 0,
+    "glutes": 12,
+    "calves": 0,
+    "chest": 0,
+    "back": 0,
+    "shoulders": 0,
+    "arms": 1,
+    "core": 0
+   },
+   "pushPull": {
+    "push": 16.2,
+    "pull": 7.3,
+    "ratio": 2.22
+   },
+   "variety": [
+    {
+     "arch": "str_upper_a",
+     "sessions": 12,
+     "distinctExercises": 5,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 10,
+     "meanSimilarity": 0.98,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_a",
+     "sessions": 12,
+     "distinctExercises": 5,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.78,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_upper_b",
+     "sessions": 12,
+     "distinctExercises": 5,
+     "distinctCompositions": 2,
+     "identicalToPrevious": 1,
+     "meanSimilarity": 0.82,
+     "distinctMains": 1
+    },
+    {
+     "arch": "str_lower_b",
+     "sessions": 12,
+     "distinctExercises": 5,
+     "distinctCompositions": 3,
+     "identicalToPrevious": 0,
+     "meanSimilarity": 0.78,
+     "distinctMains": 1
+    }
+   ],
+   "continuity": {
+    "transitions": 190,
+    "exerciseSwitched": 2,
+    "recalibrated": 0,
+    "loadDown": 0,
+    "repsDown": 0,
+    "itemsWithLoad": 160,
+    "itemsBodyweight": 28,
+    "itemsEffortOnly": 21,
+    "repeatedEffortOnly": []
+   },
+   "interference": {
+    "sessionsReduced": 0,
+    "reductions": 0,
+    "byAction": {},
+    "arbitrations": {}
+   },
+   "reproducibility": {
+    "identical": 48,
+    "progression_since_planning": 0,
+    "history_since_planning": 0,
+    "planner_divergence": 0,
+    "not_regenerable": 0
+   },
+   "plannerDivergences": 0,
+   "duration": {
+    "meanMin": 40,
+    "maxMin": 55,
+    "overAvailable": 0
+   },
+   "accountingGap": 0
+  },
+  "lifts": {
+   "db_bench_press@main_push_h": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 46,
+    "loadUps": 3,
+    "firstLoadUpWeek": "2026-10-26",
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "42x6",
+     "42x6",
+     "42x6",
+     "42x6",
+     "42x6",
+     "42x6",
+     "42x6",
+     "42x6",
+     "44x6",
+     "44x6",
+     "44x6",
+     "44x6",
+     "44x6",
+     "44x6",
+     "44x6",
+     "44x6",
+     "46x6",
+     "46x6"
+    ]
+   },
+   "db_row@pull_h": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 44,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 84,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x9-12",
+     "40x10-12",
+     "40x10-12",
+     "40x11-12",
+     "40x11-12",
+     "40x12-12",
+     "40x12-12",
+     "42x8-12",
+     "42x8-12",
+     "42x9-12",
+     "42x9-12",
+     "42x10-12",
+     "42x10-12",
+     "42x11-12",
+     "42x11-12",
+     "42x12-12",
+     "42x12-12",
+     "44x8-12",
+     "44x8-12"
+    ]
+   },
+   "db_shoulder_press@push_2v": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 48,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x9-12",
+     "40x10-12",
+     "40x10-12",
+     "40x11-12",
+     "40x11-12",
+     "40x12-12",
+     "40x12-12",
+     "42x8-12",
+     "42x8-12",
+     "42x9-12",
+     "42x9-12",
+     "42x10-12",
+     "42x10-12",
+     "42x11-12",
+     "42x11-12",
+     "42x12-12",
+     "42x12-12"
+    ]
+   },
+   "db_lateral_raise@iso_upper": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-12-21",
+    "repsUps": 8,
+    "sets": 73,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20",
+     "40x16-20",
+     "40x16-20",
+     "40x17-20",
+     "40x17-20",
+     "40x18-20",
+     "40x18-20",
+     "40x19-20",
+     "40x19-20",
+     "40x20-20",
+     "40x20-20",
+     "42x12-20",
+     "42x12-20"
+    ]
+   },
+   "db_curl@iso_upper": {
+    "n": 1,
+    "perWeek": 0.08,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 3,
+    "seq": [
+     "-x12-20"
+    ]
+   },
+   "goblet_squat@main_knee": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 46,
+    "loadUps": 3,
+    "firstLoadUpWeek": "2026-10-26",
+    "repsUps": 0,
+    "sets": 73,
+    "seq": [
+     "-x6",
+     "-x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "40x6",
+     "42x6",
+     "42x6",
+     "42x6",
+     "42x6",
+     "42x6",
+     "42x6",
+     "42x6",
+     "42x6",
+     "44x6",
+     "44x6",
+     "44x6",
+     "44x6",
+     "44x6",
+     "44x6",
+     "44x6",
+     "44x6",
+     "46x6",
+     "46x6"
+    ]
+   },
+   "single_leg_rdl_db@sec_hip": {
+    "n": 24,
+    "perWeek": 2,
+    "first": 40,
+    "last": 44,
+    "loadUps": 2,
+    "firstLoadUpWeek": "2026-11-16",
+    "repsUps": 8,
+    "sets": 72,
+    "seq": [
+     "-x8-12",
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x9-12",
+     "40x10-12",
+     "40x10-12",
+     "40x11-12",
+     "40x11-12",
+     "40x12-12",
+     "40x12-12",
+     "42x8-12",
+     "42x8-12",
+     "42x9-12",
+     "42x9-12",
+     "42x10-12",
+     "42x10-12",
+     "42x11-12",
+     "42x11-12",
+     "42x12-12",
+     "42x12-12",
+     "44x8-12",
+     "44x8-12"
+    ]
+   },
+   "walking_lunge_db@single_leg": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12"
+    ]
+   },
+   "db_calf_raise@calves": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 40,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 3,
+    "sets": 48,
+    "seq": [
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "-x12-20",
+     "40x12-20",
+     "40x12-20",
+     "40x13-20",
+     "40x13-20",
+     "40x14-20",
+     "40x14-20",
+     "40x15-20",
+     "40x15-20"
+    ]
+   },
+   "bulgarian_split_squat@single_leg": {
+    "n": 12,
+    "perWeek": 1,
+    "first": 40,
+    "last": 42,
+    "loadUps": 1,
+    "firstLoadUpWeek": "2026-11-23",
+    "repsUps": 8,
+    "sets": 24,
+    "seq": [
+     "-x8-12",
+     "40x8-12",
+     "40x8-12",
+     "40x9-12",
+     "40x10-12",
+     "40x11-12",
+     "40x12-12",
+     "42x8-12",
+     "42x9-12",
+     "42x10-12",
+     "42x11-12",
+     "42x12-12"
+    ]
+   },
+   "dead_bug@trunk": {
+    "n": 28,
+    "perWeek": 2.33,
+    "first": null,
+    "last": null,
+    "loadUps": 0,
+    "firstLoadUpWeek": null,
+    "repsUps": 0,
+    "sets": 56,
+    "seq": [
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20",
+     "-x10-20"
+    ]
+   }
+  },
+  "probes": {
+   "w2": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 4,
+    "douleur:unchanged": 2,
+    "douleur:adapted": 2,
+    "course_libre:unchanged": 3
+   },
+   "w7": {
+    "inconnu:unchanged": 4,
+    "fatigue:adapted": 4,
+    "douleur:unchanged": 2,
+    "douleur:adapted": 2,
+    "course_libre:unchanged": 3
+   }
+  },
+  "archs": {
+   "str_upper_a": 12,
+   "str_lower_b": 12,
+   "str_upper_b": 12,
+   "str_lower_a": 12
+  }
+ }
+}
