@@ -1,0 +1,230 @@
+diff --git a/packages/app-core/src/provisional-content.ts b/packages/app-core/src/provisional-content.ts
+index d5a5ee6..247c0c4 100644
+--- a/packages/app-core/src/provisional-content.ts
++++ b/packages/app-core/src/provisional-content.ts
+@@ -13,6 +13,7 @@ import { STRENGTH_PRESETS, strengthCatalogDocument } from '../../strength/tests/
+ import { strengthF6CatalogDocument, strengthF6RulesetDocument } from '../../strength/tests/fixtures/f6.js';
+ import { strengthL1V3RulesetDocument } from '../../strength/tests/fixtures/l1v3.js';
+ import { strengthL1B4RulesetDocument } from '../../strength/tests/fixtures/l1b4.js';
++import { RC51_VARIANT, strengthRc51RulesetDocument } from '../../strength/tests/fixtures/rc51.js';
+ import { testRulesetDocumentWithDuplicate } from '../../engine/tests/fixtures/ruleset.js';
+ import { testCatalogDocument } from '../../engine/tests/fixtures/catalog.js';
+ 
+@@ -44,7 +45,7 @@ let running: ContentSource | undefined;
+  * L1b-4 (tirage complémentaire à temps résiduel), catalogue de test Strength F6.
+  */
+ export function strengthContent(): ContentSource {
+-  strength ??= load(strengthL1B4RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-l1b4-0.7.0');
++  strength ??= RC51_VARIANT ? load(strengthRc51RulesetDocument(), strengthF6CatalogDocument(), `fixtures:strength-rc51-${RC51_VARIANT}`) : load(strengthL1B4RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-l1b4-0.7.0');
+   return strength;
+ }
+ 
+diff --git a/packages/app-core/tests/rc46/zz-rc51-dump.test.ts b/packages/app-core/tests/rc46/zz-rc51-dump.test.ts
+new file mode 100644
+index 0000000..9fdd83b
+--- /dev/null
++++ b/packages/app-core/tests/rc46/zz-rc51-dump.test.ts
+@@ -0,0 +1,35 @@
++import { it } from 'vitest';
++import { writeFileSync } from 'node:fs';
++import { migrateToCurrent } from '@hybridsport/engine';
++import { beta0Environment } from '../../src/index.js';
++import { simulate } from '../rc4-audit/rc4-sim.js';
++import { measureProfile, qualityProfiles, QUALITY_WEEKS, summarize } from './quality-bench.js';
++import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
++const extras = (): ProfileSpec[] => { const s4 = qualityProfiles().find((p) => p.id === 'S4') as ProfileSpec; const p3 = qualityProfiles().find((p) => p.id === 'P3') as ProfileSpec; const p2 = qualityProfiles().find((p) => p.id === 'P2') as ProfileSpec;
++  return [
++    { id: 'S4H', label: 'Musculation 4× + HYROX 2× (complément)', profile: { ...s4.profile, priorities: ['strength', 'hyrox'], hyrox: p3.profile.hyrox } },
++    { id: 'S4C', label: 'Musculation 4× + Cross-training 2× (complément)', profile: { ...s4.profile, priorities: ['strength', 'crosstraining'], crosstraining: p2.profile.crosstraining } },
++    { id: 'S4D', label: 'Musculation 4× haltères seuls (complément)', profile: { ...s4.profile, equipment: { presetId: 'preset.dumbbells_only', items: ['dumbbells', 'bench'], confirmedAt: '2026-10-04T10:00:00Z' } } },
++  ] as ProfileSpec[]; };
++it('dump', () => {
++  const out: Record<string, unknown[]> = {};
++  const summaries: unknown[] = [];
++  for (const spec of [...qualityProfiles(), ...extras()]) {
++    try { summaries.push(summarize(measureProfile(spec))); } catch (e) { summaries.push({ id: spec.id, error: String(e) }); }
++    const r = simulate(spec, QUALITY_WEEKS, beta0Environment(), () => {});
++    out[spec.id] = Object.entries(r.state.planner.weeks).sort().flatMap(([w, wk]) => wk.requests.filter((q) => q.sport === 'strength').map((q) => {
++      const d = q.record ? migrateToCurrent<any>(q.record as never) : null;
++      const s = d?.ok ? d.value.session : null;
++      return { w, id: q.requestId, date: q.date ?? null, status: q.status, arch: q.intent?.archetypeId ?? null,
++        items: s ? s.blocks.filter((b: any) => b.kind !== 'warmup' && b.kind !== 'cooldown').flatMap((b: any) => b.items.map((i: any) => [i.refs?.slotId, i.exerciseId.replace('ex.', ''), (Array.isArray(i.prescription.sets) ? i.prescription.sets.filter((x: any) => x.kind !== 'rampup' && !x.optional).length : 0), i.refs?.progressionTrackId ?? null, i.refs?.anchor ?? null])) : [],
++        p50: d?.ok ? Math.round(d.value.durationEstimate?.p50 / 60) : null,
++        avail: wk.days.find((x) => x.date === q.date)?.availableMinutes ?? null,
++        choices: q.reasons.filter((x) => x.code === 'SELECT.CHOICE_GROUP').map((x) => `${x.params.group}:${x.params.need}:${x.params.cause}`),
++        variation: q.reasons.filter((x) => /WITHIN_WEEK_VARIATION/.test(x.code)).map((x) => x.params.outcome),
++        codes: [...new Set(q.reasons.map((x) => x.code))].filter((c) => /INTERFER|PAIN|OMITTED|SUBSTIT|ANCHOR|PROGRESSION|CAP/.test(c)),
++      };
++    }));
++    out[spec.id + ':exec'] = (r.sessions ?? []).filter((x: any) => x.sport === 'strength').map((x: any) => ({ date: x.date, status: x.status, reductions: x.reductions, arbitration: x.arbitration }));
++  }
++  writeFileSync('/tmp/claude-0/-home-user-Hybridsport/f083cc76-61a7-573c-85c7-94efc86a17c0/scratchpad/rc51-'+(process.env.RC51_VARIANT||'0')+'.json', JSON.stringify({ ...out, summaries }));
++}, 900000);
+diff --git a/packages/app-core/tests/rc46/zz-rc51-more.test.ts b/packages/app-core/tests/rc46/zz-rc51-more.test.ts
+new file mode 100644
+index 0000000..10c763a
+--- /dev/null
++++ b/packages/app-core/tests/rc46/zz-rc51-more.test.ts
+@@ -0,0 +1,20 @@
++import { it } from 'vitest';
++import { writeFileSync } from 'node:fs';
++import { beta0Environment } from '../../src/index.js';
++import { simulate } from '../rc4-audit/rc4-sim.js';
++import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
++import { measureProfile, qualityProfiles } from './quality-bench.js';
++import { probe } from '../rc45/probe-starts.js';
++it('more', () => {
++  const out: Record<string, unknown> = {};
++  const specs = qualityProfiles().filter((p) => ['S4', 'P1b'].includes(p.id)) as ProfileSpec[];
++  for (const spec of specs) {
++    const q = measureProfile(spec);
++    out[`${spec.id}:loads`] = q.sessions.map((s) => ({ w: s.week, arch: s.arch, items: s.items.filter((i) => /main|sec_|pull_v|pull_h|push_v|push_h/.test(i.slot)).map((i) => [i.slot, i.ex, i.sets, i.reps, i.load]) }));
++    let w2: unknown = null;
++    simulate(spec, 2, beta0Environment(), (st, monday) => { if (monday === '2026-10-12') w2 = st; });
++    const pr = probe(w2 as never);
++    out[`${spec.id}:probe`] = pr;
++  }
++  writeFileSync(`/tmp/claude-0/-home-user-Hybridsport/f083cc76-61a7-573c-85c7-94efc86a17c0/scratchpad/rc51-more-${process.env.RC51_VARIANT || '0'}${process.env.RC51_MIGRATE ? 'M' : ''}.json`, JSON.stringify(out));
++}, 900000);
+diff --git a/packages/strength/src/archetypes.ts b/packages/strength/src/archetypes.ts
+index 5831455..f006ad2 100644
+--- a/packages/strength/src/archetypes.ts
++++ b/packages/strength/src/archetypes.ts
+@@ -82,7 +82,7 @@ export function resolveSlots(a: StrengthArchetype, params: StrengthParams, goal:
+       // de choix ne choisit jamais un membre impossible quand un autre membre est réalisable.
+       const doable = scoped.filter(feasible);
+       const pool = doable.length > 0 ? doable : scoped;
+-      const ordered = [...pool].sort((x, y) => Number(anchored(y.id)) - Number(anchored(x.id)) || Number(used.has(x.need)) - Number(used.has(y.need)) || recentNeedExposure(x.need) - recentNeedExposure(y.need) || rank(priority, x.need) - rank(priority, y.need) || (x.id < y.id ? -1 : 1));
++      const ordered = [...pool].sort((x, y) => Number(anchored(y.id)) - Number(anchored(x.id)) || Number(y.preferred === true) - Number(x.preferred === true) || Number(used.has(x.need)) - Number(used.has(y.need)) || recentNeedExposure(x.need) - recentNeedExposure(y.need) || rank(priority, x.need) - rank(priority, y.need) || (x.id < y.id ? -1 : 1));
+       const chosen = ordered[0];
+       if (chosen) {
+         const next = ordered[1];
+diff --git a/packages/strength/src/composition.ts b/packages/strength/src/composition.ts
+index da813f4..94e8854 100644
+--- a/packages/strength/src/composition.ts
++++ b/packages/strength/src/composition.ts
+@@ -48,7 +48,7 @@ export const STRENGTH_WEEKLY_COMPOSITION_CANDIDATE: StrengthCompositionRule = {
+     // technical-constant: CANDIDATE — spec Strength 02 §5.2 A1, « 1 à 3 séances par semaine » (citation, non approuvée)
+     { minSessions: 1, maxSessions: 3, rotation: ['str_full_body'], source: 'spec 02 §5.2 A1' },
+     // technical-constant: CANDIDATE — spec Strength 02 §5.1, « À 4 séances, haut / bas ×2 » (citation, non approuvée)
+-    { minSessions: 4, maxSessions: 4, rotation: ['str_upper', 'str_lower'], source: 'spec 02 §5.1' },
++    { minSessions: 4, maxSessions: 4, rotation: (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.RC51_VARIANT ? ['str_upper_a', 'str_lower_a', 'str_upper_b', 'str_lower_b'] : ['str_upper', 'str_lower'], source: 'spec 02 §5.1' },
+   ],
+ };
+ 
+@@ -86,7 +86,11 @@ export function composeStrengthWeek(i: StrengthComposeInput): StrengthComposeRes
+   const rule = i.rule;
+   if (!rule) return ungoverned(i, 'rule_absent');
+   if (rule.status !== 'approved' && i.mode === 'PRODUCTION') return ungoverned(i, 'rule_not_approved');
+-  const band = rule.bands.find((b) => i.weeklySessions >= b.minSessions && i.weeklySessions <= b.maxSessions);
++  const band0 = rule.bands.find((b) => i.weeklySessions >= b.minSessions && i.weeklySessions <= b.maxSessions);
++  // ÉTUDE RC5.1 (migration) : semaines antérieures au 2026-10-26 composées avec la rotation d'origine.
++  const env0 = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env ?? {};
++  const early = env0.RC51_MIGRATE === '1' && i.days.length > 0 && [...i.days].map((d) => d.date).sort()[0]! < '2026-10-26';
++  const band = band0 && early && band0.rotation.length > 2 ? { ...band0, rotation: ['str_upper', 'str_lower'] } : band0;
+   if (!band) return ungoverned(i, 'frequency_not_covered');
+   const gk = goalKey(i.goal);
+   const archetypes = band.rotation.map((id) => findArchetype(i.params, id));
+@@ -104,7 +108,10 @@ export function composeStrengthWeek(i: StrengthComposeInput): StrengthComposeRes
+     const ranks = needs.map((n) => (priority.includes(n) ? priority.indexOf(n) : priority.length));
+     return ranks.length === 0 ? priority.length : Math.min(...ranks);
+   };
+-  const rotation = [...band.rotation].sort((x, y) => rank(x) - rank(y) || band.rotation.indexOf(x) - band.rotation.indexOf(y));
++  const first = [...band.rotation].sort((x, y) => rank(x) - rank(y) || band.rotation.indexOf(x) - band.rotation.indexOf(y))[0] as string;
++  // ÉTUDE RC5.1 : ordre CYCLIQUE conservé (A/B alternés) ; seul le point de départ suit la priorité (identique à 2 archétypes).
++  const start = band.rotation.indexOf(first);
++  const rotation = band.rotation.length > 2 ? [...band.rotation.slice(start), ...band.rotation.slice(0, start)] : [...band.rotation].sort((x, y) => rank(x) - rank(y) || band.rotation.indexOf(x) - band.rotation.indexOf(y));
+   const authority = rule.status === 'approved' ? 'approved' : 'provisional';
+   const free = [...i.days].filter((d) => d.lockedArchetypeId === undefined).sort((a, b) => (a.date < b.date ? -1 : 1));
+   const assigned = free.map((d, k) => rotation[k % rotation.length] as string);
+diff --git a/packages/strength/src/params.ts b/packages/strength/src/params.ts
+index 612693b..31c4bc9 100644
+--- a/packages/strength/src/params.ts
++++ b/packages/strength/src/params.ts
+@@ -52,7 +52,7 @@ export const zStrengthArchetype = z.object({
+   }).strict()).min(1),
+   slots: z.array(z.object({
+     id, blockId: id, need: id, role: z.enum(ROLES), status: z.enum(['required', 'optional']),
+-    choiceGroup: id.optional(), count: range(int.positive()), minFamilies: int.positive().optional(),
++    choiceGroup: id.optional(), preferred: z.boolean().optional(), count: range(int.positive()), minFamilies: int.positive().optional(),
+     modalityPreference: z.enum(['load_ceiling', 'stability', 'specificity']).optional(),
+     anchorable: z.boolean(), trackable: z.boolean(),
+     /**
+diff --git a/packages/strength/tests/fixtures/rc51.ts b/packages/strength/tests/fixtures/rc51.ts
+new file mode 100644
+index 0000000..2f6b6d5
+--- /dev/null
++++ b/packages/strength/tests/fixtures/rc51.ts
+@@ -0,0 +1,72 @@
++/** RC5.1 — ÉTUDE (copie jetable) : Haut A/B et Bas A/B explicites, surcouche du ruleset L1b-4. Variante par RC51_VARIANT. */
++import type { RulesetDocumentInput } from '@hybridsport/domain';
++import { strengthL1B4RulesetDocument } from './l1b4.js';
++
++type Json = Record<string, unknown>;
++export const RC51_VARIANT = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env?.RC51_VARIANT ?? '';
++
++function slotOf(a: Json, id: string): Json {
++  const s = (a.slots as Json[]).find((x) => x.id === id);
++  if (!s) throw new Error(id);
++  return s;
++}
++const strip = ({ choiceGroup: _c, ...rest }: Json): Json => rest;
++const mk = (src: Json, id: string, o: Json): Json => ({ ...strip(src), id, ...o });
++
++/** Variante C : groupes de choix CONSERVÉS (repli douleur / matériel), membre PRÉFÉRÉ par archétype A ou B. */
++function variantC(upper: Json, lower: Json): Json[] {
++  const pref = (a: Json, prefix: string, preferred: Record<string, string>): Json => ({
++    ...a, id: a.id === 'str_upper' ? `str_upper_${prefix}` : `str_lower_${prefix}`,
++    slots: (a.slots as Json[]).map((s) => {
++      const id = String(s.id).replace(/^(up|lo)\./, `${a.id === 'str_upper' ? 'u' : 'l'}${prefix}.`);
++      const g = s.choiceGroup as string | undefined;
++      return { ...s, id, ...(g && preferred[g] === s.need ? { preferred: true } : {}) };
++    }),
++  });
++  return [
++    pref(upper, 'a', { main: 'push_horizontal', pull: 'pull_vertical', push_2: 'push_vertical', pull_2: 'pull_horizontal' }),
++    pref(upper, 'b', { main: 'push_vertical', pull: 'pull_horizontal', push_2: 'push_horizontal', pull_2: 'pull_vertical' }),
++    pref(lower, 'a', { main: 'knee_dominant', secondary: 'hip_dominant' }),
++    pref(lower, 'b', { main: 'hip_dominant', secondary: 'knee_dominant' }),
++  ];
++}
++
++export function rc51Archetypes(upper: Json, lower: Json, variant: string): Json[] {
++  if (variant === 'C') return variantC(upper, lower);
++  const U = (id: string) => slotOf(upper, id);
++  const L = (id: string) => slotOf(lower, id);
++  const loadSec = variant === 'B';
++  const ua = { ...upper, id: 'str_upper_a', slots: [
++    mk(U('up.main_push_h'), 'ua.main_push_h', {}),
++    mk(U('up.pull_v'), 'ua.pull_v', {}),
++    loadSec ? mk(U('up.pull_h'), 'ua.push_v', { need: 'push_vertical', blockId: 'b.secondary', role: 'secondary' }) : mk(U('up.push_2v'), 'ua.push_v', {}),
++    mk(U('up.pull_2h'), 'ua.pull_h', {}),
++    mk(U('up.iso_upper'), 'ua.iso_upper', {}), mk(U('up.trunk'), 'ua.trunk', {}),
++  ] };
++  const ub = { ...upper, id: 'str_upper_b', slots: [
++    mk(U('up.main_push_v'), 'ub.main_push_v', {}),
++    mk(U('up.pull_h'), 'ub.pull_h', {}),
++    loadSec ? mk(U('up.pull_h'), 'ub.push_h', { need: 'push_horizontal', blockId: 'b.secondary', role: 'secondary' }) : mk(U('up.push_2h'), 'ub.push_h', {}),
++    mk(U('up.pull_2v'), 'ub.pull_v', {}),
++    mk(U('up.iso_upper'), 'ub.iso_upper', {}), mk(U('up.trunk'), 'ub.trunk', {}),
++  ] };
++  const rest = (p: string) => (lower.slots as Json[]).filter((s) => ['lo.single_leg', 'lo.iso_lower', 'lo.trunk', 'lo.calves'].includes(String(s.id))).map((s) => mk(s, String(s.id).replace('lo.', `${p}.`), {}));
++  const la = { ...lower, id: 'str_lower_a', slots: [mk(L('lo.main_knee'), 'la.main_knee', {}), mk(L('lo.sec_hip'), 'la.sec_hip', {}), ...rest('la')] };
++  const lb = { ...lower, id: 'str_lower_b', slots: [mk(L('lo.main_hip'), 'lb.main_hip', {}), mk(L('lo.sec_knee'), 'lb.sec_knee', {}), ...rest('lb')] };
++  return [ua, ub, la, lb];
++}
++
++export function strengthRc51RulesetDocument(): RulesetDocumentInput {
++  const base = strengthL1B4RulesetDocument();
++  return {
++    ...base,
++    rulesetVersion: `0.8.0-strength-rc51-${RC51_VARIANT || 'none'}`,
++    parameters: base.parameters.map((p) => {
++      if (p.id !== 'strength.archetypes' || !RC51_VARIANT) return p;
++      const arr = p.value as unknown as Json[];
++      const upper = arr.find((a) => a.id === 'str_upper') as Json;
++      const lower = arr.find((a) => a.id === 'str_lower') as Json;
++      return { ...p, value: [...arr, ...rc51Archetypes(upper, lower, RC51_VARIANT)] as unknown as typeof p.value, version: '0.8.0' };
++    }),
++  };
++}
