@@ -1,0 +1,655 @@
+diff --git a/packages/app-core/src/generate.ts b/packages/app-core/src/generate.ts
+index 8247088..a2aab7a 100644
+--- a/packages/app-core/src/generate.ts
++++ b/packages/app-core/src/generate.ts
+@@ -8,6 +8,7 @@
+  * Autorité : Strength = `provisional` (ruleset de test verrouillé provisoirement) ; Running = `simulation`
+  * (moteur construit en mode simulation, contexte CANDIDATE, gouvernance réelle : rien d'approuvé).
+  */
++import { mesoPosition } from './rc53-mesocycle.js';
+ import type { CoreState, EngineContext, LoadedCatalog, LoadedRuleset, SportEngine } from '@hybridsport/engine';
+ import { ENGINE_VERSION, readToleranceProfile, runSportSession, targetFromAvailable } from '@hybridsport/engine';
+ import type { FingerprintHistoryEntry, ISODateTime, SessionDraft } from '@hybridsport/domain';
+@@ -94,7 +95,7 @@ export function strengthContextAt(state: AppState, p: Profile, date: string, con
+   return {
+     goal: { primary: { goal: p.strength.goal } },
+     // Périodisation non gouvernée : phase fixe, aucune rampe de volume ni décharge planifiée.
+-    phase: { kind: 'accumulation', weekInMesocycle: 1, mesocycleLength: 1 },
++    phase: (() => { const m = mesoPosition(state, date); return m ? { kind: m.deload ? 'deload' as const : 'accumulation' as const, weekInMesocycle: m.pos + 1, mesocycleLength: m.length } : { kind: 'accumulation' as const, weekInMesocycle: 1, mesocycleLength: 1 }; })(),
+     capacities: [],
+     tracks: state.strength.tracks.filter((t) => t.status !== 'closed'),
+     recentExposures: exposures,
+diff --git a/packages/app-core/src/programme.ts b/packages/app-core/src/programme.ts
+index 503cee3..0a7916b 100644
+--- a/packages/app-core/src/programme.ts
++++ b/packages/app-core/src/programme.ts
+@@ -17,6 +17,7 @@ import { addDays, normalizeInstant } from './dates.js';
+ import type { AppState, Feedback, ProgrammeIntent, SessionLog, SetLog } from './model.js';
+ import { appPlannerEnvironment, assertEnvironment, buildPorts, clockOf, persistWeek, recentOf } from './planning.js';
+ import type { EngineGoals, PlannerEnvironment } from './planning.js';
++import { mesoPosition } from './rc53-mesocycle.js';
+ import { applyStrengthExecutionTraced, performedSets, realizedRunFrom, testReferenceFrom } from './progression.js';
+ import { isHyroxComposed, realizeCrossTrainingExecution, realizeHyroxComposed, realizeHyroxStation } from '@hybridsport/planner';
+ import { assessStrengthWeekVolume, readStrengthParams } from '@hybridsport/strength';
+@@ -263,6 +264,16 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
+           archetypeId: intent.archetypeId, session, sets: [...sets], painItems: [...(x.painItems ?? [])],
+           sessionCompleted: x.completion !== 'abandoned', sessionPain: x.pain !== undefined && x.pain !== 'NONE',
+           sessionStatus: x.completion === 'abandoned' ? 'abandoned' : x.completion === 'modified' ? 'modified' : 'completed',
++          // RC5.3 (prototype) — phase du mésocycle et exercices à prescription modifiée (interférence, état du jour, temps).
++          ...(() => {
++            const m = req.date ? mesoPosition(state, req.date) : undefined;
++            if (!m) return {};
++            const MOD = /^(interference|interference_rir|readiness|time)/;
++            const pr = Object.values(state.planner.weeks).flatMap((w) => w.requests).find((r) => r.requestId === x.requestId);
++            const fromReasons = (pr?.reasons ?? []).filter((r) => r.code === 'DOSE.MODIFIED' && MOD.test(String(r.params.modifier))).map((r) => String(r.params.exerciseId));
++            const all = [...(adapted ? session.blocks.flatMap((b) => b.items).map((i) => i.exerciseId) : []), ...session.blocks.flatMap((b) => b.items).filter((i) => i.refs?.doseModified === true).map((i) => i.exerciseId)];
++            return { phaseKind: m.deload ? 'deload' : 'accumulation', modifiedExercises: [...new Set([...fromReasons, ...all])] };
++          })(),
+         }, at);
+         s = { ...s, strength: applied.strength };
+         progressionTrace = applied.reasons;
+diff --git a/packages/app-core/src/progression.ts b/packages/app-core/src/progression.ts
+index 6ef0df1..40ed5ed 100644
+--- a/packages/app-core/src/progression.ts
++++ b/packages/app-core/src/progression.ts
+@@ -11,8 +11,10 @@ import type { ExecutedItem, PerformedSet, SlotRole, StrengthTrack } from '@hybri
+ import { archetypeFromIntentId, isV1Archetype } from '@hybridsport/running';
+ import type { RealizedSession, RealizedStructure, RunningReference, RunningSessionArchetype } from '@hybridsport/running';
+ import type { AppState, GeneratedSession, SessionLog } from './model.js';
++import { dateOf } from './dates.js';
+ import { strengthContent } from './provisional-content.js';
+ import { STIMULUS_BY_GOAL } from './planner.js';
++import { mesoPosition, rc53 } from './rc53-mesocycle.js';
+ 
+ const isWork = (s: SetPrescription): boolean => s.kind !== 'rampup' && s.optional !== true;
+ 
+@@ -51,6 +53,10 @@ export interface StrengthExecution {
+   readonly sessionPain?: boolean;
+   /** S5 — statut déclaré de la séance (preuve : séance modifiée / abandonnée). */
+   readonly sessionStatus?: 'completed' | 'modified' | 'abandoned';
++  /** RC5.3 (prototype) — phase du mésocycle de la séance (`deload` : aucune décision de progression). */
++  readonly phaseKind?: string;
++  /** RC5.3 (prototype) — exercices dont la prescription a été MODIFIÉE (interférence, état du jour, temps). */
++  readonly modifiedExercises?: readonly string[];
+ }
+ 
+ /** Réalisation appliquée et décisions de progression du moteur Strength qui l'ont produite (trace d'audit). */
+@@ -90,14 +96,18 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
+     const prescribed = it.prescription.sets.filter(isWork);
+     const performed = performedSets(it.id, it.prescription.sets, log);
+     const pain = x.sessionPain === true || log.painItems.includes(it.id);
+-    const exec: ExecutedItem = { exerciseId: e.id, prescribed, performed, sessionCompleted: x.sessionCompleted ?? true, ...(x.sessionStatus ? { sessionStatus: x.sessionStatus } : {}), ...(pain ? { skipReason: 'pain' as const } : {}), ...(it.refs?.substitutedFrom ? { substitutedFrom: it.refs.substitutedFrom } : {}) };
++    // RC5.3 R4 — exposition modifiée : classée par rapport à l'effort de BASE de la track (jamais au RIR relevé).
++    const modified = rc53() && (x.modifiedExercises ?? []).includes(e.id);
++    const baseRir = modified && it.refs?.progressionTrackId ? state.strength.tracks.find((t) => t.trackId === it.refs?.progressionTrackId)?.nextPrescription?.rir : undefined;
++    const classified = baseRir === undefined ? prescribed : prescribed.map((z) => (z.intensity && 'effort' in z.intensity && z.intensity.effort ? { ...z, intensity: { ...z.intensity, effort: { ...z.intensity.effort, rir: baseRir } } } as typeof z : z));
++    const exec: ExecutedItem = { exerciseId: e.id, prescribed: classified, performed, sessionCompleted: x.sessionCompleted ?? true, ...(x.sessionStatus ? { sessionStatus: x.sessionStatus } : {}), ...(pain ? { skipReason: 'pain' as const } : {}), ...(it.refs?.substitutedFrom ? { substitutedFrom: it.refs.substitutedFrom } : {}) };
+     const slot = slots.find((z) => z.id === it.refs?.slotId);
+     const role: SlotRole = slot?.role ?? 'accessory';
+     const trackId = it.refs?.progressionTrackId;
+     const anchorOfSlot = [...tracks.values()].find((t) => t.tier === 'anchor' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === it.refs?.slotId);
+     const known = trackId ? tracks.get(trackId) : undefined;
+     const update = (t: StrengthTrack, cls: ReturnType<typeof classifyExposure>) => {
+-      const u = updateTrack(t, exec, cls, e, params, 'accumulation');
++      const u = updateTrack(t, exec, modified && cls === 'above' ? 'on_target' : cls, e, params, rc53() ? (x.phaseKind ?? 'accumulation') : 'accumulation', undefined, { level: p.level, modified });
+       // S4 — preuve complète de l'exposition (prescrit / réalisé), indépendante de la décision du modèle.
+       const ev = exposureEvidence(exec, cls);
+       const signed = (v: number | null) => (v === null ? 'n/a' : v > 0 ? `+${String(v)}` : String(v));
+@@ -120,9 +130,11 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
+       tracks.set(c.track.trackId, c.track);
+       reasons.push(...c.reasons);
+     } else if (role === 'accessory' && slot?.trackable && performed.length > 0 && !pain) {
+-      const k = `${archetypeId}/${slot.id}/${e.id}`;
++      const fam = (a: string) => (rc53() ? a.replace(/_[ab]$/, '') : a);
++      const suf = (z: string) => (rc53() ? z.split('.').slice(1).join('.') : z);
++      const k = `${fam(archetypeId)}/${suf(slot.id)}/${e.id}`;
+       counts[k] = (counts[k] ?? 0) + 1;
+-      const hasTracked = [...tracks.values()].some((t) => t.tier === 'tracked' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === slot.id);
++      const hasTracked = [...tracks.values()].some((t) => t.tier === 'tracked' && t.status !== 'closed' && fam(t.archetypeId) === fam(archetypeId) && suf(t.slotId) === suf(slot.id));
+       if ((counts[k] ?? 0) >= params['strength.tracks'].tier2AutoCreateAfter && !hasTracked) {
+         const model = progressionModelFor(e, role, p.level, performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
+         const c = createTrack({ tier: 'tracked', archetypeId, slotId: slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role }, params);
+@@ -132,6 +144,19 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
+     }
+     if (performed.length > 0) exposures.push({ exerciseId: e.id, at: now, ...(it.refs?.slotId ? { slotId: it.refs.slotId } : {}), sets: performed });
+   }
++  // RC5.3 R1 — historique PARTAGÉ par exercice : l'e1RM observé d'un exercice est commun à toutes ses tracks actives
++  // (lourd / volume, séance A / B) ; chaque track garde sa prescription propre (reps, RIR, charge).
++  if (rc53()) {
++    const touched = new Set(mainItems(x.session).map((i) => i.exerciseId));
++    for (const ex of touched) {
++      // Source : la track de CET exercice mise à jour par CETTE séance (exposition la plus récente), jamais un maximum.
++      const ids = new Set(mainItems(x.session).filter((i) => i.exerciseId === ex).map((i) => i.refs?.progressionTrackId));
++      const own = [...tracks.values()].filter((t) => t.exerciseId === ex && t.status === 'active' && t.e1rmKg !== undefined && t.evidence?.e1rmBasis === 'observed' && (ids.has(t.trackId) || t.openedAt === now));
++      const latest = own[0]?.e1rmKg;
++      if (latest === undefined) continue;
++      for (const t of [...tracks.values()]) if (t.exerciseId === ex && t.status === 'active' && t.model === 'autoregulated') tracks.set(t.trackId, { ...t, e1rmKg: latest });
++    }
++  }
+   return { strength: { tracks: [...tracks.values()].sort((a, b) => (a.trackId < b.trackId ? -1 : 1)), exposures, accessoryCounts: counts }, reasons };
+ }
+ 
+@@ -151,8 +176,41 @@ export function strengthWeekBoundary(state: AppState, at: ISODateTime, o: { read
+   const params = readStrengthParams(strengthContent().ruleset).values;
+   const catalog = strengthContent().catalog;
+   const reasons: ReasonCode[] = [];
+-  const tracks = state.strength.tracks.map((t0) => {
+-    if (t0.status === 'closed') return t0;
++  // RC5.3 R3 — FRONTIÈRE DE MÉSOCYCLE (1re semaine d'un nouveau cycle) : réévaluation des charges puis nouveau cycle
++  // (référence du plafond = charge réévaluée ; essais refusés oubliés). Une fois par track et par cycle (idempotent).
++  const meso = mesoPosition(state, dateOf(at));
++  const newCycle = meso !== undefined && meso.pos === 0 && meso.week > 0;
++  const already = (id: string) => (state.programmeState?.audit ?? []).some((a) => a.reason.code === 'PROGRESSION.CYCLE_STARTED' && a.reason.params.trackId === id && a.weekIndex === meso?.week);
++  const reevaluate = (t: StrengthTrack): StrengthTrack => {
++    const next = t.nextPrescription;
++    const e = catalog.exercise(t.exerciseId);
++    if (!newCycle || t.status !== 'active' || !next || next.loadKg === undefined || !e?.loadModel || already(t.trackId)) return t;
++    const inc = params['strength.load.defaultIncrements'][e.loadModel];
++    if (inc === undefined) return t;
++    const step = inc * params['strength.progression'].loadStepIncrements;
++    const down = (kg: number) => Math.max(step, Math.floor(kg / step + 1e-9) * step);
++    let kg = next.loadKg;
++    let cause = 'kept';
++    const reps = typeof next.reps === 'number' ? next.reps : next.reps.min;
++    const pct = params['strength.load'].pctByRepsToFailure[String(Math.round(reps + (next.rir ?? 0)))];
++    // technical-constant: PROTOTYPE — bornes de réévaluation (fractions de la charge courante)
++    const MAX_DOWN = 0.9; const RESET = 0.95;
++    if (t.model === 'autoregulated' && t.e1rmKg !== undefined && t.evidence?.e1rmBasis === 'observed' && pct !== undefined) {
++      const ideal = down(t.e1rmKg * pct);
++      if (ideal < kg - step) { kg = Math.max(ideal, down(kg * MAX_DOWN)); cause = 'too_heavy'; }
++      else if (ideal >= kg + step) { kg = Math.min(ideal, kg + 2 * step); cause = 'too_light'; }
++    }
++    // Remise « stagnation » : principaux (linéaire, autorégulé) seulement, et seulement si −5 % vaut au moins un pas.
++    if (cause === 'kept' && (t.model === 'autoregulated' || t.model === 'linear_load') && t.cycleStartLoadKg !== undefined && kg <= t.cycleStartLoadKg && t.consecutiveHolds >= 2 && kg * (1 - RESET) >= step) { kg = down(kg * RESET); cause = 'stagnation_reset'; }
++    const { probeRefusedKg: _r, probe: _p, ...rest } = t;
++    const out: StrengthTrack = { ...rest, cycleStartLoadKg: kg, ...(cause === 'stagnation_reset' ? { consecutiveHolds: 0 } : {}), nextPrescription: { ...next, loadKg: kg, ...(cause === 'stagnation_reset' && t.repRange ? { reps: { min: t.repRange.min, max: t.repRange.max } } : {}) } };
++    if (kg !== next.loadKg) reasons.push(strengthReasons.emit('PROGRESSION.REEVALUATED', { trackId: t.trackId, fromKg: next.loadKg, toKg: kg, cause }));
++    reasons.push(strengthReasons.emit('PROGRESSION.CYCLE_STARTED', { trackId: t.trackId }));
++    return out;
++  };
++  const tracks = state.strength.tracks.map((t00) => {
++    if (t00.status === 'closed') return t00;
++    const t0 = reevaluate(t00);
+     const r = resumeTrack(t0, o.painCleared);
+     reasons.push(...r.reasons);
+     const t = r.track;
+diff --git a/packages/app-core/src/rc53-mesocycle.ts b/packages/app-core/src/rc53-mesocycle.ts
+new file mode 100644
+index 0000000..c6b8758
+--- /dev/null
++++ b/packages/app-core/src/rc53-mesocycle.ts
+@@ -0,0 +1,27 @@
++/**
++ * RC5.3 (PROTOTYPE, `RC53=1`) — mésocycles : durée par niveau (4 à 6 semaines, surchargeable par `RC53_MESO`), position
++ * dérivée de la semaine du programme (déterministe, aucun état ajouté), dernière semaine = décharge.
++ */
++import { weekIndexOf } from '@hybridsport/programme';
++import type { AppState } from './model.js';
++
++export const rc53 = (): boolean => process.env.RC53 === '1';
++// technical-constant: PROTOTYPE — durées initiales par niveau (semaines)
++const LENGTH: Record<string, number> = { novice: 6, beginner: 6, intermediate: 5, advanced: 4 };
++
++export function mesocycleLength(level: string): number {
++  const o = Number(process.env.RC53_MESO);
++  // technical-constant: PROTOTYPE — bornes de la durée configurable (semaines)
++  return Number.isInteger(o) && o >= 4 && o <= 6 ? o : (LENGTH[level] ?? 5);
++}
++
++export interface MesoPosition { readonly week: number; readonly pos: number; readonly length: number; readonly deload: boolean }
++
++export function mesoPosition(state: AppState, date: string): MesoPosition | undefined {
++  if (!rc53() || !state.programmeState || !state.profile) return undefined;
++  const week = weekIndexOf(state.programmeState, date);
++  if (week < 0) return undefined;
++  const length = mesocycleLength(state.profile.level);
++  const pos = week % length;
++  return { week, pos, length, deload: pos === length - 1 };
++}
+diff --git a/packages/app-core/tests/rc4-audit/rc4-sim.ts b/packages/app-core/tests/rc4-audit/rc4-sim.ts
+index 5556c02..1a91889 100644
+--- a/packages/app-core/tests/rc4-audit/rc4-sim.ts
++++ b/packages/app-core/tests/rc4-audit/rc4-sim.ts
+@@ -18,7 +18,7 @@ import {
+ import type { AppState, CheckInInput, Clock, ProfileInput, SessionView } from '../../src/index.js';
+ 
+ // technical-constant: TEST_ONLY — lundis des 6 semaines simulées
+-export const MONS = ['2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26', '2026-11-02', '2026-11-09'] as const;
++export const MONS = Array.from({ length: 24 }, (_, k) => new Date(Date.UTC(2026, 9, 5 + 7 * k)).toISOString().slice(0, 10)) as readonly string[];
+ const at = (d: string, hm: string): Clock => ({ today: d, now: `${d}T${hm}:00.000Z` });
+ const eq = (id: string): string[] => [...(EQUIPMENT_PRESETS.find((p) => p.id === id)?.equipment ?? [])];
+ // technical-constant: TEST_ONLY — allure fictive de saisie (s/km) pour produire une distance réalisée, et charge de départ (kg)
+@@ -40,6 +40,8 @@ export interface ProfileSpec {
+   readonly rirOffset?: number;
+   /** RC4.1 — difficulté ressentie déclarée en fin de course ; `null` : question ignorée (défaut : « comme prévu »). */
+   readonly runDifficulty?: 'EASIER' | 'AS_EXPECTED' | 'HARDER' | 'MUCH_HARDER' | null;
++  /** RC5.3 (étude) — athlète à capacité cachée : répétitions et RIR RÉELS d'une série (remplace l'athlète « conforme »). */
++  readonly athlete?: { perform(a: { exerciseId: string; reps: unknown; rir: number | undefined; kg: number | undefined; week: number }): { reps: number; rir: number } };
+ }
+ 
+ const base = (o: Partial<ProfileInput>): ProfileInput => ({
+@@ -198,10 +200,11 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
+                 const prescribed = (p.intensity as { mode?: string; kg?: number; kgRounded?: number } | undefined);
+                 // Charge prescrite si elle existe ; poids du corps : aucune charge ; sinon charge de travail suivie (calibration).
+                 const kg = prescribed?.mode === 'load' ? prescribed.kg : prescribed?.mode === 'percent_of_reference' ? prescribed.kgRounded : prescribed?.mode === 'bodyweight' ? undefined : (workKg[it.exerciseId] ?? START_KG);
+-                s = recordProgrammeSet(s, at(d, '08:20'), v.requestId, { itemId: it.id, setIndex: i, done: true, reps: topReps(p.reps), ...(kg !== undefined ? { loadKg: kg } : {}) });
+-                // Effort déclaré = effort prescrit (athlète exactement dans la cible).
++                const real = spec.athlete?.perform({ exerciseId: it.exerciseId, reps: p.reps, rir: prescribedRir(p), kg, week: w });
++                s = recordProgrammeSet(s, at(d, '08:20'), v.requestId, { itemId: it.id, setIndex: i, done: true, reps: real ? Math.max(1, real.reps) : topReps(p.reps), ...(kg !== undefined ? { loadKg: kg } : {}) });
++                // Effort déclaré = effort prescrit (athlète exactement dans la cible), ou RIR RÉEL de l'athlète simulé.
+                 const rir = prescribedRir(p);
+-                if (i === sets.length - 1 && rir !== undefined) { try { s = recordProgrammeSetEffort(s, v.requestId, it.id, i, rir + (spec.rirOffset ?? 0)); } catch { /* effort non demandé */ } }
++                if (i === sets.length - 1 && rir !== undefined) { try { s = recordProgrammeSetEffort(s, v.requestId, it.id, i, real ? real.rir : rir + (spec.rirOffset ?? 0)); } catch { /* effort non demandé */ } }
+                 if (kg !== undefined) workKg[it.exerciseId] = kg;
+               });
+             }
+diff --git a/packages/app-core/tests/rc46/quality-bench.ts b/packages/app-core/tests/rc46/quality-bench.ts
+index f0683e1..e359f24 100644
+--- a/packages/app-core/tests/rc46/quality-bench.ts
++++ b/packages/app-core/tests/rc46/quality-bench.ts
+@@ -22,7 +22,7 @@ import { PROFILES, simulate } from '../rc4-audit/rc4-sim.js';
+ import type { ProfileSpec, SimOut } from '../rc4-audit/rc4-sim.js';
+ 
+ // technical-constant: horizon du banc (semaines)
+-export const QUALITY_WEEKS = 6;
++export const QUALITY_WEEKS = Number(process.env.RC53_WEEKS ?? 6);
+ export const GROUPS = ['quads', 'hamstrings', 'glutes', 'calves', 'chest', 'back', 'shoulders', 'arms', 'core'] as const;
+ const PUSH_MUSCLES = new Set(['chest', 'front_delts', 'side_delts', 'triceps']);
+ const PULL_MUSCLES = new Set(['lats', 'upper_back_traps', 'rear_delts', 'biceps']);
+@@ -53,12 +53,13 @@ const repsOf = (r: unknown): string => {
+ };
+ 
+ /** Mesure d'un profil à partir d'une simulation (chemin réel). `env` : environnement à évaluer (référence par défaut). */
+-export function measureProfile(spec: ProfileSpec, env = beta0Environment()): ProfileQuality {
++export function measureProfile(spec: ProfileSpec, env = beta0Environment(), onWeek?: (state: AppState, monday: string) => void): ProfileQuality & { state?: AppState } {
+   // R-A mesuré À LA PLANIFICATION de chaque semaine (aucune séance de la semaine réalisée) : en fin de simulation, les
+   // progressions ont évolué depuis et ne peuvent pas être relues à leur état d'alors (écarts attribués à tort au planificateur).
+   const repro: Record<string, number> = {};
+   const divergences: string[] = [];
+   const r: SimOut = simulate(spec, QUALITY_WEEKS, env, (state, monday) => {
++    onWeek?.(state, monday);
+     const x = weekReproducibility(state, monday, env, 'strength');
+     for (const [k, v] of Object.entries(x.counts)) repro[k] = (repro[k] ?? 0) + v;
+     divergences.push(...x.sessions.filter((y) => y.class === 'planner_divergence').map((y) => `${y.requestId}: ${y.changesAtPlanning.join(', ')}`));
+@@ -115,7 +116,7 @@ export function measureProfile(spec: ProfileSpec, env = beta0Environment()): Pro
+     id: spec.id, label: spec.label, sessions,
+     weeks: r.weeks.map((w) => ({ week: w.week, vol: Object.fromEntries(w.volume.map((v) => [v.group, [v.planned, v.target, v.high] as const])) })),
+     arbitrations: r.sessions.filter((s) => s.arbitration).map((s) => `${s.sport}@${s.date ?? '?'}:${s.arbitration ?? ''}`),
+-    repro, plannerDivergences: divergences, accountingGap: round(gap, 3),
++    repro, plannerDivergences: divergences, accountingGap: round(gap, 3), state: st,
+   };
+ }
+ 
+diff --git a/packages/app-core/tests/rc53/acceptance.test.ts b/packages/app-core/tests/rc53/acceptance.test.ts
+new file mode 100644
+index 0000000..d85e260
+--- /dev/null
++++ b/packages/app-core/tests/rc53/acceptance.test.ts
+@@ -0,0 +1,41 @@
++/** RC5.3 (étude) — contrôles ciblés des tests d'acceptation sur le prototype (RC53=1, RC53_R4=soft). */
++import { writeFileSync } from 'node:fs';
++import { it } from 'vitest';
++import { selectProgrammeSession } from '../../src/index.js';
++import type { AppState } from '../../src/index.js';
++import { simulate } from '../rc4-audit/rc4-sim.js';
++import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
++import { rc51Profiles } from '../rc51/rc51-bench.js';
++import { probe } from '../rc45/probe-starts.js';
++
++it('acceptation', () => {
++  const out: string[] = [];
++  const spec = (id: string) => rc51Profiles().find((p) => p.id === id) as ProfileSpec;
++  // TA-01 / TA-03 : S4 intermédiaire, 6 semaines.
++  let w2: AppState | undefined;
++  const s4 = simulate(spec('S4'), 6, undefined, (st, m) => { if (m === '2026-10-12') w2 = st; }).state;
++  const pec = s4.strength.tracks.filter((t) => t.exerciseId === 'ex.pec_deck' && t.status === 'active');
++  out.push(`TA-01 pec deck : tracks actives=${pec.length} (${pec.map((t) => `${t.archetypeId}/${t.slotId}`).join(', ')})`);
++  // TA-02 / TA-03 : haltères seuls — développé épaules lourd (principal) et volume (accessoire).
++  const s4d = simulate(spec('S4D'), 6).state;
++  const dsp = s4d.strength.tracks.filter((t) => t.exerciseId === 'ex.db_shoulder_press' && t.status === 'active');
++  out.push(`TA-02 développé épaules haltères : ${dsp.map((t) => `${t.tier}/${t.slotId}/${t.model} reps=${JSON.stringify(t.nextPrescription?.reps)} kg=${t.nextPrescription?.loadKg ?? '-'} e1rm=${t.e1rmKg?.toFixed(1) ?? '-'}`).join(' | ')}`);
++  // TA-09 : semaine de décharge (intermédiaire : semaine 5, index 4) — séries et RIR des principaux.
++  const week = (s: AppState, mon: string) => (s.planner.weeks[mon]?.requests ?? []).filter((r) => r.sport === 'strength' && r.status === 'planned').map((r) => {
++    const v = selectProgrammeSession(s, r.requestId);
++    const main = v?.session.blocks.flatMap((b) => b.items).find((i) => /\.main_/.test(i.refs?.slotId ?? ''));
++    const sets = main?.prescription.type === 'sets' ? main.prescription.sets.filter((x) => x.kind !== 'rampup') : [];
++    const rir = (sets[0]?.intensity as { effort?: { rir?: number } } | undefined)?.effort?.rir;
++    return `${main?.exerciseId.replace('ex.', '')}:${sets.length}×@RIR${String(rir)}`;
++  }).join(' ');
++  out.push(`TA-09 semaine 4 (accumulation) : ${week(s4, '2026-10-26')}`);
++  out.push(`TA-09 semaine 5 (décharge)     : ${week(s4, '2026-11-02')}`);
++  out.push(`TA-09 semaine 6 (nouveau cycle) : ${week(s4, '2026-11-09')}`);
++  const audit = (s: AppState) => (s.programmeState?.audit ?? []).map((a) => a.reason);
++  out.push(`TA-09/R3 traces : CYCLE_STARTED=${audit(s4).filter((r) => r.code === 'PROGRESSION.CYCLE_STARTED').length} HELD:deload=${audit(s4).filter((r) => r.code === 'PROGRESSION.HELD' && r.params.cause === 'deload').length}`);
++  // TA-13 : sondes au démarrage semaine 2 (douleur, fatigue, course libre, inconnu).
++  const dec: Record<string, number> = {};
++  for (const [k, v] of Object.entries(probe(w2 as AppState))) { const kk = `${k.split('|')[1]}:${v.decision}`; dec[kk] = (dec[kk] ?? 0) + 1; }
++  out.push(`TA-13 sondes S4 semaine 2 : ${JSON.stringify(dec)}`);
++  writeFileSync(process.env.OUT!, out.join('\n'));
++}, 1_800_000);
+diff --git a/packages/app-core/tests/rc53/bench.test.ts b/packages/app-core/tests/rc53/bench.test.ts
+new file mode 100644
+index 0000000..cc91512
+--- /dev/null
++++ b/packages/app-core/tests/rc53/bench.test.ts
+@@ -0,0 +1,108 @@
++/** RC5.3 (étude jetable) — progression individualisée : A (actuel) vs P (prototype), 24 semaines, niveaux × athlètes. */
++import { writeFileSync } from 'node:fs';
++import { it } from 'vitest';
++import { readStrengthParams } from '@hybridsport/strength';
++import { strengthContent } from '../../src/index.js';
++import type { AppState } from '../../src/index.js';
++import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
++import { measureProfile, summarize } from '../rc46/quality-bench.js';
++import { probe } from '../rc45/probe-starts.js';
++import { rc51Profiles } from '../rc51/rc51-bench.js';
++
++const V = process.env.RC53 === '1' ? (process.env.RC53_R4 === 'soft' ? 'S' : 'P') : 'A';
++const PID = process.env.RC53_PROFILE ?? 'S4';
++const LEVELS = ['beginner', 'intermediate', 'advanced'] as const;
++const KINDS = ['progressant', 'stable', 'fatigue', 'stagnation'] as const;
++// technical-constant: TEST_ONLY — hypothèses de simulation : gain hebdomadaire de capacité (e1RM) par niveau
++const GAIN = { beginner: 0.015, intermediate: 0.0075, advanced: 0.004 } as const;
++// technical-constant: TEST_ONLY — semaines de fatigue (index 0) et baisse de performance ; fin de progression (stagnation)
++const FATIGUE_WEEKS = new Set([2, 3, 10, 11, 18, 19]);
++const FATIGUE_FACTOR = 0.92;
++const STAGNATION_WEEK = 8;
++// technical-constant: TEST_ONLY — charge fictive d'un exercice au poids du corps (modèle de répétitions)
++const BODYWEIGHT_KG = 80;
++const DIV = 30;
++
++function athlete(kind: (typeof KINDS)[number], level: (typeof LEVELS)[number]) {
++  const e0 = new Map<string, number>();
++  const g = GAIN[level];
++  const growth = (w: number) => (kind === 'stable' ? 0 : kind === 'stagnation' ? g * Math.min(w, STAGNATION_WEEK) : g * w);
++  const truth = (ex: string, w: number) => (e0.get(ex) ?? 0) * (1 + growth(w)) * (kind === 'fatigue' && FATIGUE_WEEKS.has(w) ? FATIGUE_FACTOR : 1);
++  return {
++    e0, truth,
++    perform(a: { exerciseId: string; reps: unknown; rir: number | undefined; kg: number | undefined; week: number }) {
++      const load = a.kg ?? BODYWEIGHT_KG;
++      const rirT = a.rir ?? 2;
++      const r = a.reps as number | { min: number; max: number };
++      const lo = typeof r === 'number' ? r : r.min;
++      if (!e0.has(a.exerciseId)) e0.set(a.exerciseId, load * (1 + (lo + rirT) / DIV));
++      const maxR = DIV * (truth(a.exerciseId, a.week) / load - 1);
++      let done = typeof r === 'number' ? Math.min(r, Math.floor(maxR)) : Math.min(r.max, Math.max(r.min, Math.floor(maxR - rirT)));
++      if (done > maxR) done = Math.floor(maxR);
++      return { reps: Math.max(0, done), rir: Math.max(0, Math.floor(maxR - done)) };
++    },
++  };
++}
++
++it(`RC5.3 ${V} ${PID}`, () => {
++  const params = readStrengthParams(strengthContent().ruleset).values;
++  const catalog = strengthContent().catalog;
++  const pct = params['strength.load'].pctByRepsToFailure;
++  const out: Record<string, unknown> = {};
++  const base = rc51Profiles().find((p) => p.id === PID) as ProfileSpec;
++  for (const level of LEVELS) for (const kind of KINDS) {
++    const ath = athlete(kind, level);
++    const spec: ProfileSpec = {
++      ...base, profile: { ...base.profile, level }, athlete: ath,
++      ...(kind === 'fatigue' ? { checkIn: (w: number) => (FATIGUE_WEEKS.has(w) ? { painAnswer: 'no' as const, fatigue: 'high' as const, recovery: 'poor' as const } : { painAnswer: 'no' as const, fatigue: 'low' as const, recovery: 'good' as const }) } : {}),
++    };
++    const snaps: Record<string, AppState> = {};
++    const q = measureProfile(spec, undefined, (st, m) => { if (m === '2026-10-12' || m === '2026-12-28') snaps[m] = st; });
++    const wk = (d: string) => Math.floor((Date.parse(d) - Date.parse('2026-10-05')) / 86_400_000 / 7);
++    // Séquences par (exercice, emplacement) : charge, répétitions, semaine.
++    const seq: Record<string, { w: number; load: number | null; reps: string; main: boolean }[]> = {};
++    for (const s of [...q.sessions].sort((a, b) => (a.date < b.date ? -1 : 1))) for (const i of s.items) (seq[`${i.ex}@${i.slot.split('.').slice(1).join('.')}`] ??= []).push({ w: wk(s.date), load: i.load, reps: i.reps, main: /(^|\.)main_/.test(i.slot) });
++    const stepOf = (ex: string) => { const e = catalog.exercise(`ex.${ex}`); const inc = e?.loadModel ? params['strength.load.defaultIncrements'][e.loadModel] : undefined; return inc ?? 2.5; };
++    const ideal = (ex: string, w: number, reps: number, rir: number) => { const t = ath.truth(`ex.${ex}`, w); const f = pct[String(reps + rir)]; const st = stepOf(ex); return t && f ? Math.floor((t * f) / st + 1e-9) * st : null; };
++    const lifts: Record<string, unknown> = {};
++    let unjustified = 0;
++    for (const [k, L] of Object.entries(seq)) {
++      const [ex] = k.split('@');
++      const loads = L.filter((x) => x.load !== null);
++      let ups = 0; let downs = 0; let repsUps = 0;
++      for (let j = 1; j < L.length; j++) {
++        const a = L[j - 1]!; const b = L[j]!;
++        if (a.load !== null && b.load !== null && b.load > a.load) { ups++; const id = ideal(ex!, b.w, Number(b.reps.split(/[-–]/)[0]), 2); if (id !== null && b.load > id + stepOf(ex!)) unjustified++; }
++        if (a.load !== null && b.load !== null && b.load < a.load) downs++;
++        const lo = (r: string) => Number(r.split(/[-–]/)[0]);
++        if (a.load === b.load && lo(b.reps) > lo(a.reps)) repsUps++;
++      }
++      const at = (wMax: number) => loads.filter((x) => x.w < wMax).at(-1);
++      const err = (wMax: number) => { const x = at(wMax); if (!x || x.load === null || !L[0]?.main) return null; const id = ideal(ex!, x.w, Number(x.reps.split(/[-–]/)[0]), 2); return id ? Math.round(((x.load - id) / id) * 1000) / 10 : null; };
++      // Écart de capacité IMPLICITE de la prescription (charge × (1 + (reps + 2) / 30)) à la capacité réelle (accessoires chargés).
++      const cap = (wMax: number) => { const x = L.filter((y) => y.w < wMax && y.load !== null).at(-1); const t = x ? ath.truth(`ex.${ex}`, x.w) : 0; return x && t ? Math.round(((x.load! * (1 + (Number(x.reps.split(/[-–]/)[0]) + 2) / DIV)) / t - 1) * 1000) / 10 : null; };
++      lifts[k] = { capErr12: cap(12), capErr24: cap(24), n: L.length, main: L[0]?.main ?? false, first: loads[0]?.load ?? null, w12: at(12)?.load ?? null, w24: at(24)?.load ?? null, reps12: L.filter((x) => x.w < 12).at(-1)?.reps, reps24: L.at(-1)?.reps, ups, downs, repsUps, err12: err(12), err24: err(24), seq: L.map((x) => `${x.w}:${x.load ?? '-'}x${x.reps}`) };
++    }
++    const audit = (q.state?.programmeState?.audit ?? []).map((a) => a.reason);
++    const codes: Record<string, number> = {};
++    for (const r of audit) if (r.code.startsWith('PROGRESSION.') || r.code.startsWith('DOSE.')) { const key = r.code === 'PROGRESSION.HELD' ? `HELD:${String(r.params.cause)}` : r.code === 'PROGRESSION.ADVANCED' ? `ADVANCED:${String(r.params.variable)}` : r.code === 'PROGRESSION.REEVALUATED' ? `REEVALUATED:${String(r.params.cause)}` : r.code; codes[key] = (codes[key] ?? 0) + 1; }
++    const dec = (st?: AppState) => { const o: Record<string, number> = {}; if (st) for (const [k, v] of Object.entries(probe(st))) { const kk = `${k.split('|')[1] ?? ''}:${v.decision}`; o[kk] = (o[kk] ?? 0) + 1; } return o; };
++    // Volume par semaine (planifié vs plancher / haut) avec la semaine de décharge du prototype (P seulement).
++    const L = { beginner: 6, intermediate: 5, advanced: 4 }[level];
++    const deload = (w: number) => V !== 'A' && w % L === L - 1;
++    let underNoDeload = 0; let underDeload = 0; let overNoDeload = 0;
++    for (const w of q.weeks) for (const v of Object.values(w.vol)) {
++      const [pl, fl, hi] = v as readonly [number, number | null, number | null];
++      if (fl !== null && pl < fl) { if (deload(w.week - 1)) underDeload++; else underNoDeload++; }
++      if (hi !== null && pl > hi && !deload(w.week - 1)) overNoDeload++;
++    }
++    const tierOf = new Map((q.state?.strength.tracks ?? []).map((t) => [t.trackId, t.tier]));
++    const regByTier: Record<string, number> = {};
++    for (const r of audit) if (r.code === 'PROGRESSION.REGRESSED') { const k2 = tierOf.get(String(r.params.trackId)) ?? '?'; regByTier[k2] = (regByTier[k2] ?? 0) + 1; }
++    // TA-07 : essais annulés par track et par cycle (maximum observé).
++    const revertsBy: Record<string, number> = {};
++    for (const a of q.state?.programmeState?.audit ?? []) if (a.reason.code === 'PROGRESSION.PROBE_REVERTED') { const k3 = `${String(a.reason.params.trackId)}@${String(Math.floor((a.weekIndex ?? 0) / L))}@${String(a.reason.params.fromKg)}`; revertsBy[k3] = (revertsBy[k3] ?? 0) + 1; }
++    out[`${level}/${kind}`] = { underNoDeload, underDeload, overNoDeload, regByTier, maxRevertsPerLoadCycle: Math.max(0, ...Object.values(revertsBy)), summary: summarize(q), lifts, codes, unjustified, probes: { w2: dec(snaps['2026-10-12']) }, sessions: q.sessions.length };
++  }
++  writeFileSync(`${process.env.RC53_OUT}/${V}-${PID}.json`, JSON.stringify(out));
++}, 7_200_000);
+diff --git a/packages/app-core/tests/rc53/conservation.test.ts b/packages/app-core/tests/rc53/conservation.test.ts
+new file mode 100644
+index 0000000..82af680
+--- /dev/null
++++ b/packages/app-core/tests/rc53/conservation.test.ts
+@@ -0,0 +1,39 @@
++/** RC5.3 (étude) — TA-18 : états existants (BÊTA e2cdcc5 = pré-RC5.1, et RC5.1) relus par le prototype sans perte. */
++import { readdirSync, readFileSync, writeFileSync, mkdirSync } from 'node:fs';
++import { createHash } from 'node:crypto';
++import { it } from 'vitest';
++import { ensureBeta0Week, exportState, loadState, MemoryStorage, saveState, selectBeta0Week, selectHistory, STORAGE_KEY } from '../../src/index.js';
++import { simulate } from '../rc4-audit/rc4-sim.js';
++import { rc51Profiles } from '../rc51/rc51-bench.js';
++
++const D = '/tmp/claude-0/beta-compat';
++const R51 = '/tmp/claude-0/rc51-states';
++it('conservation', () => {
++  if (process.env.RC53 !== '1' && process.env.RC53_GEN === '1') {
++    // Génération par le code RC5.1 actuel (A) : S4 et P1b après 3 semaines, tracks par archétype A/B.
++    mkdirSync(R51, { recursive: true });
++    for (const id of ['S4', 'P1b', 'S4D']) {
++      const r = simulate(rc51Profiles().find((p) => p.id === id)!, 3);
++      const st = new MemoryStorage(); saveState(st, r.state);
++      writeFileSync(`${R51}/${id}.json`, st.getItem(STORAGE_KEY) ?? '');
++    }
++    return;
++  }
++  const out: string[] = [];
++  for (const [dir, files] of [[D, readdirSync(D).filter((f) => f.endsWith('.json'))], [R51, readdirSync(R51)]] as const) {
++    for (const f of files) {
++      const raw = readFileSync(`${dir}/${f}`, 'utf8');
++      const st = new MemoryStorage(); st.setItem(STORAGE_KEY, raw);
++      const r = loadState(st, '2026-10-26T07:00:00.000Z');
++      if (r.status !== 'ok') { out.push(`${f} LOAD ${r.status}`); continue; }
++      const st2 = new MemoryStorage(); saveState(st2, r.state);
++      const same = st2.getItem(STORAGE_KEY) === raw;
++      const weeks = Object.keys(r.state.planner.weeks);
++      const hist = JSON.stringify(selectHistory(r.state)).length;
++      let next = 'n/a';
++      try { const n = ensureBeta0Week(r.state, { today: '2026-10-26', now: '2026-10-26T07:00:00.000Z' }); const kept = createHash('sha256').update(JSON.stringify(weeks.map((w) => n.planner.weeks[w]))).digest('hex').slice(0, 12); next = `planned=${String(Boolean(selectBeta0Week(n, '2026-10-26')))} anciennesSemaines#=${String(kept)} tracks=${n.strength.tracks.filter((t) => t.status === 'active').length}`; } catch (e) { next = `ERREUR ${(e as Error).message}`; }
++      out.push(`${dir.split('/').at(-1)}/${f} migré=${String(r.migratedFrom ?? '-')} réécritIdentique=${String(same)} historique=${hist} ${next} export=${exportState(r.state).length}`);
++    }
++  }
++  writeFileSync(process.env.OUT!, out.join('\n'));
++}, 1_800_000);
+diff --git a/packages/domain/src/session.ts b/packages/domain/src/session.ts
+index f14bcd8..c73b832 100644
+--- a/packages/domain/src/session.ts
++++ b/packages/domain/src/session.ts
+@@ -93,6 +93,8 @@ export const zItemRefs = z.object({
+   anchor: z.enum(['declared', 'candidate']).optional(),
+   prescriptionSource: z.enum(['track', 'base_profile', 'calibration', 'substitution', 'history']).optional(),
+   substitutedFrom: zId.optional(),
++  /** RC5.3 (prototype) — dose MODIFIÉE à la génération (interférence, état du jour, temps) : jamais une preuve de progrès. */
++  doseModified: z.literal(true).optional(),
+ }).strict().refine((r) => r.anchor !== 'declared' || r.progressionTrackId !== undefined, 'une ancre déclarée porte son progressionTrackId');
+ export type ItemRefs = z.infer<typeof zItemRefs>;
+ 
+diff --git a/packages/strength/src/codes.ts b/packages/strength/src/codes.ts
+index d6a8e99..f2ecd94 100644
+--- a/packages/strength/src/codes.ts
++++ b/packages/strength/src/codes.ts
+@@ -39,6 +39,8 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
+   { code: 'PROGRESSION.CAP_REACHED', categories: ['adaptation'], params: { trackId: S }, audience: 'internal', severity: 'info' },
+   { code: 'PROGRESSION.SUSPENDED', categories: ['information'], params: { trackId: S, cause: S }, audience: 'internal', severity: 'info' },
+   { code: 'PROGRESSION.CYCLE_STARTED', categories: ['adaptation'], params: { trackId: S }, audience: 'internal', severity: 'info' },
++  { code: 'PROGRESSION.REEVALUATED', categories: ['adaptation'], params: { trackId: S, fromKg: N, toKg: N, cause: S }, audience: 'internal', severity: 'info' },
++  { code: 'PROGRESSION.PROBE_REVERTED', categories: ['adaptation'], params: { trackId: S, fromKg: N, toKg: N }, audience: 'internal', severity: 'info' },
+   { code: 'PROGRESSION.RESUMED', categories: ['adaptation'], params: { trackId: S }, audience: 'internal', severity: 'info' },
+   { code: 'PROGRESSION.TRACK_CREATED', categories: ['information'], params: { trackId: S, tier: S, exerciseId: S }, audience: 'internal', severity: 'info' },
+   { code: 'PROGRESSION.TRACK_CLOSED', categories: ['adaptation'], params: { trackId: S, cause: S }, audience: 'internal', severity: 'info' },
+diff --git a/packages/strength/src/context.ts b/packages/strength/src/context.ts
+index 07ae676..c1c28d3 100644
+--- a/packages/strength/src/context.ts
++++ b/packages/strength/src/context.ts
+@@ -71,6 +71,10 @@ export const zStrengthTrack = z.object({
+    * prescription, selon l'effort observé / inconnu ; nature de l'e1RM (`observed` : RIR saisi ; `lower_bound` :
+    * borne inférieure sans RIR). Absent : track antérieure à S5 (aucune donnée inventée).
+    */
++  /** RC5.3 (prototype) — essai de charge en cours (confirmé ou annulé à l'exposition suivante). */
++  probe: z.object({ fromKg: z.number().positive(), toKg: z.number().positive() }).strict().optional(),
++  /** RC5.3 (prototype) — charge refusée par un essai annulé : aucun nouvel essai avant le prochain cycle. */
++  probeRefusedKg: z.number().positive().optional(),
+   evidence: z.object({
+     exactStreak: z.number().int().nonnegative(), effortKnown: z.number().int().nonnegative(), effortUnknown: z.number().int().nonnegative(),
+     e1rmBasis: z.enum(['observed', 'lower_bound']).optional(),
+diff --git a/packages/strength/src/engine.ts b/packages/strength/src/engine.ts
+index 3eaf748..5ecb540 100644
+--- a/packages/strength/src/engine.ts
++++ b/packages/strength/src/engine.ts
+@@ -375,6 +375,7 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>):
+         ...(anchorDeclared ? { anchor: 'declared' as const } : candidate ? { anchor: 'candidate' as const } : {}),
+         prescriptionSource: p.substitutedFrom ? 'substitution' as const : rx.source,
+         ...(p.substitutedFrom ? { substitutedFrom: p.substitutedFrom } : {}),
++        ...(process.env.RC53 === '1' && local.some((r) => r.code === 'DOSE.MODIFIED' && r.params.exerciseId === p.exercise.id && /^(interference|interference_rir|readiness|time)/.test(String(r.params.modifier))) ? { doseModified: true as const } : {}),
+       };
+       // technical-constant: au plus 3 alternatives prévalidées (contrat de schéma zItem)
+       const alternatives = alternativesFor(p, list, env).slice(0, 3);
+diff --git a/packages/strength/src/model.ts b/packages/strength/src/model.ts
+index b4a1265..7c8b234 100644
+--- a/packages/strength/src/model.ts
++++ b/packages/strength/src/model.ts
+@@ -51,7 +51,13 @@ export function buildEnv(input: SportEngineInput<StrengthContext>, params: Stren
+   const declaredAnchors = new Set(input.intent.repetitionIntents.flatMap((r) => (r.kind === 'progression_anchor' ? [r.trackId] : [])));
+   const active = ctx.tracks.filter((t) => t.status === 'active' && t.archetypeId === archetype.id);
+   const anchorBySlot = new Map(active.filter((t) => t.tier === 'anchor' && declaredAnchors.has(t.trackId)).map((t) => [t.slotId, t]));
+-  const trackedBySlot = new Map(active.filter((t) => t.tier === 'tracked').map((t) => [t.slotId, t]));
++  // RC5.3 R1 (prototype) — tracks d'accessoires PARTAGÉES entre A et B (même famille d'archétype, même emplacement).
++  const shared = process.env.RC53 === '1';
++  const fam = (a: string) => a.replace(/_[ab]$/, '');
++  const prefix = archetype.slots[0]?.id.split('.')[0] ?? '';
++  const trackedBySlot = shared
++    ? new Map(ctx.tracks.filter((t) => t.status === 'active' && t.tier === 'tracked' && fam(t.archetypeId) === fam(archetype.id)).map((t) => [`${prefix}.${t.slotId.split('.').slice(1).join('.')}`, t]))
++    : new Map(active.filter((t) => t.tier === 'tracked').map((t) => [t.slotId, t]));
+   const incumbentBySlot = new Map<string, string[]>();
+   if (ctx.continuity === 'keep_incumbent') {
+     // Dernier instant d'exposition par emplacement, puis exercices de cet instant dans l'ordre de la séance.
+diff --git a/packages/strength/src/progression.ts b/packages/strength/src/progression.ts
+index 77e4155..f1c2524 100644
+--- a/packages/strength/src/progression.ts
++++ b/packages/strength/src/progression.ts
+@@ -208,8 +208,14 @@ function predictedRirAt(sets: readonly PerformedSet[], kg: number, reps: number,
+  * Mise à jour d'une track après exécution. Variable progressée selon le modèle de la TRACK.
+  * `phaseKind = deload` : aucune hausse. Douleur / pause : track suspendue, rien ne baisse.
+  */
+-export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number): TrackUpdate {
+-  const u = updateTrackModel(track, x, cls, e, params, phaseKind, declaredStepKg);
++/** RC5.3 (prototype, `RC53=1`) — options de mise à jour : niveau de l'athlète, exposition à prescription modifiée. */
++export interface UpdateOptions { readonly level?: string; readonly modified?: boolean }
++const RC53 = (): boolean => process.env.RC53 === '1';
++
++export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number, o: UpdateOptions = {}): TrackUpdate {
++  const u = updateTrackModel(track, x, cls, e, params, phaseKind, declaredStepKg, o);
++  // RC5.3 — semaine de décharge / exposition modifiée : aucune preuve longitudinale (ni réussite, ni série exacte).
++  if (RC53() && (phaseKind === 'deload' || (o.modified === true && process.env.RC53_R4 !== 'soft'))) return u;
+   // S5 — historique longitudinal des preuves (douleur / pause : inchangé, ce n'est ni une réussite ni un échec).
+   if (cls === 'pain' || cls === 'safety_pause') return u;
+   const basis = track.model === 'autoregulated' ? autoregulatedBasis(x.performed, params, track.e1rmKg, u.track.e1rmKg) : undefined;
+@@ -225,7 +231,17 @@ const autoregulatedBasis = (sets: readonly PerformedSet[], params: StrengthParam
+   return est.lowerBound !== undefined && after === est.lowerBound && (before === undefined || est.lowerBound > before) ? 'lower_bound' : undefined;
+ };
+ 
+-function updateTrackModel(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number): TrackUpdate {
++function updateTrackModel(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number, o: UpdateOptions = {}): TrackUpdate {
++  const u = updateTrackModelInner(track, x, cls, e, params, phaseKind, declaredStepKg, o);
++  if (!RC53()) return u;
++  // RC5.3 R2/R3 — toute HAUSSE de charge est un ESSAI : confirmée ou annulée à l'exposition probante suivante.
++  const before = track.nextPrescription?.loadKg;
++  const after = u.track.nextPrescription?.loadKg;
++  if (before !== undefined && after !== undefined && after > before && u.track.probe === undefined) return { ...u, track: { ...u.track, probe: { fromKg: before, toKg: after } } };
++  return u;
++}
++
++function updateTrackModelInner(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number, o: UpdateOptions = {}): TrackUpdate {
+   const p = params['strength.progression'];
+   const reasons: ReasonCode[] = [];
+   const next = track.nextPrescription;
+@@ -233,7 +249,28 @@ function updateTrackModel(track: StrengthTrack, x: ExecutedItem, cls: ExposureCl
+     reasons.push(strengthReasons.emit('PROGRESSION.SUSPENDED', { trackId: track.trackId, cause: cls }));
+     return { track: { ...track, status: 'suspended' }, reasons, rotate: false };
+   }
+-  const resumed: StrengthTrack = track.status === 'suspended' ? { ...track, status: 'active' } : track;
++  let resumed: StrengthTrack = track.status === 'suspended' ? { ...track, status: 'active' } : track;
++  if (RC53()) {
++    // R3 — décharge : aucune décision (ni hausse, ni baisse, ni compteur).
++    if (phaseKind === 'deload') return { track: resumed, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: 'deload' })], rotate: false };
++    // R4 — prescription MODIFIÉE (interférence, état du jour, temps) : jamais une preuve de progrès ni d'échec.
++    if (o.modified === true && cls !== 'substituted' && cls !== 'no_data' && cls !== 'interrupted') {
++      // R4-souple (`RC53_R4=soft`) : une réussite modifiée compte comme preuve, sans jamais décider seule d'une hausse.
++      if (process.env.RC53_R4 === 'soft' && (cls === 'on_target' || cls === 'above')) return { track: { ...resumed, consecutiveSuccess: resumed.consecutiveSuccess + 1, consecutiveBelow: 0 }, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: 'modified_prescription' })], rotate: false };
++      return { track: resumed, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: cls === 'below' || cls === 'partial' ? 'below_modified' : 'modified_prescription' })], rotate: false };
++    }
++    // R2 — résolution d'un essai de charge en cours.
++    if (resumed.probe && next && (cls === 'below' || cls === 'partial')) {
++      const pr = resumed.probe;
++      const { probe: _p, ...rest } = resumed;
++      const reps = track.model === 'double_progression' && track.repRange ? { reps: { min: track.repRange.max, max: track.repRange.max } } : {};
++      return {
++        track: { ...rest, probeRefusedKg: pr.toKg, consecutiveSuccess: 0, consecutiveBelow: 0, nextPrescription: { ...next, loadKg: pr.fromKg, ...reps } },
++        reasons: [strengthReasons.emit('PROGRESSION.PROBE_REVERTED', { trackId: track.trackId, fromKg: pr.toKg, toKg: pr.fromKg })], rotate: false,
++      };
++    }
++    if (resumed.probe && (cls === 'on_target' || cls === 'above')) { const { probe: _p, ...rest } = resumed; resumed = rest; }
++  }
+   if (cls === 'substituted' || cls === 'no_data' || cls === 'interrupted' || cls === 'load_deviation' || phaseKind === 'deload') {
+     reasons.push(strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: phaseKind === 'deload' ? 'deload' : cls }));
+     return { track: resumed, reasons, rotate: false };
+@@ -282,6 +319,15 @@ function updateTrackModel(track: StrengthTrack, x: ExecutedItem, cls: ExposureCl
+         if (e1rm !== undefined && pct !== undefined) kg = Math.max(next.loadKg, Math.min(next.loadKg + step, roundDownToStep(e1rm * pct, step)));
+       }
+       if (capped(kg)) return { track: base, reasons: [strengthReasons.emit('PROGRESSION.CAP_REACHED', { trackId: track.trackId })], rotate: false };
++      if (RC53() && kg === next.loadKg && track.model === 'autoregulated' && step !== undefined) {
++        const ev = exposureEvidence(x, cls);
++        const needed = (o.level === 'advanced' ? 3 : 2) + (ev.effort === 'unknown' ? 1 : 0);
++        const streak = (track.evidence?.exactStreak ?? 0) + 1;
++        const refused = track.probeRefusedKg !== undefined && next.loadKg + step >= track.probeRefusedKg;
++        if (ev.success === 'exact' && streak >= needed && !refused) kg = next.loadKg + step;
++        if (kg !== next.loadKg && capped(kg)) return { track: base, reasons: [strengthReasons.emit('PROGRESSION.CAP_REACHED', { trackId: track.trackId })], rotate: false };
++      }
++      if (RC53() && kg > next.loadKg && track.probeRefusedKg !== undefined && kg >= track.probeRefusedKg) kg = Math.max(next.loadKg, track.probeRefusedKg - step);
+       if (kg === next.loadKg) {
+         // S4 — réussite EXACTE (aucune marge mesurée) : l'estimation reproduit la charge prescrite ; aucune règle
+         // gouvernée ne transforme une réussite exacte en hausse ⇒ décision tracée comme BLOQUÉE, jamais inventée.
+@@ -312,6 +358,8 @@ function updateTrackModel(track: StrengthTrack, x: ExecutedItem, cls: ExposureCl
+       }
+       const kg = next.loadKg + step;
+       if (capped(kg)) return { track: base, reasons: [strengthReasons.emit('PROGRESSION.CAP_REACHED', { trackId: track.trackId })], rotate: false };
++      // RC5.3 — charge refusée par un essai annulé : maintien au haut de plage jusqu'au prochain cycle.
++      if (RC53() && track.probeRefusedKg !== undefined && kg >= track.probeRefusedKg) return { track: base, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: 'probe_refused' })], rotate: false };
+       // Granularité du matériel : un saut de charge que la séance MESURÉE classerait d'avance « en dessous »
+       // (RIR prévu au bas de la plage ≤ RIR visé − marge ; ex. 4 → 6 kg = +50 %) est refusé : charge maintenue,
+       // stagnation comptée (rotation d'exercice à terme). Un pas ordinaire (30 → 32 kg) passe.

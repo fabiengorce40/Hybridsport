@@ -1,0 +1,7 @@
+TA-01 pec deck : tracks actives=1 (str_upper_b/ub.iso_upper)
+TA-02 développé épaules haltères : tracked/ua.push_2v/double_progression reps={"min":11,"max":12} kg=40 e1rm=56.0 | anchor/ub.main_push_v/autoregulated reps=6 kg=44 e1rm=51.9
+TA-09 semaine 4 (accumulation) : barbell_ohp:3×@RIR2 back_squat:3×@RIR2 bench_press:3×@RIR2 romanian_deadlift:3×@RIR2
+TA-09 semaine 5 (décharge)     : bench_press:1×@RIR4 romanian_deadlift:1×@RIR4 barbell_ohp:1×@RIR4 back_squat:1×@RIR4
+TA-09 semaine 6 (nouveau cycle) : barbell_ohp:3×@RIR2 back_squat:3×@RIR2 bench_press:3×@RIR2 romanian_deadlift:3×@RIR2
+TA-09/R3 traces : CYCLE_STARTED=15 HELD:deload=18
+TA-13 sondes S4 semaine 2 : {"inconnu:unchanged":4,"fatigue:adapted":4,"douleur:unchanged":2,"douleur:adapted":2,"course_libre:unchanged":3}
