@@ -58,6 +58,24 @@
   - bandeau « Nouvelle version disponible » avec « Mettre à jour » ;
   - fonctionnement hors ligne après le premier chargement.
 
+## 2 bis. Mise à jour Course (corrections du commit `9eb1a4c`, appliquées seules)
+
+- **Saisie Course en trois natures**, choix obligatoire :
+  - sortie d'entraînement : jamais utilisée comme performance de référence ;
+  - chrono personnel : effort maximal confirmé ;
+  - course officielle.
+- **Requalification** d'un chrono en sortie d'entraînement :
+  - uniquement après confirmation explicite ;
+  - la référence reste dans l'historique ;
+  - aucun doublon de course réalisée.
+- **Nouvelle tentative ciblée** des séances de course refusées de la semaine en cours, après une saisie ou une requalification.
+- **Séance de course non planifiée** :
+  - information nommée (« Il manque votre dernière course réelle ») ;
+  - actions directes : enregistrer une course, requalifier un chrono.
+- **Profil Course** : capacités affichées (séances clés disponibles ou non prévues par l'objectif, source des allures).
+- **Données existantes :** aucune modification automatique. Le schéma reste en version 2, avec un seul champ facultatif ajouté (`running.requalified`). Les états enregistrés par la BÊTA précédente (`0a194f0`) sont relus sans migration et réécrits octet pour octet.
+- **Non inclus :** RC5.1 (Haut A/B et Bas A/B), études et autres développements non validés de `claude/kairo-rc4-dev`.
+
 ## 3. Absent ou limité (ne pas considérer comme intégré)
 
 - **Études non intégrées :**
