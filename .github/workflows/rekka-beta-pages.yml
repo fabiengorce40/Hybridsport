@@ -26,7 +26,7 @@ jobs:
   deploy:
     # Garde : uniquement depuis la branche BÊTA (un lancement manuel depuis une autre branche ne fait rien).
     if: github.ref == 'refs/heads/claude/rekka-beta'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     outputs:
       ready: ${{ steps.guard.outputs.ready }}
       url: ${{ steps.deploy.outputs.deployment-url }}
@@ -105,7 +105,7 @@ jobs:
   verify:
     needs: deploy
     if: needs.deploy.outputs.ready == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
