@@ -38,7 +38,8 @@ describe('audit de l’état affiché (programme pré-S1 ouvert un mercredi)', (
   it('semaine suivante : S1 réellement appelé — haut / bas / haut / bas, expositions prévues transmises (0, 1, 2, 3)', () => {
     const n = ensureBeta0Week(s, clock(NEXT));
     const rs = strength(n, NEXT);
-    expect(rs.map((r) => r.intent?.archetypeId)).toEqual(['str_upper', 'str_lower', 'str_upper', 'str_lower']);
+    // RC5.1 — hypertrophie 4× : Haut A → Bas A → Haut B → Bas B ; ordre B/A les semaines calendaires impaires.
+    expect(rs.map((r) => r.intent?.archetypeId)).toEqual(['str_upper_b', 'str_lower_b', 'str_upper_a', 'str_lower_a']);
     expect(rs.every((r) => codes(r).includes('PLAN.WEEK_COMPOSITION') && codes(r).includes('PLAN.PLANNER.COMPOSITION_APPLIED'))).toBe(true);
     expect(rs.map((r) => r.reasons.find((x) => x.code === 'PLAN.PLANNER.WEEK_EXPOSURES')?.params.planned)).toEqual([0, 1, 2, 3]);
     expect(n.planner.weeks[NEXT]?.planningVersion).toBe(BETA0_PLANNING_VERSION);
@@ -63,14 +64,14 @@ describe('Recréer mon programme de test (Beta / dev)', () => {
     expect(Object.keys(s.planner.weeks)).toEqual([MON]);
     const rs = strength(s, MON);
     expect(rs.map((r) => [r.date, r.intent?.archetypeId, r.composition?.authority])).toEqual([
-      ['2026-10-05', 'str_upper', 'provisional'], ['2026-10-07', 'str_lower', 'provisional'], ['2026-10-08', 'str_upper', 'provisional'], ['2026-10-09', 'str_lower', 'provisional'],
+      ['2026-10-05', 'str_upper_a', 'provisional'], ['2026-10-07', 'str_lower_a', 'provisional'], ['2026-10-08', 'str_upper_b', 'provisional'], ['2026-10-09', 'str_lower_b', 'provisional'],
     ]);
     // Contenu réel persisté (session_record) : deux séances de même archétype restent différentes.
     const ex = rs.map((r) => exercises(s, r.requestId));
     expect(ex.every((e) => e.length > 0)).toBe(true);
     expect(ex[0]).not.toEqual(ex[2]);
     expect(ex[1]).not.toEqual(ex[3]);
-    expect(selectBeta0Week(s, MON)?.sessions.filter((x) => x.sport === 'strength').every((x) => x.compositionRule === 'strength.rules.weeklyComposition@0.1.0-candidate' && x.dataError === null)).toBe(true);
+    expect(selectBeta0Week(s, MON)?.sessions.filter((x) => x.sport === 'strength').every((x) => x.compositionRule === 'strength.rules.weeklyComposition@0.2.0-candidate' && x.dataError === null)).toBe(true);
     expect(s.planner.weeks[MON]?.planningVersion).toBe(BETA0_PLANNING_VERSION);
     expect(beta0Integrity(s)).toEqual([]);
     expect((s.programmeState?.audit ?? []).map((a) => a.reason.code)).toContain('KAIRO.BETA_DATA_RESET');
@@ -80,7 +81,7 @@ describe('Recréer mon programme de test (Beta / dev)', () => {
     const s = resetBeta0Data(ensureBeta0Week(pre(), clock(WED)), clock(WED, '09:00:00'), BETA0_RESET_CONFIRMATION);
     const v = selectBeta0Week(s, WED);
     expect(v?.sessions.filter((x) => x.date !== null).every((x) => (x.date ?? '') >= WED)).toBe(true);
-    expect(v?.sessions.filter((x) => x.sport === 'strength' && x.date !== null).map((x) => x.archetypeId)).toEqual(['str_upper', 'str_lower']);
+    expect(v?.sessions.filter((x) => x.sport === 'strength' && x.date !== null).map((x) => x.archetypeId)).toEqual(['str_upper_a', 'str_lower_a']);
     expect(v?.sessions.filter((x) => x.status === 'not_planned').map((x) => x.notPlanned?.category)).toEqual(['slot_unavailable', 'slot_unavailable']);
     expect(beta0Integrity(s)).toEqual([]);
   });

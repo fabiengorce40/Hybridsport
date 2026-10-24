@@ -18,7 +18,7 @@ const clock = (): Clock => ({ today: '2026-10-05', now: '2026-10-05T07:30:00.000
 const fullGym = EQUIPMENT_PRESETS.find((p) => p.id === 'preset.full_gym')?.equipment ?? [];
 
 describe('alternatives dans la séance', () => {
-  it('séance Haut du corps : tractions sans alternative ; rowing machine → une alternative ; développé couché → alternatives compatibles', () => {
+  it('séance Haut du corps A (RC5.1) : tractions et tirage horizontal poulie sans alternative ; développé couché → alternatives compatibles', () => {
     const storage = new MemoryStorage();
     saveState(storage, createBeta0Programme(emptyState(), {
       displayName: '', level: 'intermediate', priorities: ['strength'], strength: { enabled: true, goal: 'hypertrophy', sessionsPerWeek: 4 },
@@ -33,7 +33,8 @@ describe('alternatives dans la séance', () => {
     const section = (id: string) => screen.getByRole('region', { name: new RegExp(`: ${exerciseLabel(id)}$`) }).textContent ?? '';
     expect(section('ex.pull_up')).not.toMatch(/Alternative/);
     expect(section('ex.bench_press')).toContain(`Alternatives prévues (compatibles) : ${exerciseLabel('ex.db_bench_press')}, ${exerciseLabel('ex.machine_chest_press')}.`);
-    expect(section('ex.machine_row')).toContain(`Alternative prévue : ${exerciseLabel('ex.seated_cable_row')}.`);
+    // RC5.1 — le rowing machine (une alternative) est désormais en Haut B ; le singulier reste vérifié par le test de texte.
+    expect(section('ex.seated_cable_row')).not.toMatch(/Alternative/);
   });
 
   it('texte : aucune ⇒ vide ; une ⇒ singulier ; plusieurs ⇒ « compatibles » (aucun calcul dans React)', () => {

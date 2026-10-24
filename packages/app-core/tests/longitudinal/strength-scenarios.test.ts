@@ -70,10 +70,11 @@ function invariants(run: Run) {
 }
 
 describe('Strength — scénario A : Strength seul, 4 semaines', () => {
-  const run = drive(strengthOnly(), W, (w, _r, k) => (w === 2 && k === 3 ? 'last_set_missed' : 'as_prescribed'));
+  const events = (w: number, _r: unknown, k: number) => (w === 2 && k === 3 ? 'last_set_missed' as const : 'as_prescribed' as const);
+  const run = drive(strengthOnly(), W, events);
 
   it('composition : 2 Haut du corps + 2 Bas du corps chaque semaine (règle candidate S1, inchangée)', () => {
-    for (const wk of run.weeks) expect(strengthItems(wk).map((x) => x.arch).sort()).toEqual(['str_lower', 'str_lower', 'str_upper', 'str_upper']);
+    for (const wk of run.weeks) expect(strengthItems(wk).map((x) => x.arch).sort()).toEqual(['str_lower_a', 'str_lower_b', 'str_upper_a', 'str_upper_b']);
   });
 
   it('invariants : graine stable, ancres conservées, aucune baisse de charge non tracée', () => invariants(run));
@@ -87,7 +88,11 @@ describe('Strength — scénario A : Strength seul, 4 semaines', () => {
     }
     const a = audit(run);
     expect(a.some((r) => r.code === 'PROGRESSION.ADVANCED' && r.params.variable === 'reps')).toBe(true);
-    expect(a.some((r) => r.code === 'PROGRESSION.ADVANCED' && r.params.variable === 'load')).toBe(true);
+    // RC5.1 — Haut A/B et Bas A/B : chaque exercice n'est exposé qu'une fois par semaine ; la première hausse de charge
+    // (double progression : haut de plage atteint) intervient en 6e semaine — vérifiée sur deux semaines supplémentaires.
+    expect(a.some((r) => r.code === 'PROGRESSION.ADVANCED' && r.params.variable === 'load')).toBe(false);
+    const longer = drive(strengthOnly(), [...W, '2026-11-02', '2026-11-09'], events);
+    expect(audit(longer).some((r) => r.code === 'PROGRESSION.ADVANCED' && r.params.variable === 'load')).toBe(true);
     // Série manquée (séance modifiée, semaine 3) : classée par le moteur, jamais lue comme « comme prescrit ».
     const w3 = run.weeks[2]?.executed.find((e) => e.event === 'last_set_missed');
     expect(w3?.audit.some((r) => r.code === 'PROGRESSION.EXPOSURE_CLASSIFIED' && r.params.exposure !== 'on_target' && r.params.exposure !== 'above') ?? false).toBe(true);
@@ -128,7 +133,9 @@ describe('Strength — scénario A SANS RIR (S5) : même programme, aucun effort
   });
 
   it('même composition et mêmes exercices qu’avec RIR (l’effort ne change pas la continuité S4)', () => {
-    const ex = (r: Run) => r.weeks.map((w) => strengthItems(w).map(({ rec }) => (rec?.session.blocks ?? []).flatMap((b) => b.items.map((i) => i.exerciseId)).join(',')));
+    // RC5.1 — exercices de TRAVAIL comparés : en semaine 4 (Haut B), la charge connue ajoute une série d'approche au
+    // développé militaire et le retour au calme sort de la durée disponible (avec RIR seulement) ; aucun exercice ne change.
+    const ex = (r: Run) => r.weeks.map((w) => strengthItems(w).map(({ rec }) => (rec?.session.blocks ?? []).filter((b) => b.kind !== 'warmup' && b.kind !== 'cooldown').flatMap((b) => b.items.map((i) => i.exerciseId)).join(',')));
     expect(ex(run)).toEqual(ex(withRir));
   });
 

@@ -65,7 +65,7 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'PROGRESSION.DECISION_BLOCKED', categories: ['information'], params: { trackId: S, model: S, situation: S, capability: S, rir: S, exactStreak: N }, audience: 'internal', severity: 'notice' },
   { code: 'PROGRESSION.METHOD_UNGOVERNED', categories: ['information'], params: { trackId: S, exerciseId: S, repsReached: N, methods: L, capability: S, effort: S }, audience: 'internal', severity: 'notice' },
   { code: 'PLAN.WEEK_PRESCRIPTION', categories: ['information'], params: { archetype: S, occurrence: N, weeklySessions: N, plannedBefore: N, belowFloor: L, atOrAboveHigh: L, noTarget: L, anchors: L, volumeRule: S, progressionRule: S, phase: S, blocked: L }, audience: 'internal', severity: 'info' },
-  { code: 'PLAN.WEEK_COMPOSITION', categories: ['information'], params: { rule: S, version: S, status: S, band: S, sessions: N, rotation: L, firstBy: S, swaps: L }, audience: 'internal', severity: 'info' },
+  { code: 'PLAN.WEEK_COMPOSITION', categories: ['information'], params: { rule: S, version: S, status: S, band: S, sessions: N, rotation: L, firstBy: S, swaps: L, weekOrder: S }, optionalParams: ['weekOrder'], audience: 'internal', severity: 'info' },
   { code: 'RULE.WEEK_COMPOSITION_UNGOVERNED', categories: ['business_hard'], params: { sessions: N, goal: S, cause: S }, audience: 'user', severity: 'error' },
   { code: 'STATE.REFERENCE_CONFLICT', categories: ['information'], params: { exerciseId: S }, audience: 'internal', severity: 'info' },
 ];

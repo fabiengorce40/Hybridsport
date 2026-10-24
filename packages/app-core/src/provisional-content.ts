@@ -13,6 +13,7 @@ import { STRENGTH_PRESETS, strengthCatalogDocument } from '../../strength/tests/
 import { strengthF6CatalogDocument, strengthF6RulesetDocument } from '../../strength/tests/fixtures/f6.js';
 import { strengthL1V3RulesetDocument } from '../../strength/tests/fixtures/l1v3.js';
 import { strengthL1B4RulesetDocument } from '../../strength/tests/fixtures/l1b4.js';
+import { strengthRc51RulesetDocument } from '../../strength/tests/fixtures/rc51.js';
 import { testRulesetDocumentWithDuplicate } from '../../engine/tests/fixtures/ruleset.js';
 import { testCatalogDocument } from '../../engine/tests/fixtures/catalog.js';
 
@@ -33,6 +34,7 @@ function load(rulesetDoc: Parameters<typeof loadRuleset>[0], catalogDoc: Paramet
 }
 
 let strength: ContentSource | undefined;
+let strengthL1B4: ContentSource | undefined;
 let strengthL1V3: ContentSource | undefined;
 let strengthF6: ContentSource | undefined;
 let strengthLock: ContentSource | undefined;
@@ -41,11 +43,18 @@ let running: ContentSource | undefined;
 /**
  * Contenu Strength COURANT (planification des nouvelles semaines) : ruleset verrouillé 4F + surcouche RC4.5 F6
  * (mollets à temps résiduel) + surcouche RC4.6 L1-V3 (une isolation du haut du corps en Full Body) + surcouche RC4.6
- * L1b-4 (tirage complémentaire à temps résiduel), catalogue de test Strength F6.
+ * L1b-4 (tirage complémentaire à temps résiduel) + surcouche RC5.1 (Haut A/B et Bas A/B : membre préféré, replis
+ * conservés), catalogue de test Strength F6.
  */
 export function strengthContent(): ContentSource {
-  strength ??= load(strengthL1B4RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-l1b4-0.7.0');
+  strength ??= load(strengthRc51RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-rc51-0.8.0');
   return strength;
+}
+
+/** Contenu Strength ANTÉRIEUR conservé (RC4.6 L1b-4, avant RC5.1 Haut A/B et Bas A/B). */
+function strengthL1B4Content(): ContentSource {
+  strengthL1B4 ??= load(strengthL1B4RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-l1b4-0.7.0');
+  return strengthL1B4;
 }
 
 /** Contenu Strength ANTÉRIEUR conservé (RC4.6 L1-V3, avant L1b-4). */
@@ -72,7 +81,7 @@ function strengthLockContent(): ContentSource {
  * Version inconnue ⇒ `undefined` (la séance n'est alors pas régénérable fidèlement : chemin « non reproductible »).
  */
 export function strengthContentFor(rulesetVersion: string, catalogVersion: string): ContentSource | undefined {
-  return [strengthContent(), strengthL1V3Content(), strengthF6Content(), strengthLockContent()].find((c) => c.ruleset.version === rulesetVersion && c.catalog.version === catalogVersion);
+  return [strengthContent(), strengthL1B4Content(), strengthL1V3Content(), strengthF6Content(), strengthLockContent()].find((c) => c.ruleset.version === rulesetVersion && c.catalog.version === catalogVersion);
 }
 
 /** Ruleset de test du CORE (avec les paramètres d'anti-doublon, provisoires) et catalogue de test : ceux des tests Running. */

@@ -21,6 +21,8 @@ const at = (today: string) => (): Clock => ({ today, now: `${today}T07:30:00.000
 const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('button', { name }));
 const saved = (st: MemoryStorage): AppState => JSON.parse(st.getItem(STORAGE_KEY) ?? '{}') as AppState;
 const strengthCards = () => screen.queryAllByRole('button', { name: /^Musculation : / }).map((b) => (b.getAttribute('aria-label') ?? '').replace(/^Musculation : /, '').replace(/, [^,]+$/, '').replace(/ [A-Z]$/, ''));
+// RC5.1 — libellés COMPLETS (Haut du corps A / B, Bas du corps A / B) : sans retrait de la lettre de variante.
+const strengthLabels = () => screen.queryAllByRole('button', { name: /^Musculation : / }).map((b) => (b.getAttribute('aria-label') ?? '').replace(/^Musculation : /, '').replace(/, [^,]+$/, ''));
 // R5.2 — la vue chronologique (un jour par ligne) est la GRILLE ; la liste est un catalogue par sport. Lecture des jours
 // dans la grille, puis retour à la liste (mode d'affichage inchangé pour la suite du test).
 const inGrid = <T,>(read: () => T): T => { click('Grille'); const r = read(); click('Liste'); return r; };
@@ -67,10 +69,10 @@ describe('reset Beta depuis l’état du téléphone (programme pré-S1)', () =>
     fireEvent.click(screen.getByLabelText(/Je comprends/));
     click('Effacer et recréer');
     click('Planning');
-    const shown = strengthCards();
-    expect(shown).toEqual(['Haut du corps', 'Bas du corps', 'Haut du corps', 'Bas du corps']);
+    // RC5.1 — hypertrophie 4× : Haut A / Bas A / Haut B / Bas B (semaine calendaire paire).
+    expect(strengthLabels()).toEqual(['Haut du corps A', 'Bas du corps A', 'Haut du corps B', 'Bas du corps B']);
     const v = selectBeta0Week(saved(st), '2026-10-05');
-    expect(v?.sessions.filter((x) => x.sport === 'strength').map((x) => x.archetypeId)).toEqual(['str_upper', 'str_lower', 'str_upper', 'str_lower']);
+    expect(v?.sessions.filter((x) => x.sport === 'strength').map((x) => x.archetypeId)).toEqual(['str_upper_a', 'str_lower_a', 'str_upper_b', 'str_lower_b']);
   });
 
   it('annuler : rien n’est modifié', () => {

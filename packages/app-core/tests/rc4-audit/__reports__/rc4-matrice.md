@@ -37,18 +37,18 @@ Contrôles avant séance scénarisés :
 
 | sem. | calendrier (lun → dim) | repos | jours consécutifs max | enchaînements durs J/J+1 | non planifiées |
 |---|---|---|---|---|---|
-| S1 | M:str_upperA ; C:easy ; M:str_lowerA ; M:str_upperB ; M:str_lowerB ; C:test ; — | 1 | 6 | 3 | — |
-| S2 | M:str_upperA ; C:threshold ; M:str_lowerA ; M:str_upperA ; M:str_lowerA ; — ; C:easy | 1 | 5 | 4 | — |
-| S3 | M:str_upperA ; C:threshold ; M:str_lowerA ; M:str_upperA ; M:str_lowerA ; — ; C:easy | 1 | 5 | 4 | — |
-| S4 | M:str_upperA ; C:threshold ; M:str_lowerA ; M:str_upperA ; M:str_lowerA ; — ; C:easy | 1 | 5 | 4 | — |
-| S5 | M:str_upperA ; C:threshold ; M:str_lowerA ; M:str_upperA ; M:str_lowerA ; — ; C:easy | 1 | 5 | 4 | — |
-| S6 | M:str_upperA ; C:threshold ; M:str_lowerA ; M:str_upperA ; M:str_lowerA ; — ; C:easy | 1 | 5 | 4 | — |
+| S1 | M:str_upper_a ; C:easy ; M:str_lower_a ; M:str_upper_b ; M:str_lower_b ; C:test ; — | 1 | 6 | 3 | — |
+| S2 | M:str_upper_b ; C:threshold ; M:str_lower_b ; M:str_upper_a ; M:str_lower_a ; — ; C:easy | 1 | 5 | 4 | — |
+| S3 | M:str_upper_a ; C:threshold ; M:str_lower_a ; M:str_upper_b ; M:str_lower_b ; — ; C:easy | 1 | 5 | 4 | — |
+| S4 | M:str_upper_b ; C:threshold ; M:str_lower_b ; M:str_upper_a ; M:str_lower_a ; — ; C:easy | 1 | 5 | 4 | — |
+| S5 | M:str_upper_a ; C:threshold ; M:str_lower_a ; M:str_upper_b ; M:str_lower_b ; — ; C:easy | 1 | 5 | 4 | — |
+| S6 | M:str_upper_b ; C:threshold ; M:str_lower_b ; M:str_upper_a ; M:str_lower_a ; — ; C:easy | 1 | 5 | 4 | — |
 
 Volume Musculation prévu (séries de travail / semaine, moyenne S1–S6 ; cible – borne haute) :
 
 | quads | hamstrings | glutes | calves | chest | back | shoulders | arms | core |
 |---|---|---|---|---|---|---|---|---|
-| 9.2 (10–18) | 8.2 (8–14) | 12.3 (6–14) | 3.3 (4–10) | 12.3 (10–20) | 10.2 (10–20) | 15.2 (8–16) | 18.3 (6–14) | 9.3 (4–10) |
+| 9.2 (10–18) | 8.2 (8–14) | 12.3 (6–14) | 3.3 (4–10) | 11.3 (10–20) | 10.7 (10–20) | 14.9 (8–16) | 18.0 (6–14) | 8.9 (4–10) |
 
 Course (structure prescrite par semaine) :
 

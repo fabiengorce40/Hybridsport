@@ -52,6 +52,11 @@ const withoutG5Trace = (s: AppState): AppState => ({
   ...s,
   planner: { ...s.planner, weeks: Object.fromEntries(Object.entries(s.planner.weeks).map(([k, w]) => [k, { ...w, simulation: w.simulation?.filter((x) => x !== 'planner.globalPlacement') }])) },
 });
+/**
+ * RC5.1 — retire la seule différence de trace de la règle de composition hebdomadaire (version 0.2.0-candidate, Haut A/B
+ * et Bas A/B) : à contenu 4F d'origine, la rotation commune est conservée (aucun archétype A/B dans ce contenu).
+ */
+const withRc1CompositionVersion = (s: AppState): AppState => JSON.parse(JSON.stringify(s).replaceAll('0.2.0-candidate', '0.1.0-candidate')) as AppState;
 const code = (f: () => unknown): string => { try { f(); return 'OK'; } catch (e) { return (e as { code?: string }).code ?? (e as Error).message; } };
 
 describe('RC1 TEST → RC3 : relecture sans perte', () => {
@@ -88,11 +93,11 @@ describe('RC1 TEST → RC3 : relecture sans perte', () => {
       const lock = (e: ReturnType<typeof beta0Environment>) => strengthEnvironmentFor(e, '0.4.0-strength-science-lock', '0.2.0-strength-test') ?? e;
       // RC4.4 : second passage G5 DÉSACTIVÉ (paramètre absent) ⇒ planification strictement identique à RC1 (V0).
       const later = ensureBeta0Week(s0, at('2026-11-09T06:00:00Z'), lock(beta0Environment({ globalPlacement: false })));
-      expect(hash(withoutCause(later))).toBe(REFERENCE[f]?.next);
+      expect(hash(withRc1CompositionVersion(withoutCause(later)))).toBe(REFERENCE[f]?.next);
       // G5 ACTIF (Beta 0) : aucune paire Full Body à J/J+1 dans ces états ⇒ même planification, seule la trace de
       // simulation (`planner.globalPlacement`) est ajoutée à la semaine persistée.
       const g5 = ensureBeta0Week(s0, at('2026-11-09T06:00:00Z'), lock(beta0Environment()));
-      expect(hash(withoutCause(withoutG5Trace(g5)))).toBe(REFERENCE[f]?.next);
+      expect(hash(withRc1CompositionVersion(withoutCause(withoutG5Trace(g5))))).toBe(REFERENCE[f]?.next);
       // Séances terminées conservées. Une séance laissée EN COURS au-delà de sa semaine est retirée à la clôture : même
       // comportement en RC1 (empreinte identique ci-dessus), indépendant de la mise à jour.
       const done = (s: AppState) => Object.fromEntries(Object.entries(s.programmeLogs).filter(([, l]) => l.finishedAt !== undefined));

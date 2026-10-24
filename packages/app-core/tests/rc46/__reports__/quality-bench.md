@@ -7,13 +7,13 @@ Chemin réel de l'application, 6 semaines, 8 profils. Définitions : voir `tests
 | Profil | Séances | Poussée / tirage (séries) | Rapport | Groupes sous plancher (sem.) | Au-dessus borne haute (sem.) | Allégées | Divergences R-A | Durée moy. / max (min) | Dépassements |
 |---|---|---|---|---|---|---|---|---|---|
 | P1 | 18 | 18.3 / 10.5 | 1.74 | quads 5, hamstrings 2, calves 4, back 2 | arms 6 | 12 | 0 | 51 / 63 | 0 |
-| P1b | 24 | 19.5 / 10.2 | 1.91 | quads 1, hamstrings 1, calves 1 | arms 6, core 2 | 24 | 0 | 44 / 60 | 0 |
+| P1b | 24 | 19.5 / 10.7 | 1.82 | quads 1, hamstrings 1, calves 1 | shoulders 1, arms 6, core 1 | 24 | 0 | 45 / 60 | 0 |
 | P2 | 18 | 18.3 / 10.5 | 1.74 | quads 3, calves 1, back 1 | glutes 6, arms 6 | 0 | 0 | 57 / 64 | 0 |
 | P3 | 18 | 17.8 / 9.8 | 1.82 | quads 4, hamstrings 1, calves 5, chest 1, back 3 | glutes 1, arms 6 | 6 | 0 | 51 / 64 | 0 |
 | P4 | 0 | 0 / 0 | — | — | — | 0 | 0 | — / — | 0 |
 | P5 | 18 | 18.3 / 10.8 | 1.69 | quads 5, hamstrings 5, calves 5 | arms 6 | 18 | 0 | 47 / 70 | 0 |
 | S3 | 18 | 18 / 10.2 | 1.76 | quads 3, calves 4, back 1 | glutes 6, arms 6 | 0 | 0 | 53 / 63 | 0 |
-| S4 | 24 | 19.5 / 10.2 | 1.91 | calves 6 | glutes 6, arms 6 | 0 | 0 | 48 / 60 | 0 |
+| S4 | 24 | 19.5 / 10.7 | 1.82 | calves 6 | glutes 6, shoulders 1, arms 6 | 0 | 0 | 49 / 60 | 0 |
 
 ## P1 — Musculation 3× (masse) + Course 2× (10 km)
 
@@ -47,22 +47,24 @@ Durées : moyenne 51 min, maximum 63 min, dépassements du temps disponible 0.
 | hamstrings | 8.2 | 0 | 8.2 | 8 – 14 |
 | glutes | 12.3 | 0 | 12.3 | 6 – 14 |
 | calves | 3.3 | 0 | 3.3 | 4 – 10 |
-| chest | 12.3 | 0 | 12.3 | 10 – 20 |
-| back | 10.2 | 0 | 10.2 | 10 – 20 |
-| shoulders | 7.2 | 8 | 15.2 | 8 – 16 |
-| arms | 16.2 | 2.1 | 18.3 | 6 – 14 |
-| core | 4.2 | 5.2 | 9.4 | 4 – 10 |
+| chest | 11.3 | 0 | 11.3 | 10 – 20 |
+| back | 10.7 | 0 | 10.7 | 10 – 20 |
+| shoulders | 8.2 | 6.8 | 15 | 8 – 16 |
+| arms | 15.2 | 2.8 | 18 | 6 – 14 |
+| core | 4.7 | 4.3 | 9 | 4 – 10 |
 
 | Archétype | Séances | Exercices distincts | Compositions distinctes | Identiques à la précédente | Similarité moyenne | Principaux distincts |
 |---|---|---|---|---|---|---|
-| str_upper | 12 | 9 | 5 | 0 | 0.69 | 1 |
-| str_lower | 12 | 7 | 3 | 0 | 0.33 | 1 |
+| str_upper_a | 6 | 7 | 2 | 0 | 0.86 | 1 |
+| str_lower_a | 6 | 6 | 2 | 0 | 0.33 | 1 |
+| str_upper_b | 6 | 7 | 2 | 0 | 0.71 | 1 |
+| str_lower_b | 6 | 6 | 2 | 1 | 0.47 | 1 |
 
-Continuité : 107 transitions, exercice changé 25, retour en calibration 0, baisse de charge 0, baisse de répétitions à charge égale 0 ; items chargés 70, poids du corps 11, à l'effort 37.
-Emplacements toujours « à l'effort » (≥ 3 expositions) : str_upper/up.iso_upper:machine_lateral_raise×6 ; str_upper/up.trunk:cable_pallof_press×8 ; str_lower/lo.iso_lower:leg_curl×5.
+Continuité : 97 transitions, exercice changé 19, retour en calibration 0, baisse de charge 0, baisse de répétitions à charge égale 0 ; items chargés 69, poids du corps 6, à l'effort 44.
+Emplacements toujours « à l'effort » (≥ 3 expositions) : str_upper_a/ua.iso_upper:machine_lateral_raise×3 ; str_upper_a/ua.trunk:cable_pallof_press×6 ; str_upper_b/ub.iso_upper:machine_lateral_raise×3 ; str_upper_b/ub.trunk:cable_pallof_press×3 ; str_lower_a/la.iso_lower:leg_curl×3.
 Allègements : 24 séances, 62 réductions {"full":19,"full_and_signal":12,"rir_only":31} ; arbitrages {"conflict/running":2,"conflict/strength":2}.
 Reproductibilité (R-A, à la planification de chaque semaine) : {"identical":24,"progression_since_planning":0,"history_since_planning":0,"planner_divergence":0,"not_regenerable":0}.
-Durées : moyenne 44 min, maximum 60 min, dépassements du temps disponible 0.
+Durées : moyenne 45 min, maximum 60 min, dépassements du temps disponible 0.
 
 ## P2 — Musculation 3× (masse) + Cross-training 2×
 
@@ -172,19 +174,21 @@ Durées : moyenne 53 min, maximum 63 min, dépassements du temps disponible 0.
 | hamstrings | 12.2 | 0 | 12.2 | 8 – 14 |
 | glutes | 16.2 | 0 | 16.2 | 6 – 14 |
 | calves | 0 | 0 | 0 | 4 – 10 |
-| chest | 12.3 | 0 | 12.3 | 10 – 20 |
-| back | 10.2 | 0 | 10.2 | 10 – 20 |
-| shoulders | 7.2 | 8 | 15.2 | 8 – 16 |
-| arms | 16.2 | 2.1 | 18.3 | 6 – 14 |
-| core | 3.2 | 5.8 | 9 | 4 – 10 |
+| chest | 11.3 | 0 | 11.3 | 10 – 20 |
+| back | 10.7 | 0 | 10.7 | 10 – 20 |
+| shoulders | 8.2 | 6.8 | 15 | 8 – 16 |
+| arms | 15.2 | 2.8 | 18 | 6 – 14 |
+| core | 3.2 | 4.6 | 7.8 | 4 – 10 |
 
 | Archétype | Séances | Exercices distincts | Compositions distinctes | Identiques à la précédente | Similarité moyenne | Principaux distincts |
 |---|---|---|---|---|---|---|
-| str_upper | 12 | 9 | 4 | 0 | 0.66 | 1 |
-| str_lower | 12 | 6 | 2 | 9 | 0.94 | 1 |
+| str_upper_a | 6 | 7 | 3 | 0 | 0.77 | 1 |
+| str_lower_a | 6 | 5 | 1 | 5 | 1 | 1 |
+| str_upper_b | 6 | 7 | 3 | 0 | 0.76 | 1 |
+| str_lower_b | 6 | 5 | 1 | 5 | 1 | 1 |
 
-Continuité : 122 transitions, exercice changé 39, retour en calibration 0, baisse de charge 0, baisse de répétitions à charge égale 0 ; items chargés 80, poids du corps 11, à l'effort 41.
-Emplacements toujours « à l'effort » (≥ 3 expositions) : str_upper/up.iso_upper:machine_lateral_raise×6 ; str_upper/up.trunk:cable_pallof_press×6 ; str_lower/lo.iso_lower:leg_curl×12.
+Continuité : 112 transitions, exercice changé 33, retour en calibration 0, baisse de charge 0, baisse de répétitions à charge égale 0 ; items chargés 81, poids du corps 6, à l'effort 45.
+Emplacements toujours « à l'effort » (≥ 3 expositions) : str_upper_a/ua.iso_upper:machine_lateral_raise×3 ; str_upper_a/ua.trunk:cable_pallof_press×4 ; str_lower_a/la.iso_lower:leg_curl×6 ; str_upper_b/ub.iso_upper:machine_lateral_raise×3 ; str_lower_b/lb.iso_lower:leg_curl×6.
 Allègements : 0 séances, 0 réductions {} ; arbitrages {}.
 Reproductibilité (R-A, à la planification de chaque semaine) : {"identical":24,"progression_since_planning":0,"history_since_planning":0,"planner_divergence":0,"not_regenerable":0}.
-Durées : moyenne 48 min, maximum 60 min, dépassements du temps disponible 0.
+Durées : moyenne 49 min, maximum 60 min, dépassements du temps disponible 0.

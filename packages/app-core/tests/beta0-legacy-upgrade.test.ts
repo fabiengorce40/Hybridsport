@@ -71,13 +71,14 @@ describe('mise à niveau de l’intention Strength héritée', () => {
 describe('semaine planifiée par une version antérieure', () => {
   it('ouverte le lundi, non commencée ⇒ régénérée : Haut / Bas / Haut / Bas, version courante, audit, visible', () => {
     const s = ensureBeta0Week(preS1(), clock(MON));
-    expect(strengthDays(s, MON)).toEqual([['2026-10-05', 'str_upper'], ['2026-10-07', 'str_lower'], ['2026-10-08', 'str_upper'], ['2026-10-09', 'str_lower']]);
+    // RC5.1 — hypertrophie 4× : Haut A → Bas A → Haut B → Bas B ; ordre B/A les semaines calendaires impaires.
+    expect(strengthDays(s, MON)).toEqual([['2026-10-05', 'str_upper_a'], ['2026-10-07', 'str_lower_a'], ['2026-10-08', 'str_upper_b'], ['2026-10-09', 'str_lower_b']]);
     expect(s.planner.weeks[MON]?.planningVersion).toBe(BETA0_PLANNING_VERSION);
     // S4 : le bilan de volume Strength de la semaine replanifiée est audité (KAIRO.STRENGTH_WEEK_VOLUME).
     expect(audit(s)).toEqual(['KAIRO.PROGRAMME_STRENGTH_INTENT_UPGRADED', 'KAIRO.STRENGTH_WEEK_VOLUME', 'KAIRO.WEEK_REPLANNED_STALE']);
     const v = selectBeta0Week(s, MON);
     expect(v?.planning).toMatchObject({ status: 'current', replannedAt: '2026-10-05T07:30:00Z' });
-    expect(v?.sessions.filter((x) => x.sport === 'strength').every((x) => x.compositionAuthority === 'provisional' && x.compositionRule === 'strength.rules.weeklyComposition@0.1.0-candidate' && x.dataError === null)).toBe(true);
+    expect(v?.sessions.filter((x) => x.sport === 'strength').every((x) => x.compositionAuthority === 'provisional' && x.compositionRule === 'strength.rules.weeklyComposition@0.2.0-candidate' && x.dataError === null)).toBe(true);
     // Réouverture : rien ne change (idempotent).
     expect(ensureBeta0Week(s, clock(MON))).toEqual(s);
   });
@@ -88,7 +89,7 @@ describe('semaine planifiée par une version antérieure', () => {
     expect(selectBeta0Week(s, WED)?.planning).toEqual({ version: null, status: 'stale_kept', cause: 'past_sessions', replannedAt: null });
     expect(audit(s)).toEqual(['KAIRO.PROGRAMME_STRENGTH_INTENT_UPGRADED']);
     const next = ensureBeta0Week(s, clock(NEXT_MON));
-    expect(strengthDays(next, NEXT_MON).map((x) => x[1])).toEqual(['str_upper', 'str_lower', 'str_upper', 'str_lower']);
+    expect(strengthDays(next, NEXT_MON).map((x) => x[1])).toEqual(['str_upper_b', 'str_lower_b', 'str_upper_a', 'str_lower_a']);
     expect(selectBeta0Week(next, NEXT_MON)?.planning).toMatchObject({ version: BETA0_PLANNING_VERSION, status: 'current' });
   });
 
@@ -123,7 +124,8 @@ describe('programme neuf après S1 et archétype prescrit', () => {
       priorities: ['strength', 'running'], strength: { enabled: true, goal: 'hypertrophy', sessionsPerWeek: 4 },
       running: { enabled: true, population: 'P_R1', goal: 'GENERAL_RUNNING', wearable: false, sessionsPerWeek: 2, returnState: 'NONE' }, availability: [60, 60, 60, 60, 60, 0, 60],
     }), clock(MON), { lastRun: { realizedDurationS: 1800, distanceM: 5000, difficulty: 'AS_EXPECTED' } });
-    expect(strengthDays(s, MON)).toEqual([['2026-10-05', 'str_upper'], ['2026-10-07', 'str_lower'], ['2026-10-08', 'str_upper'], ['2026-10-09', 'str_lower']]);
+    // RC5.1 — hypertrophie 4× : Haut A → Bas A → Haut B → Bas B ; ordre B/A les semaines calendaires impaires.
+    expect(strengthDays(s, MON)).toEqual([['2026-10-05', 'str_upper_a'], ['2026-10-07', 'str_lower_a'], ['2026-10-08', 'str_upper_b'], ['2026-10-09', 'str_lower_b']]);
     expect(selectBeta0Week(s, MON)?.planning).toEqual({ version: BETA0_PLANNING_VERSION, status: 'current', cause: null, replannedAt: null });
   });
 

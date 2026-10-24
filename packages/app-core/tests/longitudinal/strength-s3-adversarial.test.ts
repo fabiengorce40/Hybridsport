@@ -208,7 +208,8 @@ describe('Strength S3 — cas adverses (contexte et programme)', () => {
     const b = ensureBeta0Week(closed, clock(W[2]));
     expect(a.planner.weeks[W[2]]).toEqual(b.planner.weeks[W[2]]);
     const seeds = (s: AppState, w: string) => strengthReqs(s, w).map((r) => recordOf(r)?.provenance.seed);
-    expect(seeds(a, W[2])).toEqual(seeds(W2, W[1]));
+    // RC5.1 — l'ordre A/B alterne d'une semaine calendaire à l'autre : on compare l'ensemble des graines, pas leur ordre.
+    expect([...seeds(a, W[2])].sort()).toEqual([...seeds(W2, W[1])].sort());
   });
 
   it('21. historique absent : première exposition en calibration, aucune track, aucune progression', () => {

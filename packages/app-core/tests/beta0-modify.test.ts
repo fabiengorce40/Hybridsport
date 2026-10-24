@@ -42,7 +42,8 @@ describe('semaine pré-S1 COMMENCÉE (séance de lundi terminée), modification 
   it('semaine suivante : nouvelles intentions composées par Strength S1 ; semaine reprise clôturée normalement', () => {
     const s = recreateBeta0Programme(s0, { ...asInput(s0), displayName: 'Fabien' }, clock(WED, '10:00:00'), {});
     const n = ensureBeta0Week(s, clock(NEXT));
-    expect(strengthOf(n, NEXT).map((x) => x.archetypeId)).toEqual(['str_upper', 'str_lower', 'str_upper', 'str_lower']);
+    // RC5.1 — hypertrophie 4× : Haut A → Bas A → Haut B → Bas B ; ordre B/A les semaines calendaires impaires.
+    expect(strengthOf(n, NEXT).map((x) => x.archetypeId)).toEqual(['str_upper_b', 'str_lower_b', 'str_upper_a', 'str_lower_a']);
     expect(n.programmeState?.weeks.find((w) => w.weekIndex === 0)?.closedAt).toBeDefined();
     expect(n.profile?.displayName).toBe('Fabien');
   });
@@ -67,7 +68,7 @@ describe('semaine NON commencée', () => {
     expect(previewBeta0Recreation(s0, WED)).toMatchObject({ appliesFrom: MON, currentWeek: 'replanned', pastSessionsDropped: 2 });
     const s = recreateBeta0Programme(s0, asInput(s0), clock(WED, '10:00:00'), {});
     // M3 : la séance Bas du vendredi (standard) cède à la course KEY du jeudi ; échange avec la course facile du dimanche.
-    expect(strengthOf(s, WED).filter((x) => x.date !== null).map((x) => [x.date, x.archetypeId])).toEqual([[WED, 'str_upper'], ['2026-10-11', 'str_lower']]);
+    expect(strengthOf(s, WED).filter((x) => x.date !== null).map((x) => [x.date, x.archetypeId])).toEqual([[WED, 'str_upper_a'], ['2026-10-11', 'str_lower_a']]);
     expect(s.planner.weeks[MON]?.arbitration?.decisions.map((d) => [d.action, d.requestId, d.from, d.to, d.partner])).toEqual([['SWAP', `${MON}.strength.2`, '2026-10-09', '2026-10-11', `${MON}.running.1`]]);
     expect(beta0Integrity(s)).toEqual([]);
   });

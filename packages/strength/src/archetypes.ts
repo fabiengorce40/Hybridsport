@@ -29,7 +29,7 @@ export interface ResolvedSlots {
    */
   readonly choices: readonly { readonly group: string; readonly need: string; readonly cause: ChoiceCause; readonly others: readonly string[] }[];
 }
-export type ChoiceCause = 'anchor' | 'not_in_session' | 'least_recent_exposure' | 'goal_priority' | 'identifier' | 'only_member';
+export type ChoiceCause = 'anchor' | 'preferred' | 'not_in_session' | 'least_recent_exposure' | 'goal_priority' | 'identifier' | 'only_member';
 
 export function findArchetype(params: StrengthParams, id: string): StrengthArchetype | undefined {
   return params['strength.archetypes'].find((a) => a.id === id);
@@ -55,8 +55,10 @@ export function toSessionArchetype(a: StrengthArchetype, params: StrengthParams)
 
 /**
  * Emplacements requis et optionnels. Groupe de choix (ex. principal genou OU hanche) : le membre qui porte
- * une ANCRE déclarée par l'intention (addendum V1.1 §3), parmi les membres faisables, puis le membre dont le besoin a été le MOINS exposé récemment (alternance), puis le plus prioritaire pour l'OBJECTIF, puis
- * l'identifiant. Le stimulus n'intervient jamais dans ce choix.
+ * une ANCRE déclarée par l'intention (addendum V1.1 §3), parmi les membres faisables, puis le membre PRÉFÉRÉ de
+ * l'archétype (RC5.1, attribut `preferred` : Haut A/B, Bas A/B), puis le membre dont le besoin a été le MOINS exposé récemment (alternance), puis le plus prioritaire pour l'OBJECTIF, puis
+ * l'identifiant. Le stimulus n'intervient jamais dans ce choix. Un membre préféré infaisable (douleur, matériel) cède
+ * toujours la place à un autre membre faisable (repli).
  */
 export function resolveSlots(a: StrengthArchetype, params: StrengthParams, goal: string, stimulus: string, recentNeedExposure: (need: string) => number, anchored: (slotId: string) => boolean = () => false, feasible: (slot: ArchetypeSlotDef) => boolean = () => true): ResolvedSlots {
   const needs = params['strength.needs'];
@@ -82,12 +84,13 @@ export function resolveSlots(a: StrengthArchetype, params: StrengthParams, goal:
       // de choix ne choisit jamais un membre impossible quand un autre membre est réalisable.
       const doable = scoped.filter(feasible);
       const pool = doable.length > 0 ? doable : scoped;
-      const ordered = [...pool].sort((x, y) => Number(anchored(y.id)) - Number(anchored(x.id)) || Number(used.has(x.need)) - Number(used.has(y.need)) || recentNeedExposure(x.need) - recentNeedExposure(y.need) || rank(priority, x.need) - rank(priority, y.need) || (x.id < y.id ? -1 : 1));
+      const ordered = [...pool].sort((x, y) => Number(anchored(y.id)) - Number(anchored(x.id)) || Number(y.preferred === true) - Number(x.preferred === true) || Number(used.has(x.need)) - Number(used.has(y.need)) || recentNeedExposure(x.need) - recentNeedExposure(y.need) || rank(priority, x.need) - rank(priority, y.need) || (x.id < y.id ? -1 : 1));
       const chosen = ordered[0];
       if (chosen) {
         const next = ordered[1];
         const cause: ChoiceCause = !next ? 'only_member'
           : anchored(chosen.id) !== anchored(next.id) ? 'anchor'
+          : (chosen.preferred === true) !== (next.preferred === true) ? 'preferred'
           : used.has(chosen.need) !== used.has(next.need) ? 'not_in_session'
           : recentNeedExposure(chosen.need) !== recentNeedExposure(next.need) ? 'least_recent_exposure'
           : rank(priority, chosen.need) !== rank(priority, next.need) ? 'goal_priority' : 'identifier';

@@ -50,8 +50,9 @@ describe('RC4.6 L1b-4 — tirage complémentaire, contenu versionné', () => {
     expect(grip?.dropOptionalNeeds).toContain('pull_complement');
   });
 
-  it('registre : contenu courant L1b-4 ; L1-V3 conservé et relu', () => {
-    expect(CURRENT).toEqual({ ruleset: '0.7.0-strength-l1b4', catalog: V3.catalog });
+  it('registre : L1b-4 conservé sous le contenu courant (RC5.1) ; L1-V3 conservé et relu', () => {
+    expect(CURRENT).toEqual({ ruleset: '0.8.0-strength-rc51', catalog: V3.catalog });
+    expect(strengthContentFor('0.7.0-strength-l1b4', V3.catalog)?.ruleset.version).toBe('0.7.0-strength-l1b4');
     expect(strengthContentFor(V3.ruleset, V3.catalog)?.ruleset.version).toBe(V3.ruleset);
   });
 

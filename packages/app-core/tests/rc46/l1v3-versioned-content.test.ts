@@ -49,8 +49,8 @@ describe('RC4.6 L1-V3 — contenu versionné', () => {
     }
   });
 
-  it('registre : L1-V3 conservé (catalogue F6 inchangé) sous le contenu courant (L1b-4) ; F6 conservé et relu', () => {
-    expect(CURRENT).toEqual({ ruleset: '0.7.0-strength-l1b4', catalog: F6.catalog });
+  it('registre : L1-V3 conservé (catalogue F6 inchangé) sous le contenu courant (RC5.1) ; F6 conservé et relu', () => {
+    expect(CURRENT).toEqual({ ruleset: '0.8.0-strength-rc51', catalog: F6.catalog });
     expect(strengthContentFor(CURRENT.ruleset, CURRENT.catalog)).toBe(strengthContent());
     expect(strengthContentFor('0.6.0-strength-l1v3', F6.catalog)?.ruleset.version).toBe('0.6.0-strength-l1v3');
     expect(strengthContentFor(F6.ruleset, F6.catalog)?.ruleset.version).toBe(F6.ruleset);

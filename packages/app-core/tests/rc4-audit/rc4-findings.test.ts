@@ -147,10 +147,13 @@ describe('F7 / F8 — Progression et variation Musculation', () => {
     const loads = [...new Set(r.sessions.filter((x) => x.sport === 'strength').flatMap((x) => x.exercises.filter((e) => e.id === 'back_squat').map((e) => e.load)))];
     expect(loads).toEqual(['effort', '40 kg', '42.5 kg']);
   });
-  it('F8 : variation intra-semaine perdue après la semaine 1 (Haut/Bas : même séance deux fois)', () => {
+  it('F8 : variation intra-semaine perdue après la semaine 1 — RÉSOLU par RC5.1 (Haut A/B et Bas A/B chaque semaine, ordre alterné)', () => {
     const r = simulateOnce(spec('P1b'), 3);
-    expect(r.sessions.filter((x) => x.week === 1 && x.sport === 'strength').map((x) => `${x.archetype ?? ''}${x.variant ?? ''}`)).toEqual(['str_upperA', 'str_lowerA', 'str_upperB', 'str_lowerB']);
-    expect(r.sessions.filter((x) => x.week === 3 && x.sport === 'strength').map((x) => `${x.archetype ?? ''}${x.variant ?? ''}`)).toEqual(['str_upperA', 'str_lowerA', 'str_upperA', 'str_lowerA']);
+    const week = (w: number) => r.sessions.filter((x) => x.week === w && x.sport === 'strength').map((x) => `${x.archetype ?? ''}${x.variant ?? ''}`);
+    // Avant RC5.1 : semaine 3 = str_upperA, str_lowerA, str_upperA, str_lowerA (même séance deux fois).
+    expect(week(1)).toEqual(['str_upper_a', 'str_lower_a', 'str_upper_b', 'str_lower_b']);
+    expect(week(2)).toEqual(['str_upper_b', 'str_lower_b', 'str_upper_a', 'str_lower_a']);
+    expect(week(3)).toEqual(['str_upper_a', 'str_lower_a', 'str_upper_b', 'str_lower_b']);
   });
 });
 

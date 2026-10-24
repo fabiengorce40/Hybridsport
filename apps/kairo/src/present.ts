@@ -5,7 +5,11 @@
 import { CT_FORMAT_LABELS, CT_INTENT_LABELS, exerciseLabel, HR_ROLE_LABELS, RUNNING_ARCHETYPE_LABELS, RUNNING_ROLE_LABELS, SPORT_LABELS } from '@hybridsport/app-core';
 import type { Beta0WeekView, SessionView, SessionViewStatus } from '@hybridsport/app-core';
 
-const STRENGTH_TITLES: Readonly<Record<string, string>> = { str_full_body: 'Full body', str_upper: 'Haut du corps', str_lower: 'Bas du corps', str_support: 'Renforcement' };
+// RC5.1 — Haut A/B et Bas A/B (hypertrophie 4×) : variante nommée, les anciennes semaines Haut / Bas restent lisibles.
+const STRENGTH_TITLES: Readonly<Record<string, string>> = {
+  str_full_body: 'Full body', str_upper: 'Haut du corps', str_lower: 'Bas du corps', str_support: 'Renforcement',
+  str_upper_a: 'Haut du corps A', str_upper_b: 'Haut du corps B', str_lower_a: 'Bas du corps A', str_lower_b: 'Bas du corps B',
+};
 
 export const SPORT_SHORT: Readonly<Record<string, string>> = { strength: 'Musculation', running: 'Course', crosstraining: 'Cross-training', hyrox: 'HYROX' };
 export const sportName = (s: string): string => SPORT_SHORT[s] ?? SPORT_LABELS[s as 'strength'] ?? 'Séance';

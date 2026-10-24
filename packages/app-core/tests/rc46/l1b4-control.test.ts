@@ -31,6 +31,12 @@ const KNOWN_EFFECT = [
   ['P5', '2026-10-12.strength.1'], ['P5', '2026-10-26.strength.1'], ['P5', '2026-11-09.strength.1'],
 ].map(([profile, id]) => ({ profile, id, slot: 'fb.pull_h', ex: 'seated_cable_row', before: 4, after: 3 }));
 
+/**
+ * RC5.1 — profils Musculation 4× hypertrophie (P1b, S4) : passés PAR CONCEPTION à Haut A/B et Bas A/B (autres
+ * exercices, autres emplacements). Ce contrôle isole l'effet L1b-4 ; ces deux profils sont contrôlés contre la référence
+ * figée d'avant RC5.1 par `rc51/rc51-ab.test.ts`. Tous les autres profils restent comparés ici à l'identique.
+ */
+const RC51_AB = new Set(['P1b', 'S4']);
 const content = strengthContent();
 const params = readStrengthParams(content.ruleset).values;
 const ARMS = new Set(params['strength.volume'].muscleGroups.arms ?? []);
@@ -65,6 +71,7 @@ describe('RC4.6 L1b-4 — contrôle indépendant (régression sportive, volume d
   it('éléments ordinaires (hors tirage complémentaire) identiques, sauf l\'effet indirect énuméré (tirage principal 4 → 3)', () => {
     const seen: string[] = [];
     for (const [pid, q] of measured) {
+      if (RC51_AB.has(pid)) continue;
       const ref = new Map((REF[pid] ?? []).map((s) => [s.id, s.items]));
       for (const s of itemsOf(q)) {
         const now = s.items.filter((i) => i[2] !== COMPLEMENT);
@@ -87,6 +94,7 @@ describe('RC4.6 L1b-4 — contrôle indépendant (régression sportive, volume d
 
   it('bras (mesure indépendante, sans marge) : direct inchangé chaque semaine ; indirect = tirage complémentaire − séries retirées', () => {
     for (const [pid, q] of measured) {
+      if (RC51_AB.has(pid)) continue;
       const before = armsByWeek(REF[pid] ?? []);
       const after = armsByWeek(itemsOf(q));
       expect([...after.keys()].sort(), pid).toEqual([...before.keys()].sort());

@@ -71,9 +71,10 @@ describe('composition Strength par le moteur (Beta 0)', () => {
   it('semaine observée (4 Strength + course, hypertrophie) : haut / bas ×2 en alternance, plus aucune séance clonée', () => {
     const s = athlete({ goal: 'hypertrophy', strength: 4, running: 3 });
     const rs = strengthOf(s);
-    expect(rs.map((r) => r.intent?.archetypeId)).toEqual(['str_upper', 'str_lower', 'str_upper', 'str_lower']);
+    // RC5.1 — hypertrophie 4× : Haut A → Bas A → Haut B → Bas B ; ordre B/A les semaines calendaires impaires.
+    expect(rs.map((r) => r.intent?.archetypeId)).toEqual(['str_upper_a', 'str_lower_a', 'str_upper_b', 'str_lower_b']);
     expect(rs.every((r) => r.status === 'planned' && r.composition?.authority === 'provisional')).toBe(true);
-    expect(rs.map((r) => param(r, 'PLAN.WEEK_COMPOSITION', 'band'))).toEqual(Array(4).fill('spec 02 §5.1'));
+    expect(rs.map((r) => param(r, 'PLAN.WEEK_COMPOSITION', 'band'))).toEqual(Array(4).fill('spec 02 §5.1 ; RC5.1'));
     expect(rs.map((r) => param(r, 'PLAN.PLANNER.WEEK_EXPOSURES', 'planned'))).toEqual([0, 1, 2, 3]);
     expect(new Set(rs.map((r) => content(s, r.requestId))).size).toBe(4);
     expect(weekOf(s).requests.filter((r) => r.sport === 'running').every((r) => r.status === 'planned')).toBe(true);
@@ -169,7 +170,7 @@ describe('stabilité', () => {
     expect(selectBeta0Week(d.state, MONDAY)).toEqual(selectBeta0Week(s, MONDAY));
     expect(strengthOf(d.state).map((r) => content(d.state, r.requestId))).toEqual(strengthOf(s).map((r) => content(s, r.requestId)));
     expect(selectBeta0Week(d.state, MONDAY)?.sessions.filter((x) => x.sport === 'strength').map((x) => [x.archetypeId, x.compositionAuthority])).toEqual([
-      ['str_upper', 'provisional'], ['str_lower', 'provisional'], ['str_upper', 'provisional'], ['str_lower', 'provisional'],
+      ['str_upper_a', 'provisional'], ['str_lower_a', 'provisional'], ['str_upper_b', 'provisional'], ['str_lower_b', 'provisional'],
     ]);
   });
 

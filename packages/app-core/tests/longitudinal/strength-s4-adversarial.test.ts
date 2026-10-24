@@ -37,7 +37,9 @@ describe('continuité des exercices (scénario A, 4 semaines)', () => {
     const all = A.weeks.flatMap((w) => reasonsOfWeek(A.final, w.weekStart));
     const replaced = all.filter((r) => r.code === 'SELECT.CONTINUITY');
     expect(all.some((r) => r.code === 'SELECT.CONTINUITY_KEPT')).toBe(true);
-    expect([...new Set(replaced.map((r) => r.params.cause))]).toEqual(['declared_anchor']);
+    // RC5.1 — l'ancre déclarée est celle du membre préféré de chaque groupe : plus aucun remplacement observé sur 4 semaines
+    // (avant RC5.1 : seule cause observée = ancre déclarée). Toute cause éventuelle reste l'ancre déclarée.
+    expect([...new Set(replaced.map((r) => r.params.cause))].every((c) => c === 'declared_anchor')).toBe(true);
     expect(replaced.every((r) => r.params.outcome === 'replaced' && r.params.cause !== 'outranked')).toBe(true);
     // Un accessoire NON suivi est conservé semaines 3 et 4 (aucune variante « variété »).
     const keptFree = (w: string) => strengthReqs(A.final, w).flatMap((r) => r.reasons.filter((x) => x.code === 'SELECT.CONTINUITY_KEPT').flatMap((x) => (x.params.exercises as string[]).map((e) => e.split('=')[1] ?? '')));
@@ -92,9 +94,11 @@ describe('preuve de progression (exposition par exposition)', () => {
   });
 
   it('poids du corps au plafond : méthode non gouvernée, méthodes possibles listées (scénario A)', () => {
-    const m = audit(A.final).find((r) => r.code === 'PROGRESSION.METHOD_UNGOVERNED');
+    // RC5.1 — Haut A/B : tractions exposées une fois par semaine ⇒ haut de plage atteint en 6e semaine.
+    const A6 = drive(createBeta0Programme(emptyState(), STRENGTH, clock(W[0]), {}), [...W, '2026-11-09']);
+    const m = audit(A6.final).find((r) => r.code === 'PROGRESSION.METHOD_UNGOVERNED');
     expect(m?.params).toMatchObject({ exerciseId: 'ex.pull_up', capability: 'bodyweight_overload_method', methods: ['added_load', 'harder_variant', 'new_rep_range', 'hold'] });
-    expect(audit(A.final).some((r) => r.code === 'PROGRESSION.CAP_REACHED' && String(r.params.trackId).includes('pull_up'))).toBe(false);
+    expect(audit(A6.final).some((r) => r.code === 'PROGRESSION.CAP_REACHED' && String(r.params.trackId).includes('pull_up'))).toBe(false);
   });
 });
 

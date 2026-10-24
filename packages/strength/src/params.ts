@@ -52,7 +52,13 @@ export const zStrengthArchetype = z.object({
   }).strict()).min(1),
   slots: z.array(z.object({
     id, blockId: id, need: id, role: z.enum(ROLES), status: z.enum(['required', 'optional']),
-    choiceGroup: id.optional(), count: range(int.positive()), minFamilies: int.positive().optional(),
+    choiceGroup: id.optional(),
+    /**
+     * RC5.1 — membre PRÉFÉRÉ de son groupe de choix (Haut A/B, Bas A/B) : choisi avant les autres membres, juste après
+     * une ancre déclarée ; les autres membres restent des REPLIS (douleur, matériel, faisabilité). Absent : ordre antérieur.
+     */
+    preferred: z.literal(true).optional(),
+    count: range(int.positive()), minFamilies: int.positive().optional(),
     modalityPreference: z.enum(['load_ceiling', 'stability', 'specificity']).optional(),
     anchorable: z.boolean(), trackable: z.boolean(),
     /**

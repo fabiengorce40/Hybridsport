@@ -74,7 +74,9 @@ describe('P1 — programmation Musculation', () => {
         expect(reasons(s, b).some((r) => r.code === 'PLAN.PLANNER.STRENGTH_WITHIN_WEEK_VARIATION' && String(r.params.outcome).startsWith('no_governed_variation'))).toBe(true);
       }
     }
-    expect(Object.values(s.planner.weeks).flatMap((w) => w.requests).some((r) => r.reasons.some((x) => x.code === 'PLAN.PLANNER.STRENGTH_WITHIN_WEEK_VARIATION'))).toBe(true);
+    // RC5.1 — Haut A/B et Bas A/B : quatre archétypes distincts chaque semaine, la variation intra-semaine (F8, même
+    // archétype deux fois) n'a plus lieu d'être pour ce profil.
+    for (const mon of [W1, W2]) expect(new Set(strengthIds(s, mon).map((id) => selectProgrammeSession(s, id)?.archetypeId)).size).toBe(4);
   });
 
   it('6. 5 ou 6 séances : fréquence non composée ⇒ aucune séance inventée (limite exposée), 1–4 prises en charge', () => {
