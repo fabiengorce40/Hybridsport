@@ -235,7 +235,11 @@ describe('registre 1.1.0 (F15–F18)', () => {
       const p = SCIENCE_REGISTRY.parameters.find((x) => x.parameterId === id);
       expect(p?.status, id).toBeDefined();
     }
-    expect(used.length).toBe(DECLARED_STRENGTH_PARAMETERS.length);
+    // Paramètres facultatifs POSTÉRIEURS au verrou 4F (absents du ruleset 4F, qui reste reproductible) : provenance
+    // exigée par le registre, usage hors de ce ruleset. RC5.3 R4 : politique des expositions modifiées.
+    const POST_4F = ['strength.progression.policy'];
+    expect(used.length).toBe(DECLARED_STRENGTH_PARAMETERS.filter((d) => !POST_4F.includes(d.id)).length);
+    for (const id of POST_4F) expect(SCIENCE_REGISTRY.parameters.find((x) => x.parameterId === id)?.status, id).toBeDefined();
     expect(validateScienceRegistry(SCIENCE_REGISTRY, DECLARED_STRENGTH_PARAMETERS)).toEqual([]);
   });
 });

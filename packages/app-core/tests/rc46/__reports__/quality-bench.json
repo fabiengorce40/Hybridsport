@@ -691,7 +691,7 @@
   "plannerDivergences": 0,
   "duration": {
    "meanMin": 51,
-   "maxMin": 64,
+   "maxMin": 63,
    "overAvailable": 0
   },
   "accountingGap": 0

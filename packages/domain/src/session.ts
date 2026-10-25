@@ -93,6 +93,10 @@ export const zItemRefs = z.object({
   anchor: z.enum(['declared', 'candidate']).optional(),
   prescriptionSource: z.enum(['track', 'base_profile', 'calibration', 'substitution', 'history']).optional(),
   substitutedFrom: zId.optional(),
+  /** RC5.3 R4 — dose MODIFIÉE par un modificateur transitoire (état du jour, interférence, temps). */
+  doseModified: z.literal(true).optional(),
+  /** RC5.3 R4 — RIR de référence de l'item (avant modificateurs transitoires) : base de lecture de l'effort déclaré. */
+  referenceRir: z.number().int().nonnegative().optional(),
 }).strict().refine((r) => r.anchor !== 'declared' || r.progressionTrackId !== undefined, 'une ancre déclarée porte son progressionTrackId');
 export type ItemRefs = z.infer<typeof zItemRefs>;
 

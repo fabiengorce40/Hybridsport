@@ -51,6 +51,47 @@ export interface StrengthExecution {
   readonly sessionPain?: boolean;
   /** S5 — statut déclaré de la séance (preuve : séance modifiée / abandonnée). */
   readonly sessionStatus?: 'completed' | 'modified' | 'abandoned';
+  /**
+   * RC5.3 R4 — items de la séance EXÉCUTÉE dont la prescription a été modifiée au démarrage (adaptation), avec leur RIR
+   * de RÉFÉRENCE (celui de la séance planifiée). Les items marqués par le moteur (`refs.doseModified`) sont lus
+   * directement. Sans effet si le contenu ne déclare pas la politique des expositions modifiées.
+   */
+  readonly modifiedItems?: Readonly<Record<string, number>>;
+}
+
+/** RC5.3 R4 — séries de travail classées contre le RIR de référence (jamais contre le RIR relevé par un modificateur). */
+function withReferenceRir(sets: readonly SetPrescription[], rir: number): SetPrescription[] {
+  return sets.map((z) => {
+    const i = z.intensity;
+    const effort = i && 'effort' in i && i.effort && 'rir' in i.effort ? { intensity: { ...i, effort: { ...i.effort, rir } } } : {};
+    return { ...z, ...(z.rir !== undefined ? { rir } : {}), ...effort } as SetPrescription;
+  });
+}
+
+/** RIR visé de la première série de travail d'un item (RIR de l'effort, sinon RIR de la série). */
+function itemRir(it: SessionDraft['blocks'][number]['items'][number]): number | undefined {
+  if (it.prescription.type !== 'sets') return undefined;
+  const w = it.prescription.sets.find(isWork);
+  const e = w?.intensity && 'effort' in w.intensity ? w.intensity.effort : undefined;
+  return e && 'rir' in e ? e.rir : w?.rir;
+}
+
+/**
+ * RC5.3 R4 — items modifiés par une adaptation au démarrage : même exercice, séries de travail ou RIR différents de la
+ * séance planifiée. RIR de référence = celui de l'item planifié (ou sa propre référence s'il était déjà modifié).
+ * Un exercice remplacé ou retiré n'y figure pas (substitution : règle commune).
+ */
+export function adaptedItemsOf(planned: SessionDraft, executed: SessionDraft): Record<string, number> {
+  const out: Record<string, number> = {};
+  const work = (it: SessionDraft['blocks'][number]['items'][number]) => (it.prescription.type === 'sets' ? it.prescription.sets.filter(isWork).length : 0);
+  const before = mainItems(planned);
+  for (const it of mainItems(executed)) {
+    const p = before.find((z) => z.id === it.id && z.exerciseId === it.exerciseId) ?? before.find((z) => z.exerciseId === it.exerciseId);
+    const ref = p?.refs?.referenceRir ?? (p ? itemRir(p) : undefined);
+    if (!p || ref === undefined) continue;
+    if (work(p) !== work(it) || itemRir(p) !== itemRir(it)) out[it.id] = ref;
+  }
+  return out;
 }
 
 /** Réalisation appliquée et décisions de progression du moteur Strength qui l'ont produite (trace d'audit). */
@@ -82,6 +123,7 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
   const exposures = [...state.strength.exposures];
   const counts = { ...state.strength.accessoryCounts };
   const now = at;
+  const softModified = params['strength.progression.policy']?.modifiedExposure !== undefined;
 
   for (const it of mainItems(x.session)) {
     if (it.prescription.type !== 'sets') continue;
@@ -90,14 +132,17 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
     const prescribed = it.prescription.sets.filter(isWork);
     const performed = performedSets(it.id, it.prescription.sets, log);
     const pain = x.sessionPain === true || log.painItems.includes(it.id);
-    const exec: ExecutedItem = { exerciseId: e.id, prescribed, performed, sessionCompleted: x.sessionCompleted ?? true, ...(x.sessionStatus ? { sessionStatus: x.sessionStatus } : {}), ...(pain ? { skipReason: 'pain' as const } : {}), ...(it.refs?.substitutedFrom ? { substitutedFrom: it.refs.substitutedFrom } : {}) };
+    // RC5.3 R4 — prescription modifiée (moteur ou adaptation au démarrage) : classement contre le RIR de RÉFÉRENCE.
+    const referenceRir = softModified ? (x.modifiedItems?.[it.id] ?? (it.refs?.doseModified === true ? it.refs.referenceRir : undefined)) : undefined;
+    const modified = referenceRir !== undefined;
+    const exec: ExecutedItem = { exerciseId: e.id, prescribed: modified ? withReferenceRir(prescribed, referenceRir) : prescribed, performed, sessionCompleted: x.sessionCompleted ?? true, ...(x.sessionStatus ? { sessionStatus: x.sessionStatus } : {}), ...(pain ? { skipReason: 'pain' as const } : {}), ...(it.refs?.substitutedFrom ? { substitutedFrom: it.refs.substitutedFrom } : {}) };
     const slot = slots.find((z) => z.id === it.refs?.slotId);
     const role: SlotRole = slot?.role ?? 'accessory';
     const trackId = it.refs?.progressionTrackId;
     const anchorOfSlot = [...tracks.values()].find((t) => t.tier === 'anchor' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === it.refs?.slotId);
     const known = trackId ? tracks.get(trackId) : undefined;
     const update = (t: StrengthTrack, cls: ReturnType<typeof classifyExposure>) => {
-      const u = updateTrack(t, exec, cls, e, params, 'accumulation');
+      const u = updateTrack(t, exec, cls, e, params, 'accumulation', undefined, modified ? { modified } : {});
       // S4 — preuve complète de l'exposition (prescrit / réalisé), indépendante de la décision du modèle.
       const ev = exposureEvidence(exec, cls);
       const signed = (v: number | null) => (v === null ? 'n/a' : v > 0 ? `+${String(v)}` : String(v));

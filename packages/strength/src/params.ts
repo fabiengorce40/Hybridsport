@@ -224,6 +224,18 @@ export const STRENGTH_OPTIONAL_PARAMETER_SCHEMAS = {
     cooldown: z.enum(['always', 'if_fits_after_optionals']),
     primaryRest: z.enum(['reduce_with_others', 'reduce_last']),
   }).strict() },
+  /**
+   * RC5.3 — politique de PROGRESSION INDIVIDUALISÉE (contenu versionné). Chaque champ ABSENT ⇒ comportement antérieur,
+   * reproduit à l'identique (anciennes semaines régénérées avec leur contenu d'origine).
+   */
+  'strength.progression.policy': { governance: 'G2', schema: z.object({
+    /**
+     * R4 — exposition MODIFIÉE (interférence, état du jour, temps) : lue au RIR de RÉFÉRENCE (avant modificateurs
+     * transitoires), jamais une régression ni une hausse ; signal de capacité seulement si l'effort déclaré est exploitable.
+     * `recalculateLoad` (R4.4) : charge recalculée pour le RIR relevé (désactivé tant que sa cohérence n'est pas démontrée).
+     */
+    modifiedExposure: z.object({ mode: z.literal('soft'), recalculateLoad: z.boolean() }).strict().optional(),
+  }).strict() },
 } as const satisfies Record<string, { governance: GovernanceClass; schema: z.ZodType }>;
 
 export type StrengthParamId = keyof typeof STRENGTH_PARAMETER_SCHEMAS;

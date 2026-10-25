@@ -19,6 +19,9 @@ import type { AppState, CheckInInput, Clock, ProfileInput, SessionView } from '.
 
 // technical-constant: TEST_ONLY — lundis des 6 semaines simulées
 export const MONS = ['2026-10-05', '2026-10-12', '2026-10-19', '2026-10-26', '2026-11-02', '2026-11-09'] as const;
+/** Lundi de la semaine d'index `w` (au-delà des 6 semaines de référence : horizons longs RC5.3). */
+// technical-constant: TEST_ONLY — jours par semaine, millisecondes par jour
+export const mondayOf = (w: number): string => MONS[w] ?? new Date(Date.parse(`${MONS[0]}T00:00:00Z`) + w * 7 * 86_400_000).toISOString().slice(0, 10);
 const at = (d: string, hm: string): Clock => ({ today: d, now: `${d}T${hm}:00.000Z` });
 const eq = (id: string): string[] => [...(EQUIPMENT_PRESETS.find((p) => p.id === id)?.equipment ?? [])];
 // technical-constant: TEST_ONLY — allure fictive de saisie (s/km) pour produire une distance réalisée, et charge de départ (kg)
@@ -40,6 +43,11 @@ export interface ProfileSpec {
   readonly rirOffset?: number;
   /** RC4.1 — difficulté ressentie déclarée en fin de course ; `null` : question ignorée (défaut : « comme prévu »). */
   readonly runDifficulty?: 'EASIER' | 'AS_EXPECTED' | 'HARDER' | 'MUCH_HARDER' | null;
+  /**
+   * RC5.3 — athlète à CAPACITÉ CACHÉE : répétitions et RIR RÉELS d'une série (remplace l'athlète « conforme » qui déclare
+   * l'effort prescrit). Le moteur ne voit que ce qui est déclaré.
+   */
+  readonly athlete?: { perform(a: { readonly exerciseId: string; readonly reps: unknown; readonly rir: number | undefined; readonly kg: number | undefined; readonly week: number }): { readonly reps: number; readonly rir: number } };
 }
 
 const base = (o: Partial<ProfileInput>): ProfileInput => ({
@@ -148,7 +156,7 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
   const sessions: SessionRow[] = [];
   const out: WeekRow[] = [];
   for (let w = 0; w < weeks; w++) {
-    const mon = MONS[w] as string;
+    const mon = mondayOf(w);
     if (w > 0) s = ensureBeta0Week(s, at(mon, '06:00'), env);
     onWeekPlanned?.(s, mon);
     const view = [...(selectBeta0Week(s, mon)?.sessions ?? [])].sort((a, b) => ((a.date ?? 'z') < (b.date ?? 'z') ? -1 : 1));
@@ -198,10 +206,11 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
                 const prescribed = (p.intensity as { mode?: string; kg?: number; kgRounded?: number } | undefined);
                 // Charge prescrite si elle existe ; poids du corps : aucune charge ; sinon charge de travail suivie (calibration).
                 const kg = prescribed?.mode === 'load' ? prescribed.kg : prescribed?.mode === 'percent_of_reference' ? prescribed.kgRounded : prescribed?.mode === 'bodyweight' ? undefined : (workKg[it.exerciseId] ?? START_KG);
-                s = recordProgrammeSet(s, at(d, '08:20'), v.requestId, { itemId: it.id, setIndex: i, done: true, reps: topReps(p.reps), ...(kg !== undefined ? { loadKg: kg } : {}) });
-                // Effort déclaré = effort prescrit (athlète exactement dans la cible).
                 const rir = prescribedRir(p);
-                if (i === sets.length - 1 && rir !== undefined) { try { s = recordProgrammeSetEffort(s, v.requestId, it.id, i, rir + (spec.rirOffset ?? 0)); } catch { /* effort non demandé */ } }
+                const real = spec.athlete?.perform({ exerciseId: it.exerciseId, reps: p.reps, rir, kg, week: w });
+                s = recordProgrammeSet(s, at(d, '08:20'), v.requestId, { itemId: it.id, setIndex: i, done: true, reps: real ? Math.max(1, real.reps) : topReps(p.reps), ...(kg !== undefined ? { loadKg: kg } : {}) });
+                // Effort déclaré = effort prescrit (athlète exactement dans la cible), ou RIR RÉEL de l'athlète simulé.
+                if (i === sets.length - 1 && rir !== undefined) { try { s = recordProgrammeSetEffort(s, v.requestId, it.id, i, real ? real.rir : rir + (spec.rirOffset ?? 0)); } catch { /* effort non demandé */ } }
                 if (kg !== undefined) workKg[it.exerciseId] = kg;
               });
             }

@@ -17,7 +17,7 @@ import { addDays, normalizeInstant } from './dates.js';
 import type { AppState, Feedback, ProgrammeIntent, SessionLog, SetLog } from './model.js';
 import { appPlannerEnvironment, assertEnvironment, buildPorts, clockOf, persistWeek, recentOf } from './planning.js';
 import type { EngineGoals, PlannerEnvironment } from './planning.js';
-import { applyStrengthExecutionTraced, performedSets, realizedRunFrom, testReferenceFrom } from './progression.js';
+import { adaptedItemsOf, applyStrengthExecutionTraced, performedSets, realizedRunFrom, testReferenceFrom } from './progression.js';
 import { isHyroxComposed, realizeCrossTrainingExecution, realizeHyroxComposed, realizeHyroxStation } from '@hybridsport/planner';
 import { assessStrengthWeekVolume, readStrengthParams } from '@hybridsport/strength';
 import type { StrengthGoalRef, WeekVolumeAssessment } from '@hybridsport/strength';
@@ -233,6 +233,8 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
   const decoded = adapted ? migrateToCurrent<SessionRecord>(adapted) : planned.record ? migrateToCurrent<SessionRecord>(planned.record) : undefined;
   const record = decoded?.ok ? decoded.value : undefined;
   if (!record) return reject('EXECUTION_SESSION_UNREADABLE');
+  const plannedDecoded = adapted && planned.record ? migrateToCurrent<SessionRecord>(planned.record) : undefined;
+  const adaptedFrom = plannedDecoded?.ok ? plannedDecoded.value.session : undefined;
   // P1 — exercices remplacés pendant la séance (matériel indisponible) : la séance EXÉCUTÉE.
   const session = applySwaps(record.session, state.programmeLogs[x.requestId]?.swaps);
   const pained = (x.pain !== undefined && x.pain !== 'NONE') || (x.sport === 'strength' && (x.painItems?.length ?? 0) > 0);
@@ -263,6 +265,8 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
           archetypeId: intent.archetypeId, session, sets: [...sets], painItems: [...(x.painItems ?? [])],
           sessionCompleted: x.completion !== 'abandoned', sessionPain: x.pain !== undefined && x.pain !== 'NONE',
           sessionStatus: x.completion === 'abandoned' ? 'abandoned' : x.completion === 'modified' ? 'modified' : 'completed',
+          // RC5.3 R4 — séance adaptée au démarrage : items modifiés et RIR de référence de la séance planifiée.
+          ...(adaptedFrom ? { modifiedItems: adaptedItemsOf(adaptedFrom, session) } : {}),
         }, at);
         s = { ...s, strength: applied.strength };
         progressionTrace = applied.reasons;

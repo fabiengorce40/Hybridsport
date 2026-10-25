@@ -39,6 +39,7 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'PROGRESSION.CAP_REACHED', categories: ['adaptation'], params: { trackId: S }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.SUSPENDED', categories: ['information'], params: { trackId: S, cause: S }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.CYCLE_STARTED', categories: ['adaptation'], params: { trackId: S }, audience: 'internal', severity: 'info' },
+  { code: 'DOSE.LOAD.RECALCULATED', categories: ['optimization'], params: { exerciseId: S, fromKg: N, toKg: N, rir: N }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.RESUMED', categories: ['adaptation'], params: { trackId: S }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.TRACK_CREATED', categories: ['information'], params: { trackId: S, tier: S, exerciseId: S }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.TRACK_CLOSED', categories: ['adaptation'], params: { trackId: S, cause: S }, audience: 'internal', severity: 'info' },

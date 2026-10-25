@@ -19,13 +19,13 @@
 | 2 | 10-16 | strength | str_full_body A | non → **oui** | Passer (état inconnu) | unchanged | — | — | 69 / 38 → **42** / 38 → **42** | réalisée |
 | 2 | 10-17 | running | running.easy | oui | Passer (état inconnu) | unchanged | — | — | 88 / 30 / 30 | réalisée |
 | 3 | 10-19 | strength | str_full_body A | non → **oui** | Oui · genou P2 | adapted | recomposée (signalée) → **régénérée (reproductible)** | removed:back_squat, removed:leg_curl, removed:walking_lunge_db, added:romanian_deadlift | 69 / 36 → **60** / 36 → **50** | réalisée |
-| 3 | 10-20 | strength | str_full_body B | non → **oui** | Passer (genou P2 connu) | unchanged → **adapted** | — → **régénérée (reproductible)** | removed:leg_curl, removed:walking_lunge_db | 54 / 44 → **52** / 44 → **42** | réalisée |
+| 3 | 10-20 | strength | str_full_body B | non → **oui** | Passer (genou P2 connu) | unchanged → **adapted** | — → **régénérée (reproductible)** | removed:leg_curl, removed:walking_lunge_db | 54 / 44 → **51** / 44 → **42** | réalisée |
 | 3 | 10-21 | crosstraining | amrap + bloc force | oui | Passer (genou P2 connu) | adapted | régénérée (reproductible) | removed:back_squat, removed:air_squat, added:barbell_ohp | 73 / 48 / 46 | réalisée |
 | 3 | 10-22 | running | running.easy | oui | Passer (genou P2 connu) | adapted | régénérée (reproductible) | removed:easy_run, added:row_erg | 58 / 30 / 31 | réalisée |
 | 3 | 10-23 | strength | str_full_body C | non → **oui** | Passer (genou P2 connu) | unchanged | — | — | 69 / 39 → **37** / 39 → **37** | réalisée |
 | 3 | 10-24 | running | running.easy | oui | Passer (genou P2 connu) | adapted | régénérée (reproductible) | removed:easy_run, added:row_erg | 88 / 30 / 31 | réalisée |
-| 4 | 10-26 | strength | str_full_body A | non → **oui** | Non (genou résolu) | unchanged | — | — | 69 / 39 → **58** / 39 → **58** | réalisée |
-| 4 | 10-27 | strength | str_full_body B | oui | Oui · épaule P1 | unchanged | — | — | 54 / 33 → **47** / 33 → **47** | réalisée |
+| 4 | 10-26 | strength | str_full_body A | non → **oui** | Non (genou résolu) | unchanged | — | — | 69 / 39 → **57** / 39 → **57** | réalisée |
+| 4 | 10-27 | strength | str_full_body B | oui | Oui · épaule P1 | unchanged | — | — | 54 / 33 → **46** / 33 → **46** | réalisée |
 | 4 | 10-28 | crosstraining | amrap + bloc force | oui | Non | unchanged | — | — | 73 / 48 / 48 | réalisée |
 | 4 | 10-29 | running | running.easy | oui | Non | unchanged | — | — | 58 / 30 / 30 | réalisée |
 | 4 | 10-30 | strength | str_full_body C | non → **oui** | Oui · épaule P1 | postponed | — | — | 69 / 44 → **43** / — | non démarrée (report) |
@@ -115,8 +115,8 @@ Avant comme après : **0 violation**.
 |---|---|---|
 | 1 | 240 → 256 | 240 → 256 |
 | 2 | 232 → 259 | 232 → 259 |
-| 3 | 227 → 257 | 227 → 237 |
-| 4 | 224 → 256 | 180 → 213 |
+| 3 | 227 → 256 | 227 → 237 |
+| 4 | 224 → 254 | 180 → 211 |
 
 ## 5. Conflits, refus, adaptations
 

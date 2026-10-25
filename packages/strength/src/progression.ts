@@ -208,10 +208,21 @@ function predictedRirAt(sets: readonly PerformedSet[], kg: number, reps: number,
  * Mise à jour d'une track après exécution. Variable progressée selon le modèle de la TRACK.
  * `phaseKind = deload` : aucune hausse. Douleur / pause : track suspendue, rien ne baisse.
  */
-export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number): TrackUpdate {
-  const u = updateTrackModel(track, x, cls, e, params, phaseKind, declaredStepKg);
+/**
+ * RC5.3 R4 — options de lecture d'une exposition. `modified` : la prescription de l'exercice a été MODIFIÉE (interférence,
+ * état du jour, temps, adaptation au démarrage) ; l'appelant classe alors l'exposition contre le RIR de RÉFÉRENCE (RIR
+ * de base + modificateurs durables), jamais contre le RIR relevé. Sans effet si le contenu ne déclare pas la politique
+ * `strength.progression.policy.modifiedExposure` (sémantique antérieure, reproductible).
+ */
+export interface TrackUpdateOptions { readonly modified?: boolean }
+
+export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number, o: TrackUpdateOptions = {}): TrackUpdate {
+  const soft = o.modified === true && params['strength.progression.policy']?.modifiedExposure?.mode === 'soft';
+  const u = soft ? updateModifiedTrack(track, x, cls, e, params, phaseKind, declaredStepKg) : updateTrackModel(track, x, cls, e, params, phaseKind, declaredStepKg);
   // S5 — historique longitudinal des preuves (douleur / pause : inchangé, ce n'est ni une réussite ni un échec).
   if (cls === 'pain' || cls === 'safety_pause') return u;
+  // RC5.3 R4 — exposition modifiée : l'historique n'est enrichi que d'une preuve EXPLOITABLE (réussite, effort observé).
+  if (soft && (cls === 'above' || cls === 'on_target' || cls === 'below' || cls === 'partial') && phaseKind !== 'deload' && !(u.track.consecutiveSuccess > track.consecutiveSuccess)) return u;
   const basis = track.model === 'autoregulated' ? autoregulatedBasis(x.performed, params, track.e1rmKg, u.track.e1rmKg) : undefined;
   const evidence = nextEvidence(track, u.track, exposureEvidence(x, cls), basis);
   if (evidence === undefined) return u;
@@ -224,6 +235,26 @@ const autoregulatedBasis = (sets: readonly PerformedSet[], params: StrengthParam
   if (est.observed !== undefined) return 'observed';
   return est.lowerBound !== undefined && after === est.lowerBound && (before === undefined || est.lowerBound > before) ? 'lower_bound' : undefined;
 };
+
+/**
+ * RC5.3 R4 (variante souple) — exposition à prescription modifiée : jamais une régression du seul fait de la
+ * modification, jamais une hausse ni un essai validé décidés sur elle seule.
+ * - réussite (au-dessus / dans la cible) avec effort OBSERVÉ : signal de capacité — une réussite comptée, estimation
+ *   (e1RM) mise à jour par la médiane du ruleset ; charge et répétitions inchangées ;
+ * - réussite sans effort saisi : maintien, aucun compteur (signal inexploitable) ;
+ * - en dessous / partielle : maintien tracé `below_modified`, aucun compteur (signal visible pour la récupération) ;
+ * - douleur, pause, substitution, données absentes, interruption, charge non portée, décharge : règles communes.
+ */
+function updateModifiedTrack(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number): TrackUpdate {
+  if (phaseKind === 'deload' || (cls !== 'above' && cls !== 'on_target' && cls !== 'below' && cls !== 'partial')) return updateTrackModel(track, x, cls, e, params, phaseKind, declaredStepKg);
+  const resumed: StrengthTrack = track.status === 'suspended' ? { ...track, status: 'active' } : track;
+  const held = (cause: string, t: StrengthTrack = resumed): TrackUpdate => ({ track: t, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause })], rotate: false });
+  if (cls === 'below' || cls === 'partial') return held('below_modified');
+  const est = effortEstimate(x.performed, params);
+  if (est.observed === undefined) return held('modified_prescription');
+  const e1rm = track.model === 'autoregulated' ? (track.e1rmKg === undefined ? est.observed : median([track.e1rmKg, est.observed])) : undefined;
+  return held('modified_prescription', { ...resumed, consecutiveSuccess: resumed.consecutiveSuccess + 1, consecutiveBelow: 0, ...(e1rm !== undefined ? { e1rmKg: e1rm } : {}) });
+}
 
 function updateTrackModel(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number): TrackUpdate {
   const p = params['strength.progression'];

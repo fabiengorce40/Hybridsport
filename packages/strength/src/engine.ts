@@ -184,6 +184,8 @@ interface Rx {
   readonly workingKg?: number;
   readonly source: PrescriptionSource;
   readonly reps: RepTarget;
+  /** RC5.3 R4 — dose modifiée par un modificateur transitoire : RIR de référence de l'item (politique versionnée). */
+  readonly modified?: { readonly referenceRir: number };
 }
 
 /** Effort d'une intensité remplacé par un autre RIR (séries de calibration). */
@@ -205,19 +207,34 @@ function prescribe(pick: Pick, env: Env, timePressure: boolean, allocated: numbe
   const calibration = knowledge.confidence === 'none' && knowledge.lastLoadKg === undefined && trackKg === undefined && e.loadable;
   const dose = computeDose(e, env, { role, timePressure, doubleProgression: model === 'double_progression', calibration, ...(allocated !== undefined ? { allocatedSets: allocated } : {}), ...(pick.track ? { track: pick.track } : {}) });
   reasons.push(...dose.reasons);
+  // RC5.3 R4 — marquage de la dose modifiée (seulement si le contenu porte la politique : contenus antérieurs inchangés).
+  const policy = env.params['strength.progression.policy']?.modifiedExposure;
+  const mark = policy && dose.transient ? { modified: { referenceRir: dose.referenceRir } } : {};
   const source: PrescriptionSource = pick.track?.nextPrescription ? 'track' : calibration ? 'calibration' : 'base_profile';
   // Maintien (gainage) et porté : prescriptions en durée / distance (valeurs G2), sans répétitions.
   const nonRep = env.params['strength.dose.nonRep'];
   const pickValue = (r: { min: number; max: number }) => (env.params['strength.dose.modifiers'].repChoice === 'low' ? r.min : r.max);
   if (e.defaultPrescriptionType === 'hold') {
-    return { prescription: { type: 'hold', seconds: pickValue(nonRep.holdSeconds), sets: dose.sets, restS: dose.restS }, working: dose.sets, hasRampup: false, source, reps: dose.sets };
+    return { prescription: { type: 'hold', seconds: pickValue(nonRep.holdSeconds), sets: dose.sets, restS: dose.restS }, working: dose.sets, hasRampup: false, source, reps: dose.sets, ...mark };
   }
   if (e.defaultPrescriptionType === 'distance') {
-    return { prescription: { type: 'intervals', reps: dose.sets, work: { distanceM: pickValue(nonRep.carryMeters) }, recoveryS: dose.restS }, working: dose.sets, hasRampup: false, source, reps: dose.sets };
+    return { prescription: { type: 'intervals', reps: dose.sets, work: { distanceM: pickValue(nonRep.carryMeters) }, recoveryS: dose.restS }, working: dose.sets, hasRampup: false, source, reps: dose.sets, ...mark };
   }
   const compound = e.compound && role !== 'accessory';
-  const decision = decideLoad(e, repsForLoad(dose.reps), dose.rir, env, trackKg, compound, pick.track?.e1rmKg);
+  let decision = decideLoad(e, repsForLoad(dose.reps), dose.rir, env, trackKg, compound, pick.track?.e1rmKg);
   reasons.push(...decision.reasons);
+  // RC5.3 R4.4 (option, désactivée par défaut) : RIR relevé par un modificateur transitoire ⇒ charge recalculée depuis
+  // l'e1RM de la track pour ce RIR (jamais au-dessus de la charge de la track).
+  const e1 = pick.track?.e1rmKg;
+  const st = loadStep(e, env);
+  const pctMod = pctFor(repsForLoad(dose.reps), dose.rir, env);
+  if (policy?.recalculateLoad === true && dose.transient && dose.rir > dose.referenceRir && e1 !== undefined && st && pctMod !== undefined && decision.intensity.mode === 'load' && decision.workingKg !== undefined) {
+    const kg = Math.max(st.stepKg, roundDownToStep(e1 * pctMod, st.stepKg));
+    if (kg < decision.workingKg) {
+      reasons.push(strengthReasons.emit('DOSE.LOAD.RECALCULATED', { exerciseId: e.id, fromKg: decision.workingKg, toKg: kg, rir: dose.rir }));
+      decision = { ...decision, intensity: { ...decision.intensity, kg }, workingKg: kg };
+    }
+  }
   const relativeIntensity = decision.intensity.mode === 'percent_of_reference' ? decision.intensity.fraction : pctFor(repsForLoad(dose.reps), dose.rir, env);
   const ramp = buildRampups(e, env, { role, exerciseClass: dose.exerciseClass, decision, samePatternBefore, workingReps: repsForLoad(dose.reps), ...(relativeIntensity !== undefined ? { relativeIntensity } : {}) });
   if (ramp.length > 0) reasons.push(strengthReasons.emit('DOSE.RAMPUP', { exerciseId: e.id, steps: ramp.length, knowledge: decision.knowledge }));
@@ -239,7 +256,7 @@ function prescribe(pick: Pick, env: Env, timePressure: boolean, allocated: numbe
     reasons.push(strengthReasons.emit('DOSE.TOP_SET', { exerciseId: e.id, topKg: decision.workingKg, backoffFraction: ts.backoffLoadFraction, backoffUnroundedKg: decision.workingKg * ts.backoffLoadFraction, backoffKg: backKg, backoffSets: backoffs }));
   }
   const sets = [...ramp, ...working];
-  return { prescription: { type: 'sets', sets }, working: workingOf(sets), hasRampup: ramp.length > 0, ...(decision.workingKg !== undefined ? { workingKg: decision.workingKg } : {}), source: pick.track?.nextPrescription ? 'track' : decision.source, reps };
+  return { prescription: { type: 'sets', sets }, working: workingOf(sets), hasRampup: ramp.length > 0, ...(decision.workingKg !== undefined ? { workingKg: decision.workingKg } : {}), source: pick.track?.nextPrescription ? 'track' : decision.source, reps, ...mark };
 }
 
 function mobilityItem(env: Env, itemId: string, seconds: number, primaryPattern: string | undefined): SessionItem | undefined {
@@ -375,6 +392,7 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
         ...(anchorDeclared ? { anchor: 'declared' as const } : candidate ? { anchor: 'candidate' as const } : {}),
         prescriptionSource: p.substitutedFrom ? 'substitution' as const : rx.source,
         ...(p.substitutedFrom ? { substitutedFrom: p.substitutedFrom } : {}),
+        ...(rx.modified ? { doseModified: true as const, referenceRir: rx.modified.referenceRir } : {}),
       };
       // technical-constant: au plus 3 alternatives prévalidées (contrat de schéma zItem)
       const alternatives = alternativesFor(p, list, env).slice(0, 3);

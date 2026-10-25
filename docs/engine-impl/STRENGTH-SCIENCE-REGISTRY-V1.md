@@ -3,7 +3,7 @@
 > Document **généré** depuis `packages/strength/src/science/` par `tests/golden/science-docs.test.ts` : ne pas éditer à la main.
 
 - Version du registre : **1.1.0** · ruleset : **0.4.0-strength-science-lock**
-- Gate STRENGTH_SCIENTIFIC_V1_GATE calculé : **PASS_PROVISIONAL** ; verrou STRENGTH_SCIENTIFIC_LOCK_V1 : **LOCKED_PROVISIONAL** (anomalies : 0 ; blocages PRODUCTION : 57)
+- Gate STRENGTH_SCIENTIFIC_V1_GATE calculé : **PASS_PROVISIONAL** ; verrou STRENGTH_SCIENTIFIC_LOCK_V1 : **LOCKED_PROVISIONAL** (anomalies : 0 ; blocages PRODUCTION : 58)
 - Vérification des sources (2026-09-27, complétée le 2026-09-28) : **identité** par recherche web (PMID, titre, auteurs, revue, DOI).
 - **Niveaux de vérification du contenu** : `IDENTITY_ONLY` (aucun résultat extrait) < `SEARCH_SUMMARY` (résultats connus par des résumés de moteur de recherche, y compris secondaires) < `ABSTRACT_VERIFIED` (résumé officiel lu) < `FULL_TEXT_VERIFIED`.
   - PubMed, E-utilities, Europe PMC et les sites des éditeurs restent bloqués par la politique réseau de l’environnement d’exécution (vérifié à nouveau en 4F) : **aucun résumé officiel ni texte intégral n’a été lu**, aucune source ne dépasse `SEARCH_SUMMARY`.
@@ -40,7 +40,7 @@ Règle de non-fausse précision (contrôlée par `validateScienceRegistry`) : le
 | `SRC.GRGIC_2018` | 28933024 | systematic_review | CONFIRMED | IDENTITY_ONLY | — | — |
 | `SRC.HALPERIN_2022` | 34542869 | scoping_review | PARTIAL | SEARCH_SUMMARY | P4.RIR | `strength.load`, `strength.prescriptionConfidence`, `strength.load.specificObservation` |
 | `SRC.HUGHES_2020` | 33337690 | experimental_study | CONFIRMED | IDENTITY_ONLY | — | — |
-| `SRC.WILSON_2012` | 22002517 | meta_analysis | CONFIRMED | SEARCH_SUMMARY | — | `strength.interference`, `strength.interference.assessment` |
+| `SRC.WILSON_2012` | 22002517 | meta_analysis | CONFIRMED | SEARCH_SUMMARY | — | `strength.interference`, `strength.interference.assessment`, `strength.progression.policy` |
 | `SRC.LUNDBERG_2022` | 35476184 | meta_analysis | CONFIRMED | SEARCH_SUMMARY | — | `strength.interference.assessment` |
 | `SRC.CHEN_2024` | 38187085 | network_meta_analysis | PARTIAL | IDENTITY_ONLY | — | — |
 | `SRC.KASSIANO_2022` | 35438660 | systematic_review | CONFIRMED | SEARCH_SUMMARY | P10.ANCRES | `strength.selection.recencyBandsDays`, `strength.tracks`, `strength.selection.repetitionPolicy`, `strength.tracks.horizon` |
@@ -358,7 +358,7 @@ Règle de non-fausse précision (contrôlée par `validateScienceRegistry`) : le
 | `C.CAL` | Cible d’effort et nombre de séries de calibration. | PROGRAMMING_HEURISTIC | oui | — | `strength.calibration` |
 | `C.CAP` | Plafond de séries difficiles par groupe et par séance. | SAFETY_SIGNOFF_REQUIRED | oui | — | `strength.volume.sessionCap` |
 | `C.CELLS` | Valeurs exactes des cellules (reps, séries, RIR, repos). | PROGRAMMING_HEURISTIC | oui | — | `strength.dose.base` |
-| `C.CONC` | L’interférence dépend de la modalité, de la fréquence et de la durée d’endurance. | CONTEXT_DEPENDENT | non | SRC.WILSON_2012 | `strength.interference`, `strength.interference.assessment` |
+| `C.CONC` | L’interférence dépend de la modalité, de la fréquence et de la durée d’endurance. | CONTEXT_DEPENDENT | non | SRC.WILSON_2012 | `strength.interference`, `strength.interference.assessment`, `strength.progression.policy` |
 | `C.CONFLICT` | Politique de conflit la plus prudente. | PRODUCT_GUARDRAIL | oui | — | `strength.dose.modifiers` |
 | `C.DELOAD` | Ampleur de la décharge. | PROGRAMMING_HEURISTIC | oui | — | `strength.dose.modifiers` |
 | `C.DOSE` | Relation dose–réponse du volume hebdomadaire à rendements décroissants. | SUPPORTED | non | SRC.PELLAND_2026 | `strength.volume`, `strength.session.stimulusPreservation` |
@@ -376,6 +376,7 @@ Règle de non-fausse précision (contrôlée par `validateScienceRegistry`) : le
 | `C.PC_THRESH` | Seuils de séances et d’observations pour HIGH. | PROGRAMMING_HEURISTIC | oui | — | `strength.prescriptionConfidence` |
 | `C.PERIOD` | Programmes périodisés supérieurs aux non périodisés pour le 1RM. | CONTEXT_DEPENDENT | non | SRC.MOESGAARD_2022 | `strength.progression` |
 | `C.PROG_FRACTIONS` | Fractions, seuils et compteurs de progression. | PROGRAMMING_HEURISTIC | oui | — | `strength.progression` |
+| `C.R4_RULE` | Lecture souple des expositions modifiées. | EXPERT_DESIGN_REVIEW | oui | — | `strength.progression.policy` |
 | `C.RAMP_STEPS` | Fractions et répétitions des paliers. | PROGRAMMING_HEURISTIC | oui | — | `strength.rampup`, `strength.rampup.estimatedPolicy` |
 | `C.REST` | Hypertrophie : petit bénéfice des repos de plus de 60 s, pas de différence appréciable au-delà de 90 s, effets largement chevauchants ; aucun seuil universel (repos suffisant pour préserver la qualité des séries). | CONTEXT_DEPENDENT | non | SRC.SINGER_2024 | `strength.dose.base` |
 | `C.RIR_ERR` | La prédiction des répétitions jusqu’à l’échec est imprécise (sous-estimation moyenne d’environ une répétition, hétérogénéité importante), meilleure pour les séries courtes (moins de 12 répétitions). | CONTEXT_DEPENDENT | non | SRC.HALPERIN_2022 | `strength.load`, `strength.prescriptionConfidence`, `strength.load.specificObservation` |
@@ -468,6 +469,7 @@ Règle de non-fausse précision (contrôlée par `validateScienceRegistry`) : le
 | PROVISIONAL_VALUE | `strength.rampup.estimatedPolicy` | PROGRAMMING_HEURISTIC |
 | PROVISIONAL_VALUE | `strength.selection.repetitionPolicy` | EXPERT_DESIGN_REVIEW |
 | PROVISIONAL_VALUE | `strength.session.stimulusPreservation` | EXPERT_DESIGN_REVIEW |
+| PROVISIONAL_VALUE | `strength.progression.policy` | EXPERT_DESIGN_REVIEW |
 | PROVISIONAL_VALUE | `strength.tracks.horizon` | EXPERT_DESIGN_REVIEW |
 | PROVISIONAL_VALUE | `strength.session.durationPriority` | PRODUCT_GUARDRAIL |
 | SOURCE_NOT_FULL_TEXT | `SRC.CURRIER_2026_ACSM` | SEARCH_SUMMARY |

@@ -4,8 +4,8 @@
 
 - Ruleset : **0.4.0-strength-science-lock** (étend `0.2.0-strength-test` sans en modifier aucune valeur ; succède au candidat 4E `0.3.0-strength-science-candidate`, qui reste reproductible) · registre **1.1.0**
 - Verrou STRENGTH_SCIENTIFIC_LOCK_V1 : chaque paramètre a UNE catégorie principale (colonne « Statut ») ; aucune valeur numérique n’est `SUPPORTED` parce qu’un mécanisme général l’est.
-- 38 paramètres : EXPERT_DESIGN_REVIEW 12 · PRODUCT_GUARDRAIL 2 · PROGRAMMING_HEURISTIC 17 · SAFETY_SIGNOFF_REQUIRED 4 · TECHNICAL 3
-- Changements : new_policy 9 · reclassified 12 · unchanged 17 (`unchanged` = valeur et statut conservés ; `reclassified` = valeur conservée, statut précisé ; `new_policy` = paramètre facultatif introduit, absent en 0.2.0)
+- 39 paramètres : EXPERT_DESIGN_REVIEW 13 · PRODUCT_GUARDRAIL 2 · PROGRAMMING_HEURISTIC 17 · SAFETY_SIGNOFF_REQUIRED 4 · TECHNICAL 3
+- Changements : new_policy 10 · reclassified 12 · unchanged 17 (`unchanged` = valeur et statut conservés ; `reclassified` = valeur conservée, statut précisé ; `new_policy` = paramètre facultatif introduit, absent en 0.2.0)
 - **Aucune valeur existante n’est modifiée.** Les 7 écarts validés en phase 4C sont conservés. Toutes les valeurs restent **provisoires** : aucune validation formelle.
 - Absence d’un paramètre facultatif = **sémantique du ruleset 0.2.0** (comportement historique reproduit à l’identique, testé), jamais une valeur par défaut sportive.
 
@@ -47,6 +47,7 @@
 | `strength.rampup.estimatedPolicy` | G2 | PROGRAMMING_HEURISTIC | new_policy | 1 |
 | `strength.selection.repetitionPolicy` | G2 | EXPERT_DESIGN_REVIEW | new_policy | 1 |
 | `strength.session.stimulusPreservation` | G2 | EXPERT_DESIGN_REVIEW | new_policy | 1 |
+| `strength.progression.policy` | G2 | EXPERT_DESIGN_REVIEW | new_policy | 1 |
 | `strength.tracks.horizon` | G2 | EXPERT_DESIGN_REVIEW | new_policy | 1 |
 | `strength.session.durationPriority` | G2 | PRODUCT_GUARDRAIL | new_policy | 1 |
 
@@ -777,6 +778,26 @@
 | Si la preuve reste insuffisante | Sans échange admissible, aucun ajout supplémentaire (le temps n’est pas forcé) ; tout échange est tracé (SELECT.STIMULUS_PRESERVED). |
 | Revendications | `C.DOSE` SUPPORTED (principe) ; `C.SP_RULE` EXPERT_DESIGN_REVIEW (valeur) |
 | Version du paramètre | 0.4.0 · revue 2026-09-28 |
+
+## `strength.progression.policy`
+
+| Champ | Valeur |
+|---|---|
+| Ancienne valeur (0.2.0) | *absent (sémantique 0.2.0)* |
+| Valeur 4E (0.3.0) | *absent (sémantique 0.2.0)* |
+| Valeur 4F (0.4.0) | *absent (sémantique 0.2.0)* |
+| Lecture | Absent avant RC5.3 (une exposition à prescription modifiée était classée contre le RIR relevé) ; RC5.3 R4 : « modifiedExposure: soft » — classement contre le RIR de référence (base + modificateurs durables), aucune régression ni hausse décidée sur une exposition modifiée, réussite à effort observé comptée comme signal de capacité ; recalcul de charge (R4.4) désactivé. |
+| Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
+| Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
+| Sources | `SRC.WILSON_2012` (type le plus fort : meta_analysis) |
+| Population | Adultes en bonne santé, majoritairement jeunes et masculins selon les sources ; transposition aux femmes, aux seniors et aux sportifs d’endurance non vérifiée |
+| Critère | Sans objet (aucune mesure d’effet) |
+| Confiance | very_low |
+| Incertitude | Choix de conception validé sur athlète simulé (gains hebdomadaires supposés) ; aucune validation terrain. |
+| Justification | Constat C4 (RC5.3) : l’interférence et l’état du jour relèvent le RIR sans changer la charge ; l’athlète qui déclare son effort réel était classé « en dessous » puis régressait. Une séance allégée n’est ni une preuve de progrès suffisante, ni un échec. |
+| Si la preuve reste insuffisante | Politique appliquée et tracée (PROGRESSION.HELD modified_prescription / below_modified). |
+| Revendications | `C.CONC` CONTEXT_DEPENDENT (principe) ; `C.R4_RULE` EXPERT_DESIGN_REVIEW (valeur) |
+| Version du paramètre | — · revue 2026-09-28 |
 
 ## `strength.tracks.horizon`
 

@@ -1,0 +1,38 @@
+{
+ "beta-e2cdcc5-real-inprogress.json": {
+  "week:2026-10-19": "5f296c9771eccd28",
+  "history": "118b62333bcfd3e7",
+  "tracks": "4f53cda18c2baa0c",
+  "exposures": "4f53cda18c2baa0c"
+ },
+ "beta-e2cdcc5-real-running.json": {
+  "week:2026-10-19": "5f296c9771eccd28",
+  "history": "118b62333bcfd3e7",
+  "tracks": "4f53cda18c2baa0c",
+  "exposures": "4f53cda18c2baa0c"
+ },
+ "beta-e2cdcc5-p1b-w3.json": {
+  "week:2026-10-05": "dc060cb889428e5d",
+  "week:2026-10-12": "9747e2f970306478",
+  "week:2026-10-19": "4002b870e7d1d265",
+  "history": "6864e6ce40e16198",
+  "tracks": "b717a250df2d5903",
+  "exposures": "ffd6c6781651f8a8"
+ },
+ "../../rc51/fixtures/pre-rc51-s4-w4.json": {
+  "week:2026-10-05": "4f02dde0f4a31249",
+  "week:2026-10-12": "bdfef6bd7b59b424",
+  "week:2026-10-19": "95ec97a06498f3f3",
+  "history": "4bc0411a1513cd53",
+  "tracks": "fba7390e3c95375a",
+  "exposures": "225dce63f4f39e7f"
+ },
+ "rc51-s4-w3.json": {
+  "week:2026-10-05": "07c73e0a98ee2a47",
+  "week:2026-10-12": "2224c3bfcf5d3637",
+  "week:2026-10-19": "79d79ed9fd042f7e",
+  "history": "d756b7c4034f8b04",
+  "tracks": "1b452479622c736e",
+  "exposures": "353442f27c072b06"
+ }
+}

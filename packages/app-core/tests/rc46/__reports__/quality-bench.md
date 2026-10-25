@@ -9,7 +9,7 @@ Chemin réel de l'application, 6 semaines, 8 profils. Définitions : voir `tests
 | P1 | 18 | 18.3 / 10.5 | 1.74 | quads 5, hamstrings 2, calves 4, back 2 | arms 6 | 12 | 0 | 51 / 63 | 0 |
 | P1b | 24 | 19.5 / 10.7 | 1.82 | quads 1, hamstrings 1, calves 1 | shoulders 1, arms 6, core 1 | 24 | 0 | 45 / 60 | 0 |
 | P2 | 18 | 18.3 / 10.5 | 1.74 | quads 3, calves 1, back 1 | glutes 6, arms 6 | 0 | 0 | 57 / 64 | 0 |
-| P3 | 18 | 17.8 / 9.8 | 1.82 | quads 4, hamstrings 1, calves 5, chest 1, back 3 | glutes 1, arms 6 | 6 | 0 | 51 / 64 | 0 |
+| P3 | 18 | 17.8 / 9.8 | 1.82 | quads 4, hamstrings 1, calves 5, chest 1, back 3 | glutes 1, arms 6 | 6 | 0 | 51 / 63 | 0 |
 | P4 | 0 | 0 / 0 | — | — | — | 0 | 0 | — / — | 0 |
 | P5 | 18 | 18.3 / 10.8 | 1.69 | quads 5, hamstrings 5, calves 5 | arms 6 | 18 | 0 | 47 / 70 | 0 |
 | S3 | 18 | 18 / 10.2 | 1.76 | quads 3, calves 4, back 1 | glutes 6, arms 6 | 0 | 0 | 53 / 63 | 0 |
@@ -112,7 +112,7 @@ Continuité : 95 transitions, exercice changé 7, retour en calibration 0, baiss
 Emplacements toujours « à l'effort » (≥ 3 expositions) : str_full_body/fb.trunk:cable_pallof_press×7.
 Allègements : 6 séances, 17 réductions {"full":8,"full_and_signal":4,"rir_only":5} ; arbitrages {"moved/strength":5,"recomposed":2}.
 Reproductibilité (R-A, à la planification de chaque semaine) : {"identical":18,"progression_since_planning":0,"history_since_planning":0,"planner_divergence":0,"not_regenerable":0}.
-Durées : moyenne 51 min, maximum 64 min, dépassements du temps disponible 0.
+Durées : moyenne 51 min, maximum 63 min, dépassements du temps disponible 0.
 
 ## P4 — Course 3× (semi) + HYROX 2×
 

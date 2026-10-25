@@ -13,7 +13,7 @@ d80d389cbc34806c  domain/src/ruleset-document.ts
 8fabd15558695402  domain/src/run-structure.ts
 029edc22d7a0b3e3  domain/src/safety.ts
 2ca92095f87b46b0  domain/src/serialization.ts
-bfaeadb66d9c9697  domain/src/session.ts
+ded543c55a7c0eeb  domain/src/session.ts
 3948c30f8407549c  domain/src/sport-engine.ts
 5da48fc0512bfab9  domain/src/time.ts
 e726c1e7fbae03e6  domain/src/validation.ts

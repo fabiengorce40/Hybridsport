@@ -54,8 +54,14 @@ describe('RC5.1 — banc avant / après (13 profils, 6 semaines)', () => {
     it(`${id} (hors hypertrophie 4×) : séances, charges, durées et démarrages identiques à la référence`, () => {
       const a = after.get(id);
       const b = BEFORE[id];
-      expect(a?.sessions).toEqual(b?.sessions);
-      expect(a?.mains).toEqual(b?.mains);
+      // RC5.3 R4 (séances modifiées) : une hausse décidée sur une séance allégée par l'interférence n'a plus lieu (effet de
+      // bord RC5.2 §2.3). Composition et séries identiques ; durée à ± 1 min (paliers de montée selon la charge) ; une
+      // charge principale n'est jamais AU-DESSUS de la référence (R4 retire des hausses, n'en ajoute aucune).
+      const shape = (m: Rc51Measure | undefined) => m?.sessions.map(({ p50: _p, ...x }) => x);
+      expect(shape(a)).toEqual(shape(b));
+      a?.sessions.forEach((x, i) => expect(Math.abs((x.p50 ?? 0) - (b?.sessions[i]?.p50 ?? 0))).toBeLessThanOrEqual(1));
+      expect(Object.keys(a?.mains ?? {}).sort()).toEqual(Object.keys(b?.mains ?? {}).sort());
+      for (const [ex, loads] of Object.entries(a?.mains ?? {})) loads.forEach((kg, i) => expect([ex, i, kg === null || (b?.mains[ex]?.[i] ?? null) === null || kg <= (b?.mains[ex]?.[i] ?? 0)]).toEqual([ex, i, true]));
       expect(a?.starts).toEqual(b?.starts);
       expect(a?.summary.volume).toEqual(b?.summary.volume);
     });
@@ -177,12 +183,13 @@ describe('RC5.1 — semaine déjà planifiée par le contenu d’avant (L1b-4) e
     }
   });
 
-  it('semaine suivante : Haut A/B et Bas A/B (contenu RC5.1), charges reprises de l’historique', () => {
+  it('semaine suivante : Haut A/B et Bas A/B (contenu courant, RC5.1 et suivants), charges reprises de l’historique', () => {
     const n = ensureBeta0Week(s, clock(NEXT));
     expect(archs(n, NEXT)).toEqual(ORDER_A);
     const main = (arch: string) => {
       const r = strengthReqs(n, NEXT).find((x) => x.intent?.archetypeId === arch);
-      expect(recordOf(r as Req)?.provenance.rulesetVersion).toBe('0.8.0-strength-rc51');
+      // RC5.3 R4 : le contenu courant est la surcouche 0.9.0 de RC5.1 (mêmes archétypes A/B).
+      expect(recordOf(r as Req)?.provenance.rulesetVersion).toBe('0.9.0-strength-rc53-r4');
       const it = recordOf(r as Req)?.session.blocks.flatMap((b) => b.items).find((i) => /\.main_/.test(i.refs?.slotId ?? ''));
       const set = it?.prescription.type === 'sets' ? it.prescription.sets.find((x) => x.kind !== 'rampup') : undefined;
       return [it?.exerciseId, it?.refs?.prescriptionSource, set?.intensity?.mode === 'load' ? set.intensity.kg : null];

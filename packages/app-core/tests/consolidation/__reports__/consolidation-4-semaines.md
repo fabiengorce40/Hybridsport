@@ -19,13 +19,13 @@ Contrôle pré-séance scénarisé : S1 normal (+ matériel indisponible sur un 
 | 2 | 10-16 | strength | str_full_body A | 69 / 42 | oui | Passer (état inconnu) | unchanged | — | — | réalisée |
 | 2 | 10-17 | running | running.easy | 88 / 30 | oui | Passer (état inconnu) | unchanged | — | — | réalisée |
 | 3 | 10-19 | strength | str_full_body A | 69 / 60 | oui | Oui · genou P2 | adapted | removed:back_squat, removed:leg_curl, removed:walking_lunge_db, added:romanian_deadlift | — | réalisée |
-| 3 | 10-20 | strength | str_full_body B | 54 / 52 | oui | Passer (genou P2 connu) | adapted | removed:leg_curl, removed:walking_lunge_db | KNOWN_PAIN_KEPT | réalisée |
+| 3 | 10-20 | strength | str_full_body B | 54 / 51 | oui | Passer (genou P2 connu) | adapted | removed:leg_curl, removed:walking_lunge_db | KNOWN_PAIN_KEPT | réalisée |
 | 3 | 10-21 | crosstraining | amrap + bloc force | 73 / 48 | oui | Passer (genou P2 connu) | adapted | removed:back_squat, removed:air_squat, added:barbell_ohp | KNOWN_PAIN_KEPT | réalisée |
 | 3 | 10-22 | running | running.easy | 58 / 30 | oui | Passer (genou P2 connu) | adapted | removed:easy_run, added:row_erg | KNOWN_PAIN_KEPT | réalisée |
 | 3 | 10-23 | strength | str_full_body C | 69 / 37 | oui | Passer (genou P2 connu) | unchanged | — | KNOWN_PAIN_KEPT | réalisée |
 | 3 | 10-24 | running | running.easy | 88 / 30 | oui | Passer (genou P2 connu) | adapted | removed:easy_run, added:row_erg | KNOWN_PAIN_KEPT | réalisée |
-| 4 | 10-26 | strength | str_full_body A | 69 / 58 | oui | Non (genou résolu) | unchanged | — | — | réalisée |
-| 4 | 10-27 | strength | str_full_body B | 54 / 47 | oui | Oui · épaule P1 | unchanged | — | — | réalisée |
+| 4 | 10-26 | strength | str_full_body A | 69 / 57 | oui | Non (genou résolu) | unchanged | — | — | réalisée |
+| 4 | 10-27 | strength | str_full_body B | 54 / 46 | oui | Oui · épaule P1 | unchanged | — | — | réalisée |
 | 4 | 10-28 | crosstraining | amrap + bloc force | 73 / 48 | oui | Non | unchanged | — | — | réalisée |
 | 4 | 10-29 | running | running.easy | 58 / 30 | oui | Non | unchanged | — | — | réalisée |
 | 4 | 10-30 | strength | str_full_body C | 69 / 43 | oui | Oui · épaule P1 | postponed | — | PAIN_ESCALATED, SESSION_NOT_ADAPTABLE, BLOCKING_NEED | non démarrée (report) |

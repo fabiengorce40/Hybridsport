@@ -22,7 +22,14 @@ export interface Dose {
   readonly cell: DoseCell;
   readonly exerciseClass: ExerciseClass;
   readonly reasons: readonly ReasonCode[];
+  /** RC5.3 R4 — dose modifiée par un modificateur TRANSITOIRE (état du jour, interférence, temps). */
+  readonly transient: boolean;
+  /** RC5.3 R4 — RIR de référence : profil de base et modificateurs durables (niveau, phase), sans les transitoires. */
+  readonly referenceRir: number;
 }
+
+/** RC5.3 R4 — modificateurs TRANSITOIRES d'une séance (le niveau et la phase sont durables). */
+const TRANSIENT_MODIFIER = /^(readiness|interference|interference_rir):/;
 
 export function doseCell(e: Exercise, role: SlotRole, env: Env): { cell: DoseCell; cls: ExerciseClass } {
   const profile = env.params['strength.stimuli'][env.stimulus]?.doseProfile;
@@ -84,6 +91,16 @@ export function computeDose(e: Exercise, env: Env, opts: DoseOptions): Dose {
   const active = deltas.filter((d) => d.setsDelta !== 0 || d.rirDelta !== 0);
   const setsDelta = active.length === 0 ? 0 : m.conflictPolicy === 'sum' ? active.reduce((a, d) => a + d.setsDelta, 0) : Math.min(...active.map((d) => d.setsDelta));
   const rirDelta = active.length === 0 ? 0 : m.conflictPolicy === 'sum' ? active.reduce((a, d) => a + d.rirDelta, 0) : Math.max(...active.map((d) => d.rirDelta));
+  // RC5.3 R4 — dose de RÉFÉRENCE : même politique de conflit, modificateurs durables seulement (niveau, phase). La dose
+  // est « transitoire » quand un modificateur du JOUR (état, interférence) la change RÉELLEMENT : RIR relevé ou séries
+  // retirées au-delà de la référence (un modificateur couvert par un autre ne marque rien). La réduction liée au TEMPS
+  // disponible n'est pas transitoire : structurelle (mêmes créneaux chaque semaine), elle ne change pas l'effort par
+  // série ; la marquer priverait durablement l'exercice de toute progression (banc RC5.3 R4).
+  const durable = active.filter((d) => !TRANSIENT_MODIFIER.test(d.modifier));
+  const durableRir = durable.length === 0 ? 0 : m.conflictPolicy === 'sum' ? durable.reduce((a, d) => a + d.rirDelta, 0) : Math.max(...durable.map((d) => d.rirDelta));
+  const durableSets = durable.length === 0 ? 0 : m.conflictPolicy === 'sum' ? durable.reduce((a, d) => a + d.setsDelta, 0) : Math.min(...durable.map((d) => d.setsDelta));
+  const referenceRir = Math.max(0, baseRir + durableRir);
+  const transient = rirDelta > durableRir || setsDelta < durableSets;
   for (const d of active) reasons.push(strengthReasons.emit('DOSE.MODIFIED', { modifier: `${d.modifier}|${m.conflictPolicy}`, exerciseId: e.id, setsDelta: d.setsDelta, rirDelta: d.rirDelta }));
 
   sets += setsDelta;
@@ -104,5 +121,5 @@ export function computeDose(e: Exercise, env: Env, opts: DoseOptions): Dose {
   const restS = Math.max(cell.restS.min, Math.round(rawRest / m.restRoundingS) * m.restRoundingS);
   const calibrationSets = opts.calibration && !next ? Math.min(sets, cal.sets) : 0;
   const calibrationRir = Math.max(rir, cal.targetRir + rirDelta);
-  return { sets, reps, rir, restS, calibrationSets, calibrationRir, cell, exerciseClass: cls, reasons };
+  return { sets, reps, rir, restS, calibrationSets, calibrationRir, cell, exerciseClass: cls, reasons, transient, referenceRir };
 }

@@ -53,12 +53,13 @@ const repsOf = (r: unknown): string => {
 };
 
 /** Mesure d'un profil à partir d'une simulation (chemin réel). `env` : environnement à évaluer (référence par défaut). */
-export function measureProfile(spec: ProfileSpec, env = beta0Environment()): ProfileQuality {
+export function measureProfile(spec: ProfileSpec, env = beta0Environment(), o: { readonly weeks?: number; readonly onWeek?: (state: AppState, monday: string) => void; readonly onFinal?: (state: AppState) => void } = {}): ProfileQuality {
   // R-A mesuré À LA PLANIFICATION de chaque semaine (aucune séance de la semaine réalisée) : en fin de simulation, les
   // progressions ont évolué depuis et ne peuvent pas être relues à leur état d'alors (écarts attribués à tort au planificateur).
   const repro: Record<string, number> = {};
   const divergences: string[] = [];
-  const r: SimOut = simulate(spec, QUALITY_WEEKS, env, (state, monday) => {
+  const r: SimOut = simulate(spec, o.weeks ?? QUALITY_WEEKS, env, (state, monday) => {
+    o.onWeek?.(state, monday);
     const x = weekReproducibility(state, monday, env, 'strength');
     for (const [k, v] of Object.entries(x.counts)) repro[k] = (repro[k] ?? 0) + v;
     divergences.push(...x.sessions.filter((y) => y.class === 'planner_divergence').map((y) => `${y.requestId}: ${y.changesAtPlanning.join(', ')}`));
@@ -69,6 +70,7 @@ export function measureProfile(spec: ProfileSpec, env = beta0Environment()): Pro
   const w2 = params['strength.volume'].secondaryWeight;
   const groupOf = (m: string): string | undefined => Object.keys(groups).find((g) => (groups[g] ?? []).includes(m));
   const st: AppState = r.state;
+  o.onFinal?.(st);
   const reductionsByDate = new Map(r.sessions.filter((s) => s.sport === 'strength' && s.date).map((s) => [s.date as string, s.reductions]));
   let gap = 0;
   const sessions: QualitySession[] = Object.entries(st.planner.weeks).sort(([a], [b]) => (a < b ? -1 : 1)).flatMap(([ws, w]) => w.requests
