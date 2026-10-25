@@ -75,6 +75,13 @@ export const zStrengthTrack = z.object({
     exactStreak: z.number().int().nonnegative(), effortKnown: z.number().int().nonnegative(), effortUnknown: z.number().int().nonnegative(),
     e1rmBasis: z.enum(['observed', 'lower_bound']).optional(),
   }).strict().optional(),
+  /**
+   * RC5.3 R2 — ESSAI en cours : dernière hausse (charge, ou répétitions en double progression), confirmée ou annulée par
+   * l'exposition probante suivante. Prescription d'avant l'essai conservée pour le retour. Absent : aucun essai.
+   */
+  probe: z.object({ kind: z.enum(['load', 'reps']), fromKg: z.number().positive().optional(), fromReps: zRepTarget }).strict().optional(),
+  /** RC5.3 R2 — niveau REFUSÉ par un essai annulé (charge ou répétitions minimales), jusqu'au prochain cycle. */
+  probeRefused: z.object({ kg: z.number().positive().optional(), reps: z.number().int().positive().optional(), at: instant }).strict().optional(),
 }).strict();
 export type StrengthTrack = z.infer<typeof zStrengthTrack>;
 

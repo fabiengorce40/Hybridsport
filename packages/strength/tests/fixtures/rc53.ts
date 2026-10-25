@@ -17,6 +17,13 @@
  * - politique `sharedProgression` : accessoire suivi au même emplacement ⇒ une seule track pour la famille ; e1RM observé
  *   recopié sur les tracks autorégulées actives du même exercice ; fusion des tracks en double existantes.
  * Prescriptions spécifiques conservées (un même exercice à des rôles différents garde ses tracks).
+ *
+ * Lot R2 (`0.11.0-strength-rc53-r2`) — réussite exacte et essais (décision du 2026-10-25, extension aux répétitions) :
+ * - réussite exacte d'un principal autorégulé : un pas après 2 (intermédiaire) / 3 (avancé) réussites exactes, +1 si
+ *   l'effort n'est pas saisi ; débutant : modèle linéaire inchangé ;
+ * - toute hausse de charge OU de répétitions est un essai : annulé par une exposition probante en dessous / partielle
+ *   (retour à la dernière prescription réussie, sans baisse de charge), confirmé par une réussite ;
+ * - niveau refusé non retenté avant le prochain cycle ; sans mésocycle (avant R3), le refus expire après 4 semaines.
  */
 import type { GovernanceClass, ParameterValue, RulesetDocumentInput } from '@hybridsport/domain';
 import { param } from '../../../engine/tests/fixtures/ruleset.js';
@@ -63,5 +70,22 @@ export function strengthRc53R1RulesetDocument(): RulesetDocumentInput {
       }
       return p;
     }),
+  };
+}
+
+export const RC53_R2_RULESET_VERSION = '0.11.0-strength-rc53-r2';
+// technical-constant: TEST_ONLY — contenu provisoire R2 : réussites exactes requises par niveau, effort inconnu, expiration du refus (semaines)
+const R2_POLICY = { exactSuccess: { streak: { intermediate: 2, advanced: 3 }, unknownEffortExtra: 1 }, probes: { reps: true, refusalMaxWeeks: 4 } };
+
+/** Lot R2 : surcouche du lot R1 (réussite exacte, essais de charge et de répétitions). */
+export function strengthRc53R2RulesetDocument(): RulesetDocumentInput {
+  const base = strengthRc53R1RulesetDocument();
+  const why = `RC5.3 R2 — réussite exacte, essais de charge et de répétitions (décision du 2026-10-25) ; surcouche de ${RC53_R1_RULESET_VERSION}.`;
+  return {
+    ...base,
+    rulesetVersion: RC53_R2_RULESET_VERSION,
+    parameters: base.parameters.map((p) => (p.id === 'strength.progression.policy'
+      ? { ...p, value: { ...(p.value as Record<string, unknown>), ...R2_POLICY } as unknown as ParameterValue, version: '0.11.0', modifiedAt: '2026-10-25', justification: why }
+      : p)),
   };
 }

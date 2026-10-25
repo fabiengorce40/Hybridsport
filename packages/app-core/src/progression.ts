@@ -144,7 +144,7 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
     const anchorOfSlot = [...tracks.values()].find((t) => t.tier === 'anchor' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === it.refs?.slotId);
     const known = trackId ? tracks.get(trackId) : undefined;
     const update = (t: StrengthTrack, cls: ReturnType<typeof classifyExposure>) => {
-      const u = updateTrack(t, exec, cls, e, params, 'accumulation', undefined, modified ? { modified } : {});
+      const u = updateTrack(t, exec, cls, e, params, 'accumulation', undefined, { ...(modified ? { modified } : {}), level: p.level, at: now });
       // S4 — preuve complète de l'exposition (prescrit / réalisé), indépendante de la décision du modèle.
       const ev = exposureEvidence(exec, cls);
       const signed = (v: number | null) => (v === null ? 'n/a' : v > 0 ? `+${String(v)}` : String(v));

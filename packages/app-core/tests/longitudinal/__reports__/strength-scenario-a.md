@@ -122,18 +122,18 @@ Priorité déclarée (programme) : strength ; reçue par Strength : rang 1 ; voi
 
 | Jour | Séance | Exercice | Séries × reps | RIR cible | Charge | Source | Exercice vs semaine précédente | Décision de progression après la séance |
 |---|---|---|---|---|---|---|---|---|
-| 2026-10-19 | str_upper_a #1 | Développé couché ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (estimate) ; réussite exacte : hausse non gouvernée (BLOCKED) |
+| 2026-10-19 | str_upper_a #1 | Développé couché ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression charge** |
 | 2026-10-19 | str_upper_a #1 | Tractions ⚓ | 3 × 9–12 | 2 | poids du corps | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-19 | str_upper_a #1 | Tirage horizontal poulie | 2 × 8–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-19 | str_upper_a #1 | Développé épaules machine | 2 × 8–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-19 | str_upper_a #1 | Pec deck | 3 × 14–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-19 | str_upper_a #1 | Pallof press | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
-| 2026-10-20 | str_lower_a #1 | Squat barre ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (estimate) ; réussite exacte : hausse non gouvernée (BLOCKED) |
+| 2026-10-20 | str_lower_a #1 | Squat barre ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression charge** |
 | 2026-10-20 | str_lower_a #1 | Soulevé roumain unilatéral haltère ⚓ | 3 × 9–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-20 | str_lower_a #1 | Leg curl | 3 × 14–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-20 | str_lower_a #1 | Squat bulgare | 2 × 10–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-20 | str_lower_a #1 | Leg extension | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
-| 2026-10-21 | str_upper_b #1 | Développé militaire ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (estimate) ; réussite exacte : hausse non gouvernée (BLOCKED) |
+| 2026-10-21 | str_upper_b #1 | Développé militaire ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression charge** |
 | 2026-10-21 | str_upper_b #1 | Rowing machine ⚓ | 3 × 9–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-21 | str_upper_b #1 | Presse pectoraux machine | 2 × 8–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-21 | str_upper_b #1 | Tirage vertical | 2 × 8–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
@@ -156,11 +156,11 @@ Exercices principaux (ancres) :
 
 | Jour | Exercice | Prescription | RIR cible | RIR observé | Preuve | Réussites exactes consécutives | e1RM (nature) | Décision | Prescription suivante |
 |---|---|---|---|---|---|---|---|---|---|
-| 2026-10-19 | Développé couché | 3 × 6 @ 40 kg | 2 | 2 | exact_effort_known | 2 | 51 (observed) | maintien (estimate) ; BLOCKED (réussite exacte) | 4 × 6 @ 40 kg · RIR 2 |
+| 2026-10-19 | Développé couché | 3 × 6 @ 40 kg | 2 | 2 | exact_effort_known | 0 | 51 (observed) | **+charge** | 4 × 6 @ 42.5 kg · RIR 2 |
 | 2026-10-19 | Tractions | 3 × 9–12 @ PDC | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 10–12 · RIR 2 |
-| 2026-10-20 | Squat barre | 3 × 6 @ 40 kg | 2 | 2 | exact_effort_known | 2 | 51 (observed) | maintien (estimate) ; BLOCKED (réussite exacte) | 4 × 6 @ 40 kg · RIR 2 |
+| 2026-10-20 | Squat barre | 3 × 6 @ 40 kg | 2 | 2 | exact_effort_known | 0 | 51 (observed) | **+charge** | 4 × 6 @ 42.5 kg · RIR 2 |
 | 2026-10-20 | Soulevé roumain unilatéral haltère | 3 × 9–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 10–12 @ 40 kg · RIR 2 |
-| 2026-10-21 | Développé militaire | 3 × 6 @ 40 kg | 2 | 2 | exact_effort_known | 2 | 51.3 (observed) | maintien (estimate) ; BLOCKED (réussite exacte) | 3 × 6 @ 40 kg · RIR 2 |
+| 2026-10-21 | Développé militaire | 3 × 6 @ 40 kg | 2 | 2 | exact_effort_known | 0 | 51.3 (observed) | **+charge** | 3 × 6 @ 42.5 kg · RIR 2 |
 | 2026-10-21 | Rowing machine | 3 × 9–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 10–12 @ 40 kg · RIR 2 |
 | 2026-10-23 | Soulevé de terre roumain | 3 × 6 @ 40 kg | 2 | 2 | partial_sets | 0 | 52 (observed) | maintien (partial) | 3 × 6 @ 40 kg · RIR 2 |
 | 2026-10-23 | Presse à cuisses | 3 × 9–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 10–12 @ 40 kg · RIR 2 |
@@ -181,13 +181,11 @@ Objectif de volume de la semaine : **partially_satisfied** (4/4 séances). Contr
 
 Priorité déclarée (programme) : strength ; reçue par Strength : rang 1 ; voisines : aucune ; politique : blocked:priority_interference_policy.
 
-Décisions bloquées (après réalisation) : réussite exacte sans marge (autoregulated, RIR reported) : hausse non gouvernée ; réussite exacte sans marge (autoregulated, RIR reported) : hausse non gouvernée ; réussite exacte sans marge (autoregulated, RIR reported) : hausse non gouvernée.
-
 ## Semaine 4 — 2026-10-26
 
 | Jour | Séance | Exercice | Séries × reps | RIR cible | Charge | Source | Exercice vs semaine précédente | Décision de progression après la séance |
 |---|---|---|---|---|---|---|---|---|
-| 2026-10-26 | str_upper_b #1 | Développé militaire ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (evidence) |
+| 2026-10-26 | str_upper_b #1 | Développé militaire ⚓ | 3 × 6 | 2 | 42.5 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (evidence) |
 | 2026-10-26 | str_upper_b #1 | Rowing machine ⚓ | 4 × 10–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-26 | str_upper_b #1 | Presse pectoraux machine | 2 × 9–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-26 | str_upper_b #1 | Tirage vertical | 2 × 9–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
@@ -198,13 +196,13 @@ Décisions bloquées (après réalisation) : réussite exacte sans marge (autore
 | 2026-10-27 | str_lower_b #1 | Leg curl | 3 × 16–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-27 | str_lower_b #1 | Squat bulgare | 2 × 12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression charge** |
 | 2026-10-27 | str_lower_b #1 | Leg extension | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
-| 2026-10-28 | str_upper_a #1 | Développé couché ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (evidence) |
+| 2026-10-28 | str_upper_a #1 | Développé couché ⚓ | 3 × 6 | 2 | 42.5 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (evidence) |
 | 2026-10-28 | str_upper_a #1 | Tractions ⚓ | 3 × 10–12 | 2 | poids du corps | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-28 | str_upper_a #1 | Tirage horizontal poulie | 2 × 9–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-28 | str_upper_a #1 | Développé épaules machine | 2 × 9–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-28 | str_upper_a #1 | Pec deck | 3 × 16–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-28 | str_upper_a #1 | Pallof press | 3 × 12–20 | 1 | à l’effort (calibration) | historique | conservé | aucune track (accessoire non suivi) |
-| 2026-10-30 | str_lower_a #1 | Squat barre ⚓ | 3 × 6 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (evidence) |
+| 2026-10-30 | str_lower_a #1 | Squat barre ⚓ | 3 × 6 | 2 | 42.5 kg | track | conservé | exposition on_target (réussite exacte) ; maintien (evidence) |
 | 2026-10-30 | str_lower_a #1 | Soulevé roumain unilatéral haltère ⚓ | 3 × 10–12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-30 | str_lower_a #1 | Leg curl | 3 × 16–20 | 1 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
 | 2026-10-30 | str_lower_a #1 | Squat bulgare | 2 × 12 | 2 | 40 kg | track | conservé | exposition on_target (réussite exacte) ; **progression répétitions** |
@@ -221,13 +219,13 @@ Exercices principaux (ancres) :
 
 | Jour | Exercice | Prescription | RIR cible | RIR observé | Preuve | Réussites exactes consécutives | e1RM (nature) | Décision | Prescription suivante |
 |---|---|---|---|---|---|---|---|---|---|
-| 2026-10-26 | Développé militaire | 3 × 6 @ 40 kg | 2 | 2 | exact_effort_known | 3 | 51.3 (observed) | maintien (evidence) | 3 × 6 @ 40 kg · RIR 2 |
+| 2026-10-26 | Développé militaire | 3 × 6 @ 42.5 kg | 2 | 2 | exact_effort_known | 1 | 51.3 (observed) | maintien (evidence) | 3 × 6 @ 42.5 kg · RIR 2 |
 | 2026-10-26 | Rowing machine | 4 × 10–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 11–12 @ 40 kg · RIR 2 |
 | 2026-10-27 | Soulevé de terre roumain | 3 × 6 @ 40 kg | 2 | 2 | exact_effort_known | 1 | 52 (observed) | maintien (evidence) | 3 × 6 @ 40 kg · RIR 2 |
 | 2026-10-27 | Presse à cuisses | 3 × 10–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 11–12 @ 40 kg · RIR 2 |
-| 2026-10-28 | Développé couché | 3 × 6 @ 40 kg | 2 | 2 | exact_effort_known | 3 | 51 (observed) | maintien (evidence) | 4 × 6 @ 40 kg · RIR 2 |
+| 2026-10-28 | Développé couché | 3 × 6 @ 42.5 kg | 2 | 2 | exact_effort_known | 1 | 51 (observed) | maintien (evidence) | 4 × 6 @ 42.5 kg · RIR 2 |
 | 2026-10-28 | Tractions | 3 × 10–12 @ PDC | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 11–12 · RIR 2 |
-| 2026-10-30 | Squat barre | 3 × 6 @ 40 kg | 2 | 2 | exact_effort_known | 3 | 51 (observed) | maintien (evidence) | 4 × 6 @ 40 kg · RIR 2 |
+| 2026-10-30 | Squat barre | 3 × 6 @ 42.5 kg | 2 | 2 | exact_effort_known | 1 | 51 (observed) | maintien (evidence) | 4 × 6 @ 42.5 kg · RIR 2 |
 | 2026-10-30 | Soulevé roumain unilatéral haltère | 3 × 10–12 @ 40 kg | 2 | 2 | exact_effort_known | 0 | — | **+reps** | 3 × 11–12 @ 40 kg · RIR 2 |
 
 | Groupe | Cible (plancher) | Haut | Prévu (séries dures E1) | Réalisé | Statut |
@@ -249,9 +247,9 @@ Priorité déclarée (programme) : strength ; reçue par Strength : rang 1 ; voi
 ## Récapitulatif
 
 - Continuité : 37 exercices en place conservés par la continuité déclarée (hors ancres déclarées), 0 remplacés (—).
-- Progression : répétitions ×37, charge ×1, maintiens ×12, régressions ×0.
+- Progression : répétitions ×37, charge ×4, maintiens ×9, régressions ×0.
 - Preuves : réussites exactes ×49, dépassements ×0, sans preuve ×1.
-- Décisions bloquées : réussite exacte ×3 (effort observé ×3, effort inconnu ×0), poids du corps ×0.
+- Décisions bloquées : réussite exacte ×0 (effort observé ×0, effort inconnu ×0), poids du corps ×0.
 - Effort : expositions avec effort observé ×50, effort inconnu ×0.
 - État persisté (JSON compact, saveState) après 4 semaines : 289 Ko.
 

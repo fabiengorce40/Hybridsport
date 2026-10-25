@@ -92,8 +92,10 @@ describe('preuve de progression (exposition par exposition)', () => {
     expect(audit(closed).slice(audit(s2).length).filter((r) => r.code.startsWith('PROGRESSION.'))).toEqual([]);
   });
 
-  it('réussite exacte répétée d’un modèle autorégulé ⇒ décision BLOQUÉE tracée (scénario A), jamais une hausse inventée', () => {
-    expect(audit(A.final).some((r) => r.code === 'PROGRESSION.DECISION_BLOCKED' && r.params.capability === 'exact_success_progression')).toBe(true);
+  it('réussite exacte répétée d’un modèle autorégulé ⇒ un pas après 2 réussites exactes (intermédiaire, RC5.3 R2.1), tracé ; jamais avant', () => {
+    const adv = audit(A.final).filter((r) => r.code === 'PROGRESSION.ADVANCED' && r.params.cause === 'exact_success');
+    expect(adv.length).toBeGreaterThan(0);
+    expect(adv.every((r) => Number(r.params.exactStreak) >= 2)).toBe(true);
   });
 
   it('poids du corps au plafond : méthode non gouvernée, méthodes possibles listées (scénario A)', () => {

@@ -8,7 +8,7 @@
  * Une variable dominante progresse à la fois ; la double progression enchaîne reps puis charge, une
  * seule variable par pas. Douleur et pause de sécurité ne sont JAMAIS des échecs de performance.
  */
-import type { Exercise, ISODateTime, ReasonCode, RepTarget, SetPrescription } from '@hybridsport/domain';
+import type { Exercise, ISODateTime, Level, ReasonCode, RepTarget, SetPrescription } from '@hybridsport/domain';
 import type { StrengthTrack } from './context.js';
 import type { ProgressionModel, SlotRole, StrengthParams } from './params.js';
 import { exerciseClass } from './model.js';
@@ -34,6 +34,8 @@ export interface ExecutedItem {
 }
 
 const targetMin = (r: RepTarget): number => (typeof r === 'number' ? r : r.min);
+// technical-constant: jours par semaine (expiration d'un refus d'essai)
+const WEEK_DAYS = 7;
 const targetRir = (s: SetPrescription): number | undefined => {
   const i = s.intensity;
   if (i && 'effort' in i && i.effort && 'rir' in i.effort) return i.effort.rir;
@@ -214,19 +216,96 @@ function predictedRirAt(sets: readonly PerformedSet[], kg: number, reps: number,
  * de base + modificateurs durables), jamais contre le RIR relevé. Sans effet si le contenu ne déclare pas la politique
  * `strength.progression.policy.modifiedExposure` (sémantique antérieure, reproductible).
  */
-export interface TrackUpdateOptions { readonly modified?: boolean }
+export interface TrackUpdateOptions {
+  readonly modified?: boolean;
+  /** RC5.3 R2 — niveau de l'athlète (réussite exacte) et instant de l'exposition (refus d'un essai). */
+  readonly level?: Level;
+  readonly at?: ISODateTime;
+}
 
 export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number, o: TrackUpdateOptions = {}): TrackUpdate {
   const soft = o.modified === true && params['strength.progression.policy']?.modifiedExposure?.mode === 'soft';
-  const u = soft ? updateModifiedTrack(track, x, cls, e, params, phaseKind, declaredStepKg) : updateTrackModel(track, x, cls, e, params, phaseKind, declaredStepKg);
+  const probes = params['strength.progression.policy']?.probes;
+  // RC5.3 R2.2 — essai en cours : annulé par une exposition probante en dessous / partielle, confirmé par une réussite.
+  // Exposition modifiée, décharge, données absentes… : l'essai reste en attente (ni validé, ni annulé).
+  const probing = probes !== undefined && track.probe !== undefined && !soft && phaseKind !== 'deload';
+  if (probing && (cls === 'below' || cls === 'partial')) return withEvidence(track, revertProbe(track, o.at), x, cls, params);
+  const t0: StrengthTrack = probing && (cls === 'on_target' || cls === 'above') ? withoutProbe(track) : track;
+  const u0 = soft ? updateModifiedTrack(t0, x, cls, e, params, phaseKind, declaredStepKg) : updateTrackModel(t0, x, cls, e, params, phaseKind, declaredStepKg);
+  const u = soft || phaseKind === 'deload' ? u0 : probeDecisions(t0, u0, e, params, declaredStepKg, o);
   // S5 — historique longitudinal des preuves (douleur / pause : inchangé, ce n'est ni une réussite ni un échec).
   if (cls === 'pain' || cls === 'safety_pause') return u;
   // RC5.3 R4 — exposition modifiée : l'historique n'est enrichi que d'une preuve EXPLOITABLE (réussite, effort observé).
   if (soft && (cls === 'above' || cls === 'on_target' || cls === 'below' || cls === 'partial') && phaseKind !== 'deload' && !(u.track.consecutiveSuccess > track.consecutiveSuccess)) return u;
+  return withEvidence(track, u, x, cls, params);
+}
+
+/** S5 — historique longitudinal des preuves après une mise à jour (douleur / pause exclues par l'appelant). */
+function withEvidence(track: StrengthTrack, u: TrackUpdate, x: ExecutedItem, cls: ExposureClass, params: StrengthParams): TrackUpdate {
   const basis = track.model === 'autoregulated' ? autoregulatedBasis(x.performed, params, track.e1rmKg, u.track.e1rmKg) : undefined;
   const evidence = nextEvidence(track, u.track, exposureEvidence(x, cls), basis);
   if (evidence === undefined) return u;
   return { ...u, track: { ...u.track, evidence } };
+}
+
+const withoutProbe = (t: StrengthTrack): StrengthTrack => { const { probe: _p, ...rest } = t; return rest; };
+
+/**
+ * RC5.3 R2.2 — essai ANNULÉ : retour à la prescription d'avant l'essai (charge et répétitions, la dernière réussie),
+ * maintien compté, niveau refusé mémorisé (R2.3). Aucune baisse au-delà de la prescription d'avant l'essai : une vraie
+ * baisse de performance reste détectée par les règles communes, sur plusieurs expositions en dessous À cette prescription.
+ */
+function revertProbe(track: StrengthTrack, at: ISODateTime | undefined): TrackUpdate {
+  const pr = track.probe;
+  const next = track.nextPrescription;
+  if (!pr || !next) return { track, reasons: [], rotate: false };
+  const refusedKg = pr.kind === 'load' ? next.loadKg : undefined;
+  const refusedReps = pr.kind === 'reps' ? targetMin(next.reps) : undefined;
+  const refused = at === undefined ? {} : { probeRefused: { ...(refusedKg !== undefined ? { kg: refusedKg } : {}), ...(refusedReps !== undefined ? { reps: refusedReps } : {}), at } };
+  const reverted: StrengthTrack = { ...withoutProbe(track), ...refused, consecutiveSuccess: 0, consecutiveBelow: 0, consecutiveHolds: track.consecutiveHolds + 1, nextPrescription: { ...next, reps: pr.fromReps, ...(pr.fromKg !== undefined ? { loadKg: pr.fromKg } : {}) } };
+  return { track: reverted, reasons: [strengthReasons.emit('PROGRESSION.PROBE_REVERTED', { trackId: track.trackId, variable: pr.kind })], rotate: false };
+}
+
+/**
+ * RC5.3 R2 — décisions de la politique d'essais, appliquées APRÈS le modèle de la track (inchangé) :
+ * - R2.1 réussite exacte répétée d'un principal autorégulé ⇒ un pas de charge (seuil par niveau) ;
+ * - R2.3 hausse vers un niveau refusé (refus encore valable) ⇒ maintien `probe_refused` ;
+ * - R2.2 toute hausse retenue (charge ; répétitions si la politique le prévoit) ⇒ essai en cours.
+ */
+function probeDecisions(before: StrengthTrack, u: TrackUpdate, e: Exercise, params: StrengthParams, declaredStepKg: number | undefined, o: TrackUpdateOptions): TrackUpdate {
+  const pol = params['strength.progression.policy'];
+  const next = before.nextPrescription;
+  if (!next) return u;
+  let out = u;
+  const step = stepFor(e, params, declaredStepKg);
+  // R2.1 — réussite exacte (décision antérieurement BLOQUÉE) : un pas après la série de réussites exactes du niveau.
+  const blocked = u.reasons.find((r) => r.code === 'PROGRESSION.DECISION_BLOCKED' && r.params.capability === 'exact_success_progression');
+  const needed = o.level !== undefined ? pol?.exactSuccess?.streak[o.level] : undefined;
+  if (blocked && needed !== undefined && pol?.exactSuccess && step !== undefined && next.loadKg !== undefined) {
+    const streak = Number(blocked.params.exactStreak);
+    const unknown = blocked.params.situation === 'exact_success_effort_unknown';
+    if (streak >= needed + (unknown ? pol.exactSuccess.unknownEffortExtra : 0)) {
+      const kg = next.loadKg + step;
+      const cap = before.cycleStartLoadKg !== undefined ? Math.max(before.cycleStartLoadKg * (1 + params['strength.progression'].cycleCapFraction), before.cycleStartLoadKg + step) : undefined;
+      out = cap !== undefined && kg > cap
+        ? { ...u, reasons: [...u.reasons, strengthReasons.emit('PROGRESSION.CAP_REACHED', { trackId: before.trackId })] }
+        : { ...u, track: { ...u.track, nextPrescription: { ...next, loadKg: kg } }, reasons: [strengthReasons.emit('PROGRESSION.ADVANCED', { trackId: before.trackId, variable: 'load', cause: 'exact_success', exactStreak: streak })] };
+    }
+  }
+  const probes = pol?.probes;
+  if (!probes) return out;
+  const after = out.track.nextPrescription;
+  const loadUp = after?.loadKg !== undefined && next.loadKg !== undefined && after.loadKg > next.loadKg;
+  const repsUp = probes.reps && after !== undefined && after.loadKg === next.loadKg && targetMin(after.reps) > targetMin(next.reps);
+  if (!loadUp && !repsUp) return out;
+  // R2.3 — niveau refusé par un essai annulé, refus encore valable : maintien (ni hausse, ni compteur d'échec).
+  const refusal = before.probeRefused;
+  const valid = refusal !== undefined && (o.at === undefined || daysBetween(refusal.at, o.at) < probes.refusalMaxWeeks * WEEK_DAYS);
+  const refusedNow = valid && ((loadUp && refusal.kg !== undefined && (after?.loadKg ?? 0) >= refusal.kg) || (repsUp && refusal.reps !== undefined && after !== undefined && targetMin(after.reps) >= refusal.reps));
+  if (refusedNow) return { track: { ...before, consecutiveSuccess: 0, consecutiveBelow: 0 }, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: before.trackId, cause: 'probe_refused' })], rotate: false };
+  const { probeRefused: _r, ...expired } = out.track;
+  const track = valid ? out.track : expired;
+  return { ...out, track: { ...track, probe: { kind: loadUp ? 'load' : 'reps', ...(next.loadKg !== undefined ? { fromKg: next.loadKg } : {}), fromReps: next.reps } } };
 }
 
 /** Nature de l'estimation après mise à jour : observée si un RIR a été saisi ; borne seulement si la borne l'a RELEVÉE. */

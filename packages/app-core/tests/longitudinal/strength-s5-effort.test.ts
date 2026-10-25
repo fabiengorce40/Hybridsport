@@ -145,11 +145,13 @@ describe('tracks, première exposition, réussites successives', () => {
     expect(audit(unknown.final).find((x) => x.code === 'PROGRESSION.METHOD_UNGOVERNED')?.params.effort).toBe('unknown');
   });
 
-  it('23–24. réussites exactes successives : mémorisées dans la track, l’arrondi empêche la hausse ⇒ BLOQUÉE tracée', () => {
-    expect(bench(runObserved.final)?.evidence?.exactStreak ?? 0).toBeGreaterThanOrEqual(3);
-    expect(bench(runObserved.final)?.nextPrescription?.loadKg).toBe(40);
-    const blocked = audit(runObserved.final).filter((x) => x.code === 'PROGRESSION.DECISION_BLOCKED');
-    expect(blocked.map((x) => x.params.exactStreak as number).some((n) => n >= 2)).toBe(true);
+  it('23–24. réussites exactes successives : mémorisées ; RC5.3 R2.1 ⇒ un pas après 2 réussites exactes observées, 3 sans RIR saisi', () => {
+    const adv = (s: AppState) => audit(s).filter((x) => x.code === 'PROGRESSION.ADVANCED' && x.params.cause === 'exact_success').map((x) => Number(x.params.exactStreak));
+    expect(adv(runObserved.final).length).toBeGreaterThan(0);
+    expect(adv(runObserved.final).every((n) => n >= 2)).toBe(true);
+    expect((bench(runObserved.final)?.nextPrescription?.loadKg ?? 0) > 40).toBe(true);
+    // Effort inconnu : une réussite de plus exigée ; les réussites en dessous du seuil restent tracées comme bloquées.
+    expect(adv(runUnknown.final).every((n) => n >= 3)).toBe(true);
     expect(audit(runUnknown.final).some((x) => x.code === 'PROGRESSION.DECISION_BLOCKED' && x.params.situation === 'exact_success_effort_unknown')).toBe(true);
   });
 });

@@ -203,3 +203,32 @@ describe('R4.4 — recalcul de la charge quand le RIR est relevé (option, NON a
     expect(recalculated(normal)).toEqual([]);
   });
 });
+
+describe('séries retirées par manque de temps (comportement conservé, distinctions vérifiées)', () => {
+  const e = ex('ex.bench_press');
+  const env = () => envFor(scenario({ ruleset: RC53 }));
+  const secondary = { ...opts, role: 'secondary' as const, allocatedSets: 4 };
+  it('prescription charge / répétitions / RIR INTACTE, volume réduit : non marquée ; une réussite sur toutes les séries prescrites est une preuve ordinaire', () => {
+    const free = computeDose(e, env(), secondary);
+    const tp = computeDose(e, env(), { ...secondary, timePressure: true });
+    expect([tp.transient, tp.rir, tp.reps]).toEqual([false, free.rir, free.reps]);
+    expect(tp.sets).toBeLessThan(free.sets);
+    // Deux séries prescrites, deux réalisées à la cible : réussite comptée (modèle de la track inchangé).
+    const x: ExecutedItem = { exerciseId: e.id, prescribed: work(2, 8, 80, 2), performed: sets(2, 8, 80, 2), sessionCompleted: true };
+    const u = updateTrack(track({ consecutiveSuccess: 0 }), x, 'on_target', e, P, 'accumulation');
+    expect(u.track.consecutiveSuccess).toBe(1);
+  });
+  it('exposition INSUFFISANTE pour conclure (séance interrompue, séries non saisies) : aucune décision, aucun compteur', () => {
+    const t = track({ consecutiveSuccess: 1 });
+    const interrupted: ExecutedItem = { exerciseId: e.id, prescribed: work(3, 8, 80, 2), performed: sets(1, 8, 80, 2), sessionCompleted: false };
+    for (const cls of ['interrupted', 'no_data'] as const) {
+      const u = updateTrack(t, interrupted, cls, e, P, 'accumulation');
+      expect([cls, u.track.nextPrescription, u.track.consecutiveSuccess, u.track.consecutiveBelow]).toEqual([cls, t.nextPrescription, t.consecutiveSuccess, t.consecutiveBelow]);
+    }
+  });
+  it('fatigue ou interférence ayant RÉELLEMENT modifié l’effort : marquée (RIR relevé) et lue contre le RIR de référence', () => {
+    const d = computeDose(ex('ex.back_squat'), envFor(scenario({ ruleset: RC53, state: CAUTION })), opts);
+    expect(d.transient).toBe(true);
+    expect(d.rir).toBeGreaterThan(d.referenceRir);
+  });
+});

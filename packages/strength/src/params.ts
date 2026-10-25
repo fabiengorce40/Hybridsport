@@ -247,6 +247,19 @@ export const STRENGTH_OPTIONAL_PARAMETER_SCHEMAS = {
      * (la plus récemment exposée est conservée, l'autre close `merged`).
      */
     sharedProgression: z.literal(true).optional(),
+    /**
+     * R2.1 — réussite EXACTE d'un principal autorégulé (RIR déclaré = cible, exposition non modifiée) : un pas de charge
+     * après `streak[niveau]` réussites exactes consécutives (+ `unknownEffortExtra` si l'effort n'est pas saisi). Niveau
+     * absent : aucune hausse sur réussite exacte (comportement antérieur, décision tracée comme bloquée).
+     */
+    exactSuccess: z.object({ streak: z.partialRecord(z.enum(LEVELS), int.positive()), unknownEffortExtra: int.nonnegative() }).strict().optional(),
+    /**
+     * R2.2 / R2.3 — toute hausse (charge ; répétitions si `reps`) est un ESSAI : confirmé par la prochaine exposition
+     * probante réussie, annulé par une exposition en dessous ou partielle (retour à la prescription d'avant l'essai,
+     * maintien compté). Le niveau refusé n'est plus retenté avant le prochain cycle ; sans mésocycle, le refus expire après
+     * `refusalMaxWeeks` semaines.
+     */
+    probes: z.object({ reps: z.boolean(), refusalMaxWeeks: int.positive() }).strict().optional(),
   }).strict() },
 } as const satisfies Record<string, { governance: GovernanceClass; schema: z.ZodType }>;
 

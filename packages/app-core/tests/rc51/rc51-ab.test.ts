@@ -54,14 +54,15 @@ describe('RC5.1 — banc avant / après (13 profils, 6 semaines)', () => {
     it(`${id} (hors hypertrophie 4×) : séances, charges, durées et démarrages identiques à la référence`, () => {
       const a = after.get(id);
       const b = BEFORE[id];
-      // RC5.3 R4 (séances modifiées) : une hausse décidée sur une séance allégée par l'interférence n'a plus lieu (effet de
-      // bord RC5.2 §2.3). Composition et séries identiques ; durée à ± 1 min (paliers de montée selon la charge) ; une
-      // charge principale n'est jamais AU-DESSUS de la référence (R4 retire des hausses, n'en ajoute aucune).
+      // RC5.3 — la COMPOSITION reste celle d'avant RC5.1 (exercices, séries, démarrages, volumes) ; les CHARGES évoluent
+      // par les lots RC5.3 (R4 : aucune hausse décidée sur une séance allégée ; R2 : hausse après réussites exactes),
+      // mesurées par le banc RC5.3 (`tests/rc53`). Charge de départ de chaque principal identique ; durée à ± 2 min
+      // (paliers de montée selon la charge).
       const shape = (m: Rc51Measure | undefined) => m?.sessions.map(({ p50: _p, ...x }) => x);
       expect(shape(a)).toEqual(shape(b));
-      a?.sessions.forEach((x, i) => expect(Math.abs((x.p50 ?? 0) - (b?.sessions[i]?.p50 ?? 0))).toBeLessThanOrEqual(1));
+      a?.sessions.forEach((x, i) => expect(Math.abs((x.p50 ?? 0) - (b?.sessions[i]?.p50 ?? 0))).toBeLessThanOrEqual(2));
       expect(Object.keys(a?.mains ?? {}).sort()).toEqual(Object.keys(b?.mains ?? {}).sort());
-      for (const [ex, loads] of Object.entries(a?.mains ?? {})) loads.forEach((kg, i) => expect([ex, i, kg === null || (b?.mains[ex]?.[i] ?? null) === null || kg <= (b?.mains[ex]?.[i] ?? 0)]).toEqual([ex, i, true]));
+      for (const [ex, loads] of Object.entries(a?.mains ?? {})) expect([ex, loads.find((x) => x !== null)]).toEqual([ex, b?.mains[ex]?.find((x) => x !== null)]);
       expect(a?.starts).toEqual(b?.starts);
       expect(a?.summary.volume).toEqual(b?.summary.volume);
     });
@@ -189,7 +190,7 @@ describe('RC5.1 — semaine déjà planifiée par le contenu d’avant (L1b-4) e
     const main = (arch: string) => {
       const r = strengthReqs(n, NEXT).find((x) => x.intent?.archetypeId === arch);
       // RC5.3 : le contenu courant est une surcouche de RC5.1 (mêmes archétypes A/B).
-      expect(recordOf(r as Req)?.provenance.rulesetVersion).toBe('0.10.0-strength-rc53-r1');
+      expect(recordOf(r as Req)?.provenance.rulesetVersion).toMatch(/-strength-rc53-/);
       const it = recordOf(r as Req)?.session.blocks.flatMap((b) => b.items).find((i) => /\.main_/.test(i.refs?.slotId ?? ''));
       const set = it?.prescription.type === 'sets' ? it.prescription.sets.find((x) => x.kind !== 'rampup') : undefined;
       return [it?.exerciseId, it?.refs?.prescriptionSource, set?.intensity?.mode === 'load' ? set.intensity.kg : null];
