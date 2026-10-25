@@ -326,9 +326,9 @@
    "recalibrated": 0,
    "loadDown": 0,
    "repsDown": 0,
-   "itemsWithLoad": 69,
+   "itemsWithLoad": 75,
    "itemsBodyweight": 6,
-   "itemsEffortOnly": 44,
+   "itemsEffortOnly": 38,
    "repeatedEffortOnly": [
     "str_upper_a/ua.iso_upper:machine_lateral_raise×3",
     "str_upper_a/ua.trunk:cable_pallof_press×6",
@@ -1340,9 +1340,9 @@
    "recalibrated": 0,
    "loadDown": 0,
    "repsDown": 0,
-   "itemsWithLoad": 81,
+   "itemsWithLoad": 85,
    "itemsBodyweight": 6,
-   "itemsEffortOnly": 45,
+   "itemsEffortOnly": 41,
    "repeatedEffortOnly": [
     "str_upper_a/ua.iso_upper:machine_lateral_raise×3",
     "str_upper_a/ua.trunk:cable_pallof_press×4",

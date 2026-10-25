@@ -158,6 +158,19 @@ const STRENGTH_RC53_R4_CHANGES = [
   'packages/strength/tests/unit/science-lock.test.ts',
 ];
 /**
+ * RC5.3 lot R1 — même autorisation (liste FERMÉE) : progression partagée A/B. Famille de progression déclarée par le
+ * contenu et politique `sharedProgression` (params.ts), clé de progression d'un emplacement et accessoire suivi partagé
+ * dans la famille (model.ts), trace de l'e1RM partagé (codes.ts), contenu RC5.3 R1 en SURCOUCHE du lot R4 et ses tests.
+ */
+const STRENGTH_RC53_R1_CHANGES = [
+  'packages/strength/src/codes.ts',
+  'packages/strength/src/model.ts',
+  'packages/strength/src/params.ts',
+  'packages/strength/tests/fixtures/rc53.ts',
+  'packages/strength/tests/unit/rc53-r1.test.ts',
+  'packages/strength/src/science/provenance.ts',
+];
+/**
  * Lot Running RC4.3 — décision R2 (option A′) validée le 2026-10-18 (liste FERMÉE) : politique `freeRunPolicy`
  * PROGRAMME_FIRST de V19 (surcouche des décisions produit), origine des courses libres FOURNIE au contexte, ancre et
  * preuve de tolérance (V23) selon cette politique ; test dédié. Aucune autre modification de Running n'est admise.
@@ -212,6 +225,7 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   ...STRENGTH_RC46_L1B4_CHANGES,
   ...STRENGTH_RC51_CHANGES,
   ...STRENGTH_RC53_R4_CHANGES,
+  ...STRENGTH_RC53_R1_CHANGES,
   ...RUNNING_RC43_R2_CHANGES,
 ];
 
@@ -241,7 +255,7 @@ describe('frontières', () => {
     }
     const changed = diff.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
     expect(changed.filter((f) => !CT_C2_AUTHORIZED_CORE_CHANGES.includes(f))).toEqual([]);
-    expect(changed.filter((f) => (f.startsWith('packages/running/') && !RUNNING_RC43_R2_CHANGES.includes(f)) || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f) && !STRENGTH_C42_A2_CHANGES.includes(f) && !STRENGTH_RC45_F6_CHANGES.includes(f) && !STRENGTH_RC45_PERF_CHANGES.includes(f) && !STRENGTH_RC53_R4_CHANGES.includes(f)))).toEqual([]);
+    expect(changed.filter((f) => (f.startsWith('packages/running/') && !RUNNING_RC43_R2_CHANGES.includes(f)) || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f) && !STRENGTH_C42_A2_CHANGES.includes(f) && !STRENGTH_RC45_F6_CHANGES.includes(f) && !STRENGTH_RC45_PERF_CHANGES.includes(f) && !STRENGTH_RC53_R4_CHANGES.includes(f) && !STRENGTH_RC53_R1_CHANGES.includes(f)))).toEqual([]);
   });
 });
 

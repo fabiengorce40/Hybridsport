@@ -6,7 +6,7 @@
  * Running : la séance réalisée est ajoutée à l'historique déclaré ; l'ancre V19 du moteur en tient compte.
  */
 import type { FingerprintHistoryEntry, ISODateTime, ReasonCode, SessionDraft, SetPrescription } from '@hybridsport/domain';
-import { anchorReviewDue, classifyExposure, closeTrack, closureCause, createTrack, declarableAnchors, exerciseStillAdmissible, exposureEvidence, progressionModelFor, readStrengthParams, resumeTrack, strengthReasons, updateTrack } from '@hybridsport/strength';
+import { anchorReviewDue, classifyExposure, closeTrack, closureCause, createTrack, declarableAnchors, effortEstimate, exerciseStillAdmissible, exposureEvidence, progressionModelFor, progressionSlotKey, readStrengthParams, resumeTrack, strengthReasons, updateTrack } from '@hybridsport/strength';
 import type { ExecutedItem, PerformedSet, SlotRole, StrengthTrack } from '@hybridsport/strength';
 import { archetypeFromIntentId, isV1Archetype } from '@hybridsport/running';
 import type { RealizedSession, RealizedStructure, RunningReference, RunningSessionArchetype } from '@hybridsport/running';
@@ -124,6 +124,8 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
   const counts = { ...state.strength.accessoryCounts };
   const now = at;
   const softModified = params['strength.progression.policy']?.modifiedExposure !== undefined;
+  // RC5.3 R1.3 — tracks dont l'estimation vient d'être mise à jour par un effort OBSERVÉ dans cette séance.
+  const observedNow = new Set<string>();
 
   for (const it of mainItems(x.session)) {
     if (it.prescription.type !== 'sets') continue;
@@ -152,6 +154,7 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
         kind: ev.kind, effort: ev.effort,
       }), ...u.reasons);
       tracks.set(t.trackId, u.track);
+      if (effortEstimate(performed, params).observed !== undefined) observedNow.add(t.trackId);
     };
     if (known) {
       update(known, classifyExposure(exec, params));
@@ -165,9 +168,11 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
       tracks.set(c.track.trackId, c.track);
       reasons.push(...c.reasons);
     } else if (role === 'accessory' && slot?.trackable && performed.length > 0 && !pain) {
-      const k = `${archetypeId}/${slot.id}/${e.id}`;
+      // RC5.3 R1 — progression partagée : compteur et track communs à la famille d'archétypes (même suffixe d'emplacement).
+      const key = progressionSlotKey(params, archetypeId, slot.id);
+      const k = `${key}/${e.id}`;
       counts[k] = (counts[k] ?? 0) + 1;
-      const hasTracked = [...tracks.values()].some((t) => t.tier === 'tracked' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === slot.id);
+      const hasTracked = [...tracks.values()].some((t) => t.tier === 'tracked' && t.status !== 'closed' && progressionSlotKey(params, t.archetypeId, t.slotId) === key);
       if ((counts[k] ?? 0) >= params['strength.tracks'].tier2AutoCreateAfter && !hasTracked) {
         const model = progressionModelFor(e, role, p.level, performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
         const c = createTrack({ tier: 'tracked', archetypeId, slotId: slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role }, params);
@@ -176,6 +181,19 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
       }
     }
     if (performed.length > 0) exposures.push({ exerciseId: e.id, at: now, ...(it.refs?.slotId ? { slotId: it.refs.slotId } : {}), sets: performed });
+  }
+  // RC5.3 R1.3 — historique PARTAGÉ : l'e1RM OBSERVÉ que cette séance vient de produire pour un exercice (estimation de sa
+  // track autorégulée après l'exposition, effort saisi) est recopié sur les autres tracks autorégulées actives du même
+  // exercice (lourd / volume, A / B). Jamais un maximum ; chaque track garde sa prescription (charge, reps, RIR).
+  if (params['strength.progression.policy']?.sharedProgression === true) {
+    for (const src of [...tracks.values()]) {
+      if (!observedNow.has(src.trackId) || src.model !== 'autoregulated' || src.e1rmKg === undefined || src.evidence?.e1rmBasis !== 'observed') continue;
+      for (const t of [...tracks.values()]) {
+        if (t.trackId === src.trackId || t.exerciseId !== src.exerciseId || t.status !== 'active' || t.model !== 'autoregulated' || t.e1rmKg === src.e1rmKg) continue;
+        tracks.set(t.trackId, { ...t, e1rmKg: src.e1rmKg, evidence: { ...(t.evidence ?? { exactStreak: 0, effortKnown: 0, effortUnknown: 0 }), e1rmBasis: 'observed' } });
+        reasons.push(strengthReasons.emit('PROGRESSION.E1RM_SHARED', { fromTrackId: src.trackId, toTrackId: t.trackId, e1rmKg: src.e1rmKg }));
+      }
+    }
   }
   return { strength: { tracks: [...tracks.values()].sort((a, b) => (a.trackId < b.trackId ? -1 : 1)), exposures, accessoryCounts: counts }, reasons };
 }
@@ -196,7 +214,11 @@ export function strengthWeekBoundary(state: AppState, at: ISODateTime, o: { read
   const params = readStrengthParams(strengthContent().ruleset).values;
   const catalog = strengthContent().catalog;
   const reasons: ReasonCode[] = [];
-  const tracks = state.strength.tracks.map((t0) => {
+  const merged = mergedDuplicates(state, params);
+  const tracks = state.strength.tracks.map((t00) => {
+    const m = merged.get(t00.trackId);
+    if (m) { reasons.push(...m.reasons); return m.track; }
+    const t0 = t00;
     if (t0.status === 'closed') return t0;
     const r = resumeTrack(t0, o.painCleared);
     reasons.push(...r.reasons);
@@ -211,6 +233,30 @@ export function strengthWeekBoundary(state: AppState, at: ISODateTime, o: { read
     return t;
   });
   return { strength: { ...state.strength, tracks }, reasons };
+}
+
+/**
+ * RC5.3 R1.4 — tracks d'accessoires suivis EN DOUBLE (créées avant la progression partagée : une par archétype A / B) de
+ * même clé (famille, suffixe d'emplacement, exercice) : la plus récemment exposée est conservée, les autres closes
+ * `merged` (historique lisible, aucune semaine planifiée réécrite). Sans la politique : aucune fusion.
+ */
+function mergedDuplicates(state: AppState, params: ReturnType<typeof readStrengthParams>['values']): Map<string, ReturnType<typeof closeTrack>> {
+  const out = new Map<string, ReturnType<typeof closeTrack>>();
+  if (params['strength.progression.policy']?.sharedProgression !== true) return out;
+  const lastExposure = (t: StrengthTrack) => state.strength.exposures.filter((x) => x.exerciseId === t.exerciseId && x.slotId === t.slotId).reduce((m, x) => (x.at > m ? x.at : m), t.openedAt as string);
+  const groups = new Map<string, StrengthTrack[]>();
+  for (const t of state.strength.tracks) {
+    if (t.status === 'closed' || t.tier !== 'tracked') continue;
+    const k = `${progressionSlotKey(params, t.archetypeId, t.slotId)}/${t.exerciseId}`;
+    groups.set(k, [...(groups.get(k) ?? []), t]);
+  }
+  for (const g of groups.values()) {
+    if (g.length <= 1) continue;
+    // Plus récente exposition, puis (égalité) identifiant le plus grand : choix déterministe.
+    const keep = [...g].sort((a, b) => (lastExposure(a) === lastExposure(b) ? (a.trackId < b.trackId ? 1 : -1) : lastExposure(a) < lastExposure(b) ? 1 : -1))[0] as StrengthTrack;
+    for (const t of g) if (t.trackId !== keep.trackId) out.set(t.trackId, closeTrack(t, 'merged'));
+  }
+  return out;
 }
 
 /** Structure PRESCRITE d'une séance de course (réalisée « comme prévu ») : lecture de la structure CORE, rien de calculé. */

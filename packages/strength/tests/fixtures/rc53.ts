@@ -11,6 +11,12 @@
  * - aucune hausse de charge ni validation d'essai n'en découle seule ;
  * - R4.4 (recalcul de la charge quand le RIR est relevé) : NON activé (`recalculateLoad: false`).
  * Catalogue : inchangé (F6). Composition, archétypes, volumes : inchangés.
+ *
+ * Lot R1 (`0.10.0-strength-rc53-r1`) — progression PARTAGÉE A/B (variante CA de RC5.2) :
+ * - familles de progression déclarées : Haut A / Haut B ⇒ `str_upper`, Bas A / Bas B ⇒ `str_lower` ;
+ * - politique `sharedProgression` : accessoire suivi au même emplacement ⇒ une seule track pour la famille ; e1RM observé
+ *   recopié sur les tracks autorégulées actives du même exercice ; fusion des tracks en double existantes.
+ * Prescriptions spécifiques conservées (un même exercice à des rôles différents garde ses tracks).
  */
 import type { GovernanceClass, ParameterValue, RulesetDocumentInput } from '@hybridsport/domain';
 import { param } from '../../../engine/tests/fixtures/ruleset.js';
@@ -33,5 +39,29 @@ export function strengthRc53R4RulesetDocument(o: { readonly recalculateLoad?: bo
     parameters: [...base.parameters, param(pid, rc53R4Policy(o.recalculateLoad === true), STRENGTH_OPTIONAL_PARAMETER_SCHEMAS[pid].governance as GovernanceClass, {
       version: '0.9.0', modifiedAt: '2026-10-25', justification: `RC5.3 R4 — séances modifiées, lecture souple (décision du 2026-10-25) ; surcouche de ${RC51_RULESET_VERSION}.`,
     })],
+  };
+}
+
+export const RC53_R1_RULESET_VERSION = '0.10.0-strength-rc53-r1';
+const FAMILIES: Readonly<Record<string, string>> = { str_upper_a: 'str_upper', str_upper_b: 'str_upper', str_lower_a: 'str_lower', str_lower_b: 'str_lower' };
+
+/** Lot R1 : surcouche du lot R4 (familles de progression, politique de progression partagée). */
+export function strengthRc53R1RulesetDocument(): RulesetDocumentInput {
+  const base = strengthRc53R4RulesetDocument();
+  const why = `RC5.3 R1 — progression partagée A/B (décision du 2026-10-25) ; surcouche de ${RC53_R4_RULESET_VERSION}.`;
+  return {
+    ...base,
+    rulesetVersion: RC53_R1_RULESET_VERSION,
+    parameters: base.parameters.map((p) => {
+      if (p.id === 'strength.archetypes') {
+        const all = p.value as unknown as Record<string, unknown>[];
+        const value = all.map((a) => (FAMILIES[String(a.id)] !== undefined ? { ...a, progressionFamily: FAMILIES[String(a.id)] } : a));
+        return { ...p, value: value as unknown as typeof p.value, version: '0.10.0', modifiedAt: '2026-10-25', justification: why };
+      }
+      if (p.id === 'strength.progression.policy') {
+        return { ...p, value: { ...(p.value as Record<string, unknown>), sharedProgression: true } as unknown as ParameterValue, version: '0.10.0', modifiedAt: '2026-10-25', justification: why };
+      }
+      return p;
+    }),
   };
 }

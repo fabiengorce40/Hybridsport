@@ -43,6 +43,16 @@ export function exerciseClass(e: Exercise, params: StrengthParams): ExerciseClas
   return e.loadCeiling >= t.highLoadCeilingMin ? 'compound_high_load' : 'compound_other';
 }
 
+/**
+ * RC5.3 R1 — clé de progression d'un emplacement : `famille/suffixe` sous la politique de progression partagée et pour un
+ * archétype déclarant sa famille (Haut A `ua.iso_upper` et Haut B `ub.iso_upper` ⇒ `str_upper/iso_upper`) ; sinon
+ * `archétype/emplacement` (comportement antérieur : une track par archétype).
+ */
+export function progressionSlotKey(params: StrengthParams, archetypeId: string, slotId: string): string {
+  const family = params['strength.progression.policy']?.sharedProgression === true ? params['strength.archetypes'].find((a) => a.id === archetypeId)?.progressionFamily : undefined;
+  return family === undefined ? `${archetypeId}/${slotId}` : `${family}/${slotId.split('.').slice(1).join('.')}`;
+}
+
 export function buildEnv(input: SportEngineInput<StrengthContext>, params: StrengthParams, archetype: StrengthArchetype, goal: StrengthGoalRef, goalKey: string, lowered: ReadonlyMap<string, string>, rng: SeededRng, rirOnly: ReadonlyMap<string, string> = new Map()): Env {
   const ctx = input.discipline;
   const catalog = input.catalog;
@@ -51,7 +61,18 @@ export function buildEnv(input: SportEngineInput<StrengthContext>, params: Stren
   const declaredAnchors = new Set(input.intent.repetitionIntents.flatMap((r) => (r.kind === 'progression_anchor' ? [r.trackId] : [])));
   const active = ctx.tracks.filter((t) => t.status === 'active' && t.archetypeId === archetype.id);
   const anchorBySlot = new Map(active.filter((t) => t.tier === 'anchor' && declaredAnchors.has(t.trackId)).map((t) => [t.slotId, t]));
-  const trackedBySlot = new Map(active.filter((t) => t.tier === 'tracked').map((t) => [t.slotId, t]));
+  // RC5.3 R1 — progression partagée : l'accessoire suivi d'un emplacement peut porter la track d'un archétype de la même
+  // famille (même suffixe d'emplacement) ; celle de l'archétype lui-même prime. Sans la politique : comportement antérieur.
+  const shared = params['strength.progression.policy']?.sharedProgression === true && archetype.progressionFamily !== undefined;
+  const trackedBySlot = shared
+    ? new Map(archetype.slots.flatMap((sl) => {
+      const key = progressionSlotKey(params, archetype.id, sl.id);
+      const own = ctx.tracks.filter((t) => t.status === 'active' && t.tier === 'tracked' && t.archetypeId === archetype.id && t.slotId === sl.id);
+      const sibling = ctx.tracks.filter((t) => t.status === 'active' && t.tier === 'tracked' && t.archetypeId !== archetype.id && progressionSlotKey(params, t.archetypeId, t.slotId) === key);
+      const t = own.at(-1) ?? sibling.at(-1);
+      return t ? [[sl.id, t] as const] : [];
+    }))
+    : new Map(active.filter((t) => t.tier === 'tracked').map((t) => [t.slotId, t]));
   const incumbentBySlot = new Map<string, string[]>();
   if (ctx.continuity === 'keep_incumbent') {
     // Dernier instant d'exposition par emplacement, puis exercices de cet instant dans l'ordre de la séance.

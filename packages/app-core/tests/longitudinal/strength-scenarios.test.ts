@@ -89,8 +89,9 @@ describe('Strength — scénario A : Strength seul, 4 semaines', () => {
     const a = audit(run);
     expect(a.some((r) => r.code === 'PROGRESSION.ADVANCED' && r.params.variable === 'reps')).toBe(true);
     // RC5.1 — Haut A/B et Bas A/B : chaque exercice n'est exposé qu'une fois par semaine ; la première hausse de charge
-    // (double progression : haut de plage atteint) intervient en 6e semaine — vérifiée sur deux semaines supplémentaires.
-    expect(a.some((r) => r.code === 'PROGRESSION.ADVANCED' && r.params.variable === 'load')).toBe(false);
+    // intervenait en 6e semaine. RC5.3 R1 — accessoires communs à A et B sur UNE track (deux expositions par semaine) :
+    // première hausse de charge revenue dans les 4 premières semaines (rythme d'avant RC5.1, TA-01).
+    expect(a.some((r) => r.code === 'PROGRESSION.ADVANCED' && r.params.variable === 'load')).toBe(true);
     const longer = drive(strengthOnly(), [...W, '2026-11-02', '2026-11-09'], events);
     expect(audit(longer).some((r) => r.code === 'PROGRESSION.ADVANCED' && r.params.variable === 'load')).toBe(true);
     // Série manquée (séance modifiée, semaine 3) : classée par le moteur, jamais lue comme « comme prescrit ».

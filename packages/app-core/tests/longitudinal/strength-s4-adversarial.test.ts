@@ -46,7 +46,10 @@ describe('continuité des exercices (scénario A, 4 semaines)', () => {
     const tracked = new Set(A.final.strength.tracks.map((t) => t.exerciseId));
     const free3 = keptFree(W[2]).filter((x) => !tracked.has(x));
     expect(free3.length).toBeGreaterThan(0);
-    for (const x of free3) expect(keptFree(W[3])).toContain(x);
+    // RC5.3 R1 — tracks d'accessoires partagées A/B : la répartition des emplacements facultatifs entre Haut A et Haut B
+    // peut changer d'une semaine à l'autre (omission tracée, cause « volume ») ; l'accessoire reste dans la semaine.
+    const week4 = new Set(strengthReqs(A.final, W[3]).flatMap((r) => items(r).map((i) => i.exerciseId)));
+    for (const x of free3) expect([...week4]).toContain(x);
   });
 
   const W3 = ensureBeta0Week(A.weeks[2]?.before ?? A.final, clock(W[2]));

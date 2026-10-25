@@ -188,8 +188,8 @@ describe('RC5.1 — semaine déjà planifiée par le contenu d’avant (L1b-4) e
     expect(archs(n, NEXT)).toEqual(ORDER_A);
     const main = (arch: string) => {
       const r = strengthReqs(n, NEXT).find((x) => x.intent?.archetypeId === arch);
-      // RC5.3 R4 : le contenu courant est la surcouche 0.9.0 de RC5.1 (mêmes archétypes A/B).
-      expect(recordOf(r as Req)?.provenance.rulesetVersion).toBe('0.9.0-strength-rc53-r4');
+      // RC5.3 : le contenu courant est une surcouche de RC5.1 (mêmes archétypes A/B).
+      expect(recordOf(r as Req)?.provenance.rulesetVersion).toBe('0.10.0-strength-rc53-r1');
       const it = recordOf(r as Req)?.session.blocks.flatMap((b) => b.items).find((i) => /\.main_/.test(i.refs?.slotId ?? ''));
       const set = it?.prescription.type === 'sets' ? it.prescription.sets.find((x) => x.kind !== 'rampup') : undefined;
       return [it?.exerciseId, it?.refs?.prescriptionSource, set?.intensity?.mode === 'load' ? set.intensity.kg : null];

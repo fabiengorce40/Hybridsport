@@ -45,6 +45,12 @@ export const zStrengthArchetype = z.object({
    * Un archétype `block` n'est composé qu'en mode bloc ; un archétype de séance jamais en mode bloc.
    */
   usage: z.enum(['session', 'block']).optional(),
+  /**
+   * RC5.3 R1 — FAMILLE DE PROGRESSION (contenu versionné, jamais une expression régulière) : les archétypes d'une même
+   * famille (Haut A / Haut B…) partagent la track d'un accessoire suivi au même emplacement (même suffixe d'emplacement,
+   * même exercice), sous la politique `strength.progression.policy.sharedProgression`. Absent : track par archétype.
+   */
+  progressionFamily: id.optional(),
   feasiblePresets: z.array(id), declaredInfeasiblePresets: z.array(id), declaredInfeasibleRestrictions: z.array(id),
   blocks: z.array(z.object({
     id, kind: z.enum(['strength', 'accessory']), role: z.enum(['primary', 'secondary', 'support']),
@@ -230,11 +236,17 @@ export const STRENGTH_OPTIONAL_PARAMETER_SCHEMAS = {
    */
   'strength.progression.policy': { governance: 'G2', schema: z.object({
     /**
-     * R4 — exposition MODIFIÉE (interférence, état du jour, temps) : lue au RIR de RÉFÉRENCE (avant modificateurs
+     * R4 — exposition MODIFIÉE (interférence, état du jour) : lue au RIR de RÉFÉRENCE (avant modificateurs
      * transitoires), jamais une régression ni une hausse ; signal de capacité seulement si l'effort déclaré est exploitable.
      * `recalculateLoad` (R4.4) : charge recalculée pour le RIR relevé (désactivé tant que sa cohérence n'est pas démontrée).
      */
     modifiedExposure: z.object({ mode: z.literal('soft'), recalculateLoad: z.boolean() }).strict().optional(),
+    /**
+     * R1 — progression PARTAGÉE : track d'accessoire suivi commune à une famille d'archétypes (`progressionFamily`),
+     * e1RM observé recopié sur les tracks autorégulées actives du même exercice, fusion des tracks en double existantes
+     * (la plus récemment exposée est conservée, l'autre close `merged`).
+     */
+    sharedProgression: z.literal(true).optional(),
   }).strict() },
 } as const satisfies Record<string, { governance: GovernanceClass; schema: z.ZodType }>;
 

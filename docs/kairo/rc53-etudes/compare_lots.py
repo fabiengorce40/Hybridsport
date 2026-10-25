@@ -67,7 +67,7 @@ def main():
     profiles = sorted(set(ref) & set(lot))
     L = [f'# {title} — comparaison chiffrée (référence → lot)', '', f'Profils : {", ".join(profiles)} ; 24 semaines ; athlète à capacité cachée.', '']
     for scope, ps in [('Tous profils', profiles), ('Multisport (Course, HYROX)', [p for p in profiles if p in MULTI])]:
-        L += [f'## {scope}', '', '| Athlète | Niveau | Gain réel 24 sem. | Gain principaux 12 sem. | Gain principaux 24 sem. | Écart principaux S24 | Écart accessoires S24 | Régressions | Hausses injustifiées | Pas de répétitions | Maintiens « séance modifiée » |', '|---|---|---|---|---|---|---|---|---|---|---|']
+        L += [f'## {scope}', '', '| Athlète | Niveau | Gain réel 24 sem. | Gain principaux 12 sem. | Gain principaux 24 sem. | Écart principaux S24 | Écart accessoires S24 | Hausses charge accessoires | Régressions | Hausses injustifiées | Pas de répétitions | Maintiens « séance modifiée » |', '|---|---|---|---|---|---|---|---|---|---|---|---|']
         for kind in KINDS:
             for level in LEVELS:
                 def pair(f, d=1, total=False):
@@ -81,6 +81,7 @@ def main():
                     KD[kind], LV[level], fmt(real),
                     pair(lambda c: gain(c, 'w12')), pair(lambda c: gain(c, 'w24')),
                     pair(lambda c: avg(c, 'err24', True)), pair(lambda c: avg(c, 'capErr24', False)),
+                    pair(lambda c: sum(v['ups'] for v in c['lifts'].values() if not v['main']), total=True),
                     pair(lambda c: code(c, 'PROGRESSION.REGRESSED'), total=True),
                     pair(lambda c: c['unjustified'], total=True),
                     pair(lambda c: code(c, 'ADVANCED:reps'), total=True),

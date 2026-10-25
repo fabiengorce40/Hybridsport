@@ -34,6 +34,7 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'DOSE.RAMPUP', categories: ['information'], params: { exerciseId: S, steps: N, knowledge: S }, audience: 'internal', severity: 'info' },
   { code: 'DOSE.TOP_SET', categories: ['information'], params: { exerciseId: S, topKg: N, backoffFraction: N, backoffUnroundedKg: N, backoffKg: N, backoffSets: N }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.ADVANCED', categories: ['adaptation'], params: { trackId: S, variable: S }, audience: 'user', severity: 'info' },
+  { code: 'PROGRESSION.E1RM_SHARED', categories: ['adaptation'], params: { fromTrackId: S, toTrackId: S, e1rmKg: N }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.HELD', categories: ['adaptation'], params: { trackId: S, cause: S }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.REGRESSED', categories: ['adaptation'], params: { trackId: S }, audience: 'user', severity: 'notice' },
   { code: 'PROGRESSION.CAP_REACHED', categories: ['adaptation'], params: { trackId: S }, audience: 'internal', severity: 'info' },

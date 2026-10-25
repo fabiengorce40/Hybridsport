@@ -60,7 +60,7 @@ Durées : moyenne 51 min, maximum 63 min, dépassements du temps disponible 0.
 | str_upper_b | 6 | 7 | 2 | 0 | 0.71 | 1 |
 | str_lower_b | 6 | 6 | 2 | 1 | 0.47 | 1 |
 
-Continuité : 97 transitions, exercice changé 19, retour en calibration 0, baisse de charge 0, baisse de répétitions à charge égale 0 ; items chargés 69, poids du corps 6, à l'effort 44.
+Continuité : 97 transitions, exercice changé 19, retour en calibration 0, baisse de charge 0, baisse de répétitions à charge égale 0 ; items chargés 75, poids du corps 6, à l'effort 38.
 Emplacements toujours « à l'effort » (≥ 3 expositions) : str_upper_a/ua.iso_upper:machine_lateral_raise×3 ; str_upper_a/ua.trunk:cable_pallof_press×6 ; str_upper_b/ub.iso_upper:machine_lateral_raise×3 ; str_upper_b/ub.trunk:cable_pallof_press×3 ; str_lower_a/la.iso_lower:leg_curl×3.
 Allègements : 24 séances, 62 réductions {"full":19,"full_and_signal":12,"rir_only":31} ; arbitrages {"conflict/running":2,"conflict/strength":2}.
 Reproductibilité (R-A, à la planification de chaque semaine) : {"identical":24,"progression_since_planning":0,"history_since_planning":0,"planner_divergence":0,"not_regenerable":0}.
@@ -187,7 +187,7 @@ Durées : moyenne 53 min, maximum 63 min, dépassements du temps disponible 0.
 | str_upper_b | 6 | 7 | 3 | 0 | 0.76 | 1 |
 | str_lower_b | 6 | 5 | 1 | 5 | 1 | 1 |
 
-Continuité : 112 transitions, exercice changé 33, retour en calibration 0, baisse de charge 0, baisse de répétitions à charge égale 0 ; items chargés 81, poids du corps 6, à l'effort 45.
+Continuité : 112 transitions, exercice changé 33, retour en calibration 0, baisse de charge 0, baisse de répétitions à charge égale 0 ; items chargés 85, poids du corps 6, à l'effort 41.
 Emplacements toujours « à l'effort » (≥ 3 expositions) : str_upper_a/ua.iso_upper:machine_lateral_raise×3 ; str_upper_a/ua.trunk:cable_pallof_press×4 ; str_lower_a/la.iso_lower:leg_curl×6 ; str_upper_b/ub.iso_upper:machine_lateral_raise×3 ; str_lower_b/lb.iso_lower:leg_curl×6.
 Allègements : 0 séances, 0 réductions {} ; arbitrages {}.
 Reproductibilité (R-A, à la planification de chaque semaine) : {"identical":24,"progression_since_planning":0,"history_since_planning":0,"planner_divergence":0,"not_regenerable":0}.

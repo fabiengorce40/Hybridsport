@@ -786,7 +786,7 @@
 | Ancienne valeur (0.2.0) | *absent (sémantique 0.2.0)* |
 | Valeur 4E (0.3.0) | *absent (sémantique 0.2.0)* |
 | Valeur 4F (0.4.0) | *absent (sémantique 0.2.0)* |
-| Lecture | Absent avant RC5.3 (une exposition à prescription modifiée était classée contre le RIR relevé) ; RC5.3 R4 : « modifiedExposure: soft » — classement contre le RIR de référence (base + modificateurs durables), aucune régression ni hausse décidée sur une exposition modifiée, réussite à effort observé comptée comme signal de capacité ; recalcul de charge (R4.4) désactivé. |
+| Lecture | Absent avant RC5.3 (une exposition à prescription modifiée était classée contre le RIR relevé) ; RC5.3 R4 : « modifiedExposure: soft » — classement contre le RIR de référence (base + modificateurs durables), aucune régression ni hausse décidée sur une exposition modifiée, réussite à effort observé comptée comme signal de capacité ; recalcul de charge (R4.4) désactivé. RC5.3 R1 : « sharedProgression » — accessoire suivi partagé par la famille d’archétypes (Haut A/B, Bas A/B), e1RM observé partagé entre tracks autorégulées du même exercice, fusion des tracks en double. |
 | Statut | `EXPERT_DESIGN_REVIEW` — choix de conception soumis à revue d’expert |
 | Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
 | Sources | `SRC.WILSON_2012` (type le plus fort : meta_analysis) |
@@ -796,7 +796,7 @@
 | Incertitude | Choix de conception validé sur athlète simulé (gains hebdomadaires supposés) ; aucune validation terrain. |
 | Justification | Constat C4 (RC5.3) : l’interférence et l’état du jour relèvent le RIR sans changer la charge ; l’athlète qui déclare son effort réel était classé « en dessous » puis régressait. Une séance allégée n’est ni une preuve de progrès suffisante, ni un échec. |
 | Si la preuve reste insuffisante | Politique appliquée et tracée (PROGRESSION.HELD modified_prescription / below_modified). |
-| Revendications | `C.CONC` CONTEXT_DEPENDENT (principe) ; `C.R4_RULE` EXPERT_DESIGN_REVIEW (valeur) |
+| Revendications | `C.CONC` CONTEXT_DEPENDENT (principe) ; `C.R1_RULE` EXPERT_DESIGN_REVIEW (valeur) ; `C.R4_RULE` EXPERT_DESIGN_REVIEW (valeur) |
 | Version du paramètre | — · revue 2026-09-28 |
 
 ## `strength.tracks.horizon`

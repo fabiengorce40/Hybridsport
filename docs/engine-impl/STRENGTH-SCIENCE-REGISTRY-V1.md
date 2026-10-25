@@ -376,6 +376,7 @@ Règle de non-fausse précision (contrôlée par `validateScienceRegistry`) : le
 | `C.PC_THRESH` | Seuils de séances et d’observations pour HIGH. | PROGRAMMING_HEURISTIC | oui | — | `strength.prescriptionConfidence` |
 | `C.PERIOD` | Programmes périodisés supérieurs aux non périodisés pour le 1RM. | CONTEXT_DEPENDENT | non | SRC.MOESGAARD_2022 | `strength.progression` |
 | `C.PROG_FRACTIONS` | Fractions, seuils et compteurs de progression. | PROGRAMMING_HEURISTIC | oui | — | `strength.progression` |
+| `C.R1_RULE` | Progression commune d’un même exercice au même emplacement dans des séances complémentaires (A/B). | EXPERT_DESIGN_REVIEW | oui | — | `strength.progression.policy` |
 | `C.R4_RULE` | Lecture souple des expositions modifiées. | EXPERT_DESIGN_REVIEW | oui | — | `strength.progression.policy` |
 | `C.RAMP_STEPS` | Fractions et répétitions des paliers. | PROGRAMMING_HEURISTIC | oui | — | `strength.rampup`, `strength.rampup.estimatedPolicy` |
 | `C.REST` | Hypertrophie : petit bénéfice des repos de plus de 60 s, pas de différence appréciable au-delà de 90 s, effets largement chevauchants ; aucun seuil universel (repos suffisant pour préserver la qualité des séries). | CONTEXT_DEPENDENT | non | SRC.SINGER_2024 | `strength.dose.base` |

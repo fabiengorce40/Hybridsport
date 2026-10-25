@@ -60,8 +60,9 @@ const weekOf = (d: string) => Math.floor((Date.parse(d) - Date.parse('2026-10-05
 const decided = (d: Decision) => d.decision.startsWith('ADVANCED') || d.decision === 'PROGRESSION.REGRESSED';
 
 describe('RC5.3 R4 — contenu courant et registre', () => {
-  it('contenu courant 0.9.0 (politique souple) ; RC5.1 0.8.0 conservé au registre, sans politique', () => {
-    expect(strengthContent().ruleset.version).toBe('0.9.0-strength-rc53-r4');
+  it('contenu courant (RC5.3, politique souple) ; R4 0.9.0 et RC5.1 0.8.0 conservés au registre', () => {
+    expect(strengthContent().ruleset.version).toMatch(/-strength-rc53-/);
+    expect(strengthContentFor('0.9.0-strength-rc53-r4', strengthContent().catalog.version)?.ruleset.version).toBe('0.9.0-strength-rc53-r4');
     const rc51 = strengthContentFor('0.8.0-strength-rc51', strengthContent().catalog.version);
     expect(rc51?.ruleset.version).toBe('0.8.0-strength-rc51');
   });

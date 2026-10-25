@@ -34,6 +34,8 @@ const load = (raw: string, now: string): AppState => {
   return r.state;
 };
 
+const merged = (s: AppState): Set<string> => new Set((s.programmeState?.audit ?? []).filter((a) => a.reason.code === 'PROGRESSION.TRACK_CLOSED' && a.reason.params.cause === 'merged').map((a) => String(a.reason.params.trackId)));
+
 /** Empreintes de ce qui doit être conservé : semaines existantes (après planification de la suivante), historique, tracks. */
 function fingerprint(file: string, now: string): Record<string, string> {
   const s = load(read(file), now);
@@ -42,7 +44,9 @@ function fingerprint(file: string, now: string): Record<string, string> {
   return {
     ...Object.fromEntries(existing.map((w) => [`week:${w}`, h(next.planner.weeks[w])])),
     history: h(selectHistory(next)),
-    tracks: h(next.strength.tracks.filter((t) => s.strength.tracks.some((x) => x.trackId === t.trackId))),
+    // RC5.3 R1.4 — fusion VOULUE des tracks en double (close `merged`, vérifiée par TA-04) : neutralisée ici pour comparer
+    // tout le reste à la référence.
+    tracks: h(next.strength.tracks.filter((t) => s.strength.tracks.some((x) => x.trackId === t.trackId)).map((t) => (merged(next).has(t.trackId) ? s.strength.tracks.find((x) => x.trackId === t.trackId) : t))),
     exposures: h(next.strength.exposures),
   };
 }
