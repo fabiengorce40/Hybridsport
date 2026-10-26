@@ -13,7 +13,7 @@
 import { readStrengthParams, sessionPlannedHardSets } from '@hybridsport/strength';
 import {
   beta0Environment, controlCtTimer, ctWorkoutOf, createBeta0Programme, emptyState, ensureBeta0Week, EQUIPMENT_PRESETS, finishProgrammeSession, hrWorkoutOfView, logFreeRun,
-  recordFieldFeedback, recordProgrammeSet, recordProgrammeSetEffort, selectBeta0Week, selectProgrammeSession, setHrSteps, startProgrammeSession, strengthContent, strengthWeekInsights,
+  recordFieldFeedback, recordProgrammeSet, recordProgrammeSetEffort, selectBeta0Week, selectProgrammeSession, setHrSteps, startProgrammeSession, strengthContent, strengthEnvironmentFor, strengthWeekInsights,
 } from '../../src/index.js';
 import type { AppState, CheckInInput, Clock, ProfileInput, SessionView } from '../../src/index.js';
 
@@ -133,11 +133,21 @@ const cache = new Map<string, SimOut>();
  * (profil, scénarios, nombre de semaines, placement global G5 ou V0). Le résultat est un état immuable : les tests le
  * lisent seulement. Clé : données du profil + texte des fonctions de scénario.
  */
+/**
+ * RC5.3 R3 — environnement de RÉFÉRENCE des bancs antérieurs (RC4 à RC5.2, horizons de 6 semaines) : contenu RC5.3 R2,
+ * identique au contenu courant hors mésocycles (aucune décharge, aucune réévaluation de cycle) ; l'équivalence hors
+ * décharge est vérifiée par `tests/rc53/rc53-r3.test.ts`. Les bancs RC5.3 passent l'environnement courant.
+ */
+export const REFERENCE_RULESET = '0.11.0-strength-rc53-r2';
+export function referenceEnvironment(base = beta0Environment()): ReturnType<typeof beta0Environment> {
+  return strengthEnvironmentFor(base, REFERENCE_RULESET, strengthContent().catalog.version) ?? base;
+}
+
 export function simulateOnce(spec: ProfileSpec, weeks: number = MONS.length, globalPlacement = true): SimOut {
   const key = `${JSON.stringify(spec)}|${String(spec.checkIn ?? '')}|${String(weeks)}|${String(globalPlacement)}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  const r = simulate(spec, weeks, beta0Environment({ globalPlacement }));
+  const r = simulate(spec, weeks, referenceEnvironment(beta0Environment({ globalPlacement })));
   cache.set(key, r);
   return r;
 }
@@ -147,7 +157,7 @@ export function simulateOnce(spec: ProfileSpec, weeks: number = MONS.length, glo
  * `onWeekPlanned` (RC4.6 L0, observation seulement) : appelé avec l'état juste après la planification de chaque semaine,
  * avant toute séance de cette semaine ; il ne modifie rien.
  */
-export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = beta0Environment(), onWeekPlanned?: (state: AppState, monday: string) => void): SimOut {
+export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = referenceEnvironment(), onWeekPlanned?: (state: AppState, monday: string) => void): SimOut {
   const content = strengthContent();
   const params = readStrengthParams(content.ruleset).values;
   const errors: string[] = [];

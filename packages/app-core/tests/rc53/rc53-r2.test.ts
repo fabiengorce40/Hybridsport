@@ -6,6 +6,7 @@
  * - réussite exacte : principaux de l'intermédiaire progressant au-delà de la charge de départ.
  */
 import { describe, expect, it } from 'vitest';
+import { beta0Environment } from '../../src/index.js';
 import type { AppState } from '../../src/index.js';
 import { simulate } from '../rc4-audit/rc4-sim.js';
 import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
@@ -22,7 +23,7 @@ const loadsOf = (s: AppState, ex: string) => s.strength.exposures.filter((x) => 
 const audit = (s: AppState) => (s.programmeState?.audit ?? []).map((a) => a.reason);
 
 describe('RC5.3 R2 — essais sur 12 semaines (S4, intermédiaire progressant)', () => {
-  const s = simulate(spec('S4', 'progressant', 'intermediate'), WEEKS).state;
+  const s = simulate(spec('S4', 'progressant', 'intermediate'), WEEKS, beta0Environment()).state;
   it('pec deck et leg extension : jamais sous la charge de départ (oscillation 40 → 35 → 40 kg corrigée)', () => {
     for (const ex of ['ex.pec_deck', 'ex.leg_extension']) {
       const loads = loadsOf(s, ex);
@@ -49,7 +50,7 @@ describe('RC5.3 R2 — essais sur 12 semaines (S4, intermédiaire progressant)',
 
 describe('RC5.3 R2 — athlète stable : pas de hausse durable au-delà de sa capacité', () => {
   it('S4 intermédiaire stable : essais annulés, aucune charge principale au-dessus de deux pas du départ', () => {
-    const s = simulate(spec('S4', 'stable', 'intermediate'), WEEKS).state;
+    const s = simulate(spec('S4', 'stable', 'intermediate'), WEEKS, beta0Environment()).state;
     for (const ex of ['ex.bench_press', 'ex.back_squat']) {
       const loads = loadsOf(s, ex);
       // technical-constant: TEST_ONLY — deux pas de barre (kg)

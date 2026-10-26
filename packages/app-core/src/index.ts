@@ -5,6 +5,7 @@ export * from './planner.js';
 export * from './generate.js';
 export * from './running-week.js';
 export * from './progression.js';
+export * from './mesocycle.js';
 export * from './app.js';
 export * from './store.js';
 export * from './labels.js';

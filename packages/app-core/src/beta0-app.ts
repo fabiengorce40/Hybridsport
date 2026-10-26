@@ -12,7 +12,7 @@ import type { ProgrammeResult, ProgrammeState } from '@hybridsport/programme';
 import { logFreeRun } from './app.js';
 import type { Clock } from './app.js';
 import { beta0Environment, compositionScopeOf, ctDeclarations, hrDeclarations, legacyBeta0StrengthIntent, prescribedArchetype, LEGACY_BETA0_STRENGTH_ARCHETYPE, programmeDefinitionFromProfile, weekPlanning } from './beta0.js';
-import { STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } from '@hybridsport/strength';
+import { readStrengthParams, STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } from '@hybridsport/strength';
 import { addDays, dateOf, normalizeInstant, weekStartOf } from './dates.js';
 import { AppError } from './errors.js';
 import { DIFFICULTIES, emptyState, zProfile } from './model.js';
@@ -24,6 +24,7 @@ import { closeProgrammeWeekInApp, planProgrammeCurrentWeek, portInputs, Programm
 import { buildPorts, clockOf, recentOf } from './planning.js';
 import { manualPlacementConflicts } from '@hybridsport/planner';
 import { strengthWeekBoundary } from './progression.js';
+import { withMesocycleAnchor } from './mesocycle.js';
 import { compactHistory } from './history.js';
 import { declareRunningPerformance, trainingRunOf } from './running-profile.js';
 import type { DeclaredPerformance, TrainingRunInput } from './running-profile.js';
@@ -277,7 +278,8 @@ export function ensureBeta0Week(state: AppState, clock: Clock, env: ProgrammeEnv
   const ps = s.programmeState;
   if (!ps || !withinProgramme(ps, cur) || activePainPause(s)) return s;
   const existing = ps.weeks.find((w) => w.weekIndex === cur);
-  if (!existing) return planProgrammeCurrentWeek(strengthBoundary(s, clock, cur), clock, env, cur, { pastDaysUnavailable: true });
+  // RC5.3 R3 — ancre des mésocycles posée à la première semaine planifiée avec un contenu qui les déclare.
+  if (!existing) return planProgrammeCurrentWeek(strengthBoundary(withMesocycleAnchor(s, cur, readStrengthParams(env.strength?.content.ruleset ?? strengthContent().ruleset).values), clock, cur), clock, env, cur, { pastDaysUnavailable: true });
   const planning = env.planningVersion ? weekPlanning(s, existing.plannerRef, clock.today, env.planningVersion) : null;
   if (planning?.status !== 'stale_replaceable') return s;
   const replanned = planProgrammeCurrentWeek(strengthBoundary(s, clock, cur), clock, env, cur, { pastDaysUnavailable: true });

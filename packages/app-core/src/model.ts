@@ -38,7 +38,12 @@ export const zProfile = z.object({
   level: z.enum(LEVELS),
   /** Ordre de priorité des sports activés (sélection déterministe du planificateur). */
   priorities: z.array(z.enum(SPORTS)),
-  strength: z.object({ enabled: z.boolean(), goal: z.enum(STRENGTH_GOALS), sessionsPerWeek }).strict(),
+  strength: z.object({
+    enabled: z.boolean(), goal: z.enum(STRENGTH_GOALS), sessionsPerWeek,
+    /** RC5.3 R3 — durée de mésocycle choisie (semaines) ; absente : durée du niveau (contenu). */
+    // technical-constant: réglage utilisateur de la durée de mésocycle, 4 à 6 semaines (décision RC5.3 du 2026-10-25)
+    mesocycleWeeks: z.number().int().min(4).max(6).optional(),
+  }).strict(),
   running: z.object({
     enabled: z.boolean(),
     population: z.enum(RUNNING_LEVELS),
@@ -433,7 +438,15 @@ export const zAppState = z.object({
   plans: z.record(date, zWeekPlan),
   sessions: z.record(z.string(), zGeneratedSession),
   logs: z.record(z.string(), zSessionLog),
-  strength: z.object({ tracks: z.array(zStrengthTrack), exposures: z.array(zExerciseExposure), accessoryCounts: z.record(z.string(), z.number().int().nonnegative()) }).strict(),
+  strength: z.object({
+    tracks: z.array(zStrengthTrack), exposures: z.array(zExerciseExposure), accessoryCounts: z.record(z.string(), z.number().int().nonnegative()),
+    /**
+     * RC5.3 R3 — ANCRE des mésocycles : lundi de la première semaine planifiée avec un contenu à mésocycles. Les
+     * programmes existants commencent leur premier cycle à cette semaine (aucune décharge rétroactive) ; une date, et non
+     * un index, pour que les cycles se poursuivent quand le programme est modifié. Absente : aucun cycle encore ouvert.
+     */
+    mesocycleStartWeek: date.optional(),
+  }).strict(),
   running: z.object({
     realized: z.array(zRealizedSession),
     /** Références de performance enregistrées par l'application (TEST réalisés). */

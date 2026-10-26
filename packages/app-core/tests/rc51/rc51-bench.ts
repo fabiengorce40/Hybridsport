@@ -6,9 +6,8 @@
  */
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { SessionRecord } from '@hybridsport/domain';
-import { beta0Environment } from '../../src/index.js';
 import type { AppState } from '../../src/index.js';
-import { simulate } from '../rc4-audit/rc4-sim.js';
+import { referenceEnvironment, simulate } from '../rc4-audit/rc4-sim.js';
 import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
 import { measureProfile, qualityProfiles, summarize } from '../rc46/quality-bench.js';
 import { probe } from '../rc45/probe-starts.js';
@@ -40,8 +39,8 @@ export interface Rc51Measure {
 }
 
 export function rc51Measure(spec: ProfileSpec): Rc51Measure {
-  const env = beta0Environment();
-  const q = measureProfile(spec);
+  const env = referenceEnvironment();
+  const q = measureProfile(spec, env);
   const mains: Record<string, (number | null)[]> = {};
   for (const s of q.sessions) for (const i of s.items) if (/\.main_/.test(i.slot)) (mains[i.ex] ??= []).push(i.load);
   let w2: AppState | undefined;

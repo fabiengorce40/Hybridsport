@@ -12,7 +12,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
-import { adaptedItemsOf, strengthContent, strengthContentFor } from '../../src/index.js';
+import { adaptedItemsOf, beta0Environment, strengthContent, strengthContentFor } from '../../src/index.js';
 import type { AppState } from '../../src/index.js';
 import { simulate } from '../rc4-audit/rc4-sim.js';
 import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
@@ -72,12 +72,12 @@ describe('TA-11 — séances allégées par l’interférence (Course, HYROX)', 
   for (const id of ['P1b', 'S4H']) {
     it(`${id} : aucune hausse ni régression décidée sur une exposition modifiée ; lecture souple exercée`, () => {
       const ath = athlete('progressant', 'intermediate');
-      const s = simulate(level(spec(id, { athlete: ath }), 'intermediate'), WEEKS).state;
+      const s = simulate(level(spec(id, { athlete: ath }), 'intermediate'), WEEKS, beta0Environment()).state;
       const all = decisions(s);
       const mod = all.filter((d) => d.modified);
       expect(mod.length).toBeGreaterThan(0);
       expect(mod.filter(decided)).toEqual([]);
-      expect(mod.every((d) => d.decision === 'HELD:modified_prescription' || d.decision === 'HELD:below_modified' || !['above', 'on_target', 'below', 'partial'].includes(d.exposure))).toBe(true);
+      expect(mod.every((d) => d.decision === 'HELD:modified_prescription' || d.decision === 'HELD:below_modified' || d.decision === 'HELD:deload' || !['above', 'on_target', 'below', 'partial'].includes(d.exposure))).toBe(true);
       // Les régressions restantes viennent d'expositions NON modifiées (hausses de la double progression plus rapides que
       // la capacité réelle : lot R2, essais de charge) — jamais de la modification.
       expect(all.filter((d) => d.decision === 'PROGRESSION.REGRESSED' && d.modified)).toEqual([]);
@@ -90,7 +90,7 @@ describe('TA-11 — séances allégées par l’interférence (Course, HYROX)', 
 describe('TA-12 — athlète fatigué (contrôle « fatigue élevée »)', () => {
   it('S4 intermédiaire : séances des semaines de fatigue adaptées et lues comme modifiées, aucune baisse ni hausse décidée sur elles', () => {
     const ath = athlete('fatigue', 'intermediate');
-    const s = simulate(level(spec('S4', { athlete: ath, checkIn: FATIGUE_CHECKIN }), 'intermediate'), WEEKS).state;
+    const s = simulate(level(spec('S4', { athlete: ath, checkIn: FATIGUE_CHECKIN }), 'intermediate'), WEEKS, beta0Environment()).state;
     const tired = decisions(s).filter((d) => FATIGUE_WEEKS.has(weekOf(d.date)));
     expect(tired.length).toBeGreaterThan(0);
     expect(tired.filter((d) => d.modified).length).toBeGreaterThan(0);

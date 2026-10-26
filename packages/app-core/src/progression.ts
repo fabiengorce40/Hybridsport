@@ -6,12 +6,16 @@
  * Running : la séance réalisée est ajoutée à l'historique déclaré ; l'ancre V19 du moteur en tient compte.
  */
 import type { FingerprintHistoryEntry, ISODateTime, ReasonCode, SessionDraft, SetPrescription } from '@hybridsport/domain';
-import { anchorReviewDue, classifyExposure, closeTrack, closureCause, createTrack, declarableAnchors, effortEstimate, exerciseStillAdmissible, exposureEvidence, progressionModelFor, progressionSlotKey, readStrengthParams, resumeTrack, strengthReasons, updateTrack } from '@hybridsport/strength';
+import { anchorReviewDue, classifyExposure, closeTrack, closureCause, createTrack, cycleCapacity, declarableAnchors, effortEstimate, exerciseStillAdmissible, exposureEvidence, progressionModelFor, progressionSlotKey, readStrengthParams, resumeTrack, startTrackCycle, strengthReasons, updateTrack } from '@hybridsport/strength';
 import type { ExecutedItem, PerformedSet, SlotRole, StrengthTrack } from '@hybridsport/strength';
 import { archetypeFromIntentId, isV1Archetype } from '@hybridsport/running';
 import type { RealizedSession, RealizedStructure, RunningReference, RunningSessionArchetype } from '@hybridsport/running';
 import type { AppState, GeneratedSession, SessionLog } from './model.js';
 import { strengthContent } from './provisional-content.js';
+import { mesocycleAt } from './mesocycle.js';
+import { addDays, dateOf } from './dates.js';
+// technical-constant: jours par semaine (calendrier)
+const DAYS_PER_WEEK = 7;
 import { STIMULUS_BY_GOAL } from './planner.js';
 
 const isWork = (s: SetPrescription): boolean => s.kind !== 'rampup' && s.optional !== true;
@@ -57,6 +61,8 @@ export interface StrengthExecution {
    * directement. Sans effet si le contenu ne déclare pas la politique des expositions modifiées.
    */
   readonly modifiedItems?: Readonly<Record<string, number>>;
+  /** RC5.3 R3 — phase de la semaine de la séance (`deload` : aucune décision de progression). Défaut : accumulation. */
+  readonly phaseKind?: 'accumulation' | 'deload';
 }
 
 /** RC5.3 R4 — séries de travail classées contre le RIR de référence (jamais contre le RIR relevé par un modificateur). */
@@ -144,7 +150,7 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
     const anchorOfSlot = [...tracks.values()].find((t) => t.tier === 'anchor' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === it.refs?.slotId);
     const known = trackId ? tracks.get(trackId) : undefined;
     const update = (t: StrengthTrack, cls: ReturnType<typeof classifyExposure>) => {
-      const u = updateTrack(t, exec, cls, e, params, 'accumulation', undefined, { ...(modified ? { modified } : {}), level: p.level, at: now });
+      const u = updateTrack(t, exec, cls, e, params, x.phaseKind ?? 'accumulation', undefined, { ...(modified ? { modified } : {}), level: p.level, at: now });
       // S4 — preuve complète de l'exposition (prescrit / réalisé), indépendante de la décision du modèle.
       const ev = exposureEvidence(exec, cls);
       const signed = (v: number | null) => (v === null ? 'n/a' : v > 0 ? `+${String(v)}` : String(v));
@@ -195,7 +201,7 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
       }
     }
   }
-  return { strength: { tracks: [...tracks.values()].sort((a, b) => (a.trackId < b.trackId ? -1 : 1)), exposures, accessoryCounts: counts }, reasons };
+  return { strength: { ...state.strength, tracks: [...tracks.values()].sort((a, b) => (a.trackId < b.trackId ? -1 : 1)), exposures, accessoryCounts: counts }, reasons };
 }
 
 /**
@@ -215,11 +221,23 @@ export function strengthWeekBoundary(state: AppState, at: ISODateTime, o: { read
   const catalog = strengthContent().catalog;
   const reasons: ReasonCode[] = [];
   const merged = mergedDuplicates(state, params);
+  // RC5.3 R3 — nouveau mésocycle (une fois par track et par cycle) : réévaluation sur preuve du cycle écoulé.
+  const meso = mesocycleAt(state, dateOf(at), params);
   const tracks = state.strength.tracks.map((t00) => {
     const m = merged.get(t00.trackId);
     if (m) { reasons.push(...m.reasons); return m.track; }
-    const t0 = t00;
+    let t0 = t00;
     if (t0.status === 'closed') return t0;
+    if (meso && meso.cycle > 0 && t0.cycleIndex !== meso.cycle) {
+      // Track ouverte pendant le cycle courant : rattachée au cycle, sans réévaluation (aucune preuve à relire).
+      if (dateOf(t0.openedAt) >= meso.cycleStart) t0 = { ...t0, cycleIndex: meso.cycle };
+      else {
+        const e = catalog.exercise(t0.exerciseId);
+        const previousStart = addDays(meso.cycleStart, -meso.length * DAYS_PER_WEEK);
+        const evidence = state.strength.exposures.filter((x) => x.exerciseId === t0.exerciseId && dateOf(x.at) >= previousStart && dateOf(x.at) < meso.cycleStart);
+        if (e) { const c = startTrackCycle(t0, { cycle: meso.cycle, at, capacity: cycleCapacity(evidence, params) }, e, params); reasons.push(...c.reasons); t0 = c.track; }
+      }
+    }
     const r = resumeTrack(t0, o.painCleared);
     reasons.push(...r.reasons);
     const t = r.track;

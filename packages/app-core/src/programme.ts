@@ -22,6 +22,7 @@ import { isHyroxComposed, realizeCrossTrainingExecution, realizeHyroxComposed, r
 import { assessStrengthWeekVolume, readStrengthParams } from '@hybridsport/strength';
 import type { StrengthGoalRef, WeekVolumeAssessment } from '@hybridsport/strength';
 import { strengthContent } from './provisional-content.js';
+import { mesocycleAt } from './mesocycle.js';
 
 /** Erreur applicative portant les raisons structurées (jamais « échec » sans cause). */
 export class ProgrammeError extends AppError {
@@ -146,7 +147,7 @@ function withStrengthVolumeAudit(planned: AppState, clock: Clock, i: number): Ap
  * S4 — Bilan de volume Strength d'une semaine PERSISTÉE (séances planifiées, raisons persistées, demandes non
  * planifiées), par la fonction du moteur Strength. Null si la semaine ne demande pas de Strength.
  */
-export function strengthWeekVolume(state: AppState, weekStart: string): WeekVolumeAssessment | null {
+export function strengthWeekVolume(state: AppState, weekStart: string): (WeekVolumeAssessment & { readonly deload?: true }) | null {
   const w = state.planner.weeks[weekStart];
   const p = state.profile;
   if (!w || !p) return null;
@@ -158,10 +159,13 @@ export function strengthWeekVolume(state: AppState, weekStart: string): WeekVolu
   });
   const goal = state.programmeState?.definition.goals.find((g) => g.sport === 'strength')?.goal ?? p.strength.goal;
   const content = strengthContent();
-  return assessStrengthWeekVolume({
-    params: readStrengthParams(content.ruleset).values, catalog: content.catalog, goal: { goal } as StrengthGoalRef, level: p.level,
+  const params = readStrengthParams(content.ruleset).values;
+  const v = assessStrengthWeekVolume({
+    params, catalog: content.catalog, goal: { goal } as StrengthGoalRef, level: p.level,
     requestedSessions: reqs.length, sessions, notPlanned: reqs.filter((r) => r.status !== 'planned').map((r) => ({ category: r.category })),
   });
+  // RC5.3 R3 — semaine de DÉCHARGE : volume volontairement réduit, distinguée dans les indicateurs (jamais un déficit).
+  return mesocycleAt(state, weekStart, params)?.deload === true ? { ...v, deload: true } : v;
 }
 
 /**
@@ -267,6 +271,8 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
           sessionStatus: x.completion === 'abandoned' ? 'abandoned' : x.completion === 'modified' ? 'modified' : 'completed',
           // RC5.3 R4 — séance adaptée au démarrage : items modifiés et RIR de référence de la séance planifiée.
           ...(adaptedFrom ? { modifiedItems: adaptedItemsOf(adaptedFrom, session) } : {}),
+          // RC5.3 R3 — séance d'une semaine de décharge : aucune décision de progression.
+          ...(mesocycleAt(state, week.plannerRef, readStrengthParams(strengthContent().ruleset).values)?.deload === true ? { phaseKind: 'deload' as const } : {}),
         }, at);
         s = { ...s, strength: applied.strength };
         progressionTrace = applied.reasons;

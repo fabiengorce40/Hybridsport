@@ -138,7 +138,8 @@ describe('tracks, première exposition, réussites successives', () => {
   it('21. poids du corps en haut de plage : méthode non gouvernée, effort qualifié (observé à la cible / inconnu)', () => {
     // RC5.1 — Haut A/B : les tractions ne sont exposées qu'une fois par semaine (Haut A) ; le haut de plage est atteint
     // à la 6e semaine (5 progressions de répétitions, puis haut de plage).
-    const W6 = [...W, '2026-11-02', '2026-11-09'];
+    // RC5.3 R3 — semaine de décharge (aucune décision) : haut de plage atteint une semaine plus tard.
+    const W6 = [...W, '2026-11-02', '2026-11-09', '2026-11-16'];
     const observed = drive(createBeta0Programme(emptyState(), STRENGTH, clock(W[0]), {}), W6);
     const unknown = drive(createBeta0Programme(emptyState(), STRENGTH, clock(W[0]), {}), W6, () => 'as_prescribed', { effort: 'unknown' });
     expect(audit(observed.final).find((x) => x.code === 'PROGRESSION.METHOD_UNGOVERNED')?.params.effort).toBe('at_target');

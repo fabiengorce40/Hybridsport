@@ -105,7 +105,9 @@ export function computeDose(e: Exercise, env: Env, opts: DoseOptions): Dose {
 
   sets += setsDelta;
   const factor = m.phase[phase].setsFactor;
-  if (factor !== undefined) sets = Math.floor(sets * factor);
+  // RC5.3 R3 — décharge : arrondi au plus proche si le contenu le déclare (3 séries ⇒ 2), sinon à l'inférieur (antérieur).
+  const nearest = env.params['strength.progression.policy']?.mesocycle?.deloadSetsRounding === 'nearest';
+  if (factor !== undefined) sets = nearest ? Math.round(sets * factor) : Math.floor(sets * factor);
   // Aucun modificateur ne dépasse le haut du profil ; un exercice prescrit garde au moins une série.
   sets = clamp(sets, 1, cell.sets.max);
   if (opts.timePressure && opts.role !== 'primary') {

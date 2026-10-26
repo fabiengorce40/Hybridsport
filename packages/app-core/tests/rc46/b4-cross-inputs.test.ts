@@ -15,14 +15,15 @@ import {
 } from '../../src/index.js';
 import type { AppState } from '../../src/index.js';
 import { loadText, probe } from '../rc45/probe-starts.js';
-import { simulate } from '../rc4-audit/rc4-sim.js';
+import { referenceEnvironment, simulate } from '../rc4-audit/rc4-sim.js';
 import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
 import { PROFILE } from '../consolidation/sim4.js';
 import { qualityProfiles } from './quality-bench.js';
 import { at, reload } from '../hr/hr-fixtures.js';
 import { clock } from '../fixtures.js';
 
-const env = beta0Environment();
+// RC5.3 R3 — banc antérieur : environnement de référence (contenu R2, sans mésocycle), cf. rc4-sim.
+const env = referenceEnvironment();
 const fx = (n: string) => readFileSync(new URL(`./fixtures/${n}.json`, import.meta.url), 'utf8');
 const REFS = JSON.parse(fx('pre-b4-starts')) as Record<string, ReturnType<typeof probe>>;
 const OLD = { 'pre-b4-cons-w2': '2026-10-12', 'pre-b4-p2f-w1': '2026-10-05' } as const;

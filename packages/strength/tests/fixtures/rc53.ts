@@ -24,6 +24,13 @@
  * - toute hausse de charge OU de répétitions est un essai : annulé par une exposition probante en dessous / partielle
  *   (retour à la dernière prescription réussie, sans baisse de charge), confirmé par une réussite ;
  * - niveau refusé non retenté avant le prochain cycle ; sans mésocycle (avant R3), le refus expire après 4 semaines.
+ *
+ * Lot R3 (`0.12.0-strength-rc53-r3`) — mésocycles (décision du 2026-10-25) :
+ * - durée : débutant 6, intermédiaire 5, avancé 4 semaines (valeurs provisoires) ; réglage utilisateur 4 à 6 ;
+ * - dernière semaine = décharge (séries × 0,6 arrondies au PLUS PROCHE, minimum 1 ; RIR + 2 ; aucune décision) ;
+ * - frontière : réévaluation des principaux sur PREUVE (au moins 2 expositions à effort saisi exploitable du cycle
+ *   écoulé), sinon « non évaluable » ; trop lourde : au plus −10 % ; trop légère (≥ 1 pas, preuve médiane d'au moins 2 expositions ; effort au-delà de la plage compté à sa borne haute) : au plus +2 pas ;
+ *   plafond de gain et refus d'essai remis à zéro (plafond PAR CYCLE).
  */
 import type { GovernanceClass, ParameterValue, RulesetDocumentInput } from '@hybridsport/domain';
 import { param } from '../../../engine/tests/fixtures/ruleset.js';
@@ -86,6 +93,28 @@ export function strengthRc53R2RulesetDocument(): RulesetDocumentInput {
     rulesetVersion: RC53_R2_RULESET_VERSION,
     parameters: base.parameters.map((p) => (p.id === 'strength.progression.policy'
       ? { ...p, value: { ...(p.value as Record<string, unknown>), ...R2_POLICY } as unknown as ParameterValue, version: '0.11.0', modifiedAt: '2026-10-25', justification: why }
+      : p)),
+  };
+}
+
+export const RC53_R3_RULESET_VERSION = '0.12.0-strength-rc53-r3';
+// technical-constant: TEST_ONLY — contenu provisoire R3 : durées de cycle par niveau, réglage utilisateur, réévaluation
+const R3_POLICY = {
+  mesocycle: {
+    lengths: { novice: 6, beginner: 6, intermediate: 5, advanced: 4 }, userRange: { min: 4, max: 6 }, deloadSetsRounding: 'nearest',
+    reevaluation: { minEvidence: 2, maxDownFraction: 0.1, lightThresholdSteps: 1, maxUpSteps: 2 },
+  },
+};
+
+/** Lot R3 : surcouche du lot R2 (mésocycles, décharge, réévaluation sur preuve). */
+export function strengthRc53R3RulesetDocument(): RulesetDocumentInput {
+  const base = strengthRc53R2RulesetDocument();
+  const why = `RC5.3 R3 — mésocycles, décharge, réévaluation sur preuve (décision du 2026-10-25) ; surcouche de ${RC53_R2_RULESET_VERSION}.`;
+  return {
+    ...base,
+    rulesetVersion: RC53_R3_RULESET_VERSION,
+    parameters: base.parameters.map((p) => (p.id === 'strength.progression.policy'
+      ? { ...p, value: { ...(p.value as Record<string, unknown>), ...R3_POLICY } as unknown as ParameterValue, version: '0.12.0', modifiedAt: '2026-10-25', justification: why }
       : p)),
   };
 }

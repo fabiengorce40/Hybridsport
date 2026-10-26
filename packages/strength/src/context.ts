@@ -82,6 +82,13 @@ export const zStrengthTrack = z.object({
   probe: z.object({ kind: z.enum(['load', 'reps']), fromKg: z.number().positive().optional(), fromReps: zRepTarget }).strict().optional(),
   /** RC5.3 R2 — niveau REFUSÉ par un essai annulé (charge ou répétitions minimales), jusqu'au prochain cycle. */
   probeRefused: z.object({ kg: z.number().positive().optional(), reps: z.number().int().positive().optional(), at: instant }).strict().optional(),
+  /** RC5.3 R3 — index du mésocycle déjà ouvert pour cette track (réévaluation une seule fois par cycle). */
+  cycleIndex: z.number().int().nonnegative().optional(),
+  /**
+   * RC5.3 R3 — progression NON ÉVALUABLE à la dernière frontière de cycle (preuve insuffisante : efforts non saisis ou
+   * inexploitables) : état explicite, ni stagnation silencieuse ni hausse inventée. Absent : évaluable.
+   */
+  evaluation: z.object({ status: z.literal('not_evaluable'), cause: z.string().min(1), at: instant }).strict().optional(),
 }).strict();
 export type StrengthTrack = z.infer<typeof zStrengthTrack>;
 

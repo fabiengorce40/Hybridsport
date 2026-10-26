@@ -10,7 +10,7 @@
  * - répétitions et RIR réels par la relation d'Epley (diviseur 30), RIR déclaré arrondi à l'inférieur.
  */
 import { readStrengthParams } from '@hybridsport/strength';
-import { strengthContent } from '../../src/index.js';
+import { beta0Environment, strengthContent } from '../../src/index.js';
 import type { AppState } from '../../src/index.js';
 import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
 import { measureProfile, summarize } from '../rc46/quality-bench.js';
@@ -93,7 +93,7 @@ export function benchCell(profileId: string, level: Level, kind: Kind, weeks: nu
   const spec: ProfileSpec = { ...base, profile: { ...base.profile, level }, athlete: ath, ...(kind === 'fatigue' ? { checkIn: FATIGUE_CHECKIN } : {}) };
   let w2: AppState | undefined;
   let final: AppState | undefined;
-  const q = measureProfile(spec, undefined, { weeks, onWeek: (st, m) => { if (m === '2026-10-12') w2 = st; }, onFinal: (st) => { final = st; } });
+  const q = measureProfile(spec, beta0Environment(), { weeks, onWeek: (st, m) => { if (m === '2026-10-12') w2 = st; }, onFinal: (st) => { final = st; } });
   const wk = (d: string) => Math.floor((Date.parse(d) - Date.parse('2026-10-05')) / WEEK_MS);
   const seq: Record<string, { w: number; load: number | null; reps: string; main: boolean }[]> = {};
   for (const s of [...q.sessions].sort((a, b) => (a.date < b.date ? -1 : 1))) for (const i of s.items) (seq[`${i.ex}@${i.slot.split('.').slice(1).join('.')}`] ??= []).push({ w: wk(s.date), load: i.load, reps: i.reps, main: /(^|\.)main_/.test(i.slot) });

@@ -48,7 +48,8 @@ export interface RecoverySignal {
 }
 export interface StrengthWeekInsights {
   readonly sessions: readonly StrengthInsight[];
-  readonly volume: WeekVolumeAssessment | null;
+  /** RC5.3 R3 — `deload` : semaine de décharge du mésocycle (volume volontairement réduit). */
+  readonly volume: (WeekVolumeAssessment & { readonly deload?: true }) | null;
   readonly recovery: readonly RecoverySignal[];
 }
 
@@ -119,7 +120,7 @@ export function strengthSupportedFrequencies(): number[] {
 }
 
 /** P1 — lecture pour UNE séance Strength : son explication, les signaux de récupération qui la concernent, le volume. */
-export function strengthInsightOf(state: AppState, requestId: string): { readonly insight: StrengthInsight; readonly recovery: readonly RecoverySignal[]; readonly volume: WeekVolumeAssessment | null } | null {
+export function strengthInsightOf(state: AppState, requestId: string): { readonly insight: StrengthInsight; readonly recovery: readonly RecoverySignal[]; readonly volume: (WeekVolumeAssessment & { readonly deload?: true }) | null } | null {
   const weekStart = Object.entries(state.planner.weeks).find(([, w]) => w.requests.some((r) => r.requestId === requestId))?.[0];
   const all = weekStart ? strengthWeekInsights(state, weekStart) : null;
   const insight = all?.sessions.find((x) => x.requestId === requestId);

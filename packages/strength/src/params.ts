@@ -260,6 +260,20 @@ export const STRENGTH_OPTIONAL_PARAMETER_SCHEMAS = {
      * `refusalMaxWeeks` semaines.
      */
     probes: z.object({ reps: z.boolean(), refusalMaxWeeks: int.positive() }).strict().optional(),
+    /**
+     * R3 — MÉSOCYCLES : durée par niveau (`lengths`), bornes d'un réglage utilisateur (`userRange`) ; dernière semaine =
+     * décharge (phase `deload` du ruleset), séries arrondies selon `deloadSetsRounding` (minimum 1). À la frontière d'un
+     * nouveau cycle, réévaluation de chaque track chargée (principal) sur PREUVE : capacité observée sur le cycle écoulé
+     * (au moins `minEvidence` expositions à effort saisi exploitable), sinon progression « non évaluable » (aucune hausse
+     * inventée). Trop lourde : baisse vers la charge idéale, au plus `maxDownFraction` ; trop légère (idéale ≥ charge +
+     * `lightThresholdSteps` pas) : hausse d'au plus `maxUpSteps` pas. Plafond de gain et refus d'essai remis à zéro.
+     */
+    mesocycle: z.object({
+      lengths: z.partialRecord(z.enum(LEVELS), int.positive()),
+      userRange: z.object({ min: int.positive(), max: int.positive() }).strict(),
+      deloadSetsRounding: z.enum(['floor', 'nearest']),
+      reevaluation: z.object({ minEvidence: int.positive(), maxDownFraction: fraction, lightThresholdSteps: int.positive(), maxUpSteps: int.positive() }).strict(),
+    }).strict().optional(),
   }).strict() },
 } as const satisfies Record<string, { governance: GovernanceClass; schema: z.ZodType }>;
 

@@ -19,6 +19,7 @@ import { dateOf, daysBetween, sessionInstant, weekStartOf } from './dates.js';
 import type { AppState, Authority, FreeRunType, GeneratedSession, PlanEntry, Profile, Reason } from './model.js';
 import { STIMULUS_BY_GOAL } from './planner.js';
 import { anchorsToDeclare } from './progression.js';
+import { mesocycleAt } from './mesocycle.js';
 import { UNKNOWN_CORE_STATE } from './checkin.js';
 import { activePainPause } from './weeks.js';
 import { runningContent, strengthContent } from './provisional-content.js';
@@ -93,8 +94,10 @@ export function strengthContextAt(state: AppState, p: Profile, date: string, con
   const recentDone = exposures.filter((x) => daysBetween(dateOf(x.at), date) < D7);
   return {
     goal: { primary: { goal: p.strength.goal } },
-    // Périodisation non gouvernée : phase fixe, aucune rampe de volume ni décharge planifiée.
-    phase: { kind: 'accumulation', weekInMesocycle: 1, mesocycleLength: 1 },
+    // Périodisation : phase fixe, aucune rampe de volume. RC5.3 R3 — contenu déclarant des mésocycles : dernière semaine
+    // du cycle en DÉCHARGE. Position transmise neutre (1/1) : la rampe PM4 et la rotation de début de cycle restent
+    // non gouvernées (R3.5 : aucune rotation automatique en fin de cycle).
+    phase: { kind: mesocycleAt(state, date, readStrengthParams(content.ruleset).values)?.deload === true ? 'deload' : 'accumulation', weekInMesocycle: 1, mesocycleLength: 1 },
     capacities: [],
     tracks: state.strength.tracks.filter((t) => t.status !== 'closed'),
     recentExposures: exposures,

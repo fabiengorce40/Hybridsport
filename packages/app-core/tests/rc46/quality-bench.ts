@@ -18,7 +18,7 @@ import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
 import { readStrengthParams, sessionPlannedHardSets } from '@hybridsport/strength';
 import { beta0Environment, strengthContent, weekReproducibility } from '../../src/index.js';
 import type { AppState } from '../../src/index.js';
-import { PROFILES, simulate } from '../rc4-audit/rc4-sim.js';
+import { PROFILES, referenceEnvironment, simulate } from '../rc4-audit/rc4-sim.js';
 import type { ProfileSpec, SimOut } from '../rc4-audit/rc4-sim.js';
 
 // technical-constant: horizon du banc (semaines)
@@ -53,7 +53,7 @@ const repsOf = (r: unknown): string => {
 };
 
 /** Mesure d'un profil à partir d'une simulation (chemin réel). `env` : environnement à évaluer (référence par défaut). */
-export function measureProfile(spec: ProfileSpec, env = beta0Environment(), o: { readonly weeks?: number; readonly onWeek?: (state: AppState, monday: string) => void; readonly onFinal?: (state: AppState) => void } = {}): ProfileQuality {
+export function measureProfile(spec: ProfileSpec, env = referenceEnvironment(), o: { readonly weeks?: number; readonly onWeek?: (state: AppState, monday: string) => void; readonly onFinal?: (state: AppState) => void } = {}): ProfileQuality {
   // R-A mesuré À LA PLANIFICATION de chaque semaine (aucune séance de la semaine réalisée) : en fin de simulation, les
   // progressions ont évolué depuis et ne peuvent pas être relues à leur état d'alors (écarts attribués à tort au planificateur).
   const repro: Record<string, number> = {};

@@ -100,7 +100,8 @@ describe('preuve de progression (exposition par exposition)', () => {
 
   it('poids du corps au plafond : méthode non gouvernée, méthodes possibles listées (scénario A)', () => {
     // RC5.1 — Haut A/B : tractions exposées une fois par semaine ⇒ haut de plage atteint en 6e semaine.
-    const A6 = drive(createBeta0Programme(emptyState(), STRENGTH, clock(W[0]), {}), [...W, '2026-11-09']);
+    // RC5.3 R3 — semaine de décharge (aucune décision de progression) : une semaine de plus.
+    const A6 = drive(createBeta0Programme(emptyState(), STRENGTH, clock(W[0]), {}), [...W, '2026-11-09', '2026-11-16']);
     const m = audit(A6.final).find((r) => r.code === 'PROGRESSION.METHOD_UNGOVERNED');
     expect(m?.params).toMatchObject({ exerciseId: 'ex.pull_up', capability: 'bodyweight_overload_method', methods: ['added_load', 'harder_variant', 'new_rep_range', 'hold'] });
     expect(audit(A6.final).some((r) => r.code === 'PROGRESSION.CAP_REACHED' && String(r.params.trackId).includes('pull_up'))).toBe(false);

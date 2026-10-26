@@ -12,7 +12,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { SessionRecord } from '@hybridsport/domain';
-import { applyStrengthExecutionTraced, ensureBeta0Week, loadState, MemoryStorage, saveState, STORAGE_KEY } from '../../src/index.js';
+import { applyStrengthExecutionTraced, beta0Environment, ensureBeta0Week, loadState, MemoryStorage, saveState, STORAGE_KEY } from '../../src/index.js';
 import type { AppState } from '../../src/index.js';
 import { simulate } from '../rc4-audit/rc4-sim.js';
 import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
@@ -26,7 +26,7 @@ const WEEKS = 8;
 const REF_FIRST_LOAD_WEEK = 7;
 
 describe('TA-01 — track partagée A/B', () => {
-  const s = simulate(spec('S4'), WEEKS).state;
+  const s = simulate(spec('S4'), WEEKS, beta0Environment()).state;
   it('pec deck, leg extension, squat bulgare : une seule track active pour Haut A / Haut B (Bas A / Bas B)', () => {
     for (const ex of ['ex.pec_deck', 'ex.leg_extension', 'ex.bulgarian_split_squat']) {
       const active = s.strength.tracks.filter((t) => t.exerciseId === ex && t.status === 'active' && t.tier === 'tracked');
@@ -48,7 +48,7 @@ describe('TA-01 — track partagée A/B', () => {
 
 describe('TA-02 — prescriptions spécifiques', () => {
   it('haltères seuls : développé épaules principal (Haut B) et accessoire (Haut A) = deux tracks, répétitions distinctes', () => {
-    const s = simulate(spec('S4D'), 4).state;
+    const s = simulate(spec('S4D'), 4, beta0Environment()).state;
     const dsp = s.strength.tracks.filter((t) => t.exerciseId === 'ex.db_shoulder_press' && t.status === 'active');
     expect(dsp.length).toBe(2);
     expect(new Set(dsp.map((t) => t.slotId.split('.').slice(1).join('.'))).size).toBe(2);
@@ -58,7 +58,7 @@ describe('TA-02 — prescriptions spécifiques', () => {
 
 describe('TA-03 — historique partagé (e1RM observé)', () => {
   it('une exposition à effort observé recopie l’e1RM sur l’autre track autorégulée du même exercice, prescription inchangée', () => {
-    const s0 = simulate({ ...spec('S4'), rirOffset: 1 }, 2).state;
+    const s0 = simulate({ ...spec('S4'), rirOffset: 1 }, 2, beta0Environment()).state;
     const bench = s0.strength.tracks.find((t) => t.exerciseId === 'ex.bench_press' && t.model === 'autoregulated' && t.status === 'active');
     expect(bench).toBeDefined();
     if (!bench) return;

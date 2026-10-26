@@ -36,6 +36,8 @@ export interface ExecutedItem {
 const targetMin = (r: RepTarget): number => (typeof r === 'number' ? r : r.min);
 // technical-constant: jours par semaine (expiration d'un refus d'essai)
 const WEEK_DAYS = 7;
+// technical-constant: tolérance d'arrondi flottant au pas de charge (baisse bornée, arrondi au pas supérieur)
+const ROUND_EPS = 1e-9;
 const targetRir = (s: SetPrescription): number | undefined => {
   const i = s.intensity;
   if (i && 'effort' in i && i.effort && 'rir' in i.effort) return i.effort.rir;
@@ -438,6 +440,59 @@ function updateTrackModel(track: StrengthTrack, x: ExecutedItem, cls: ExposureCl
       // PM4 agit sur le volume hebdomadaire (allocation), jamais comme modèle de track.
       return { track: base, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: 'volume_model' })], rotate: false };
   }
+}
+
+/**
+ * RC5.3 R3 — capacité OBSERVÉE d'un exercice sur le cycle écoulé : médiane des e1RM des expositions dont l'effort a été
+ * saisi et reste dans le domaine de validité de l'estimation (aucun RIR supposé). `exposures` : nombre de ces preuves.
+ */
+export function cycleCapacity(exposures: readonly { readonly sets: readonly PerformedSet[] }[], params: StrengthParams): { readonly e1rmKg?: number; readonly exposures: number } {
+  const l = params['strength.load'];
+  // Série à effort saisi au-delà de la plage valide (répétitions + RIR > max) : preuve CENSURÉE — la capacité vaut AU
+  // MOINS celle de la borne haute de la plage (estimation prudente, jamais extrapolée au-delà).
+  const perSet = (s: PerformedSet) => (s.rir !== undefined && s.loadKg !== undefined && s.loadKg > 0 && s.reps + s.rir >= l.validRepRange.min ? [s.loadKg * (1 + Math.min(s.reps + s.rir, l.validRepRange.max) / l.e1rmDivisor)] : []);
+  const obs = exposures.flatMap((x) => { const v = median(x.sets.flatMap(perSet)); return v === undefined ? [] : [v]; });
+  return obs.length === 0 ? { exposures: 0 } : { e1rmKg: median(obs), exposures: obs.length };
+}
+
+/**
+ * RC5.3 R3 — NOUVEAU MÉSOCYCLE pour une track (une seule fois par cycle) : plafond de gain et refus d'essai remis à zéro ;
+ * principal chargé (linéaire ou autorégulé) RÉÉVALUÉ sur preuve — capacité observée du cycle écoulé :
+ * - preuve insuffisante (moins de `minEvidence` expositions à effort exploitable) : progression « non évaluable »,
+ *   charge conservée, état explicite et tracé (jamais une hausse inventée, jamais une stagnation silencieuse) ;
+ * - charge trop lourde (idéale < charge − 1 pas) : baisse vers l'idéale, au plus `maxDownFraction` ;
+ * - charge trop légère (idéale ≥ charge + `lightThresholdSteps` pas) : hausse d'au plus `maxUpSteps` pas ;
+ * - sinon : charge conservée.
+ * Sans la politique `mesocycle` : track inchangée.
+ */
+export function startTrackCycle(track: StrengthTrack, o: { readonly cycle: number; readonly at: ISODateTime; readonly capacity: { readonly e1rmKg?: number; readonly exposures: number } }, e: Exercise, params: StrengthParams, declaredStepKg?: number): { track: StrengthTrack; reasons: readonly ReasonCode[] } {
+  const pol = params['strength.progression.policy']?.mesocycle;
+  if (!pol || track.status === 'closed' || track.cycleIndex === o.cycle) return { track, reasons: [] };
+  const { probeRefused: _r, evaluation: _e, ...rest } = track;
+  const next = track.nextPrescription;
+  const reasons: ReasonCode[] = [strengthReasons.emit('PROGRESSION.CYCLE_STARTED', { trackId: track.trackId, cycle: o.cycle })];
+  const step = stepFor(e, params, declaredStepKg);
+  const main = track.model === 'autoregulated' || track.model === 'linear_load';
+  if (!main || !next || next.loadKg === undefined || step === undefined) {
+    return { track: { ...rest, cycleIndex: o.cycle, ...(next?.loadKg !== undefined ? { cycleStartLoadKg: next.loadKg } : {}) }, reasons };
+  }
+  const r = pol.reevaluation;
+  const kg0 = next.loadKg;
+  if (o.capacity.e1rmKg === undefined || o.capacity.exposures < r.minEvidence) {
+    reasons.push(strengthReasons.emit('PROGRESSION.NOT_EVALUABLE', { trackId: track.trackId, cause: 'insufficient_effort_data', exposures: o.capacity.exposures }));
+    return { track: { ...rest, cycleIndex: o.cycle, cycleStartLoadKg: kg0, evaluation: { status: 'not_evaluable', cause: 'insufficient_effort_data', at: o.at } }, reasons };
+  }
+  const pct = params['strength.load'].pctByRepsToFailure[String(Math.round(targetMin(next.reps) + (next.rir ?? 0)))];
+  const ideal = pct === undefined ? undefined : Math.max(step, roundDownToStep(o.capacity.e1rmKg * pct, step));
+  let kg = kg0;
+  let cause: string | undefined;
+  if (ideal !== undefined && ideal < kg0 - step) { kg = Math.max(ideal, Math.ceil(kg0 * (1 - r.maxDownFraction) / step - ROUND_EPS) * step); cause = 'too_heavy'; }
+  else if (ideal !== undefined && ideal >= kg0 + r.lightThresholdSteps * step) { kg = Math.min(ideal, kg0 + r.maxUpSteps * step); cause = 'too_light'; }
+  if (cause !== undefined && kg !== kg0) reasons.push(strengthReasons.emit('PROGRESSION.REEVALUATED', { trackId: track.trackId, fromKg: kg0, toKg: kg, cause, e1rmKg: o.capacity.e1rmKg, exposures: o.capacity.exposures }));
+  const changed = kg !== kg0;
+  const { probe: _p, ...base } = rest;
+  const t: StrengthTrack = changed ? { ...base, consecutiveSuccess: 0, consecutiveBelow: 0, consecutiveHolds: 0, nextPrescription: { ...next, loadKg: kg } } : rest;
+  return { track: { ...t, cycleIndex: o.cycle, cycleStartLoadKg: kg }, reasons };
 }
 
 /** Création d'une track après exécution réelle d'un item `candidate` (ancre) ou d'un accessoire suivi. */

@@ -6,6 +6,7 @@
 import { useState } from 'react';
 import {
   EQUIPMENT_PRESETS, equipmentLabel, strengthSupportedFrequencies, LEVEL_LABELS, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, RUNNING_LEVEL_LABELS, SPORT_LABELS, STRENGTH_GOAL_LABELS,
+  MESOCYCLE_WEEK_CHOICES,
 } from '@hybridsport/app-core';
 import type { ProfileInput, Sport } from '@hybridsport/app-core';
 import { Notice, WEEKDAY_NAMES } from './ui.js';
@@ -74,6 +75,12 @@ export function GoalsSection({ p, set, beta0 = false }: { p: ProfileInput; set: 
             <select value={p.strength.sessionsPerWeek} onChange={(e) => set((x) => ({ ...x, strength: { ...x.strength, sessionsPerWeek: Number(e.target.value) } }))}>
               {/* P1 — fréquences que la composition Musculation ne sait pas encore gérer : affichées, jamais proposées. */}
               {SESSION_CHOICES.map((n) => <option key={n} value={n} disabled={!strengthSupportedFrequencies().includes(n)}>{strengthSupportedFrequencies().includes(n) ? String(n) : `${String(n)} — pas encore pris en charge`}</option>)}
+            </select>
+          </label>
+          <label className="field">Durée d’un cycle (dernière semaine allégée)
+            <select data-mesocycle-weeks value={p.strength.mesocycleWeeks ?? ''} onChange={(e) => set((x) => { const { mesocycleWeeks: _m, ...rest } = x.strength; return { ...x, strength: e.target.value === '' ? rest : { ...rest, mesocycleWeeks: Number(e.target.value) } }; })}>
+              <option value="">Selon mon niveau (recommandé)</option>
+              {MESOCYCLE_WEEK_CHOICES.map((n) => <option key={n} value={n}>{`${String(n)} semaines`}</option>)}
             </select>
           </label>
           {!strengthSupportedFrequencies().includes(p.strength.sessionsPerWeek) && <p className="small" role="alert" data-strength-frequency-unsupported style={{ margin: 0 }}>KAIRO ne sait pas encore composer {String(p.strength.sessionsPerWeek)} séances de musculation par semaine. Choisissez {String(Math.max(...strengthSupportedFrequencies()))} séances ou moins.</p>}
