@@ -10,6 +10,9 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { Prototype } from '../prototype/Prototype.js';
+import logoPrimary from '../src/assets/rekka-v2/logos/rekka-logo-primary.svg';
+import artAccueil from '../src/assets/rekka-v2/illustrations/accueil-cyberpunk.webp';
+import badgeObjectif from '../src/assets/rekka-v2/badges/objectif-atteint.svg';
 
 afterEach(cleanup);
 const nav = () => screen.getByRole('navigation', { name: 'Navigation principale' });
@@ -25,14 +28,23 @@ describe('REKKA V2 — prototype', () => {
     }
   });
 
-  it('Accueil : bandeau démonstration, provisoires identifiés, navigation à 5 onglets', () => {
+  it('Accueil : bandeau démonstration, logo et illustration du kit, navigation à 5 onglets', () => {
     render(<Prototype />);
     expect(screen.getByRole('note').textContent).toMatch(/données de démonstration/);
     expect(within(nav()).getAllByRole('button').map((b) => b.textContent)).toEqual(['Accueil', 'Planning', 'Séances', 'Progression', 'Profil']);
-    // Logo et illustration : ressources PROVISOIRES identifiées (nom accessible et étiquette visible).
-    expect(screen.getByRole('img', { name: /Logo provisoire/ })).toBeTruthy();
-    expect(screen.getByRole('img', { name: /illustration provisoire/ })).toBeTruthy();
-    expect(screen.getByText('Illustration provisoire')).toBeTruthy();
+    // Logo du kit (fichier SVG, nom accessible) ; 烈火 et la devise en TEXTE HTML, jamais dans une image.
+    expect(screen.getByRole('img', { name: 'REKKA' }).getAttribute('src')).toBe(logoPrimary);
+    expect(screen.getByText('烈火').getAttribute('lang')).toBe('ja');
+    expect(screen.getByText('Nourris ta flamme.')).toBeTruthy();
+    // Illustration d'ambiance du kit (WebP) : texte alternatif, cadre de repli, étiquette « à valider » visible.
+    const hero = screen.getByRole('img', { name: /Ville néon cyberpunk/ });
+    expect(hero.getAttribute('src')).toBe(artAccueil);
+    expect(hero.closest('[data-art="accueil"]')).not.toBeNull();
+    expect(screen.getByText('Illustration à valider')).toBeTruthy();
+    // Aucune image de maquette ni capture : seules des ressources du kit (SVG / WebP).
+    for (const img of document.querySelectorAll('img')) expect(img.getAttribute('src') ?? '').not.toMatch(/\.png|references/);
+    // Pictogrammes de navigation : masques `currentColor`, décoratifs (le libellé texte nomme l'onglet).
+    expect(nav().querySelectorAll('.r-mask-icon[aria-hidden="true"]').length).toBe(5);
     expect(within(nav()).getByRole('button', { name: 'Accueil' }).getAttribute('aria-current')).toBe('page');
     expect(screen.getByRole('region', { name: 'Séance du jour' })).toBeTruthy();
     expect(within(screen.getByRole('navigation', { name: 'Disciplines' })).getAllByRole('button').length).toBe(4);
@@ -84,6 +96,12 @@ describe('REKKA V2 — prototype', () => {
     expect(screen.getByRole('region', { name: 'Évolution des charges' })).toBeTruthy();
     expect(screen.getByRole('region', { name: 'Records confirmés' })).toBeTruthy();
     expect(screen.getAllByRole('article', { name: /: (obtenu|à venir)$/ }).length).toBe(3);
+    // Badges du kit : jalon verrouillé grisé ET libellé « À venir » (jamais la couleur seule).
+    const locked = screen.getByRole('article', { name: /: à venir$/ });
+    expect(locked.className).toMatch(/locked/);
+    expect(locked.querySelector('img.p-badge-img')?.getAttribute('src')).toBe(badgeObjectif);
+    expect(locked.textContent).toMatch(/À venir/);
+    expect(screen.getByRole('group', { name: 'Discipline' }).hasAttribute('data-scroll-x')).toBe(true);
     fireEvent.click(screen.getByRole('button', { name: 'HYROX' }));
     expect(document.querySelector('[data-unavailable]')?.textContent).toMatch(/non disponible/);
     go('Séances');

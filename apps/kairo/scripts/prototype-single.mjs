@@ -10,6 +10,8 @@ const js = files.filter((f) => f.endsWith('.js')).map((f) => read(f, 'utf8')).jo
 let css = files.filter((f) => f.endsWith('.css')).map((f) => read(f, 'utf8')).join('\n');
 for (const f of files.filter((x) => x.endsWith('.woff2'))) css = css.split(`./${f}`).join(`data:font/woff2;base64,${read(f).toString('base64')}`).split(`/assets/${f}`).join(`data:font/woff2;base64,${read(f).toString('base64')}`);
 if (/url\((?!data:)/.test(css)) throw new Error('ressource non intégrée dans le CSS');
+// Les images du kit doivent être intégrées (build PROTO_SINGLE=1) : aucun fichier image ne doit rester référencé.
+for (const f of files.filter((x) => /\.(webp|svg|png|jpe?g)$/.test(x))) if (js.includes(f) || css.includes(f)) throw new Error(`image non intégrée : ${f}`);
 const out = process.argv[2];
 if (!out) throw new Error('chemin de sortie requis');
 const page = [

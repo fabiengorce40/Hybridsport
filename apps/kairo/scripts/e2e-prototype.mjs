@@ -1,10 +1,11 @@
-/* global document, window, localStorage */
+/* global document, window, localStorage, getComputedStyle */
 /**
  * REKKA V2 — prototype isolé (lot V2-2) dans Chromium mobile (360 et 390 px) : bandeau « démonstration » visible sur
  * chaque écran, navigation à 5 onglets, Accueil → Séance, Planning liste / grille, phases et validation d'une série,
  * chronomètre et pause, Progression (graphique, records, jalons, indicateur indisponible), aucun défilement horizontal,
  * polices V2 chargées depuis le prototype lui-même, aucune requête externe, aucune écriture dans le stockage local,
- * aucune erreur. Captures dans le dossier donné.
+ * aucune erreur. Lot V2-2B : ressources du kit (logo SVG, illustrations WebP, badges, décorations) chargées, aucune
+ * capture ni maquette affichée, décorations sans capture des touchers. Captures dans le dossier donné.
  * Usage : node scripts/e2e-prototype.mjs [dossier de captures] — serveur du prototype sur E2E_URL.
  */
 import { chromium } from 'playwright';
@@ -36,8 +37,15 @@ for (const width of [360, 390]) {
   await banner('Accueil');
   check(await page.evaluate(() => document.documentElement.dataset.theme) === 'v2', `${w} px : thème V2 actif`);
   check(await page.evaluate(() => document.fonts.check("800 20px 'REKKA Barlow Condensed'") && document.fonts.check("400 15px 'REKKA Inter'")), `${w} px : polices V2 locales chargées`);
-  check(await page.locator('[data-placeholder="illustration"]').isVisible() && await page.locator('[data-placeholder="logo"]').isVisible(), `${w} px : illustration et logo provisoires identifiés`);
+  const loaded = (sel) => page.locator(sel).first().evaluate((i) => i.complete && i.naturalWidth > 0);
+  check(await page.getByRole('img', { name: 'REKKA' }).isVisible() && await loaded('.p-hero-logo'), `${w} px : logo du kit affiché (SVG)`);
+  check(await loaded('[data-art="accueil"] img') && await page.getByText('Illustration à valider').isVisible(), `${w} px : illustration d'ambiance WebP chargée, signalée « à valider »`);
+  check(await page.evaluate(() => [...document.images].every((i) => !/\.png|references/.test(i.src))), `${w} px : aucune capture ni maquette PNG affichée`);
+  check(await page.evaluate(() => [...document.querySelectorAll('.p-deco-corner, .p-divider')].every((d) => getComputedStyle(d).pointerEvents === 'none' && Number(getComputedStyle(d).opacity) <= 0.6)), `${w} px : décorations discrètes, sans capture des touchers`);
   const cta = await page.getByRole('button', { name: 'Commencer la séance' }).boundingBox();
+  check(cta !== null && await page.evaluate(({ x, y }) => document.elementFromPoint(x, y)?.closest('button')?.getAttribute('aria-label'), { x: cta.x + cta.width / 2, y: cta.y + cta.height / 2 }) === 'Commencer la séance', `${w} px : action principale non masquée par une décoration`);
+  const tabs = await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button').evaluateAll((b) => b.map((x) => x.getBoundingClientRect()).map((r) => Math.min(r.width, r.height)));
+  check(tabs.every((m) => m >= 44), `${w} px : onglets ≥ 44 px (${tabs.map((m) => String(Math.round(m))).join(', ')})`);
   check(cta !== null && cta.y + cta.height <= 800, `${w} px : action principale visible sans défilement (y = ${String(Math.round(cta?.y ?? 0))})`);
   check(await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button').allInnerTexts().then((t) => t.join('|')) === 'Accueil|Planning|Séances|Progression|Profil', `${w} px : navigation Accueil / Planning / Séances / Progression / Profil`);
   check(await noHScroll(), `${w} px : Accueil sans défilement horizontal`);
@@ -96,6 +104,9 @@ for (const width of [360, 390]) {
   await banner('Progression');
   check(await page.getByRole('region', { name: 'Évolution des charges' }).isVisible() && await page.getByRole('region', { name: 'Records confirmés' }).isVisible() && await page.getByRole('region', { name: 'Jalons' }).isVisible(), `${w} px : graphique, records, jalons`);
   check(await noHScroll(), `${w} px : Progression sans défilement horizontal`);
+  const chips = page.getByRole('group', { name: 'Discipline' });
+  check(await chips.evaluate((c) => getComputedStyle(c).overflowX === 'auto') && (await chips.getByRole('button').evaluateAll((b) => b.every((x) => x.getBoundingClientRect().height >= 44))), `${w} px : filtres de discipline défilables, cibles ≥ 44 px`);
+  check(await page.locator('.p-badge2.locked .p-badge-img').evaluate((i) => getComputedStyle(i).filter.includes('grayscale')) && ((await page.locator('.p-badge2.locked').textContent()) ?? '').includes('À venir'), `${w} px : badge verrouillé grisé et libellé « À venir »`);
   await shot('06-progression');
   await shot('06-progression-complet', true);
   await page.getByRole('button', { name: 'HYROX', exact: true }).click();
