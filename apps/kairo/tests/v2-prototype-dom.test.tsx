@@ -29,11 +29,14 @@ describe('REKKA V2 — prototype', () => {
     render(<Prototype />);
     expect(screen.getByRole('note').textContent).toMatch(/données de démonstration/);
     expect(within(nav()).getAllByRole('button').map((b) => b.textContent)).toEqual(['Accueil', 'Planning', 'Séances', 'Progression', 'Profil']);
+    // Logo et illustration : ressources PROVISOIRES identifiées (nom accessible et étiquette visible).
+    expect(screen.getByRole('img', { name: /Logo provisoire/ })).toBeTruthy();
+    expect(screen.getByRole('img', { name: /illustration provisoire/ })).toBeTruthy();
     expect(screen.getByText('Illustration provisoire')).toBeTruthy();
-    expect(screen.getByText('Logo provisoire')).toBeTruthy();
     expect(within(nav()).getByRole('button', { name: 'Accueil' }).getAttribute('aria-current')).toBe('page');
     expect(screen.getByRole('region', { name: 'Séance du jour' })).toBeTruthy();
-    expect(screen.getAllByRole('article', { name: /^Quête :/ }).length).toBe(2);
+    expect(within(screen.getByRole('navigation', { name: 'Disciplines' })).getAllByRole('button').length).toBe(4);
+    expect(within(screen.getByRole('region', { name: 'Ma semaine' })).getAllByRole('listitem').length).toBe(7);
   });
 
   it('Planning : liste puis grille (une ligne par jour), états écrits', () => {

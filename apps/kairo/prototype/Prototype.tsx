@@ -8,8 +8,9 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { SportIcon, SPORT_NAMES } from '../src/design/SportIcon.js';
 import type { SportKey } from '../src/design/SportIcon.js';
-import { athlete, DEMO_NOTICE, progression, quests, STATE_LABELS, STATE_MARKS, todayLabel, week, workout } from './demo-data.js';
+import { DEMO_NOTICE, progression, STATE_LABELS, STATE_MARKS, todayLabel, week, workout } from './demo-data.js';
 import type { DemoExercise, DemoSession, DemoSet } from './demo-data.js';
+import { Home } from './screens/Home.js';
 
 export type ProtoTab = 'home' | 'plan' | 'sessions' | 'progress' | 'profile';
 const TABS: readonly { id: ProtoTab; label: string; icon: string }[] = [
@@ -29,16 +30,6 @@ function DemoBanner() {
 }
 
 /** Logo REKKA provisoire (texte) : le logo final est une ressource graphique à fournir. */
-function Wordmark() {
-  return (
-    <div className="p-brand" aria-label="REKKA, Nourris ta flamme">
-      <span className="p-wordmark" aria-hidden="true">REKKA</span>
-      <span className="p-kanji" aria-hidden="true">烈火</span>
-      <span className="r-badge demo" data-placeholder="logo">Logo provisoire</span>
-    </div>
-  );
-}
-
 function TabBar({ tab, onChange }: { tab: ProtoTab; onChange: (t: ProtoTab) => void }) {
   return (
     <nav className="r-tabbar" aria-label="Navigation principale">
@@ -54,86 +45,6 @@ function TabBar({ tab, onChange }: { tab: ProtoTab; onChange: (t: ProtoTab) => v
 
 function StateTag({ s }: { s: DemoSession['state'] }) {
   return <span className={`p-state ${s}`} data-state={s}><span aria-hidden="true">{STATE_MARKS[s]}</span> {STATE_LABELS[s]}</span>;
-}
-
-// ——— Accueil
-
-function Home({ onStart, onGo }: { onStart: () => void; onGo: (t: ProtoTab) => void }) {
-  const done = week.flatMap((d) => d.sessions).filter((s) => s.state === 'done').length;
-  const total = week.flatMap((d) => d.sessions).filter((s) => s.state !== 'cancelled').length;
-  return (
-    <main className="r-screen" aria-label="Accueil">
-      <Wordmark />
-      <section className="r-hero placeholder" aria-label="Bannière REKKA">
-        <span className="r-badge demo r-placeholder-tag" data-placeholder="illustration">Illustration provisoire</span>
-        <span className="r-eyebrow">{todayLabel}</span>
-        <h1 className="r-h1">Salut {athlete.name},<br /><span className="p-neon">nourris ta flamme.</span></h1>
-      </section>
-
-      <section className="r-card accent" aria-label="Séance du jour" data-sport="strength">
-        <div className="r-row between"><span className="r-eyebrow">Séance du jour</span><span className="r-badge" data-sport="strength">Musculation</span></div>
-        <div className="r-row" style={{ gap: 12 }}>
-          <SportIcon sport="strength" />
-          <div className="r-stack" style={{ gap: 2 }}>
-            <h2 className="r-h2">{workout.title}</h2>
-            <span className="r-text-2 r-num">≈ {workout.plannedMin} min · 3 exercices · 14 séries</span>
-          </div>
-        </div>
-        <button type="button" className="r-btn primary block" onClick={onStart}>Commencer la séance</button>
-      </section>
-
-      <section className="r-card" aria-label="Ma semaine">
-        <div className="r-row between"><h3 className="r-h3">Ma semaine</h3><button type="button" className="r-btn ghost" onClick={() => onGo('plan')}>Planning</button></div>
-        <div className="p-weekstrip">
-          {week.map((d) => {
-            const s = d.sessions[0];
-            return (
-              <div key={d.day} className={`p-daycell ${s?.state ?? 'rest'}`} {...(s ? { 'data-sport': s.sport } : {})} aria-label={`${d.day} ${d.date} : ${s ? `${SPORT_NAMES[s.sport]}, ${STATE_LABELS[s.state]}` : 'repos'}`}>
-                <span className="p-dayname">{d.day}</span>
-                <span className="p-daydot" aria-hidden="true">{s ? STATE_MARKS[s.state] : '–'}</span>
-              </div>
-            );
-          })}
-        </div>
-        <div className="r-progress" role="progressbar" aria-label="Séances réalisées cette semaine" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done}><i style={{ width: `${String(Math.round((done / total) * 100))}%` }} /></div>
-        <span className="r-text-3 r-num">{done} / {total} séances réalisées</span>
-      </section>
-
-      <section aria-label="Disciplines" className="p-sports">
-        {(['strength', 'running', 'hyrox', 'crosstraining'] as const).map((sp) => {
-          const next = week.flatMap((d) => d.sessions.map((s) => ({ d, s }))).find(({ s }) => s.sport === sp && s.state !== 'done' && s.state !== 'cancelled');
-          return (
-            <button key={sp} type="button" className="r-card p-sport" data-sport={sp} onClick={() => onGo('plan')}>
-              <SportIcon sport={sp} label={false} />
-              <b>{SPORT_NAMES[sp]}</b>
-              <span className="r-text-3">{next ? `${next.d.day} · ${next.s.title}` : 'Rien de prévu'}</span>
-            </button>
-          );
-        })}
-      </section>
-
-      <section className="r-stack" aria-label="Objectifs en cours">
-        <h3 className="r-h3">Quêtes en cours</h3>
-        {quests.map((q) => <Quest key={q.id} q={q} />)}
-      </section>
-    </main>
-  );
-}
-
-function Quest({ q }: { q: (typeof quests)[number] }) {
-  return (
-    <article className="r-card r-quest" data-sport={q.sport} aria-label={`Quête : ${q.title}`}>
-      <SportIcon sport={q.sport} />
-      <div className="r-stack" style={{ gap: 6 }}>
-        <b>{q.title}</b>
-        <span className="r-text-3">{q.detail}</span>
-        <div className="r-milestones" aria-label={`Jalons atteints : ${String(q.reached)} sur ${String(q.milestones.length)}`}>
-          {q.milestones.map((m, i) => <i key={m} className={i < q.reached ? 'on' : ''} title={m} />)}
-        </div>
-        <span className="r-text-3 r-num">{q.milestones.map((m, i) => `${i < q.reached ? '✓ ' : ''}${m}`).join(' · ')}</span>
-      </div>
-    </article>
-  );
 }
 
 // ——— Planning
@@ -398,7 +309,7 @@ export function Prototype({ initial = 'home' }: { initial?: ProtoTab | 'workout'
   useEffect(() => { window.scrollTo?.(0, 0); }, [tab, inWorkout]);
   let body: ReactNode;
   if (inWorkout) body = <Workout onBack={() => setInWorkout(false)} />;
-  else if (tab === 'home') body = <Home onStart={() => setInWorkout(true)} onGo={setTab} />;
+  else if (tab === 'home') body = <Home onStart={() => setInWorkout(true)} onPlanning={() => setTab('plan')} />;
   else if (tab === 'plan') body = <Planning onOpen={() => setInWorkout(true)} />;
   else if (tab === 'progress') body = <Progress />;
   else if (tab === 'sessions') body = <Sessions onOpen={() => setInWorkout(true)} />;

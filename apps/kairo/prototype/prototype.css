@@ -77,3 +77,52 @@ button { cursor: pointer; }
 .p-badge-mark { font-size: 26px; color: var(--r-gold); }
 .p-badge.locked .p-badge-mark { color: var(--r-text-3); }
 .p-badge.locked { opacity: 0.8; }
+
+/* ===== V2-2B — Accueil et identité ===== */
+.p-home { min-height: 100dvh; padding-bottom: calc(96px + env(safe-area-inset-bottom)); background: var(--r-bg); }
+.p-hero { position: relative; height: 368px; overflow: hidden; isolation: isolate; }
+.p-scene { position: absolute; inset: 0; width: 100%; height: 100%; z-index: -1; display: block; }
+.p-hero-tag { position: absolute; top: 12px; right: 12px; background: rgba(7, 24, 39, 0.6); }
+.p-hero-brand { position: absolute; top: 18px; left: 14px; width: 62%; max-width: 250px; }
+.p-wordmark-svg { display: block; width: 100%; height: auto; overflow: visible; filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.45)); }
+.p-hero-text { position: absolute; left: 16px; right: 16px; bottom: 14px; }
+.p-hello { margin: 0; font-family: var(--r-font-display); font-weight: 800; font-size: 30px; line-height: 1; letter-spacing: 0.01em; text-shadow: 0 2px 12px rgba(7, 24, 39, 0.8); }
+.p-hero-text p { margin: 4px 0 0; color: var(--r-text-2); font-size: var(--r-fs-m); text-shadow: 0 1px 8px rgba(7, 24, 39, 0.9); }
+.p-home-body { padding: 0 16px; display: flex; flex-direction: column; gap: 16px; margin-top: -4px; }
+
+/* Séance du jour : bordure dégradée néon, bouton lecture rond (vrai bouton). */
+.p-today {
+  position: relative; display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto; align-items: center; gap: 4px 12px;
+  padding: 14px; border-radius: var(--r-radius-l); background: linear-gradient(var(--r-surface-1), var(--r-surface-1)) padding-box,
+  linear-gradient(120deg, var(--r-cyan), var(--r-magenta) 45%, var(--r-neon)) border-box; border: 2px solid transparent; box-shadow: 0 10px 34px rgba(220, 255, 53, 0.12);
+}
+.p-today-icon { grid-row: 1 / span 2; width: 48px; height: 48px; }
+.p-today-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; grid-row: 1 / span 2; }
+.p-today-title { margin: 0; font-family: var(--r-font-display); font-weight: 800; font-size: 26px; line-height: 1; text-transform: none; }
+.p-today-sport { position: absolute; top: -11px; right: 14px; padding: 2px 10px; border-radius: var(--r-radius-pill); font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--r-magenta); background: var(--r-bg); border: 1px solid var(--r-magenta); }
+.p-play { grid-row: 1 / span 2; width: 56px; height: 56px; border-radius: 50%; border: 0; background: var(--r-neon); color: var(--r-night); display: grid; place-items: center; box-shadow: var(--r-glow-neon); transition: transform var(--r-fast) var(--r-ease); }
+.p-play svg { width: 26px; height: 26px; margin-left: 3px; }
+.p-play:active { transform: scale(0.95); }
+.p-play:focus-visible { outline: none; box-shadow: var(--r-focus-ring); }
+
+/* 4 disciplines : tuiles carrées teintées. */
+.p-sport-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.p-sport-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 84px; padding: 8px 4px; border-radius: var(--r-radius-m); color: var(--r-text); font-size: 11px; font-weight: 600; background: color-mix(in srgb, var(--r-sport) 14%, var(--r-surface-1)); border: 1px solid color-mix(in srgb, var(--r-sport) 50%, transparent); }
+.p-sport-tile .r-sport-icon { background: transparent; border: 0; width: 34px; height: 34px; }
+.p-sport-tile .r-sport-icon svg { width: 28px; height: 28px; }
+.p-sport-tile span:last-child { white-space: nowrap; }
+
+/* Ma semaine. */
+.p-section-title { margin: 0; font-family: var(--r-font-display); font-weight: 700; font-size: 22px; }
+.p-link { min-height: 44px; font-size: var(--r-fs-s); color: var(--r-cyan); text-transform: none; letter-spacing: 0; font-family: var(--r-font-ui); font-weight: 600; }
+.p-week { display: flex; flex-direction: column; gap: 10px; }
+.p-week-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.p-wstat { display: flex; flex-direction: column; }
+.p-wstat b { font-family: var(--r-font-display); font-weight: 800; font-size: 24px; line-height: 1.05; }
+.p-wstat span { font-size: var(--r-fs-xs); color: var(--r-text-3); }
+.p-week-bars { display: grid; grid-template-columns: repeat(7, 1fr); gap: 10px; align-items: end; height: 72px; }
+.p-wbar { height: 100%; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 4px; }
+.p-wbar i { width: 100%; max-width: 22px; border-radius: 4px 4px 2px 2px; background: var(--r-sport, var(--r-surface-3)); }
+.p-wbar i.planned { background: transparent; border: 1.5px dashed var(--r-sport); }
+.p-wbar i.rest { background: var(--r-surface-3); }
+.p-wbar small { font-size: 10px; color: var(--r-text-3); }

@@ -58,3 +58,19 @@ export const progression = {
     { id: 'b3', title: '50 séances', detail: '38 / 50 réalisées', earned: false },
   ],
 } as const;
+
+/** V2-2B — résumé de semaine (démonstration) : séances réalisées / prévues, temps cumulé, régularité, minutes par jour. */
+export const weekSummary = {
+  sessions: { done: 3, planned: 5 },
+  durationLabel: '2 h 14',
+  regularity: 86,
+  days: [
+    { day: 'L', sport: 'running' as SportKey, minutes: 40 },
+    { day: 'M', sport: 'strength' as SportKey, minutes: 51 },
+    { day: 'M', sport: null, minutes: 0 },
+    { day: 'J', sport: 'hyrox' as SportKey, minutes: 0 },
+    { day: 'V', sport: 'running' as SportKey, minutes: 0 },
+    { day: 'S', sport: 'strength' as SportKey, minutes: 0 },
+    { day: 'D', sport: null, minutes: 0 },
+  ],
+} as const;
