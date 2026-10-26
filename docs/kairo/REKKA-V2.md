@@ -232,3 +232,80 @@ Les visuels définitifs doivent être **originaux** : aucune reprise d'Edgerunne
 - **Animations :** transitions courtes seulement (validation, onglets) ; `prefers-reduced-motion` est respecté.
 
 **Arrêt après V2-2 :** aucune intégration dans l'application, aucune reprise de RC5.4 et aucune publication tant que vous n'avez pas validé le prototype.
+
+---
+
+## V2-2B — Refonte graphique fidèle à la planche validée (prototype)
+
+- **Branche :** `claude/rekka-v2-2b`, issue de `claude/rekka-v2` (`0aec4ff`).
+- **Garanties :**
+  - aucun moteur, aucune donnée enregistrée, aucun contrat modifié ;
+  - RC5.3 et RC5.4 non intégrés ;
+  - BÊTA, production et leurs workflows inchangés ;
+  - ancien thème toujours actif par défaut dans l'application ;
+  - aucune image distante ni dépendance réseau.
+- **Références :** kit `REKKA_V2_Kit`, examiné en entier (planche, identité, ambiance, 5 maquettes, instructions). **Aucune image du kit n'est intégrée** : ce sont des recadrages de référence, pas des assets.
+
+### Sous-lots (commits séparés)
+
+| Commit | Sous-lot | Contenu |
+|---|---|---|
+| `8fed186` | V2-2B.1 Identité et Accueil | Scène vectorielle originale (provisoire). Logo typographique (provisoire). Accueil : grand univers illustré, logo, 烈火, « Nourris ta flamme. », accueil, séance du jour à bordure dégradée et **vrai bouton** lecture, 4 tuiles de discipline, « Ma semaine » (3 mesures, histogramme par jour) |
+| `03057d5` | V2-2B.2 Planning | En-tête paysage. Bascule Liste / Grille en segments. Semaine et sélecteur de jours (filtre). Cartes compactes : jour, pictogramme, discipline, titre, durée, **état écrit dans un badge**. **Légende supprimée.** Grille à une ligne par jour |
+| `4467b0e` | V2-2B.3 Séance | En-tête : chronomètre global et bouton pause. Bandeau de séance (visuel provisoire). Exercice numéroté, muscles. Phases titrées (montée en charge cyan, travail jaune-vert, back-off seulement s'il est présent). Séries numérotées, **répétitions et charges modifiables**. Barre de repos distincte. **La série en cours est toujours ramenée au-dessus de la barre de repos.** Barre de navigation sur « Séances ». Tout est **libellé « simulation »**. |
+| `853f164` | V2-2B.4 Progression et Profil | Progression : filtres discipline et période (4 semaines / 3 mois / 1 an), 3 tuiles de mesures, courbe, records, jalons, mention « non disponible ». Profil : paysage, avatar provisoire, **aucun niveau ni XP**, onglets Objectifs / Stats / Badges, objectifs par discipline, « Mes disciplines », accès Historique et Réglages. Écran Séances harmonisé. |
+
+### Inventaire des assets — sans ambiguïté
+
+| Asset | Statut | Détail |
+|---|---|---|
+| Polices Barlow Condensed et Inter | **Produit, final** | Lot V2-1. Locales, licence OFL. |
+| Pictogrammes de discipline (4) | **Produit, utilisable** | SVG originaux du lot V2-1, avec nom accessible |
+| Composants d'interface (boutons, puces, segments, cartes, badges d'état, séries, barres, graphique) | **Produit, final pour l'intégration** | CSS et React. Aucun texte ni élément d'interface dans une image. |
+| Logo REKKA | **PROVISOIRE** | `prototype/brand/Wordmark.tsx` : logo **typographique** (Barlow Condensed 800 inclinée, dégradé jaune électrique → néon, entailles anguleuses). Il évoque la planche **sans reproduire le logo au pinceau validé**. Nom accessible « … Logo provisoire ». |
+| Logo final, versions compacte et monochrome, 烈火 stylisé | **MANQUANT** | À recréer en vectoriel original de qualité. Destination prévue : `public/rekka-v2/brand/rekka-logo.svg`, `rekka-mark.svg`, `rekka-mono.svg`, `rekka-kanji.svg`. **Je ne fabrique pas un faux logo final à partir des pixels de la planche.** |
+| Icônes PWA (192, 512, masquable) | **MANQUANT** | Après validation du logo. L'icône BÊTA actuelle n'est pas touchée. |
+| Illustration d'accueil | **PROVISOIRE** | `prototype/art/Scene.tsx` : scène **vectorielle originale générée** (ciel violet-magenta, soleil, ville néon, pagode, reflets, végétation), étiquetée « Illustration provisoire ». **Ni personnage ni rendu peint** : elle n'égale pas l'illustration de la planche. |
+| Illustration d'accueil finale (`home-hero.webp`, sans texte ni interface) | **MANQUANT** | Paysage cyberpunk / fantasy avec personnage original, comme la planche ; 1080 × 720 et version mobile, ≤ 150 Ko |
+| Paysage de montagne (en-têtes Planning, Séances, Progression, Profil) | **PROVISOIRE** | Variante « montagne » de la même scène vectorielle |
+| Illustration de profil finale (`profile-hero.webp`) | **MANQUANT** | — |
+| Bandeau de séance (salle de sport, personnage) | **PROVISOIRE** | Motif CSS abstrait (néons de plafond), étiqueté « Visuel provisoire » |
+| Avatar | **PROVISOIRE** | Initiale sur pastille dégradée, « Avatar provisoire ». Un portrait ou un avatar choisi par l'utilisateur est à définir. |
+| Visuels « Mes disciplines » (personnages par sport) | **MANQUANT** | Remplacés par les pictogrammes, avec une mention écrite à l'écran |
+| Visuels de badges / jalons (`badges/*.svg`) | **MANQUANT** | Étoiles en texte (★ / ☆) |
+
+### Écarts entre le prototype et la planche validée
+
+| Écran | Conforme à la planche | Écart restant |
+|---|---|---|
+| **Accueil** | Composition (univers illustré en haut, logo, 烈火, slogan, accueil, séance du jour à bordure néon et bouton lecture, 4 tuiles colorées, « Ma semaine » avec 3 mesures et barres par jour), palette, hiérarchie | **Illustration** : scène vectorielle sans personnage, moins riche que la peinture. **Logo** : typographique, pas au pinceau. **« Nourris ta flamme. »** en Inter inclinée, sans écriture manuscrite. Pas de pictogrammes devant les 3 mesures. |
+| **Planning** | Segments Liste / Grille, semaine, sélecteur de jours (aujourd'hui en néon), cartes compactes avec badge d'état coloré et écrit, jour coloré par discipline, carte du jour en néon | En-tête paysage provisoire. « Mobilité » de la maquette absente (non prévue par le moteur). Repos sans sous-titre « Récupération active ». |
+| **Séance** | Chronomètre global et pause en en-tête, bandeau, exercice numéroté en néon, muscles en puces, phases cyan / jaune-vert, séries numérotées, série en cours encadrée, barre de repos (icône, temps, gros bouton pause, +10 s), navigation « Séances » | **Bandeau** sans illustration de salle ni personnage (visuel provisoire). Barre de repos plus haute que sur la maquette ; elle ne masque jamais la série en cours. Mention « simulation » ajoutée (exigence du lot). |
+| **Progression** | Filtres discipline et période, 3 tuiles avec indicateurs, courbe jaune-vert avec aire, records en or, « Voir tous » | En-tête paysage provisoire. Pictogramme « tractions » de la maquette remplacé par la Course (données de démonstration). Jalons ajoutés sous les records (RPG modéré). |
+| **Profil** | Paysage, avatar cerclé de néon, nom, roue des réglages, onglets Objectifs / Stats / Badges, objectifs avec liseré de couleur de discipline, « Mes disciplines » avec barres | **Pas de « Niveau 28 » ni de barre d'XP**, volontairement : la valeur est illustrative. Remplacés par « Membre depuis… » et « 4 disciplines actives ». Avatar et visuels de disciplines provisoires. |
+| **Global** | Palette exacte, typographies, néon, densité, navigation à 5 onglets, contrastes | Bandeau magenta « Prototype · données de démonstration » en haut de chaque écran : volontaire, à retirer à l'intégration |
+
+### Vérifications
+
+| Vérification | Résultat |
+|---|---|
+| E2E du prototype, 360 et 390 px | **OK**, dont :<br>• bandeau sur les 5 écrans ;<br>• polices locales chargées ;<br>• logo et illustration provisoires identifiés ;<br>• action principale visible sans défilement ;<br>• 5 onglets ;<br>• Planning liste et grille, états écrits ;<br>• **la série en cours n'est pas masquée par la barre de repos**, y compris après changement de série ;<br>• état indépendant du type ;<br>• repos distinct du chronomètre global ;<br>• **Profil sans niveau ni XP** ;<br>• aucun défilement horizontal ;<br>• aucune requête externe, stockage vide, aucune erreur |
+| Tests DOM du prototype | 5 / 5 :<br>• isolation ;<br>• Accueil ;<br>• Planning ;<br>• Séance : saisie modifiable, décocher une montée la remet en cours ;<br>• Progression (période) et Profil (pas de niveau, avatar provisoire, onglets) |
+| Fichier autonome (`proto:single`, 468 Ko) ouvert en `file://` | aucune erreur, aucune requête réseau, polices chargées |
+| Application principale (thème par défaut) : build et E2E principal | ✓ 303 vérifications |
+| `pnpm check` (types, lint, suite complète) | ✓ **3 020 tests réussis**, 0 échec |
+
+### Captures (`docs/kairo/captures/v2-2b/`, 360 et 390 px)
+
+| Fichier | Écran |
+|---|---|
+| `v2-{360,390}-01-accueil.png` | Accueil |
+| `v2-{360,390}-02-planning-liste.png` | Planning, liste |
+| `v2-{360,390}-03-planning-grille.png` | Planning, grille |
+| `v2-{360,390}-04-seance.png` | Séance, série en cours au-dessus de la barre de repos |
+| `v2-{360,390}-05-seance-pause-travail.png` | Séance en pause, séries de travail |
+| `v2-{360,390}-06-progression.png` | Progression |
+| `v2-{360,390}-07-seances.png` | Séances (écran d'attente harmonisé) |
+| `v2-{360,390}-08-profil.png` | Profil |
+
+**Arrêt :** aucune publication, aucune intégration dans l'application, RC5.4 non repris. J'attends votre retour visuel.
