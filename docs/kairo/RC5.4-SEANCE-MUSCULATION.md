@@ -83,7 +83,7 @@ Le rapport du § 3 permettra de vérifier ces paramètres sur des séances réel
 | Tests app-core RC5.4 (`tests/rc54`) | 6 / 6 : horodatage, pause et reprise, absence de double comptage, relecture, fin figée, anciennes séances, historique, rapport |
 | Tests d'interface RC5.4 (`rc54-phases-dom`, `rc54-clock-dom`) | 5 / 5 : phases, états, prescription intacte, montées hors exposition, chronomètre (redémarrage, navigation, pause, fin), historique, rapport |
 | Tests d'interface existants | 37 fichiers verts (deux fixtures d'interface régénérées : les séances terminées portent désormais leurs durées) |
-| `pnpm check` | voir le bilan de livraison |
+| `pnpm check` | Types et lint verts. Tests : 3 142 réussis, **1 échec hors RC5.4** : `rc53-r2` (« principaux : … charges au-dessus du départ »), qui échoue déjà sur le commit RC5.3 R3 en cours `7d6307f`, avant RC5.4. Il relève du lot R3 non terminé (les hausses des principaux passent désormais par la réévaluation de début de cycle et non plus par `ADVANCED`). Instantané de taille et fixture C-9 régénérés (+1 Kio sur 52 semaines, dû au lot R3). |
 | Build de production | OK |
 | E2E principal (`scripts/e2e.mjs`) | OK, 303 vérifications |
 | E2E RC5.4 (`scripts/e2e-rc54.mjs`), 360 et 390 px | OK, 38 vérifications (§ 4) |

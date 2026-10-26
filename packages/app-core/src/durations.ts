@@ -34,11 +34,13 @@ export interface DurationReport {
   readonly summary: { readonly sessions: number; readonly meanRatio: number | null; readonly medianDeltaS: number | null; readonly onTarget: number };
 }
 
+// technical-constant: moitié d'une série (médiane)
+const HALF = 2;
 const median = (xs: readonly number[]): number | null => {
   if (xs.length === 0) return null;
   const s = [...xs].sort((a, b) => a - b);
-  const m = Math.floor(s.length / 2);
-  return s.length % 2 === 1 ? (s[m] ?? null) : ((s[m - 1] ?? 0) + (s[m] ?? 0)) / 2;
+  const m = Math.floor(s.length / HALF);
+  return s.length % HALF === 1 ? (s[m] ?? null) : ((s[m - 1] ?? 0) + (s[m] ?? 0)) / HALF;
 };
 
 export function strengthDurationReport(state: AppState): DurationReport {
