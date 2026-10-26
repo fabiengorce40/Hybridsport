@@ -44,7 +44,7 @@ button { cursor: pointer; }
 .p-grid-cells { display: flex; flex-direction: column; gap: 6px; padding: 6px 8px; justify-content: center; min-width: 0; }
 .p-grid-cell { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .p-grid-cell .r-sport-icon { width: 30px; height: 30px; border-radius: 9px; }
-.p-grid-cell .r-sport-icon svg { width: 17px; height: 17px; }
+.p-grid-cell .r-sport-icon img { width: 17px; height: 17px; }
 .p-grid-text { display: flex; flex-direction: column; min-width: 0; }
 .p-grid-text b { font-size: var(--r-fs-s); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .p-grid-text small { font-size: 11px; color: var(--r-text-3); }
@@ -109,7 +109,7 @@ button { cursor: pointer; }
 .p-sport-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .p-sport-tile { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 84px; padding: 8px 4px; border-radius: var(--r-radius-m); color: var(--r-text); font-size: 11px; font-weight: 600; background: color-mix(in srgb, var(--r-sport) 14%, var(--r-surface-1)); border: 1px solid color-mix(in srgb, var(--r-sport) 50%, transparent); }
 .p-sport-tile .r-sport-icon { background: transparent; border: 0; width: 34px; height: 34px; }
-.p-sport-tile .r-sport-icon svg { width: 28px; height: 28px; }
+.p-sport-tile .r-sport-icon img { width: 28px; height: 28px; }
 .p-sport-tile span:last-child { white-space: nowrap; }
 
 /* Ma semaine. */
@@ -274,7 +274,7 @@ button { cursor: pointer; }
 .p-disc-tile { display: flex; flex-direction: column; align-items: center; gap: 6px; text-align: center; }
 .p-disc-art { width: 100%; aspect-ratio: 3 / 4; display: grid; place-items: center; border-radius: var(--r-radius-m); background: linear-gradient(160deg, color-mix(in srgb, var(--r-sport) 28%, var(--r-surface-2)), var(--r-surface-1)); border: 1px solid color-mix(in srgb, var(--r-sport) 55%, transparent); }
 .p-disc-art .r-sport-icon { width: 44px; height: 44px; background: transparent; border: 0; }
-.p-disc-art .r-sport-icon svg { width: 34px; height: 34px; }
+.p-disc-art .r-sport-icon img { width: 34px; height: 34px; }
 .p-disc-tile b { font-size: 11px; white-space: nowrap; }
 .p-disc-bar { width: 100%; height: 5px; border-radius: 3px; background: var(--r-surface-3); overflow: hidden; }
 .p-disc-bar i { display: block; height: 100%; background: var(--r-sport); }
