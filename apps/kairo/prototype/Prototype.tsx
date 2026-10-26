@@ -4,11 +4,12 @@
  * DÉMONSTRATION uniquement (demo-data.ts) : aucune lecture ni écriture de l'état de l'application, aucun moteur appelé.
  * L'état local (séries cochées, chronomètre) disparaît au rechargement : c'est une maquette, pas une fonctionnalité.
  */
-import { useEffect, useState } from 'react';
+import { useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { SportIcon, SPORT_NAMES } from '../src/design/SportIcon.js';
 import { DEMO_NOTICE, week } from './demo-data.js';
-import { Scene } from './art/Scene.js';
+import { Ambience } from './art/Ambience.js';
+import { MaskIcon, NAV_ICONS } from '../src/design/assets.js';
 import { Home } from './screens/Home.js';
 import { Planning, StateBadge } from './screens/Planning.js';
 import { Workout } from './screens/Workout.js';
@@ -17,25 +18,39 @@ import { Profile } from './screens/Profile.js';
 
 export type ProtoTab = 'home' | 'plan' | 'sessions' | 'progress' | 'profile';
 const TABS: readonly { id: ProtoTab; label: string; icon: string }[] = [
-  { id: 'home', label: 'Accueil', icon: 'M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z' },
-  { id: 'plan', label: 'Planning', icon: 'M3 5h18v16H3zM3 10h18M8 3v4M16 3v4' },
-  { id: 'sessions', label: 'Séances', icon: 'M6 4h12v16H6zM9 8h6M9 12h6M9 16h4' },
-  { id: 'progress', label: 'Progression', icon: 'M4 19V9M10 19V5M16 19v-7M22 19H2' },
-  { id: 'profile', label: 'Profil', icon: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6' },
+  { id: 'home', label: 'Accueil', icon: NAV_ICONS.accueil },
+  { id: 'plan', label: 'Planning', icon: NAV_ICONS.planning },
+  { id: 'sessions', label: 'Séances', icon: NAV_ICONS.seances },
+  { id: 'progress', label: 'Progression', icon: NAV_ICONS.progression },
+  { id: 'profile', label: 'Profil', icon: NAV_ICONS.profil },
 ];
 
 
+/** Bandeau toujours visible ; sa hauteur (1 ou 2 lignes selon la largeur) est publiée en `--p-demo-h` pour que les
+ *  en-têtes collants (Séance) se placent juste en dessous au lieu d'être masqués. */
 function DemoBanner() {
-  return <div className="r-demo-banner" role="note" data-demo-banner>{DEMO_NOTICE}</div>;
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const app = el?.parentElement;
+    if (!el || !app) return undefined;
+    const sync = () => { app.style.setProperty('--p-demo-h', `${String(el.offsetHeight)}px`); };
+    sync();
+    if (typeof ResizeObserver === 'undefined') return undefined;
+    const ro = new ResizeObserver(sync);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  return <div ref={ref} className="r-demo-banner" role="note" data-demo-banner>{DEMO_NOTICE}</div>;
 }
 
-/** Logo REKKA provisoire (texte) : le logo final est une ressource graphique à fournir. */
+/** Barre d'onglets : pictogrammes du kit en masque `currentColor` (la couleur suit l'état actif). */
 function TabBar({ tab, onChange }: { tab: ProtoTab; onChange: (t: ProtoTab) => void }) {
   return (
     <nav className="r-tabbar" aria-label="Navigation principale">
       {TABS.map((t) => (
         <button key={t.id} type="button" className="r-tab" aria-current={t.id === tab ? 'page' : undefined} onClick={() => onChange(t.id)}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={t.icon} /></svg>
+          <MaskIcon src={t.icon} className="r-tab-icon" />
           {t.label}
         </button>
       ))}
@@ -51,7 +66,7 @@ function Sessions({ onOpen }: { onOpen: () => void }) {
   return (
     <main className="p-page" aria-label="Séances">
       <header className="p-page-head">
-        <Scene variant="mountain" label="Paysage de montagne (illustration provisoire)" />
+        <Ambience art="bilan" />
         <h1 className="p-page-title">Séances</h1>
       </header>
       <div className="p-page-body">
@@ -74,7 +89,8 @@ function Sessions({ onOpen }: { onOpen: () => void }) {
 export function Prototype({ initial = 'home' }: { initial?: ProtoTab | 'workout' }) {
   const [tab, setTab] = useState<ProtoTab>(initial === 'workout' ? 'home' : initial);
   const [inWorkout, setInWorkout] = useState(initial === 'workout');
-  useEffect(() => { window.scrollTo?.(0, 0); }, [tab, inWorkout]);
+  // Retour en haut à chaque écran, AVANT les effets des écrans (la Séance amène ensuite la série en cours en vue).
+  useLayoutEffect(() => { window.scrollTo?.(0, 0); }, [tab, inWorkout]);
   let body: ReactNode;
   if (inWorkout) body = <Workout onBack={() => setInWorkout(false)} />;
   else if (tab === 'home') body = <Home onStart={() => setInWorkout(true)} onPlanning={() => setTab('plan')} />;

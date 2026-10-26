@@ -3,6 +3,7 @@
  * d'un état utilisateur ; elles ne sont jamais enregistrées. Chaque écran du prototype l'indique (bandeau « Démonstration »).
  */
 import type { SportKey } from '../src/design/SportIcon.js';
+import type { BadgeKey } from '../src/design/assets.js';
 
 export const DEMO_NOTICE = 'Prototype · données de démonstration · non connecté au moteur';
 
@@ -53,9 +54,9 @@ export const progression = {
   // Séances réalisées / prévues par semaine (8 dernières semaines).
   regularity: [[3, 4], [4, 4], [4, 4], [2, 4], [4, 4], [3, 4], [4, 4], [1, 4]] as const,
   badges: [
-    { id: 'b1', title: 'Quatre semaines régulières', detail: 'Toutes les séances prévues réalisées 4 semaines de suite', earned: true },
-    { id: 'b2', title: 'Premier record', detail: 'Une charge confirmée au-delà de la précédente', earned: true },
-    { id: 'b3', title: '50 séances', detail: '38 / 50 réalisées', earned: false },
+    { id: 'b1', title: 'Quatre semaines régulières', detail: 'Toutes les séances prévues réalisées 4 semaines de suite', earned: true, badge: 'regularite' as BadgeKey },
+    { id: 'b2', title: 'Premier record', detail: 'Une charge confirmée au-delà de la précédente', earned: true, badge: 'record' as BadgeKey },
+    { id: 'b3', title: '50 séances', detail: '38 / 50 réalisées', earned: false, badge: 'objectif' as BadgeKey },
   ],
 } as const;
 

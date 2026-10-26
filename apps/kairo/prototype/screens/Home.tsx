@@ -1,11 +1,11 @@
 /**
- * REKKA V2 — Accueil du prototype (lot V2-2B) : univers illustré (scène vectorielle provisoire) séparé de
- * l'interface ; logo provisoire, accueil, séance du jour actionnable, accès aux 4 disciplines, résumé de semaine.
- * Tous les éléments d'interface sont de vrais composants, jamais incrustés dans l'image. Données de démonstration.
+ * REKKA V2 — Accueil du prototype (lot V2-2B) : bandeau d'ambiance (illustration WebP du kit, à valider) séparé de
+ * l'interface ; logo du kit, 烈火 et devise en texte HTML, séance du jour actionnable, accès aux 4 disciplines,
+ * résumé de semaine. Tous les éléments d'interface sont de vrais composants, jamais incrustés dans l'image.
  */
 import { SportIcon, SPORT_NAMES } from '../../src/design/SportIcon.js';
-import { Scene } from '../art/Scene.js';
-import { Wordmark } from '../brand/Wordmark.js';
+import { DECORATIONS, Logo } from '../../src/design/assets.js';
+import { Ambience } from '../art/Ambience.js';
 import { athlete, todayLabel, week, weekSummary, workout } from '../demo-data.js';
 
 const SPORTS = ['strength', 'running', 'hyrox', 'crosstraining'] as const;
@@ -15,9 +15,12 @@ export function Home({ onStart, onPlanning }: { onStart: () => void; onPlanning:
   return (
     <main className="p-home" aria-label="Accueil">
       <section className="p-hero" aria-label="Bannière REKKA">
-        <Scene variant="city" label="Paysage cyberpunk et fantasy : ville néon au coucher du soleil (illustration provisoire)" />
-        <span className="r-badge demo p-hero-tag" data-placeholder-tag>Illustration provisoire</span>
-        <div className="p-hero-brand"><Wordmark /></div>
+        <Ambience art="accueil" eager />
+        <span className="r-badge demo p-hero-tag" data-placeholder-tag>Illustration à valider</span>
+        <div className="p-hero-brand" data-asset="logo">
+          <Logo className="p-hero-logo" />
+          <p className="p-hero-motto"><span className="p-kanji" lang="ja">烈火</span><span>Nourris ta flamme.</span></p>
+        </div>
         <div className="p-hero-text">
           <h1 className="p-hello">Salut {athlete.name},</h1>
           <p>Une nouvelle journée pour nourrir ta flamme.</p>
@@ -26,9 +29,8 @@ export function Home({ onStart, onPlanning }: { onStart: () => void; onPlanning:
 
       <div className="p-home-body">
         <section className="p-today" aria-label="Séance du jour" data-sport="strength">
-          <span className="r-sport-icon p-today-icon" data-sport="strength" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9v6M7 7v10M17 7v10M20 9v6M7 12h10" /></svg>
-          </span>
+          <img className="p-deco-corner" src={DECORATIONS.corner} alt="" aria-hidden="true" />
+          <SportIcon sport="strength" label={false} className="p-today-icon" />
           <div className="p-today-text">
             <span className="r-eyebrow">Séance du jour · {todayLabel}</span>
             <h2 className="p-today-title">{workout.title}</h2>
@@ -52,6 +54,7 @@ export function Home({ onStart, onPlanning }: { onStart: () => void; onPlanning:
           })}
         </nav>
 
+        <img className="p-divider" src={DECORATIONS.divider} alt="" aria-hidden="true" />
         <section className="p-week" aria-label="Ma semaine">
           <div className="r-row between"><h2 className="p-section-title">Ma semaine</h2><button type="button" className="r-btn ghost p-link" onClick={onPlanning}>Planning</button></div>
           <div className="p-week-stats">

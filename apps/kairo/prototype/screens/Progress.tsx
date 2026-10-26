@@ -6,7 +6,8 @@
 import { useState } from 'react';
 import { SportIcon, SPORT_NAMES } from '../../src/design/SportIcon.js';
 import type { SportKey } from '../../src/design/SportIcon.js';
-import { Scene } from '../art/Scene.js';
+import { BADGES, MaskIcon, UI_ICONS } from '../../src/design/assets.js';
+import { Ambience } from '../art/Ambience.js';
 import { progression, squatSeries } from '../demo-data.js';
 import type { Period } from '../demo-data.js';
 
@@ -40,11 +41,11 @@ export function Progress() {
   return (
     <main className="p-page" aria-label="Progression">
       <header className="p-page-head">
-        <Scene variant="mountain" label="Paysage de montagne (illustration provisoire)" />
+        <Ambience art="objectifs" />
         <h1 className="p-page-title">Progression</h1>
       </header>
       <div className="p-page-body">
-        <div className="p-chips" role="group" aria-label="Discipline">
+        <div className="p-chips" role="group" aria-label="Discipline" data-scroll-x>
           {(['strength', 'running', 'hyrox', 'crosstraining'] as const).map((sp) => <button key={sp} type="button" className="r-chip" aria-pressed={sport === sp} onClick={() => setSport(sp)}>{SPORT_NAMES[sp]}</button>)}
         </div>
         <div className="p-segment three" role="group" aria-label="Période">
@@ -70,7 +71,7 @@ export function Progress() {
           </section>
         )}
         <section className="p-card" aria-label="Records confirmés">
-          <div className="r-row between"><h2 className="p-card-title">Records confirmés</h2><button type="button" className="r-btn ghost p-link" aria-label="Voir tous les records (simulation)">Voir tous</button></div>
+          <div className="r-row between"><h2 className="p-card-title"><MaskIcon src={UI_ICONS.record} className="p-title-icon" />Records confirmés</h2><button type="button" className="r-btn ghost p-link" aria-label="Voir tous les records (simulation)">Voir tous</button></div>
           {progression.records.map((r) => (
             <div key={r.label} className="p-record2" data-sport={r.sport}>
               <SportIcon sport={r.sport} />
@@ -84,7 +85,7 @@ export function Progress() {
           <h2 className="p-card-title">Jalons</h2>
           {progression.badges.map((b) => (
             <article key={b.id} className={`p-badge2 ${b.earned ? 'earned' : 'locked'}`} aria-label={`${b.title} : ${b.earned ? 'obtenu' : 'à venir'}`}>
-              <span className="p-badge2-mark" aria-hidden="true">{b.earned ? '★' : '☆'}</span>
+              <img className="p-badge-img" src={BADGES[b.badge]} alt="" aria-hidden="true" />
               <span className="p-record2-text"><b>{b.title}</b><span>{b.detail}</span></span>
               <span className={`r-badge ${b.earned ? 'success' : ''}`}>{b.earned ? 'Obtenu' : 'À venir'}</span>
             </article>

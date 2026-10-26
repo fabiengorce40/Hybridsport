@@ -5,7 +5,7 @@
  */
 import { useState } from 'react';
 import { SportIcon, SPORT_NAMES } from '../../src/design/SportIcon.js';
-import { Scene } from '../art/Scene.js';
+import { Ambience } from '../art/Ambience.js';
 import { STATE_LABELS, STATE_MARKS, week } from '../demo-data.js';
 import type { DemoSession } from '../demo-data.js';
 
@@ -25,7 +25,7 @@ export function Planning({ onOpen }: { onOpen: () => void }) {
   return (
     <main className="p-page" aria-label="Planning">
       <header className="p-page-head">
-        <Scene variant="mountain" label="Paysage de montagne (illustration provisoire)" />
+        <Ambience art="objectifs" />
         <h1 className="p-page-title">Planning</h1>
       </header>
       <div className="p-page-body">

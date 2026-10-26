@@ -6,6 +6,8 @@
  * SIMULATION : rien n'est connecté au moteur ni enregistré ; chronomètres et saisies sont locaux à la page.
  */
 import { useEffect, useState } from 'react';
+import { MaskIcon, UI_ICONS } from '../../src/design/assets.js';
+import { Ambience } from '../art/Ambience.js';
 import { todayLabel, workout } from '../demo-data.js';
 import type { DemoExercise, DemoSet } from '../demo-data.js';
 
@@ -38,7 +40,18 @@ export function Workout({ onBack }: { onBack: () => void }) {
   const current = all.find((k) => !done.has(k));
   const toggle = (k: string) => { setDone((d) => { const n = new Set(d); if (n.has(k)) n.delete(k); else { n.add(k); setRest(90); } return n; }); };
   // La série EN COURS est toujours amenée au-dessus de la barre de repos (marge de défilement réservée en CSS).
-  useEffect(() => { document.querySelector('.p-set2[aria-current="step"]')?.scrollIntoView?.({ block: 'nearest' }); }, [current]);
+  // Calcul explicite (les marges `scroll-margin-*` du CSS réservent l'en-tête et la barre de repos) : `scrollIntoView`
+  // en mode `nearest` ne les respecte pas de façon fiable selon le conteneur.
+  useEffect(() => {
+    const el = document.querySelector<HTMLElement>('.p-set2[aria-current="step"]');
+    if (!el || typeof window.scrollBy !== 'function') return;
+    const r = el.getBoundingClientRect();
+    const cs = getComputedStyle(el);
+    const below = r.bottom + parseFloat(cs.scrollMarginBottom || '0') - window.innerHeight;
+    const above = parseFloat(cs.scrollMarginTop || '0') - r.top;
+    if (below > 0) window.scrollBy({ top: below });
+    else if (above > 0) window.scrollBy({ top: -above });
+  }, [current]);
   const exDone = workout.exercises.filter((e) => e.sets.every((_, i) => done.has(`${e.id}.${String(i)}`))).length;
   return (
     <main aria-label="Séance Musculation" className="p-workout2">
@@ -47,15 +60,16 @@ export function Workout({ onBack }: { onBack: () => void }) {
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7M8 12h12" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </button>
         <div className="p-wk-clock" data-proto-clock aria-label={`Chronomètre de séance (simulation) ${clock(elapsed)}${paused ? ', séance en pause' : ''}`}>
-          <span>{paused ? 'En pause' : 'Séance'}</span><b className="r-num">{clock(elapsed)}</b><span>· ≈ {workout.plannedMin} min</span>
+          <MaskIcon src={UI_ICONS.chrono} className="p-wk-clock-icon" /><span>{paused ? 'En pause' : 'Séance'}</span><b className="r-num">{clock(elapsed)}</b><span>· ≈ {workout.plannedMin} min</span>
         </div>
         <button type="button" className="p-icon-btn round" aria-pressed={paused} onClick={() => setPaused((p) => !p)} aria-label={paused ? 'Reprendre la séance (simulation)' : 'Mettre la séance en pause (simulation)'}>
-          {paused ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor" /></svg> : <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5h3v14H8zM13 5h3v14h-3z" fill="currentColor" /></svg>}
+          {paused ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor" /></svg> : <MaskIcon src={UI_ICONS.pause} />}
         </button>
       </header>
 
       <section className="p-wk-banner" aria-label="Séance">
-        <div className="p-wk-eyebrow-row"><span className="p-wk-eyebrow">Musculation · {todayLabel}</span><span className="r-badge demo p-wk-tag" data-placeholder-tag>Visuel provisoire</span></div>
+        <Ambience art="bilan" />
+        <div className="p-wk-eyebrow-row"><span className="p-wk-eyebrow">Musculation · {todayLabel}</span><span className="r-badge demo p-wk-tag" data-placeholder-tag>Illustration à valider</span></div>
         <h1 className="p-wk-title">{workout.title}</h1>
         <span className="r-text-2 r-num">{workout.exercises.length} exercices · {all.length} séries · {done.size} validées</span>
         <div className="p-wk-progress"><div className="r-progress" role="progressbar" aria-label="Séries validées" aria-valuemin={0} aria-valuemax={all.length} aria-valuenow={done.size}><i style={{ width: `${String(Math.round((done.size / all.length) * 100))}%` }} /></div><span className="r-num">{exDone} / {workout.exercises.length}</span></div>
@@ -69,10 +83,10 @@ export function Workout({ onBack }: { onBack: () => void }) {
       </div>
 
       <div className="p-restbar" role="timer" aria-label={`Repos (simulation) ${clock(rest)}${restPaused ? ', en pause' : ''}`}>
-        <svg className="p-restbar-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M12 9v4l2.5 2M9 2h6" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+        <MaskIcon src={UI_ICONS.chrono} className="p-restbar-icon" />
         <span className="p-restbar-time"><small>Repos</small><b className="r-num">{two(Math.floor(rest / 60))}:{two(rest % 60)}</b></span>
         <button type="button" className="p-restbar-main" aria-label={restPaused ? 'Reprendre le repos (simulation)' : 'Mettre le repos en pause (simulation)'} onClick={() => setRestPaused((p) => !p)}>
-          {restPaused ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor" /></svg> : <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5h3v14H8zM13 5h3v14h-3z" fill="currentColor" /></svg>}
+          {restPaused ? <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor" /></svg> : <MaskIcon src={UI_ICONS.pause} />}
         </button>
         <button type="button" className="p-restbar-plus" onClick={() => setRest((r) => r + 10)} aria-label="Ajouter 10 secondes au repos (simulation)">+10 s</button>
       </div>
@@ -106,7 +120,7 @@ function ExerciseCard({ e, n, done, current, values, onToggle, onValue }: {
                 <span className="p-set-idx" aria-label={`Série ${String(i + 1)}${state === 'current' ? ', en cours' : state === 'done' ? ', validée' : ''}`}>{i + 1}</span>
                 <label className="p-set-field"><input inputMode="numeric" aria-label={`Répétitions, série ${String(i + 1)} (simulation)`} value={v?.reps ?? String(s.reps)} onChange={(ev) => onValue(k, { reps: ev.target.value.replace(/[^0-9]/g, '') })} disabled={state === 'done'} /><small>reps</small></label>
                 <label className="p-set-field"><input inputMode="decimal" aria-label={`Charge en kg, série ${String(i + 1)} (simulation)`} value={v?.kg ?? String(s.kg).replace('.', ',')} onChange={(ev) => onValue(k, { kg: ev.target.value.replace(/[^0-9,.]/g, '') })} disabled={state === 'done'} /><small>kg</small></label>
-                <button type="button" className="r-set-check" aria-pressed={state === 'done'} aria-label={`${state === 'done' ? 'Décocher' : 'Cocher'} la série ${String(i + 1)}, ${e.name} (simulation)`} onClick={() => onToggle(k)}>✓</button>
+                <button type="button" className="r-set-check" aria-pressed={state === 'done'} aria-label={`${state === 'done' ? 'Décocher' : 'Cocher'} la série ${String(i + 1)}, ${e.name} (simulation)`} onClick={() => onToggle(k)}><MaskIcon src={UI_ICONS.check} /></button>
               </div>
             );
           })}

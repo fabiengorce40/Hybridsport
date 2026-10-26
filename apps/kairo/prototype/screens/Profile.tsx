@@ -1,11 +1,12 @@
 /**
- * REKKA V2 — Profil du prototype (lot V2-2B) : en-tête paysage (provisoire), avatar PROVISOIRE, objectifs par
+ * REKKA V2 — Profil du prototype (lot V2-2B) : en-tête d'ambiance (illustration du kit, à valider), avatar PROVISOIRE, objectifs par
  * discipline, disciplines actives, accès à l'historique et aux réglages (écrans existants). AUCUN niveau ni XP : le
  * « niveau 28 » de la maquette est purement illustratif et n'est pas une spécification. Données de démonstration.
  */
 import { useState } from 'react';
 import { SportIcon, SPORT_NAMES } from '../../src/design/SportIcon.js';
-import { Scene } from '../art/Scene.js';
+import { BADGES } from '../../src/design/assets.js';
+import { Ambience } from '../art/Ambience.js';
 import { athlete, profileDemo, progression } from '../demo-data.js';
 
 type Tab = 'goals' | 'stats' | 'badges';
@@ -15,7 +16,7 @@ export function Profile() {
   return (
     <main className="p-page" aria-label="Profil">
       <header className="p-profile-head">
-        <Scene variant="mountain" label="Paysage de montagne (illustration provisoire)" />
+        <Ambience art="objectifs" />
         <div className="r-row between p-profile-top">
           <h1 className="p-page-title">Profil</h1>
           <button type="button" className="p-icon-btn round" aria-label="Réglages (écran existant)">
@@ -54,7 +55,7 @@ export function Profile() {
         )}
         {tab === 'badges' && (
           <section className="p-goals" aria-label="Badges">
-            {progression.badges.map((b) => <div key={b.id} className={`p-goal ${b.earned ? '' : 'locked'}`}><span className="p-badge2-mark" aria-hidden="true">{b.earned ? '★' : '☆'}</span><span className="p-record2-text"><b>{b.title}</b><span>{b.earned ? 'Obtenu' : 'À venir'} · {b.detail}</span></span></div>)}
+            {progression.badges.map((b) => <div key={b.id} className={`p-goal ${b.earned ? '' : 'locked'}`}><img className="p-badge-img" src={BADGES[b.badge]} alt="" aria-hidden="true" /><span className="p-record2-text"><b>{b.title}</b><span>{b.earned ? 'Obtenu' : 'À venir'} · {b.detail}</span></span></div>)}
           </section>
         )}
         <section aria-label="Mes disciplines">
