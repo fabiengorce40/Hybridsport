@@ -32,8 +32,10 @@ export interface StrengthWorkoutProps {
 }
 
 /** Ligne de série : SÉRIE 1 · REPS · KG · ○ — la valeur réellement saisie reste toujours lisible. */
-export function SetLine({ set, label, saved, editable, onRecord }: {
+export function SetLine({ set, label, saved, editable, current = false, onRecord }: {
   set: SetPrescription; label: string; saved: SetLog | undefined; editable: boolean;
+  /** RC5.4 — série « en cours » (prochaine à faire de l'exercice courant) : état indépendant du TYPE de série. */
+  current?: boolean;
   onRecord: (x: { done: boolean; reps?: number; loadKg?: number }) => void;
 }) {
   const prescribedKg = set.intensity?.mode === 'load' ? set.intensity.kg : set.intensity?.mode === 'percent_of_reference' ? set.intensity.kgRounded : undefined;
@@ -48,10 +50,11 @@ export function SetLine({ set, label, saved, editable, onRecord }: {
     ? { done: false, ...(repsN !== undefined ? { reps: repsN } : {}), ...(kgN !== undefined ? { loadKg: kgN } : {}) }
     : { done: true, reps: repsN ?? 0, ...(kgN !== undefined ? { loadKg: kgN } : {}) });
   const warm = set.kind === 'rampup';
-  const target = [`obj. ${repsTarget(set.reps)}`, set.optional ? 'facultative' : '', set.kind !== 'working' && !warm ? setKindLabel(set.kind) : ''].filter(Boolean).join(' · ');
+  const target = [`obj. ${repsTarget(set.reps)}`, set.optional ? 'facultative' : '', set.kind !== 'working' && !warm && set.kind !== 'backoff' ? setKindLabel(set.kind) : ''].filter(Boolean).join(' · ');
+  const state = done ? 'done' : current && editable ? 'current' : 'todo';
   return (
-    <div className={`k-set ${warm ? 'warm' : ''} ${done ? 'done' : ''}`}>
-      <div className="k-set-label"><b>{label}</b><span>{target}</span></div>
+    <div className={`k-set ${warm ? 'warm' : ''} ${done ? 'done' : ''} ${state === 'current' ? 'now' : ''}`} data-set-state={state} data-set-kind={set.kind} {...(state === 'current' ? { 'aria-current': 'step' as const } : {})}>
+      <div className="k-set-label"><b>{state === 'current' ? <span className="k-set-now" aria-hidden="true">▸ </span> : null}{label}</b><span>{state === 'current' ? 'en cours · ' : ''}{target}</span></div>
       <label className="k-field">
         <input aria-label="Répétitions réalisées" inputMode="numeric" placeholder={typeof set.reps === 'number' ? '—' : repsTarget(set.reps)} value={reps} disabled={!editable || done} onChange={(e) => setReps(e.target.value.replace(/[^0-9]/g, ''))} />
         <small>REPS</small>
@@ -66,10 +69,43 @@ export function SetLine({ set, label, saved, editable, onRecord }: {
   );
 }
 
+/**
+ * RC5.4 — PHASES d'un exercice, lues sur le TYPE de série prescrit par le moteur (aucune série recalculée) : montée en
+ * charge (`rampup`, jamais comptée comme série effective), travail (`working`, `top_set`, `amrap`), retour en charge
+ * (`backoff`, seulement s'il est prescrit). Les indices d'origine sont conservés (saisies et validation inchangées).
+ */
+export type SetPhase = 'warmup' | 'work' | 'backoff';
+export const phaseOf = (s: SetPrescription): SetPhase => (s.kind === 'rampup' ? 'warmup' : s.kind === 'backoff' ? 'backoff' : 'work');
+export function setPhases(sets: readonly SetPrescription[]): { phase: SetPhase; indices: number[] }[] {
+  const out: { phase: SetPhase; indices: number[] }[] = [];
+  sets.forEach((s, i) => { const ph = phaseOf(s); const last = out.at(-1); if (last?.phase === ph) last.indices.push(i); else out.push({ phase: ph, indices: [i] }); });
+  return out;
+}
+const PHASE_TITLES: Readonly<Record<SetPhase, string>> = { warmup: 'Montée en charge', work: 'Séries de travail', backoff: 'Retour en charge (back-off)' };
+const PHASE_NOTES: Readonly<Record<SetPhase, string>> = { warmup: 'approche · hors volume et progression', work: 'comptent pour la progression', backoff: 'charge réduite après le travail' };
+
+/**
+ * RC5.4 — adaptation FIABLE d'un exercice : changements calculés au démarrage par le contrôle avant séance et persistés
+ * avec la séance (`sets:<ex>:3>2`, `rir:<ex>:2>3`, `added:<ex>`). Texte d'explication, ou null si l'exercice est inchangé.
+ */
+export function adaptationText(changes: readonly string[], exerciseId: string): string | null {
+  const parts = changes.flatMap((c) => {
+    const [kind, ex, delta] = c.split(':');
+    if (ex !== exerciseId) return [];
+    const [a, b] = (delta ?? '').split('>');
+    if (kind === 'sets') return [`${String(a)} → ${String(b)} séries de travail`];
+    if (kind === 'rir') return [`effort visé : ${String(a)} → ${String(b)} reps en réserve`];
+    if (kind === 'added') return ['exercice ajouté'];
+    return [];
+  });
+  return parts.length > 0 ? `Adaptée au contrôle avant séance : ${parts.join(' ; ')}.` : null;
+}
+
 function setLabels(sets: readonly SetPrescription[]): string[] {
   let warm = 0;
   let work = 0;
-  return sets.map((s) => (s.kind === 'rampup' ? `Montée ${String(++warm)}` : `Série ${String(++work)}`));
+  let back = 0;
+  return sets.map((s) => (s.kind === 'rampup' ? `Montée ${String(++warm)}` : s.kind === 'backoff' ? `Back-off ${String(++back)}` : `Série ${String(++work)}`));
 }
 
 // technical-constant: échelle de saisie des répétitions en réserve proposée (valeurs EXACTES, aucune borne « + »)
@@ -116,13 +152,14 @@ function revealNextSet(): void {
 }
 
 /** Carte exercice : nom dominant ; consignes et douleur en second plan. */
-export function ExerciseCard({ number, item, block, log, editable, current, onRecord, onTogglePain, onEffort, onUnavailable }: {
+export function ExerciseCard({ number, item, block, log, editable, current, adaptation = null, onRecord, onTogglePain, onEffort, onUnavailable }: {
   number: number; item: SetsItem; block: Block; log: ProgrammeSessionView['log']; editable: boolean; current: boolean;
+  /** RC5.4 — explication de l'adaptation de cet exercice (contrôle avant séance), null s'il est inchangé. */
+  adaptation?: string | null;
   onRecord: StrengthWorkoutProps['onRecord']; onTogglePain: (itemId: string) => void; onEffort?: StrengthWorkoutProps['onEffort']; onUnavailable?: StrengthWorkoutProps['onUnavailable'];
 }) {
   const sets = item.prescription.sets;
   const working = sets.filter((s) => s.kind !== 'rampup');
-  const warmups = sets.length - working.length;
   const first = working[0] ?? sets[0];
   const labels = setLabels(sets);
   const saved = (i: number) => log?.sets.find((x) => x.itemId === item.id && x.setIndex === i);
@@ -137,9 +174,10 @@ export function ExerciseCard({ number, item, block, log, editable, current, onRe
   // Dernière série de TRAVAIL validée : celle dont l'effort est lu par le moteur.
   const lastDone = sets.map((x, i) => ({ x, i })).filter(({ x, i }) => x.kind !== 'rampup' && x.optional !== true && saved(i)?.done === true).at(-1);
   const savedRir = lastDone ? saved(lastDone.i)?.rir : undefined;
+  // RC5.4 — série « en cours » : première série non validée de l'exercice courant.
+  const nextIdx = sets.findIndex((_, i) => saved(i)?.done !== true);
   const notes = [
     effort ? `Intensité : ${effort}.` : '',
-    warmups > 0 ? `${String(warmups)} série${warmups > 1 ? 's' : ''} de montée avant le travail.` : '',
     item.refs?.prescriptionSource === 'calibration' ? 'Première fois : choisissez une charge qui respecte l’intensité indiquée.' : '',
     // Substituts DIRECTS validés par le moteur Strength (contrat de substitution) : affichés tels quels, jamais calculés ici.
     alternativesText(item.alternatives ?? []),
@@ -160,7 +198,20 @@ export function ExerciseCard({ number, item, block, log, editable, current, onRe
       {swap?.substituteId && <div className="small" data-swap="substituted">Remplace {exerciseLabel(swap.fromExerciseId)} (matériel indisponible) · même séries et répétitions, charge à choisir selon l’effort indiqué.</div>}
       {refused && <div className="small" role="status" data-swap="refused">Matériel indisponible : aucun exercice de remplacement validé par KAIRO. Passez cet exercice ; la séance sera enregistrée comme adaptée.</div>}
       <div className="k-sets">
-        {sets.map((set, i) => <SetLine key={`${item.id}.${String(i)}`} set={set} label={labels[i] ?? ''} saved={saved(i)} editable={editable} onRecord={(x) => { onRecord(item, i, x); if (x.done) revealNextSet(); }} />)}
+        {setPhases(sets).map(({ phase, indices }) => (
+          <div key={`${item.id}.${phase}.${String(indices[0])}`} className={`k-phase ${phase}`} data-phase={phase} role="group" aria-label={`${PHASE_TITLES[phase]}, ${name}`}>
+            <div className="k-phase-head">
+              <b>{PHASE_TITLES[phase]}</b>
+              <span>{indices.length} série{indices.length > 1 ? 's' : ''} · {PHASE_NOTES[phase]}</span>
+              {phase === 'work' && adaptation && <span className="k-phase-tag" data-adapted-tag>Adaptée</span>}
+            </div>
+            {phase === 'work' && adaptation && <div className="k-phase-adapt" data-adapted>{adaptation}</div>}
+            {indices.map((i) => {
+              const set = sets[i] as SetPrescription;
+              return <SetLine key={`${item.id}.${String(i)}`} set={set} label={labels[i] ?? ''} saved={saved(i)} editable={editable} current={current && i === nextIdx} onRecord={(x) => { onRecord(item, i, x); if (x.done) revealNextSet(); }} />;
+            })}
+          </div>
+        ))}
       </div>
       {lastDone && onEffort && (editable || savedRir !== undefined) && (
         <EffortRow name={name} setLabel={labels[lastDone.i] ?? ''} setIndex={lastDone.i} itemId={item.id} target={targetRirOf(lastDone.x)} value={savedRir} editable={editable} onEffort={onEffort} />
@@ -241,7 +292,7 @@ export function StrengthWorkout({ v, title, eyebrow, editable, onRecord, onToggl
 
       {session.blocks.filter((b) => b.kind === 'warmup').map((b) => <LightBlock key={b.id} block={b} />)}
       {main.map(({ block, item }, k) => (
-        <ExerciseCard key={item.id} number={k + 1} item={item} block={block} log={log} editable={editable} current={k === currentIdx} onRecord={onRecord} onTogglePain={onTogglePain} {...(onEffort ? { onEffort } : {})} {...(onUnavailable ? { onUnavailable } : {})} />
+        <ExerciseCard key={item.id} number={k + 1} item={item} block={block} log={log} editable={editable} current={k === currentIdx} adaptation={adaptationText(v.adaptation?.changes ?? [], item.exerciseId)} onRecord={onRecord} onTogglePain={onTogglePain} {...(onEffort ? { onEffort } : {})} {...(onUnavailable ? { onUnavailable } : {})} />
       ))}
       {session.blocks.filter((b) => !LIGHT_BLOCKS.includes(b.kind)).flatMap((b) => b.items.filter((it) => !isSets(it)).map((it) => ({ b, it }))).map(({ b, it }) => <LightBlock key={it.id} block={{ ...b, items: [it] } as Block} />)}
       {session.blocks.filter((b) => b.kind === 'cooldown').map((b) => <LightBlock key={b.id} block={b} />)}

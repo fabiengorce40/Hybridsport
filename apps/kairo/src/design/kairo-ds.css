@@ -148,3 +148,27 @@
 .k-dur-part span { font-size: 14px; font-weight: 700; color: var(--k-text-3); }
 .k-dur.invalid .k-dur-part { box-shadow: inset 0 0 0 2px var(--k-danger); }
 .k-dur-error { font-size: 14px; font-weight: 600; color: var(--k-danger); }
+
+/* —— RC5.4 : phases d'un exercice (le titre porte l'information ; la couleur la souligne seulement) —— */
+:root {
+  --k-warm: #8fa3b8;
+  --k-warm-soft: rgba(143, 163, 184, 0.10);
+  --k-warm-line: rgba(143, 163, 184, 0.45);
+}
+.k-phase { display: flex; flex-direction: column; gap: 6px; padding-left: 10px; border-left: 2px solid transparent; }
+.k-phase + .k-phase { margin-top: 6px; }
+.k-phase.warmup { border-left-color: var(--k-warm-line); }
+.k-phase.work { border-left-color: var(--k-accent-line); }
+.k-phase.backoff { border-left: 2px dashed var(--k-accent-line); }
+.k-phase-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; padding: 2px 0 0; }
+.k-phase-head b { font-size: 11px; font-weight: 900; letter-spacing: 0.14em; text-transform: uppercase; }
+.k-phase-head span { font-size: 11px; color: var(--k-text-3); }
+.k-phase.warmup .k-phase-head b { color: var(--k-warm); }
+.k-phase.work .k-phase-head b, .k-phase.backoff .k-phase-head b { color: var(--k-accent); }
+.k-phase.warmup .k-set:not(.done) { background: var(--k-warm-soft); }
+.k-phase-tag { font-size: 10px; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--k-text); border: 1px solid var(--k-text-3); border-radius: 99px; padding: 1px 8px; }
+.k-phase-adapt { font-size: 12px; line-height: 1.35; color: var(--k-text-2); background: var(--k-surface-3); border-radius: 12px; padding: 6px 10px; }
+.k-set.now { box-shadow: inset 0 0 0 1px var(--k-accent-line); }
+.k-phase.warmup .k-set.now { box-shadow: inset 0 0 0 1px var(--k-warm-line); }
+.k-set-now { color: var(--k-accent); }
+.k-phase.warmup .k-set-now { color: var(--k-warm); }
