@@ -54,7 +54,7 @@ export function SetLine({ set, label, saved, editable, current = false, onRecord
   const state = done ? 'done' : current && editable ? 'current' : 'todo';
   return (
     <div className={`k-set ${warm ? 'warm' : ''} ${done ? 'done' : ''} ${state === 'current' ? 'now' : ''}`} data-set-state={state} data-set-kind={set.kind} {...(state === 'current' ? { 'aria-current': 'step' as const } : {})}>
-      <div className="k-set-label"><b>{state === 'current' ? <span className="k-set-now" aria-hidden="true">▸ </span> : null}{label}</b><span>{state === 'current' ? 'en cours · ' : ''}{target}</span></div>
+      <div className="k-set-label"><b>{label}</b><span>{state === 'current' ? 'en cours · ' : ''}{target}</span></div>
       <label className="k-field">
         <input aria-label="Répétitions réalisées" inputMode="numeric" placeholder={typeof set.reps === 'number' ? '—' : repsTarget(set.reps)} value={reps} disabled={!editable || done} onChange={(e) => setReps(e.target.value.replace(/[^0-9]/g, ''))} />
         <small>REPS</small>

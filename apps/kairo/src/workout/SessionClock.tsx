@@ -33,7 +33,7 @@ export function SessionClock({ log, now, plannedS, onPause, onResume }: {
       {plannedS !== null && <span className="k-clock-plan" data-planned-s={plannedS}>/ ≈ {approxMinutes(plannedS)}</span>}
       {!finished && (paused
         ? <button type="button" className="k-clock-btn" onClick={onResume} aria-label="Reprendre la séance après la pause">Reprendre</button>
-        : <button type="button" className="k-clock-btn" onClick={onPause} aria-label="Mettre la séance en pause (hors repos)">Pause</button>)}
+        : <button type="button" className="k-clock-btn" onClick={onPause} aria-label="Mettre la séance en pause (hors repos)">Pause séance</button>)}
     </div>
   );
 }

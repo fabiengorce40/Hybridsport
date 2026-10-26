@@ -16,7 +16,7 @@
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
 import { readStrengthParams, sessionPlannedHardSets } from '@hybridsport/strength';
-import { beta0Environment, strengthContent, weekReproducibility } from '../../src/index.js';
+import { strengthContent, weekReproducibility } from '../../src/index.js';
 import type { AppState } from '../../src/index.js';
 import { PROFILES, referenceEnvironment, simulate } from '../rc4-audit/rc4-sim.js';
 import type { ProfileSpec, SimOut } from '../rc4-audit/rc4-sim.js';

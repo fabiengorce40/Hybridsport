@@ -10,7 +10,7 @@ import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
-  beta0Environment, compactHistory, createBeta0Programme, emptyState, ensureBeta0Week, finishProgrammeSession, HISTORY_COMPACTED, MemoryStorage, previewBeta0Recreation,
+  compactHistory, createBeta0Programme, emptyState, ensureBeta0Week, finishProgrammeSession, HISTORY_COMPACTED, MemoryStorage, previewBeta0Recreation,
   recordProgrammeSet, recreateBeta0Programme, regenerateSession, saveState, selectProgrammeSession, sessionChanges, startProgrammeSession, STORAGE_KEY, UNKNOWN_CORE_STATE, weekReproducibility,
 } from '../../src/index.js';
 import type { AppState } from '../../src/index.js';
