@@ -1,0 +1,159 @@
+/*
+ * REKKA V2 — design system (lot V2-1) : Digital Club × Cyberpunk × RPG.
+ * Activé UNIQUEMENT par `<html data-theme="v2">` : sans cet attribut, l'ancien thème KAIRO (styles.css, kairo-ds.css)
+ * reste strictement inchangé. Polices libres (SIL OFL 1.1) intégrées localement : aucun chargement réseau obligatoire,
+ * téléchargées seulement lorsqu'un texte les utilise (thème V2).
+ * Contrastes vérifiés par test (apps/kairo/tests/v2-design-system.test.ts) : texte ≥ 4,5:1, composants ≥ 3:1.
+ */
+
+@font-face { font-family: 'REKKA Barlow Condensed'; font-style: normal; font-weight: 600; font-display: swap; src: url('./fonts/barlow-condensed-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'REKKA Barlow Condensed'; font-style: normal; font-weight: 700; font-display: swap; src: url('./fonts/barlow-condensed-latin-700-normal.woff2') format('woff2'); }
+@font-face { font-family: 'REKKA Barlow Condensed'; font-style: normal; font-weight: 800; font-display: swap; src: url('./fonts/barlow-condensed-latin-800-normal.woff2') format('woff2'); }
+@font-face { font-family: 'REKKA Inter'; font-style: normal; font-weight: 400; font-display: swap; src: url('./fonts/inter-latin-400-normal.woff2') format('woff2'); }
+@font-face { font-family: 'REKKA Inter'; font-style: normal; font-weight: 600; font-display: swap; src: url('./fonts/inter-latin-600-normal.woff2') format('woff2'); }
+@font-face { font-family: 'REKKA Inter'; font-style: normal; font-weight: 800; font-display: swap; src: url('./fonts/inter-latin-800-normal.woff2') format('woff2'); }
+
+:root[data-theme="v2"] {
+  /* —— Palette validée (cahier des charges V2 § 2.1) —— */
+  --r-neon: #dcff35;
+  --r-night: #071827;
+  --r-slate: #122a3c;
+  --r-cyan: #39ddeb;
+  --r-magenta: #ff438b;
+  --r-violet: #8b5cf6;
+  --r-emerald: #4de2a1;
+  --r-gold: #ffe35a;
+  --r-ice: #f3f8fc;
+
+  /* —— Surfaces et texte (dérivés, ajustés pour le contraste) —— */
+  --r-bg: var(--r-night);
+  --r-bg-deep: #04101b;
+  --r-surface-1: #0c2133;
+  --r-surface-2: var(--r-slate);
+  --r-surface-3: #1a3850;
+  --r-line: rgba(57, 221, 235, 0.16);
+  --r-line-strong: rgba(243, 248, 252, 0.2);
+  --r-text: var(--r-ice);
+  --r-text-2: #a9bbcb;
+  --r-text-3: #8aa0b4;
+  --r-on-accent: var(--r-night);
+  /* Violet en texte : variante éclaircie (le violet de la palette est réservé aux formes et aplats). */
+  --r-violet-text: #a78bfa;
+
+  /* —— Rôles —— */
+  --r-accent: var(--r-neon);
+  --r-accent-pressed: #c6e62e;
+  --r-accent-soft: rgba(220, 255, 53, 0.12);
+  --r-accent-line: rgba(220, 255, 53, 0.42);
+  --r-success: var(--r-emerald);
+  --r-warning: var(--r-gold);
+  --r-danger: #ff6b6b;
+  --r-info: var(--r-cyan);
+  --r-record: var(--r-gold);
+  --r-demo: var(--r-magenta);
+
+  /* —— Disciplines (couleur + pictogramme, jamais la couleur seule) —— */
+  --r-strength: var(--r-neon);
+  --r-running: var(--r-cyan);
+  --r-hyrox: var(--r-magenta);
+  --r-crosstraining: var(--r-violet-text);
+
+  /* —— Phases de séries —— */
+  --r-phase-warmup: var(--r-cyan);
+  --r-phase-work: var(--r-neon);
+  --r-phase-backoff: var(--r-gold);
+  --r-phase-adapt: var(--r-text-2);
+
+  /* —— Typographie —— */
+  --r-font-display: 'REKKA Barlow Condensed', 'Arial Narrow', 'Roboto Condensed', system-ui, sans-serif;
+  --r-font-ui: 'REKKA Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --r-fs-xs: 12px;
+  --r-fs-s: 13px;
+  --r-fs-m: 15px;
+  --r-fs-l: 17px;
+  --r-fs-xl: 22px;
+  --r-fs-2xl: 28px;
+  --r-fs-3xl: 40px;
+  --r-fs-hero: 52px;
+  --r-tracking-caps: 0.12em;
+
+  /* —— Espacements, rayons, tailles tactiles —— */
+  --r-space-1: 4px;
+  --r-space-2: 8px;
+  --r-space-3: 12px;
+  --r-space-4: 16px;
+  --r-space-5: 20px;
+  --r-space-6: 24px;
+  --r-space-8: 32px;
+  --r-radius-s: 10px;
+  --r-radius-m: 16px;
+  --r-radius-l: 22px;
+  --r-radius-xl: 28px;
+  --r-radius-pill: 999px;
+  --r-touch-min: 44px;
+  --r-touch: 48px;
+
+  /* —— Ombres et lueurs (discrètes) —— */
+  --r-shadow-1: 0 8px 24px rgba(0, 0, 0, 0.35);
+  --r-shadow-2: 0 18px 48px rgba(0, 0, 0, 0.5);
+  --r-glow-neon: 0 0 0 1px rgba(220, 255, 53, 0.5), 0 8px 28px rgba(220, 255, 53, 0.22);
+  --r-glow-cyan: 0 0 0 1px rgba(57, 221, 235, 0.45), 0 8px 28px rgba(57, 221, 235, 0.18);
+
+  /* —— États —— */
+  --r-focus-ring: 0 0 0 3px rgba(57, 221, 235, 0.65);
+  --r-disabled-opacity: 0.45;
+  --r-pressed-scale: 0.98;
+
+  /* —— Mouvements (subtils ; neutralisés par prefers-reduced-motion) —— */
+  --r-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --r-fast: 140ms;
+  --r-base: 220ms;
+
+  /* —— Pont vers l'ancien thème : les écrans existants adoptent la palette V2 sans réécriture —— */
+  --bg: var(--r-bg);
+  --bg-elevated: var(--r-surface-1);
+  --bg-sunken: var(--r-bg-deep);
+  --bg-card: var(--r-surface-2);
+  --text: var(--r-text);
+  --text-2: var(--r-text-2);
+  --text-3: var(--r-text-3);
+  --border: var(--r-line);
+  --border-strong: var(--r-line-strong);
+  --accent: var(--r-accent);
+  --accent-pressed: var(--r-accent-pressed);
+  --accent-subtle: var(--r-accent-soft);
+  --success: var(--r-success);
+  --warning: var(--r-warning);
+  --danger: var(--r-danger);
+  --info: var(--r-info);
+  --sim: var(--r-violet-text);
+  --font: var(--r-font-ui);
+  --k-bg: var(--r-bg);
+  --k-surface-1: var(--r-surface-1);
+  --k-surface-2: var(--r-surface-2);
+  --k-surface-3: var(--r-surface-3);
+  --k-text: var(--r-text);
+  --k-text-2: var(--r-text-2);
+  --k-text-3: var(--r-text-3);
+  --k-accent: var(--r-accent);
+  --k-accent-soft: var(--r-accent-soft);
+  --k-accent-line: var(--r-accent-line);
+  --k-success: var(--r-success);
+  --k-danger: var(--r-danger);
+  --sport-strength: var(--r-strength);
+  --sport-running: var(--r-running);
+  --sport-crosstraining: var(--r-crosstraining);
+  --sport-hyrox: var(--r-hyrox);
+  color-scheme: dark;
+}
+
+/* Ancien thème : lueurs orange codées en dur, neutralisées en V2 (inventaire : docs/kairo/REKKA-V2.md § V2-1). */
+:root[data-theme="v2"] .k-progress > i { background: var(--r-accent); box-shadow: 0 0 16px rgba(220, 255, 53, 0.4); }
+:root[data-theme="v2"] .k-check.on,
+:root[data-theme="v2"] .k-cta { color: var(--r-on-accent); box-shadow: var(--r-glow-neon); }
+:root[data-theme="v2"] .k-ex.current { box-shadow: inset 0 0 0 1px var(--r-accent-line); }
+:root[data-theme="v2"] h1, :root[data-theme="v2"] .k-title, :root[data-theme="v2"] .screen-title { font-family: var(--r-font-display); letter-spacing: 0.01em; }
+
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme="v2"] *, :root[data-theme="v2"] *::before, :root[data-theme="v2"] *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+}

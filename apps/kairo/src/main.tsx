@@ -6,7 +6,12 @@ import { BETA_LABEL, IS_BETA } from './channel.js';
 import { BUILD_ID } from './version.js';
 import './styles.css';
 import './design/kairo-ds.css';
+import './design/rekka-v2.css';
+import './design/rekka-components.css';
+import { applyTheme } from './design/theme.js';
 
+// REKKA V2 (lot V2-1) : thème V2 seulement si la build le demande ; sinon interface actuelle inchangée.
+applyTheme(document.documentElement);
 // BÊTA : identité, version et commit déployés toujours visibles (bandeau fixe).
 if (IS_BETA) { document.title = BETA_LABEL; document.documentElement.classList.add('k-test'); }
 const root = document.getElementById('root');

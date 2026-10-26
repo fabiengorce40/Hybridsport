@@ -1,0 +1,158 @@
+/*
+ * REKKA V2 — composants visuels communs (lot V2-1). Classes `r-*`, utilisées seulement par l'interface V2 (prototype
+ * puis intégration écran par écran) ; elles ne lisent que les jetons de rekka-v2.css (thème `data-theme="v2"`).
+ * Règles : cibles tactiles ≥ 44 px ; l'état et la discipline sont TOUJOURS portés par un texte ou un pictogramme, la
+ * couleur ne fait que les souligner ; focus visible au clavier.
+ */
+
+:root[data-theme="v2"] body { background: var(--r-bg); color: var(--r-text); font-family: var(--r-font-ui); }
+
+/* —— Disciplines : une variable locale --r-sport par élément —— */
+[data-sport="strength"] { --r-sport: var(--r-strength); }
+[data-sport="running"] { --r-sport: var(--r-running); }
+[data-sport="hyrox"] { --r-sport: var(--r-hyrox); }
+[data-sport="crosstraining"] { --r-sport: var(--r-crosstraining); }
+
+/* —— Écran —— */
+.r-screen {
+  min-height: 100dvh; padding: var(--r-space-4) var(--r-space-4) calc(96px + env(safe-area-inset-bottom));
+  display: flex; flex-direction: column; gap: var(--r-space-4);
+  background:
+    radial-gradient(120% 60% at 100% 0%, rgba(139, 92, 246, 0.16), transparent 60%),
+    radial-gradient(90% 50% at 0% 100%, rgba(57, 221, 235, 0.08), transparent 60%),
+    var(--r-bg);
+}
+.r-eyebrow { font-size: var(--r-fs-xs); font-weight: 800; letter-spacing: var(--r-tracking-caps); text-transform: uppercase; color: var(--r-text-3); }
+.r-h1 { margin: 0; font-family: var(--r-font-display); font-weight: 800; font-size: var(--r-fs-3xl); line-height: 0.95; text-transform: uppercase; letter-spacing: 0.01em; }
+.r-h2 { margin: 0; font-family: var(--r-font-display); font-weight: 700; font-size: var(--r-fs-2xl); line-height: 1; text-transform: uppercase; }
+.r-h3 { margin: 0; font-family: var(--r-font-display); font-weight: 700; font-size: var(--r-fs-xl); line-height: 1.05; text-transform: uppercase; }
+.r-text-2 { color: var(--r-text-2); }
+.r-text-3 { color: var(--r-text-3); }
+.r-num { font-variant-numeric: tabular-nums; }
+.r-row { display: flex; align-items: center; gap: var(--r-space-2); }
+.r-row.between { justify-content: space-between; }
+.r-stack { display: flex; flex-direction: column; gap: var(--r-space-2); }
+
+/* —— Carte —— */
+.r-card {
+  position: relative; display: flex; flex-direction: column; gap: var(--r-space-3); padding: var(--r-space-4);
+  border-radius: var(--r-radius-l); background: linear-gradient(180deg, var(--r-surface-2), var(--r-surface-1));
+  border: 1px solid var(--r-line); box-shadow: var(--r-shadow-1);
+}
+.r-card.accent { border-color: var(--r-accent-line); box-shadow: var(--r-glow-neon); }
+.r-card[data-sport] { border-left: 3px solid var(--r-sport); }
+/* Coin découpé « cyber » (décor seulement). */
+.r-card.cut { clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 18px, 100% 100%, 0 100%); }
+
+/* —— Boutons —— */
+.r-btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--r-space-2);
+  min-height: var(--r-touch); padding: 0 var(--r-space-5); border-radius: var(--r-radius-pill); border: 1px solid transparent;
+  font-family: var(--r-font-display); font-weight: 800; font-size: var(--r-fs-l); letter-spacing: 0.04em; text-transform: uppercase;
+  transition: transform var(--r-fast) var(--r-ease), background var(--r-fast) var(--r-ease), box-shadow var(--r-base) var(--r-ease);
+}
+.r-btn.primary { background: var(--r-accent); color: var(--r-on-accent); box-shadow: var(--r-glow-neon); }
+.r-btn.primary:active { background: var(--r-accent-pressed); transform: scale(var(--r-pressed-scale)); }
+.r-btn.secondary { background: transparent; color: var(--r-text); border-color: var(--r-line-strong); }
+.r-btn.ghost { background: transparent; color: var(--r-text-2); min-height: var(--r-touch-min); padding: 0 var(--r-space-3); }
+.r-btn.block { width: 100%; }
+.r-btn:disabled { opacity: var(--r-disabled-opacity); box-shadow: none; }
+.r-btn:focus-visible, .r-chip:focus-visible, .r-tab:focus-visible, .r-set-check:focus-visible { outline: none; box-shadow: var(--r-focus-ring); }
+
+/* —— Puces (bascules) et badges —— */
+.r-chip {
+  min-height: var(--r-touch-min); padding: 0 var(--r-space-4); border-radius: var(--r-radius-pill);
+  border: 1px solid var(--r-line-strong); background: var(--r-surface-1); color: var(--r-text-2); font-weight: 600; font-size: var(--r-fs-s);
+}
+.r-chip[aria-pressed="true"], .r-chip[aria-selected="true"] { background: var(--r-accent-soft); border-color: var(--r-accent-line); color: var(--r-text); }
+.r-badge {
+  display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px; border-radius: var(--r-radius-pill);
+  font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; background: var(--r-surface-3); color: var(--r-text);
+}
+.r-badge[data-sport] { background: transparent; border: 1px solid var(--r-sport); color: var(--r-sport); }
+.r-badge.success { color: var(--r-success); border: 1px solid var(--r-success); background: transparent; }
+.r-badge.record { color: var(--r-on-accent); background: var(--r-record); }
+.r-badge.demo { color: var(--r-text); background: transparent; border: 1px dashed var(--r-demo); }
+
+/* —— Pictogramme de discipline —— */
+.r-sport-icon { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 12px; color: var(--r-sport); background: color-mix(in srgb, var(--r-sport) 14%, transparent); border: 1px solid color-mix(in srgb, var(--r-sport) 45%, transparent); }
+.r-sport-icon svg { width: 22px; height: 22px; }
+
+/* —— Barre de progression et statistiques —— */
+.r-progress { height: 8px; border-radius: var(--r-radius-pill); background: var(--r-surface-3); overflow: hidden; }
+.r-progress > i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--r-cyan), var(--r-accent)); transition: width var(--r-base) var(--r-ease); }
+.r-stat { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.r-stat b { font-family: var(--r-font-display); font-weight: 800; font-size: var(--r-fs-2xl); line-height: 1; font-variant-numeric: tabular-nums; }
+.r-stat span { font-size: var(--r-fs-xs); color: var(--r-text-3); text-transform: uppercase; letter-spacing: 0.08em; }
+
+/* —— Emplacement d'illustration (visuel de substitution identifié tant que la ressource finale manque) —— */
+.r-hero {
+  position: relative; overflow: hidden; border-radius: var(--r-radius-xl); min-height: 180px; padding: var(--r-space-5);
+  display: flex; flex-direction: column; justify-content: flex-end; gap: var(--r-space-2); isolation: isolate;
+  background:
+    linear-gradient(180deg, rgba(7, 24, 39, 0) 30%, rgba(7, 24, 39, 0.92) 100%),
+    linear-gradient(135deg, rgba(139, 92, 246, 0.55), rgba(255, 67, 139, 0.35) 45%, rgba(57, 221, 235, 0.35)),
+    var(--r-surface-2);
+}
+.r-hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; }
+.r-hero .r-placeholder-tag { position: absolute; top: var(--r-space-3); right: var(--r-space-3); }
+/* Motif provisoire : grille de perspective et soleil stylisé, en CSS seul (aucune image). */
+.r-hero.placeholder::before {
+  content: ''; position: absolute; inset: 0; z-index: -1; opacity: 0.55;
+  background:
+    radial-gradient(circle at 70% 38%, rgba(255, 227, 90, 0.9) 0 34px, rgba(255, 67, 139, 0.55) 35px 60px, transparent 61px),
+    repeating-linear-gradient(90deg, rgba(57, 221, 235, 0.25) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(0deg, rgba(57, 221, 235, 0.18) 0 1px, transparent 1px 22px);
+  mask-image: linear-gradient(180deg, #000 20%, transparent 95%);
+}
+
+/* —— Barre de navigation —— */
+.r-tabbar {
+  position: fixed; left: 50%; transform: translateX(-50%); bottom: 0; width: 100%; max-width: 520px; z-index: 20;
+  display: grid; grid-template-columns: repeat(5, 1fr); padding: 6px 6px calc(6px + env(safe-area-inset-bottom));
+  background: rgba(7, 24, 39, 0.94); backdrop-filter: blur(12px); border-top: 1px solid var(--r-line);
+}
+.r-tab { min-height: 56px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; border: 0; background: transparent; color: var(--r-text-3); font-size: 11px; font-weight: 600; border-radius: var(--r-radius-m); }
+.r-tab svg { width: 22px; height: 22px; }
+.r-tab[aria-current="page"] { color: var(--r-accent); }
+.r-tab[aria-current="page"]::after { content: ''; width: 18px; height: 3px; border-radius: 2px; background: var(--r-accent); box-shadow: 0 0 10px rgba(220, 255, 53, 0.6); }
+
+/* —— Séance : phases et séries (état et type indépendants) —— */
+.r-phase { display: flex; flex-direction: column; gap: var(--r-space-2); padding-left: var(--r-space-3); border-left: 3px solid var(--r-phase, var(--r-line)); }
+.r-phase[data-phase="warmup"] { --r-phase: var(--r-phase-warmup); }
+.r-phase[data-phase="work"] { --r-phase: var(--r-phase-work); }
+.r-phase[data-phase="backoff"] { --r-phase: var(--r-phase-backoff); border-left-style: dashed; }
+.r-phase-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--r-space-2); }
+.r-phase-head b { font-family: var(--r-font-display); font-weight: 800; font-size: var(--r-fs-l); letter-spacing: 0.06em; text-transform: uppercase; color: var(--r-phase); }
+.r-phase-head span { font-size: var(--r-fs-xs); color: var(--r-text-3); }
+.r-set {
+  display: grid; grid-template-columns: minmax(64px, 1fr) 64px 76px 52px; align-items: center; gap: var(--r-space-2);
+  min-height: 60px; padding: 6px 6px 6px var(--r-space-3); border-radius: var(--r-radius-m); background: var(--r-surface-1);
+}
+.r-set[data-state="current"] { background: var(--r-surface-2); box-shadow: inset 0 0 0 1px var(--r-phase, var(--r-accent-line)); }
+.r-set[data-state="done"] { background: transparent; }
+.r-set-label { display: flex; flex-direction: column; min-width: 0; }
+.r-set-label b { font-size: var(--r-fs-xs); font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--r-text-2); }
+.r-set-label span { font-size: var(--r-fs-xs); color: var(--r-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.r-set[data-state="current"] .r-set-label span { color: var(--r-phase, var(--r-accent)); }
+.r-set-value { text-align: center; }
+.r-set-value b { display: block; font-family: var(--r-font-display); font-weight: 800; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
+.r-set-value small { font-size: 10px; letter-spacing: 0.12em; color: var(--r-text-3); }
+.r-set[data-state="done"] .r-set-value b { color: var(--r-text-2); }
+.r-set-check { width: 48px; height: 48px; border-radius: 50%; border: 2px solid var(--r-line-strong); background: transparent; color: var(--r-text-2); font-size: 20px; font-weight: 900; }
+.r-set[data-state="done"] .r-set-check { background: var(--r-phase, var(--r-accent)); border-color: transparent; color: var(--r-on-accent); }
+
+/* —— Chronomètre global (barre du haut) —— */
+.r-topbar { position: sticky; top: 0; z-index: 15; display: flex; align-items: center; gap: var(--r-space-2); padding: var(--r-space-2) var(--r-space-3); background: rgba(7, 24, 39, 0.94); backdrop-filter: blur(12px); border-bottom: 1px solid var(--r-line); }
+.r-clock { display: flex; align-items: baseline; gap: var(--r-space-2); margin-left: auto; }
+.r-clock b { font-family: var(--r-font-display); font-weight: 800; font-size: 26px; font-variant-numeric: tabular-nums; }
+.r-clock span { font-size: var(--r-fs-xs); color: var(--r-text-3); }
+
+/* —— RPG modéré : quête (objectif réel) et jalons —— */
+.r-quest { display: grid; grid-template-columns: auto 1fr; gap: var(--r-space-3); align-items: center; }
+.r-milestones { display: flex; gap: 6px; }
+.r-milestones i { flex: 1; height: 6px; border-radius: 3px; background: var(--r-surface-3); }
+.r-milestones i.on { background: var(--r-accent); }
+
+/* —— Bandeau « données de démonstration » —— */
+.r-demo-banner { position: sticky; top: 0; z-index: 30; display: flex; gap: var(--r-space-2); align-items: center; justify-content: center; padding: 6px var(--r-space-3); font-size: var(--r-fs-xs); font-weight: 800; letter-spacing: 0.06em; color: var(--r-on-accent); background: var(--r-magenta); }
