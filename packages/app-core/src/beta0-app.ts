@@ -672,7 +672,9 @@ export function recordProgrammeSet(state: AppState, clock: Clock, requestId: str
   const rest: Rest | null = set.done && prescribed.restAfterS > 0
     ? { endsAt: normalizeInstant(new Date(now + prescribed.restAfterS * MS_PER_S).toISOString()), totalS: prescribed.restAfterS, exerciseId: item.exerciseId }
     : log.rest;
-  return withLog(state, { ...log, sets, rest });
+  // RC5.4 — une série validée pendant une pause manuelle reprend la séance (l'athlète s'entraîne de nouveau).
+  const resumed = set.done && log.clock?.pausedAt ? { clock: closedPause(log.clock, clock.now) } : {};
+  return withLog(state, { ...log, ...resumed, sets, rest });
 }
 
 /**
@@ -731,6 +733,43 @@ export function controlRest(state: AppState, clock: Clock, requestId: string, ac
       : { ...r, endsAt: at(Math.max(Date.parse(r.endsAt), now) + REST_EXTENSION_S * MS_PER_S), totalS: r.totalS + REST_EXTENSION_S };
   }
   return withLog(state, { ...log, rest });
+}
+
+/**
+ * RC5.4 — TEMPS ÉCOULÉ de la séance (s) à l'instant donné, calculé sur les horodatages persistés (aucune perte en
+ * arrière-plan, aucun double comptage après reprise) : de `startedAt` à la fin (ou maintenant), moins les pauses
+ * manuelles. Séance terminée : temps figé (`timing.activeS`, sinon fin − début pour les séances antérieures).
+ */
+export function sessionElapsedS(log: ProgrammeLog, nowIso: string): number {
+  if (log.timing) return log.timing.activeS;
+  const end = Date.parse(log.finishedAt ?? nowIso);
+  const c = log.clock;
+  const pausedS = (c?.pausedS ?? 0) + (c?.pausedAt ? Math.max(0, (end - Date.parse(c.pausedAt)) / MS_PER_S) : 0);
+  return Math.max(0, Math.floor((end - Date.parse(log.startedAt)) / MS_PER_S - pausedS));
+}
+
+/** RC5.4 — pause manuelle de la séance en cours (sans effet si déjà en pause) ; le repos entre séries n'est pas touché. */
+export function pauseProgrammeSession(state: AppState, clock: Clock, requestId: string): AppState {
+  const log = openLog(state, requestId);
+  if (log.clock?.pausedAt) return state;
+  return withLog(state, { ...log, clock: { pausedS: log.clock?.pausedS ?? 0, pausedAt: normalizeInstant(clock.now) } });
+}
+
+/** RC5.4 — reprise après une pause manuelle : la durée de la pause est ajoutée au cumul (sans effet hors pause). */
+export function resumeProgrammeSession(state: AppState, clock: Clock, requestId: string): AppState {
+  const log = openLog(state, requestId);
+  return log.clock?.pausedAt ? withLog(state, { ...log, clock: closedPause(log.clock, clock.now) }) : state;
+}
+
+function closedPause(c: NonNullable<ProgrammeLog['clock']>, nowIso: string): NonNullable<ProgrammeLog['clock']> {
+  return { pausedS: c.pausedS + (c.pausedAt ? Math.max(0, (Date.parse(nowIso) - Date.parse(c.pausedAt)) / MS_PER_S) : 0) };
+}
+
+/** RC5.4 — durées figées à la fin : temps actif, pauses, durée prévue de la séance exécutée. */
+function finalTiming(state: AppState, log: ProgrammeLog, nowIso: string): Pick<ProgrammeLog, 'clock' | 'timing'> {
+  const c = log.clock ? closedPause(log.clock, nowIso) : { pausedS: 0 };
+  const activeS = sessionElapsedS({ ...log, clock: c, finishedAt: normalizeInstant(nowIso) }, nowIso);
+  return { clock: c, timing: { activeS, pausedS: Math.round(c.pausedS), plannedS: selectProgrammeSession(state, log.requestId)?.estimatedDurationS ?? null } };
 }
 
 export interface FinishInput {
@@ -801,7 +840,7 @@ export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishI
   const runPlayer = rp && rp.runningSince !== null
     ? { runPlayer: { ...rp, runningSince: null, accumulatedS: rp.accumulatedS + Math.max(0, (Date.parse(clock.now) - Date.parse(rp.runningSince)) / MS_PER_S) } }
     : {};
-  return withLog(recorded, { ...log, ...runPlayer, rest: null, finishedAt: normalizeInstant(clock.now), outcome });
+  return withLog(recorded, { ...log, ...runPlayer, ...(log.sport === 'strength' ? finalTiming(s0, log, clock.now) : {}), rest: null, finishedAt: normalizeInstant(clock.now), outcome });
 }
 
 // ——— Historique

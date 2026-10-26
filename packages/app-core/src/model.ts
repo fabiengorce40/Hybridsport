@@ -428,6 +428,17 @@ export const zProgrammeLog = z.object({
    * explicite (`substituteId` absent). Champ additif.
    */
   swaps: z.array(z.object({ itemId: z.string().min(1), fromExerciseId: z.string().min(1), substituteId: z.string().min(1).optional(), cause: z.literal('equipment_unavailable'), at: instant, reasons: z.array(zReason) }).strict()).optional(),
+  /**
+   * RC5.4 — chronomètre GLOBAL de la séance, HORODATÉ (jamais un compteur) : il court depuis `startedAt` ; pause
+   * MANUELLE de séance (distincte du repos entre séries) = `pausedAt` (pause en cours) et cumul des pauses closes
+   * `pausedS`. Absent : aucune pause (anciennes séances). Champ additif.
+   */
+  clock: z.object({ pausedAt: instant.optional(), pausedS: z.number().nonnegative() }).strict().optional(),
+  /**
+   * RC5.4 — durées figées à la FIN de séance : temps actif (hors pauses manuelles), pauses, durée PRÉVUE (p50 du CORE
+   * de la séance exécutée, null si indisponible). Absent sur les séances terminées avant RC5.4. Champ additif.
+   */
+  timing: z.object({ activeS: z.number().nonnegative(), pausedS: z.number().nonnegative(), plannedS: z.number().nonnegative().nullable() }).strict().optional(),
 }).strict();
 export type ProgrammeLog = z.infer<typeof zProgrammeLog>;
 

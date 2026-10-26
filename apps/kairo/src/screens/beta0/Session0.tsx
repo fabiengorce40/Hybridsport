@@ -5,7 +5,7 @@
  */
 import { useEffect, useState } from 'react';
 import {
-  approxMinutes, controlRest, maintainedInterference, startAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, reportEquipmentUnavailable, runPlayerPosition, runPlayerSteps, selectProgrammeSession, strengthInsightOf, toggleProgrammePainItem,
+  approxMinutes, controlRest, pauseProgrammeSession, resumeProgrammeSession, maintainedInterference, startAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, reportEquipmentUnavailable, runPlayerPosition, runPlayerSteps, selectProgrammeSession, strengthInsightOf, toggleProgrammePainItem,
   adaptationVolumeDeficit,
 } from '@hybridsport/app-core';
 import type { FinishInput, ProgrammeSessionView, SessionItem, SetPrescription } from '@hybridsport/app-core';
@@ -26,6 +26,7 @@ import { durationFromParts, EMPTY_DURATION } from '../../running/duration.js';
 import type { DurationParts } from '../../running/duration.js';
 import { formatChrono, partsFromSeconds } from '../../running/duration.js';
 import { RunPlayer } from '../../running/RunPlayer.js';
+import { SessionClock } from '../../workout/SessionClock.js';
 
 type Completion = FinishInput['completion'];
 const COMPLETIONS: readonly { id: Completion; label: string }[] = [
@@ -202,12 +203,16 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   if (v.sport === 'strength') {
     return (
       <>
-        <Topbar title="" onBack={onBack} right={v.experimental ? <span className="k-pill" title="Certaines règles de planification sont encore en cours de validation.">Beta</span> : undefined} />
+        <Topbar title="" onBack={onBack} right={<>
+          {/* RC5.4 — chronomètre global : depuis le lancement effectif, figé à la fin (durée réelle). */}
+          {log && <SessionClock log={log} now={now()} plannedS={v.estimatedDurationS} onPause={() => store.apply((s, c) => pauseProgrammeSession(s, c, requestId))} onResume={() => store.apply((s, c) => resumeProgrammeSession(s, c, requestId))} />}
+          {v.experimental ? <span className="k-pill" title="Certaines règles de planification sont encore en cours de validation.">Beta</span> : null}
+        </>} />
         <div className={`k-workout ${editable && log.rest ? 'with-timer' : ''} ${!started && !finished ? 'with-dock' : ''}`}>
           <AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state, requestId)} />
           <StrengthInsightPanel requestId={requestId} />
           <StrengthWorkout
-            v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}${editable ? ` · ${String(Math.floor(elapsed / 60))}:${String(elapsed % 60).padStart(2, '0')}` : ''}`} editable={editable}
+            v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}`} editable={editable}
             onRecord={(item, index, x) => record(item, undefined, index, x)}
             onTogglePain={(itemId) => store.apply((s) => toggleProgrammePainItem(s, requestId, itemId))}
             onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, requestId, itemId, setIndex, rir))}
