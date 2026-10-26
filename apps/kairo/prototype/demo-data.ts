@@ -27,14 +27,14 @@ export const week: readonly DemoDay[] = [
 ];
 
 export interface DemoSet { readonly kind: 'warmup' | 'work' | 'backoff'; readonly reps: number; readonly kg: number }
-export interface DemoExercise { readonly id: string; readonly name: string; readonly rest: string; readonly sets: readonly DemoSet[]; readonly adapted?: string; readonly illustrative?: string }
+export interface DemoExercise { readonly id: string; readonly name: string; readonly muscles: readonly string[]; readonly rest: string; readonly sets: readonly DemoSet[]; readonly adapted?: string; readonly illustrative?: string }
 export const workout = {
   title: 'Full Body A',
   plannedMin: 47,
   exercises: [
-    { id: 'squat', name: 'Squat barre', rest: '2:00', sets: [{ kind: 'warmup', reps: 8, kg: 20 }, { kind: 'warmup', reps: 5, kg: 40 }, { kind: 'warmup', reps: 3, kg: 55 }, { kind: 'work', reps: 6, kg: 70 }, { kind: 'work', reps: 6, kg: 70 }, { kind: 'work', reps: 6, kg: 70 }] },
-    { id: 'bench', name: 'Développé couché', rest: '1:45', adapted: 'Adaptée au contrôle avant séance : 4 → 3 séries de travail.', illustrative: 'Retour en charge : exemple visuel (seulement si le moteur le prescrit).', sets: [{ kind: 'warmup', reps: 6, kg: 30 }, { kind: 'work', reps: 8, kg: 50 }, { kind: 'work', reps: 8, kg: 50 }, { kind: 'work', reps: 8, kg: 50 }, { kind: 'backoff', reps: 10, kg: 40 }] },
-    { id: 'row', name: 'Rowing machine', rest: '1:30', sets: [{ kind: 'work', reps: 10, kg: 45 }, { kind: 'work', reps: 10, kg: 45 }, { kind: 'work', reps: 10, kg: 45 }] },
+    { id: 'squat', name: 'Squat barre', muscles: ['Quadriceps', 'Fessiers', 'Tronc'], rest: '2:00', sets: [{ kind: 'warmup', reps: 8, kg: 20 }, { kind: 'warmup', reps: 5, kg: 40 }, { kind: 'warmup', reps: 3, kg: 55 }, { kind: 'work', reps: 6, kg: 70 }, { kind: 'work', reps: 6, kg: 70 }, { kind: 'work', reps: 6, kg: 70 }] },
+    { id: 'bench', name: 'Développé couché', muscles: ['Pectoraux', 'Épaules', 'Triceps'], rest: '1:45', adapted: 'Adaptée au contrôle avant séance : 4 → 3 séries de travail.', illustrative: 'Retour en charge : exemple visuel (seulement si le moteur le prescrit).', sets: [{ kind: 'warmup', reps: 6, kg: 30 }, { kind: 'work', reps: 8, kg: 50 }, { kind: 'work', reps: 8, kg: 50 }, { kind: 'work', reps: 8, kg: 50 }, { kind: 'backoff', reps: 10, kg: 40 }] },
+    { id: 'row', name: 'Rowing machine', muscles: ['Dos', 'Biceps'], rest: '1:30', sets: [{ kind: 'work', reps: 10, kg: 45 }, { kind: 'work', reps: 10, kg: 45 }, { kind: 'work', reps: 10, kg: 45 }] },
   ] satisfies readonly DemoExercise[],
 } as const;
 

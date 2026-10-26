@@ -8,10 +8,10 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { SportIcon, SPORT_NAMES } from '../src/design/SportIcon.js';
 import type { SportKey } from '../src/design/SportIcon.js';
-import { DEMO_NOTICE, progression, todayLabel, week, workout } from './demo-data.js';
-import type { DemoExercise, DemoSet } from './demo-data.js';
+import { DEMO_NOTICE, progression, week } from './demo-data.js';
 import { Home } from './screens/Home.js';
 import { Planning, StateBadge } from './screens/Planning.js';
+import { Workout } from './screens/Workout.js';
 
 export type ProtoTab = 'home' | 'plan' | 'sessions' | 'progress' | 'profile';
 const TABS: readonly { id: ProtoTab; label: string; icon: string }[] = [
@@ -22,8 +22,6 @@ const TABS: readonly { id: ProtoTab; label: string; icon: string }[] = [
   { id: 'profile', label: 'Profil', icon: 'M12 4a4 4 0 1 0 0 8 4 4 0 0 0 0-8M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6' },
 ];
 
-const two = (n: number) => String(n).padStart(2, '0');
-const clock = (s: number) => `${String(Math.floor(s / 60))}:${two(s % 60)}`;
 const kg = (n: number) => String(n).replace('.', ',');
 
 function DemoBanner() {
@@ -44,91 +42,6 @@ function TabBar({ tab, onChange }: { tab: ProtoTab; onChange: (t: ProtoTab) => v
   );
 }
 
-
-// ——— Séance Musculation
-
-const PHASE_TITLES: Readonly<Record<DemoSet['kind'], string>> = { warmup: 'Montée en charge', work: 'Séries de travail', backoff: 'Retour en charge (back-off)' };
-const PHASE_NOTES: Readonly<Record<DemoSet['kind'], string>> = { warmup: 'approche · hors volume et progression', work: 'comptent pour la progression', backoff: 'charge réduite après le travail' };
-
-function phases(sets: readonly DemoSet[]): { kind: DemoSet['kind']; idx: number[] }[] {
-  const out: { kind: DemoSet['kind']; idx: number[] }[] = [];
-  sets.forEach((s, i) => { const last = out.at(-1); if (last?.kind === s.kind) last.idx.push(i); else out.push({ kind: s.kind, idx: [i] }); });
-  return out;
-}
-
-function Workout({ onBack }: { onBack: () => void }) {
-  const [done, setDone] = useState<ReadonlySet<string>>(new Set(['squat.0', 'squat.1']));
-  const [elapsed, setElapsed] = useState(12 * 60 + 4);
-  const [paused, setPaused] = useState(false);
-  useEffect(() => {
-    if (paused) return undefined;
-    const t = setInterval(() => setElapsed((x) => x + 1), 1000);
-    return () => clearInterval(t);
-  }, [paused]);
-  const all = workout.exercises.flatMap((e) => e.sets.map((_, i) => `${e.id}.${String(i)}`));
-  const toggle = (k: string) => setDone((d) => { const n = new Set(d); if (n.has(k)) n.delete(k); else n.add(k); return n; });
-  const current = all.find((k) => !done.has(k));
-  return (
-    <main aria-label="Séance Musculation" className="p-workout">
-      <header className="r-topbar">
-        <button type="button" className="r-btn ghost" onClick={onBack} aria-label="Retour">←</button>
-        <div className="r-clock" data-proto-clock aria-label={`Chronomètre de séance (simulation) ${clock(elapsed)}${paused ? ', en pause' : ''}`}>
-          <span>{paused ? 'Séance en pause' : 'Séance'}</span><b>{clock(elapsed)}</b><span>/ ≈ {workout.plannedMin} min</span>
-        </div>
-        <button type="button" className="r-chip" aria-pressed={paused} onClick={() => setPaused((p) => !p)}>{paused ? 'Reprendre' : 'Pause séance'}</button>
-      </header>
-      <div className="r-screen" style={{ minHeight: 0 }}>
-        <div className="r-stack" style={{ gap: 4 }}>
-          <span className="r-eyebrow">Musculation · {todayLabel}</span>
-          <h1 className="r-h1">{workout.title}</h1>
-          <span className="r-text-2 r-num">≈ {workout.plannedMin} min · {done.size}/{all.length} séries</span>
-          <div className="r-progress" role="progressbar" aria-label="Séries validées" aria-valuemin={0} aria-valuemax={all.length} aria-valuenow={done.size}><i style={{ width: `${String(Math.round((done.size / all.length) * 100))}%` }} /></div>
-        </div>
-        {workout.exercises.map((e, n) => <ExerciseCard key={e.id} e={e} n={n + 1} done={done} current={current} onToggle={toggle} />)}
-        <button type="button" className="r-btn secondary block">Terminer la séance</button>
-      </div>
-      <div className="p-rest-dock" role="timer" aria-label="Chrono de repos (simulation)">
-        <span className="r-eyebrow" style={{ color: 'var(--r-cyan)' }}>Repos</span><b className="r-num">1:24</b><span className="r-text-3">Squat barre</span>
-      </div>
-    </main>
-  );
-}
-
-function ExerciseCard({ e, n, done, current, onToggle }: { e: DemoExercise; n: number; done: ReadonlySet<string>; current: string | undefined; onToggle: (k: string) => void }) {
-  let work = 0; let warm = 0; let back = 0;
-  const labels = e.sets.map((s) => (s.kind === 'warmup' ? `Montée ${String(++warm)}` : s.kind === 'backoff' ? `Back-off ${String(++back)}` : `Série ${String(++work)}`));
-  return (
-    <section className="r-card" aria-label={`Exercice ${two(n)} : ${e.name}`}>
-      <div className="r-row" style={{ alignItems: 'baseline', gap: 10 }}>
-        <span className="p-exnum">{two(n)}</span>
-        <div className="r-stack" style={{ gap: 2 }}><h2 className="r-h2">{e.name}</h2><span className="r-text-3">{work} séries de travail · repos {e.rest}</span></div>
-      </div>
-      {phases(e.sets).map((p) => (
-        <div key={`${e.id}.${p.kind}`} className="r-phase" data-phase={p.kind} role="group" aria-label={`${PHASE_TITLES[p.kind]}, ${e.name}`}>
-          <div className="r-phase-head">
-            <b>{PHASE_TITLES[p.kind]}</b><span>{p.idx.length} série{p.idx.length > 1 ? 's' : ''} · {PHASE_NOTES[p.kind]}</span>
-            {p.kind === 'work' && e.adapted && <span className="r-badge" data-adapted-tag>Adaptée</span>}
-          </div>
-          {p.kind === 'work' && e.adapted && <div className="p-adapt">{e.adapted}</div>}
-          {p.kind === 'backoff' && e.illustrative && <div className="p-adapt" data-illustrative>{e.illustrative}</div>}
-          {p.idx.map((i) => {
-            const s = e.sets[i] as DemoSet;
-            const k = `${e.id}.${String(i)}`;
-            const state = done.has(k) ? 'done' : current === k ? 'current' : 'todo';
-            return (
-              <div key={k} className="r-set" data-state={state} data-kind={s.kind} {...(state === 'current' ? { 'aria-current': 'step' as const } : {})}>
-                <div className="r-set-label"><b>{labels[i]}</b><span>{state === 'current' ? 'en cours' : state === 'done' ? 'validée' : `obj. ${String(s.reps)}`}</span></div>
-                <div className="r-set-value"><b>{s.reps}</b><small>REPS</small></div>
-                <div className="r-set-value"><b>{kg(s.kg)}</b><small>KG</small></div>
-                <button type="button" className="r-set-check" aria-pressed={state === 'done'} aria-label={`${state === 'done' ? 'Décocher' : 'Cocher'} ${labels[i] ?? ''}, ${e.name}`} onClick={() => onToggle(k)}>✓</button>
-              </div>
-            );
-          })}
-        </div>
-      ))}
-    </section>
-  );
-}
 
 // ——— Progression
 
@@ -251,7 +164,7 @@ export function Prototype({ initial = 'home' }: { initial?: ProtoTab | 'workout'
     <div className="p-app">
       <DemoBanner />
       {body}
-      {!inWorkout && <TabBar tab={tab} onChange={setTab} />}
+      <TabBar tab={inWorkout ? 'sessions' : tab} onChange={(t) => { setInWorkout(false); setTab(t); }} />
     </div>
   );
 }

@@ -57,14 +57,23 @@ describe('REKKA V2 — prototype', () => {
     expect(within(squat).getByRole('group', { name: /^Séries de travail,/ })).toBeTruthy();
     const current = () => document.querySelectorAll('.r-set[data-state="current"]');
     expect(current().length).toBe(1);
-    expect(current()[0]?.getAttribute('data-kind')).toBe('warmup');
-    fireEvent.click(within(current()[0] as HTMLElement).getByRole('button'));
+    // Montées validées : la première série de TRAVAIL est en cours.
     expect(current()[0]?.getAttribute('data-kind')).toBe('work');
+    fireEvent.click(within(current()[0] as HTMLElement).getByRole('button', { name: /^Cocher/ }));
+    expect(current()[0]?.getAttribute('data-kind')).toBe('work');
+    // État indépendant du type : décocher une montée la remet « en cours ».
+    fireEvent.click(screen.getByRole('button', { name: 'Décocher la série 3, Squat barre (simulation)' }));
+    expect(current()[0]?.getAttribute('data-kind')).toBe('warmup');
+    // Charges et répétitions modifiables (simulation locale).
+    const reps = within(current()[0] as HTMLElement).getByLabelText(/^Répétitions, série 3/) as HTMLInputElement;
+    fireEvent.change(reps, { target: { value: '4' } });
+    expect(reps.value).toBe('4');
+    expect(screen.getByRole('timer', { name: /^Repos \(simulation\)/ })).toBeTruthy();
     const clock = document.querySelector('[data-proto-clock]');
     expect(clock?.getAttribute('aria-label')).toMatch(/simulation/);
-    fireEvent.click(screen.getByRole('button', { name: 'Pause séance' }));
-    expect(clock?.textContent).toMatch(/Séance en pause/);
-    expect(screen.queryByRole('navigation', { name: 'Navigation principale' })).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Mettre la séance en pause (simulation)' }));
+    expect(clock?.textContent).toMatch(/En pause/);
+    expect(within(nav()).getByRole('button', { name: 'Séances' }).getAttribute('aria-current')).toBe('page');
     fireEvent.click(screen.getByRole('button', { name: 'Retour' }));
     expect(screen.getByRole('main', { name: 'Accueil' })).toBeTruthy();
   });
