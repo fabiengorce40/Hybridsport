@@ -84,5 +84,13 @@ describe('RC5.4 B — chronomètre global', () => {
     now = '2026-10-05T09:00:00.000Z';
     mount(storage);
     expect(storage.getItem('kairo.state')).toContain('"activeS":900');
+    // RC5.4 C — Historique : durée réelle (temps actif) et prévue ; rapport prévu / réel.
+    fireEvent.click(screen.getByRole('button', { name: 'Historique', exact: true }));
+    expect(document.querySelector('[data-history-meta]')?.textContent).toMatch(/^Durée réelle 15 min · prévue ≈ \d+ min/);
+    const report = document.querySelector('[data-duration-report]') as HTMLElement;
+    expect(within(report).getByText('Durées prévues et réelles')).toBeTruthy();
+    // Séance arrêtée : listée, hors synthèse.
+    expect(report.querySelector('[data-duration-summary]')?.textContent).toBe('Aucune séance mesurée par le chronomètre de séance pour l’instant.');
+    expect(report.querySelectorAll('[data-duration-row="chrono"]').length).toBe(1);
   });
 });

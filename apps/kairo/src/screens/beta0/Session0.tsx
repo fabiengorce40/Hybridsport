@@ -218,7 +218,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
             onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, requestId, itemId, setIndex, rir))}
             onUnavailable={(itemId) => store.apply((s, c) => reportEquipmentUnavailable(s, c, requestId, itemId))}
           />
-          {finished && <div className="k-light"><span className="k-pill done">✓ {STATUS_LABELS[result.completion]}</span><span className="k-light-name">Séance terminée</span></div>}
+          {finished && <div className="k-light"><span className="k-pill done">✓ {STATUS_LABELS[result.completion]}</span><span className="k-light-name">Séance terminée</span>{log?.timing && <span className="k-light-dose" data-finished-duration>{`${durationLabel(log.timing.activeS)}${log.timing.plannedS !== null ? ` · prévue ≈ ${approxMinutes(log.timing.plannedS)}` : ''}`}</span>}</div>}
           {!started && !finished && <div className="k-dock"><button className="k-cta" onClick={() => flow.start(requestId)}>{startLabel(v)}</button></div>}
           {editable && <button className="k-cta ghost" onClick={() => setFinishing(true)}>Terminer la séance</button>}
         </div>

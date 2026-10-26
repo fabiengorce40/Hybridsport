@@ -1,4 +1,4 @@
-import { durationLabel, exerciseLabel, fieldFeedbackText, HR_STRUCTURE_LABELS, maintainedInterference, selectFieldHistory, selectFreeRuns, selectProgrammeSession } from '@hybridsport/app-core';
+import { approxMinutes, durationLabel, exerciseLabel, strengthDurationReport, fieldFeedbackText, HR_STRUCTURE_LABELS, maintainedInterference, selectFieldHistory, selectFreeRuns, selectProgrammeSession } from '@hybridsport/app-core';
 import { FreeRunCard, FreeRunEntry } from '../../running/FreeRunForm.js';
 import type { HistoryEntry } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
@@ -38,6 +38,7 @@ export function History0({ onOpen }: { onOpen: (id: string) => void }) {
       {/* RC3.4 — aussi pour un profil HYROX sans Course : historique de course seulement, sans effet sur HYROX. */}
       {/* RC4.3 (R3) : une course libre compte dans la récupération, même sans sport Course déclaré. */}
       {state.profile && <FreeRunEntry />}
+      <DurationReportCard />
       {entries.length === 0 && freeRuns.length === 0 && <div className="empty">Aucune séance terminée pour l’instant.</div>}
       {items.map(({ e, r }) => (r ? <FreeRunCard key={r.sessionId} r={r} /> : e && (
         <button key={e.requestId} className="card button-card" onClick={() => onOpen(e.requestId)}>
@@ -64,7 +65,7 @@ export function History0({ onOpen }: { onOpen: (id: string) => void }) {
             </div>
           )}
           {e.composition?.scope === 'TRAINING_BLOCK' && <div className="tiny muted" data-block-scope="TRAINING_BLOCK">Bloc d’entraînement (pas une séance complète)</div>}
-          {(e.durationS !== null || e.manual) && <div className="tiny muted num" data-history-meta>{[e.durationS !== null ? `Durée réelle ${durationLabel(e.durationS)}` : null, e.manual ? 'Faite hors planning (séance non planifiée)' : null].filter(Boolean).join(' · ')}</div>}
+          {(e.durationS !== null || e.manual) && <div className="tiny muted num" data-history-meta>{[e.durationS !== null ? `Durée réelle ${durationLabel(e.durationS)}${e.plannedDurationS !== null ? ` · prévue ≈ ${approxMinutes(e.plannedDurationS)}` : ''}` : null, e.manual ? 'Faite hors planning (séance non planifiée)' : null].filter(Boolean).join(' · ')}</div>}
           {e.feedback && <div className="small" data-history-feedback>Ressenti : {fieldFeedbackText(e.feedback)}</div>}
           {/* RC4.5 (lot C) — maintien volontaire, distinct du ressenti déclaré. */}
           {maintainedInterference(state, e.requestId) && <div className="tiny muted" data-interference-maintained>{maintainedText(maintainedInterference(state, e.requestId) ?? [])}</div>}
@@ -72,6 +73,37 @@ export function History0({ onOpen }: { onOpen: (id: string) => void }) {
         </button>
       )))}
     </div>
+  );
+}
+
+/**
+ * RC5.4 — durées PRÉVUES et RÉELLES des séances de Musculation (observation) : synthèse et détail par séance. Masqué
+ * tant qu'aucune séance de Musculation n'est terminée.
+ */
+function DurationReportCard() {
+  const { state } = useStore();
+  const r = strengthDurationReport(state);
+  if (r.rows.length === 0) return null;
+  const s = r.summary;
+  const pct = (x: number) => `${x >= 1 ? '+' : '−'}${String(Math.round(Math.abs(x - 1) * 100))} %`;
+  const signed = (d: number) => `${d >= 0 ? '+' : '−'}${durationLabel(Math.abs(d))}`;
+  return (
+    <details className="card" data-duration-report>
+      <summary className="row between"><b>Durées prévues et réelles</b><span className="small muted">Musculation</span></summary>
+      <p className="small" style={{ margin: '8px 0' }} data-duration-summary>
+        {s.sessions === 0 ? 'Aucune séance mesurée par le chronomètre de séance pour l’instant.'
+          : `${String(s.sessions)} séance${s.sessions > 1 ? 's' : ''} mesurée${s.sessions > 1 ? 's' : ''} · écart médian ${signed(s.medianDeltaS ?? 0)} · réel / prévu ${pct(s.meanRatio ?? 1)} en moyenne · ${String(s.onTarget)} à ± 15 % de la prévision`}
+      </p>
+      <div className="stack" style={{ gap: 4 }}>
+        {r.rows.map((x) => (
+          <div key={x.requestId} className="small num row between" data-duration-row={x.source}>
+            <span>{formatDate(x.date)}</span>
+            <span>{x.plannedS !== null ? `prévue ≈ ${approxMinutes(x.plannedS)}` : 'prévue inconnue'} · réelle {durationLabel(x.actualS)}{x.source === 'wall' ? ' (horloge, non mesurée)' : ''}{x.ratio !== null ? ` (${pct(x.ratio)})` : ''}</span>
+          </div>
+        ))}
+      </div>
+      <p className="tiny muted" style={{ margin: '8px 0 0' }}>Durée réelle : chronomètre de séance, pauses manuelles exclues. Observation seulement : aucune règle d’entraînement n’en dépend.</p>
+    </details>
   );
 }
 

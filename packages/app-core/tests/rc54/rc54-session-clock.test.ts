@@ -6,7 +6,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   controlRest, createBeta0Programme, decodeState, emptyState, EQUIPMENT_PRESETS, exportState, finishProgrammeSession, pauseProgrammeSession, recordProgrammeSet,
-  resumeProgrammeSession, selectBeta0Week, selectProgrammeSession, sessionElapsedS, startProgrammeSession,
+  resumeProgrammeSession, selectBeta0Week, selectFieldHistory, selectProgrammeSession, sessionElapsedS, startProgrammeSession, strengthDurationReport,
 } from '../../src/index.js';
 import type { AppState, ProgrammeLog } from '../../src/index.js';
 import { clock, profile } from '../fixtures.js';
@@ -86,5 +86,28 @@ describe('RC5.4 B — chronomètre global horodaté', () => {
     const old: AppState = { ...f, programmeLogs: { ...f.programmeLogs, [id]: legacy } };
     expect(logOf(reload(old), id)).toEqual(legacy);
     expect(sessionElapsedS(legacy, at('23:00').now)).toBe(40 * 60);
+  });
+});
+
+describe('RC5.4 C — durées prévues et réelles (historique, rapport)', () => {
+  it('historique : durée réelle = temps actif ; durée prévue figée ; rapport par séance et synthèse (arrêtées et anciennes hors synthèse)', () => {
+    const { s: s0, id, at } = started();
+    const p = pauseProgrammeSession(s0, at('10:30'), id);
+    const r = resumeProgrammeSession(p, at('10:40'), id);
+    const f = finishProgrammeSession(r, at('11:00'), { requestId: id, completion: 'modified', pain: false });
+    const planned = logOf(f, id).timing?.plannedS ?? 0;
+    const h = selectFieldHistory(f).find((e) => e.requestId === id);
+    expect([h?.durationS, h?.plannedDurationS]).toEqual([50 * 60, planned]);
+    const rep = strengthDurationReport(f);
+    expect(rep.rows).toEqual([expect.objectContaining({ requestId: id, source: 'chrono', actualS: 50 * 60, pausedS: 10 * 60, plannedS: planned, deltaS: 50 * 60 - planned })]);
+    expect(rep.summary.sessions).toBe(1);
+    expect(rep.summary.meanRatio).toBeCloseTo((50 * 60) / planned, 9);
+    // Séance antérieure à RC5.4 (sans `timing`) : durée d'horloge, listée « non mesurée », hors synthèse.
+    const { timing: _t, clock: _c, ...legacy } = logOf(f, id);
+    const old: AppState = { ...f, programmeLogs: { ...f.programmeLogs, [id]: legacy } };
+    const r2 = strengthDurationReport(old);
+    expect(r2.rows[0]).toEqual(expect.objectContaining({ source: 'wall', actualS: 60 * 60, plannedS: null, ratio: null }));
+    expect(r2.summary).toEqual({ sessions: 0, meanRatio: null, medianDeltaS: null, onTarget: 0 });
+    expect(selectFieldHistory(old).find((e) => e.requestId === id)?.durationS).toBe(60 * 60);
   });
 });

@@ -15,6 +15,7 @@ export * from './programme.js';
 export * from './weeks.js';
 export * from './beta0.js';
 export * from './beta0-app.js';
+export * from './durations.js';
 export * from './run-player.js';
 export * from './running-profile.js';
 export * from './running-retry.js';

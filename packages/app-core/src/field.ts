@@ -99,7 +99,8 @@ function executionOf(log: ProgrammeLog | undefined): FieldExecution | null {
   const wall = log.finishedAt ? Math.max(0, Math.round((Date.parse(log.finishedAt) - Date.parse(log.startedAt)) / MS_PER_S)) : null;
   return {
     startedAt: log.startedAt, finishedAt: log.finishedAt ?? null, wallDurationS: wall,
-    chronoS: o?.ct?.elapsedS ?? o?.hr?.elapsedS ?? null, runDurationS: o?.run?.realizedDurationS ?? null, distanceM: o?.run?.distanceM ?? null,
+    // RC5.4 — Musculation : temps actif du chronomètre global (pauses manuelles exclues), figé à la fin.
+    chronoS: o?.ct?.elapsedS ?? o?.hr?.elapsedS ?? log.timing?.activeS ?? null, runDurationS: o?.run?.realizedDurationS ?? null, distanceM: o?.run?.distanceM ?? null,
     completion: o?.completion ?? null, pain: o?.pain ?? false, setsDone: log.sets.filter((x) => x.done).length,
     ctResult: o?.ct?.result ?? null, hrResult: o?.hr?.result ?? null,
   };
@@ -180,6 +181,8 @@ export function selectBetaJournal(state: AppState): readonly BetaJournalEntry[] 
 export interface FieldHistoryEntry extends HistoryEntry {
   readonly manual: boolean;
   readonly durationS: number | null;
+  /** RC5.4 — durée PRÉVUE de la séance exécutée (p50 du CORE, figée à la fin), null si inconnue. */
+  readonly plannedDurationS: number | null;
   readonly feedback: FieldFeedback | null;
   /** FIELD TEST P0 — bloc d'entraînement ou séance complète (Cross-training / HYROX), sinon null. */
   readonly composition: CompositionScope | null;
@@ -189,7 +192,7 @@ export function selectFieldHistory(state: AppState): readonly FieldHistoryEntry[
   const requests = new Map(Object.values(state.planner.weeks).flatMap((w) => w.requests.map((r) => [r.requestId, r] as const)));
   return selectHistory(state).map((e) => ({
     ...e, manual: results.some((r) => r.requestId === e.requestId && r.provenance === 'manual_from_unplaced'),
-    durationS: realDurationS(executionOf(state.programmeLogs[e.requestId])), feedback: state.programmeLogs[e.requestId]?.field ?? null,
+    durationS: realDurationS(executionOf(state.programmeLogs[e.requestId])), plannedDurationS: state.programmeLogs[e.requestId]?.timing?.plannedS ?? null, feedback: state.programmeLogs[e.requestId]?.field ?? null,
     composition: requests.get(e.requestId) ? compositionScopeOf(requests.get(e.requestId) as Req) : null,
   }));
 }
