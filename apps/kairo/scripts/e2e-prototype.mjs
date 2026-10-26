@@ -102,8 +102,14 @@ for (const width of [360, 390]) {
   check(await page.locator('[data-unavailable]').isVisible(), `${w} px : indicateur indisponible présenté comme tel`);
   await tab('Séances').click();
   await page.getByRole('main', { name: 'Séances' }).waitFor();
+  await shot('07-seances');
   await tab('Profil').click();
   await page.getByRole('main', { name: 'Profil' }).waitFor();
+  await banner('Profil');
+  check(!/niveau|XP/i.test(await page.getByRole('main', { name: 'Profil' }).innerText()), `${w} px : Profil sans niveau ni XP inventé`);
+  check(await page.getByRole('img', { name: 'Avatar provisoire' }).isVisible(), `${w} px : avatar provisoire identifié`);
+  check(await noHScroll(), `${w} px : Profil sans défilement horizontal`);
+  await shot('08-profil');
   check(true, `${w} px : 5 onglets navigables`);
 
   check(await page.evaluate(() => localStorage.length) === 0, `${w} px : aucune donnée écrite dans le stockage local`);

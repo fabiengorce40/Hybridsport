@@ -87,8 +87,19 @@ describe('REKKA V2 — prototype', () => {
     fireEvent.click(screen.getByRole('button', { name: 'HYROX' }));
     expect(document.querySelector('[data-unavailable]')?.textContent).toMatch(/non disponible/);
     go('Séances');
+    go('Progression');
+    fireEvent.click(screen.getByRole('button', { name: 'Musculation' }));
+    fireEvent.click(screen.getByRole('button', { name: '4 semaines' }));
+    expect(screen.getByRole('button', { name: '4 semaines' }).getAttribute('aria-pressed')).toBe('true');
+    expect(screen.getByRole('figure').getAttribute('aria-label')).toMatch(/de 67,5 à 72,5 kg/);
     go('Profil');
-    expect(screen.getByRole('main', { name: 'Profil' })).toBeTruthy();
+    const profile = screen.getByRole('main', { name: 'Profil' });
+    // Aucun niveau ni XP inventé (le « niveau 28 » de la maquette est illustratif).
+    expect(profile.textContent).not.toMatch(/niveau|XP/i);
+    expect(screen.getByRole('img', { name: 'Avatar provisoire' })).toBeTruthy();
+    expect(within(screen.getByRole('region', { name: 'Objectifs' })).getAllByText(/Musculation|Course|HYROX|Cross-training/).length).toBe(4);
+    fireEvent.click(screen.getByRole('tab', { name: 'Badges' }));
+    expect(screen.getByRole('region', { name: 'Badges' })).toBeTruthy();
     expect(window.localStorage.length).toBe(0);
   });
 });

@@ -74,3 +74,28 @@ export const weekSummary = {
     { day: 'D', sport: null, minutes: 0 },
   ],
 } as const;
+
+/** V2-2B — séries par période (démonstration) : charge de travail au squat (kg). */
+export const squatSeries = {
+  '4w': { labels: ['S9', 'S10', 'S11', 'S12'], loads: [67.5, 70, 70, 72.5], gain: '+5' },
+  '3m': { labels: ['S1', 'S2', 'S3', 'S4', 'S5', 'S6', 'S7', 'S8', 'S9', 'S10', 'S11', 'S12'], loads: [60, 62.5, 62.5, 65, 65, 67.5, 65, 67.5, 67.5, 70, 70, 72.5], gain: '+12,5' },
+  '1y': { labels: ['T1', 'T2', 'T3', 'T4'], loads: [50, 57.5, 65, 72.5], gain: '+22,5' },
+} as const;
+export type Period = keyof typeof squatSeries;
+
+/** V2-2B — profil (démonstration) : objectifs par discipline, disciplines actives. Aucun niveau ni XP. */
+export const profileDemo = {
+  since: 'octobre 2026',
+  goals: [
+    { sport: 'strength' as SportKey, title: 'Développer ma force', detail: 'Squat 100 kg' },
+    { sport: 'running' as SportKey, title: '10 km en 45 min', detail: 'Référence actuelle 51:42' },
+    { sport: 'hyrox' as SportKey, title: 'Sub 1 h 10', detail: 'Première course complète' },
+    { sport: 'crosstraining' as SportKey, title: 'Être plus mobile', detail: 'Forme générale' },
+  ],
+  disciplines: [
+    { sport: 'strength' as SportKey, done: 9, planned: 12 },
+    { sport: 'running' as SportKey, done: 7, planned: 8 },
+    { sport: 'hyrox' as SportKey, done: 2, planned: 4 },
+    { sport: 'crosstraining' as SportKey, done: 1, planned: 4 },
+  ],
+} as const;

@@ -85,7 +85,6 @@ export function Scene({ variant = 'city', label }: { variant?: 'city' | 'mountai
       </g>
       {variant === 'mountain' ? (<>
         <path d={`M0 ${String(horizon)} L60 170 L95 200 L150 110 L205 190 L250 150 L320 230 L360 180 L400 220 L400 ${String(horizon)} Z`} fill="#24507a" />
-        <path d="M150 110 L140 130 L150 125 L160 134 L165 122 Z M60 170 L54 181 L62 178 L68 184 Z" fill="#e8f4fb" opacity="0.85" />
         <path d={`M0 ${String(horizon)} L40 230 L90 250 L140 210 L200 255 L260 225 L330 260 L400 240 L400 ${String(horizon)} Z`} fill="#16405e" />
         {/* Ruine en arche (fantasy) */}
         <g fill="#0f2f45" opacity="0.95"><rect x="300" y="196" width="10" height="70" /><rect x="342" y="196" width="10" height="70" /><path d="M296 200 Q326 160 356 200 L350 204 Q326 172 302 204 Z" /></g>
