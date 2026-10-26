@@ -309,3 +309,84 @@ Les visuels définitifs doivent être **originaux** : aucune reprise d'Edgerunne
 | `v2-{360,390}-08-profil.png` | Profil |
 
 **Arrêt :** aucune publication, aucune intégration dans l'application, RC5.4 non repris. J'attends votre retour visuel.
+
+## V2-2B (suite) — Intégration du kit `REKKA_V2_ASSETS`
+
+- **Source :** archive `REKKA_V2_ASSETS.zip`, avec `README`, `INTEGRATION_CLAUDE.md` et `PROMPT_CLAUDE.md`. La planche de `references/` est la référence artistique officielle.
+- **Règle appliquée :** les écrans restent de **vrais composants React/CSS**. Les PNG de référence ne sont ni copiés dans le dépôt ni affichés. Aucune image ne contient de texte ou d'interface.
+- **Garanties :**
+  - moteurs, contrats de données, RC5.3 et RC5.4 intacts ;
+  - BÊTA et production inchangées, aucun déploiement ;
+  - thème historique par défaut, V2 seulement avec `VITE_REKKA_THEME=v2` ou le prototype.
+- **Les captures `docs/kairo/captures/v2-2b/` montrent désormais l'état avec le kit.** Les tableaux « Inventaire » et « Écarts » ci-dessus décrivent l'état antérieur ; l'état courant est décrit ci-dessous.
+
+### Commits
+
+| Commit | Sous-lot | Contenu |
+|---|---|---|
+| `516bfe4` | V2-2B.6 Assets | Kit copié dans `apps/kairo/src/assets/rekka-v2/`, avec un `README` de provenance. Module unique `src/design/assets.tsx` (`Logo`, `MaskIcon`, `ArtImage`, `NAV_ICONS`, `UI_ICONS`, `BADGES`, `DECORATIONS`, `ART`). Pictogrammes de discipline du kit. Test d'inventaire et de sûreté des SVG. |
+| `df46c99` | V2-2B.7 Écrans | Détail ci-dessous. Scène vectorielle et logo provisoires supprimés. |
+| `9a6efd1` | V2-2B.8 Tests et page autonome | Tests DOM et E2E adaptés **sans retrait d'assertion de fond** : chaque assertion « provisoire » est remplacée par une vérification de l'asset réel. Build `PROTO_SINGLE=1` qui intègre les images. |
+
+Détail de V2-2B.7 :
+- **Accueil :**
+  - bandeau `accueil-cyberpunk`, avec voile et fond dégradé de repli ;
+  - logo SVG ;
+  - 烈火 en **texte** avec une police CJK, `lang="ja"` ;
+  - devise en HTML.
+- **Planning, Progression, Profil :** en-têtes `objectifs-rpg`.
+- **Séance :** bandeau `bilan-performance` ; chrono, pause et validation du kit.
+- **Navigation :** 5 pictogrammes du kit en masque `currentColor`.
+- **Badges :** badges du kit ; verrouillé = grisé **et** « À venir » écrit.
+- **Décorations :** cadre d'angle autour du pictogramme du jour, séparateur néon.
+- **Progression :** filtres défilables avec accroche, fondu et cibles de 44 px.
+
+### Assets : intégrés / non intégrés / à valider
+
+| Asset du kit | Statut | Où / pourquoi |
+|---|---|---|
+| `logos/rekka-logo-primary.svg` | **Intégré, forme à valider** | Accueil, via `Logo` : point unique de remplacement. Le dessin est une capitale italique grasse vectorisée, **pas le trait au pinceau de la planche**. |
+| `logos/rekka-logo-white.svg`, `rekka-logo-dark.svg` | Disponibles, non affichés | Exposés par `Logo variant` ; aucun écran du prototype n'en a besoin |
+| `logos/rekka-mark.svg` | **Non intégré, à valider** | Se lit comme un « P » à petite taille. **L'icône PWA publiée n'est pas modifiée.** |
+| `logos/rekka-kanji-symbol.svg` | **Non intégré** | Interprétation stylisée qui **ne se lit pas comme 烈火**. Le texte exact est affiché en police CJK. |
+| `icons/sports/*.svg` (4) | **Intégré** | `SportIcon` partout ; nom accessible conservé |
+| `icons/navigation/` accueil, planning, séances, progression, profil | **Intégré** | Barre d'onglets, masque `currentColor` |
+| `icons/navigation/` chrono, pause, check, record | **Intégré** | Séance (chronomètre, pause, repos, validation), titre « Records confirmés » |
+| `badges/*.svg` (4) | **Intégré** (3 affichés) | Jalons et onglet Badges. En production : **seulement sur données réelles vérifiées**. `premiere-seance` est disponible mais n'a pas de jalon de démonstration. |
+| `decorations/corner-frame.svg`, `neon-divider.svg` | **Intégré** | Opacité ≤ 0,6, `pointer-events: none`, jamais sur un texte ni une commande (vérifié en E2E) |
+| `decorations/grid-pattern.svg`, `quest-progress.svg` | **Non intégré** | Trame : gêne la lisibilité des cartes denses. Barre de quête : aucun écran de quête dans ce lot. |
+| `illustrations/accueil-cyberpunk.webp` | **Intégré, à valider** | Bandeau d'Accueil, étiquette « Illustration à valider » |
+| `illustrations/objectifs-rpg.webp` | **Intégré, à valider** | En-têtes Planning, Progression, Profil |
+| `illustrations/bilan-performance.webp` | **Intégré, à valider** | Bandeau de Séance et en-tête Séances |
+| `palette.json` | Copié | Conforme aux jetons `--r-*` du lot V2-1 |
+| `references/*.png` | **Non copiés** | Références visuelles uniquement |
+
+**Les trois illustrations ne sont pas déclarées finales.** Leur rendu est plat et géométrique : lune, immeubles en blocs, montagnes, anneau. Elles n'ont **ni personnage ni rendu anime**, contrairement à l'univers validé. Elles posent une ambiance correcte mais ne remplacent pas les peintures de la planche.
+
+### Écarts restants avec la planche
+
+| Écran | Écart |
+|---|---|
+| Accueil | Pas de personnage. Logo non calligraphié. 烈火 et la devise en typographie, sans écriture manuscrite. |
+| Planning | Bandeau d'ambiance au lieu du paysage détaillé. Le reste est conforme : légende supprimée, états écrits, liste et grille. |
+| Séance | Bandeau d'illustration ajouté (absent de la maquette), sous un voile ; mention « simulation » conservée. |
+| Progression | Conforme dans sa structure ; jalons ajoutés sous les records. |
+| Profil | Avatar provisoire (initiale). Pas de « Niveau 28 » ni d'XP, volontairement. Visuels « Mes disciplines » = pictogrammes. |
+
+### Vérifications
+
+| Vérification | Résultat |
+|---|---|
+| E2E prototype 360 et 390 px | **92 vérifications OK**, dont :<br>• logo SVG et WebP chargés ;<br>• aucune image PNG ni capture ;<br>• décorations sans capture des touchers ;<br>• bouton principal non masqué ;<br>• onglets ≥ 44 px ;<br>• filtres défilables ≥ 44 px ;<br>• badge verrouillé grisé et écrit ;<br>• série en cours visible au-dessus du repos ;<br>• aucun défilement horizontal ;<br>• aucune requête externe, aucun stockage, aucune erreur |
+| Tests DOM et assets | 17 / 17 : isolation, assets réels, 烈火 en texte, badges, sûreté des SVG (ni script, ni `href`, ni URL externe), WebP ≤ 150 Ko |
+| Page autonome (`pnpm proto:single`, 561 Ko) en `file://` | 0 erreur, 0 requête réseau, polices et images chargées |
+| E2E de l'application (thème historique) | ✓ 303 vérifications |
+| `pnpm check` | ✓ 3 024 tests réussis, 2 ignorés, 0 échec |
+
+### Ouvrir le prototype sur Android
+
+1. Télécharger `rekka-v2-prototype.html`, un fichier unique sans dépendance.
+2. L'ouvrir avec Chrome. Depuis « Fichiers », faire « Ouvrir avec → Chrome ». Si Chrome ne propose pas le fichier, saisir `file:///sdcard/Download/rekka-v2-prototype.html` dans la barre d'adresse.
+3. Tout fonctionne hors ligne. Rien n'est enregistré : un rechargement remet la démonstration à zéro.
+
+**Arrêt après V2-2B.** Aucune intégration dans l'application, aucune publication. RC5.4 n'est pas repris.
