@@ -8,6 +8,10 @@
     "build": "vite build",
     "preview": "vite preview",
     "build:beta": "VITE_KAIRO_CHANNEL=beta vite build --outDir dist-beta",
+    "proto:dev": "vite --config vite.prototype.config.ts",
+    "proto:build": "vite build --config vite.prototype.config.ts",
+    "proto:preview": "vite preview --config vite.prototype.config.ts --port 4180",
+    "proto:single": "vite build --config vite.prototype.config.ts && node scripts/prototype-single.mjs dist-prototype/rekka-v2-prototype.html",
     "build:single": "VITE_TARGET=single vite build --outDir dist-single && node scripts/single-file.mjs dist-single/kairo-preview.html"
   },
   "dependencies": {

@@ -128,3 +128,107 @@ Fichiers les plus concernés : `Setup.tsx` (13), `FreeRunForm.tsx` (8), `PreSess
 | Bascule `kairo` / `v2` sans résidu | ✓ |
 | Polices sous des noms propres, ancien thème non affecté | ✓ |
 | Tests d'interface existants (37 fichiers, 169 tests) | ✓ inchangés |
+
+---
+
+## V2-2 — Prototype isolé
+
+### Ce que c'est, et ce que ce n'est pas
+
+- **Quatre écrans de référence** navigables à 360 et 390 px :
+  - **Accueil** ;
+  - **Planning** (liste et grille) ;
+  - **Séance Musculation** (phases, série en cours, validation, chronomètre global, pause) ;
+  - **Progression** (graphique, records, régularité, jalons, indicateur indisponible).
+- **Navigation cible :** Accueil / Planning / Séances / Progression / Profil. « Séances » et « Profil » sont des écrans d'attente qui expliquent ce qu'ils regrouperont.
+- **Données de démonstration** (`prototype/demo-data.ts`) : inventées, signalées par un bandeau magenta permanent « Prototype · données de démonstration · non connecté au moteur ».
+  - Le chronomètre est annoncé comme « simulation ».
+  - Le back-off est marqué « exemple visuel ».
+  - Le logo et l'illustration portent « provisoire ».
+- **Ce n'est pas une fonctionnalité :**
+  - aucun import d'app-core, du magasin ni des moteurs (vérifié par test) ;
+  - aucune lecture ni écriture du stockage ;
+  - aucun service worker ;
+  - rien n'est conservé au rechargement.
+
+### Fichiers
+
+| Fichier | Rôle |
+|---|---|
+| `apps/kairo/prototype/index.html`, `main.tsx` | Entrée distincte, `<html data-theme="v2">`. Paramètre `?ecran=accueil\|planning\|seance\|progression\|seances\|profil`. |
+| `apps/kairo/prototype/Prototype.tsx` | Les écrans, construits avec les composants `r-*` du lot V2-1 |
+| `apps/kairo/prototype/demo-data.ts` | Données de démonstration |
+| `apps/kairo/prototype/prototype.css` | Mise en page propre au prototype |
+| `apps/kairo/vite.prototype.config.ts` | Build séparée vers `dist-prototype/` (ignorée par Git). La build de l'application (`dist/`) n'est pas touchée. |
+| `apps/kairo/scripts/prototype-single.mjs` | Version en **une seule page** : JS, CSS et polices intégrés, aucune requête réseau |
+| `apps/kairo/scripts/e2e-prototype.mjs` | E2E mobile à 360 et 390 px, avec captures |
+| `apps/kairo/tests/v2-prototype-dom.test.tsx` | Tests DOM et test d'isolation |
+| `apps/kairo/package.json` | Scripts `proto:dev`, `proto:build`, `proto:preview`, `proto:single` |
+| `apps/kairo/tsconfig.json`, `eslint.config.mjs`, `.gitignore` | Prise en compte du dossier `prototype/` ; `dist-prototype/` ignoré |
+| `docs/kairo/captures/v2/` | Captures à 360 et 390 px (12) |
+
+### Consulter le prototype sans modifier la BÊTA
+
+1. **Fichier autonome (recommandé sur téléphone) :** `rekka-v2-prototype.html`, environ 434 Ko.
+   - Il est remis avec ce rapport. On l'ouvre dans Chrome Android depuis les téléchargements.
+   - Il fonctionne sans réseau.
+   - Il n'a aucun lien avec l'application installée : autre adresse, aucun stockage, aucun service worker.
+   - Pour le régénérer : `pnpm --filter @hybridsport/kairo proto:single`, sortie dans `apps/kairo/dist-prototype/rekka-v2-prototype.html`.
+2. **En local, avec rechargement à chaud :** `pnpm --filter @hybridsport/kairo proto:dev`, puis l'adresse affichée. Ajouter `--host` pour l'ouvrir depuis un téléphone sur le même réseau.
+3. **Build servie :** `pnpm --filter @hybridsport/kairo proto:build && pnpm --filter @hybridsport/kairo proto:preview` (port 4180).
+
+**Aucune de ces méthodes ne publie quoi que ce soit.** La branche `claude/rekka-v2` n'a aucun workflow de déploiement.
+
+### Poids
+
+| Élément | Taille |
+|---|---|
+| JavaScript du prototype | 243 Ko (75 Ko gzip), React seul, aucun moteur |
+| CSS | 19,5 Ko (4,7 Ko gzip) |
+| Polices | 137 Ko (6 woff2) |
+| Fichier autonome | 434 Ko |
+
+### Vérifications
+
+| Vérification | Résultat |
+|---|---|
+| E2E prototype (`e2e-prototype.mjs`), 360 et 390 px | **64 vérifications OK**, dont :<br>• bandeau sur chaque écran ;<br>• thème V2 et polices locales chargées ;<br>• provisoires identifiés ;<br>• action principale visible sans défilement ;<br>• navigation à 5 onglets ;<br>• Planning liste puis grille (7 lignes), états écrits ;<br>• phases titrées, une seule série en cours, validation qui la fait avancer ;<br>• chronomètre dans la barre du haut, annoncé comme simulation, pause libellée ;<br>• Progression ;<br>• indicateur indisponible ;<br>• aucun défilement horizontal ;<br>• **aucune requête externe, stockage local vide, aucune erreur** |
+| Fichier autonome ouvert en `file://` | aucune erreur, aucune requête réseau, polices chargées |
+| Tests DOM du prototype (5) | ✓, dont l'isolation (aucun import `@hybridsport/*` ni de l'application) |
+| Application principale, thème par défaut : build et E2E principal | ✓, **303 vérifications** (interface inchangée) |
+| `pnpm check` (types, lint, suite complète) | ✓ **3 020 tests réussis**, 0 échec |
+
+### Captures (`docs/kairo/captures/v2/`, 360 et 390 px)
+
+| Fichier | Écran |
+|---|---|
+| `v2-{360,390}-01-accueil.png` | Accueil : logo et illustration provisoires, séance du jour, semaine, (bas de page : disciplines, quêtes) |
+| `v2-{360,390}-02-planning-liste.png` | Planning, liste : pictogramme, couleur et état écrit par séance |
+| `v2-{360,390}-03-planning-grille.png` | Planning, grille : une ligne par jour |
+| `v2-{360,390}-04-seance.png` | Séance : chronomètre global, montées en charge (cyan) validées, série de travail (néon) en cours |
+| `v2-{360,390}-05-seance-pause-travail.png` | Séance en pause, séries de travail |
+| `v2-{360,390}-06-progression.png` | Progression : chiffres clés, évolution des charges, records |
+
+### Inventaire des ressources graphiques manquantes
+
+| Ressource | Usage | Format recommandé | Remplacement provisoire actuel |
+|---|---|---|---|
+| **Logo REKKA complet** (dégradé jaune électrique → néon) | Accueil, onboarding, bilans | SVG vectoriel | Texte « REKKA » en Barlow Condensed incliné et dégradé, badge « Logo provisoire » |
+| **Logo compact et monochrome** | Barre du haut, cartes de partage | SVG | — |
+| **Icône PWA** (192, 512, 512 masquable) | Écran d'accueil Android | PNG | Icônes KAIRO actuelles (inchangées) |
+| **Symbole 烈火** stylisé | Élément secondaire de marque | SVG | Caractères en texte (police système, rendu variable selon l'appareil) |
+| **Illustration d'accueil** (paysage cyber / fantasy, personnage original) | Bannière d'accueil | AVIF ou WebP, 1080 × 720 et 720 × 480, ≤ 150 Ko | Dégradé violet / magenta / cyan, grille et soleil en CSS, badge « Illustration provisoire » |
+| **Illustrations d'onboarding** (3 à 4) | Étapes d'accueil | AVIF ou WebP, ≤ 120 Ko chacune | — (lot V2-9) |
+| **Illustrations de bilan / partage** (par discipline) | Fin de séance, cartes 9:16 et 4:5 | AVIF ou WebP, 1080 × 1920 | — (lot V2-11) |
+| **Visuels de jalons / badges** (RPG modéré) | Progression | SVG | Étoiles en texte (★ / ☆) |
+| **Pictogrammes de discipline définitifs** (facultatif) | Partout | SVG 24 px, trait 2 px | Pictogrammes SVG originaux du lot V2-1 (utilisables tels quels) |
+
+Les visuels définitifs doivent être **originaux** : aucune reprise d'Edgerunners, de personnages ou de logos protégés (cahier des charges § 2.4).
+
+### Écarts connus et points à valider
+
+- **Planche visuelle :** je n'ai pas accès à la planche validée. Le prototype suit les décisions écrites (palette, ambiance Digital Club × Cyberpunk × RPG, densité équilibrée). Votre validation visuelle sur téléphone est l'étape prévue (cahier des charges, phase 4).
+- **Captures pleine page :** la barre de navigation fixe y apparaît au milieu de la page. C'est un artefact de la capture, pas un défaut d'affichage.
+- **Animations :** transitions courtes seulement (validation, onglets) ; `prefers-reduced-motion` est respecté.
+
+**Arrêt après V2-2 :** aucune intégration dans l'application, aucune reprise de RC5.4 et aucune publication tant que vous n'avez pas validé le prototype.
