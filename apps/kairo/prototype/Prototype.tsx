@@ -8,9 +8,10 @@ import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
 import { SportIcon, SPORT_NAMES } from '../src/design/SportIcon.js';
 import type { SportKey } from '../src/design/SportIcon.js';
-import { DEMO_NOTICE, progression, STATE_LABELS, STATE_MARKS, todayLabel, week, workout } from './demo-data.js';
-import type { DemoExercise, DemoSession, DemoSet } from './demo-data.js';
+import { DEMO_NOTICE, progression, todayLabel, week, workout } from './demo-data.js';
+import type { DemoExercise, DemoSet } from './demo-data.js';
 import { Home } from './screens/Home.js';
+import { Planning, StateBadge } from './screens/Planning.js';
 
 export type ProtoTab = 'home' | 'plan' | 'sessions' | 'progress' | 'profile';
 const TABS: readonly { id: ProtoTab; label: string; icon: string }[] = [
@@ -43,74 +44,6 @@ function TabBar({ tab, onChange }: { tab: ProtoTab; onChange: (t: ProtoTab) => v
   );
 }
 
-function StateTag({ s }: { s: DemoSession['state'] }) {
-  return <span className={`p-state ${s}`} data-state={s}><span aria-hidden="true">{STATE_MARKS[s]}</span> {STATE_LABELS[s]}</span>;
-}
-
-// ——— Planning
-
-function Planning({ onOpen }: { onOpen: () => void }) {
-  const [view, setView] = useState<'list' | 'grid'>('list');
-  return (
-    <main className="r-screen" aria-label="Planning">
-      <div className="r-row between">
-        <div className="r-stack" style={{ gap: 0 }}><span className="r-eyebrow">Semaine du 26 octobre</span><h1 className="r-h1">Planning</h1></div>
-      </div>
-      <div className="r-row" role="group" aria-label="Affichage du planning">
-        <button type="button" className="r-chip" aria-pressed={view === 'list'} onClick={() => setView('list')}>Liste</button>
-        <button type="button" className="r-chip" aria-pressed={view === 'grid'} onClick={() => setView('grid')}>Grille</button>
-        <span className="r-text-3" style={{ marginLeft: 'auto' }}>‹ Semaine ›</span>
-      </div>
-      <Legend />
-      {view === 'list' ? (
-        <div className="r-stack" data-view="list">
-          {week.map((d) => (
-            <section key={d.day} className="r-stack" aria-label={`${d.day} ${d.date}`} style={{ gap: 6 }}>
-              <span className="r-eyebrow">{d.day} {d.date}</span>
-              {d.sessions.length === 0 && <div className="p-rest">Repos</div>}
-              {d.sessions.map((s) => (
-                <button key={s.id} type="button" className={`r-card p-mission ${s.state}`} data-sport={s.sport} onClick={s.sport === 'strength' ? onOpen : undefined} aria-label={`${SPORT_NAMES[s.sport]} : ${s.title}, ${STATE_LABELS[s.state]}`}>
-                  <div className="r-row" style={{ gap: 12 }}>
-                    <SportIcon sport={s.sport} label={false} />
-                    <div className="r-stack" style={{ gap: 2, flex: 1, minWidth: 0 }}>
-                      <b className="p-mission-title">{s.title}</b>
-                      <span className="r-text-3 r-num">{SPORT_NAMES[s.sport]} · ≈ {s.minutes} min{s.note ? ` · ${s.note}` : ''}</span>
-                    </div>
-                    <StateTag s={s.state} />
-                  </div>
-                </button>
-              ))}
-            </section>
-          ))}
-        </div>
-      ) : (
-        <div className="p-grid" data-view="grid" role="table" aria-label="Semaine en grille">
-          {week.map((d) => (
-            <div key={d.day} className="p-grid-row" role="row">
-              <span className="p-grid-day" role="rowheader">{d.day}<small>{d.date}</small></span>
-              <div className="p-grid-cells" role="cell">
-                {d.sessions.length === 0 ? <span className="p-rest">Repos</span> : d.sessions.map((s) => (
-                  <span key={s.id} className={`p-grid-cell ${s.state}`} data-sport={s.sport}>
-                    <SportIcon sport={s.sport} label={false} />
-                    <span className="p-grid-text"><b>{s.title}</b><small>{STATE_MARKS[s.state]} {STATE_LABELS[s.state]} · {s.minutes} min</small></span>
-                  </span>
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </main>
-  );
-}
-
-function Legend() {
-  return (
-    <div className="p-legend" aria-label="Légende des états">
-      {(['done', 'today', 'planned', 'moved', 'cancelled'] as const).map((s) => <StateTag key={s} s={s} />)}
-    </div>
-  );
-}
 
 // ——— Séance Musculation
 
@@ -287,7 +220,7 @@ function Sessions({ onOpen }: { onOpen: () => void }) {
       <p className="r-text-2" style={{ margin: 0 }}>Regroupera les séances à venir et l’historique (écran existant conservé, refonte dans un lot ultérieur).</p>
       {all.map(({ d, s }) => (
         <button key={s.id} type="button" className="r-card p-mission" data-sport={s.sport} onClick={s.sport === 'strength' ? onOpen : undefined}>
-          <div className="r-row" style={{ gap: 12 }}><SportIcon sport={s.sport} label={false} /><span className="r-stack" style={{ gap: 2, flex: 1 }}><b>{s.title}</b><span className="r-text-3">{d.day} {d.date} · {SPORT_NAMES[s.sport]}</span></span><StateTag s={s.state} /></div>
+          <div className="r-row" style={{ gap: 12 }}><SportIcon sport={s.sport} label={false} /><span className="r-stack" style={{ gap: 2, flex: 1 }}><b>{s.title}</b><span className="r-text-3">{d.day} {d.date} · {SPORT_NAMES[s.sport]}</span></span><StateBadge s={s.state} /></div>
         </button>
       ))}
     </main>

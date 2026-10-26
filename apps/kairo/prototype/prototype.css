@@ -126,3 +126,46 @@ button { cursor: pointer; }
 .p-wbar i.planned { background: transparent; border: 1.5px dashed var(--r-sport); }
 .p-wbar i.rest { background: var(--r-surface-3); }
 .p-wbar small { font-size: 10px; color: var(--r-text-3); }
+
+/* ===== V2-2B — pages (en-tête paysage) et Planning ===== */
+.p-page { min-height: 100dvh; padding-bottom: calc(96px + env(safe-area-inset-bottom)); background: var(--r-bg); }
+.p-page-head { position: relative; height: 118px; overflow: hidden; isolation: isolate; display: flex; align-items: flex-end; padding: 0 16px 10px; }
+.p-page-head .p-scene { opacity: 0.85; }
+.p-page-title { margin: 0; font-family: var(--r-font-display); font-weight: 800; font-size: 36px; line-height: 1; text-shadow: 0 2px 12px rgba(7, 24, 39, 0.85); }
+.p-page-body { padding: 4px 16px 0; display: flex; flex-direction: column; gap: 12px; }
+
+.p-segment { display: grid; grid-template-columns: 1fr 1fr; padding: 4px; border-radius: var(--r-radius-pill); background: var(--r-surface-1); border: 1px solid var(--r-line); }
+.p-segment button { min-height: 40px; border: 0; border-radius: var(--r-radius-pill); background: transparent; color: var(--r-text-2); font-weight: 700; font-size: var(--r-fs-s); }
+.p-segment button[aria-pressed="true"] { background: var(--r-neon); color: var(--r-night); box-shadow: 0 0 18px rgba(220, 255, 53, 0.35); }
+.p-weeknav { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.p-weeknav b { font-family: var(--r-font-display); font-weight: 700; font-size: 18px; }
+.p-round { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--r-line-strong); background: var(--r-surface-1); color: var(--r-text); font-size: 20px; line-height: 1; }
+.p-days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; }
+.p-day { min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; border-radius: var(--r-radius-s); border: 1px solid var(--r-line); background: var(--r-surface-1); color: var(--r-text-2); padding: 0; }
+.p-day small { font-size: 11px; color: var(--r-text-3); }
+.p-day b { font-family: var(--r-font-display); font-weight: 800; font-size: 18px; color: var(--r-text); }
+.p-day.today { border-color: var(--r-neon); background: var(--r-accent-soft); }
+.p-day[aria-pressed="true"] { background: var(--r-neon); border-color: var(--r-neon); }
+.p-day[aria-pressed="true"] b, .p-day[aria-pressed="true"] small { color: var(--r-night); }
+
+.p-plan-list { display: flex; flex-direction: column; gap: 8px; }
+.p-plan-row {
+  display: grid; grid-template-columns: 40px 40px 1fr auto; align-items: center; gap: 10px; width: 100%; text-align: left; color: var(--r-text);
+  padding: 10px 10px 10px 12px; border-radius: var(--r-radius-m); background: var(--r-surface-1); border: 1px solid var(--r-line);
+}
+.p-plan-row.today { border-color: var(--r-neon); box-shadow: inset 3px 0 0 var(--r-neon), 0 0 22px rgba(220, 255, 53, 0.12); background: linear-gradient(90deg, rgba(220, 255, 53, 0.08), var(--r-surface-1) 60%); }
+.p-plan-row.cancelled { opacity: 0.62; }
+.p-plan-row.cancelled .p-plan-text b { text-decoration: line-through; }
+.p-plan-row.rest { grid-template-columns: 40px 40px 1fr; background: transparent; }
+.p-plan-date { display: flex; flex-direction: column; align-items: center; line-height: 1.05; }
+.p-plan-date small { font-size: 12px; color: var(--r-text-3); }
+.p-plan-date b { font-family: var(--r-font-display); font-weight: 800; font-size: 22px; }
+.p-plan-row[data-sport] .p-plan-date b { color: var(--r-sport); }
+.p-plan-text { display: flex; flex-direction: column; min-width: 0; }
+.p-plan-text b { font-size: var(--r-fs-m); }
+.p-plan-text span { font-size: 12px; color: var(--r-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.p-rest-icon { --r-sport: var(--r-text-3); }
+.p-plan-row .p-state { font-size: 10px; padding: 3px 7px; }
+.p-grid-row.today { box-shadow: inset 3px 0 0 var(--r-neon); }
+.p-grid-rest { font-size: var(--r-fs-s); color: var(--r-text-3); }
+.p-grid-cell .p-state { margin-left: auto; font-size: 9px; padding: 2px 6px; }
