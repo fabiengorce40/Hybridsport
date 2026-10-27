@@ -25,6 +25,29 @@ import artAccueil from '../assets/rekka-v2/illustrations/accueil-cyberpunk.webp'
 import artObjectifs from '../assets/rekka-v2/illustrations/objectifs-rpg.webp';
 import artBilan from '../assets/rekka-v2/illustrations/bilan-performance.webp';
 
+/**
+ * Ressources FINALES validées (V2-2C) : déposées dans `assets/rekka-v2/validated/` sous un nom fixe, elles remplacent
+ * automatiquement la ressource provisoire du kit au prochain build, et l'étiquette « provisoire » disparaît. Tant que
+ * le fichier manque, la ressource du kit reste affichée ET signalée comme provisoire (jamais présentée comme finale).
+ */
+const VALIDATED: Readonly<Record<string, string>> = Object.fromEntries(
+  Object.entries(import.meta.glob<string>('../assets/rekka-v2/validated/*.{svg,webp}', { eager: true, query: '?url', import: 'default' }))
+    .map(([path, url]) => [path.slice(path.lastIndexOf('/') + 1), url]),
+);
+/** Fichiers finals attendus (nom exact dans `validated/`). */
+export const FINAL_ASSETS = { logo: 'rekka-logo.svg', homeHero: 'accueil-hero.webp' } as const;
+export type FinalAssetKey = keyof typeof FINAL_ASSETS;
+export interface ResolvedAsset { src: string; validated: boolean }
+/** Choisit la ressource validée si elle existe, sinon la ressource provisoire (fonction pure, testable). */
+export function resolveAsset(validated: Readonly<Record<string, string>>, key: FinalAssetKey, fallback: string): ResolvedAsset {
+  const v = validated[FINAL_ASSETS[key]];
+  return v ? { src: v, validated: true } : { src: fallback, validated: false };
+}
+export const LOGO_ASSET: ResolvedAsset = resolveAsset(VALIDATED, 'logo', logoPrimary);
+export const HOME_HERO_ASSET: ResolvedAsset = resolveAsset(VALIDATED, 'homeHero', artAccueil);
+/** Ressources finales encore manquantes (affichées comme provisoires). */
+export const MISSING_FINAL_ASSETS: readonly FinalAssetKey[] = (Object.keys(FINAL_ASSETS) as FinalAssetKey[]).filter((k) => !VALIDATED[FINAL_ASSETS[k]]);
+
 export const NAV_ICONS = { accueil: icoAccueil, planning: icoPlanning, seances: icoSeances, progression: icoProgression, profil: icoProfil } as const;
 export const UI_ICONS = { chrono: icoChrono, pause: icoPause, check: icoCheck, record: icoRecord } as const;
 export const BADGES = { objectif: badgeObjectif, premiere: badgePremiere, record: badgeRecord, regularite: badgeRegularite } as const;
@@ -32,15 +55,17 @@ export type BadgeKey = keyof typeof BADGES;
 export const DECORATIONS = { corner: decoCorner, grid: decoGrid, divider: decoDivider } as const;
 /** Illustrations d'ambiance (WebP, sans texte ni interface) et leur texte alternatif. */
 export const ART = {
-  accueil: { src: artAccueil, alt: 'Ville néon cyberpunk sous une lune magenta', width: 1080, height: 720 },
+  accueil: HOME_HERO_ASSET.validated
+    ? { src: HOME_HERO_ASSET.src, alt: 'Univers REKKA : ville néon et nature fantastique', width: 1080, height: 1200 }
+    : { src: artAccueil, alt: 'Ville néon cyberpunk sous une lune magenta', width: 1080, height: 720 },
   objectifs: { src: artObjectifs, alt: 'Montagnes au crépuscule et anneau lumineux', width: 1080, height: 720 },
   bilan: { src: artBilan, alt: 'Barre de musculation néon devant une ville la nuit', width: 1080, height: 720 },
 } as const;
 export type ArtKey = keyof typeof ART;
 
-/** Logo REKKA (SVG en contours du kit). `variant` : néon (défaut), blanc, ou pictogramme compact. */
+/** Logo REKKA : logo FINAL validé s'il est déposé, sinon proposition du kit. `variant` : néon (défaut), blanc, compact. */
 export function Logo({ variant = 'primary', className }: { variant?: 'primary' | 'white' | 'mark'; className?: string }) {
-  const src = variant === 'white' ? logoWhite : variant === 'mark' ? logoMark : logoPrimary;
+  const src = variant === 'white' ? logoWhite : variant === 'mark' ? logoMark : LOGO_ASSET.src;
   return <img className={className} src={src} alt="REKKA" draggable={false} />;
 }
 

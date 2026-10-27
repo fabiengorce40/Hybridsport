@@ -1,11 +1,12 @@
 /**
- * REKKA V2 — Profil du prototype (lot V2-2B) : en-tête d'ambiance (illustration du kit, à valider), avatar PROVISOIRE, objectifs par
+ * REKKA V2 — Profil du prototype (lot V2-2B) : en-tête d'ambiance (illustration provisoire du kit), avatar PROVISOIRE, objectifs par
  * discipline, disciplines actives, accès à l'historique et aux réglages (écrans existants). AUCUN niveau ni XP : le
  * « niveau 28 » de la maquette est purement illustratif et n'est pas une spécification. Données de démonstration.
  */
 import { useState } from 'react';
 import { SportIcon, SPORT_NAMES } from '../../src/design/SportIcon.js';
 import { BADGES } from '../../src/design/assets.js';
+import { milestoneEarned } from '../../src/design/Milestones.js';
 import { Ambience } from '../art/Ambience.js';
 import { athlete, profileDemo, progression } from '../demo-data.js';
 
@@ -55,7 +56,7 @@ export function Profile() {
         )}
         {tab === 'badges' && (
           <section className="p-goals" aria-label="Badges">
-            {progression.badges.map((b) => <div key={b.id} className={`p-goal ${b.earned ? '' : 'locked'}`}><img className="p-badge-img" src={BADGES[b.badge]} alt="" aria-hidden="true" /><span className="p-record2-text"><b>{b.title}</b><span>{b.earned ? 'Obtenu' : 'À venir'} · {b.detail}</span></span></div>)}
+            {progression.badges.map((b) => { const earned = milestoneEarned(b); return <div key={b.id} className={`p-goal ${earned ? '' : 'locked'}`}><img className="p-badge-img" src={BADGES[b.badge]} alt="" aria-hidden="true" /><span className="p-record2-text"><b>{b.title}</b><span>{earned ? 'Obtenu' : 'À venir'} · {b.detail}</span></span></div>; })}
           </section>
         )}
         <section aria-label="Mes disciplines">

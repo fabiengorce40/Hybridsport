@@ -1,23 +1,35 @@
 /**
- * REKKA V2 — Accueil du prototype (lot V2-2B) : bandeau d'ambiance (illustration WebP du kit, à valider) séparé de
+ * REKKA V2 — Accueil du prototype (lots V2-2B/2C) : bandeau d'ambiance (illustration finale si livrée, sinon kit) séparé de
  * l'interface ; logo du kit, 烈火 et devise en texte HTML, séance du jour actionnable, accès aux 4 disciplines,
  * résumé de semaine. Tous les éléments d'interface sont de vrais composants, jamais incrustés dans l'image.
  */
 import { SportIcon, SPORT_NAMES } from '../../src/design/SportIcon.js';
-import { DECORATIONS, Logo } from '../../src/design/assets.js';
+import { DECORATIONS, HOME_HERO_ASSET, LOGO_ASSET, Logo } from '../../src/design/assets.js';
 import { Ambience } from '../art/Ambience.js';
 import { athlete, todayLabel, week, weekSummary, workout } from '../demo-data.js';
 
 const SPORTS = ['strength', 'running', 'hyrox', 'crosstraining'] as const;
 
+/** Étiquette honnête : tant que le logo calligraphique et l'illustration finale ne sont pas livrés et validés
+ *  (`assets/rekka-v2/validated/`), les ressources du kit sont annoncées comme provisoires. */
+function provisionalLabel(): string | null {
+  const logo = !LOGO_ASSET.validated;
+  const art = !HOME_HERO_ASSET.validated;
+  if (logo && art) return 'Logo et illustration provisoires';
+  if (logo) return 'Logo provisoire';
+  if (art) return 'Illustration provisoire';
+  return null;
+}
+
 export function Home({ onStart, onPlanning }: { onStart: () => void; onPlanning: () => void }) {
   const maxMin = Math.max(...weekSummary.days.map((d) => d.minutes), 1);
+  const provisional = provisionalLabel();
   return (
     <main className="p-home" aria-label="Accueil">
       <section className="p-hero" aria-label="Bannière REKKA">
-        <Ambience art="accueil" eager />
-        <span className="r-badge demo p-hero-tag" data-placeholder-tag>Illustration à valider</span>
-        <div className="p-hero-brand" data-asset="logo">
+        <Ambience art="accueil" eager validated={HOME_HERO_ASSET.validated} />
+        {provisional && <span className="r-badge demo p-hero-tag" data-placeholder-tag>{provisional}</span>}
+        <div className="p-hero-brand" data-asset="logo" data-validated={LOGO_ASSET.validated}>
           <Logo className="p-hero-logo" />
           <p className="p-hero-motto"><span className="p-kanji" lang="ja">烈火</span><span>Nourris ta flamme.</span></p>
         </div>

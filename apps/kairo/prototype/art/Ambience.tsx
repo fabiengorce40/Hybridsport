@@ -6,9 +6,9 @@
 import { ArtImage } from '../../src/design/assets.js';
 import type { ArtKey } from '../../src/design/assets.js';
 
-export function Ambience({ art, eager = false }: { art: ArtKey; eager?: boolean }) {
+export function Ambience({ art, eager = false, validated = false }: { art: ArtKey; eager?: boolean; validated?: boolean }) {
   return (
-    <div className="p-ambience" data-art={art}>
+    <div className="p-ambience" data-art={art} data-validated={validated}>
       <ArtImage art={art} eager={eager} />
       <span className="p-ambience-veil" aria-hidden="true" />
     </div>
