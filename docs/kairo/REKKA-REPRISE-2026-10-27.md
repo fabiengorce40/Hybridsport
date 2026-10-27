@@ -11,11 +11,11 @@ Base : `codex/rekka-continuation-20261027` à `559aca6`. Les références BÊTA 
 
 ## Vérifications effectuées
 
-- TypeScript racine et application : réussis après le port visuel ; ESLint ciblé sur les fichiers applicatifs concernés : réussi.
+- TypeScript racine et application : réussis après le port visuel ; ESLint ciblé puis ESLint complet : réussis.
 - 13 tests ciblés design/prototype : réussis. Nouvelle build BÊTA locale : réussie, avertissement Vite sur le gros bundle JavaScript (environ 1,42 Mo minifié).
 - Relance séquentielle de deux fichiers ayant subi des délais lors de l'exécution concurrente : 21 tests réussis, notamment les scénarios Planning et placement. Les erreurs précédentes étaient des dépassements de 5 secondes ; la relance ne suffit pas à valider l'ensemble de la suite.
 - E2E BÊTA : interrompu par la limite de 180 s, donc résultat global **non validé**. Parmi les étapes observées avant interruption : import, vues liste/grille, navigation, quatre sports, conservation d'une série et d'un repos après rechargement en Cross-training. Les captures ci-dessus sont distinctes de ce parcours et ne remplacent pas une validation E2E complète.
-- Suite complète initiale : interrompue après 180 s ; un test de placement avait dépassé son délai sous exécution concurrente, puis son fichier a réussi en relance séquentielle. Voir la suite du rapport pour le résultat de la nouvelle tentative.
+- Suite complète initiale : interrompue après 180 s ; un test de placement avait dépassé son délai sous exécution concurrente, puis son fichier a réussi en relance séquentielle. La deuxième tentative limitée à 240 s avec deux processus a également expiré sans bilan final ; aucun résultat complet ne peut être déclaré.
 
 ## À poursuivre
 
