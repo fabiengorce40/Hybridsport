@@ -390,3 +390,77 @@ Détail de V2-2B.7 :
 3. Tout fonctionne hors ligne. Rien n'est enregistré : un rechargement remet la démonstration à zéro.
 
 **Arrêt après V2-2B.** Aucune intégration dans l'application, aucune publication. RC5.4 n'est pas repris.
+
+## V2-2C — Corrections après audit visuel (prototype)
+
+- **Branche :** `claude/rekka-v2-2c`, issue de `claude/rekka-v2-2b` (`cdec1cf`).
+- **Garanties :**
+  - aucun moteur, aucun contrat, aucune donnée enregistrée ;
+  - BÊTA, production et thème historique inchangés ;
+  - ni fusion ni déploiement.
+
+### Commits
+
+| Commit | Sous-lot | Contenu |
+|---|---|---|
+| `628f938` | V2-2C.1 Accueil, ressources finales | Emplacements `src/assets/rekka-v2/validated/` (`rekka-logo.svg`, `accueil-hero.webp`). Un fichier déposé là remplace automatiquement la ressource du kit au build (`resolveAsset`) et retire l'étiquette « provisoire ». Tant qu'il manque, l'Accueil affiche « Logo et illustration provisoires ». **Aucun dégradé ni dessin improvisé à la place des ressources manquantes.** |
+| `00b43bd` | V2-2C.2 Séance, Planning, Progression | Voir le détail ci-dessous |
+
+Détail de V2-2C.2 :
+- **Séance :**
+  - réserve basse calculée (navigation + barre de repos + 28 px de marge) ;
+  - espacements verticaux réduits sans descendre sous 44 px de cible ;
+  - en-tête au chronomètre global toujours collé sous le bandeau de démonstration ;
+  - montée en charge cyan, séries de travail jaune-vert : inchangé.
+- **Planning :**
+  - l'état passe sur la ligne de la discipline ;
+  - intitulé et détails utilisent toute la largeur, sur deux lignes si besoin ;
+  - en-tête réduit de 118 à 92 px.
+- **Progression :**
+  - disciplines défilables signalées par des flèches « › » / « ‹ » de 44 px et un fondu du côté où il reste du contenu ;
+  - nouveaux composants `src/design/Milestones.tsx` (`GoalProgress`, `MilestoneCard`), décrits ci-dessous.
+
+### Ressources manquantes (bloquantes pour la fidélité de l'Accueil)
+
+| Fichier à livrer dans `src/assets/rekka-v2/validated/` | Spécification |
+|---|---|
+| `rekka-logo.svg` | Logo **calligraphique au pinceau**, jaune-vert néon, proche du trait de la planche. SVG vectoriel en contours, fond transparent, sans script / lien / image, lisible à 180 px. |
+| `accueil-hero.webp` | Illustration **cyberpunk / anime** : personnage original, ville lumineuse, nature fantastique. Aucun texte ni interface. ≈ 1080 × 1200 px, ≤ 300 Ko. Zone calme en haut à gauche (logo), tiers inférieur plus sombre (texte d'accueil). |
+
+Ces deux ressources ne peuvent pas être produites ici avec une qualité acceptable. Elles sont **signalées comme manquantes** plutôt qu'improvisées. Les ressources actuelles du kit restent affichées et **annoncées provisoires**, jamais finales.
+
+### Objectifs et jalons vérifiés (`src/design/Milestones.tsx`)
+
+- **Preuve :** une preuve = des identifiants de séances réelles et une date.
+- **Objectifs :**
+  - avec preuve et mesure : valeur actuelle / cible, barre (objectifs « plus = mieux »), nombre de séances ;
+  - sinon : « non disponible : aucune séance réelle ne le mesure encore », sans chiffre ni barre ;
+  - objectif de temps : jamais de ratio inventé.
+- **Jalons :** « Obtenu le … » seulement avec une date **et** une preuve. Sinon : « À venir », badge grisé.
+- **Aucun niveau, aucune XP :** ces notions n'existent pas dans les types.
+- **Branchement sur l'application :** à faire dans un lot ultérieur, à partir de l'historique réel.
+
+### Écarts restants avec la planche
+
+| Écran | Écart |
+|---|---|
+| Accueil | **Logo calligraphique et illustration avec personnage manquants** (ressources ci-dessus). Structure, séance du jour et 4 disciplines conformes. |
+| Séance | Bandeau d'illustration provisoire (`bilan-performance`). La barre de repos reste flottante : une série située sous elle se lit en faisant défiler, et chaque série et chaque bouton peut être amené au-dessus (vérifié). |
+| Planning | En-tête d'ambiance provisoire (`objectifs-rpg`) |
+| Progression | En-tête provisoire ; objectifs et jalons sur données de démonstration |
+| Profil | Avatar et visuels de disciplines provisoires ; ni niveau ni XP, volontairement |
+
+### Vérifications
+
+| Vérification | Résultat |
+|---|---|
+| E2E du prototype, 360 et 390 px | **112 vérifications OK**. Nouvelles vérifications :<br>• ressources annoncées provisoires ;<br>• **chaque série, saisie et bouton de séance atteignable sans être masqué par le repos**, chronomètre global visible ;<br>• « Terminer » à 28 px au-dessus du repos en bas de page ;<br>• cibles ≥ 44 px ;<br>• aucun intitulé de Planning tronqué ;<br>• en-tête du Planning ≤ 96 px ;<br>• flèche « Disciplines suivantes » qui fait défiler, puis retour ;<br>• objectifs : barre seulement si mesuré |
+| Tests DOM, assets et jalons | 25 / 25 (dont 6 nouveaux tests d'objectifs et jalons, et le remplacement automatique par une ressource validée) |
+| Substitution réelle, vérifiée puis retirée | Un SVG déposé en `validated/rekka-logo.svg` est pris en compte. L'étiquette devient « Illustration provisoire ». |
+| Page autonome (567 Ko) en `file://` | 0 erreur, 0 requête, images et polices chargées |
+| Application, thème historique : E2E principal | ✓ 303 |
+| `pnpm check` | ✓ 3 032 tests réussis, 2 ignorés, 0 échec |
+
+Captures : `docs/kairo/captures/v2-2c/` (360 et 390 px, mêmes noms qu'en V2-2B).
+
+**Arrêt après V2-2C.** J'attends votre validation et les deux ressources finales.
