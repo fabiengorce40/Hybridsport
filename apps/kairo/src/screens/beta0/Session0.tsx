@@ -209,7 +209,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
           <AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state, requestId)} />
           <StrengthInsightPanel requestId={requestId} />
           <StrengthWorkout
-            v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}${editable ? ` · ${String(Math.floor(elapsed / 60))}:${String(elapsed % 60).padStart(2, '0')}` : ''}`} editable={editable}
+            v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}${editable ? ` · ${String(Math.floor(elapsed / 60))}:${String(elapsed % 60).padStart(2, '0')} écoulé` : ''}`} editable={editable}
             onRecord={(item, index, x) => record(item, undefined, index, x)}
             onTogglePain={(itemId) => store.apply((s) => toggleProgrammePainItem(s, requestId, itemId))}
             onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, requestId, itemId, setIndex, rir))}
