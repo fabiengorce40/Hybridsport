@@ -2,10 +2,10 @@
  * REKKA V2 — pictogrammes de discipline (fichiers SVG du kit `assets/rekka-v2/icons/sports/`, couleur de discipline
  * intégrée). Toujours accompagnés d'un nom accessible : la discipline n'est jamais portée par la couleur seule.
  */
-import musculation from './visual/musculation.svg';
-import course from './visual/course.svg';
-import hyrox from './visual/hyrox.svg';
-import crossTraining from './visual/cross-training.svg';
+import musculation from './visual/icon-musculation.webp';
+import course from './visual/icon-course.webp';
+import hyrox from './visual/icon-hyrox.webp';
+import crossTraining from './visual/icon-crosstraining.webp';
 
 export type SportKey = 'strength' | 'running' | 'hyrox' | 'crosstraining';
 export const SPORT_NAMES: Readonly<Record<SportKey, string>> = { strength: 'Musculation', running: 'Course', hyrox: 'HYROX', crosstraining: 'Cross-training' };

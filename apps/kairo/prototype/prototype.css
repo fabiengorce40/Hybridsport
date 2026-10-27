@@ -374,3 +374,12 @@ button { cursor: pointer; }
 /* City skyline from the approved home artwork, framed for compact headers. */
 .p-page-head .r-art { object-position: 82% 44%; }
 .p-profile-head .r-art { object-position: 80% 43%; }
+
+/* Approved circular emblems: no extra rounded tile around their ring. */
+.p-app [data-sport="strength"] { --r-sport: #ff43cc; }
+.p-app [data-sport="running"] { --r-sport: #37c6ff; }
+.p-app [data-sport="hyrox"] { --r-sport: #dcff35; }
+.p-app [data-sport="crosstraining"] { --r-sport: #ffb83d; }
+.p-app .r-sport-icon { background: transparent; border: 0; }
+.p-app .r-sport-icon img { width: 100%; height: 100%; object-fit: contain; }
+.p-sport-tile .r-sport-icon { width: 44px; height: 44px; }
