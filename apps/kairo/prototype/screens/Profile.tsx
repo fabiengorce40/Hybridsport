@@ -1,10 +1,6 @@
-/**
- * REKKA V2 — Profil du prototype (lot V2-2B) : en-tête d'ambiance (illustration du kit, à valider), avatar PROVISOIRE, objectifs par
- * discipline, disciplines actives, accès à l'historique et aux réglages (écrans existants). AUCUN niveau ni XP : le
- * « niveau 28 » de la maquette est purement illustratif et n'est pas une spécification. Données de démonstration.
- */
+/** Demonstration profile with anime avatar, goals and discipline cards. No invented XP or level. */
 import { useState } from 'react';
-import { SportIcon, SPORT_NAMES } from '../../src/design/SportIcon.js';
+import { SportIcon, SPORT_NAMES } from '../art/SportIcon.js';
 import { BADGES } from '../../src/design/assets.js';
 import { Ambience } from '../art/Ambience.js';
 import { athlete, profileDemo, progression } from '../demo-data.js';
@@ -24,7 +20,7 @@ export function Profile() {
           </button>
         </div>
         <div className="p-identity">
-          <span className="p-avatar" role="img" aria-label="Avatar provisoire" data-placeholder="avatar">{athlete.name.slice(0, 1)}</span>
+          <span className="p-avatar" role="img" aria-label="Avatar de démonstration" data-placeholder="avatar">{athlete.name.slice(0, 1)}</span>
           <div className="r-stack" style={{ gap: 2 }}>
             <b className="p-identity-name">{athlete.name}</b>
             <span className="r-text-2">Membre depuis {profileDemo.since}</span>
@@ -70,7 +66,7 @@ export function Profile() {
               </div>
             ))}
           </div>
-          <span className="r-text-3 p-fine">Visuels de disciplines provisoires (pictogrammes) : les illustrations finales sont à fournir.</span>
+          <span className="r-text-3 p-fine">Progression de tes disciplines sur le mois.</span>
         </section>
         <div className="p-links">
           <button type="button" className="r-btn secondary block">Historique des séances (écran existant)</button>

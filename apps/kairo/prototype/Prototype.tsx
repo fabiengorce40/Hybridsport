@@ -6,7 +6,7 @@
  */
 import { useLayoutEffect, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { SportIcon, SPORT_NAMES } from '../src/design/SportIcon.js';
+import { SportIcon, SPORT_NAMES } from './art/SportIcon.js';
 import { DEMO_NOTICE, week } from './demo-data.js';
 import { Ambience } from './art/Ambience.js';
 import { MaskIcon, NAV_ICONS } from '../src/design/assets.js';

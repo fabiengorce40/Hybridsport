@@ -69,7 +69,7 @@ export function Workout({ onBack }: { onBack: () => void }) {
 
       <section className="p-wk-banner" aria-label="Séance">
         <Ambience art="bilan" />
-        <div className="p-wk-eyebrow-row"><span className="p-wk-eyebrow">Musculation · {todayLabel}</span><span className="r-badge demo p-wk-tag" data-placeholder-tag>Illustration à valider</span></div>
+        <div className="p-wk-eyebrow-row"><span className="p-wk-eyebrow">Musculation · {todayLabel}</span></div>
         <h1 className="p-wk-title">{workout.title}</h1>
         <span className="r-text-2 r-num">{workout.exercises.length} exercices · {all.length} séries · {done.size} validées</span>
         <div className="p-wk-progress"><div className="r-progress" role="progressbar" aria-label="Séries validées" aria-valuemin={0} aria-valuemax={all.length} aria-valuenow={done.size}><i style={{ width: `${String(Math.round((done.size / all.length) * 100))}%` }} /></div><span className="r-num">{exDone} / {workout.exercises.length}</span></div>

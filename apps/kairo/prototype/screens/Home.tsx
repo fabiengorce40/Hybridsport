@@ -1,10 +1,7 @@
-/**
- * REKKA V2 — Accueil du prototype (lot V2-2B) : bandeau d'ambiance (illustration WebP du kit, à valider) séparé de
- * l'interface ; logo du kit, 烈火 et devise en texte HTML, séance du jour actionnable, accès aux 4 disciplines,
- * résumé de semaine. Tous les éléments d'interface sont de vrais composants, jamais incrustés dans l'image.
- */
-import { SportIcon, SPORT_NAMES } from '../../src/design/SportIcon.js';
-import { DECORATIONS, Logo } from '../../src/design/assets.js';
+/** Isolated React home screen: brush logo, cinematic artwork and actionable session card. */
+import { SportIcon, SPORT_NAMES } from '../art/SportIcon.js';
+import { DECORATIONS } from '../../src/design/assets.js';
+import { VisualLogo as Logo } from '../art/visual-assets.js';
 import { Ambience } from '../art/Ambience.js';
 import { athlete, todayLabel, week, weekSummary, workout } from '../demo-data.js';
 
@@ -16,7 +13,7 @@ export function Home({ onStart, onPlanning }: { onStart: () => void; onPlanning:
     <main className="p-home" aria-label="Accueil">
       <section className="p-hero" aria-label="Bannière REKKA">
         <Ambience art="accueil" eager />
-        <span className="r-badge demo p-hero-tag" data-placeholder-tag>Illustration à valider</span>
+
         <div className="p-hero-brand" data-asset="logo">
           <Logo className="p-hero-logo" />
           <p className="p-hero-motto"><span className="p-kanji" lang="ja">烈火</span><span>Nourris ta flamme.</span></p>

@@ -10,8 +10,8 @@ import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { Prototype } from '../prototype/Prototype.js';
-import logoPrimary from '../src/assets/rekka-v2/logos/rekka-logo-primary.svg';
-import artAccueil from '../src/assets/rekka-v2/illustrations/accueil-cyberpunk.webp';
+import logoPrimary from '../prototype/art/visual/logo-brush.svg';
+import artAccueil from '../prototype/art/visual/accueil.webp';
 import badgeObjectif from '../src/assets/rekka-v2/badges/objectif-atteint.svg';
 
 afterEach(cleanup);
@@ -36,11 +36,11 @@ describe('REKKA V2 — prototype', () => {
     expect(screen.getByRole('img', { name: 'REKKA' }).getAttribute('src')).toBe(logoPrimary);
     expect(screen.getByText('烈火').getAttribute('lang')).toBe('ja');
     expect(screen.getByText('Nourris ta flamme.')).toBeTruthy();
-    // Illustration d'ambiance du kit (WebP) : texte alternatif, cadre de repli, étiquette « à valider » visible.
+    // Illustration anime autonome, avec texte alternatif.
     const hero = screen.getByRole('img', { name: /Ville néon cyberpunk/ });
     expect(hero.getAttribute('src')).toBe(artAccueil);
     expect(hero.closest('[data-art="accueil"]')).not.toBeNull();
-    expect(screen.getByText('Illustration à valider')).toBeTruthy();
+    expect(screen.queryByText('Illustration à valider')).toBeNull();
     // Aucune image de maquette ni capture : seules des ressources du kit (SVG / WebP).
     for (const img of document.querySelectorAll('img')) expect(img.getAttribute('src') ?? '').not.toMatch(/\.png|references/);
     // Pictogrammes de navigation : masques `currentColor`, décoratifs (le libellé texte nomme l'onglet).
@@ -114,7 +114,7 @@ describe('REKKA V2 — prototype', () => {
     const profile = screen.getByRole('main', { name: 'Profil' });
     // Aucun niveau ni XP inventé (le « niveau 28 » de la maquette est illustratif).
     expect(profile.textContent).not.toMatch(/niveau|XP/i);
-    expect(screen.getByRole('img', { name: 'Avatar provisoire' })).toBeTruthy();
+    expect(screen.getByRole('img', { name: 'Avatar de démonstration' })).toBeTruthy();
     expect(within(screen.getByRole('region', { name: 'Objectifs' })).getAllByText(/Musculation|Course|HYROX|Cross-training/).length).toBe(4);
     fireEvent.click(screen.getByRole('tab', { name: 'Badges' }));
     expect(screen.getByRole('region', { name: 'Badges' })).toBeTruthy();

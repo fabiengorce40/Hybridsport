@@ -17,7 +17,7 @@ const check = (cond, m) => { if (!cond) fail(m); console.log(`ok  ${m}`); };
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 
 for (const width of [360, 390]) {
-  const ctx = await browser.newContext({ viewport: { width, height: 800 }, deviceScaleFactor: 3, isMobile: true, hasTouch: true, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
+  const ctx = await browser.newContext({ viewport: { width, height: 800 }, deviceScaleFactor: 3, userAgent: 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.0.0 Mobile Safari/537.36', isMobile: true, hasTouch: true, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
   const page = await ctx.newPage();
   const errors = [];
   const external = [];
@@ -39,7 +39,7 @@ for (const width of [360, 390]) {
   check(await page.evaluate(() => document.fonts.check("800 20px 'REKKA Barlow Condensed'") && document.fonts.check("400 15px 'REKKA Inter'")), `${w} px : polices V2 locales chargées`);
   const loaded = (sel) => page.locator(sel).first().evaluate((i) => i.complete && i.naturalWidth > 0);
   check(await page.getByRole('img', { name: 'REKKA' }).isVisible() && await loaded('.p-hero-logo'), `${w} px : logo du kit affiché (SVG)`);
-  check(await loaded('[data-art="accueil"] img') && await page.getByText('Illustration à valider').isVisible(), `${w} px : illustration d'ambiance WebP chargée, signalée « à valider »`);
+  check(await loaded('[data-art="accueil"] img'), `${w} px : illustration anime WebP chargée`);
   check(await page.evaluate(() => [...document.images].every((i) => !/\.png|references/.test(i.src))), `${w} px : aucune capture ni maquette PNG affichée`);
   check(await page.evaluate(() => [...document.querySelectorAll('.p-deco-corner, .p-divider')].every((d) => getComputedStyle(d).pointerEvents === 'none' && Number(getComputedStyle(d).opacity) <= 0.6)), `${w} px : décorations discrètes, sans capture des touchers`);
   const cta = await page.getByRole('button', { name: 'Commencer la séance' }).boundingBox();
@@ -105,7 +105,7 @@ for (const width of [360, 390]) {
   check(await page.getByRole('region', { name: 'Évolution des charges' }).isVisible() && await page.getByRole('region', { name: 'Records confirmés' }).isVisible() && await page.getByRole('region', { name: 'Jalons' }).isVisible(), `${w} px : graphique, records, jalons`);
   check(await noHScroll(), `${w} px : Progression sans défilement horizontal`);
   const chips = page.getByRole('group', { name: 'Discipline' });
-  check(await chips.evaluate((c) => getComputedStyle(c).overflowX === 'auto') && (await chips.getByRole('button').evaluateAll((b) => b.every((x) => x.getBoundingClientRect().height >= 44))), `${w} px : filtres de discipline défilables, cibles ≥ 44 px`);
+  check(await chips.evaluate((c) => c.scrollWidth <= c.clientWidth) && (await chips.getByRole('button').evaluateAll((b) => b.every((x) => x.getBoundingClientRect().height >= 44))), `${w} px : quatre filtres visibles, cibles ≥ 44 px`);
   check(await page.locator('.p-badge2.locked .p-badge-img').evaluate((i) => getComputedStyle(i).filter.includes('grayscale')) && ((await page.locator('.p-badge2.locked').textContent()) ?? '').includes('À venir'), `${w} px : badge verrouillé grisé et libellé « À venir »`);
   await shot('06-progression');
   await shot('06-progression-complet', true);
@@ -118,10 +118,20 @@ for (const width of [360, 390]) {
   await page.getByRole('main', { name: 'Profil' }).waitFor();
   await banner('Profil');
   check(!/niveau|XP/i.test(await page.getByRole('main', { name: 'Profil' }).innerText()), `${w} px : Profil sans niveau ni XP inventé`);
-  check(await page.getByRole('img', { name: 'Avatar provisoire' }).isVisible(), `${w} px : avatar provisoire identifié`);
+  check(await page.getByRole('img', { name: 'Avatar de démonstration' }).isVisible(), `${w} px : avatar provisoire identifié`);
   check(await noHScroll(), `${w} px : Profil sans défilement horizontal`);
   await shot('08-profil');
   check(true, `${w} px : 5 onglets navigables`);
+
+  // Canonical review captures: initial screen state, with its header visible.
+  if (shots) for (const screen of ['accueil', 'planning', 'seance', 'progression', 'profil']) {
+    await page.goto(`${URL_}?ecran=${screen}`);
+    await page.evaluate(() => document.fonts.ready);
+    await page.locator('main').waitFor();
+    await page.locator('.p-ambience img').first().evaluate((img) => img.decode());
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await shot(`review-${screen}`);
+  }
 
   check(await page.evaluate(() => localStorage.length) === 0, `${w} px : aucune donnée écrite dans le stockage local`);
   check(external.length === 0, `${w} px : aucune requête externe (${external.join(', ')})`);

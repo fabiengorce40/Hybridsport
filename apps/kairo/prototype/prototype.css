@@ -293,3 +293,81 @@ button { cursor: pointer; }
 .p-disc-tile small { font-size: 10px; color: var(--r-text-3); }
 .p-links { display: flex; flex-direction: column; gap: 8px; }
 .p-links .r-btn { font-family: var(--r-font-ui); font-size: var(--r-fs-s); font-weight: 600; text-transform: none; letter-spacing: 0; }
+
+/* Visual-direct: composition aligned with the official reference, scoped to this entry point. */
+.p-app { --r-bg: #04121f; --r-surface-1: #081e30; --r-radius-l: 14px; --r-radius-m: 11px; --r-cyan: #07d1b7; background: var(--r-bg); }
+.p-app .r-demo-banner { font-size: 10px; letter-spacing: .02em; padding: 4px 8px; background: #122a3c; color: #c8d7e6; border-bottom: 1px solid #29445a; }
+.p-hero { height: 390px; }
+.p-hero .r-art { object-position: 35% center; }
+.p-hero .p-ambience-veil { background: linear-gradient(180deg, #04121f22 15%, transparent 48%, #04121f55 70%, #04121f 100%); }
+.p-hero-brand { top: 8px; left: 12px; width: 67%; max-width: 260px; }
+.p-hero-logo { filter: drop-shadow(0 3px 3px #00101f); }
+.p-hero-motto { margin-top: -16px; margin-left: 26px; flex-direction: column; gap: 0; align-items: center; font-style: italic; }
+.p-hero-motto .p-kanji { font-size: 25px; font-style: normal; }
+.p-hero-text { bottom: 16px; }
+.p-hello { font-size: 28px; }
+.p-hero-text p { max-width: 230px; color: #e0e9ef; font-size: 13px; }
+.p-home-body { gap: 13px; padding: 0 12px; }
+.p-today { padding: 12px 10px; gap: 8px; border-width: 1px; border-radius: 12px; }
+.p-today-title { font-size: 24px; }
+.p-today .r-eyebrow { font-size: 9px; letter-spacing: .06em; }
+.p-today .r-text-2 { font-size: 11px; }
+.p-play { width: 48px; height: 48px; }
+.p-today-icon { width: 44px; height: 48px; }
+.p-sport-tile { min-height: 67px; gap: 3px; font-size: 9px; }
+.p-sport-tile .r-sport-icon { width: 30px; height: 30px; }
+.p-divider { height: 3px; }
+.p-week { gap: 5px; }
+.p-week-bars { height: 38px; }
+.p-section-title { font-size: 22px; }
+.p-wstat b { font-size: 28px; }
+.p-page-head { height: 100px; padding: 0 14px 10px; }
+.p-page-head .r-art { object-position: center 48%; }
+.p-page-head .p-ambience-veil { background: linear-gradient(90deg,#04121fbb,transparent),linear-gradient(0deg,#04121f,transparent 75%); }
+.p-page-title { font-size: 32px; }
+.p-page-body { padding: 4px 12px 0; gap: 10px; }
+.p-segment { padding: 2px; }
+.p-segment button { min-height: 40px; font-size: 12px; }
+.p-weeknav b { font-size: 16px; }
+.p-round { border: 0; width: 44px; background: transparent; }
+.p-days { gap: 5px; }
+.p-day { min-height: 46px; border-radius: 8px; }
+.p-plan-list { gap: 5px; }
+.p-plan-row { grid-template-columns: 28px 40px 1fr auto; gap: 7px; padding: 8px; border-color: #15364b; min-height: 65px; }
+.p-plan-row.rest { grid-template-columns: 28px 40px 1fr; }
+.p-plan-text b { font-family: var(--r-font-display); font-size: 19px; }
+.p-plan-text span { font-size: 10px; }
+.p-plan-row .p-state { font-size: 8px; padding: 3px 4px; letter-spacing: 0; }
+.p-plan-date b { font-size: 24px; }
+.p-plan-date small { font-size: 10px; }
+.p-wk-banner { margin: 0; border-radius: 0; border: 0; min-height: 160px; padding: 12px 16px; }
+.p-wk-banner .p-ambience-veil { background: linear-gradient(0deg,#04121f 0%,#04121f33 60%,transparent); }
+.p-wk-banner .r-art { object-position: center 36%; }
+.p-wk-eyebrow { color: #ff88be; }
+.p-wk-top { padding: 4px 10px; }
+.p-wk-list { padding: 8px 10px 0; gap: 10px; }
+.p-ex { padding: 10px; gap: 7px; }
+.p-ex-name h2 { font-size: 21px; }
+.p-ex-num { width: 30px; height: 30px; }
+.p-set-field input { font-size: 21px; width: 42px; }
+.p-restbar { border-radius: 15px; box-shadow: 0 0 14px #07d1b733; }
+.p-chips { margin: 0; padding: 0; gap: 3px; overflow: visible; mask-image: none; }
+.p-chips .r-chip { flex: 1; min-width: 0; padding: 0 3px; font-size: 10px; border-radius: 20px; }
+.p-metric { padding: 12px 10px; min-height: 88px; border-color: #25445d; background: linear-gradient(145deg,#142a43,#071b2c); }
+.p-card { padding: 12px; gap: 4px; border-color: #183549; background: linear-gradient(130deg,#0b2235,#061825); }
+.p-card-title { font-size: 22px; }
+.p-card .r-text-3 { font-size: 11px; }
+.p-record2-text b { font-family: var(--r-font-display); font-size: 17px; }
+.p-record2-value { font-size: 18px; }
+.p-profile-head { height: 210px; padding: 12px 16px 20px; }
+.p-profile-head .p-ambience-veil { background: linear-gradient(0deg,#04121f,transparent 100%),linear-gradient(90deg,#04121f66,transparent); }
+.p-avatar { color: transparent; background: #8b5cf6 url('./art/visual/avatar.webp') center / cover; width: 82px; height: 82px; border: 2px solid #dcff35; box-shadow: 0 0 0 2px #ff438b; }
+.p-goal { padding: 9px 10px; gap: 10px; }
+.p-disc-art { aspect-ratio: 1 / 1; background-image: linear-gradient(0deg,#04121f44,transparent),url('./art/visual/seance.webp'); background-size: cover; background-position: 65% center; }
+.p-disc-tile[data-sport="running"] .p-disc-art { background-image: url('./art/visual/paysage.webp'); }
+.p-disc-tile[data-sport="hyrox"] .p-disc-art { background-image: url('./art/visual/accueil.webp'); }
+.p-disc-art .r-sport-icon { filter: drop-shadow(0 1px 4px #000); background: #04121f88; border-radius: 8px; }
+.p-app .r-tabbar { background: #04121ff5; border-top-color: #214053; }
+@media (max-width: 375px) { .p-hero { height: 365px; } .p-hero-brand { width: 64%; } .p-profile-head { height: 195px; } }
+/* Calligraphy from the owner's board avoids missing Japanese system glyphs on Android. */
+.p-hero-motto .p-kanji { font-size: 0; display: block; width: 62px; height: 35px; background: url('./art/visual/kanji.svg') center / contain no-repeat; }

@@ -7,7 +7,7 @@ import type { BadgeKey } from '../src/design/assets.js';
 
 export const DEMO_NOTICE = 'Prototype · données de démonstration · non connecté au moteur';
 
-export const athlete = { name: 'Alex' } as const;
+export const athlete = { name: 'Fabien' } as const;
 export const todayLabel = 'Mardi 27 octobre';
 
 export type DemoState = 'done' | 'today' | 'planned' | 'moved' | 'cancelled';

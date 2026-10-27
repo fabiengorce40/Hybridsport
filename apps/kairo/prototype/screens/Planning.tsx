@@ -4,7 +4,7 @@
  * Grille : une ligne par jour. Toutes les séances restent consultables. Données de démonstration.
  */
 import { useState } from 'react';
-import { SportIcon, SPORT_NAMES } from '../../src/design/SportIcon.js';
+import { SportIcon, SPORT_NAMES } from '../art/SportIcon.js';
 import { Ambience } from '../art/Ambience.js';
 import { STATE_LABELS, STATE_MARKS, week } from '../demo-data.js';
 import type { DemoSession } from '../demo-data.js';

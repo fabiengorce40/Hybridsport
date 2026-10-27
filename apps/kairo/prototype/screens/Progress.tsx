@@ -4,8 +4,8 @@
  * VÉRIFIÉS sont affichés ; sans donnée, l'indicateur est déclaré « non disponible ». Données de démonstration.
  */
 import { useState } from 'react';
-import { SportIcon, SPORT_NAMES } from '../../src/design/SportIcon.js';
-import type { SportKey } from '../../src/design/SportIcon.js';
+import { SportIcon, SPORT_NAMES } from '../art/SportIcon.js';
+import type { SportKey } from '../art/SportIcon.js';
 import { BADGES, MaskIcon, UI_ICONS } from '../../src/design/assets.js';
 import { Ambience } from '../art/Ambience.js';
 import { progression, squatSeries } from '../demo-data.js';
