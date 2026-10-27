@@ -1,3 +1,4 @@
+import { REKKA_V2 } from './rekka/flag.js';
 /** Composants communs (présentation uniquement). */
 import type { ReactNode } from 'react';
 import { sessionName } from './present.js';
@@ -6,7 +7,7 @@ import type { Authority, GeneratedSession, Sport } from '@hybridsport/app-core';
 
 export type Tab = 'home' | 'plan' | 'run' | 'history' | 'profile' | 'programme' | 'settings';
 export const V0_TABS: readonly Tab[] = ['home', 'plan', 'run', 'history', 'profile'];
-export const BETA0_TABS: readonly Tab[] = ['home', 'plan', 'history', 'programme', 'settings'];
+export const BETA0_TABS: readonly Tab[] = REKKA_V2 ? ['home', 'plan', 'programme', 'history', 'settings'] : ['home', 'plan', 'history', 'programme', 'settings'];
 
 const ICONS: Record<Tab, ReactNode> = {
   home: <path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
@@ -17,6 +18,11 @@ const ICONS: Record<Tab, ReactNode> = {
   programme: <><path d="M4 19V9M10 19V5M16 19v-7M22 19H2" /></>,
   settings: <><circle cx="12" cy="12" r="3" /><path d="M12 2v3M12 19v3M4.2 4.2l2.1 2.1M17.7 17.7l2.1 2.1M2 12h3M19 12h3M4.2 19.8l2.1-2.1M17.7 6.3l2.1-2.1" /></>,
 };
+const V2_ICONS: Partial<Record<Tab, ReactNode>> = {
+  programme: <><path d="M7 12h10M3 10v4M21 10v4"/><rect x="5" y="7" width="3" height="10" rx="1"/><rect x="16" y="7" width="3" height="10" rx="1"/></>,
+  history: <path d="M3 19h18M5 15l5-5 4 3 6-8M15 5h5v5"/>,
+  settings: <><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></>,
+};
 const TAB_LABELS: Record<Tab, string> = { home: 'Accueil', plan: 'Planning', run: 'Course', history: 'Historique', profile: 'Profil', programme: 'Programme', settings: 'Réglages' };
 
 export function TabBar({ tabs = V0_TABS, tab, onChange }: { tabs?: readonly Tab[]; tab: Tab; onChange: (t: Tab) => void }) {
@@ -24,8 +30,8 @@ export function TabBar({ tabs = V0_TABS, tab, onChange }: { tabs?: readonly Tab[
     <nav className="tabbar" aria-label="Navigation principale">
       {tabs.map((t) => (
         <button key={t} className={t === tab ? 'on' : ''} onClick={() => onChange(t)} aria-current={t === tab ? 'page' : undefined}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{ICONS[t]}</svg>
-          {TAB_LABELS[t]}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{REKKA_V2 && tabs === BETA0_TABS ? V2_ICONS[t] ?? ICONS[t] : ICONS[t]}</svg>
+          {REKKA_V2 && tabs === BETA0_TABS ? ({ history: 'Progression', settings: 'Profil', programme: 'Séances' } as Partial<Record<Tab, string>>)[t] ?? TAB_LABELS[t] : TAB_LABELS[t]}
         </button>
       ))}
     </nav>

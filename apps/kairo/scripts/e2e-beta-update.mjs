@@ -66,6 +66,10 @@ check(shown === NEW_BUILD && shown !== oldBuild, `build B exécutée après « M
 await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
 const after = await dump();
 check(JSON.stringify(after) === JSON.stringify(before), `données BÊTA identiques octet pour octet après la mise à jour (${String(Object.keys(after).length)} clés)`);
+if (process.env.E2E_EXPECT_REKKA_V2 === '1') {
+  check(await page.evaluate(() => document.documentElement.dataset.rekka === 'v2'), 'nouvelle interface REKKA active après mise à jour');
+  check((await page.getByRole('navigation', { name: 'Navigation principale' }).innerText()).includes('Progression'), 'navigation REKKA réelle affichée');
+}
 await page.getByRole('button', { name: 'Planning', exact: true }).click();
 check(await page.locator('[data-planning-grid]').isVisible(), 'préférence Grille conservée après la mise à jour');
 await browser.close();

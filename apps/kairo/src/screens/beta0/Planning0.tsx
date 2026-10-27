@@ -1,3 +1,4 @@
+import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
 import { useState } from 'react';
 import { addDays, beta0Integrity, weekdayIndex, weekLoadWarnings } from '@hybridsport/app-core';
 import type { AppState, WeekLoadWarning } from '@hybridsport/app-core';
@@ -48,7 +49,7 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
   const unplanned = week?.items.filter((x) => !onDays.has(x.requestId)) ?? [];
   return (
     <div className="screen">
-      <div className="row between"><h1 className="screen-title">Planning</h1>{week?.experimental && <ExperimentalBadge />}</div>
+      {REKKA_V2 ? <VisualHeader title="Planning" /> : <div className="row between"><h1 className="screen-title">Planning</h1>{week?.experimental && <ExperimentalBadge />}</div>}
       {state.safety.activePain && <PainPause onGo={() => onGo('settings')} />}
       <IntegrityNotice issues={beta0Integrity(state)} />
       {current && (

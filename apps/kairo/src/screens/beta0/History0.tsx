@@ -1,3 +1,4 @@
+import { REKKA_V2, VisualHeader, LiveProgress } from '../../rekka/visual.js';
 import { durationLabel, exerciseLabel, fieldFeedbackText, HR_STRUCTURE_LABELS, maintainedInterference, selectFieldHistory, selectFreeRuns, selectProgrammeSession } from '@hybridsport/app-core';
 import { FreeRunCard, FreeRunEntry } from '../../running/FreeRunForm.js';
 import type { HistoryEntry } from '@hybridsport/app-core';
@@ -34,7 +35,7 @@ export function History0({ onOpen }: { onOpen: (id: string) => void }) {
     .sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : 0));
   return (
     <div className="screen">
-      <h1 className="screen-title">Historique</h1>
+      {REKKA_V2 ? <><VisualHeader title="Progression" /><LiveProgress /></> : <h1 className="screen-title">Historique</h1>}
       {/* RC3.4 — aussi pour un profil HYROX sans Course : historique de course seulement, sans effet sur HYROX. */}
       {/* RC4.3 (R3) : une course libre compte dans la récupération, même sans sport Course déclaré. */}
       {state.profile && <FreeRunEntry />}

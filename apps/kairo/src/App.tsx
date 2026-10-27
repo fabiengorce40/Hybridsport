@@ -1,3 +1,4 @@
+import { REKKA_V2, LiveSessions } from './rekka/visual.js';
 import { useEffect, useState } from 'react';
 import { useStore } from './store.js';
 import { AuthorityBanner, BETA0_TABS, Notice, TabBar } from './ui.js';
@@ -62,7 +63,7 @@ export function App() {
         {tab === 'home' && <Home0 onOpen={setOpen} onGo={setTab} onEditProgramme={() => setEditing(true)} />}
         {tab === 'plan' && <Planning0 onOpen={setOpen} onGo={setTab} />}
         {tab === 'history' && <History0 onOpen={setOpen} />}
-        {tab === 'programme' && <Programme0 onEdit={() => setEditing(true)} />}
+        {tab === 'programme' && <>{REKKA_V2 && <LiveSessions onOpen={setOpen} />}<Programme0 onEdit={() => setEditing(true)} /></>}
         {(tab === 'settings' || tab === 'profile' || tab === 'run') && <Settings0 />}
         <TabBar tabs={BETA0_TABS} tab={tab} onChange={(t) => { setOpen(null); setTab(t); }} />
       </div>

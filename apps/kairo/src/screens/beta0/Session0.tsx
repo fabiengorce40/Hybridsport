@@ -1,3 +1,4 @@
+import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
 /**
  * Séance du programme Beta 0. Strength : exercices, séries, saisie réelle (répétitions, charge), validation série par
  * série, chrono de repos automatique (repos PRESCRIT, échéance persistée). Running : type, rôle, structure prescrite
@@ -145,6 +146,7 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
   const maintained = v?.log ? maintainedInterference(store.state, requestId) : null;
   return (
     <>
+      {REKKA_V2 && v && <VisualHeader title={sportName(v.sport)} sport={v.sport} />}
       <SessionBody requestId={requestId} onBack={onBack} />
       {v && (quality || done || refused || warning || maintained) && (
         <div className="field-after">

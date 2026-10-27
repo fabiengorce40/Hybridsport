@@ -1,3 +1,4 @@
+import { REKKA_V2, RekkaBrand, SportLinks } from '../../rekka/visual.js';
 import { confirmEquipment, equipmentLabel, equipmentNeedsConfirmation, EQUIPMENT_PRESETS, programmeStatusAt, weekdayIndex } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate, Notice, weekdayShort } from '../../ui.js';
@@ -75,7 +76,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
   return (
     <div className="screen">
       <div className="hero">
-        <div className="hero-brand">KAI<span>RO</span></div>
+        {REKKA_V2 ? <RekkaBrand /> : <div className="hero-brand">KAI<span>RO</span></div>}
         <p className="small">{formatDate(today)}</p>
         <h1>{name ? `${name}, ` : ''}{next ? (next.date === today ? 'c’est le moment.' : 'prochaine séance.') : 'rien de prévu.'}</h1>
         {next && <SessionCard0 v={next} onOpen={onOpen} highlight />}
@@ -86,6 +87,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
         )}
       </div>
 
+      {REKKA_V2 && <SportLinks onPlanning={() => onGo('plan')} />}
       {/* FIELD TEST — séances composées mais non placées : visibles sans remplacer la séance prévue. */}
       {extra.length > 0 && (
         <div className="card" aria-label="Séances supplémentaires disponibles" data-extra={extra.length}>

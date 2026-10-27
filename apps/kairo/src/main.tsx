@@ -9,6 +9,9 @@ import './design/kairo-ds.css';
 import './design/rekka-v2.css';
 import './design/rekka-components.css';
 import { applyTheme } from './design/theme.js';
+import './rekka/visual.css';
+import { REKKA_V2 } from './rekka/visual.js';
+if (REKKA_V2) document.documentElement.dataset.rekka = 'v2';
 
 // REKKA V2 (lot V2-1) : thème V2 seulement si la build le demande ; sinon interface actuelle inchangée.
 applyTheme(document.documentElement);
