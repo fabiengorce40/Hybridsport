@@ -2,8 +2,8 @@
  * REKKA V2 — pictogrammes de discipline (fichiers SVG du kit `assets/rekka-v2/icons/sports/`, couleur de discipline
  * intégrée). Toujours accompagnés d'un nom accessible : la discipline n'est jamais portée par la couleur seule.
  */
-import musculation from '../../src/assets/rekka-v2/icons/sports/musculation.svg';
-import course from '../../src/assets/rekka-v2/icons/sports/course.svg';
+import musculation from './visual/musculation.svg';
+import course from './visual/course.svg';
 import hyrox from './visual/hyrox.svg';
 import crossTraining from './visual/cross-training.svg';
 

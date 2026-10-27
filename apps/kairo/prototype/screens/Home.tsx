@@ -26,7 +26,6 @@ export function Home({ onStart, onPlanning }: { onStart: () => void; onPlanning:
 
       <div className="p-home-body">
         <section className="p-today" aria-label="Séance du jour" data-sport="strength">
-          <img className="p-deco-corner" src={DECORATIONS.corner} alt="" aria-hidden="true" />
           <SportIcon sport="strength" label={false} className="p-today-icon" />
           <div className="p-today-text">
             <span className="r-eyebrow">Séance du jour · {todayLabel}</span>

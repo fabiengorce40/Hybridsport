@@ -1,8 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="HYROX - poussée de traîneau">
-<title>HYROX — poussée de traîneau</title>
-<g fill="none" stroke="#ff438b" stroke-width="3.6" stroke-linecap="round" stroke-linejoin="round">
-<circle cx="18" cy="13" r="5"/>
-<path d="m17 22 10 7 8-2M17 22l-5 13 11 7M27 29l-5 13-10 8"/>
-<path d="M35 15v35M35 19h18M35 50h21M40 43h13v7H40z"/>
-<path d="M35 27h18"/>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><g fill="none" stroke="#ff438b" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="3.5"/><path d="m14 16 9 6h10M14 16 9 29l8 6-4 8M9 29l-5 11M33 14v27M28 41h16M37 34h5v7h-5"/></g></svg>
