@@ -39,7 +39,9 @@ for (const width of [360, 390]) {
   check(await page.evaluate(() => document.fonts.check("800 20px 'REKKA Barlow Condensed'") && document.fonts.check("400 15px 'REKKA Inter'")), `${w} px : polices V2 locales chargées`);
   const loaded = (sel) => page.locator(sel).first().evaluate((i) => i.complete && i.naturalWidth > 0);
   check(await page.getByRole('img', { name: 'REKKA' }).isVisible() && await loaded('.p-hero-logo'), `${w} px : logo du kit affiché (SVG)`);
-  check(await loaded('[data-art="accueil"] img') && await page.getByText('Illustration à valider').isVisible(), `${w} px : illustration d'ambiance WebP chargée, signalée « à valider »`);
+  check(await loaded('[data-art="accueil"] img'), `${w} px : illustration d'ambiance WebP chargée`);
+  // V2-2C : tant que logo calligraphique et illustration finale ne sont pas livrés (validated/), ils sont annoncés provisoires.
+  check(await page.locator('[data-asset="logo"]').getAttribute('data-validated') === 'false' && await page.getByText('Logo et illustration provisoires').isVisible(), `${w} px : logo et illustration du kit annoncés « provisoires » (ressources finales manquantes)`);
   check(await page.evaluate(() => [...document.images].every((i) => !/\.png|references/.test(i.src))), `${w} px : aucune capture ni maquette PNG affichée`);
   check(await page.evaluate(() => [...document.querySelectorAll('.p-deco-corner, .p-divider')].every((d) => getComputedStyle(d).pointerEvents === 'none' && Number(getComputedStyle(d).opacity) <= 0.6)), `${w} px : décorations discrètes, sans capture des touchers`);
   const cta = await page.getByRole('button', { name: 'Commencer la séance' }).boundingBox();
@@ -60,6 +62,9 @@ for (const width of [360, 390]) {
   const states = (await page.locator('.p-state').allTextContents()).join('|');
   check(['Réalisée', 'Prévue', 'Déplacée', 'Annulée'].every((x) => states.includes(x)), `${w} px : états prévu / réalisé / déplacé / annulé écrits (pas seulement en couleur)`);
   check(await noHScroll(), `${w} px : Planning liste sans défilement horizontal`);
+  const clipped = await page.locator('.p-plan-text span').evaluateAll((els) => els.filter((e) => e.scrollHeight > e.clientHeight + 1 || e.scrollWidth > e.clientWidth + 1).map((e) => e.textContent));
+  check(clipped.length === 0, `${w} px : aucun intitulé de séance tronqué (${clipped.join(' | ')})`);
+  check((await page.locator('.p-page-head').boundingBox())?.height <= 96, `${w} px : en-tête décoratif du Planning réduit`);
   await shot('02-planning-liste');
   await page.getByRole('button', { name: 'Grille' }).click();
   check(await page.locator('[data-view="grid"]').isVisible() && await page.getByRole('button', { name: 'Grille' }).getAttribute('aria-pressed') === 'true', `${w} px : bascule en grille`);
@@ -91,6 +96,29 @@ for (const width of [360, 390]) {
   check(cur2 !== null && restBox !== null && cur2.y + cur2.height <= restBox.y && cur2.y >= 60, `${w} px : nouvelle série en cours amenée au-dessus de la barre de repos`);
   check(await noHScroll(), `${w} px : Séance sans défilement horizontal`);
   await shot('04-seance');
+  // V2-2C : AUCUNE série ni AUCUN bouton masqué par le chronomètre de repos flottant ; chronomètre global toujours visible.
+  const hidden = await page.evaluate(() => {
+    const bar = document.querySelector('.p-restbar').getBoundingClientRect();
+    const out = [];
+    for (const el of document.querySelectorAll('.p-wk-list button, .p-wk-list input')) {
+      const r0 = el.getBoundingClientRect();
+      window.scrollTo(0, window.scrollY + r0.top - (window.innerHeight - bar.height) / 2);
+      const r = el.getBoundingClientRect();
+      const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+      const clock = document.querySelector('[data-proto-clock]').getBoundingClientRect();
+      if (!(hit === el || el.contains(hit)) || r.bottom > document.querySelector('.p-restbar').getBoundingClientRect().top || clock.top < 0 || clock.bottom > window.innerHeight) out.push(el.getAttribute('aria-label') ?? el.textContent);
+    }
+    return out;
+  });
+  check(hidden.length === 0, `${w} px : chaque série et chaque bouton de la séance atteignable sans masquage, chronomètre global visible (${hidden.join(' | ')})`);
+  await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+  const finish = await page.getByRole('button', { name: 'Terminer la séance (simulation)' }).boundingBox();
+  const bar2 = await page.locator('.p-restbar').boundingBox();
+  check(finish !== null && bar2 !== null && bar2.y - (finish.y + finish.height) >= 16, `${w} px : marge de défilement en bas — « Terminer » à ${String(Math.round((bar2?.y ?? 0) - (finish?.y ?? 0) - (finish?.height ?? 0)))} px au-dessus du repos`);
+  check(await page.locator('[data-proto-clock]').isVisible(), `${w} px : chronomètre global visible en bas de séance`);
+  const small = await page.locator('.p-wk-list button, .p-wk-list input').evaluateAll((els) => els.map((e) => e.getBoundingClientRect()).filter((r) => Math.min(r.width, r.height) < 44).length);
+  check(small === 0, `${w} px : cibles tactiles de la séance ≥ 44 px`);
+  await page.evaluate(() => window.scrollTo(0, 0));
   await page.getByRole('button', { name: 'Mettre la séance en pause (simulation)' }).click();
   check((await page.locator('[data-proto-clock]').innerText()).includes('En pause'), `${w} px : pause de séance libellée, distincte du repos`);
   check((await page.getByRole('timer').getAttribute('aria-label'))?.startsWith('Repos (simulation)') === true, `${w} px : repos distinct du chronomètre global`);
@@ -106,7 +134,18 @@ for (const width of [360, 390]) {
   check(await noHScroll(), `${w} px : Progression sans défilement horizontal`);
   const chips = page.getByRole('group', { name: 'Discipline' });
   check(await chips.evaluate((c) => getComputedStyle(c).overflowX === 'auto') && (await chips.getByRole('button').evaluateAll((b) => b.every((x) => x.getBoundingClientRect().height >= 44))), `${w} px : filtres de discipline défilables, cibles ≥ 44 px`);
-  check(await page.locator('.p-badge2.locked .p-badge-img').evaluate((i) => getComputedStyle(i).filter.includes('grayscale')) && ((await page.locator('.p-badge2.locked').textContent()) ?? '').includes('À venir'), `${w} px : badge verrouillé grisé et libellé « À venir »`);
+  // V2-2C : défilement des disciplines rendu évident — puce suivante coupée et bouton « › » (44 px) qui fait défiler.
+  if (await chips.evaluate((c) => c.scrollWidth > c.clientWidth)) {
+    const next = page.getByRole('button', { name: 'Disciplines suivantes' });
+    check(await next.isVisible() && (await next.boundingBox()).width >= 44, `${w} px : bouton « Disciplines suivantes » visible (≥ 44 px)`);
+    await next.click();
+    await page.waitForFunction(() => document.querySelector('[data-scroll-x]').scrollLeft > 0);
+    check(await page.getByRole('button', { name: 'Disciplines précédentes' }).isVisible(), `${w} px : défilement effectué, retour possible`);
+    await page.getByRole('button', { name: 'Disciplines précédentes' }).click();
+    await page.waitForFunction(() => document.querySelector('[data-scroll-x]').scrollLeft === 0);
+  } else check(await page.getByRole('button', { name: 'Disciplines suivantes' }).count() === 0, `${w} px : aucune flèche quand tout tient`);
+  check(await page.locator('.r-milestone.locked .r-milestone-img').evaluate((i) => getComputedStyle(i).filter.includes('grayscale')) && ((await page.locator('.r-milestone.locked').textContent()) ?? '').includes('À venir'), `${w} px : jalon verrouillé grisé et libellé « À venir »`);
+  check(await page.getByRole('article', { name: /: non disponible$/ }).count() === 1 && await page.locator('.r-goal[data-verified="true"] [role="progressbar"]').count() === 1, `${w} px : objectifs — progression seulement si mesurée, sinon « non disponible »`);
   await shot('06-progression');
   await shot('06-progression-complet', true);
   await page.getByRole('button', { name: 'HYROX', exact: true }).click();

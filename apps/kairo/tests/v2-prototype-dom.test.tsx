@@ -33,14 +33,17 @@ describe('REKKA V2 — prototype', () => {
     expect(screen.getByRole('note').textContent).toMatch(/données de démonstration/);
     expect(within(nav()).getAllByRole('button').map((b) => b.textContent)).toEqual(['Accueil', 'Planning', 'Séances', 'Progression', 'Profil']);
     // Logo du kit (fichier SVG, nom accessible) ; 烈火 et la devise en TEXTE HTML, jamais dans une image.
+    // V2-2C : aucune ressource finale livrée → logo et illustration du kit, annoncés PROVISOIRES (jamais finals).
     expect(screen.getByRole('img', { name: 'REKKA' }).getAttribute('src')).toBe(logoPrimary);
+    expect(document.querySelector('[data-asset="logo"]')?.getAttribute('data-validated')).toBe('false');
     expect(screen.getByText('烈火').getAttribute('lang')).toBe('ja');
     expect(screen.getByText('Nourris ta flamme.')).toBeTruthy();
     // Illustration d'ambiance du kit (WebP) : texte alternatif, cadre de repli, étiquette « à valider » visible.
     const hero = screen.getByRole('img', { name: /Ville néon cyberpunk/ });
     expect(hero.getAttribute('src')).toBe(artAccueil);
     expect(hero.closest('[data-art="accueil"]')).not.toBeNull();
-    expect(screen.getByText('Illustration à valider')).toBeTruthy();
+    expect(screen.getByText('Logo et illustration provisoires')).toBeTruthy();
+    expect(hero.closest('[data-art="accueil"]')?.getAttribute('data-validated')).toBe('false');
     // Aucune image de maquette ni capture : seules des ressources du kit (SVG / WebP).
     for (const img of document.querySelectorAll('img')) expect(img.getAttribute('src') ?? '').not.toMatch(/\.png|references/);
     // Pictogrammes de navigation : masques `currentColor`, décoratifs (le libellé texte nomme l'onglet).
@@ -99,9 +102,13 @@ describe('REKKA V2 — prototype', () => {
     // Badges du kit : jalon verrouillé grisé ET libellé « À venir » (jamais la couleur seule).
     const locked = screen.getByRole('article', { name: /: à venir$/ });
     expect(locked.className).toMatch(/locked/);
-    expect(locked.querySelector('img.p-badge-img')?.getAttribute('src')).toBe(badgeObjectif);
+    expect(locked.querySelector('img.r-milestone-img')?.getAttribute('src')).toBe(badgeObjectif);
     expect(locked.textContent).toMatch(/À venir/);
     expect(screen.getByRole('group', { name: 'Discipline' }).hasAttribute('data-scroll-x')).toBe(true);
+    // V2-2C : objectifs à preuve — l'objectif mesuré affiche sa valeur, l'autre est déclaré « non disponible ».
+    const goals = screen.getByRole('region', { name: 'Objectifs vérifiés' });
+    expect(within(goals).getByRole('article', { name: /Squat barre : 80 kg × 6 : 72,5 kg sur 80 kg/ })).toBeTruthy();
+    expect(within(goals).getByRole('article', { name: /HYROX en moins de 1 h 10 : non disponible/ })).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: 'HYROX' }));
     expect(document.querySelector('[data-unavailable]')?.textContent).toMatch(/non disponible/);
     go('Séances');

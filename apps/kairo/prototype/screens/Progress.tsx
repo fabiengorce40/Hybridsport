@@ -3,10 +3,11 @@
  * charges, records confirmés, jalons (RPG modéré, fondés sur des faits sportifs). En production, seuls les records
  * VÉRIFIÉS sont affichés ; sans donnée, l'indicateur est déclaré « non disponible ». Données de démonstration.
  */
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { SportIcon, SPORT_NAMES } from '../../src/design/SportIcon.js';
 import type { SportKey } from '../../src/design/SportIcon.js';
-import { BADGES, MaskIcon, UI_ICONS } from '../../src/design/assets.js';
+import { MaskIcon, UI_ICONS } from '../../src/design/assets.js';
+import { GoalProgress, MilestoneCard } from '../../src/design/Milestones.js';
 import { Ambience } from '../art/Ambience.js';
 import { progression, squatSeries } from '../demo-data.js';
 import type { Period } from '../demo-data.js';
@@ -35,6 +36,38 @@ function Chart({ period }: { period: Period }) {
   );
 }
 
+const SPORTS = ['strength', 'running', 'hyrox', 'crosstraining'] as const;
+
+/**
+ * V2-2C — filtres de discipline défilables, défilement RENDU ÉVIDENT : puce suivante coupée, fondu, et bouton « › »
+ * (44 px) tant qu'il reste des disciplines à droite ; « ‹ » pour revenir. Les boutons disparaissent sans débordement.
+ */
+const motion = (): ScrollBehavior => (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth');
+
+function SportChips({ sport, onChange }: { sport: SportKey; onChange: (s: SportKey) => void }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [edges, setEdges] = useState({ start: true, end: true });
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    const sync = () => setEdges({ start: el.scrollLeft <= 1, end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 1 });
+    sync();
+    el.addEventListener('scroll', sync, { passive: true });
+    window.addEventListener('resize', sync);
+    return () => { el.removeEventListener('scroll', sync); window.removeEventListener('resize', sync); };
+  }, []);
+  const step = (dir: 1 | -1) => ref.current?.scrollBy?.({ left: dir * ref.current.clientWidth * 0.7, behavior: motion() });
+  return (
+    <div className="p-chips-wrap" data-start={edges.start} data-end={edges.end}>
+      <div ref={ref} className="p-chips" role="group" aria-label="Discipline" data-scroll-x>
+        {SPORTS.map((sp) => <button key={sp} type="button" className="r-chip" aria-pressed={sport === sp} onClick={(e) => { onChange(sp); e.currentTarget.scrollIntoView?.({ inline: 'nearest', block: 'nearest', behavior: motion() }); }}>{SPORT_NAMES[sp]}</button>)}
+      </div>
+      {!edges.start && <button type="button" className="p-chips-arrow prev" aria-label="Disciplines précédentes" onClick={() => step(-1)}>‹</button>}
+      {!edges.end && <button type="button" className="p-chips-arrow next" aria-label="Disciplines suivantes" onClick={() => step(1)}>›</button>}
+    </div>
+  );
+}
+
 export function Progress() {
   const [sport, setSport] = useState<SportKey>('strength');
   const [period, setPeriod] = useState<Period>('3m');
@@ -45,9 +78,7 @@ export function Progress() {
         <h1 className="p-page-title">Progression</h1>
       </header>
       <div className="p-page-body">
-        <div className="p-chips" role="group" aria-label="Discipline" data-scroll-x>
-          {(['strength', 'running', 'hyrox', 'crosstraining'] as const).map((sp) => <button key={sp} type="button" className="r-chip" aria-pressed={sport === sp} onClick={() => setSport(sp)}>{SPORT_NAMES[sp]}</button>)}
-        </div>
+        <SportChips sport={sport} onChange={setSport} />
         <div className="p-segment three" role="group" aria-label="Période">
           {PERIODS.map((p) => <button key={p.id} type="button" aria-pressed={period === p.id} onClick={() => setPeriod(p.id)}>{p.label}</button>)}
         </div>
@@ -81,15 +112,14 @@ export function Progress() {
           ))}
           <span className="r-text-3 p-fine">En production : seulement des records issus de séances réelles à effort saisi.</span>
         </section>
+        <section className="p-card" aria-label="Objectifs vérifiés">
+          <h2 className="p-card-title">Objectifs</h2>
+          <div className="p-goals">{progression.goals.map((g) => <GoalProgress key={g.id} goal={g} />)}</div>
+          <span className="r-text-3 p-fine">Une progression ne s’affiche que si des séances réelles la mesurent.</span>
+        </section>
         <section className="p-card" aria-label="Jalons">
           <h2 className="p-card-title">Jalons</h2>
-          {progression.badges.map((b) => (
-            <article key={b.id} className={`p-badge2 ${b.earned ? 'earned' : 'locked'}`} aria-label={`${b.title} : ${b.earned ? 'obtenu' : 'à venir'}`}>
-              <img className="p-badge-img" src={BADGES[b.badge]} alt="" aria-hidden="true" />
-              <span className="p-record2-text"><b>{b.title}</b><span>{b.detail}</span></span>
-              <span className={`r-badge ${b.earned ? 'success' : ''}`}>{b.earned ? 'Obtenu' : 'À venir'}</span>
-            </article>
-          ))}
+          {progression.badges.map((b) => <MilestoneCard key={b.id} m={b} />)}
         </section>
       </div>
     </main>

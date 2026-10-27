@@ -3,7 +3,7 @@
  * d'un état utilisateur ; elles ne sont jamais enregistrées. Chaque écran du prototype l'indique (bandeau « Démonstration »).
  */
 import type { SportKey } from '../src/design/SportIcon.js';
-import type { BadgeKey } from '../src/design/assets.js';
+import type { VerifiedGoal, VerifiedMilestone } from '../src/design/Milestones.js';
 
 export const DEMO_NOTICE = 'Prototype · données de démonstration · non connecté au moteur';
 
@@ -53,11 +53,17 @@ export const progression = {
   ],
   // Séances réalisées / prévues par semaine (8 dernières semaines).
   regularity: [[3, 4], [4, 4], [4, 4], [2, 4], [4, 4], [3, 4], [4, 4], [1, 4]] as const,
+  // V2-2C : jalons à PREUVE (séances de démonstration) ; « obtenu » seulement avec date ET preuve.
   badges: [
-    { id: 'b1', title: 'Quatre semaines régulières', detail: 'Toutes les séances prévues réalisées 4 semaines de suite', earned: true, badge: 'regularite' as BadgeKey },
-    { id: 'b2', title: 'Premier record', detail: 'Une charge confirmée au-delà de la précédente', earned: true, badge: 'record' as BadgeKey },
-    { id: 'b3', title: '50 séances', detail: '38 / 50 réalisées', earned: false, badge: 'objectif' as BadgeKey },
-  ],
+    { id: 'b1', title: 'Quatre semaines régulières', detail: 'Toutes les séances prévues réalisées 4 semaines de suite', badge: 'regularite', achievedOn: '19 octobre', evidence: { sessionIds: ['s21', 's22', 's23', 's24', 's25', 's26', 's27', 's28', 's29', 's30', 's31', 's32', 's33', 's34', 's35', 's36'], lastOn: '19 octobre' } },
+    { id: 'b2', title: 'Premier record', detail: 'Une charge confirmée au-delà de la précédente', badge: 'record', achievedOn: '20 octobre', evidence: { sessionIds: ['s36'], lastOn: '20 octobre' } },
+    { id: 'b3', title: '50 séances', detail: '38 / 50 réalisées', badge: 'objectif', achievedOn: null, evidence: null },
+  ] satisfies readonly VerifiedMilestone[],
+  // V2-2C : objectifs à preuve. Sans séance réelle mesurant l'objectif → « non disponible » (aucune valeur inventée).
+  goals: [
+    { id: 'g1', sport: 'strength', title: 'Squat barre : 80 kg × 6', current: 72.5, target: 80, unit: 'kg', better: 'higher', evidence: { sessionIds: ['s34', 's36'], lastOn: '20 octobre' } },
+    { id: 'g2', sport: 'hyrox', title: 'HYROX en moins de 1 h 10', current: null, target: 70, unit: 'min', better: 'lower', evidence: null },
+  ] satisfies readonly VerifiedGoal[],
 } as const;
 
 /** V2-2B — résumé de semaine (démonstration) : séances réalisées / prévues, temps cumulé, régularité, minutes par jour. */
