@@ -204,7 +204,10 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   if (v.sport === 'strength') {
     return (
       <>
-        <Topbar title="" onBack={onBack} right={v.experimental ? <span className="k-pill" title="Certaines règles de planification sont encore en cours de validation.">Beta</span> : undefined} />
+        <Topbar title="" onBack={onBack} right={<div className="row">
+          {editable && <span className="k-elapsed" role="timer" aria-label="Temps écoulé depuis le début de la séance" aria-live="off">{formatChrono(elapsed)} <small>écoulé</small></span>}
+          {v.experimental && <span className="k-pill" title="Certaines règles de planification sont encore en cours de validation.">Beta</span>}
+        </div>} />
         <div className={`k-workout ${editable && log.rest ? 'with-timer' : ''} ${!started && !finished ? 'with-dock' : ''}`}>
           <AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state, requestId)} />
           <StrengthInsightPanel requestId={requestId} />

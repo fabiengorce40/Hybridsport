@@ -291,14 +291,16 @@ describe('séance Strength', () => {
     expect(log?.sets).toEqual([expect.objectContaining({ setIndex: 0, done: true, reps: 6, loadKg: 37.5 })]);
     expect(log?.rest).not.toBeNull();
     const timer = screen.getByRole('timer', { name: 'Chrono de repos' });
+    expect(screen.getByRole('timer', { name: 'Temps écoulé depuis le début de la séance' })).toBeTruthy();
     fireEvent.click(within(timer).getByRole('button', { name: 'Mettre le repos en pause' }));
-    expect(within(screen.getByRole('timer')).getByText('Repos en pause')).toBeTruthy();
+    expect(within(screen.getByRole('timer', { name: 'Chrono de repos' })).getByText('Repos en pause')).toBeTruthy();
     const before = Object.values(saved(storage).programmeLogs)[0]?.rest?.pausedRemainingS ?? 0;
-    fireEvent.click(within(screen.getByRole('timer')).getByRole('button', { name: 'Ajouter 15 secondes' }));
+    fireEvent.click(within(screen.getByRole('timer', { name: 'Chrono de repos' })).getByRole('button', { name: 'Ajouter 15 secondes' }));
     expect(Object.values(saved(storage).programmeLogs)[0]?.rest?.pausedRemainingS).toBe(before + 15);
-    fireEvent.click(within(screen.getByRole('timer')).getByRole('button', { name: 'Reprendre le repos' }));
-    fireEvent.click(within(screen.getByRole('timer')).getByRole('button', { name: 'Passer' }));
-    expect(screen.queryByRole('timer')).toBeNull();
+    fireEvent.click(within(screen.getByRole('timer', { name: 'Chrono de repos' })).getByRole('button', { name: 'Reprendre le repos' }));
+    fireEvent.click(within(screen.getByRole('timer', { name: 'Chrono de repos' })).getByRole('button', { name: 'Passer' }));
+    expect(screen.queryByRole('timer', { name: 'Chrono de repos' })).toBeNull();
+    expect(screen.getByRole('timer', { name: 'Temps écoulé depuis le début de la séance' })).toBeTruthy();
     expect(screen.getByText(/1\/\d+ séries/)).toBeTruthy();
   });
 

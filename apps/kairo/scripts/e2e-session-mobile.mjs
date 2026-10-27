@@ -44,6 +44,7 @@ try {
     await page.getByRole('button', { name: 'Reprendre le repos' }).click();
     const series = page.getByRole('button', { name: 'Décocher la série' }).first();
     await series.scrollIntoViewIfNeeded();
+    if (!await page.getByRole('timer', { name: 'Temps écoulé depuis le début de la séance' }).isVisible()) throw new Error(`${width}: temps écoulé non visible`);
     if (shots) await page.screenshot({ path: `${shots}/${width}-seance-en-cours.png` });
     if (await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)) throw new Error(`${width}: débordement horizontal`);
     await page.reload();
