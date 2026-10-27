@@ -51,6 +51,7 @@ try {
     await page.getByRole('button', { name: 'Reprendre la séance' }).click();
     await page.getByRole('button', { name: 'Décocher la série' }).first().waitFor();
     await page.getByRole('timer', { name: 'Chrono de repos' }).waitFor();
+    await page.getByRole('timer', { name: 'Temps écoulé depuis le début de la séance' }).waitFor();
     if (await page.getByLabel('Répétitions réalisées').first().inputValue() !== '6' || await page.getByLabel('Charge (kg)').first().inputValue() !== '42.5') throw new Error(`${width}: valeurs de série non conservées`);
     if (errors.length) throw new Error(`${width}: ${errors.join('; ')}`);
     console.log(`OK ${width}: série réelle, charge, repos, pause, +15 s, reprise et rechargement`);
