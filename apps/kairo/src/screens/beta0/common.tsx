@@ -1,3 +1,4 @@
+import { REKKA_V2, SportEmblem } from '../../rekka/visual.js';
 /** Lectures et composants communs Beta 0 (présentation uniquement : projection de `selectBeta0Week`). */
 import { useState } from 'react';
 import { approxMinutes, exerciseLabel, selectBeta0Week, selectRunningProfile } from '@hybridsport/app-core';
@@ -106,7 +107,8 @@ export function SessionCard0({ v, onOpen, highlight = false, dateLabel }: { v: S
     );
   }
   return (
-    <button className={`card button-card ${highlight ? 'accent' : ''}`} data-request={v.requestId} data-status={v.display} onClick={() => onOpen(v.requestId)} aria-label={`${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`} {...(dateLabel ? { 'aria-describedby': `date-${v.requestId}` } : {})}>
+    <button className={`card button-card ${highlight ? 'accent' : ''} ${REKKA_V2 ? 'rv-has-emblem' : ''}`} data-request={v.requestId} data-status={v.display} onClick={() => onOpen(v.requestId)} aria-label={`${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`} {...(dateLabel ? { 'aria-describedby': `date-${v.requestId}` } : {})}>
+      {REKKA_V2 && <span className="rv-card-emblem"><SportEmblem sport={v.sport} /></span>}
       <div className="row between">
         {dateLabel ? <span className="small catalog-date" id={`date-${v.requestId}`} data-catalog-date>{dateLabel}</span> : <span className="small muted">{sportName(v.sport)}</span>}
         <span className="row">{isTest(v.archetypeId) && <span className="badge test">TEST</span>}<StatusPill status={v.display} /></span>

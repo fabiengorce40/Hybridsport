@@ -1,3 +1,4 @@
+import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
 import { useRef, useState } from 'react';
 import { BUILD_DATE, BUILD_ID } from '../../version.js';
 import { JournalBeta } from '../../field/JournalBeta.js';
@@ -134,7 +135,7 @@ export function Settings0() {
   if (journal) return <JournalBeta onBack={() => setJournal(false)} />;
   return (
     <div className="screen">
-      <h1 className="screen-title">Réglages</h1>
+      {REKKA_V2 ? <VisualHeader title="Profil" profile /> : <h1 className="screen-title">Réglages</h1>}
       <PainCard />
       <FieldTestCard />
       {isBeta0(store.state) && (

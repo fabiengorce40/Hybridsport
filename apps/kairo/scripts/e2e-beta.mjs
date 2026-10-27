@@ -23,6 +23,8 @@ import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
+const visualName = (name) => process.env.E2E_REKKA_V2 === '1' ? ({ 'Réglages': 'Profil', 'Historique': 'Progression', 'Programme': 'Séances' }[name] ?? name) : name;
+
 const URL_ = process.env.E2E_URL ?? 'http://localhost:4174/';
 const PROD_URL = process.env.E2E_PROD_URL;
 const shots = process.argv[2];
@@ -84,7 +86,7 @@ await page.getByRole('button', { name: 'Continuer' }).click();
 await page.addLocatorHandler(page.locator('[data-equipment-missing]'), async () => { await page.getByLabel('Lieu d’entraînement').selectOption('preset.full_gym'); });
 await page.getByRole('button', { name: 'Créer mon programme' }).click();
 await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
-await page.getByRole('button', { name: 'Réglages', exact: true }).click();
+await page.getByRole('button', { name: visualName('Réglages'), exact: true }).click();
 await page.getByLabel('Fichier de données à importer').setInputFiles(USER_STATE);
 await page.getByText('Données importées.').waitFor();
 check(true, 'état utilisateur importé par « Importer mes données »');

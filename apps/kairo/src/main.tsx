@@ -6,6 +6,9 @@ import { BETA_LABEL, IS_BETA } from './channel.js';
 import { BUILD_ID } from './version.js';
 import './styles.css';
 import './design/kairo-ds.css';
+import './rekka/visual.css';
+import { REKKA_V2 } from './rekka/visual.js';
+if (REKKA_V2) document.documentElement.dataset.rekka = 'v2';
 
 // BÊTA : identité, version et commit déployés toujours visibles (bandeau fixe).
 if (IS_BETA) { document.title = BETA_LABEL; document.documentElement.classList.add('k-test'); }

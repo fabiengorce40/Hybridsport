@@ -130,7 +130,7 @@ jobs:
         env:
           SITE_URL: ${{ needs.deploy.outputs.site }}
           PROD_URL: https://fabiengorce40.github.io/Hybridsport/
-        run: mkdir -p shots && E2E_URL="${SITE_URL}/" E2E_PROD_URL="${PROD_URL}" E2E_EXPECT_BUILD="${GITHUB_SHA}" node apps/kairo/scripts/e2e-beta.mjs shots
+        run: mkdir -p shots && E2E_URL="${SITE_URL}/" E2E_PROD_URL="${PROD_URL}" E2E_REKKA_V2=1 E2E_EXPECT_BUILD="${GITHUB_SHA}" node apps/kairo/scripts/e2e-beta.mjs shots
       - uses: actions/upload-artifact@v4
         if: always()
         with:

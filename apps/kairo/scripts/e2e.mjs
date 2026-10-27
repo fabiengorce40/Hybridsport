@@ -10,6 +10,8 @@
 import { readFileSync } from 'node:fs';
 import { chromium, devices } from 'playwright';
 
+const visualName = (name) => process.env.E2E_REKKA_V2 === '1' ? ({ 'Réglages': 'Profil', 'Historique': 'Progression', 'Programme': 'Séances' }[name] ?? name) : name;
+
 const URL_ = process.env.E2E_URL ?? 'http://localhost:4173/';
 const shots = process.argv[2];
 const fail = (m) => { console.error(`ÉCHEC : ${m}`); process.exit(1); };
@@ -127,7 +129,7 @@ await shot('08-fin');
 await page.getByRole('button', { name: 'Enregistrer' }).click();
 await page.getByText('Séance terminée').first().waitFor();
 await page.getByRole('button', { name: 'Retour' }).click();
-await page.getByRole('button', { name: 'Historique', exact: true }).click();
+await page.getByRole('button', { name: visualName('Historique'), exact: true }).click();
 await shot('09-historique');
 check((await text()).includes('6 × 42.5 kg'), 'historique : série réellement saisie (6 × 42,5 kg)');
 
@@ -154,7 +156,7 @@ await page.getByRole('button', { name: 'Je confirme' }).click();
 
 // Fermeture / réouverture.
 await page.reload();
-await page.getByRole('button', { name: 'Historique', exact: true }).click();
+await page.getByRole('button', { name: visualName('Historique'), exact: true }).click();
 const h = await text();
 check(h.includes('6 × 42.5 kg') && h.includes('31 min · 5.3 km'), 'réouverture : historique Musculation et Course conservé');
 const st = await state();
@@ -213,7 +215,7 @@ const strengthTitles = (p) => p.getByRole('button', { name: /^Musculation : / })
   await p.getByRole('button', { name: 'Planning', exact: true }).click();
   const before = await strengthTitles(p);
   check(before.join(',') === 'Full body,Full body,Full body,Full body' && (await p.locator('body').innerText()).includes('version précédente de KAIRO'), `reset Beta : avant, semaine pré-S1 conservée et signalée (${before.join(', ')})`);
-  await p.getByRole('button', { name: 'Réglages', exact: true }).click();
+  await p.getByRole('button', { name: visualName('Réglages'), exact: true }).click();
   await p.getByRole('button', { name: 'Recréer mon programme de test' }).click();
   check(await p.getByRole('button', { name: 'Effacer et recréer' }).isDisabled(), 'reset Beta : impossible sans confirmation explicite');
   await p.getByLabel(/Je comprends que ces données seront définitivement effacées/).check();
@@ -250,7 +252,7 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
     const box = await b.boundingBox();
     return box !== null && box.y >= 0 && box.y + box.height <= vh && await b.isVisible() && await b.isEnabled();
   };
-  await p.getByRole('button', { name: 'Programme', exact: true }).click();
+  await p.getByRole('button', { name: visualName('Programme'), exact: true }).click();
   await p.getByRole('button', { name: 'Modifier et recréer le programme' }).click();
   check(await p.getByRole('navigation', { name: 'Navigation principale' }).count() === 0, `${tag} modifier : assistant plein écran, sans barre de navigation`);
   await p.getByRole('radio', { name: /^Musculation \+ Course/ }).click();
@@ -421,7 +423,7 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
   const done = await st();
   check(done.crosstraining?.realized?.[0]?.result?.kind === 'rounds_reps' && done.crosstraining.realized[0].result.rounds === 2 && done.crosstraining.realized[0].result.reps === 3, `${tag} résultat STRUCTURÉ enregistré dans l’historique du moteur`);
   await p.reload();
-  await p.getByRole('button', { name: 'Historique', exact: true }).click();
+  await p.getByRole('button', { name: visualName('Historique'), exact: true }).click();
   const h = await p.locator('body').innerText();
   check(h.includes('2 tours + 3 rép.') && h.includes('AMRAP'), `${tag} historique visible après rechargement`);
   if (shots) await p.screenshot({ path: `${shots}/ct-03-historique.png` });
@@ -594,7 +596,7 @@ async function hrNoOverlap(p, tag) {
   check(doneA?.result?.kind === 'completed' && doneA.completion === 'completed' && doneA.performedLoads?.[0]?.kg === prescribed - 2, `${tag} résultat structuré : terminée, charge réelle ≠ prescrite enregistrée`);
   check((await p.locator('body').innerText()).includes('prévus →'), `${tag} prescrit vs réalisé affiché`);
   await p.reload();
-  await p.getByRole('button', { name: 'Historique', exact: true }).click();
+  await p.getByRole('button', { name: visualName('Historique'), exact: true }).click();
   const hA = await p.locator('body').innerText();
   check(hA.includes('Terminée en') && hA.includes('HYROX') && !HR_INTERNAL.test(hA), `${tag} historique après rechargement : HYROX, résultat, aucun code interne`);
   if (shots) await p.screenshot({ path: `${shots}/hr-03-historique.png` });
@@ -664,7 +666,7 @@ async function hrNoOverlap(p, tag) {
   const capped = (await hrState(p)).hyrox?.realized?.[1];
   check(capped?.result?.kind === 'time_capped' && capped.result.roundsCompleted === 0 && capped.result.itemsCompletedInRound === 3 && capped.completion === 'completed', `${tagC} résultat : time cap, 0 tour + 3 étapes (jamais un échec, jamais « comme prévu »)`);
   await p.reload();
-  await p.getByRole('button', { name: 'Historique', exact: true }).click();
+  await p.getByRole('button', { name: visualName('Historique'), exact: true }).click();
   check((await p.locator('body').innerText()).includes('Time cap atteint · 0 tour complet + 3/4 étapes'), `${tagC} historique : time cap et progression lisibles`);
   check(perrors.length === 0, `${tag} aucune erreur de page (${perrors.join(' | ')})`);
   await c.close();
@@ -695,7 +697,7 @@ async function hrNoOverlap(p, tag) {
   const ab = d.hyrox?.realized?.[0];
   check(ab?.completion === 'abandoned' && ab.result?.kind === 'abandoned' && ab.result.itemsCompletedInRound === 2 && ab.pain === 'REPORTED' && d.safety?.activePain !== null, `${tag} abandon persisté (progression conservée), douleur centrale`);
   await p.reload();
-  await p.getByRole('button', { name: 'Historique', exact: true }).click();
+  await p.getByRole('button', { name: visualName('Historique'), exact: true }).click();
   const h = await p.locator('body').innerText();
   check(h.includes('Arrêtée') && h.includes('Douleur signalée'), `${tag} historique : arrêtée, douleur signalée`);
   const saved = await p.evaluate(() => localStorage.getItem('kairo.state'));
@@ -800,7 +802,7 @@ async function mobileFit(p, tag) {
   check(res?.provenance === 'manual_from_unplaced' && res.date === '2026-10-05' && realized?.role === un?.intent?.archetypeId?.replace('hybrid_race.h2.', ''), `${tag} terminée : provenance manual_from_unplaced, jour réel, rôle réalisé = rôle non placé (${realized?.role})`);
   check(st1.planner?.weeks?.['2026-10-05']?.requests?.find((r) => r.requestId === un?.requestId)?.status === 'unplaced', `${tag} aucun placement réécrit`);
   await p.reload();
-  await p.getByRole('button', { name: 'Historique', exact: true }).click();
+  await p.getByRole('button', { name: visualName('Historique'), exact: true }).click();
   check((await p.locator('body').innerText()).includes('Terminée en'), `${tag} historique : séance réalisée visible`);
   const saved = await p.evaluate(() => localStorage.getItem('kairo.state'));
   check(perrors.length === 0, `${tag} aucune erreur de page (${perrors.join(' | ')})`);
@@ -846,7 +848,7 @@ async function mobileFit(p, tag) {
   const st = () => p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
   const body = () => p.locator('body').innerText();
   const CODES = /hybrid_race|ex\.[a-z]|str_full|running\.[a-z]|crosstraining\.|UNRESOLVED|TEST_ONLY|SIMULATION_ONLY|USER_REPORTED|manual_from_unplaced|composed_unplaced/;
-  const nav = (name) => p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name, exact: true }).click();
+  const nav = (name) => p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: visualName(name), exact: true }).click();
   const fit = async (t) => {
     const r = await p.evaluate(() => {
       const btns = [...document.querySelectorAll('.overlay button, .screen button')].filter((b) => b.getBoundingClientRect().height > 0);
@@ -1057,10 +1059,10 @@ async function p0Block(p, { tag, cardName, label, missing, content, full, shot }
   const field = Object.values((await st()).programmeLogs).find((l) => l.field?.contentAmount)?.field;
   check(field?.provenance === 'USER_REPORTED_FIELD_FEEDBACK' && field.contentAmount && field.fullSessionAdequacy, `${tag} retour « contenu / séance complète » stocké (${JSON.stringify(field)})`);
   await p.getByRole('button', { name: 'Retour' }).click();
-  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Historique', exact: true }).click();
+  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: visualName('Historique'), exact: true }).click();
   const h = await p.locator('body').innerText();
   check(h.includes('Bloc d’entraînement (pas une séance complète)') && h.includes(`contenu ${content.toLowerCase()}`), `${tag} historique : bloc d’entraînement, ressenti du contenu`);
-  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Réglages', exact: true }).click();
+  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: visualName('Réglages'), exact: true }).click();
   await p.getByRole('button', { name: /Journal Beta/ }).click();
   check((await p.locator('body').innerText()).includes('Bloc d’entraînement seulement : séance complète non composée par KAIRO'), `${tag} Journal Beta : bloc d’entraînement signalé`);
   const [dl] = await Promise.all([p.waitForEvent('download'), p.getByRole('button', { name: 'Exporter le journal Beta (JSON)' }).click()]);
@@ -1111,7 +1113,7 @@ async function c4Full(p, tag) {
   const log = Object.values(s1.programmeLogs ?? {})[0];
   check(log?.ct?.blocksDone?.length === nw && log.outcome?.ct?.elapsedS >= 300 && s1.crosstraining?.realized?.length === 1, `${tag} fin : blocs validés et résultat du bloc principal persistés (${JSON.stringify(log?.ct)})`);
   await p.getByRole('button', { name: 'Retour' }).click();
-  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Réglages', exact: true }).click();
+  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: visualName('Réglages'), exact: true }).click();
   await p.getByRole('button', { name: /Journal Beta/ }).click();
   const [dl] = await Promise.all([p.waitForEvent('download'), p.getByRole('button', { name: 'Exporter le journal Beta (JSON)' }).click()]);
   const j = JSON.parse(readFileSync(await dl.path(), 'utf8'));
@@ -1321,7 +1323,7 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   await fin.getByRole('button', { name: 'Enregistrer' }).click();
   await p.getByLabel('Retour terrain').waitFor();
   await p.getByRole('button', { name: 'Retour' }).click();
-  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Historique', exact: true }).click();
+  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: visualName('Historique'), exact: true }).click();
   check(/40 kg|40 ?kg/.test(await p.locator('body').innerText()) || ((await st()).strength?.exposures?.length ?? 0) > 0, `${tag} historique : performance enregistrée`);
   // Séance 2 : épaule P2 ⇒ séance reportée (raisons lisibles), non démarrée.
   await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Planning', exact: true }).click();
@@ -1344,7 +1346,7 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   await dlg.getByRole('button', { name: 'Fermer' }).click();
   // Programme : volume de la semaine (repère, jamais augmenté) et récupération entre séances de force.
   await p.getByRole('button', { name: 'Retour' }).click().catch(() => {});
-  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Programme', exact: true }).click();
+  await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: visualName('Programme'), exact: true }).click();
   check(await p.locator('[data-week-volume]').isVisible() && /n’augmente pas le volume automatiquement/.test(await p.locator('[data-week-volume]').innerText()), `${tag} programme : volume hebdomadaire par groupe, aucune hausse automatique`);
   if (await p.locator('[data-week-recovery]').count()) check(/pas encore de règle validée/.test(await p.locator('[data-week-recovery]').innerText()), `${tag} récupération : séances de force rapprochées signalées (non résolu)`);
   await snap('10-programme-volume');
@@ -1548,7 +1550,7 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
 {
   const { c, p } = await freshPage(readFileSync(new URL('../../../packages/app-core/tests/fixtures/pre-s1-state.json', import.meta.url), 'utf8'));
   const published = await p.evaluate(async () => { try { const r = await fetch('./version.json', { cache: 'no-store' }); return r.ok ? (await r.json()).commit : null; } catch { return null; } });
-  await p.getByRole('button', { name: 'Réglages', exact: true }).click();
+  await p.getByRole('button', { name: visualName('Réglages'), exact: true }).click();
   const shown = await p.getByLabel('Version de l’application').innerText();
   if (published) check(shown === `Version : ${published.slice(0, 7)}`, `version affichée = version publiée (${shown} / ${published.slice(0, 7)})`);
   else console.log(`--  version.json absent (build locale) : ${shown}`);
