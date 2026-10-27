@@ -77,7 +77,7 @@
 .k-set-label { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .k-set-label b { font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--k-text-2); white-space: nowrap; }
 .k-set.warm .k-set-label b { color: var(--k-text-3); }
-.k-set-label span { font-size: 12px; color: var(--k-text-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-variant-numeric: tabular-nums; }
+.k-set-label span { font-size: 12px; color: var(--k-text-3); overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
 .k-field { min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 0; border-radius: 14px; padding: 4px 0 6px; cursor: text; transition: background 150ms; }
 .k-field:focus-within { background: var(--k-surface-3); }
 .k-field input { width: 100%; min-width: 0; min-height: 40px; padding: 0; border: 0; outline: none; background: transparent; text-align: center; font-size: 28px; font-weight: 800; letter-spacing: -0.02em; color: var(--k-text); font-variant-numeric: tabular-nums; -moz-appearance: textfield; caret-color: var(--k-accent); }

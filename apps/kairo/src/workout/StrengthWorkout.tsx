@@ -4,7 +4,7 @@
  * Actions : déléguées aux transitions app-core fournies par l'écran (`onRecord`, `onTogglePain`, `onEffort`) ; aucune prescription,
  * série, RIR, charge ni repos n'est calculé ou modifié ici.
  */
-import { useState } from 'react';
+import { useId, useState } from 'react';
 import { approxMinutes, exerciseLabel, intensityLabel, setKindLabel } from '@hybridsport/app-core';
 import type { ProgrammeSessionView, SessionItem, SetLog, SetPrescription } from '@hybridsport/app-core';
 import { BLOCK_LABELS } from '../screens/Session.js';
@@ -40,9 +40,11 @@ export function SetLine({ set, label, saved, editable, onRecord }: {
   // Pré-remplissage : uniquement ce que le moteur a PRESCRIT exactement (reps fixes, charge prescrite) ; une plage jamais.
   const [reps, setReps] = useState<string>(saved?.reps !== undefined ? String(saved.reps) : typeof set.reps === 'number' ? String(set.reps) : '');
   const [kg, setKg] = useState<string>(saved?.loadKg !== undefined ? String(saved.loadKg) : prescribedKg !== undefined ? String(prescribedKg) : '');
+  const chargeErrorId = useId();
   const done = saved?.done === true;
   const repsN = reps === '' ? undefined : Number(reps);
   const kgN = kg === '' ? undefined : Number(kg);
+  const invalidKg = kg !== '' && (kgN === undefined || !Number.isFinite(kgN) || kgN < 0);
   const valid = repsN !== undefined && Number.isInteger(repsN) && repsN >= 0 && (kgN === undefined || (Number.isFinite(kgN) && kgN >= 0));
   const toggle = () => onRecord(done
     ? { done: false, ...(repsN !== undefined ? { reps: repsN } : {}), ...(kgN !== undefined ? { loadKg: kgN } : {}) }
@@ -57,11 +59,12 @@ export function SetLine({ set, label, saved, editable, onRecord }: {
         <small>REPS</small>
       </label>
       <label className="k-field">
-        <input aria-label="Charge (kg)" inputMode="decimal" placeholder="—" value={kg} disabled={!editable || done} onChange={(e) => setKg(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))} />
+        <input aria-label="Charge (kg)" aria-invalid={invalidKg || undefined} aria-describedby={invalidKg ? chargeErrorId : undefined} inputMode="decimal" placeholder="—" value={kg} disabled={!editable || done} onChange={(e) => setKg(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))} />
         <small>KG</small>
       </label>
       <button className={`k-check ${done ? 'on' : ''}`} aria-label={done ? 'Décocher la série' : 'Cocher la série'} aria-pressed={done} disabled={!editable || (!done && !valid)} onClick={toggle}>✓</button>
       {editable && !done && repsN === undefined && <small className="k-set-hint" data-reps-required>Saisissez les répétitions réalisées pour valider la série{typeof set.reps === 'number' ? '' : ` (objectif ${repsTarget(set.reps)})`}.</small>}
+      {editable && !done && invalidKg && <small className="k-set-hint" id={chargeErrorId} role="alert">Saisissez une charge valide, par exemple 12,5 kg.</small>}
     </div>
   );
 }
