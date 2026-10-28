@@ -30,6 +30,12 @@ try {
     await page.getByRole('button', { name: 'Planning', exact: true }).click();
     await page.getByRole('button', { name: /^Musculation : Full body/ }).first().click();
     await page.getByRole('button', { name: 'Commencer la séance' }).click();
+    await page.getByRole('button', { name: 'Mettre en pause le chronomètre global' }).click();
+    const global = page.getByRole('timer', { name: 'Chronomètre global' });
+    const globalPaused = await global.innerText();
+    await page.waitForTimeout(1200);
+    if (await global.innerText() !== globalPaused) throw new Error(`${width}: le chrono global en pause évolue`);
+    await page.getByRole('button', { name: 'Reprendre le chronomètre global' }).click();
     const reps = page.getByLabel('Répétitions réalisées').first();
     const kg = page.getByLabel('Charge (kg)').first();
     await reps.fill('6'); await kg.fill('42.5');

@@ -11,6 +11,7 @@ import {
 } from '@hybridsport/app-core';
 import type { FinishInput, ProgrammeSessionView, SessionItem, SetPrescription } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
+import { clockInstant } from '../../clock/session-clock.js';
 import { RestTimer0 } from '../../RestTimer0.js';
 import { formatDate, Notice, sessionDay, startLabel, Topbar } from '../../ui.js';
 import { interferenceWarningText, isTest, maintainedText, manualStartText, sessionTitle, qualityVerdictText, roleName, sportName, STATUS_LABELS } from '../../present.js';
@@ -173,7 +174,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   const running = v?.log !== null && v?.log !== undefined && v.result === null;
   useEffect(() => {
     if (running && !wasRunning.current && wasOpenedBeforeStart.current && v?.sport === 'strength' && v.log && !store.sessionClocks.get(requestId, v.log.startedAt)) {
-      store.sessionClocks.start(requestId, v.log.startedAt, performance.now());
+      store.sessionClocks.start(requestId, v.log.startedAt, clockInstant());
       setTick((x) => x + 1);
     }
     wasRunning.current = running;
@@ -182,8 +183,10 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   // Rafraîchissement de l'affichage du temps écoulé (calculé depuis l'horodatage de début, jamais compté).
   useEffect(() => {
     if (!running) return undefined;
-    const t = setInterval(() => setTick((x) => x + 1), 1000);
-    return () => clearInterval(t);
+    const update = () => setTick((x) => x + 1);
+    const t = setInterval(update, 1000);
+    document.addEventListener('visibilitychange', update);
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', update); };
   }, [running]);
   if (!v) return <><Topbar title="Séance" onBack={onBack} /><div className="empty">Séance introuvable.</div></>;
   // Cross-training : séance propre au format (prescription persistée lue, jamais de repli Strength ni legacy).
@@ -202,7 +205,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   const playerSteps = v.sport === 'running' ? runPlayerSteps(v) : null;
   const elapsed = log && !finished ? Math.max(0, Math.floor((Date.parse(now()) - Date.parse(log.startedAt)) / 1000)) : 0;
   const clockValue = log && editable && v.sport === 'strength' ? store.sessionClocks.get(requestId, log.startedAt) : null;
-  const clockElapsed = log && clockValue ? store.sessionClocks.elapsed(requestId, log.startedAt, performance.now()) : null;
+  const clockElapsed = log && clockValue ? store.sessionClocks.elapsed(requestId, log.startedAt, clockInstant()) : null;
   const record = (item: SessionItem, _set: SetPrescription | undefined, index: number, x: { done: boolean; reps?: number; loadKg?: number }) =>
     store.apply((s, c) => recordProgrammeSet(s, c, requestId, { itemId: item.id, setIndex: index, ...x }));
 
@@ -221,7 +224,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
           {v.experimental && <span className="k-pill" title="Certaines règles de planification sont encore en cours de validation.">Beta</span>}
         </div>} />
         <div className={`k-workout ${editable && log.rest ? 'with-timer' : ''} ${!started && !finished ? 'with-dock' : ''}`}>
-          {editable && (clockValue && clockElapsed !== null ? <button type="button" className="btn secondary" onClick={() => { if (clockValue.runningSince === null) store.sessionClocks.resume(requestId, log.startedAt, performance.now()); else store.sessionClocks.pause(requestId, log.startedAt, performance.now()); setTick((x) => x + 1); }}>{clockValue.runningSince === null ? 'Reprendre le chronomètre global' : 'Mettre en pause le chronomètre global'}</button> : <Notice tone="warn"><span>Le temps précédent ne peut pas être récupéré avec certitude. Tu peux réinitialiser le chronomètre sans perdre ta séance.</span><button type="button" className="btn secondary" onClick={() => { store.sessionClocks.start(requestId, log.startedAt, performance.now()); setTick((x) => x + 1); }}>Réinitialiser le chronomètre</button></Notice>)}
+          {editable && (clockValue && clockElapsed !== null ? <button type="button" className="btn secondary" onClick={() => { if (clockValue.runningSince === null) store.sessionClocks.resume(requestId, log.startedAt, clockInstant()); else store.sessionClocks.pause(requestId, log.startedAt, clockInstant()); setTick((x) => x + 1); }}>{clockValue.runningSince === null ? 'Reprendre le chronomètre global' : 'Mettre en pause le chronomètre global'}</button> : <Notice tone="warn"><span>Le temps précédent ne peut pas être récupéré avec certitude. Tu peux réinitialiser le chronomètre sans perdre ta séance.</span><button type="button" className="btn secondary" onClick={() => { store.sessionClocks.start(requestId, log.startedAt, clockInstant()); setTick((x) => x + 1); }}>Réinitialiser le chronomètre</button></Notice>)}
           <AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state, requestId)} />
           <StrengthInsightPanel requestId={requestId} />
           <StrengthWorkout

@@ -4,14 +4,14 @@
  * (séries réelles, chrono persisté) → fin de séance → historique ; Course (saisie, TEST) ; douleur ; rechargement ;
  * import ; statut expérimental ; HYROX absent, Cross-training proposé (C3.5). Horloge injectée (lundi 2026-10-05).
  */
-import { afterEach, describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createBeta0Programme, emptyState, EQUIPMENT_PRESETS, exportState, finishProgrammeSession, MemoryStorage, saveState, selectBeta0Week, STORAGE_KEY } from '@hybridsport/app-core';
 import type { AppState, Clock, ProfileInput } from '@hybridsport/app-core';
 import { App } from '../src/App.js';
 import { StoreProvider } from '../src/store.js';
 
-afterEach(cleanup);
+afterEach(() => { cleanup(); vi.restoreAllMocks(); });
 const MONDAY = '2026-10-05';
 const at = (today: string, time = '07:30:00') => (): Clock => ({ today, now: `${today}T${time}.000Z` });
 const mount = (storage: MemoryStorage, clock = at(MONDAY)) => render(<StoreProvider storage={storage} clock={clock}><App /></StoreProvider>);
@@ -70,6 +70,17 @@ function openStrength() {
 }
 
 describe('onboarding Beta 0 et programme', () => {
+  it('retour au premier plan après une veille indéterminable : demande une remise à zéro du seul chrono', () => {
+    let mono = 1000; let wall = 100000;
+    vi.spyOn(performance, 'now').mockImplementation(() => mono);
+    vi.spyOn(Date, 'now').mockImplementation(() => wall);
+    const storage = new MemoryStorage(); onboard(storage, 'Musculation'); openStrength();
+    const savedBefore = storage.getItem(STORAGE_KEY);
+    mono += 1000; wall += 3600000;
+    fireEvent(document, new Event('visibilitychange'));
+    expect(screen.getByText(/Le temps précédent ne peut pas être récupéré avec certitude/)).toBeTruthy();
+    expect(storage.getItem(STORAGE_KEY)).toBe(savedBefore);
+  });
   it('chronomètre global Musculation : pause, reprise, retour et rechargement sans toucher à la séance', async () => {
     const storage = new MemoryStorage();
     onboard(storage, 'Musculation');
