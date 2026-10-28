@@ -65,7 +65,7 @@ export function elapsedMs(session: ClockSession, snapshot: ClockSnapshot | null,
 }
 
 /** Les commandes sont explicites et n'écrivent jamais à chaque tic d'affichage. */
-export function controlClock(storage: KeyValueStorage, session: ClockSession, now: string, action: 'pause' | 'resume'): ClockWrite {
+function controlClock(storage: KeyValueStorage, session: ClockSession, now: string, action: 'pause' | 'resume'): ClockWrite {
   if (!validSession(session) || !validDate(now)) return { ok: false, reason: 'invalid' };
   if (!session.active) return { ok: false, reason: 'inactive' };
   const current = readClock(storage, session);
@@ -92,7 +92,7 @@ export async function controlClockLocked(storage: KeyValueStorage, locks: ClockL
 /** Sauvegarde compagnon séparée ; l'export historique de l'application reste strictement inchangé. */
 export function exportClock(snapshot: ClockSnapshot): string { return JSON.stringify(snapshot); }
 /** Import explicite d'un compagnon lié à une séance en cours ; n'écrase jamais un chrono existant. */
-export function importClock(storage: KeyValueStorage, session: ClockSession, raw: string): ClockWrite {
+function importClock(storage: KeyValueStorage, session: ClockSession, raw: string): ClockWrite {
   if (!validSession(session)) return { ok: false, reason: 'invalid' };
   if (!session.active) return { ok: false, reason: 'inactive' };
   let snapshot: unknown;
