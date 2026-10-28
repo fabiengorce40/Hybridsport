@@ -34,6 +34,16 @@ try {
     return read.ok ? clock.elapsedMs(s, read.snapshot, '2026-10-05T08:30:00.000Z') : null;
   }, session);
   if (afterReload !== 600000) throw new Error('Pause non conservée au rechargement');
+  await context.setOffline(true);
+  const offline = await page.evaluate(async (s) => {
+    const clock = await import('/src/clock/global-clock.ts');
+    const locks = navigator.locks ? { request: (name, work) => navigator.locks.request(name, work) } : null;
+    const isolated = { ...s, requestId: `${s.requestId}.test-hors-ligne` };
+    const result = await clock.controlClockLocked(localStorage, locks, isolated, '2026-10-05T08:10:00.000Z', 'pause');
+    return result.ok ? clock.elapsedMs(isolated, result.snapshot, '2026-10-05T08:30:00.000Z') : null;
+  }, session);
+  await context.setOffline(false);
+  if (offline !== 600000) throw new Error('Stockage auxiliaire indisponible hors ligne');
   // Deux onglets de la même origine : le second ne doit écrire qu'après la libération du verrou par le premier.
   const second = await context.newPage();
   await second.goto(new URL('__clock_fixture', url).href);
@@ -81,7 +91,7 @@ try {
   }, { s: session, backup: first.backup });
   if (!restored.imported.ok || restored.elapsed !== 600000 || !restored.unchanged) throw new Error('Import compagnon incohérent');
   await context.close(); context = undefined;
-  console.log('OK stockage auxiliaire Chromium : pause, rechargement, deux onglets, fermeture/réouverture, reprise, clôture, compagnon exporté/importé et sauvegarde historique inchangée');
+  console.log('OK stockage auxiliaire Chromium : pause, rechargement, hors ligne, deux onglets, fermeture/réouverture, reprise, clôture, compagnon exporté/importé et sauvegarde historique inchangée');
 } finally {
   if (context) await context.close().catch(() => {});
   rmSync(profile, { recursive: true, force: true });
