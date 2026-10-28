@@ -1,0 +1,39 @@
+# Diagnostic en lecture seule sur la branche de continuation ; ne crée ni ne déploie aucun projet.
+name: REKKA ESSAI — diagnostic Cloudflare en lecture seule
+on:
+  push:
+    branches: [codex/rekka-continuation-20261027]
+    paths: ['.github/workflows/rekka-android-access-check.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    env:
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Vérifier les accès sans modifier les projets
+        shell: bash
+        run: |
+          set -eu
+          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ]; then
+            echo 'DIAGNOSTIC: identifiants Cloudflare indisponibles pour cette branche.'
+            exit 0
+          fi
+          projects=$(mktemp)
+          status=$(curl -sS --max-time 20 -o "$projects" -w '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects?per_page=100") || exit 1
+          echo "DIAGNOSTIC: lecture des projets Pages HTTP $status"
+          if [ "$status" = 200 ]; then
+            python3 - "$projects" <<'PY'
+          import json,sys
+          d=json.load(open(sys.argv[1])); projects=d.get('result',[])
+          print('DIAGNOSTIC: projet BÊTA dans la première page =',any(p.get('name')=='rekka-beta' for p in projects))
+          print('DIAGNOSTIC: nom proposé dans la première page =',any(p.get('name')=='rekka-v2-android-test' for p in projects))
+          print('DIAGNOSTIC: pagination complète =', d.get('result_info',{}).get('total_pages',1)<=1)
+          PY
+          fi
+          access=$(mktemp)
+          access_status=$(curl -sS --max-time 20 -o "$access" -w '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/access/apps?per_page=1") || exit 1
+          echo "DIAGNOSTIC: lecture Cloudflare Access HTTP $access_status"
