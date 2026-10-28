@@ -35,6 +35,12 @@ try {
     const globalPaused = await global.innerText();
     await page.waitForTimeout(1200);
     if (await global.innerText() !== globalPaused) throw new Error(`${width}: le chrono global en pause évolue`);
+    const other = await ctx.newPage();
+    await other.goto(url);
+    await other.getByRole('button', { name: 'Reprendre la séance' }).click();
+    await other.getByText('Le temps précédent ne peut pas être récupéré avec certitude. Tu peux réinitialiser le chronomètre sans perdre ta séance.').waitFor();
+    await other.close();
+    if (await global.innerText() !== globalPaused) throw new Error(`${width}: le second onglet a changé le chrono de la première page`);
     await page.getByRole('button', { name: 'Reprendre le chronomètre global' }).click();
     const reps = page.getByLabel('Répétitions réalisées').first();
     const kg = page.getByLabel('Charge (kg)').first();
