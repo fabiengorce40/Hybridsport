@@ -1,4 +1,4 @@
-/* global localStorage, navigator -- exécutés dans le navigateur */
+/* global localStorage, navigator, setTimeout -- exécutés dans le navigateur */
 /** Test du stockage auxiliaire dans un profil Chromium jetable, sans modifier l'application ni ses sauvegardes. */
 import { chromium } from 'playwright';
 import { mkdtempSync, rmSync } from 'node:fs';
@@ -34,6 +34,29 @@ try {
     return read.ok ? clock.elapsedMs(s, read.snapshot, '2026-10-05T08:30:00.000Z') : null;
   }, session);
   if (afterReload !== 600000) throw new Error('Pause non conservée au rechargement');
+  // Deux onglets de la même origine : le second ne doit écrire qu'après la libération du verrou par le premier.
+  const second = await context.newPage();
+  await second.goto(new URL('__clock_fixture', url).href);
+  const concurrent = { ...session, requestId: `${session.requestId}.test-verrou` };
+  const holding = page.evaluate(async (s) => {
+    const clock = await import('/src/clock/global-clock.ts');
+    await navigator.locks.request(clock.clockKey(s), async () => {
+      localStorage.setItem('test-clock-lock', 'held');
+      while (localStorage.getItem('test-clock-waiter') !== 'ready') await new Promise((resolve) => setTimeout(resolve, 20));
+      localStorage.setItem('test-clock-lock', 'released');
+    });
+  }, concurrent);
+  await second.waitForFunction(() => localStorage.getItem('test-clock-lock') === 'held');
+  const waiting = await second.evaluate(async (s) => {
+    const clock = await import('/src/clock/global-clock.ts');
+    localStorage.setItem('test-clock-waiter', 'ready');
+    const locks = { request: (name, work) => navigator.locks.request(name, work) };
+    const result = await clock.controlClockLocked(localStorage, locks, s, '2026-10-05T08:10:00.000Z', 'pause');
+    return { result, released: localStorage.getItem('test-clock-lock') === 'released' };
+  }, concurrent);
+  await holding;
+  if (!waiting.result.ok || !waiting.released) throw new Error('Écriture simultanée non sérialisée');
+  await second.close();
   await context.close(); context = undefined;
   ({ context, page } = await open());
   const reopened = await page.evaluate(async (s) => {
@@ -58,7 +81,7 @@ try {
   }, { s: session, backup: first.backup });
   if (!restored.imported.ok || restored.elapsed !== 600000 || !restored.unchanged) throw new Error('Import compagnon incohérent');
   await context.close(); context = undefined;
-  console.log('OK stockage auxiliaire Chromium : pause, rechargement, fermeture/réouverture, reprise, clôture, compagnon exporté/importé et sauvegarde historique inchangée');
+  console.log('OK stockage auxiliaire Chromium : pause, rechargement, deux onglets, fermeture/réouverture, reprise, clôture, compagnon exporté/importé et sauvegarde historique inchangée');
 } finally {
   if (context) await context.close().catch(() => {});
   rmSync(profile, { recursive: true, force: true });
