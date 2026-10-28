@@ -5,6 +5,7 @@
  * Validé à la frontière par `parseStrengthContext` (schéma strict).
  */
 import { z } from 'zod';
+import { zStrengthPersonalization } from './personalization-contract.js';
 import { DEMAND_LEVELS, DISCIPLINES, isISODateTime, zRepTarget } from '@hybridsport/domain';
 import { createCoreRegistry } from '@hybridsport/engine';
 import type { ContextParse } from '@hybridsport/engine';
@@ -89,6 +90,8 @@ export const zExerciseExposure = z.object({
 export type ExerciseExposure = z.infer<typeof zExerciseExposure>;
 
 export const zStrengthContext = z.object({
+  personalization: zStrengthPersonalization.optional(),
+  otherSports: z.array(z.string()).optional(),
   goal: z.object({ primary: zGoalRef, secondary: zGoalRef.optional() }).strict(),
   phase: z.object({ kind: z.enum(PHASE_KINDS), weekInMesocycle: z.number().int().positive(), mesocycleLength: z.number().int().positive() }).strict()
     .refine((p) => p.weekInMesocycle <= p.mesocycleLength, 'weekInMesocycle ≤ mesocycleLength'),

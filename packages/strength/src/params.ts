@@ -4,6 +4,7 @@
  * (`parametersUsed`). Paramètre absent ou mal formé ⇒ RulesetParameterError (erreur explicite).
  */
 import { z } from 'zod';
+import { zPersonalizationPolicy } from './personalization-contract.js';
 import { DEMAND_LEVELS, LEVELS, zCompressionLever, zSlotRequirement } from '@hybridsport/domain';
 import type { GovernanceClass } from '@hybridsport/domain';
 import { RulesetParameterError } from '@hybridsport/engine';
@@ -160,6 +161,7 @@ export type InterferenceAction = (typeof INTERFERENCE_ACTIONS)[number];
  * RulesetParameterError comme tout paramètre.
  */
 export const STRENGTH_OPTIONAL_PARAMETER_SCHEMAS = {
+  'strength.personalization': { governance: 'G2', schema: zPersonalizationPolicy },
   /** Version du registre scientifique (provenance des paramètres) avec laquelle ce ruleset a été construit. */
   'strength.science.registryVersion': { governance: 'G4', schema: id },
   /** PrescriptionConfidence ordinale : règles versionnées, sans coefficient (addendum 4E §E). */

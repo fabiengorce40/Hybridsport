@@ -165,7 +165,7 @@ describe('AppState v2 : migration v1 → v2', () => {
     const d = decodeState(JSON.stringify(toV1(s)));
     expect(d.ok && d.from).toBe(1);
     expect(d.ok && d.state).toEqual(s);
-    expect(CURRENT_SCHEMA_VERSION).toBe(2);
+    expect(CURRENT_SCHEMA_VERSION).toBe(3);
   });
 
   it('déterministe et idempotente : même v1 ⇒ même v2 ; une donnée déjà v2 n’est jamais remigrée', () => {

@@ -10,7 +10,7 @@ import { zCheckIn } from './checkin.js';
 import { isISODateTime, LEVELS, zFingerprintHistoryEntry, zSerializedEnvelope, zSessionDraft } from '@hybridsport/domain';
 import { INTENT_FIELDS, PLANNER_MODES, REQUEST_CATEGORIES } from '@hybridsport/planner';
 import { HYROX_PROGRAMME_GOALS, zProgrammeState } from '@hybridsport/programme';
-import { zExerciseExposure, zStrengthTrack } from '@hybridsport/strength';
+import { zExerciseExposure, zStrengthTrack, zStrengthPersonalization } from '@hybridsport/strength';
 import { RETURN_STATES, RUNNING_GOALS, RUNNING_LEVELS, zRealizedSession, zRunningReference } from '@hybridsport/running';
 
 export const SPORTS = ['strength', 'running', 'crosstraining', 'hyrox'] as const;
@@ -38,7 +38,7 @@ export const zProfile = z.object({
   level: z.enum(LEVELS),
   /** Ordre de priorité des sports activés (sélection déterministe du planificateur). */
   priorities: z.array(z.enum(SPORTS)),
-  strength: z.object({ enabled: z.boolean(), goal: z.enum(STRENGTH_GOALS), sessionsPerWeek }).strict(),
+  strength: z.object({ enabled: z.boolean(), goal: z.enum(STRENGTH_GOALS), sessionsPerWeek, personalization: zStrengthPersonalization.optional() }).strict(),
   running: z.object({
     enabled: z.boolean(),
     population: z.enum(RUNNING_LEVELS),
@@ -237,6 +237,7 @@ export type EnvironmentAuthority = (typeof ENVIRONMENT_AUTHORITIES)[number];
 
 /** Semaine planifiée par le planificateur global, PERSISTÉE : séances en session_record (enveloppe versionnée). */
 export const zPersistedWeek = z.object({
+  strengthProfile: zProfile.optional(),
   weekStart: date,
   /** Propriétaire UNIQUE de la semaine (v2) : seul ce chemin peut la replanifier (voir weeks.ts). */
   owner: z.enum(['programme', 'multisport']),
@@ -428,7 +429,7 @@ export type ProgrammeLog = z.infer<typeof zProgrammeLog>;
 
 export const zAppState = z.object({
   // technical-constant: version du schéma persistant de l'état applicatif (contrat de format)
-  schemaVersion: z.literal(2),
+  schemaVersion: z.literal(3),
   profile: zProfile.nullable(),
   plans: z.record(date, zWeekPlan),
   sessions: z.record(z.string(), zGeneratedSession),
@@ -500,7 +501,7 @@ export const zAppState = z.object({
 export type AppState = z.infer<typeof zAppState>;
 
 // technical-constant: version du schéma persistant de l'état applicatif (contrat de format)
-export const CURRENT_SCHEMA_VERSION = 2;
+export const CURRENT_SCHEMA_VERSION = 3;
 
 export function emptyState(): AppState {
   return {
