@@ -1,0 +1,23 @@
+/** Prépare une copie locale d'une build beta ; ce script ne publie rien. */
+import { cpSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+const source = resolve('dist-beta');
+const target = resolve('dist-android-test');
+if (!existsSync(`${source}/sw.js`) || !existsSync(`${source}/manifest.webmanifest`)) throw Error('Construire d’abord la build BÊTA locale.');
+const sw = readFileSync(`${source}/sw.js`, 'utf8');
+if (!sw.includes("const CACHE = 'rekka-beta-1';") || !sw.includes("k.startsWith('rekka-beta-')")) throw Error('Build source BÊTA non reconnue.');
+const html = readFileSync(`${source}/index.html`, 'utf8');
+if (!html.includes('<title>REKKA BÊTA</title>')) throw Error('Identité BÊTA source manquante.');
+const commit = process.env.GITHUB_SHA ?? '';
+if (!/^[a-f0-9]{40}$/i.test(commit)) throw Error('GITHUB_SHA complet requis pour la build et version.json.');
+const entry = /<script type="module" crossorigin src="\.\/(assets\/[^"/]+\.js)"><\/script>/.exec(html)?.[1];
+if (!entry || !readFileSync(`${source}/${entry}`, 'utf8').includes(commit.slice(0, 7))) throw Error('Le commit ne correspond pas à la build source.');
+rmSync(target, { recursive: true, force: true });
+cpSync(source, target, { recursive: true });
+const manifest = JSON.parse(readFileSync(`${target}/manifest.webmanifest`, 'utf8'));
+Object.assign(manifest, { id: './?kairo-channel=android-test', name: 'REKKA V2 ESSAI', short_name: 'REKKA ESSAI', description: 'REKKA V2 — essai Android isolé' });
+writeFileSync(`${target}/manifest.webmanifest`, `${JSON.stringify(manifest, null, 2)}\n`);
+writeFileSync(`${target}/index.html`, html.replace('<title>REKKA BÊTA</title>', '<title>REKKA V2 ESSAI</title>'));
+writeFileSync(`${target}/sw.js`, sw.replace("const CACHE = 'rekka-beta-1';", "const CACHE = 'rekka-android-test-1';").replace("k.startsWith('rekka-beta-')", "k.startsWith('rekka-android-test-')"));
+writeFileSync(`${target}/version.json`, `${JSON.stringify({ commit, channel: 'android-test' })}\n`);
+console.log(`Copie locale préparée : ${target}. Publication interdite sans origine HTTPS distincte et autorisation.`);

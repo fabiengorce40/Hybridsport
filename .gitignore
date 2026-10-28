@@ -9,3 +9,5 @@ dist/
 dist-single/
 dist-beta/
 dist-prototype/
+
+dist-android-test/
