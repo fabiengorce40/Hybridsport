@@ -1,0 +1,40 @@
+/* global localStorage, document, innerWidth */
+/** Parcours V2.1 sur build locale jetable, jamais sur des données utilisateur. */
+import { chromium } from 'playwright';
+import { mkdirSync, readFileSync } from 'node:fs';
+import { createServer } from 'node:http';
+import { fileURLToPath } from 'node:url';
+import { resolve, extname } from 'node:path';
+import assert from 'node:assert/strict';
+const root=fileURLToPath(new URL('../dist-android-test/',import.meta.url));
+const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.webmanifest':'application/manifest+json','.svg':'image/svg+xml','.png':'image/png'};
+const server=process.env.E2E_URL?undefined:createServer((req,res)=>{const pathname=new URL(req.url,'http://localhost').pathname;const file=resolve(root,'.'+(pathname==='/'?'/index.html':pathname));if(!file.startsWith(root)){res.writeHead(403).end();return;}try{res.setHeader('Content-Type',types[extname(file)]??'application/octet-stream');res.setHeader('Cache-Control','no-cache');res.end(readFileSync(file));}catch{res.writeHead(404).end();}});
+if(server)await new Promise(r=>server.listen(0,'127.0.0.1',r));
+const url=process.env.E2E_URL??`http://127.0.0.1:${server.address().port}/`;const shots=process.env.E2E_SHOTS;
+if(shots)mkdirSync(shots,{recursive:true});
+const browser=await chromium.launch();
+try {for(const width of [360,390]){
+ const context=await browser.newContext({viewport:{width,height:800},locale:'fr-FR',timezoneId:'Europe/Paris'});
+ const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
+ await page.goto(url);await page.getByLabel(/J’ai compris/).check();await page.getByRole('button',{name:'Commencer',exact:true}).click();
+ await page.getByRole('radio',{name:/^Musculation Séances/}).click();await page.getByRole('button',{name:'Continuer',exact:true}).click();
+ await page.getByRole('button',{name:'Développer mes muscles',exact:true}).click();
+ const next=()=>page.getByRole('button',{name:'Suivant · Musculation',exact:true}).click();
+ await next();await page.getByRole('button',{name:'Fessiers',exact:true}).click();assert.equal(await page.getByLabel('1. Fessiers').inputValue(),'volume');
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);
+ if(shots)await page.screenshot({path:`${shots}/priorites-${width}.png`,fullPage:true});
+ await next();await page.getByLabel('Depuis combien de mois pratiquez-vous la musculation ?').fill('24');
+ await page.getByLabel('Séances régulières par semaine sur les derniers mois').selectOption('3');await page.getByLabel('Maîtrise des mouvements').selectOption('confident');await next();
+ await page.getByLabel('Séances Musculation par semaine').selectOption('3');await next();await page.getByLabel('Lieu d’entraînement').selectOption('preset.full_gym');await next();await next();
+ await page.getByRole('button',{name:'Confirmer ma personnalisation'}).click();await page.getByRole('button',{name:'Continuer',exact:true}).click();await page.getByRole('button',{name:'Continuer',exact:true}).click();
+ await page.getByRole('button',{name:'Créer mon programme',exact:true}).click();await page.getByRole('navigation',{name:'Navigation principale'}).waitFor();
+ const read=()=>page.evaluate(()=>{const key=Object.keys(localStorage).find(k=>k.endsWith('kairo.state'));return key?JSON.parse(localStorage.getItem(key)):null;});
+ const before=await read();assert.equal(before.profile.strength.personalization.priorities[0].zone,'glutes');assert.equal(before.schemaVersion,3);
+ await page.reload();await page.getByRole('button',{name:/^(Profil|Réglages)$/}).click();await page.getByRole('button',{name:/^Ma musculation/}).click();
+ await page.getByRole('button',{name:'Modifier mes priorités',exact:true}).click();await page.getByRole('button',{name:'Fessiers',exact:true}).click();await page.getByRole('button',{name:'Pectoraux',exact:true}).click();
+ await page.getByRole('button',{name:'Confirmer ces modifications'}).click();await page.getByRole('button',{name:'Enregistrer mes objectifs Musculation'}).click();await page.getByRole('status').filter({hasText:'Objectifs enregistrés'}).waitFor();
+ const after=await read();assert.equal(after.profile.strength.personalization.priorities[0].zone,'chest');assert.deepEqual(after.strength,before.strength);assert.deepEqual(after.programmeLogs,before.programmeLogs);
+ for(const key of Object.keys(before.planner.weeks))assert.deepEqual(after.planner.weeks[key].requests,before.planner.weeks[key].requests);
+ assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);if(shots)await page.screenshot({path:`${shots}/profil-${width}.png`,fullPage:true});
+ assert.deepEqual(errors,[]);await context.close();console.log(`OK ${width}px : 7 etapes, generation, rechargement, edition directe, planning et donnees conserves, aucun debordement.`);
+}}finally{await browser.close();server?.closeAllConnections();server?.close();}

@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { completeStrengthCustomization } from './strength-onboarding.js';
 /**
  * E2E interface → DOM (jsdom, application réelle, backend réel) du bug post-S1 « 4 × Full body » :
  *   A — programme NEUF créé après S1 depuis l'onboarding, 4 séances de musculation : le Planning affiche la composition
@@ -10,7 +11,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryStorage, selectBeta0Week, STORAGE_KEY } from '@hybridsport/app-core';
 import type { AppState, Clock } from '@hybridsport/app-core';
 import { App } from '../src/App.js';
@@ -35,12 +36,9 @@ describe('A — programme neuf après S1 (onboarding UI, 4 séances de musculati
     click('Commencer');
     fireEvent.click(screen.getByRole('radio', { name: /^Musculation Séances/ }));
     click('Continuer');
-    const card = screen.getByRole('heading', { name: 'Musculation' }).closest('.card') as HTMLElement;
-    fireEvent.change(within(card).getByLabelText('Séances par semaine'), { target: { value: '4' } });
+    completeStrengthCustomization({ frequency: 4, allDays: true });
     click('Continuer');
     click('Continuer');
-    // P1 — lieu d'entraînement choisi explicitement (aucune présélection).
-    fireEvent.change(screen.getByLabelText('Lieu d’entraînement'), { target: { value: 'preset.full_gym' } });
     click('Créer mon programme');
     click('Planning');
     const shown = strengthCards();

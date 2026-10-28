@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { completeStrengthCustomization } from './strength-onboarding.js';
 /**
  * Interface Beta 0 (jsdom) : onboarding Musculation / Course / hybride → programme réel → semaine → séance Strength
  * (séries réelles, chrono persisté) → fin de séance → historique ; Course (saisie, TEST) ; douleur ; rechargement ;
@@ -36,6 +37,7 @@ function onboard(storage: MemoryStorage, choice: Choice) {
   expect(screen.getByRole('radio', { name: /^Cross-training/ })).toBeTruthy();
   fireEvent.click(screen.getByRole('radio', { name: CHOICE_NAMES[choice] }));
   click('Continuer');
+  if (choice !== 'Course') completeStrengthCustomization();
   if (choice !== 'Musculation') {
     fireEvent.change(screen.getByLabelText('Durée (min)'), { target: { value: '30' } });
     fireEvent.change(screen.getByLabelText('Distance (km)'), { target: { value: '5' } });
@@ -43,12 +45,7 @@ function onboard(storage: MemoryStorage, choice: Choice) {
   click('Continuer');
   click('Continuer');
   if (choice === 'Musculation + Course') expect(screen.getByRole('radio', { name: 'Priorité Course' })).toBeTruthy();
-  if (choice !== 'Course') {
-    // P1 — aucun matériel présélectionné : création impossible tant que le lieu d'entraînement n'est pas choisi.
-    expect(screen.getByRole('button', { name: 'Créer mon programme' })).toHaveProperty('disabled', true);
-    expect(document.querySelector('[data-equipment-missing]')).toBeTruthy();
-    fireEvent.change(screen.getByLabelText('Lieu d’entraînement'), { target: { value: 'preset.full_gym' } });
-  }
+  expect(screen.getByRole('button', { name: 'Créer mon programme' })).toHaveProperty('disabled', false);
   click('Créer mon programme');
 }
 

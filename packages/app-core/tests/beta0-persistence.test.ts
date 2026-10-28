@@ -174,7 +174,7 @@ describe('AppState v2 : migration v1 → v2', () => {
     expect(() => migrateV1toV2(migrateV1toV2(v1))).toThrow();
     const once = decodeState(JSON.stringify(v1));
     const twice = once.ok ? decodeState(exportState(once.state)) : once;
-    expect(twice.ok && twice.from).toBe(2);
+    expect(twice.ok && twice.from).toBe(3);
     expect(once.ok && twice.ok && twice.state).toEqual(once.ok ? once.state : null);
   });
 

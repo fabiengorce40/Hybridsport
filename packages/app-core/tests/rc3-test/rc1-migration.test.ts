@@ -41,7 +41,8 @@ const open = (s: AppState): ProgrammeLog => {
 /** Empreintes calculées par le CODE RC1 (efc5f2f) sur ces mêmes états : historique, et semaine suivante planifiée. */
 const REFERENCE = JSON.parse(readFileSync(join(DIR, 'reference-rc1-efc5f2f.json'), 'utf8')) as Record<string, { history: string; next: string }>;
 const canon = (v: unknown): string => JSON.stringify(v, (_k, x: unknown) => (x && typeof x === 'object' && !Array.isArray(x) ? Object.fromEntries(Object.entries(x as Record<string, unknown>).sort(([a], [b]) => (a < b ? -1 : 1))) : x));
-const hash = (v: unknown): string => createHash('sha256').update(canon(v)).digest('hex');
+// La comparaison historique RC1 neutralise seulement la version de l'enveloppe v2 → v3.
+const hash = (v: unknown): string => createHash('sha256').update(canon(v && typeof v === 'object' && 'schemaVersion' in v ? { ...v, schemaVersion: 2 } : v)).digest('hex');
 /** Retire le seul champ ajouté par RC3 à une semaine persistée (RC3.1 A8 : cause décisive d'une demande non planifiée). */
 const withoutCause = (s: AppState): AppState => ({
   ...s,
@@ -60,17 +61,17 @@ describe('RC1 TEST → RC3 : relecture sans perte', () => {
   });
 
   for (const f of FIXTURES) {
-    it(`${f} : relu tel quel (aucune migration, aucune copie illisible), réécrit octet pour octet`, () => {
+    it(`${f} : migration additive v2 → v3, données inchangées et aucune copie illisible`, () => {
       const raw = readFileSync(join(DIR, f), 'utf8');
       const storage = new MemoryStorage();
       storage.setItem(STORAGE_KEY, raw);
       const r = loadState(storage, '2026-11-10T08:00:00Z');
       expect(r.status).toBe('ok');
       if (r.status !== 'ok') return;
-      expect(r.migratedFrom).toBeUndefined();
+      expect(r.migratedFrom).toBe(2);
       expect(storage.keys()).toEqual([STORAGE_KEY]);
       expect(saveState(storage, r.state)).toEqual({ ok: true });
-      expect(storage.getItem(STORAGE_KEY)).toBe(raw);
+      expect(JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}')).toEqual({ ...JSON.parse(raw), schemaVersion: 3 });
       // Profil, journaux, résultats, contrôles, réalisations Running : identiques.
       const before = JSON.parse(raw) as AppState;
       expect(r.state.profile).toEqual(before.profile);
