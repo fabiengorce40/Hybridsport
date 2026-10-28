@@ -1,44 +1,121 @@
-# Diagnostic en lecture seule sur la branche de continuation ; ne crée ni ne déploie aucun projet.
-name: REKKA ESSAI — diagnostic Cloudflare en lecture seule
+name: REKKA ESSAI public temporaire isole
 on:
   push:
     branches: [codex/rekka-continuation-20261027]
     paths: ['.github/workflows/rekka-android-access-check.yml']
 permissions:
   contents: read
+concurrency:
+  group: rekka-android-test-only
+  cancel-in-progress: false
 jobs:
-  inspect:
+  publish:
+    if: github.ref == 'refs/heads/codex/rekka-continuation-20261027'
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    timeout-minutes: 20
     env:
-      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      CF_PROJECT: rekka-v2-android-test
+      SOURCE_SHA: f45c242c1e13a780d9c46084cf15ff6991707a62
     steps:
-      - name: Vérifier les accès sans modifier les projets
-        shell: bash
+      - uses: actions/checkout@v4
+        with:
+          ref: f45c242c1e13a780d9c46084cf15ff6991707a62
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build epinglee et identite isolee
+        env:
+          GITHUB_SHA: f45c242c1e13a780d9c46084cf15ff6991707a62
         run: |
-          set -eu
-          if [ -z "$CF_TOKEN" ] || [ -z "$CF_ACCOUNT" ]; then
-            echo 'DIAGNOSTIC: identifiants Cloudflare indisponibles pour cette branche.'
-            exit 0
-          fi
-          projects=$(mktemp)
-          status=$(curl -sS --max-time 20 -o "$projects" -w '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects") || exit 1
-          echo "DIAGNOSTIC: lecture des projets Pages HTTP $status"
-          if [ "$status" = 200 ]; then
-            python3 - "$projects" <<'PY'
-          import json,sys
-          d=json.load(open(sys.argv[1])); projects=d.get('result',[])
-          print('DIAGNOSTIC: projet BÊTA dans la première page =',any(p.get('name')=='rekka-beta' for p in projects))
-          print('DIAGNOSTIC: nom proposé dans la première page =',any(p.get('name')=='rekka-v2-android-test' for p in projects))
-          print('DIAGNOSTIC: pagination complète =', d.get('result_info',{}).get('total_pages',1)<=1)
+          pnpm kairo:build:beta
+          python3 - <<'PY'
+          import json,pathlib
+          p=pathlib.Path('apps/kairo/dist-beta')
+          m=json.loads((p/'manifest.webmanifest').read_text())
+          assert m['scope']=='./' and m['start_url']=='./'
+          m.update(name='REKKA V2 ESSAI',short_name='REKKA ESSAI',description='Essai public temporaire - donnees fictives uniquement',id='./?kairo-channel=android-test')
+          (p/'manifest.webmanifest').write_text(json.dumps(m,ensure_ascii=False,indent=2))
+          sw=(p/'sw.js').read_text()
+          assert "rekka-beta-1" in sw and "k.startsWith('rekka-beta-')" in sw
+          (p/'sw.js').write_text(sw.replace('rekka-beta-','rekka-android-test-'))
+          h=(p/'index.html').read_text()
+          assert '<title>REKKA BÊTA</title>' in h
+          (p/'index.html').write_text(h.replace('<title>REKKA BÊTA</title>','<title>REKKA V2 ESSAI</title>'))
+          (p/'version.json').write_text(json.dumps(dict(commit='f45c242c1e13a780d9c46084cf15ff6991707a62',channel='android-test')))
+          assert not list(p.rglob('*.map'))
+          assert not (p/'_worker.js').exists() and not (p/'functions').exists()
           PY
-          else
-            python3 - "$projects" <<'PYERR'
-          import json,sys
-          d=json.load(open(sys.argv[1])); print('DIAGNOSTIC: codes erreur Pages =', [e.get('code') for e in d.get('errors',[])])
-          PYERR
-          fi
-          access=$(mktemp)
-          access_status=$(curl -sS --max-time 20 -o "$access" -w '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/access/apps?per_page=1") || exit 1
-          echo "DIAGNOSTIC: lecture Cloudflare Access HTTP $access_status"
+      - name: Creer uniquement un projet neuf apres controles
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python3 - <<'PY'
+          import os,json,urllib.request,urllib.error,pathlib
+          token=os.environ['CF_TOKEN']; account=os.environ['CF_ACCOUNT']; name=os.environ['CF_PROJECT']
+          assert token and account and name=='rekka-v2-android-test'
+          base=f'https://api.cloudflare.com/client/v4/accounts/{account}/pages/projects'
+          def api(url,data=None):
+              req=urllib.request.Request(url,data=None if data is None else json.dumps(data).encode(),headers={'Authorization':'Bearer '+token,'Content-Type':'application/json'})
+              try:
+                  with urllib.request.urlopen(req,timeout=30) as r: d=json.load(r)
+              except urllib.error.HTTPError as e: raise RuntimeError('Cloudflare HTTP '+str(e.code)) from None
+              assert d.get('success'), 'Cloudflare refuse'
+              return d
+          d=api(base)
+          assert d.get('result_info',{}).get('total_pages',1)<=1,'Pagination incomplete'
+          assert all(p['name']!=name for p in d['result']),'Nom deja present : arret sans ecrasement'
+          beta=api(base+'/rekka-beta')['result']
+          assert beta['subdomain']=='rekka-beta.pages.dev'
+          pathlib.Path('/tmp/rekka-beta-before.json').write_text(json.dumps(beta,sort_keys=True))
+          prod='https://fabiengorce40.github.io/Hybridsport/'
+          with urllib.request.urlopen(prod+'version.json',timeout=30) as r: pathlib.Path('/tmp/rekka-prod-before').write_bytes(r.read())
+          assert name+'.pages.dev'!=beta['subdomain']
+          created=api(base,dict(name=name,production_branch='android-test'))['result']
+          assert created['name']==name and created['subdomain']==name+'.pages.dev'
+          assert not created.get('source'),'Integration Git inattendue'
+          assert set(created.get('domains',[])) <= {name+'.pages.dev'},'Domaine inattendu'
+          for cfg in created.get('deployment_configs',{}).values():
+              for key in ('env_vars','kv_namespaces','d1_databases','r2_buckets','services'):
+                  assert not cfg.get(key), 'Binding partage inattendu'
+          print('CREATION ET ISOLATION OK: https://'+created['subdomain'])
+          PY
+      - name: Publier exclusivement ESSAI
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@3.90.0 pages deploy apps/kairo/dist-beta --project-name=rekka-v2-android-test --branch=android-test --commit-hash=f45c242c1e13a780d9c46084cf15ff6991707a62 --commit-dirty=true
+      - name: Verifier publication et absence de modification BETA production
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python3 - <<'PY'
+          import os,json,urllib.request,pathlib,time
+          root='https://rekka-v2-android-test.pages.dev/'
+          def get(url):
+              with urllib.request.urlopen(url,timeout=30) as r:
+                  assert r.geturl().startswith(url.split('?')[0]),'Redirection inattendue'
+                  return r.read()
+          for attempt in range(12):
+              try:
+                  v=json.loads(get(root+'version.json'))
+                  assert v['commit']==os.environ['SOURCE_SHA'] and v['channel']=='android-test'
+                  break
+              except Exception:
+                  if attempt==11: raise
+                  time.sleep(5)
+          m=json.loads(get(root+'manifest.webmanifest'))
+          assert m['short_name']=='REKKA ESSAI' and m['id']=='./?kairo-channel=android-test'
+          assert m['scope']=='./' and m['start_url']=='./'
+          assert b'rekka-android-test-1' in get(root+'sw.js')
+          assert b'<title>REKKA V2 ESSAI</title>' in get(root)
+          req=urllib.request.Request('https://api.cloudflare.com/client/v4/accounts/'+os.environ['CF_ACCOUNT']+'/pages/projects/rekka-beta',headers={'Authorization':'Bearer '+os.environ['CF_TOKEN']})
+          with urllib.request.urlopen(req,timeout=30) as r: beta=json.load(r)['result']
+          assert json.dumps(beta,sort_keys=True)==pathlib.Path('/tmp/rekka-beta-before.json').read_text(),'BETA modifiee'
+          assert get('https://fabiengorce40.github.io/Hybridsport/version.json')==pathlib.Path('/tmp/rekka-prod-before').read_bytes(),'Production modifiee'
+          print('VERIFICATION OK: '+root)
+          PY
