@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { emptyState, exportState, MemoryStorage, STORAGE_KEY } from '@hybridsport/app-core';
+import { decodeState, emptyState, exportState, MemoryStorage, STORAGE_KEY } from '@hybridsport/app-core';
 import { clockKey, controlClock, elapsedMs, exportClock, importClock, readClock } from '../src/clock/global-clock.js';
 import type { ClockSession } from '../src/clock/global-clock.js';
 const s: ClockSession = { requestId: '2026-10-05.strength.1', startedAt: '2026-10-05T08:00:00.000Z', active: true };
@@ -30,6 +30,7 @@ describe('horloge indépendante des données de séance', () => {
     const pause = controlClock(storage, s, at(10), 'pause');
     if (!pause.ok) throw new Error('pause impossible');
     expect(storage.getItem(STORAGE_KEY)).toBe(oldExport);
+    expect(decodeState(storage.getItem(STORAGE_KEY) ?? '').ok).toBe(true);
     const backup = exportClock(pause.snapshot);
     const restored = new MemoryStorage();
     expect(importClock(restored, { ...s, active: false }, backup)).toEqual({ ok: false, reason: 'inactive' });
@@ -38,6 +39,18 @@ describe('horloge indépendante des données de séance', () => {
     expect(importClock(restored, s, backup)).toEqual({ ok: false, reason: 'conflict' });
     const value = readClock(restored, s);
     expect(value.ok && elapsedMs(s, value.snapshot, at(30))).toBe(600000);
+  });
+  it.each(['strength', 'running', 'hyrox', 'crosstraining'])('ne modifie pas la sauvegarde sportive pour %s', (sport) => {
+    const storage = new MemoryStorage();
+    const session = { ...s, requestId: `2026-10-05.${sport}.1` };
+    const legacy = exportState(emptyState());
+    storage.setItem(STORAGE_KEY, legacy);
+    const paused = controlClock(storage, session, at(8), 'pause');
+    expect(paused.ok).toBe(true);
+    expect(controlClock(storage, session, at(12), 'pause')).toEqual(paused);
+    expect(controlClock(storage, session, at(15), 'resume').ok).toBe(true);
+    expect(storage.getItem(STORAGE_KEY)).toBe(legacy);
+    expect(decodeState(legacy).ok).toBe(true);
   });
   it('n’écrase pas une donnée inconnue ou illisible et signale les échecs de stockage', () => {
     const storage = new MemoryStorage();
