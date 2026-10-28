@@ -23,7 +23,7 @@ jobs:
             exit 0
           fi
           projects=$(mktemp)
-          status=$(curl -sS --max-time 20 -o "$projects" -w '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects?per_page=100") || exit 1
+          status=$(curl -sS --max-time 20 -o "$projects" -w '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects?per_page=25") || exit 1
           echo "DIAGNOSTIC: lecture des projets Pages HTTP $status"
           if [ "$status" = 200 ]; then
             python3 - "$projects" <<'PY'
@@ -33,6 +33,11 @@ jobs:
           print('DIAGNOSTIC: nom proposé dans la première page =',any(p.get('name')=='rekka-v2-android-test' for p in projects))
           print('DIAGNOSTIC: pagination complète =', d.get('result_info',{}).get('total_pages',1)<=1)
           PY
+          else
+            python3 - "$projects" <<'PYERR'
+          import json,sys
+          d=json.load(open(sys.argv[1])); print('DIAGNOSTIC: codes erreur Pages =', [e.get('code') for e in d.get('errors',[])])
+          PYERR
           fi
           access=$(mktemp)
           access_status=$(curl -sS --max-time 20 -o "$access" -w '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/access/apps?per_page=1") || exit 1
