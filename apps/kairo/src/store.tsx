@@ -5,6 +5,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { AppError, ensureBeta0Week, ensureCurrentWeek, isBeta0, loadState, MemoryStorage, saveState } from '@hybridsport/app-core';
+import { SessionClocks } from './clock/session-clock.js';
 import { ERROR_TEXT } from './present.js';
 import { namespaced, STORAGE_NAMESPACE } from './channel.js';
 import type { AppState, Clock, KeyValueStorage, LoadResult } from '@hybridsport/app-core';
@@ -31,6 +32,7 @@ function browserStorage(): { storage: KeyValueStorage; persistent: boolean } {
 
 export interface Store {
   readonly state: AppState;
+  readonly sessionClocks: SessionClocks;
   readonly load: LoadResult['status'];
   readonly loadInfo?: string;
   readonly persistent: boolean;
@@ -74,8 +76,10 @@ export function StoreProvider({ children, storage: injected, clock = realClock }
   const [saveError, setSaveError] = useState<string>();
   const [toast, setToast] = useState<string | undefined>(() => { const c = initial.current?.openError; return c ? ERROR_MESSAGES[c] ?? 'La semaine n’a pas pu être préparée.' : undefined; });
   const stateRef = useRef(state);
+  const clocks = useRef(new SessionClocks());
 
   const commit = useCallback((next: AppState) => {
+    clocks.current.retain(next.programmeLogs);
     stateRef.current = next;
     setState(next);
     const r = saveState(backend.current.storage, next);
@@ -97,6 +101,7 @@ export function StoreProvider({ children, storage: injected, clock = realClock }
   const reset = useCallback((next: AppState): boolean => {
     const result = saveState(backend.current.storage, next);
     if (!result.ok) { setSaveError(result.error); return false; }
+    clocks.current.clear();
     stateRef.current = next;
     setState(next);
     setSaveError(undefined);
@@ -123,7 +128,7 @@ export function StoreProvider({ children, storage: injected, clock = realClock }
   const info = initial.current.result;
   const loadInfo = info.status === 'unreadable' ? `${info.problem} — copie conservée sous « ${info.backupKey} »` : info.status === 'newer_version' ? `version ${String(info.version)}` : undefined;
   const value = useMemo<Store>(() => ({
-    state, load, persistent: backend.current.persistent, clock, apply, reset, dismissToast: () => setToast(undefined),
+    state, load, sessionClocks: clocks.current, persistent: backend.current.persistent, clock, apply, reset, dismissToast: () => setToast(undefined),
     ...(loadInfo ? { loadInfo } : {}), ...(saveError ? { saveError } : {}), ...(toast ? { toast } : {}),
   }), [state, load, loadInfo, saveError, toast, clock, apply, reset]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

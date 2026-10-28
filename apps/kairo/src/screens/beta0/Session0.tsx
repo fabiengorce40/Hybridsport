@@ -4,7 +4,7 @@ import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
  * série, chrono de repos automatique (repos PRESCRIT, échéance persistée). Running : type, rôle, structure prescrite
  * par le moteur. Fin de séance : saisie réelle → `finishProgrammeSession` (→ recordSessionExecution).
  */
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   approxMinutes, controlRest, maintainedInterference, startAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, reportEquipmentUnavailable, runPlayerPosition, runPlayerSteps, selectProgrammeSession, strengthInsightOf, toggleProgrammePainItem,
   adaptationVolumeDeficit,
@@ -168,7 +168,17 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   const [finishing, setFinishing] = useState(false);
   const [, setTick] = useState(0);
   const v = selectProgrammeSession(store.state, requestId);
+  const wasRunning = useRef(false);
+  const wasOpenedBeforeStart = useRef(false);
   const running = v?.log !== null && v?.log !== undefined && v.result === null;
+  useEffect(() => {
+    if (running && !wasRunning.current && wasOpenedBeforeStart.current && v?.sport === 'strength' && v.log && !store.sessionClocks.get(requestId, v.log.startedAt)) {
+      store.sessionClocks.start(requestId, v.log.startedAt, performance.now());
+      setTick((x) => x + 1);
+    }
+    wasRunning.current = running;
+    if (!running) wasOpenedBeforeStart.current = true;
+  }, [running, requestId, store.sessionClocks, v?.sport, v?.log]);
   // Rafraîchissement de l'affichage du temps écoulé (calculé depuis l'horodatage de début, jamais compté).
   useEffect(() => {
     if (!running) return undefined;
@@ -191,6 +201,8 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   // RC3.5 — lecteur de séance Course : étapes de la séance persistée (adaptée au contrôle avant séance le cas échéant).
   const playerSteps = v.sport === 'running' ? runPlayerSteps(v) : null;
   const elapsed = log && !finished ? Math.max(0, Math.floor((Date.parse(now()) - Date.parse(log.startedAt)) / 1000)) : 0;
+  const clockValue = log && editable && v.sport === 'strength' ? store.sessionClocks.get(requestId, log.startedAt) : null;
+  const clockElapsed = log && clockValue ? store.sessionClocks.elapsed(requestId, log.startedAt, performance.now()) : null;
   const record = (item: SessionItem, _set: SetPrescription | undefined, index: number, x: { done: boolean; reps?: number; loadKg?: number }) =>
     store.apply((s, c) => recordProgrammeSet(s, c, requestId, { itemId: item.id, setIndex: index, ...x }));
 
@@ -205,14 +217,15 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
     return (
       <>
         <Topbar title="" onBack={onBack} right={<div className="row">
-          {editable && <span className="k-elapsed" role="timer" aria-label="Temps écoulé depuis le début de la séance" aria-live="off">{formatChrono(elapsed)} <small>écoulé</small></span>}
+          {editable && clockElapsed !== null && <span className="k-elapsed" role="timer" aria-label="Chronomètre global" aria-live="off">{formatChrono(Math.floor(clockElapsed / 1000))} <small>{clockValue?.runningSince === null ? "en pause" : "écoulé"}</small></span>}
           {v.experimental && <span className="k-pill" title="Certaines règles de planification sont encore en cours de validation.">Beta</span>}
         </div>} />
         <div className={`k-workout ${editable && log.rest ? 'with-timer' : ''} ${!started && !finished ? 'with-dock' : ''}`}>
+          {editable && (clockValue && clockElapsed !== null ? <button type="button" className="btn secondary" onClick={() => { if (clockValue.runningSince === null) store.sessionClocks.resume(requestId, log.startedAt, performance.now()); else store.sessionClocks.pause(requestId, log.startedAt, performance.now()); setTick((x) => x + 1); }}>{clockValue.runningSince === null ? 'Reprendre le chronomètre global' : 'Mettre en pause le chronomètre global'}</button> : <Notice tone="warn"><span>Le temps précédent ne peut pas être récupéré avec certitude. Tu peux réinitialiser le chronomètre sans perdre ta séance.</span><button type="button" className="btn secondary" onClick={() => { store.sessionClocks.start(requestId, log.startedAt, performance.now()); setTick((x) => x + 1); }}>Réinitialiser le chronomètre</button></Notice>)}
           <AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state, requestId)} />
           <StrengthInsightPanel requestId={requestId} />
           <StrengthWorkout
-            v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}${editable ? ` · ${String(Math.floor(elapsed / 60))}:${String(elapsed % 60).padStart(2, '0')} écoulé` : ''}`} editable={editable}
+            v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}${clockElapsed !== null ? ` · ${formatChrono(Math.floor(clockElapsed / 1000))} ${clockValue?.runningSince === null ? 'en pause' : 'écoulé'}` : ''}`} editable={editable}
             onRecord={(item, index, x) => record(item, undefined, index, x)}
             onTogglePain={(itemId) => store.apply((s) => toggleProgrammePainItem(s, requestId, itemId))}
             onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, requestId, itemId, setIndex, rir))}

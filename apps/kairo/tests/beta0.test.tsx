@@ -70,6 +70,41 @@ function openStrength() {
 }
 
 describe('onboarding Beta 0 et programme', () => {
+  it('chronomètre global Musculation : pause, reprise, retour et rechargement sans toucher à la séance', async () => {
+    const storage = new MemoryStorage();
+    onboard(storage, 'Musculation');
+    openStrength();
+    fireEvent.change(screen.getAllByLabelText('Répétitions réalisées')[0]!, { target: { value: '12' } });
+    fireEvent.change(screen.getAllByLabelText('Charge (kg)')[0]!, { target: { value: '20' } });
+    fireEvent.click(screen.getAllByRole('button', { name: 'Cocher la série' })[0]!);
+    expect(Object.values(saved(storage).programmeLogs)[0]?.sets[0]).toMatchObject({ done: true, reps: 12, loadKg: 20 });
+    const initial = storage.getItem(STORAGE_KEY);
+    click('Mettre en pause le chronomètre global');
+    expect(screen.getByRole('button', { name: 'Reprendre le chronomètre global' })).toBeTruthy();
+    expect(storage.getItem(STORAGE_KEY)).toBe(initial);
+    click('Reprendre le chronomètre global');
+    expect(screen.getByRole('button', { name: 'Mettre en pause le chronomètre global' })).toBeTruthy();
+    click('Retour');
+    click('Reprendre la séance');
+    expect(screen.getByRole('button', { name: 'Mettre en pause le chronomètre global' })).toBeTruthy();
+    cleanup();
+    mount(storage);
+    click('Reprendre la séance');
+    expect(screen.getByText(/Le temps précédent ne peut pas être récupéré avec certitude/)).toBeTruthy();
+    const beforeReset = storage.getItem(STORAGE_KEY);
+    click('Réinitialiser le chronomètre');
+    expect(screen.getByRole('button', { name: 'Mettre en pause le chronomètre global' })).toBeTruthy();
+    expect(storage.getItem(STORAGE_KEY)).toBe(beforeReset);
+    click('Mettre en pause le chronomètre global');
+    click('Retour');
+    click('Réglages');
+    fireEvent.change(screen.getByLabelText('Fichier de données à importer'), { target: { files: [new File([beforeReset ?? ''], 'ancienne.json', { type: 'application/json' })] } });
+    await waitFor(() => expect(screen.getByText('Données importées.')).toBeTruthy());
+    click('Accueil');
+    click('Reprendre la séance');
+    expect(screen.getByText(/Le temps précédent ne peut pas être récupéré avec certitude/)).toBeTruthy();
+    expect(Object.values(saved(storage).programmeLogs)[0]?.sets[0]).toMatchObject({ done: true, reps: 12, loadKg: 20 });
+  });
   it('Musculation : programme créé par le chemin Beta 0, semaine affichée, statut expérimental visible', () => {
     const storage = new MemoryStorage();
     onboard(storage, 'Musculation');
@@ -291,7 +326,7 @@ describe('séance Strength', () => {
     expect(log?.sets).toEqual([expect.objectContaining({ setIndex: 0, done: true, reps: 6, loadKg: 37.5 })]);
     expect(log?.rest).not.toBeNull();
     const timer = screen.getByRole('timer', { name: 'Chrono de repos' });
-    expect(screen.getByRole('timer', { name: 'Temps écoulé depuis le début de la séance' })).toBeTruthy();
+    expect(screen.getByRole('timer', { name: 'Chronomètre global' })).toBeTruthy();
     fireEvent.click(within(timer).getByRole('button', { name: 'Mettre le repos en pause' }));
     expect(within(screen.getByRole('timer', { name: 'Chrono de repos' })).getByText('Repos en pause')).toBeTruthy();
     const before = Object.values(saved(storage).programmeLogs)[0]?.rest?.pausedRemainingS ?? 0;
@@ -300,7 +335,7 @@ describe('séance Strength', () => {
     fireEvent.click(within(screen.getByRole('timer', { name: 'Chrono de repos' })).getByRole('button', { name: 'Reprendre le repos' }));
     fireEvent.click(within(screen.getByRole('timer', { name: 'Chrono de repos' })).getByRole('button', { name: 'Passer' }));
     expect(screen.queryByRole('timer', { name: 'Chrono de repos' })).toBeNull();
-    expect(screen.getByRole('timer', { name: 'Temps écoulé depuis le début de la séance' })).toBeTruthy();
+    expect(screen.getByRole('timer', { name: 'Chronomètre global' })).toBeTruthy();
     expect(screen.getByText(/1\/\d+ séries/)).toBeTruthy();
   });
 

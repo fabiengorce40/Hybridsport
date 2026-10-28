@@ -44,7 +44,7 @@ try {
     await page.getByRole('button', { name: 'Reprendre le repos' }).click();
     const series = page.getByRole('button', { name: 'Décocher la série' }).first();
     await series.scrollIntoViewIfNeeded();
-    if (!await page.getByRole('timer', { name: 'Temps écoulé depuis le début de la séance' }).isVisible()) throw new Error(`${width}: temps écoulé non visible`);
+    if (!await page.getByRole('timer', { name: 'Chronomètre global' }).isVisible()) throw new Error(`${width}: temps écoulé non visible`);
     const smallNavigation = await page.locator('.k-nav-dot').evaluateAll((buttons) => buttons.filter((button) => button.getBoundingClientRect().height < 44 || button.getBoundingClientRect().width < 44).length);
     if (smallNavigation > 0) throw new Error(`${width}: ${smallNavigation} cibles de navigation trop petites`);
     if (shots) await page.screenshot({ path: `${shots}/${width}-seance-en-cours.png` });
@@ -53,7 +53,9 @@ try {
     await page.getByRole('button', { name: 'Reprendre la séance' }).click();
     await page.getByRole('button', { name: 'Décocher la série' }).first().waitFor();
     await page.getByRole('timer', { name: 'Chrono de repos' }).waitFor();
-    await page.getByRole('timer', { name: 'Temps écoulé depuis le début de la séance' }).waitFor();
+    await page.getByText('Le temps précédent ne peut pas être récupéré avec certitude. Tu peux réinitialiser le chronomètre sans perdre ta séance.').waitFor();
+    await page.getByRole('button', { name: 'Réinitialiser le chronomètre' }).click();
+    await page.getByRole('timer', { name: 'Chronomètre global' }).waitFor();
     if (await page.getByLabel('Répétitions réalisées').first().inputValue() !== '6' || await page.getByLabel('Charge (kg)').first().inputValue() !== '42.5') throw new Error(`${width}: valeurs de série non conservées`);
     if (errors.length) throw new Error(`${width}: ${errors.join('; ')}`);
     console.log(`OK ${width}: série réelle, charge, repos, pause, +15 s, reprise et rechargement`);
