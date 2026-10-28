@@ -23,7 +23,7 @@ jobs:
             exit 0
           fi
           projects=$(mktemp)
-          status=$(curl -sS --max-time 20 -o "$projects" -w '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects?per_page=25") || exit 1
+          status=$(curl -sS --max-time 20 -o "$projects" -w '%{http_code}' -H "Authorization: Bearer $CF_TOKEN" "https://api.cloudflare.com/client/v4/accounts/$CF_ACCOUNT/pages/projects") || exit 1
           echo "DIAGNOSTIC: lecture des projets Pages HTTP $status"
           if [ "$status" = 200 ]; then
             python3 - "$projects" <<'PY'
