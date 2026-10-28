@@ -24,12 +24,13 @@ export function DataSection() {
   const single = import.meta.env.VITE_TARGET === 'single';
   const onImport = async (f: File | undefined) => {
     if (!f) return;
-    const d = decodeState(await readText(f));
+    let text: string;
+    try { text = await readText(f); } catch { setMessage('Import impossible : le fichier ne peut pas être lu. Rien n’a été modifié.'); return; }
+    const d = decodeState(text);
     if (!d.ok) { setMessage(`Import impossible : fichier illisible ou d’une version plus récente. Rien n’a été modifié.`); return; }
     let next = d.state;
     try { next = openWeek(d.state, store.clock()); } catch { /* état importé conservé tel quel */ }
-    store.reset(next);
-    setMessage('Données importées.');
+    setMessage(store.reset(next) ? 'Données importées.' : 'Import impossible : l’enregistrement a échoué. Les données actuelles sont conservées.');
   };
   return (
     <>

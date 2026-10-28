@@ -7,6 +7,16 @@ const serial: ClockLocks = { request: async (_name, work) => work() };
 const at = (m: number): string => `2026-10-05T08:${String(m).padStart(2, '0')}:00.000Z`;
 
 describe('horloge indépendante des données de séance', () => {
+  it('documente le risque : un import principal ancien avec la même identité retrouve le chrono auxiliaire', async () => {
+    const storage = new MemoryStorage();
+    const ancienneSauvegarde = exportState(emptyState());
+    storage.setItem(STORAGE_KEY, ancienneSauvegarde);
+    const pause = await controlClockLocked(storage, serial, s, at(10), 'pause');
+    expect(pause.ok).toBe(true);
+    // L'import historique ne connaît pas le stockage auxiliaire.
+    storage.setItem(STORAGE_KEY, ancienneSauvegarde);
+    expect(readClock(storage, s)).toEqual({ ok: true, snapshot: pause.ok ? pause.snapshot : null });
+  });
   it('pause, fermeture, rechargement et reprise : temps figé puis temps actif', async () => {
     const storage = new MemoryStorage();
     const pause = await controlClockLocked(storage, serial, s, at(10), 'pause');

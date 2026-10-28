@@ -40,7 +40,7 @@ export interface Store {
   /** Applique une transition d'app-core ; renvoie false si elle est refusée (message affiché). */
   apply(f: (s: AppState, clock: Clock) => AppState): boolean;
   /** Recommencer (après lecture impossible : la sauvegarde illisible est déjà conservée à part). */
-  reset(next: AppState): void;
+  reset(next: AppState): boolean;
   dismissToast(): void;
 }
 
@@ -93,7 +93,16 @@ export function StoreProvider({ children, storage: injected, clock = realClock }
     }
   }, [clock, commit]);
 
-  const reset = useCallback((next: AppState) => { setLoad('ok'); commit(next); }, [commit]);
+  // Pour un remplacement complet, conserver l'état courant si la sauvegarde échoue.
+  const reset = useCallback((next: AppState): boolean => {
+    const result = saveState(backend.current.storage, next);
+    if (!result.ok) { setSaveError(result.error); return false; }
+    stateRef.current = next;
+    setState(next);
+    setSaveError(undefined);
+    setLoad('ok');
+    return true;
+  }, []);
 
   // Ouverture : la semaine préparée (clôture, planification) est enregistrée immédiatement.
   useEffect(() => {
