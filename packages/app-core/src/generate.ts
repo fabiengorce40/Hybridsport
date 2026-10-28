@@ -1,3 +1,4 @@
+import { otherStrengthSports } from './strength-personalization.js';
 /**
  * Génération d'une séance planifiée par le moteur RÉEL de sa discipline, via le CORE (`runSportSession`).
  *
@@ -93,6 +94,7 @@ export function strengthContextAt(state: AppState, p: Profile, date: string, con
   const recentDone = exposures.filter((x) => daysBetween(dateOf(x.at), date) < D7);
   return {
     goal: { primary: { goal: p.strength.goal } },
+    ...(p.strength.personalization ? { personalization: p.strength.personalization, personalizationSessions: p.strength.sessionsPerWeek, otherSports: otherStrengthSports(p) } : {}),
     // Périodisation non gouvernée : phase fixe, aucune rampe de volume ni décharge planifiée.
     phase: { kind: 'accumulation', weekInMesocycle: 1, mesocycleLength: 1 },
     capacities: [],
@@ -100,7 +102,7 @@ export function strengthContextAt(state: AppState, p: Profile, date: string, con
     recentExposures: exposures,
     hardSets: { d7: hardSetsByGroup(recentDone.map((x) => ({ exerciseId: x.exerciseId, workingSets: x.sets.length })), content) },
     week: { otherStrengthSessions: others, neighbors: [], known },
-    preferences: { liked: [], disliked: [] },
+    preferences: { liked: p.strength.personalization?.likedExercises ?? [], disliked: [] },
     continuity: BETA0_STRENGTH_CONTINUITY,
   };
 }

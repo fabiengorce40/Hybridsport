@@ -17,7 +17,7 @@ import { h2ExposureOf, runHyroxH1 } from '@hybridsport/hyrox';
 import type { HyroxContextInput, HyroxEngine } from '@hybridsport/hyrox';
 import { ARCHETYPE_INTENT_IDS, archetypeFromIntentId, composeRunningWeek, isV1Archetype, parseRunningContext, resolveParameter } from '@hybridsport/running';
 import type { RunningContextInput, RunningParameter } from '@hybridsport/running';
-import { composeStrengthWeek, declarableAnchors, plannedWeekExposures, readStrengthParams, sessionPlannedHardSets, strengthReasons, strengthWeekPrescription, weekPrescriptionSummary } from '@hybridsport/strength';
+import { personalizedStrengthParams, composeStrengthWeek, declarableAnchors, plannedWeekExposures, readStrengthParams, sessionPlannedHardSets, strengthReasons, strengthWeekPrescription, weekPrescriptionSummary } from '@hybridsport/strength';
 import type { StrengthCompositionRule, StrengthContextInput } from '@hybridsport/strength';
 import { GP_CODES, gpReasons } from './codes.js';
 import { delegateStrengthBlock, expressesStrengthNeed, strengthNeedOf } from './strength-delegation.js';
@@ -118,6 +118,8 @@ export interface SportPort {
   readonly weekSessionsScope?: 'before' | 'generated';
   /** C4.3 — disciplines dont les séances placées de la semaine sont transmises (`SlotRequest.crossSportWeek`). */
   readonly crossSportWeek?: readonly PlannerSport[];
+  /** Budget déclaré par discipline et par jour ; absent : disponibilité commune inchangée. */
+  availableMinutesFor?(date: string, commonMinutes: number): number;
   generate(slot: SlotRequest): PortOutcome;
   /** Structures sollicitées (dérivées du catalogue par la table GOUVERNÉE du ruleset de la discipline). */
   structures(session: SessionDraft): StructuresResult;
@@ -394,7 +396,7 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
     extraReasons: (slot, c) => {
       const ctx = c as StrengthContextInput;
       const p = strengthWeekPrescription({
-        params: params(), paramStatus: (id) => def.content.ruleset.parameter(id)?.status ?? 'missing', goal: ctx.goal.primary, level: def.profile.athleteLevel,
+        params: personalizedStrengthParams(params(), ctx.personalization, ctx.otherSports), paramStatus: (id) => def.content.ruleset.parameter(id)?.status ?? 'missing', goal: ctx.goal.primary, level: def.profile.athleteLevel,
         archetypeId: slot.intent.archetypeId, occurrence: (slot.weekSessions ?? []).length + 1, weeklySessions: slot.sportSessions ?? (slot.weekSessions ?? []).length + 1,
         context: { tracks: ctx.tracks, recentExposures: [...ctx.recentExposures, ...plannedExposures(slot)], hardSets: ctx.hardSets, week: ctx.week },
       });

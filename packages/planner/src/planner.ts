@@ -122,6 +122,7 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
   const hoursOf = (d: string): number => Date.parse(clock.instantOf(d)) / MS_PER_HOUR;
   const dates = input.days.map((d) => d.date);
   const minutes = new Map(input.days.map((d) => [d.date, d.availableMinutes]));
+  const minutesFor = (sport: PlannerSport, date: string): number => { const m = minutes.get(date) ?? 0; return ports[sport]?.availableMinutesFor?.(date,m) ?? m; };
 
   const unknownStructures = (sport: PlannerSport): StructuresResult => ({ ok: false, reasons: [gpReasons.emit(GP_CODES.STRUCTURES_UNAVAILABLE, { sport, cause: 'ENGINE_UNAVAILABLE' })] });
   const unknownDemand = (sport: PlannerSport): DemandOutcome => ({ status: 'unavailable', reasons: [gpReasons.emit(GP_CODES.STRUCTURES_UNAVAILABLE, { sport, cause: 'ENGINE_UNAVAILABLE' })] });
@@ -255,7 +256,7 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
     });
     // Raisons de composition du moteur conservées avec la prescription (décisions persistées, comme une séance placée).
     if (done) return { composed: toComposition(done.date, done.out), reasons: [...done.out.reasons] };
-    const ref = [...dates].filter((d) => (minutes.get(d) ?? 0) > 0).sort((a, b) => (minutes.get(b) ?? 0) - (minutes.get(a) ?? 0) || (a < b ? -1 : 1))[0];
+    const ref = [...dates].filter((d) => minutesFor(r.sport,d) > 0).sort((a, b) => (minutes.get(b) ?? 0) - (minutes.get(a) ?? 0) || (a < b ? -1 : 1))[0];
     if (ref === undefined) return { reasons: [] };
     const out = port.generate({ requestId: r.requestId, date: ref, availableMinutes: minutes.get(ref) ?? 0, hybrid, seed: `planner:${r.requestId}:${ref}`, intent: r.intent, ...weekArg(r.sport, ref, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
     return out.status === 'planned' ? { composed: toComposition(ref, out), reasons: [...out.reasons] } : { reasons: [gpReasons.emit(GP_CODES.ENGINE_REFUSED, { sport: r.sport, requestId: r.requestId, date: ref }), ...out.reasons] };
@@ -271,7 +272,7 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
     const takenIdx = [...placed.values()].map((x) => dates.indexOf(x.date));
     const gap = (d: string): number => (takenIdx.length === 0 ? 0 : Math.min(...takenIdx.map((i) => Math.abs(i - dates.indexOf(d)))));
     const taken = new Set([...placed.values()].map((x) => x.date));
-    const free = dates.filter((d) => !taken.has(d) && (minutes.get(d) ?? 0) > 0).sort((a, b) => gap(b) - gap(a) || (a < b ? -1 : 1));
+    const free = dates.filter((d) => !taken.has(d) && minutesFor(r.sport,d) > 0).sort((a, b) => gap(b) - gap(a) || (a < b ? -1 : 1));
     // G5 : jour imposé d'abord ; jours imposés à d'AUTRES séances encore non placées essayés en dernier.
     const pinned = pins?.get(r.requestId);
     const reserved = new Set(pins ? [...pins].filter(([id]) => id !== r.requestId && !placed.has(id)).map(([, d]) => d) : []);
@@ -579,7 +580,7 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
     const others = c.members.filter((m) => m !== n.requestId).map((m) => map.get(m)).filter((x): x is M3Node => x !== undefined);
     const taken = new Set([...placed.values()].map((x) => x.date));
     const spread = (d: string): number => Math.min(...others.map((o) => Math.abs(hoursOf(d) - o.hours)));
-    const free = dates.filter((d) => !taken.has(d) && (minutes.get(d) ?? 0) > 0);
+    const free = dates.filter((d) => !taken.has(d) && minutesFor(n.sport,d) > 0);
     const candidates = free.filter((d) => keepsComposedOrder(n.requestId, d)).sort((a, b) => spread(b) - spread(a) || (a < b ? -1 : 1));
     if (free.length === 0) tried.push('MOVE:NO_FREE_DAY');
     else if (candidates.length === 0) tried.push('MOVE:COMPOSITION_ORDER');

@@ -1,3 +1,4 @@
+import { strengthParametersFor, muscleLevel } from './strength-personalization.js';
 /**
  * Programme longitudinal dans l'application : app-core → Programme Engine → planificateur global → moteurs → CORE.
  * L'application ne décide rien de sportif : elle fournit l'état (historique, disponibilités, déclarations), persiste
@@ -19,7 +20,7 @@ import { appPlannerEnvironment, assertEnvironment, buildPorts, clockOf, persistW
 import type { EngineGoals, PlannerEnvironment } from './planning.js';
 import { applyStrengthExecutionTraced, performedSets, realizedRunFrom, testReferenceFrom } from './progression.js';
 import { isHyroxComposed, realizeCrossTrainingExecution, realizeHyroxComposed, realizeHyroxStation } from '@hybridsport/planner';
-import { assessStrengthWeekVolume, readStrengthParams } from '@hybridsport/strength';
+import { assessStrengthWeekVolume } from '@hybridsport/strength';
 import type { StrengthGoalRef, WeekVolumeAssessment } from '@hybridsport/strength';
 import { strengthContent } from './provisional-content.js';
 
@@ -120,7 +121,7 @@ function planWeekOnce(state: AppState, clock: Clock, env: ProgrammeEnvironment, 
   });
   if (!r.ok) throw new ProgrammeError('PROGRAMME_WEEK_NOT_PLANNABLE', r.reasons);
   // Écriture par la passerelle unique : jamais de remplacement d'une semaine commencée ou clôturée (refus, état inchangé).
-  const written = writePlannedWeek(state, persistWeek(r.value.week, normalizeInstant(clock.now), ps.definition.origin, env), 'programme');
+  const written = writePlannedWeek(state, { ...persistWeek(r.value.week, normalizeInstant(clock.now), ps.definition.origin, env), ...(p.strength.personalization ? { strengthProfile: p } : {}) }, 'programme');
   return { ...written, programmeState: r.value.state };
 }
 
@@ -156,10 +157,9 @@ export function strengthWeekVolume(state: AppState, weekStart: string): WeekVolu
     const d = r.status === 'planned' && r.record ? migrateToCurrent<SessionRecord>(r.record) : undefined;
     return d?.ok ? [{ session: d.value.session, reasons: r.reasons }] : [];
   });
-  const goal = state.programmeState?.definition.goals.find((g) => g.sport === 'strength')?.goal ?? p.strength.goal;
   const content = strengthContent();
   return assessStrengthWeekVolume({
-    params: readStrengthParams(content.ruleset).values, catalog: content.catalog, goal: { goal } as StrengthGoalRef, level: p.level,
+    params: strengthParametersFor(w.strengthProfile ?? p), catalog: content.catalog, goal: { goal: (w.strengthProfile ?? p).strength.goal } as StrengthGoalRef, level: muscleLevel(w.strengthProfile ?? p),
     requestedSessions: reqs.length, sessions, notPlanned: reqs.filter((r) => r.status !== 'planned').map((r) => ({ category: r.category })),
   });
 }

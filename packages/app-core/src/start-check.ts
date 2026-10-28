@@ -145,7 +145,7 @@ export function regenerateSession(state0: AppState, requestId: string, coreState
   const at = locate(state0, requestId);
   // Historiques tels qu'à la planification de la semaine (aucune donnée persistée en plus ; tracks : état courant).
   const state = at ? asOfPlanning(state0, at.week.plannedAt) : state0;
-  const p = state.profile;
+  const p = at?.r.sport === 'strength' && at.week.strengthProfile ? at.week.strengthProfile : state.profile;
   const ps = state.programmeState;
   if (!at || !p || !ps) return { status: 'not_regenerable', cause: 'session_unknown' };
   const { week, r } = at;
@@ -155,7 +155,7 @@ export function regenerateSession(state0: AppState, requestId: string, coreState
   const date = r.date;
   // RC4.4 (lot E) — station HYROX : celle de l'intention de semaine persistée du programme (H1), sinon aucune (H2 par rôle).
   const station = r.sport === 'hyrox' ? ps.weeks.find((w) => w.plannerRef === week.weekStart)?.intent.demands.find((d) => d.sport === 'hyrox')?.station : undefined;
-  const ports = buildPorts(state, p, intent, env, goals, (d) => (d === date ? coreState : UNKNOWN_CORE_STATE));
+  const ports = buildPorts(state, p, intent, env, r.sport === 'strength' && week.strengthProfile ? { ...goals, strength: p.strength.goal } : goals, (d) => (d === date ? coreState : UNKNOWN_CORE_STATE));
   const port = ports[r.sport];
   if (!port) return { status: 'not_regenerable', cause: 'port_unavailable' };
   const placed = week.requests.filter((x) => x.status === 'planned' && x.date && x.requestId !== requestId);

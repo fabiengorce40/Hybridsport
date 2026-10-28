@@ -1,3 +1,4 @@
+import { withStrengthPersonalization } from './strength-personalization.js';
 /**
  * Façade applicative Beta 0 pour l'interface : création du programme depuis le profil, ouverture de la semaine
  * (clôture des semaines passées, planification de la semaine courante), séance en cours PERSISTÉE (séries
@@ -96,7 +97,8 @@ function carryWeek(ps: ProgrammeState, c: CarriedWeek): ProgrammeState {
  * activé ⇒ déclarations complètes exigées (fréquence, intention / rôle, objectif, coupure) — aucune valeur supposée.
  */
 function beta0Profile(input: ProfileInput): ProfileInput & ReturnType<typeof zProfile.parse> {
-  const profile = zProfile.parse(input);
+  const profile = zProfile.parse(input.strength.personalization ? withStrengthPersonalization(input,input.strength.personalization) : input);
+  if (profile.strength.enabled && profile.strength.personalization && !profile.strength.personalization.completed) throw new AppError('STRENGTH_PERSONALIZATION_INCOMPLETE');
   if (!profile.strength.enabled && !profile.running.enabled && !profile.crosstraining.enabled && !profile.hyrox.enabled) throw new AppError('NO_SPORT_SELECTED');
   if (profile.crosstraining.enabled) ctDeclarations(profile);
   if (profile.hyrox.enabled) hrDeclarations(profile);
@@ -481,6 +483,13 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   const v = selectProgrammeSession(state, requestId);
   if (!v) throw new AppError('SESSION_UNAVAILABLE');
   if (v.result) throw new AppError('SESSION_FINISHED');
+  // V2.1 : les contraintes actuelles restent prioritaires sur l'instantané d'une séance ancienne.
+  const personalization = state.profile?.strength.personalization;
+  if (v.sport === 'strength' && personalization) {
+    if (personalization.painNow) throw new AppError('STRENGTH_PERSONALIZATION_PAIN');
+    const conflict = v.session.blocks.flatMap(b => b.items).some(item => personalization.avoidExercises.includes(item.exerciseId) || (strengthContent().catalog.exercise(item.exerciseId)?.painSensitiveAreas ?? []).some(a => personalization.avoidAreas.includes(a)));
+    if (conflict) throw new AppError('STRENGTH_PERSONALIZATION_CONSTRAINT');
+  }
   // Q1 — une prescription de qualité BLOQUÉE n'est jamais exécutable (« Faire maintenant » compris). UNRESOLVED reste
   // exécutable selon la règle produit EXISTANTE de la Beta 0 (séances provisoires acceptées explicitement au profil).
   if (v.quality === 'BLOCKED') throw new AppError('QUALITY_BLOCKED');
@@ -549,6 +558,13 @@ function startWithoutCheck(state: AppState, clock: Clock, requestId: string): Ap
   const v = selectProgrammeSession(state, requestId);
   if (!v) throw new AppError('SESSION_UNAVAILABLE');
   if (v.result) throw new AppError('SESSION_FINISHED');
+  // V2.1 : les contraintes actuelles restent prioritaires sur l'instantané d'une séance ancienne.
+  const personalization = state.profile?.strength.personalization;
+  if (v.sport === 'strength' && personalization) {
+    if (personalization.painNow) throw new AppError('STRENGTH_PERSONALIZATION_PAIN');
+    const conflict = v.session.blocks.flatMap(b => b.items).some(item => personalization.avoidExercises.includes(item.exerciseId) || (strengthContent().catalog.exercise(item.exerciseId)?.painSensitiveAreas ?? []).some(a => personalization.avoidAreas.includes(a)));
+    if (conflict) throw new AppError('STRENGTH_PERSONALIZATION_CONSTRAINT');
+  }
   if (v.quality === 'BLOCKED') throw new AppError('QUALITY_BLOCKED');
   const a = startAssessment(state, clock, requestId);
   if (!a.allowed && a.cause) throw new AppError(START_ERROR[a.cause]);

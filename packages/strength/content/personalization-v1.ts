@@ -24,7 +24,7 @@ export const PERSONALIZATION_V1 = {
     muscle: { method: 'hypertrophy', strategy: 'Hypertrophie progressive, avec spécialisation mesurée des zones prioritaires', volumeFactor: 1 },
     silhouette: { method: 'hypertrophy', strategy: 'Renforcement et recomposition corporelle ; aucune perte de graisse localisée', volumeFactor: 0.85 },
     fat_loss: { method: 'general', strategy: 'Maintien musculaire et activité régulière ; la perte de graisse dépend du bilan énergétique global', volumeFactor: 0.8 },
-    fitness: { method: 'general', strategy: 'Apprentissage des mouvements et progression graduelle', volumeFactor: 0.75 },
+    fitness: { method: 'general', strategy: 'Apprentissage des mouvements et progression graduelle', volumeFactor: 1 },
     strength: { method: 'strength', strategy: 'Force sur les mouvements principaux ; accessoires selon vos priorités', volumeFactor: 1 },
     performance: { method: 'general', strategy: 'Renforcement complémentaire ; récupération et sports prioritaires avant volume supplémentaire', volumeFactor: 0.75 },
     mobility: { method: 'general', strategy: 'Renforcement accessible et contrôle du mouvement ; sans traitement médical', volumeFactor: 0.65 },

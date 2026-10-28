@@ -1,3 +1,4 @@
+import { PERSONALIZATION_V1 } from '../../strength/content/personalization-v1.js';
 /**
  * CONTENU PROVISOIRE de KAIRO V0 — point d'entrée UNIQUE.
  *
@@ -72,7 +73,7 @@ function strengthLockContent(): ContentSource {
  * Version inconnue ⇒ `undefined` (la séance n'est alors pas régénérable fidèlement : chemin « non reproductible »).
  */
 export function strengthContentFor(rulesetVersion: string, catalogVersion: string): ContentSource | undefined {
-  return [strengthContent(), strengthL1V3Content(), strengthF6Content(), strengthLockContent()].find((c) => c.ruleset.version === rulesetVersion && c.catalog.version === catalogVersion);
+  return [strengthContent(), personalizedStrengthContent(strengthContent()), strengthL1V3Content(), strengthF6Content(), strengthLockContent()].find((c) => c.ruleset.version === rulesetVersion && c.catalog.version === catalogVersion);
 }
 
 /** Ruleset de test du CORE (avec les paramètres d'anti-doublon, provisoires) et catalogue de test : ceux des tests Running. */
@@ -84,3 +85,20 @@ export function runningContent(): ContentSource {
 /** Préréglages de matériel du catalogue de test (identifiants et noms fournis par le catalogue). */
 export const EQUIPMENT_PRESETS: readonly { readonly id: string; readonly name: string; readonly equipment: readonly string[] }[] =
   STRENGTH_PRESETS.map((p) => ({ id: p.id, name: p.name, equipment: [...p.equipment] }));
+
+/** Contenu V2.1 distinct, uniquement pour les profils qui ont choisi la personnalisation. */
+const personalContentCache = new WeakMap<LoadedRuleset, ContentSource>();
+export function personalizedStrengthContent(base: ContentSource): ContentSource {
+  if (base.ruleset.parameter('strength.personalization')) return base;
+  const cached = personalContentCache.get(base.ruleset);
+  if (cached) return cached;
+  const doc = base.ruleset.document;
+  const r = loadRuleset({ ...doc, rulesetVersion: '0.8.0-strength-personalization-v1', parameters: [...doc.parameters, {
+    id: 'strength.personalization', value: PERSONALIZATION_V1, governance: 'G2', version: '1.0.0', modifiedAt: '2026-10-29', status: 'draft', confidence: 'provisional', provisional: true,
+    source: { kind: 'internal_hypothesis' }, justification: 'V2.1 CANDIDATE : politique de personnalisation expérimentale, jamais approuvée en production.',
+  }] } as Parameters<typeof loadRuleset>[0]);
+  if (!r.ok) throw new Error('Contenu personnalisé Strength invalide');
+  const out = { ...base, ruleset: r.ruleset, origin: 'fixtures:strength-personalization-v1' };
+  personalContentCache.set(base.ruleset,out);
+  return out;
+}

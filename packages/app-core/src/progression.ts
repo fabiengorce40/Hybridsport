@@ -1,3 +1,4 @@
+import { strengthParametersFor, muscleLevel } from './strength-personalization.js';
 /**
  * Adaptation après séance (rôle « ProgressionEngine » extérieur aux moteurs, comme dans le simulateur
  * longitudinal Strength) : uniquement des appels aux fonctions du moteur Strength (`classifyExposure`,
@@ -72,8 +73,12 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
   if (!state.profile) return { strength: state.strength, reasons: [] };
   const reasons: ReasonCode[] = [];
   const log = { sets: x.sets, painItems: x.painItems } as SessionLog;
-  const p = state.profile;
-  const params = readStrengthParams(strengthContent().ruleset).values;
+  const snapshot = Object.values(state.planner.weeks).find(w => w.requests.some(r => {
+    const record = r.record?.data as { session?: { id?: string } } | undefined;
+    return record?.session?.id === x.session.id;
+  }))?.strengthProfile;
+  const p = snapshot ?? state.profile;
+  const params = strengthParametersFor(p);
   const catalog = strengthContent().catalog;
   const stimulus = STIMULUS_BY_GOAL[p.strength.goal];
   const archetypeId = x.archetypeId;
@@ -115,7 +120,7 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
     } else if (it.refs?.substitutedFrom && anchorOfSlot) {
       update(anchorOfSlot, 'substituted');
     } else if (it.refs?.anchor === 'candidate' && !anchorOfSlot && performed.length > 0 && slot && !pain) {
-      const model = progressionModelFor(e, role, p.level, performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
+      const model = progressionModelFor(e, role, muscleLevel(p), performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
       const c = createTrack({ tier: 'anchor', archetypeId, slotId: slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role }, params);
       tracks.set(c.track.trackId, c.track);
       reasons.push(...c.reasons);
@@ -124,7 +129,7 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
       counts[k] = (counts[k] ?? 0) + 1;
       const hasTracked = [...tracks.values()].some((t) => t.tier === 'tracked' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === slot.id);
       if ((counts[k] ?? 0) >= params['strength.tracks'].tier2AutoCreateAfter && !hasTracked) {
-        const model = progressionModelFor(e, role, p.level, performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
+        const model = progressionModelFor(e, role, muscleLevel(p), performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
         const c = createTrack({ tier: 'tracked', archetypeId, slotId: slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role }, params);
         tracks.set(c.track.trackId, c.track);
         reasons.push(...c.reasons);

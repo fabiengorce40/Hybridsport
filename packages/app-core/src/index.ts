@@ -31,3 +31,5 @@ export * from './week-load.js';
 export * from './readiness-persisted.js';
 export * from './equipment.js';
 export * from './strength-insight.js';
+
+export * from './strength-personalization.js';
