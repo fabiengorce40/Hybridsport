@@ -22,7 +22,9 @@ describe('import et remplacement des données', () => {
     render(<StoreProvider storage={backend}><CurrentState /></StoreProvider>);
     const before = screen.getByTestId('current').textContent;
     blocked = true;
-    fireEvent.change(screen.getByLabelText('Fichier de données à importer'), { target: { files: [new File([exportState(emptyState())], 'backup.json', { type: 'application/json' })] } });
+    const imported = { ...emptyState(), revision: 42 };
+    expect(JSON.stringify(imported)).not.toBe(before);
+    fireEvent.change(screen.getByLabelText('Fichier de données à importer'), { target: { files: [new File([exportState(imported)], 'backup.json', { type: 'application/json' })] } });
     await waitFor(() => expect(screen.getByText(/Import impossible : l’enregistrement a échoué/)).toBeTruthy());
     expect(storage.getItem(STORAGE_KEY)).toBe(original);
     expect(screen.getByTestId('current').textContent).toBe(before);
