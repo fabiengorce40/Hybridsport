@@ -45,7 +45,7 @@
 .k-nav-count { font-size: 13px; font-weight: 800; color: var(--k-text-2); font-variant-numeric: tabular-nums; margin-right: 4px; white-space: nowrap; }
 .k-nav-count b { color: var(--k-text); }
 .k-nav-dots { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
-.k-nav-dot { min-width: 44px; height: 36px; padding: 0 10px; border-radius: 99px; border: 0; background: var(--k-surface-2); color: var(--k-text-2); font-weight: 800; font-size: 13px; font-variant-numeric: tabular-nums; }
+.k-nav-dot { min-width: 44px; height: 44px; padding: 0 10px; border-radius: 99px; border: 0; background: var(--k-surface-2); color: var(--k-text-2); font-weight: 800; font-size: 13px; font-variant-numeric: tabular-nums; }
 .k-nav-dot.current { background: var(--k-text); color: var(--k-bg); }
 .k-nav-dot.done { color: var(--k-accent); background: var(--k-accent-soft); }
 

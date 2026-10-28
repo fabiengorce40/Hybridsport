@@ -45,6 +45,8 @@ try {
     const series = page.getByRole('button', { name: 'Décocher la série' }).first();
     await series.scrollIntoViewIfNeeded();
     if (!await page.getByRole('timer', { name: 'Temps écoulé depuis le début de la séance' }).isVisible()) throw new Error(`${width}: temps écoulé non visible`);
+    const smallNavigation = await page.locator('.k-nav-dot').evaluateAll((buttons) => buttons.filter((button) => button.getBoundingClientRect().height < 44 || button.getBoundingClientRect().width < 44).length);
+    if (smallNavigation > 0) throw new Error(`${width}: ${smallNavigation} cibles de navigation trop petites`);
     if (shots) await page.screenshot({ path: `${shots}/${width}-seance-en-cours.png` });
     if (await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)) throw new Error(`${width}: débordement horizontal`);
     await page.reload();
