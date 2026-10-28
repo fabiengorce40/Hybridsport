@@ -83,6 +83,7 @@ export const NOT_PLANNED_MESSAGES: Readonly<Record<string, string>> = {
 };
 /** Précisions connues pour certaines raisons (aucun code affiché). */
 const REASON_HINTS: Readonly<Record<string, string>> = {
+  'PLAN.PERSONALIZATION_BLOCKED': 'Vos jours disponibles, votre récupération ou le budget de volume de cette semaine ne permettent pas cette séance. Aucun volume supplémentaire n’est forcé.',
   // REKKA — information nommée, raison, et ce qui suffit (une sortie ordinaire, jamais un test maximal exigé).
   'DOSE.RUNNING.DOSE_ANCHOR_UNAVAILABLE': 'Il manque votre dernière course réelle (durée, et si possible distance et date) : le footing reprend ce que vous avez vraiment couru, sans durée inventée. Une sortie d’entraînement suffit, aucun test maximal n’est nécessaire. La séance reste en attente et sera planifiée dès que cette course sera enregistrée.',
   'DOSE.RUNNING.TEST_REFUSED': 'Enregistrez une course récente avec sa distance : elle sert à estimer la durée du test.',
@@ -197,6 +198,9 @@ export const ERROR_TEXT: Readonly<Record<string, string>> = {
   SESSION_UNAVAILABLE: 'Cette séance n’est pas disponible.',
   QUALITY_BLOCKED: 'Cette séance n’est pas réalisable : sa prescription est incohérente.',
   SESSION_FINISHED: 'Cette séance est déjà terminée.',
+  STRENGTH_PERSONALIZATION_PAIN: 'Votre profil signale une douleur actuelle. La séance Musculation ne peut pas être démarrée.',
+  STRENGTH_PERSONALIZATION_CONSTRAINT: 'Cette séance conservée contient un exercice exclu par vos contraintes actuelles. Elle ne peut pas être démarrée.',
+  STRENGTH_PERSONALIZATION_INCOMPLETE: 'Terminez et confirmez votre personnalisation Musculation.',
   SESSION_NOT_STARTED: 'Démarrez la séance d’abord.',
   SET_REPS_REQUIRED: 'Indiquez les répétitions réalisées.',
   EXECUTION_STRENGTH_INCOMPLETE: 'Toutes les séries n’ont pas été validées : choisissez « J’ai adapté la séance ».',

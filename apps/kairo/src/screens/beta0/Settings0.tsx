@@ -1,3 +1,4 @@
+import { StrengthProfileScreen } from '../../strength/StrengthProfile.js';
 import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
 import { useRef, useState } from 'react';
 import { BUILD_DATE, BUILD_ID } from '../../version.js';
@@ -131,7 +132,9 @@ export function FieldTestCard() {
 export function Settings0() {
   const store = useStore();
   const [runningProfile, setRunningProfile] = useState(false);
+  const [strengthProfile,setStrengthProfile] = useState(false);
   const [journal, setJournal] = useState(false);
+  if (strengthProfile) return <StrengthProfileScreen onBack={() => setStrengthProfile(false)} />;
   if (runningProfile) return <RunningProfileScreen onBack={() => setRunningProfile(false)} />;
   if (journal) return <JournalBeta onBack={() => setJournal(false)} />;
   return (
@@ -151,6 +154,7 @@ export function Settings0() {
           <div className="small muted">Vos performances récentes et ce que KAIRO en déduit</div>
         </button>
       )}
+      {store.state.profile?.strength.enabled && <button className="card button-card" onClick={() => setStrengthProfile(true)}><h3>Ma musculation</h3><div className="small muted">Objectif, priorités musculaires et récupération · sans effacer vos performances</div></button>}
       <DataSection />
       <BetaResetSection />
       <div className="section-title">À propos de la Beta</div>

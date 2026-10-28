@@ -1,3 +1,4 @@
+import { StrengthCustomization } from './strength/StrengthCustomization.js';
 /**
  * Formulaire de profil (onboarding et édition) : sports, objectifs, niveau, disponibilités, matériel.
  * Les listes proposées proviennent des données (niveaux CORE, populations et objectifs Running, préréglages
@@ -5,7 +6,7 @@
  */
 import { useState } from 'react';
 import {
-  EQUIPMENT_PRESETS, equipmentLabel, strengthSupportedFrequencies, LEVEL_LABELS, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, RUNNING_LEVEL_LABELS, SPORT_LABELS, STRENGTH_GOAL_LABELS,
+  EQUIPMENT_PRESETS, equipmentLabel, LEVEL_LABELS, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, RUNNING_LEVEL_LABELS, SPORT_LABELS, STRENGTH_GOAL_LABELS, strengthSupportedFrequencies, defaultStrengthPersonalization, withStrengthPersonalization,
 } from '@hybridsport/app-core';
 import type { ProfileInput, Sport } from '@hybridsport/app-core';
 import { Notice, WEEKDAY_NAMES } from './ui.js';
@@ -54,31 +55,15 @@ export function SportsSection({ p, set }: { p: ProfileInput; set: Setter }) {
   );
 }
 
-export function GoalsSection({ p, set, beta0 = false }: { p: ProfileInput; set: Setter; beta0?: boolean }) {
+export function GoalsSection({ p, set, beta0 = false, legacyStrength = false }: { p: ProfileInput; set: Setter; beta0?: boolean; legacyStrength?: boolean }) {
   return (
     <div className="stack-3">
-      <label className="field">Niveau d’entraînement général
+      {(!p.strength.enabled || p.running.enabled || p.hyrox.enabled || p.crosstraining.enabled || legacyStrength) && <label className="field">Niveau d’entraînement général
         <select value={p.level} onChange={(e) => set((x) => ({ ...x, level: e.target.value as ProfileInput['level'] }))}>
           {Object.entries(LEVEL_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
-      </label>
-      {p.strength.enabled && (
-        <div className="card">
-          <h3>Musculation</h3>
-          <div className="row wrap">
-            {Object.entries(STRENGTH_GOAL_LABELS).map(([k, v]) => (
-              <button type="button" key={k} className={`chip ${p.strength.goal === k ? 'on' : ''}`} onClick={() => set((x) => ({ ...x, strength: { ...x.strength, goal: k as ProfileInput['strength']['goal'] } }))}>{v}</button>
-            ))}
-          </div>
-          <label className="field">Séances par semaine
-            <select value={p.strength.sessionsPerWeek} onChange={(e) => set((x) => ({ ...x, strength: { ...x.strength, sessionsPerWeek: Number(e.target.value) } }))}>
-              {/* P1 — fréquences que la composition Musculation ne sait pas encore gérer : affichées, jamais proposées. */}
-              {SESSION_CHOICES.map((n) => <option key={n} value={n} disabled={!strengthSupportedFrequencies().includes(n)}>{strengthSupportedFrequencies().includes(n) ? String(n) : `${String(n)} — pas encore pris en charge`}</option>)}
-            </select>
-          </label>
-          {!strengthSupportedFrequencies().includes(p.strength.sessionsPerWeek) && <p className="small" role="alert" data-strength-frequency-unsupported style={{ margin: 0 }}>KAIRO ne sait pas encore composer {String(p.strength.sessionsPerWeek)} séances de musculation par semaine. Choisissez {String(Math.max(...strengthSupportedFrequencies()))} séances ou moins.</p>}
-        </div>
-      )}
+      </label>}
+      {p.strength.enabled && (legacyStrength && !p.strength.personalization ? <div className="card"><h3>Musculation · programme existant</h3><div className="row wrap">{Object.entries(STRENGTH_GOAL_LABELS).map(([key,label])=><button type="button" className={`chip ${p.strength.goal===key?'on':''}`} key={key} onClick={()=>set(x=>({...x,strength:{...x.strength,goal:key as ProfileInput['strength']['goal']}}))}>{label}</button>)}</div><label className="field">Séances par semaine<select value={p.strength.sessionsPerWeek} onChange={e=>set(x=>({...x,strength:{...x.strength,sessionsPerWeek:Number(e.target.value)}}))}>{strengthSupportedFrequencies().map(n=><option key={n} value={n}>{n}</option>)}</select></label><button type="button" className="btn secondary" onClick={()=>set(x=>withStrengthPersonalization(x,defaultStrengthPersonalization(x)))}>Personnaliser mes résultats et mes priorités</button></div> : <StrengthCustomization p={p} set={set} />)}
       {p.running.enabled && (
         <div className="card">
           <h3>Course à pied</h3>

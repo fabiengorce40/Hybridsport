@@ -1,3 +1,4 @@
+import { StrengthPersonalizationSummary } from './StrengthCustomization.js';
 /**
  * P1 — « Pourquoi cette séance » (Musculation) : variante, mouvements dominants, groupes sollicités (séries de travail),
  * allègements tracés, variation intra-semaine, signaux de récupération et volume de la semaine. Lecture seule des
@@ -50,8 +51,10 @@ export function StrengthWeekCard({ weekStart }: { weekStart: string }) {
   const { state } = useStore();
   const w = strengthWeekInsights(state, weekStart);
   if (!w || w.sessions.length === 0) return null;
+  const profile = state.planner.weeks[weekStart]?.strengthProfile ?? state.profile;
   return (
     <>
+      {profile?.strength.personalization && <StrengthPersonalizationSummary p={profile} />}
       <WeekVolumeCard volume={w.volume} />
       {w.recovery.length > 0 && (
         <div className="card" aria-label="Récupération entre séances de force" data-week-recovery>
