@@ -11,6 +11,8 @@ const L = 'string[]' as const;
 const B = 'boolean' as const;
 
 export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
+  { code: 'PLAN.PERSONALIZATION_BLOCKED', categories: ['feasibility'], params: { cause: S }, audience: 'user', severity: 'error' },
+  { code: 'PLAN.PERSONALIZATION', categories: ['information'], params: { outcome: S, priorities: L, policy: S, strategy: S, recovery: S }, audience: 'user', severity: 'info' },
   { code: 'PLAN.ANCHOR_CHOICE_GROUP_CONFLICT', categories: ['technical'], params: { group: S, trackIds: L }, audience: 'internal', severity: 'error' },
   { code: 'PLAN.ANCHOR_NOT_DECLARABLE', categories: ['technical'], params: { trackId: S, cause: S }, audience: 'internal', severity: 'error' },
   { code: 'SELECT.EXERCISE.CHOSEN', categories: ['optimization'], params: { exerciseId: S, slot: S, decidingCriterion: S }, audience: 'internal', severity: 'info' },

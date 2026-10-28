@@ -62,6 +62,7 @@ const KEEP = 'Valeur conservée ; en l’absence de validation, le moteur appliq
 const G1_BLOCK = 'Paramètre G1 : bloqué sans visa de sécurité ; aucune promotion possible, la valeur provisoire reste la référence prudente du cliquet G1.';
 
 export const PARAMETER_PROVENANCE: readonly ParameterProvenance[] = [
+  { ...prov({ id: 'strength.personalization', status: 'PROGRAMMING_HEURISTIC', governance: 'G2', change: 'new_policy', valueNote: 'V2.1 optionnelle : intentions ciblées, expérience et récupération ; absente des rulesets historiques.', rationale: 'Politique candidate de personnalisation demandée par le produit ; aucune efficacité clinique revendiquée.', uncertainty: 'Plages et facteurs expérimentaux à revoir par un expert ; pas de perte de graisse localisée ni de traitement médical.', insufficient: 'Refus si la personnalisation est demandée sans politique explicite ; comportement historique inchangé quand elle est absente.' }), reviewDate: '2026-10-29' },
   prov({ id: 'strength.needs', status: 'EXPERT_DESIGN_REVIEW', governance: 'G2', change: 'unchanged',
     valueNote: 'Table besoin → exigence de mouvement, inchangée.', rationale: 'Taxonomie de conception (patterns, régions) ; aucune question empirique directe.',
     uncertainty: 'Découpage des besoins à relire par un expert.', insufficient: KEEP }),

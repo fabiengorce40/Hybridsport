@@ -33,6 +33,7 @@ import { strengthReasons } from './codes.js';
 import { STRENGTH_CHECKS } from './checks.js';
 import { validateStrengthIntent } from './intent-contract.js';
 import { roundDownToStep } from './util.js';
+import { personalizedStrengthParams } from './personalization.js';
 import { directSubstitutes } from './substitution.js';
 
 export const STRENGTH_ENGINE_ID = 'engine.strength';
@@ -201,7 +202,10 @@ function prescribe(pick: Pick, env: Env, timePressure: boolean, allocated: numbe
   const role: SlotRole = pick.slot.def.role;
   const knowledge = loadKnowledge(e, env);
   const model = pick.track?.model ?? progressionModelFor(e, role, env.level, knowledge.lastLoadKg, env.params, loadStep(e, env)?.stepKg);
-  const trackKg = pick.track?.nextPrescription?.loadKg;
+  const band = doseCell(e, role, env).cell.reps;
+  const trackReps = pick.track?.nextPrescription?.reps;
+  const compatibleTrack = !env.input.discipline.personalization || trackReps === undefined || (typeof trackReps === 'number' ? trackReps >= band.min && trackReps <= band.max : trackReps.min >= band.min && trackReps.max <= band.max);
+  const trackKg = compatibleTrack ? pick.track?.nextPrescription?.loadKg : undefined;
   const calibration = knowledge.confidence === 'none' && knowledge.lastLoadKg === undefined && trackKg === undefined && e.loadable;
   const dose = computeDose(e, env, { role, timePressure, doubleProgression: model === 'double_progression', calibration, ...(allocated !== undefined ? { allocatedSets: allocated } : {}), ...(pick.track ? { track: pick.track } : {}) });
   reasons.push(...dose.reasons);
@@ -282,7 +286,7 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
   const slots = resolveSlots(env.archetype, params, env.goalKey, env.stimulus, recentNeed, (id) => env.anchorBySlot.has(id), feasible);
   // RC4.5 (F6, R1) — emplacements à temps résiduel : écartés de la composition ordinaire (étapes 2 à 4), ajoutés en 5.
   const residual = slots.optional.filter((s) => isResidual(s.def));
-  const ordinary = slots.optional.filter((s) => !isResidual(s.def));
+  const ordinary = slots.optional.filter((s) => !isResidual(s.def)).sort((a,b) => Number(b.def.id.includes('.focus.'))-Number(a.def.id.includes('.focus.')));
   // Explication (S3) : pourquoi ce besoin dans chaque groupe de choix (ancre, déjà présent, exposition, objectif).
   for (const c of slots.choices) reasons.push(strengthReasons.emit('SELECT.CHOICE_GROUP', { group: c.group, need: c.need, cause: c.cause, others: [...c.others] }));
   const dropped = new Set([...env.lowered.keys()].flatMap((s) => params['strength.interference'].perStructure[s]?.dropOptionalNeeds ?? []));
@@ -354,12 +358,39 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
       const shares = groups.map((g) => remainingShare(g, env)).filter((x): x is number => x !== undefined);
       const need = shares.length > 0 ? Math.min(...shares) - Math.max(0, ...groups.map((g) => allocated[g] ?? 0)) : undefined;
       const { cell } = doseCell(p.exercise, p.slot.def.role, env);
-      const alloc = need === undefined ? undefined : Math.min(cell.sets.max, Math.max(cell.sets.min, Math.floor(need)));
+      let alloc = need === undefined ? undefined : Math.min(cell.sets.max, Math.max(cell.sets.min, Math.floor(need)));
+      if (input.discipline.personalization) {
+        const ctx = input.discipline;
+        const weighted = groupsOf(p.exercise,env);
+        const secondaryWeight = params['strength.volume'].secondaryWeight;
+        const contributions = [...weighted.primary.map(group => ({group,weight:1})),...weighted.secondary.map(group => ({group,weight:secondaryWeight}))].filter(x => x.weight>0);
+        const prior = ctx.week.otherStrengthSessions.filter(s => !s.done);
+        const split = ['str_upper','str_lower'].includes(env.archetype.id) ? Math.max(1,params['strength.archetypes'].filter(a => ['str_upper','str_lower'].includes(a.id)).length) : 1;
+        const remaining = Math.max(1,Math.ceil((ctx.personalizationSessions ?? 1)/split)-prior.filter(s => s.archetypeId===env.archetype.id).length);
+        let budget = cell.sets.max;
+        for (const {group,weight} of contributions) {
+          const t = weeklyTarget(group,env); if (!t) continue;
+          const used = (ctx.hardSets.d7[group] ?? 0)+prior.reduce((n,s)=>n+(s.plannedHardSets[group] ?? 0),0);
+          const here = allocated[group] ?? 0;
+          const highBudget = Math.max(0,Math.floor((t.high-used-here)/weight));
+          const goalBudget = Math.max(0,Math.floor((Math.max(0,(t.floor-used)/remaining)-here)/weight));
+          // La couverture requise peut dépasser la part TARGET, jamais le haut hebdomadaire.
+          const ownBudget = p.slot.def.status==='required' ? Math.min(highBudget,Math.max(1,goalBudget)) : Math.min(highBudget,goalBudget);
+          budget=Math.min(budget,ownBudget);
+        }
+        if (budget<1) {
+          if (p.slot.def.status==='required') throw new NoProposal([strengthReasons.emit('PLAN.PERSONALIZATION_BLOCKED',{cause:'weekly_volume_budget_exhausted'})]);
+          local.push(strengthReasons.emit('SELECT.SLOT_OMITTED',{slot:p.slot.def.id,cause:'personalization_volume_budget'}));
+          continue;
+        }
+        alloc=Math.min(alloc ?? cell.sets.min,budget);
+      }
       const before = patternRamped.get(p.exercise.patterns.primary) ?? 0;
       const rx = prescribe(p, env, timePressure && !(keepPrimaryRest && p.slot.def.role === 'primary'), alloc, before, local);
       if (rx.hasRampup) patternRamped.set(p.exercise.patterns.primary, before + 1);
       const w = rx.working;
       for (const g of groups) allocated[g] = (allocated[g] ?? 0) + w;
+      if (input.discipline.personalization) for (const g of groupsOf(p.exercise,env).secondary) allocated[g]=(allocated[g] ?? 0)+w*params['strength.volume'].secondaryWeight;
       if (alloc !== undefined) local.push(strengthReasons.emit('DOSE.VOLUME_ALLOCATED', { exerciseId: p.exercise.id, sets: w, group: groups.join('+') || 'none' }));
       const n = (counters.get(p.slot.def.id) ?? 0) + 1;
       counters.set(p.slot.def.id, n);
@@ -648,7 +679,10 @@ function proposal(b: Built, env: Env, input: Input, loaded: LoadedStrengthParams
 /** Point d'entrée : propositions (1 à N), ou absence de proposition explicable (issue métier). */
 export function proposeStrength(input: Input): ProposeResult {
   const loaded = readStrengthParams(input.ruleset);
-  const params = loaded.values;
+  if (input.discipline.personalization && (!loaded.values['strength.personalization'] || input.discipline.personalization.painNow)) return {
+    status: 'no_valid_proposal', reasons: asProposalReasons([strengthReasons.emit('PLAN.PERSONALIZATION_BLOCKED', { cause: input.discipline.personalization.painNow ? 'pain_reported' : 'policy_missing' })]), blockingNeeds: [], missingData: [], provenance: { engineId: STRENGTH_ENGINE_ID, engineVersion: STRENGTH_ENGINE_VERSION, rulesetVersion: input.ruleset.version, catalogVersion: input.catalog.version, seed: input.context.seed },
+  };
+  const params = personalizedStrengthParams(loaded.values, input.discipline.personalization, input.discipline.otherSports);
   const noProposal = (reasons: readonly ReasonCode[], blockingNeeds: readonly { slotId: string; need: string }[] = [], missingData: readonly ('capacities' | 'week_context' | 'tracks' | 'catalog_coverage')[] = []): ProposeResult => ({
     status: 'no_valid_proposal', reasons: asProposalReasons(reasons), blockingNeeds: [...blockingNeeds], missingData: [...missingData],
     provenance: { engineId: STRENGTH_ENGINE_ID, engineVersion: STRENGTH_ENGINE_VERSION, rulesetVersion: input.ruleset.version, catalogVersion: input.catalog.version, seed: input.context.seed },
@@ -680,7 +714,8 @@ export function proposeStrength(input: Input): ProposeResult {
     neighbours: [...new Set(input.discipline.week.neighbors.map((n) => n.discipline))].sort().map((d) => `${d}:${sp.order.indexOf(d) + 1}`),
     policy: 'blocked:priority_interference_policy',
   })] : [];
-  const lr = [...(registry !== undefined ? [strengthReasons.emit('DATA.SCIENCE_REGISTRY', { version: registry })] : []), ...priority, ...inter.reasons];
+  const personalizationReasons = input.discipline.personalization ? [strengthReasons.emit('PLAN.PERSONALIZATION', { outcome: input.discipline.personalization.outcome, priorities: input.discipline.personalization.priorities.map(x => `${x.zone}:${x.intention}`), policy: params['strength.personalization']?.version ?? '', strategy: params['strength.personalization']?.goals[input.discipline.personalization.outcome].strategy ?? '', recovery: input.discipline.personalization.recovery })] : [];
+  const lr = [...personalizationReasons,...(registry !== undefined ? [strengthReasons.emit('DATA.SCIENCE_REGISTRY', { version: registry })] : []), ...priority, ...inter.reasons];
   const env = buildEnv(input, params, archetype, goal, gk, inter.lowered, SeededRng.fromSeed(input.context.seed), inter.rirOnly);
   try {
     const main = build(env, input, new Map());

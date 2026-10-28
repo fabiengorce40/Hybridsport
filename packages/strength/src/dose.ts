@@ -9,6 +9,7 @@ import { exerciseClass } from './model.js';
 import type { DoseCell, ExerciseClass, SlotRole } from './params.js';
 import type { StrengthTrack } from './context.js';
 import { strengthReasons } from './codes.js';
+import { personalizedDoseCell } from './personalization.js';
 import { clamp } from './util.js';
 
 export interface Dose {
@@ -29,7 +30,7 @@ export function doseCell(e: Exercise, role: SlotRole, env: Env): { cell: DoseCel
   const cls = exerciseClass(e, env.params);
   const cell = profile === undefined ? undefined : env.params['strength.dose.base'][profile]?.[role]?.[cls];
   if (!cell) throw new Error(`Profil de dosage absent : ${env.stimulus} / ${role} / ${cls}`);
-  return { cell, cls };
+  return { cell: personalizedDoseCell(cell, e, role, env.params, env.input.discipline.personalization, env.input.discipline.otherSports), cls };
 }
 
 export interface DoseOptions {
@@ -47,7 +48,9 @@ export function computeDose(e: Exercise, env: Env, opts: DoseOptions): Dose {
   const { cell, cls } = doseCell(e, opts.role, env);
   const m = env.params['strength.dose.modifiers'];
   const reasons: ReasonCode[] = [];
-  const next = opts.track?.nextPrescription;
+  const rawNext = opts.track?.nextPrescription;
+  const compatible = !env.input.discipline.personalization || !rawNext || (typeof rawNext.reps === 'number' ? rawNext.reps >= cell.reps.min && rawNext.reps <= cell.reps.max : rawNext.reps.min >= cell.reps.min && rawNext.reps.max <= cell.reps.max);
+  const next = compatible ? rawNext : undefined;
   const cal = env.params['strength.calibration'];
 
   // Contrat track ↔ dosage (addendum V1.1 §4) : la track porte la CHARGE et les RÉPÉTITIONS (variables de
@@ -57,7 +60,8 @@ export function computeDose(e: Exercise, env: Env, opts: DoseOptions): Dose {
   let sets = opts.allocatedSets ?? cell.sets.min;
   const baseRir = cell.rir;
   // Répétitions : prescription de la track, sinon SA plage (double progression), sinon le profil.
-  const trackRange = opts.track?.repRange;
+  const trackRange0 = opts.track?.repRange;
+  const trackRange = env.input.discipline.personalization && trackRange0 && (trackRange0.min < cell.reps.min || trackRange0.max > cell.reps.max) ? undefined : trackRange0;
   const reps: RepTarget = next?.reps ?? (opts.doubleProgression ? (trackRange ? { min: trackRange.min, max: trackRange.max } : { min: cell.reps.min, max: cell.reps.max }) : m.repChoice === 'low' ? cell.reps.min : cell.reps.max);
 
   // Modificateurs : chacun est tracé ; la politique de conflit (ruleset) combine les deltas.

@@ -91,6 +91,7 @@ export type ExerciseExposure = z.infer<typeof zExerciseExposure>;
 
 export const zStrengthContext = z.object({
   personalization: zStrengthPersonalization.optional(),
+  personalizationSessions: z.number().int().positive().optional(),
   otherSports: z.array(z.string()).optional(),
   goal: z.object({ primary: zGoalRef, secondary: zGoalRef.optional() }).strict(),
   phase: z.object({ kind: z.enum(PHASE_KINDS), weekInMesocycle: z.number().int().positive(), mesocycleLength: z.number().int().positive() }).strict()
