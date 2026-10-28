@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { decodeState, emptyState, exportState, MemoryStorage, STORAGE_KEY } from '@hybridsport/app-core';
-import { clockKey, controlClock, elapsedMs, exportClock, importClock, readClock } from '../src/clock/global-clock.js';
-import type { ClockSession } from '../src/clock/global-clock.js';
+import { clockKey, controlClock, controlClockLocked, elapsedMs, exportClock, importClock, importClockLocked, readClock } from '../src/clock/global-clock.js';
+import type { ClockLocks, ClockSession } from '../src/clock/global-clock.js';
 const s: ClockSession = { requestId: '2026-10-05.strength.1', startedAt: '2026-10-05T08:00:00.000Z', active: true };
 const at = (m: number): string => `2026-10-05T08:${String(m).padStart(2, '0')}:00.000Z`;
 
@@ -59,5 +59,20 @@ describe('horloge indépendante des données de séance', () => {
     expect(storage.getItem(clockKey(s))).toBe('{"version":2}');
     const blocked = { getItem: () => null, setItem: () => { throw new Error('quota'); } };
     expect(controlClock(blocked, s, at(5), 'pause')).toEqual({ ok: false, reason: 'storage' });
+  });
+  it('sérialise les commandes concurrentes et refuse toute écriture sans verrou', async () => {
+    const storage = new MemoryStorage();
+    let queue: Promise<unknown> = Promise.resolve();
+    const locks: ClockLocks = { request: <T,>(_name: string, work: () => T): Promise<T> => {
+      const next = queue.then(work); queue = next.catch(() => undefined); return next;
+    } };
+    expect(await controlClockLocked(storage, null, s, at(10), 'pause')).toEqual({ ok: false, reason: 'coordination' });
+    const [pause, resume] = await Promise.all([
+      controlClockLocked(storage, locks, s, at(10), 'pause'),
+      controlClockLocked(storage, locks, s, at(20), 'resume'),
+    ]);
+    expect(pause.ok && resume.ok && elapsedMs(s, resume.snapshot, at(25))).toBe(900000);
+    if (!pause.ok) throw new Error('pause impossible');
+    expect(await importClockLocked(storage, locks, s, exportClock(pause.snapshot))).toEqual({ ok: false, reason: 'conflict' });
   });
 });

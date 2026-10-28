@@ -19,7 +19,12 @@ export interface ClockSnapshot {
   readonly runningSince: string | null;
 }
 export type ClockRead = { readonly ok: true; readonly snapshot: ClockSnapshot | null } | { readonly ok: false; readonly reason: 'storage' | 'invalid' };
-export type ClockWrite = { readonly ok: true; readonly snapshot: ClockSnapshot } | { readonly ok: false; readonly reason: 'storage' | 'invalid' | 'inactive' | 'conflict' };
+export type ClockWrite = { readonly ok: true; readonly snapshot: ClockSnapshot } | { readonly ok: false; readonly reason: 'storage' | 'invalid' | 'inactive' | 'conflict' | 'coordination' };
+
+/** Adaptateur explicite : jamais de repli non coordonné si plusieurs onglets peuvent écrire. */
+export interface ClockLocks {
+  request<T>(name: string, work: () => T): Promise<T>;
+}
 
 const PREFIX = 'rekka.global-clock.v1.';
 const validDate = (s: string): boolean => Number.isFinite(Date.parse(s));
@@ -77,6 +82,13 @@ export function controlClock(storage: KeyValueStorage, session: ClockSession, no
   return { ok: true, snapshot };
 }
 
+/** Une future interface doit utiliser ce point d'entrée et partager le même verrou pour l'import. */
+export async function controlClockLocked(storage: KeyValueStorage, locks: ClockLocks | null, session: ClockSession, now: string, action: 'pause' | 'resume'): Promise<ClockWrite> {
+  if (!locks) return { ok: false, reason: 'coordination' };
+  try { return await locks.request(clockKey(session), () => controlClock(storage, session, now, action)); }
+  catch { return { ok: false, reason: 'coordination' }; }
+}
+
 /** Sauvegarde compagnon séparée ; l'export historique de l'application reste strictement inchangé. */
 export function exportClock(snapshot: ClockSnapshot): string { return JSON.stringify(snapshot); }
 /** Import explicite d'un compagnon lié à une séance en cours ; n'écrase jamais un chrono existant. */
@@ -91,4 +103,10 @@ export function importClock(storage: KeyValueStorage, session: ClockSession, raw
   if (current.snapshot) return { ok: false, reason: 'conflict' };
   try { storage.setItem(clockKey(session), JSON.stringify(snapshot)); } catch { return { ok: false, reason: 'storage' }; }
   return { ok: true, snapshot };
+}
+
+export async function importClockLocked(storage: KeyValueStorage, locks: ClockLocks | null, session: ClockSession, raw: string): Promise<ClockWrite> {
+  if (!locks) return { ok: false, reason: 'coordination' };
+  try { return await locks.request(clockKey(session), () => importClock(storage, session, raw)); }
+  catch { return { ok: false, reason: 'coordination' }; }
 }
