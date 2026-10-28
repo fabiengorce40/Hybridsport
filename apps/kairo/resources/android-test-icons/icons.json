@@ -1,0 +1,15 @@
+{
+  "source_sha256": "2f07c7916ee622fb1f358463a5e12f6d7a77be5572ff7d75960fe995d09a44c4",
+  "maskable_scale": 0.740234375,
+  "safe_radius": 0.4,
+  "files": {
+    "icon-48.png": "28779e2fe9ee3ad1b8c697c23c3fae40fa0e793634ff5f322bca945ed0b5a745",
+    "icon-72.png": "0c9ea2c71bc77ba6b35821c31b12445970d2e871937a92868e3a9656827f4efd",
+    "icon-96.png": "a1fef0928ef1b40b1f0ce1d2be615528ad00be6983d2f101e7c27b022bad8009",
+    "icon-180.png": "3d534170cb00727a1c9b035ee5f35be613106444fc35c97e2db417dd9711b906",
+    "icon-192.png": "c2355ee197564ba1af38e76e5b08bdda6e94adc34598e9aa72cc169ee0f7efef",
+    "icon-512.png": "c6c219ddaea18da3e5245351c8890c348bd12ad15f386f28bdc8a2362e849985",
+    "icon-512-maskable.png": "d517dbb7e047afbb8f4413d6801576bfa5dbdf5c614899476c3bd0cbf9f2d55d",
+    "favicon.ico": "bdd4c2255286bf74c9c4acc02b2567f592a7d617ada4cf3c4b92ee5808720d24"
+  }
+}
