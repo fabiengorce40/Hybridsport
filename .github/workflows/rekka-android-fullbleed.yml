@@ -38,6 +38,7 @@ jobs:
         working-directory: apps/kairo
         run: node scripts/prepare-android-test.mjs
       - run: pnpm --filter @hybridsport/kairo exec playwright install --with-deps chromium
+      # Await the new controller before asserting the exact release cache.
       - name: Migration worker, stockage intact, icones hors ligne et BETA isolee
         run: node apps/kairo/scripts/e2e-android-icons.mjs
       - name: Derniere garde isolation avant ecriture

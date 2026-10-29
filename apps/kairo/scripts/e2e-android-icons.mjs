@@ -32,6 +32,8 @@ writeFileSync(join(previous, 'sw.js'), readFileSync(join(beta, 'sw.js'), 'utf8')
   .replace(/c\.addAll\(\[[^\]]*\]\)/, `c.addAll(${JSON.stringify(['./','./index.html','./manifest.webmanifest',...Object.keys(oldMetadata.files).map(f=>'./'+oldDir+'/'+f)])})`));
 
 const manifest = JSON.parse(readFileSync(join(next, 'manifest.webmanifest')));
+const newCache = /const CACHE = '([^']+)'/.exec(readFileSync(join(next, 'sw.js'), 'utf8'))[1];
+assert.notEqual(newCache, oldCache);
 assert.equal(manifest.id, previousManifest.id);
 assert.equal(manifest.scope, previousManifest.scope);
 assert.equal(manifest.start_url, previousManifest.start_url);
@@ -82,8 +84,17 @@ try {
       request.onsuccess = () => { const db = request.result; const tx = db.transaction('sentinels', 'readwrite'); tx.objectStore('sentinels').put('conserve', 'value'); tx.oncomplete = () => { db.close(); resolve(); }; };
     });
   });
+  await page.waitForLoadState('networkidle');
   current = next;
-  await page.evaluate(async () => { await (await navigator.serviceWorker.getRegistration()).update(); });
+  // Cache creation/deletion precedes clients.claim(). Await the actual controller
+  // change before navigating, otherwise the old worker can repopulate its cache.
+  await page.evaluate(async () => {
+    const registration = await navigator.serviceWorker.getRegistration();
+    await new Promise((resolve, reject) => {
+      navigator.serviceWorker.addEventListener('controllerchange', resolve, { once: true });
+      registration.update().catch(reject);
+    });
+  });
   await page.waitForFunction(async old => (await caches.keys()).some(k => k.startsWith('rekka-android-test-icons-')) && !(await caches.keys()).includes(old), oldCache);
   await page.reload();
   const actual = await page.evaluate(async () => (await fetch('./manifest.webmanifest')).json());
@@ -91,7 +102,7 @@ try {
   assert.ok(manifest.icons.every(icon => !icon.src.includes(oldDir+'/')));
   assert.equal(await page.evaluate(() => localStorage.getItem('icon-update-probe')), 'ESSAI intact');
   assert.equal(await page.evaluate(() => new Promise(resolve => { const r = indexedDB.open('icon-update-probe'); r.onsuccess = () => { const db = r.result; const g = db.transaction('sentinels').objectStore('sentinels').get('value'); g.onsuccess = () => { db.close(); resolve(g.result); }; }; })), 'conserve');
-  const cached = await page.evaluate(async () => { const names = await caches.keys(); const cache = await caches.open(names.find(k => k.startsWith('rekka-android-test-icons-'))); return (await cache.keys()).map(r => new URL(r.url).pathname); });
+  const cached = await page.evaluate(async name => { const cache = await caches.open(name); return (await cache.keys()).map(r => new URL(r.url).pathname); }, newCache);
   for (const icon of manifest.icons) assert.ok(cached.includes('/'+icon.src));
   await context.setOffline(true);
   assert.deepEqual(await page.evaluate(async () => (await fetch('./manifest.webmanifest')).json()), manifest);
