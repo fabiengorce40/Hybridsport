@@ -219,7 +219,7 @@ describe('R5.1 — Planning en grille', () => {
       const text = storage.getItem(STORAGE_KEY) ?? '';
       const file = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', `${name}.json`);
       if (process.env.R51_WRITE_FIXTURE) writeFileSync(file, text);
-      expect({ ...JSON.parse(readFileSync(file, 'utf8')), schemaVersion: 3 }).toEqual(JSON.parse(text));
+      expect({ ...JSON.parse(readFileSync(file, 'utf8')), schemaVersion: 4 }).toEqual(JSON.parse(text));
     }
   });
 });

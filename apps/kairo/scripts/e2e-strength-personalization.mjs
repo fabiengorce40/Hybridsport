@@ -29,7 +29,7 @@ try {for(const width of [360,390]){
  await page.getByRole('button',{name:'Confirmer ma personnalisation'}).click();await page.getByRole('button',{name:'Continuer',exact:true}).click();await page.getByRole('button',{name:'Continuer',exact:true}).click();
  await page.getByRole('button',{name:'Créer mon programme',exact:true}).click();await page.getByRole('navigation',{name:'Navigation principale'}).waitFor();
  const read=()=>page.evaluate(()=>{const key=Object.keys(localStorage).find(k=>k.endsWith('kairo.state'));return key?JSON.parse(localStorage.getItem(key)):null;});
- const before=await read();assert.equal(before.profile.strength.personalization.priorities[0].zone,'glutes');assert.equal(before.schemaVersion,3);
+ const before=await read();assert.equal(before.profile.strength.personalization.priorities[0].zone,'glutes');assert.equal(before.schemaVersion,4);
  await page.getByRole('button',{name:'Planning',exact:true}).click();
  await page.getByRole('button',{name:/^Musculation :/}).first().click();
  await page.getByRole('button',{name:'Commencer la séance',exact:true}).click();
@@ -51,9 +51,17 @@ try {for(const width of [360,390]){
  const performed=await read();assert.ok(Object.keys(performed.programmeLogs).length>0);
  await page.reload();await page.getByRole('button',{name:/^(Profil|Réglages)$/}).click();await page.getByRole('button',{name:/^Ma musculation/}).click();
  await page.getByRole('button',{name:'Modifier mes priorités',exact:true}).click();await page.getByRole('button',{name:'Fessiers',exact:true}).click();await page.getByRole('button',{name:'Pectoraux',exact:true}).click();
- await page.getByRole('button',{name:'Confirmer ces modifications'}).click();await page.getByRole('button',{name:'Enregistrer mes objectifs Musculation'}).click();await page.getByRole('status').filter({hasText:'Objectifs enregistrés'}).waitFor();
+ await page.getByRole('button',{name:'Confirmer ces modifications'}).click();await page.getByRole('button',{name:'Appliquer aux prochaines semaines'}).click();await page.getByRole('status').filter({hasText:'Objectifs enregistrés'}).waitFor();
  const after=await read();assert.equal(after.profile.strength.personalization.priorities[0].zone,'chest');assert.deepEqual(after.strength,performed.strength);assert.deepEqual(after.programmeLogs,performed.programmeLogs);
  for(const key of Object.keys(performed.planner.weeks))assert.deepEqual(after.planner.weeks[key].requests,performed.planner.weeks[key].requests);
+ await page.getByRole('button',{name:'Recalculer ma semaine',exact:true}).click();await page.getByLabel('Prévisualisation du planning',{exact:true}).waitFor();
+ assert.deepEqual(await read(),after);assert.equal(await page.getByRole('button',{name:'Confirmer le nouveau planning',exact:true}).isDisabled(),true);
+ await page.getByRole('button',{name:'Annuler la replanification',exact:true}).click();assert.deepEqual(await read(),after);
+ await page.getByRole('button',{name:'Recalculer ma semaine',exact:true}).click();await page.getByLabel('Prévisualisation du planning',{exact:true}).waitFor();
+ await page.getByLabel(/Je confirme le remplacement des séances futures/).check();await page.getByRole('button',{name:'Confirmer le nouveau planning',exact:true}).click();await page.getByRole('status').filter({hasText:'Semaine recalculée.'}).waitFor();
+ const recalculated=await read();assert.deepEqual(recalculated.strength,after.strength);assert.deepEqual(recalculated.programmeLogs,after.programmeLogs);assert.deepEqual(recalculated.programmeState.results,after.programmeState.results);
+ for(const id of Object.keys(after.programmeLogs)){const old=Object.values(after.planner.weeks).flatMap(w=>w.requests).find(r=>r.requestId===id);const now=Object.values(recalculated.planner.weeks).flatMap(w=>w.requests).find(r=>r.requestId===id);assert.deepEqual(now,old);}
+ assert.ok(Object.values(recalculated.planner.weeks).flatMap(w=>w.requests).some(r=>r.requestId.includes('.v22.')&&r.strengthProfile?.strength.personalization.priorities[0].zone==='chest'));
  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);if(shots)await page.screenshot({path:`${shots}/profil-${width}.png`,fullPage:true});
- assert.deepEqual(errors,[]);await context.close();console.log(`OK ${width}px : 7 etapes, generation, rechargement, edition directe, series cliquables, chrono/pause/rechargement, historique et donnees conserves, aucun debordement.`);
+ assert.deepEqual(errors,[]);await context.close();console.log(`OK ${width}px : 7 etapes, generation, rechargement, edition directe, series cliquables, chrono/pause/rechargement, historique conserve, apercu/annulation/confirmation, aucune seance realisee remplacee, aucun debordement.`);
 }}finally{await browser.close();server?.closeAllConnections();server?.close();}

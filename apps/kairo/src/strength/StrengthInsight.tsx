@@ -4,7 +4,7 @@ import { StrengthPersonalizationSummary } from './StrengthCustomization.js';
  * allègements tracés, variation intra-semaine, signaux de récupération et volume de la semaine. Lecture seule des
  * décisions persistées (app-core) ; aucune valeur calculée ni augmentée ici.
  */
-import { exerciseLabel, strengthInsightOf, strengthWeekInsights } from '@hybridsport/app-core';
+import { exerciseLabel, strengthProfileForWeek, strengthInsightOf, strengthWeekInsights } from '@hybridsport/app-core';
 import type { StrengthWeekInsights } from '@hybridsport/app-core';
 
 type WeekVolumeAssessment = StrengthWeekInsights['volume'];
@@ -51,7 +51,7 @@ export function StrengthWeekCard({ weekStart }: { weekStart: string }) {
   const { state } = useStore();
   const w = strengthWeekInsights(state, weekStart);
   if (!w || w.sessions.length === 0) return null;
-  const profile = state.planner.weeks[weekStart]?.strengthProfile ?? state.profile;
+  const profile = strengthProfileForWeek(state,weekStart);
   return (
     <>
       {profile?.strength.personalization && <StrengthPersonalizationSummary p={profile} />}
