@@ -13,10 +13,10 @@ export function StrengthProfileScreen({onBack}:{onBack:()=>void}) {
  const summary=strengthPersonalizationSummary(draft);
  return <div className="screen"><button className="btn ghost" onClick={onBack}>Retour au profil</button><h1 className="screen-title">Ma musculation</h1>
   <StrengthCustomization p={draft} set={f=>{setDraft(x=>x?f(x):x);setSaved(false);}}/>
-  <Notice>Les séances déjà planifiées, commencées et terminées restent conservées. Vos nouveaux choix s’appliqueront aux prochaines semaines à planifier. Aucune performance ni charge passée n’est effacée.</Notice>
+  <Notice>Option « Prochaines semaines » : les séances déjà planifiées restent inchangées. Pour appliquer dès maintenant, utilisez « Recalculer ma semaine » et confirmez l’aperçu. Les séances commencées ou réalisées et leurs performances restent toujours conservées.</Notice>
   {summary&&<p className="tiny">{summary.conflict}</p>}
   <button className="btn primary block" disabled={!dirty||!draft.strength.personalization?.completed} onClick={()=>{if(store.apply((s,c)=>updateStrengthPersonalization(s,draft,c)))setSaved(true);}}>Appliquer aux prochaines semaines</button>
-  <StrengthReplanControl profile={draft}/>
+  <StrengthReplanControl profile={draft} onConfirmed={()=>setSaved(false)}/>
   {saved&&<p role="status">Objectifs enregistrés. Vos séances déjà planifiées sont conservées.</p>}
  </div>;
 }

@@ -55,10 +55,12 @@ try {for(const width of [360,390]){
  const after=await read();assert.equal(after.profile.strength.personalization.priorities[0].zone,'chest');assert.deepEqual(after.strength,performed.strength);assert.deepEqual(after.programmeLogs,performed.programmeLogs);
  for(const key of Object.keys(performed.planner.weeks))assert.deepEqual(after.planner.weeks[key].requests,performed.planner.weeks[key].requests);
  await page.getByRole('button',{name:'Recalculer ma semaine',exact:true}).click();await page.getByLabel('Prévisualisation du planning',{exact:true}).waitFor();
+ if(shots)await page.screenshot({path:`${shots}/apercu-${width}.png`,fullPage:true});
  assert.deepEqual(await read(),after);assert.equal(await page.getByRole('button',{name:'Confirmer le nouveau planning',exact:true}).isDisabled(),true);
  await page.getByRole('button',{name:'Annuler la replanification',exact:true}).click();assert.deepEqual(await read(),after);
  await page.getByRole('button',{name:'Recalculer ma semaine',exact:true}).click();await page.getByLabel('Prévisualisation du planning',{exact:true}).waitFor();
  await page.getByLabel(/Je confirme le remplacement des séances futures/).check();await page.getByRole('button',{name:'Confirmer le nouveau planning',exact:true}).click();await page.getByRole('status').filter({hasText:'Semaine recalculée.'}).waitFor();
+ assert.equal(await page.getByRole('status').filter({hasText:'Objectifs enregistrés. Vos séances déjà planifiées sont conservées.'}).count(),0);
  const recalculated=await read();assert.deepEqual(recalculated.strength,after.strength);assert.deepEqual(recalculated.programmeLogs,after.programmeLogs);assert.deepEqual(recalculated.programmeState.results,after.programmeState.results);
  for(const id of Object.keys(after.programmeLogs)){const old=Object.values(after.planner.weeks).flatMap(w=>w.requests).find(r=>r.requestId===id);const now=Object.values(recalculated.planner.weeks).flatMap(w=>w.requests).find(r=>r.requestId===id);assert.deepEqual(now,old);}
  assert.ok(Object.values(recalculated.planner.weeks).flatMap(w=>w.requests).some(r=>r.requestId.includes('.v22.')&&r.strengthProfile?.strength.personalization.priorities[0].zone==='chest'));
