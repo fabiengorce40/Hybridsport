@@ -80,7 +80,8 @@ export function previewStrengthWeekReplan(state:AppState,input:ProfileInput,cloc
  const demands:SportIntent[]=oldWeek.intent.demands.filter(d=>['strength','hyrox'].includes(d.sport)).flatMap(d=>{
   const n=p[d.sport].enabled?(p[d.sport].sessionsPerWeek??d.sessions):0;
   const count=Math.max(0,n-fixed.filter(r=>r.sport===d.sport).length);
-  return count>0?[{...d,sessions:count}]:[];
+  const declared=intent.sports.find(x=>x.sport===d.sport);
+  return count>0?[{...d,sessions:count,...(d.sport==='strength'&&declared?{intent:{...d.intent,stimulus:declared.intent.stimulus,objective:declared.intent.objective}}:{})}]:[];
  });
  const edition=before.governance.filter(r=>r.code==='KAIRO.WEEK_REPLANNED').length+1;
  const idOf=(id:string)=>id.replace(weekStart+'.',`${weekStart}.v22.${String(edition)}.`);
@@ -113,7 +114,7 @@ export function previewStrengthWeekReplan(state:AppState,input:ProfileInput,cloc
   const week:PersistedWeek={...before,strengthProfile:before.strengthProfile??state.profile??undefined,days:available.map(d=>{const r=requests.find(r=>r.status==='planned'&&r.date===d.date);return{...d,status:r?'planned':'empty',...(r?{requestId:r.requestId,sport:r.sport}:{})};}),requests,
    conflicts:mapped.conflicts,arbitration:mapped.arbitration,governance:[...before.governance,{code:'KAIRO.WEEK_REPLANNED',params:{at:clock.now,preserved:[...fixedIds],replaced:before.requests.filter(r=>!fixedIds.has(r.requestId)).map(r=>r.requestId)}}]};
   const wReq=requests.map(r=>({requestId:r.requestId,sport:r.sport,status:r.status,category:r.category,...(r.date?{date:r.date}:{}),...(r.intent?{intent:r.intent}:{}),...(r.composition?{composition:r.composition}:{}),...(r.composedFor?{composedUnplaced:true as const}:{})}));
-  const next={...updated,planner:{...updated.planner,weeks:{...updated.planner.weeks,[weekStart]:week}},programmeState:zProgrammeState.parse({...ps,weeks:ps.weeks.map(w=>w.plannerRef===weekStart?{...w,intent:{...w.intent,demands:w.intent.demands.map(d=>['strength','hyrox'].includes(d.sport)?{...d,sessions:p[d.sport].sessionsPerWeek??d.sessions}:d)},requests:wReq}:w)})};
+  const next={...updated,planner:{...updated.planner,weeks:{...updated.planner.weeks,[weekStart]:week}},programmeState:zProgrammeState.parse({...ps,weeks:ps.weeks.map(w=>w.plannerRef===weekStart?{...w,intent:{...w.intent,demands:w.intent.demands.map(d=>['strength','hyrox'].includes(d.sport)?{...d,sessions:p[d.sport].sessionsPerWeek??d.sessions,...(d.sport==='strength'?{intent:{...d.intent,stimulus:intent.sports.find(x=>x.sport==='strength')?.intent.stimulus,objective:intent.sports.find(x=>x.sport==='strength')?.intent.objective}}:{})}:d)},requests:wReq}:w)})};
   const warnings=weekLoadWarnings(next,weekStart);const consecutive=warnings.find(w=>w.kind==='consecutive');
   const rank=[requests.filter(r=>r.status==='planned').length,...p.priorities.map(sp=>requests.filter(r=>r.sport===sp&&r.status==='planned').length),-requests.filter(r=>r.reasons.some(c=>c.code.includes('M3_CONFLICT_UNRESOLVED'))).length,-(consecutive?.kind==='consecutive'?consecutive.days:1)];
   if(!best||rank.some((n,i)=>n!==(bestRank[i]??0)&&rank.slice(0,i).every((v,j)=>v===bestRank[j])&&n>(bestRank[i]??0))){best=next;bestRank=rank;}

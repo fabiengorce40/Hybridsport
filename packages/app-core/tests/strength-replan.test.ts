@@ -65,6 +65,12 @@ describe('V2.2 transaction de replanification',()=>{
   const bad={...s,planner:{...s.planner,weeks:{...s.planner.weeks,[MONDAY]:{...week,requests:week.requests.map(r=>r.record?{...r,record:{...r.record,data:{}}}:r)}}}};
   expect(()=>preview(bad)).toThrow('REPLAN_RECORD_UNREADABLE');expect(exportState(s)).toBe(original);
  });
+ it('changement de méthode : la force remplace le stimulus de volume uniquement sur les nouvelles séances',()=>{
+  const s=setup();const target=changed(s,['chest']);target.strength.personalization={...target.strength.personalization!,outcome:'strength',priorities:[{zone:'chest',intention:'strengthen'}]};
+  const next=preview(s,target).next;const fresh=placed(next).filter(r=>r.sport==='strength');expect(fresh.length).toBeGreaterThan(0);
+  expect(fresh.every(r=>r.intent?.stimulus==='strength_heavy'&&r.strengthProfile?.strength.goal==='strength')).toBe(true);
+  expect(next.programmeState!.weeks.find(w=>w.plannerRef===MONDAY)!.intent.demands.find(d=>d.sport==='strength')!.intent.stimulus).toBe('strength_heavy');
+ },30000);
  it('migration v3 → v4 sans changement et jours passés verrouillés',()=>{
   const s=setup();expect(decodeState(JSON.stringify({...s,schemaVersion:3}))).toMatchObject({ok:true,state:s});
   const p=previewStrengthWeekReplan(s,changed(s),clock('2026-10-08'),beta0Environment());
