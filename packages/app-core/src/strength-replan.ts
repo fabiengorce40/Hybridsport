@@ -1,6 +1,8 @@
 /** V2.2 — transaction pure de replanification. Les moteurs restent seuls auteurs des séances. */
 import { migrateToCurrent } from '@hybridsport/engine';
 import type { SessionDraft, SessionRecord } from '@hybridsport/domain';
+import { sessionPlannedHardSets } from '@hybridsport/strength';
+import { strengthContent } from './provisional-content.js';
 import { planMultisportWeek } from '@hybridsport/planner';
 import type { SportPorts, SportIntent, WeekSession } from '@hybridsport/planner';
 import { zProgrammeState } from '@hybridsport/programme';
@@ -11,7 +13,7 @@ import { addDays, normalizeInstant, weekStartOf } from './dates.js';
 import { assertEnvironment, buildPorts, clockOf, persistWeek, recentOf } from './planning.js';
 import { portInputs, strengthWeekVolume } from './programme.js';
 import type { ProgrammeEnvironment } from './programme.js';
-import { updateStrengthPersonalization } from './strength-personalization.js';
+import { updateStrengthPersonalization, strengthParametersFor } from './strength-personalization.js';
 import { assertPlanningAllowed, plannedWeekStatus, protectedWeekRequests, writeReplannedWeek } from './weeks.js';
 import { weekLoadWarnings } from './week-load.js';
 
@@ -34,14 +36,14 @@ export function weekPlacementExplanation(state: AppState, weekStart: string) {
     return {sport:sp,name:sportName[sp],requested,placed,deferred:Math.max(0,requested-reqs.length),previous:reqs.filter(r=>r.status==='planned'&&requestProfileOrigin(state,weekStart,r.requestId)==='previous').length,
       missing:reqs.filter(r=>r.status!=='planned').map(r=>{
         const reasons=[...r.reasons,...w.conflicts.filter(c=>c.params.sport===sp)];
-        const timeLimit=state.profile?.strength.personalization?.sessionMinutes;
+        const timeLimit=snapshot(state,w,r)?.strength.personalization?.sessionMinutes;
         const budget=reasons.some(c=>c.params.cause==='personalization_volume_budget');
         const recovery=reasons.some(c=>c.params.cause==='strength_recovery_window');
         const conflicts=reasons.filter(c=>c.code.includes('INTERFERENCE_CONFLICT'));
         const dates=[...new Set(conflicts.map(c=>String(c.params.date??'')).filter(Boolean))];
         const shared=[...new Set(conflicts.map(c=>structures[String(c.params.structure)]??String(c.params.structure??'')).filter(Boolean))];
         const text=recovery?'La fenêtre de récupération Musculation n’est pas respectée sur les créneaux essayés.':budget&&r.status==='refused'&&r.category!=='slot_unavailable'?'Le volume hebdomadaire restant ne permet pas cette prescription supplémentaire.':r.category==='slot_unavailable'?(r.status==='unplaced'?'Les jours compatibles sont déjà occupés : une seule séance est planifiée par jour.':`Le moteur ne peut pas composer cette séance dans la durée disponible${sp==='strength'&&timeLimit?' (limite Musculation : '+String(timeLimit)+' min)':''}.`):r.category==='interference_conflict'?`Aucun créneau compatible avec les autres sports${shared.length?' : '+shared.join(', '):''}${dates.length?' ; jours en conflit : '+dates.join(', '):''}.`:r.category==='safety_blocked'?'Une contrainte de sécurité du moteur empêche cette séance.':r.category==='governance_blocked'?'Une règle nécessaire à cette combinaison sportive n’est pas disponible ou validée.':r.category==='engine_unavailable'?'Le moteur de ce sport n’est pas disponible.':'Le moteur n’a pas trouvé de prescription compatible avec les contraintes déclarées.';
-        return {requestId:r.requestId,category:r.category,text,composed:!!r.composedFor,alternatives:r.category==='safety_blocked'?['Réexaminer la contrainte de sécurité ; aucun contournement automatique.']:['Libérer un autre jour dans les disponibilités.','Prévisualiser une autre durée ; une séance plus courte n’est pas garantie.','Réduire la fréquence ou revoir l’ordre de priorité des sports.','Décaler ou ajuster une autre activité puis recalculer.']};
+        return {requestId:r.requestId,origin:requestProfileOrigin(state,weekStart,r.requestId),category:r.category,text,composed:!!r.composedFor,alternatives:r.category==='safety_blocked'?['Réexaminer la contrainte de sécurité ; aucun contournement automatique.']:['Libérer un autre jour dans les disponibilités.','Prévisualiser une autre durée ; une séance plus courte n’est pas garantie.','Réduire la fréquence ou revoir l’ordre de priorité des sports.','Décaler ou ajuster une autre activité puis recalculer.']};
       })};
   });
 }
@@ -65,6 +67,7 @@ export function replanSessionDetails(request:Request) {
 export function previewStrengthWeekReplan(state:AppState,input:ProfileInput,clock:Clock,env:ProgrammeEnvironment):WeekReplanPreview {
  assertPlanningAllowed(state);assertEnvironment(env);const weekStart=weekStartOf(clock.today);const before=state.planner.weeks[weekStart];
  if(!before||before.owner!=='programme'||plannedWeekStatus(state,weekStart)==='closed'||!state.programmeState)throw new AppError('REPLAN_NOT_ALLOWED');
+ for(const request of before.requests)if(request.record)sessionOf(request);
  const updated=updateStrengthPersonalization(state,input,clock);const p=updated.profile;const ps=updated.programmeState;if(!p||!ps)throw new AppError('PROFILE_MISSING');
  const oldWeek=ps.weeks.find(w=>w.plannerRef===weekStart);if(!oldWeek)throw new AppError('REPLAN_NOT_ALLOWED');
  // Other sports stay fixed; past, begun, completed and recorded sessions are never replaced.
@@ -118,7 +121,17 @@ export function previewStrengthWeekReplan(state:AppState,input:ProfileInput,cloc
  if(!best)throw new AppError('REPLAN_NOT_ALLOWED');
  // Assert the existing engine's weekly high limits. Preserved work can never be removed to meet a new target.
  const volume=strengthWeekVolume(best,weekStart);
- if(volume?.groups.some(g=>g.aboveHigh))throw new AppError('REPLAN_VOLUME_LIMIT');
+ const forecast:Record<string,number>={};const params=strengthParametersFor(p);const catalog=strengthContent().catalog;
+ for(const request of best.planner.weeks[weekStart]?.requests??[]){
+  const result=state.programmeState?.results.find(r=>r.requestId===request.requestId);
+  if(request.sport!=='strength'||!request.record||result?.completion==='missed'||(request.status!=='planned'&&!result))continue;
+  let session=sessionOf(request);const log=state.programmeLogs[request.requestId];
+  // A completed partial session contributes its performed sets, never its unperformed prescription.
+  // An unfinished protected session reserves its full prescription conservatively.
+  if(result&&log)session={...session,blocks:session.blocks.map(b=>({...b,items:b.items.map(item=>({...item,prescription:item.prescription.type==='sets'?{...item.prescription,sets:item.prescription.sets.filter((_set,index)=>log.sets.some(s=>s.itemId===item.id&&s.setIndex===index&&s.done))}:item.prescription}))}))};
+  for(const [group,sets] of Object.entries(sessionPlannedHardSets(session,params,catalog)))forecast[group]=(forecast[group]??0)+sets;
+ }
+ if(volume?.groups.some(g=>g.high!==null&&(forecast[g.group]??0)>g.high))throw new AppError('REPLAN_VOLUME_LIMIT');
  const after=best.planner.weeks[weekStart];if(!after)throw new AppError('REPLAN_NOT_ALLOWED');
  return{source:JSON.stringify(state),clock,profile:input,weekStart,before,after,protectedIds,next:best,alternativesTried:tried};
 }

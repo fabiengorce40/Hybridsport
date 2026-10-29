@@ -60,6 +60,11 @@ describe('V2.2 transaction de replanification',()=>{
   const s=setup();const next=updateStrengthPersonalization(s,changed(s),clock());expect(next.planner.weeks[MONDAY]!.requests).toEqual(s.planner.weeks[MONDAY]!.requests);
   const row=weekPlacementExplanation(next,MONDAY)!.find(x=>x.sport==='strength')!;expect(row.requested).toBe(4);expect(row.deferred).toBe(2);expect(row.previous).toBeGreaterThan(0);
  });
+ it('séance illisible : refus sans remplacement ni écriture',()=>{
+  const s=setup();const original=exportState(s);const week=s.planner.weeks[MONDAY]!;
+  const bad={...s,planner:{...s.planner,weeks:{...s.planner.weeks,[MONDAY]:{...week,requests:week.requests.map(r=>r.record?{...r,record:{...r.record,data:{}}}:r)}}}};
+  expect(()=>preview(bad)).toThrow('REPLAN_RECORD_UNREADABLE');expect(exportState(s)).toBe(original);
+ });
  it('migration v3 → v4 sans changement et jours passés verrouillés',()=>{
   const s=setup();expect(decodeState(JSON.stringify({...s,schemaVersion:3}))).toMatchObject({ok:true,state:s});
   const p=previewStrengthWeekReplan(s,changed(s),clock('2026-10-08'),beta0Environment());
