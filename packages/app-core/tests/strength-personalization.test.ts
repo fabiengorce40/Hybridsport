@@ -1,9 +1,10 @@
-import { writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync } from 'node:fs';
 import { describe,expect,it } from 'vitest';
 import { createBeta0Programme, emptyState, withStrengthPersonalization, defaultStrengthPersonalization, strengthWeekVolume, updateStrengthPersonalization, exportState, decodeState, CURRENT_SCHEMA_VERSION, EQUIPMENT_PRESETS, regenerateSession, UNKNOWN_CORE_STATE, beta0Environment, startProgrammeSession, zProfile } from '../src/index.js';
 import type { StrengthPersonalization, StrengthOutcome, StrengthZone, AppState } from '../src/index.js';
 import { profile,clock,MONDAY } from './fixtures.js';
 import { plannedSession,workSetsDone } from './executions.js';
+import { closeProgrammeWeekInApp, planProgrammeCurrentWeek } from '../src/programme.js';
 import { recordSessionExecution } from '../src/programme.js';
 
 function athlete(outcome: StrengthOutcome, zones: StrengthZone[], extra: Partial<StrengthPersonalization> = {}, hybrid=false) {
@@ -87,6 +88,30 @@ describe('V2.1 personnalisation réelle dans le moteur existant',()=>{
   const rx=(s:AppState)=>requests(s).flatMap(r=>plannedSession(s,r.requestId).blocks.flatMap(b=>b.items)).filter(i=>i.refs?.slotId?.includes('.focus.glutes')).map(i=>i.prescription);
   expect(rx(vol).length).toBeGreaterThan(0);expect(rx(vol)).not.toEqual(rx(control));
   expect(requests(athlete('muscle',['chest','shoulders','glutes'])).length).toBeGreaterThan(0);
+ });
+ it('prochaines semaines : les nouvelles priorités changent le programme sans altérer le passé',()=>{
+  let state=athlete('muscle',['glutes']);
+  for(const r of requests(state)) state=recordSessionExecution(state,clock(MONDAY,'12:00:00'),{requestId:r.requestId,sport:'strength',completion:'completed_as_prescribed',sets:workSetsDone(state,r.requestId,{loadKg:40,rir:3})});
+  const original=state;
+  const changed=updateStrengthPersonalization(state,withStrengthPersonalization(state.profile!,{...state.profile!.strength.personalization!,priorities:[{zone:'chest',intention:'volume'}]}),clock(MONDAY,'13:00:00'));
+  const next=(s:AppState)=>planProgrammeCurrentWeek(closeProgrammeWeekInApp(s,clock('2026-10-12'),beta0Environment()),clock('2026-10-12'),beta0Environment());
+  const a=next(original);const c=next(changed);
+  expect(c.strength).toEqual(original.strength);
+  expect(c.programmeLogs).toEqual(original.programmeLogs);
+  expect(c.planner.weeks[MONDAY]!.requests).toEqual(original.planner.weeks[MONDAY]!.requests);
+  const focus=(s:AppState)=>s.planner.weeks['2026-10-12']!.requests.filter(r=>r.sport==='strength'&&r.status==='planned').flatMap(r=>plannedSession(s,r.requestId).blocks.flatMap(b=>b.items)).filter(i=>i.refs?.slotId?.includes('.focus.')).map(i=>[i.exerciseId,i.prescription]);
+  expect(focus(c).length).toBeGreaterThan(0);expect(focus(c)).not.toEqual(focus(a));
+  expect(c.planner.weeks['2026-10-12']!.strengthProfile!.strength.personalization!.priorities[0]!.zone).toBe('chest');
+ });
+ it('sauvegardes v1/v2 riches : profils, semaines, résultats, charges et journaux conservés',()=>{
+  const v2=JSON.parse(readFileSync(new URL('../../../apps/kairo/tests/fixtures/r51-p5-w2.json',import.meta.url),'utf8')) as AppState;
+  expect(v2.strength.tracks.length).toBeGreaterThan(0);expect(Object.keys(v2.programmeLogs).length).toBeGreaterThan(0);
+  for(const version of [1,2]){
+   const raw=JSON.parse(JSON.stringify({...v2,schemaVersion:version}));
+   if(version===1)for(const week of Object.values(raw.planner.weeks) as Array<Record<string,unknown>>)delete week.owner;
+   const decoded=decodeState(JSON.stringify(raw));expect(decoded.ok).toBe(true);
+   if(decoded.ok)expect(decoded.state).toEqual({...v2,schemaVersion:3});
+  }
  });
  it('migration v2 → v3 sans modification des profils et programmes existants',()=>{
   const p=profile();const original=emptyState();const old={...original,schemaVersion:2,profile:zProfile.parse(p)};

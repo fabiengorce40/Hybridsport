@@ -1,0 +1,82 @@
+name: REKKA ESSAI V2.1 integration Android isolee
+on:
+  push:
+    branches: [codex/rekka-v2-1-android-integration]
+    paths: ['.github/workflows/rekka-v21-android.yml']
+permissions:
+  contents: read
+concurrency:
+  group: rekka-android-test-only
+  cancel-in-progress: false
+jobs:
+  publish:
+    if: github.ref == 'refs/heads/codex/rekka-v2-1-android-integration'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Lire version servie et confirmer isolation avant toute publication
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: python3 apps/kairo/scripts/verify-v21-isolation.py preflight
+      - name: Verifier icones officielles et perimetre sportif
+        run: |
+          git diff --exit-code 3ec81a84c8e19acc1243a1aa32a214e08acfa89e HEAD -- apps/kairo/resources/android-test-icons apps/kairo/scripts/generate-android-icons.py
+          git diff --exit-code 297ea6eb416778ec255ca2ac246ac3cafd30e3fc HEAD -- apps/kairo/src 'packages/*/src' 'packages/*/content' apps/kairo/public apps/kairo/index.html apps/kairo/vite.config.ts
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - name: Suite unitaire et integration complete (profils A–E, migrations, prochaines semaines)
+        run: pnpm exec vitest run --reporter=json --outputFile=/tmp/rekka-v21-tests.json
+      - run: pnpm kairo:build:beta
+      - name: Preparer uniquement ESSAI (icones conservees, cache versionne par build)
+        working-directory: apps/kairo
+        run: node scripts/prepare-android-test.mjs
+      - name: Construire en lecture seule la version actuellement installee 3ec81a8
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/rekka-v2-legacy" 3ec81a84c8e19acc1243a1aa32a214e08acfa89e
+          cd "$RUNNER_TEMP/rekka-v2-legacy"
+          pnpm install --frozen-lockfile
+          GITHUB_SHA=3ec81a84c8e19acc1243a1aa32a214e08acfa89e pnpm kairo:build:beta
+          cd apps/kairo
+          GITHUB_SHA=3ec81a84c8e19acc1243a1aa32a214e08acfa89e node scripts/prepare-android-test.mjs
+      - run: pnpm --filter @hybridsport/kairo exec playwright install --with-deps chromium
+      - name: Migration reelle v1 et v2 vers v3, IndexedDB conservee, ancienne v2 refuse v3
+        run: REKKA_LEGACY_DIST="$RUNNER_TEMP/rekka-v2-legacy/apps/kairo/dist-android-test" node apps/kairo/scripts/e2e-v21-upgrade.mjs
+      - name: Onboarding, generation, series, chrono, pause, historique, profil, 360 et 390 px
+        run: E2E_SHOTS=/tmp/rekka-v21-shots node apps/kairo/scripts/e2e-strength-personalization.mjs
+      - name: Icones, cache hors ligne et isolation BETA simulee
+        run: node apps/kairo/scripts/e2e-android-icons.mjs
+      - name: Recontroler isolation immediatement avant ecriture
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: python3 apps/kairo/scripts/verify-v21-isolation.py prepublish
+      - name: Publier uniquement le projet ESSAI existant
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx --yes wrangler@3.90.0 pages deploy apps/kairo/dist-android-test --project-name=rekka-v2-android-test --branch=android-test --commit-hash="$GITHUB_SHA" --commit-dirty=true
+      - name: Verifier version, bundle V2.1, manifeste, icones et BETA production inchangees
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: python3 apps/kairo/scripts/verify-v21-isolation.py post
+      - name: Parcours Chromium sur les ressources reellement servies (stockage navigateur jetable)
+        run: E2E_URL=https://rekka-v2-android-test.pages.dev/ E2E_SHOTS=/tmp/rekka-v21-live-shots node apps/kairo/scripts/e2e-strength-personalization.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rekka-v21-android-validation
+          path: |
+            /tmp/rekka-v21-tests.json
+            /tmp/rekka-v21-shots
+            /tmp/rekka-v21-live-shots

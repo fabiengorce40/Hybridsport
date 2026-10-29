@@ -1,15 +1,20 @@
 {
   "source_sha256": "2f07c7916ee622fb1f358463a5e12f6d7a77be5572ff7d75960fe995d09a44c4",
-  "maskable_scale": 0.740234375,
+  "decor_sha256": "4b4df11ab7c327ca993804840f2b1136c36919dbd6cb0373efd494185a5bc228",
+  "asset_version": "rekka-v2-city-fullbleed-v2",
+  "revision": "e82a96d9d9545439",
+  "maskable_foreground_scale": 0.78,
+  "protected_neon_radius": 0.3900266129632439,
   "safe_radius": 0.4,
   "files": {
-    "icon-48.png": "28779e2fe9ee3ad1b8c697c23c3fae40fa0e793634ff5f322bca945ed0b5a745",
-    "icon-72.png": "0c9ea2c71bc77ba6b35821c31b12445970d2e871937a92868e3a9656827f4efd",
-    "icon-96.png": "a1fef0928ef1b40b1f0ce1d2be615528ad00be6983d2f101e7c27b022bad8009",
-    "icon-180.png": "3d534170cb00727a1c9b035ee5f35be613106444fc35c97e2db417dd9711b906",
-    "icon-192.png": "c2355ee197564ba1af38e76e5b08bdda6e94adc34598e9aa72cc169ee0f7efef",
-    "icon-512.png": "c6c219ddaea18da3e5245351c8890c348bd12ad15f386f28bdc8a2362e849985",
-    "icon-512-maskable.png": "d517dbb7e047afbb8f4413d6801576bfa5dbdf5c614899476c3bd0cbf9f2d55d",
-    "favicon.ico": "bdd4c2255286bf74c9c4acc02b2567f592a7d617ada4cf3c4b92ee5808720d24"
+    "icon-48.png": "50b3138cec7690e93dda763ffbd737ca33250853b3de453ddc66ae26309f37ec",
+    "icon-72.png": "5f8bf3abbb8ad9ca445f182dd9aa28d261f6181bb58e565b360eda3649139fa4",
+    "icon-96.png": "6cc740a25b5aeda3a52ef58134c56b14c5249fa787a78a934ee15ec36bfc6957",
+    "icon-180.png": "636f954503b73a9df69e182d9fe0c14dcd07bb9c035efb5e7fff2bb79400d798",
+    "icon-192.png": "dc6d075db5ff2c67a9b4c27164cdefde4679f9c8a70da9da31d06e252ea699a7",
+    "icon-512.png": "d8642589729806e9d838518a3396d7c6273f1355192a4105abc93f1b4a4022fb",
+    "icon-192-maskable.png": "e105491209936ac7eae8f241c026e5564057c5996d40eb646fec53f306993063",
+    "icon-512-maskable.png": "f4c941d6c269f4ab1c6d4b60f628c6dd6ba5235d48bf7514dadc28eec2240866",
+    "favicon.ico": "dbb2db166ce90075eac99f714438b495ce3989713e109e5b1c285106e9b6b52d"
   }
 }
