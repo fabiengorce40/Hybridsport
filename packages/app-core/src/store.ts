@@ -21,7 +21,7 @@ export const BACKUP_PREFIX = 'kairo.unreadable.';
 
 /** Migrations successives : MIGRATIONS[n] transforme une donnée de version n en version n + 1. */
 // technical-constant: numéro de version du schéma persistant (contrat de format), pas une valeur sportive
-export const MIGRATIONS: Readonly<Record<number, (data: unknown) => unknown>> = { 1: migrateV1toV2, 2: migrateV2toV3 };
+export const MIGRATIONS: Readonly<Record<number, (data: unknown) => unknown>> = { 1: migrateV1toV2, 2: migrateV2toV3, 3: migrateV3toV4 };
 
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -53,6 +53,14 @@ export function migrateV2toV3(data: unknown): unknown {
   if (!isObj(data) || data.schemaVersion !== 2) throw new Error('migration v2 → v3 : donnée v2 attendue');
   // technical-constant: version du format de sauvegarde
   return { ...data, schemaVersion: 3 };
+}
+
+/** V2.2 : snapshots par séance ; migration additive, aucune séance ni performance modifiée. */
+export function migrateV3toV4(data: unknown): unknown {
+  // technical-constant: versions de format persisté
+  if (!isObj(data) || data.schemaVersion !== 3) throw new Error('migration v3 → v4 : donnée v3 attendue');
+  // technical-constant: version du format V2.2
+  return { ...data, schemaVersion: 4 };
 }
 
 export type LoadResult =

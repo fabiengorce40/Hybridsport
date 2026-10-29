@@ -71,7 +71,7 @@ describe('RC1 TEST → RC3 : relecture sans perte', () => {
       expect(r.migratedFrom).toBe(2);
       expect(storage.keys()).toEqual([STORAGE_KEY]);
       expect(saveState(storage, r.state)).toEqual({ ok: true });
-      expect(JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}')).toEqual({ ...JSON.parse(raw), schemaVersion: 3 });
+      expect(JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}')).toEqual({ ...JSON.parse(raw), schemaVersion: 4 });
       // Profil, journaux, résultats, contrôles, réalisations Running : identiques.
       const before = JSON.parse(raw) as AppState;
       expect(r.state.profile).toEqual(before.profile);

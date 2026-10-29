@@ -1,4 +1,4 @@
-import { strengthParametersFor, muscleLevel } from './strength-personalization.js';
+import { strengthParametersFor, muscleLevel, strengthProfileForWeek } from './strength-personalization.js';
 /**
  * Programme longitudinal dans l'application : app-core → Programme Engine → planificateur global → moteurs → CORE.
  * L'application ne décide rien de sportif : elle fournit l'état (historique, disponibilités, déclarations), persiste
@@ -159,7 +159,7 @@ export function strengthWeekVolume(state: AppState, weekStart: string): WeekVolu
   });
   const content = strengthContent();
   return assessStrengthWeekVolume({
-    params: strengthParametersFor(w.strengthProfile ?? p), catalog: content.catalog, goal: { goal: (w.strengthProfile ?? p).strength.goal } as StrengthGoalRef, level: muscleLevel(w.strengthProfile ?? p),
+    params: strengthParametersFor(strengthProfileForWeek(state,weekStart)??p), catalog: content.catalog, goal: { goal: (strengthProfileForWeek(state,weekStart)??p).strength.goal } as StrengthGoalRef, level: muscleLevel(strengthProfileForWeek(state,weekStart)??p),
     requestedSessions: reqs.length, sessions, notPlanned: reqs.filter((r) => r.status !== 'planned').map((r) => ({ category: r.category })),
   });
 }

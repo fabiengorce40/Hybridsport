@@ -73,10 +73,12 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
   if (!state.profile) return { strength: state.strength, reasons: [] };
   const reasons: ReasonCode[] = [];
   const log = { sets: x.sets, painItems: x.painItems } as SessionLog;
-  const snapshot = Object.values(state.planner.weeks).find(w => w.requests.some(r => {
+  const week = Object.values(state.planner.weeks).find(w => w.requests.some(r => {
     const record = r.record?.data as { session?: { id?: string } } | undefined;
     return record?.session?.id === x.session.id;
-  }))?.strengthProfile;
+  }));
+  const request = week?.requests.find(r => (r.record?.data as { session?: { id?: string } } | undefined)?.session?.id === x.session.id);
+  const snapshot = request?.strengthProfile ?? week?.strengthProfile;
   const p = snapshot ?? state.profile;
   const params = strengthParametersFor(p);
   const catalog = strengthContent().catalog;

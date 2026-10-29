@@ -256,6 +256,8 @@ export const zPersistedWeek = z.object({
   planningVersion: z.string().min(1).optional(),
   days: z.array(z.object({ date, availableMinutes: z.number().int().nonnegative(), status: z.enum(['planned', 'empty']), sport: z.enum(SPORTS).optional(), requestId: z.string().optional(), reason: zReason.optional() }).strict()),
   requests: z.array(z.object({
+    strengthProfile: zProfile.optional(),
+    plannedAt: instant.optional(),
     requestId: z.string().min(1), sport: z.enum(SPORTS), status: z.enum(['planned', 'refused', 'unplaced']), category: z.enum(REQUEST_CATEGORIES),
     date: date.optional(),
     /** Intention RÉELLEMENT utilisée (déclarée, surchargée ou composée par le moteur). */
@@ -429,7 +431,8 @@ export type ProgrammeLog = z.infer<typeof zProgrammeLog>;
 
 export const zAppState = z.object({
   // technical-constant: version du schéma persistant de l'état applicatif (contrat de format)
-  schemaVersion: z.literal(3),
+  // technical-constant: version du format de sauvegarde V2.2
+  schemaVersion: z.literal(4),
   profile: zProfile.nullable(),
   plans: z.record(date, zWeekPlan),
   sessions: z.record(z.string(), zGeneratedSession),
@@ -501,7 +504,7 @@ export const zAppState = z.object({
 export type AppState = z.infer<typeof zAppState>;
 
 // technical-constant: version du schéma persistant de l'état applicatif (contrat de format)
-export const CURRENT_SCHEMA_VERSION = 3;
+export const CURRENT_SCHEMA_VERSION = 4;
 
 export function emptyState(): AppState {
   return {

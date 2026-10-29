@@ -43,7 +43,7 @@ const reason = (r: { code: string; params: Readonly<Record<string, unknown>> }):
 function locate(state: AppState, requestId: string): { week: PersistedWeek; r: Request } | undefined {
   for (const week of Object.values(state.planner.weeks)) {
     const r = week.requests.find((x) => x.requestId === requestId);
-    if (r) return { week, r };
+    if (r) return { week: { ...week, plannedAt: r.plannedAt ?? week.plannedAt, strengthProfile: r.strengthProfile ?? week.strengthProfile }, r };
   }
   return undefined;
 }

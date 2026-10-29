@@ -66,3 +66,9 @@ export function strengthExerciseOptions() {
 export function strengthAvoidAreaOptions(): string[] {
   return [...new Set([...strengthContent().catalog.exercises()].flatMap(e => e.painSensitiveAreas))].sort();
 }
+
+/** Profil de la dernière génération de la semaine ; jamais celui d'une édition future non appliquée. */
+export function strengthProfileForWeek(state:AppState,weekStart:string):Profile|null {
+ const w=state.planner.weeks[weekStart];
+ return [...(w?.requests??[])].reverse().find(r=>r.sport==='strength'&&r.strengthProfile)?.strengthProfile??w?.strengthProfile??state.profile;
+}
