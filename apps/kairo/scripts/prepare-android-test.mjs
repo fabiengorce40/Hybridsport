@@ -18,7 +18,7 @@ cpSync(source, target, { recursive: true });
 const manifest = JSON.parse(readFileSync(`${target}/manifest.webmanifest`, 'utf8'));
 const iconsRoot = resolve('resources/android-test-icons');
 const metadata = JSON.parse(readFileSync(`${iconsRoot}/icons.json`, 'utf8'));
-const iconDir = 'icons/rekka-v2-city-v1';
+const iconDir = `icons/${metadata.asset_version}-${metadata.revision}`;
 mkdirSync(`${target}/${iconDir}`, { recursive: true });
 for (const [file, hash] of Object.entries(metadata.files)) {
   const bytes = readFileSync(`${iconsRoot}/${file}`);
@@ -26,8 +26,8 @@ for (const [file, hash] of Object.entries(metadata.files)) {
   cpSync(`${iconsRoot}/${file}`, `${target}/${iconDir}/${file}`);
 }
 const icons = [48, 72, 96, 192, 512].map((size) => ({ src: `${iconDir}/icon-${size}.png`, sizes: `${size}x${size}`, type: 'image/png', purpose: 'any' }));
-icons.push({ src: `${iconDir}/icon-512-maskable.png`, sizes: '512x512', type: 'image/png', purpose: 'maskable' });
-Object.assign(manifest, { id: './?kairo-channel=android-test', name: 'REKKA ESSAI', short_name: 'REKKA ESSAI', description: 'REKKA V2 — essai Android isolé', theme_color: '#071127', background_color: '#000000', icons });
+for (const size of [192, 512]) icons.push({ src: `${iconDir}/icon-${size}-maskable.png`, sizes: `${size}x${size}`, type: 'image/png', purpose: 'maskable' });
+Object.assign(manifest, { id: './?kairo-channel=android-test', name: 'REKKA ESSAI', short_name: 'REKKA ESSAI', description: 'REKKA V2 — essai Android isolé', theme_color: '#071127', background_color: '#071127', icons });
 writeFileSync(`${target}/manifest.webmanifest`, `${JSON.stringify(manifest, null, 2)}\n`);
 const nextHtml = html.replace('<title>REKKA BÊTA</title>', '<title>REKKA ESSAI</title>')
   .replace(/<meta name="theme-color" content="[^"]*"\s*\/>/, '<meta name="theme-color" content="#071127" />')
@@ -38,7 +38,7 @@ writeFileSync(`${target}/index.html`, nextHtml);
 cpSync(`${iconsRoot}/favicon.ico`, `${target}/favicon.ico`);
 for (const name of ['icon.svg', 'icon-192.png', 'icon-512.png', 'icon-512-maskable.png']) rmSync(`${target}/${name}`, { force: true });
 const precache = ['./', './index.html', './manifest.webmanifest', './favicon.ico', ...Object.keys(metadata.files).map((file) => `./${iconDir}/${file}`)];
-const nextSw = sw.replace("const CACHE = 'rekka-beta-1';", `const CACHE = 'rekka-android-test-icons-${metadata.source_sha256.slice(0, 12)}';`)
+const nextSw = sw.replace("const CACHE = 'rekka-beta-1';", `const CACHE = 'rekka-android-test-icons-${metadata.revision}';`)
   .replace("k.startsWith('rekka-beta-')", "k.startsWith('rekka-android-test-')")
   .replace(/c\.addAll\(\[[^\]]*\]\)/, `c.addAll(${JSON.stringify(precache)})`)
   .replace("req.mode === 'navigate'", "(req.mode === 'navigate' || new URL(req.url).pathname.endsWith('/manifest.webmanifest'))");
