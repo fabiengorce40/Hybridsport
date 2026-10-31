@@ -7,6 +7,7 @@ export * from './running-week.js';
 export * from './progression.js';
 export * from './app.js';
 export * from './store.js';
+export * from './write-guard.js';
 export * from './labels.js';
 export type { SessionDraft, SessionItem, SetPrescription } from '@hybridsport/domain';
 export * from './planning.js';

@@ -37,6 +37,21 @@ function LoadProblem() {
   );
 }
 
+/** Reprise 2 — données réécrites par une version non protégée (ancien onglet) : l'utilisateur choisit, rien n'est perdu. */
+function OverwriteChoice({ savedAt }: { savedAt: string }) {
+  const store = useStore();
+  const when = new Date(savedAt).toLocaleString('fr-FR', { dateStyle: 'long', timeStyle: 'short' });
+  return (
+    <div className="screen">
+      <h1 className="screen-title">Données remplacées par une autre version</h1>
+      <p className="muted">Une autre version de REKKA, probablement restée ouverte dans un autre onglet, a réécrit vos données après votre dernier enregistrement du {when}. Rien n’a été effacé : les deux versions sont conservées sur l’appareil.</p>
+      <button className="btn primary block" onClick={() => store.resolveOverwrite('restore')}>Restaurer les données enregistrées le {when}</button>
+      <button className="btn secondary block" onClick={() => store.resolveOverwrite('keep')}>Garder les données actuelles</button>
+      <p className="small muted">La version non retenue reste enregistrée sur cet appareil.</p>
+    </div>
+  );
+}
+
 export function App() {
   const store = useStore();
   const [tab, setTab] = useState<Tab>('home');
@@ -52,7 +67,8 @@ export function App() {
   const [editing, setEditing] = useState(false);
   const beta0 = isBeta0(store.state);
   let body;
-  if (store.load === 'unreadable' || store.load === 'newer_version') body = <LoadProblem />;
+  if (store.overwrite) body = <OverwriteChoice savedAt={store.overwrite.savedAt} />;
+  else if (store.load === 'unreadable' || store.load === 'newer_version') body = <LoadProblem />;
   else if (!store.state.profile) body = <Setup />;
   // Modification du programme : assistant en plein écran, SANS barre de navigation (ses actions restent accessibles).
   else if (beta0 && editing) body = <Setup initial={store.state.profile} mode="recreate" onDone={() => { setEditing(false); setTab('plan'); }} onCancel={() => setEditing(false)} />;
