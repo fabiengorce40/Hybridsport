@@ -1,5 +1,6 @@
 /* global document -- exécuté dans le navigateur via page.evaluate */
 /* Parcours autonome : séance réelle Musculation, repos et reprise après rechargement, 360/390 px. */
+import { completeStrengthPersonalization } from './lib/strength-onboarding.mjs';
 import { chromium } from 'playwright';
 import { mkdirSync } from 'node:fs';
 const url = process.env.E2E_URL ?? 'http://127.0.0.1:4174/';
@@ -21,6 +22,8 @@ try {
     await page.getByRole('button', { name: 'Commencer' }).click();
     await page.getByRole('radio', { name: /^Musculation \+ Course/ }).click();
     await page.getByRole('button', { name: 'Continuer' }).click();
+    // V2.1/V2.2 : personnalisation Musculation obligatoire (7 étapes), choix explicites.
+    if (!(await completeStrengthPersonalization(page, { strengthDays: ['Lundi', 'Mardi', 'Mercredi', 'Vendredi', 'Samedi'] }))) throw new Error('personnalisation Musculation attendue');
     await page.getByLabel('Durée (min)').fill('30');
     await page.getByLabel('Distance (km)').fill('5');
     await page.getByRole('button', { name: 'Continuer' }).click();

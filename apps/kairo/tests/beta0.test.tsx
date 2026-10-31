@@ -66,6 +66,9 @@ function openStrength() {
   click('Commencer la séance');
 }
 
+// technical-constant: délai d'un test de parcours lourd en jsdom (≈ 1,8 s seul), marge pour l'exécution parallèle
+const CLOCK_JOURNEY_TIMEOUT_MS = 20_000;
+
 describe('onboarding Beta 0 et programme', () => {
   it('retour au premier plan après une veille indéterminable : demande une remise à zéro du seul chrono', () => {
     let mono = 1000; let wall = 100000;
@@ -78,6 +81,8 @@ describe('onboarding Beta 0 et programme', () => {
     expect(screen.getByText(/Le temps précédent ne peut pas être récupéré avec certitude/)).toBeTruthy();
     expect(storage.getItem(STORAGE_KEY)).toBe(savedBefore);
   });
+  // Parcours complet en jsdom (onboarding, séance, remontage, import) : ≈ 1,8 s seul, plus de 5 s quand la suite tourne
+  // en parallèle (dépassement constaté le 31/10). Délai explicite, assertions inchangées.
   it('chronomètre global Musculation : pause, reprise, retour et rechargement sans toucher à la séance', async () => {
     const storage = new MemoryStorage();
     onboard(storage, 'Musculation');
@@ -112,7 +117,7 @@ describe('onboarding Beta 0 et programme', () => {
     click('Reprendre la séance');
     expect(screen.getByText(/Le temps précédent ne peut pas être récupéré avec certitude/)).toBeTruthy();
     expect(Object.values(saved(storage).programmeLogs)[0]?.sets[0]).toMatchObject({ done: true, reps: 12, loadKg: 20 });
-  });
+  }, CLOCK_JOURNEY_TIMEOUT_MS);
   it('Musculation : programme créé par le chemin Beta 0, semaine affichée, statut expérimental visible', () => {
     const storage = new MemoryStorage();
     onboard(storage, 'Musculation');

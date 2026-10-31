@@ -8,6 +8,7 @@
  *
  * Usage : E2E_URL=<url> E2E_REBUILD_CMD="<commande>" E2E_NEW_BUILD=<commit B> node scripts/e2e-beta-update.mjs
  */
+import { completeStrengthPersonalization } from './lib/strength-onboarding.mjs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
@@ -35,6 +36,8 @@ await page.getByLabel(/J’ai compris/).check();
 await page.getByRole('button', { name: 'Commencer' }).click();
 await page.getByRole('radio', { name: /^Musculation \+ Course/ }).click();
 await page.getByRole('button', { name: 'Continuer' }).click();
+// V2.1/V2.2 : personnalisation Musculation obligatoire (7 étapes), choix explicites.
+if (!(await completeStrengthPersonalization(page))) throw new Error('personnalisation Musculation attendue');
 await page.getByLabel('Durée (min)').fill('30');
 await page.getByLabel('Distance (km)').fill('5');
 await page.getByRole('button', { name: 'Continuer' }).click();
@@ -42,7 +45,7 @@ await page.getByRole('button', { name: 'Continuer' }).click();
 await page.addLocatorHandler(page.locator('[data-equipment-missing]'), async () => { await page.getByLabel('Lieu d’entraînement').selectOption('preset.full_gym'); });
 await page.getByRole('button', { name: 'Créer mon programme' }).click();
 await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
-await page.getByRole('button', { name: 'Réglages', exact: true }).click();
+await page.getByRole('button', { name: /^(Réglages|Profil)$/ }).click();
 await page.getByLabel('Fichier de données à importer').setInputFiles(USER_STATE);
 await page.getByText('Données importées.').waitFor();
 await page.getByRole('button', { name: 'Planning', exact: true }).click();

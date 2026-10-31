@@ -21,6 +21,7 @@
 import { readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
+import { completeStrengthPersonalization } from './lib/strength-onboarding.mjs';
 import { chromium } from 'playwright';
 
 const visualName = (name) => process.env.E2E_REKKA_V2 === '1' ? ({ 'Réglages': 'Profil', 'Historique': 'Progression', 'Programme': 'Séances' }[name] ?? name) : name;
@@ -79,6 +80,8 @@ await page.getByLabel(/J’ai compris/).check();
 await page.getByRole('button', { name: 'Commencer' }).click();
 await page.getByRole('radio', { name: /^Musculation \+ Course/ }).click();
 await page.getByRole('button', { name: 'Continuer' }).click();
+// V2.1/V2.2 : personnalisation Musculation obligatoire (7 étapes), choix explicites.
+check(await completeStrengthPersonalization(page), 'personnalisation Musculation complétée (7 étapes ; état remplacé ensuite par l’import)');
 await page.getByLabel('Durée (min)').fill('30');
 await page.getByLabel('Distance (km)').fill('5');
 await page.getByRole('button', { name: 'Continuer' }).click();
