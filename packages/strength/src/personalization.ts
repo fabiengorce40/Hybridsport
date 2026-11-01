@@ -2,6 +2,7 @@
 import type { Exercise, Level } from '@hybridsport/domain';
 import type { StrengthParams, DoseCell } from './params.js';
 import type { StrengthPersonalization } from './personalization-contract.js';
+import { archetypeRegion } from './archetypes.js';
 
 export function strengthExperienceLevel(p: StrengthPersonalization, params: StrengthParams): Level {
   const rule = params['strength.personalization'];
@@ -44,7 +45,10 @@ export function personalizedStrengthParams(base: StrengthParams, p?: StrengthPer
   for (const zone of p.priorities) needs[`focus_${zone.zone}`] = { requirement: { region: rule.zones[zone.zone]?.region, movementTypes: ['strength','isometric'] } };
   const archetypes = base['strength.archetypes'].map(a => {
     if (a.usage === 'block') return a;
-    const compatible = p.priorities.filter(x => a.id !== 'str_upper' || rule.zones[x.zone]?.region !== 'lower').filter(x => a.id !== 'str_lower' || rule.zones[x.zone]?.region !== 'upper');
+    // Reprise RC5 lot 4 — région de l'archétype (Haut et ses variantes A/B, Bas et ses variantes) : aucune zone du bas du
+    // corps dans une séance Haut, et inversement ; Full Body inchangé.
+    const region = archetypeRegion(a.id);
+    const compatible = p.priorities.filter(x => region !== 'upper' || rule.zones[x.zone]?.region !== 'lower').filter(x => region !== 'lower' || rule.zones[x.zone]?.region !== 'upper');
     return { ...a, slots: [...a.slots, ...compatible.map(x => ({ id: `${a.id}.focus.${x.zone}`, blockId: 'b.accessory', need: `focus_${x.zone}`, role: 'accessory' as const, status: 'optional' as const, count: { min: 1, max: 1 }, modalityPreference: 'stability' as const, anchorable: false, trackable: true, untilWeeklyTarget: true }))] };
   });
   return { ...base, 'strength.volume': { ...volume, weeklyRange }, 'strength.needs': needs, 'strength.archetypes': archetypes,

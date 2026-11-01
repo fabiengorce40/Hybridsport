@@ -37,14 +37,21 @@ describe('continuité des exercices (scénario A, 4 semaines)', () => {
     const all = A.weeks.flatMap((w) => reasonsOfWeek(A.final, w.weekStart));
     const replaced = all.filter((r) => r.code === 'SELECT.CONTINUITY');
     expect(all.some((r) => r.code === 'SELECT.CONTINUITY_KEPT')).toBe(true);
-    expect([...new Set(replaced.map((r) => r.params.cause))]).toEqual(['declared_anchor']);
+    // Lot 4 (mécanisme RC5.1) — l'ancre déclarée est celle du membre préféré de chaque groupe : plus aucun remplacement observé sur 4 semaines
+    // (avant RC5.1 : seule cause observée = ancre déclarée). Toute cause éventuelle reste l'ancre déclarée.
+    expect([...new Set(replaced.map((r) => r.params.cause))].every((c) => c === 'declared_anchor')).toBe(true);
     expect(replaced.every((r) => r.params.outcome === 'replaced' && r.params.cause !== 'outranked')).toBe(true);
     // Un accessoire NON suivi est conservé semaines 3 et 4 (aucune variante « variété »).
     const keptFree = (w: string) => strengthReqs(A.final, w).flatMap((r) => r.reasons.filter((x) => x.code === 'SELECT.CONTINUITY_KEPT').flatMap((x) => (x.params.exercises as string[]).map((e) => e.split('=')[1] ?? '')));
     const tracked = new Set(A.final.strength.tracks.map((t) => t.exerciseId));
     const free3 = keptFree(W[2]).filter((x) => !tracked.has(x));
     expect(free3.length).toBeGreaterThan(0);
-    for (const x of free3) expect(keptFree(W[3])).toContain(x);
+    // Reprise RC5 lot 4 — l'ordre A/B alterne d'une semaine à l'autre : un accessoire libre peut changer d'EMPLACEMENT
+    // (même exercice, emplacement de l'autre variante, ex. `ua.trunk` → `ub.trunk`), jamais d'exercice. Il reste donc
+    // dans la semaine 4, et aucun remplacement « variété » ne le concerne.
+    const present4 = strengthReqs(A.final, W[3]).flatMap(items).map((i) => i.exerciseId);
+    for (const x of free3) expect([...keptFree(W[3]), ...present4]).toContain(x);
+    expect(replaced.some((r) => free3.includes(String(r.params.incumbent)))).toBe(false);
   });
 
   const W3 = ensureBeta0Week(A.weeks[2]?.before ?? A.final, clock(W[2]));
@@ -92,9 +99,11 @@ describe('preuve de progression (exposition par exposition)', () => {
   });
 
   it('poids du corps au plafond : méthode non gouvernée, méthodes possibles listées (scénario A)', () => {
-    const m = audit(A.final).find((r) => r.code === 'PROGRESSION.METHOD_UNGOVERNED');
+    // Lot 4 (mécanisme RC5.1) — Haut A/B : tractions exposées une fois par semaine ⇒ haut de plage atteint en 6e semaine.
+    const A6 = drive(createBeta0Programme(emptyState(), STRENGTH, clock(W[0]), {}), [...W, '2026-11-09']);
+    const m = audit(A6.final).find((r) => r.code === 'PROGRESSION.METHOD_UNGOVERNED');
     expect(m?.params).toMatchObject({ exerciseId: 'ex.pull_up', capability: 'bodyweight_overload_method', methods: ['added_load', 'harder_variant', 'new_rep_range', 'hold'] });
-    expect(audit(A.final).some((r) => r.code === 'PROGRESSION.CAP_REACHED' && String(r.params.trackId).includes('pull_up'))).toBe(false);
+    expect(audit(A6.final).some((r) => r.code === 'PROGRESSION.CAP_REACHED' && String(r.params.trackId).includes('pull_up'))).toBe(false);
   });
 });
 

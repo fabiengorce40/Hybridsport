@@ -17,7 +17,7 @@ import { h2ExposureOf, runHyroxH1 } from '@hybridsport/hyrox';
 import type { HyroxContextInput, HyroxEngine } from '@hybridsport/hyrox';
 import { ARCHETYPE_INTENT_IDS, archetypeFromIntentId, composeRunningWeek, isV1Archetype, parseRunningContext, resolveParameter } from '@hybridsport/running';
 import type { RunningContextInput, RunningParameter } from '@hybridsport/running';
-import { personalizedStrengthParams, composeStrengthWeek, declarableAnchors, plannedWeekExposures, readStrengthParams, sessionPlannedHardSets, strengthReasons, strengthWeekPrescription, weekPrescriptionSummary } from '@hybridsport/strength';
+import { archetypeVariant, personalizedStrengthParams, composeStrengthWeek, declarableAnchors, plannedWeekExposures, readStrengthParams, sessionPlannedHardSets, strengthReasons, strengthWeekPrescription, weekPrescriptionSummary } from '@hybridsport/strength';
 import type { StrengthCompositionRule, StrengthContextInput } from '@hybridsport/strength';
 import { GP_CODES, gpReasons } from './codes.js';
 import { delegateStrengthBlock, expressesStrengthNeed, strengthNeedOf } from './strength-delegation.js';
@@ -458,7 +458,10 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
     ...withWeek,
     composition: {
       // Réservation des jours : archétype que la règle du moteur attribue en premier pour la fréquence déclarée.
-      placementArchetypeId: (weeklySessions) => { const r = run([], weeklySessions, 'CANDIDATE'); return r.status === 'composed' ? r.rotation[0] : undefined; },
+      // Reprise RC5 lot 4 — une variante A/B (Haut A, Bas B…) réserve le jour sous son archétype de BASE (`str_upper`,
+      // `str_lower`) : placement des jours identique à la rotation Haut / Bas d'avant ; la variante (et ses contrôles de
+      // récupération) n'est appliquée qu'à la composition, sur l'archétype réellement attribué à chaque date.
+      placementArchetypeId: (weeklySessions) => { const r = run([], weeklySessions, 'CANDIDATE'); const first = r.status === 'composed' ? r.rotation[0] : undefined; return first !== undefined && archetypeVariant(first) !== null ? first.replace(/_[ab]$/, '') : first; },
       compose({ days, base, mode, weeklySessions }) {
         const r = run(days, weeklySessions, mode);
         if (r.status === 'unresolved') return { status: 'unresolved', reasons: [gpReasons.emit(GP_CODES.COMPOSITION_UNRESOLVED, { sport: 'strength', mode }), ...r.reasons] };

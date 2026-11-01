@@ -76,6 +76,13 @@ export const zStrengthTrack = z.object({
     exactStreak: z.number().int().nonnegative(), effortKnown: z.number().int().nonnegative(), effortUnknown: z.number().int().nonnegative(),
     e1rmBasis: z.enum(['observed', 'lower_bound']).optional(),
   }).strict().optional(),
+  /**
+   * Reprise RC5 lot 4 (D5) — RÉFÉRENCE INITIALE TRANSFÉRÉE (jamais une performance) : suivi d'un autre archétype dont ce
+   * suivi a repris la borne de cycle (`cycleStartLoadKg`, charge réellement réalisée en début de cycle), lors d'une
+   * correspondance FIABLE (même exercice, même rôle, même modèle, candidat unique). L'historique réel reste dans les
+   * expositions et dans le suivi d'origine, inchangé. Absent : aucun transfert (cas antérieurs ou ambigus).
+   */
+  transferredFrom: z.object({ trackId: id, archetypeId: id, slotId: id, cycleStartLoadKg: z.number().positive().optional() }).strict().optional(),
 }).strict();
 export type StrengthTrack = z.infer<typeof zStrengthTrack>;
 

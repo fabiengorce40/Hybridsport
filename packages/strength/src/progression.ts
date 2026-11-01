@@ -367,6 +367,29 @@ export function createTrack(input: {
 }
 
 /**
+ * Reprise RC5 lot 4 (D5) — CONTINUITÉ d'un suivi neuf de la rotation Haut A/B et Bas A/B. Candidats : suivis ANCRES
+ * ACTIFS d'un AUTRE archétype, pour le MÊME exercice. Correspondance FIABLE seulement si exactement un candidat a le même
+ * rôle d'emplacement et le même modèle de progression ; alors la borne de cycle du nouveau suivi devient la plus basse des
+ * deux charges RÉELLEMENT réalisées en début de cycle (le plafond de gain du cycle n'est jamais élargi) et la provenance
+ * est tracée (`transferredFrom`). Aucun compteur de réussite n'est repris (il décrit une autre prescription), aucune
+ * charge n'est inventée, aucun suivi d'origine n'est modifié. Sinon : aucun transfert, cause tracée.
+ */
+export function inheritPredecessorTrack(track: StrengthTrack, role: SlotRole, all: readonly StrengthTrack[], roleOf: (t: StrengthTrack) => SlotRole | undefined): { track: StrengthTrack; reasons: readonly ReasonCode[] } {
+  const same = all.filter((t) => t.tier === 'anchor' && t.status === 'active' && t.exerciseId === track.exerciseId && t.archetypeId !== track.archetypeId && t.trackId !== track.trackId);
+  if (same.length === 0) return { track, reasons: [] };
+  const fit = same.filter((t) => roleOf(t) === role && t.model === track.model);
+  const skip = (cause: string) => ({ track, reasons: [strengthReasons.emit('PROGRESSION.TRACK_TRANSFER_SKIPPED', { trackId: track.trackId, exerciseId: track.exerciseId, cause, candidates: same.map((t) => t.trackId).sort() })] });
+  if (fit.length === 0) return skip('role_or_model_differs');
+  if (fit.length > 1) return skip('ambiguous');
+  const from = fit[0] as StrengthTrack;
+  const own = track.cycleStartLoadKg;
+  const theirs = from.cycleStartLoadKg;
+  const cycle = own !== undefined && theirs !== undefined ? Math.min(own, theirs) : own;
+  const next: StrengthTrack = { ...track, ...(cycle !== undefined ? { cycleStartLoadKg: cycle } : {}), transferredFrom: { trackId: from.trackId, archetypeId: from.archetypeId, slotId: from.slotId, ...(theirs !== undefined && cycle === theirs ? { cycleStartLoadKg: theirs } : {}) } };
+  return { track: next, reasons: [strengthReasons.emit('PROGRESSION.TRACK_TRANSFERRED', { trackId: track.trackId, fromTrackId: from.trackId, cycleStartLoadKg: theirs !== undefined && cycle === theirs ? String(theirs) : 'n/a' })] };
+}
+
+/**
  * Reprise d'une track SUSPENDUE (douleur, pause de sécurité) : décidée par le ProgressionEngine à une
  * frontière de semaine, quand l'état de douleur du CORE ne la concerne plus. La prescription reprend là où
  * elle s'était arrêtée (jamais une baisse : la suspension n'est pas un échec). Sans cette reprise, le

@@ -8,7 +8,7 @@
 
 | Avant | Après |
 |---|---|
-| `personalizedStrengthContent` nommait toujours son contenu `0.8.0-strength-personalization-v1`, quelle que soit sa base. Après RC5.1, ce nom aurait désigné un **autre** contenu que celui des semaines V2.1/V2.2 déjà générées, dont l'ESSAI. | `personalizedRulesetVersion(base)` : le **nom historique est conservé** pour la base L1b-4, donc les prescriptions actuelles et historiques sont inchangées. Toute autre base reçoit `<base>+personalization-v1`. |
+| `personalizedStrengthContent` nommait toujours son contenu `0.8.0-strength-personalization-v1`, quelle que soit sa base. Après RC5.1, ce nom aurait désigné un **autre** contenu que celui des semaines V2.1/V2.2 déjà générées, dont l'ESSAI. | `personalizedRulesetVersion(base)` : le **nom historique est conservé** pour la base L1b-4, donc les prescriptions actuelles et historiques sont inchangées. Toute autre base reçoit `<base>.personalization-v1` (corrigé au lot 4 : le `+` initialement prévu était refusé par le contrôle SemVer du chargeur ; ce nom n'a jamais été chargé ni enregistré). |
 | Registre implicite, L1b-4 = « contenu courant » | `strengthContentRegistry()` : contenu courant, L1b-4 explicite (et sa personnalisation), L1-V3, F6, 4F. L1b-4 reste relisible quand RC5.1 deviendra le contenu courant. |
 
 Tests :

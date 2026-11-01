@@ -12,7 +12,7 @@ import { parseStrengthContext } from './context.js';
 import type { StrengthContext, StrengthTrack } from './context.js';
 import { readStrengthParams } from './params.js';
 import type { LoadedStrengthParams, SlotRole } from './params.js';
-import { findArchetype, goalKey as goalKeyOf, resolveSlots } from './archetypes.js';
+import { archetypeRegion, findArchetype, goalKey as goalKeyOf, resolveSlots } from './archetypes.js';
 import type { SlotInstance } from './archetypes.js';
 import { buildEnv } from './model.js';
 import type { Env } from './model.js';
@@ -365,8 +365,12 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
         const secondaryWeight = params['strength.volume'].secondaryWeight;
         const contributions = [...weighted.primary.map(group => ({group,weight:1})),...weighted.secondary.map(group => ({group,weight:secondaryWeight}))].filter(x => x.weight>0);
         const prior = ctx.week.otherStrengthSessions.filter(s => !s.done);
-        const split = ['str_upper','str_lower'].includes(env.archetype.id) ? Math.max(1,params['strength.archetypes'].filter(a => ['str_upper','str_lower'].includes(a.id)).length) : 1;
-        const remaining = Math.max(1,Math.ceil((ctx.personalizationSessions ?? 1)/split)-prior.filter(s => s.archetypeId===env.archetype.id).length);
+        // Reprise RC5 lot 4 — séances de la semaine partagées par RÉGION (Haut / Bas, variantes A/B comprises) : le budget
+        // d'une séance Haut A tient compte de Haut B ; `str_upper` / `str_lower` gardent exactement leur répartition.
+        const region = archetypeRegion(env.archetype.id);
+        // technical-constant: structure — deux régions (Haut, Bas) se partagent les séances d'une semaine Haut / Bas
+        const split = region !== 'full' ? 2 : 1;
+        const remaining = Math.max(1,Math.ceil((ctx.personalizationSessions ?? 1)/split)-prior.filter(s => (region !== 'full' ? archetypeRegion(s.archetypeId) === region : s.archetypeId===env.archetype.id)).length);
         let budget = cell.sets.max;
         for (const {group,weight} of contributions) {
           const t = weeklyTarget(group,env); if (!t) continue;

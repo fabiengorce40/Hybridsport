@@ -14,6 +14,7 @@ import { STRENGTH_PRESETS, strengthCatalogDocument } from '../../strength/tests/
 import { strengthF6CatalogDocument, strengthF6RulesetDocument } from '../../strength/tests/fixtures/f6.js';
 import { strengthL1V3RulesetDocument } from '../../strength/tests/fixtures/l1v3.js';
 import { strengthL1B4RulesetDocument } from '../../strength/tests/fixtures/l1b4.js';
+import { strengthHautBasAbRulesetDocument } from '../../strength/tests/fixtures/hautbas-ab.js';
 import { testRulesetDocumentWithDuplicate } from '../../engine/tests/fixtures/ruleset.js';
 import { testCatalogDocument } from '../../engine/tests/fixtures/catalog.js';
 
@@ -34,6 +35,7 @@ function load(rulesetDoc: Parameters<typeof loadRuleset>[0], catalogDoc: Paramet
 }
 
 let strength: ContentSource | undefined;
+let strengthAb: ContentSource | undefined;
 let strengthL1V3: ContentSource | undefined;
 let strengthF6: ContentSource | undefined;
 let strengthLock: ContentSource | undefined;
@@ -42,14 +44,16 @@ let running: ContentSource | undefined;
 /**
  * Contenu Strength COURANT (planification des nouvelles semaines) : ruleset verrouillé 4F + surcouche RC4.5 F6
  * (mollets à temps résiduel) + surcouche RC4.6 L1-V3 (une isolation du haut du corps en Full Body) + surcouche RC4.6
- * L1b-4 (tirage complémentaire à temps résiduel), catalogue de test Strength F6.
+ * L1b-4 (tirage complémentaire à temps résiduel) + surcouche Reprise RC5 lot 4 (archétypes Haut A/B et Bas A/B, membre
+ * préféré, replis conservés), catalogue de test Strength F6. Les archétypes existants sont inchangés.
  */
 export function strengthContent(): ContentSource {
-  return strengthL1B4Content();
+  strengthAb ??= load(strengthHautBasAbRulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-hautbas-ab-0.8.0');
+  return strengthAb;
 }
 
 /**
- * Contenu Strength RC4.6 L1b-4 : contenu courant jusqu'à RC5.1, puis conservé au registre. Base de la personnalisation
+ * Contenu Strength RC4.6 L1b-4 : contenu courant jusqu'au lot 4 de la reprise RC5, puis conservé au registre. Base de la personnalisation
  * V2.1/V2.2 (semaines générées sous la version `0.8.0-strength-personalization-v1`).
  */
 function strengthL1B4Content(): ContentSource {
@@ -108,14 +112,15 @@ const personalContentCache = new WeakMap<LoadedRuleset, ContentSource>();
 /** Version historique de la personnalisation V2.1/V2.2, construite sur L1b-4 : conservée telle quelle (semaines existantes). */
 export const LEGACY_PERSONALIZATION_VERSION = '0.8.0-strength-personalization-v1';
 /**
- * Reprise RC5 (lot 1) — version d'un contenu personnalisé DÉRIVÉE de sa base : `<base>+personalization-v1`. Seule la
+ * Reprise RC5 (lot 1, corrigé au lot 4) — version d'un contenu personnalisé DÉRIVÉE de sa base : `<base>.personalization-v1`
+ * (identifiant de pré-version SemVer ; le `+` initial était refusé par le chargeur, jamais chargé ni persisté). Seule la
  * base L1b-4 garde le nom historique, pour que les semaines V2.1/V2.2 restent relues avec leur contenu d'origine. Sans
  * cette règle, la personnalisation d'une nouvelle base (RC5.1) porterait le MÊME nom qu'un contenu différent.
  */
 export function personalizedRulesetVersion(base: ContentSource): string {
   return base.ruleset.version === strengthL1B4Content().ruleset.version && base.catalog.version === strengthL1B4Content().catalog.version
     ? LEGACY_PERSONALIZATION_VERSION
-    : `${base.ruleset.version}+personalization-v1`;
+    : `${base.ruleset.version}.personalization-v1`;
 }
 
 export function personalizedStrengthContent(base: ContentSource): ContentSource {

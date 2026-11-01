@@ -11,7 +11,8 @@ import { strengthReasons } from '@hybridsport/strength';
  */
 import { toEnvelope } from '@hybridsport/engine';
 import type { ISODateTime, ReasonCode, SessionDraft } from '@hybridsport/domain';
-import { findArchetype, readStrengthParams, StrengthEngine } from '@hybridsport/strength';
+import { archetypeRegion, archetypeVariant, findArchetype, readStrengthParams, StrengthEngine } from '@hybridsport/strength';
+import type { ArchetypeRegion } from '@hybridsport/strength';
 import type { StrengthCompositionRule } from '@hybridsport/strength';
 import { crossTrainingPort, hyroxHistoriesOf, hyroxPort, planMultisportWeek, runningPort, strengthPort } from '@hybridsport/planner';
 import type { QualityAssessment } from '@hybridsport/engine';
@@ -146,15 +147,34 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
       const day = (weekday+p.availability.length-1)%p.availability.length;
       // technical-constant: dix caractères du format de date ISO AAAA-MM-JJ
       const dateLength = 10;
-      const recent = [...(slot.weekSessions ?? []).map(w => ({ date:w.date, archetype:w.archetypeId })), ...state.strength.exposures.map(x => ({ date:x.at.slice(0,dateLength), archetype:x.slotId?.startsWith('up.') || x.slotId?.startsWith('str_upper.') ? 'str_upper' : x.slotId?.startsWith('lo.') || x.slotId?.startsWith('str_lower.') ? 'str_lower' : 'str_full_body' }))];
+      const recent = recentStrengthRegions(state, slot.weekSessions ?? [], dateLength);
       // technical-constant: conversion millisecondes → heures
       const hourMs = 3600000;
-      const disjoint = (a:string,b:string) => (a==='str_upper' && b==='str_lower') || (a==='str_lower' && b==='str_upper');
       const fullBodyBand = env.strength?.composition?.rule?.bands.find(b => b.rotation.length === 1 && b.rotation.includes('str_full_body'));
-      const tooClose = !!fullBodyBand && p.strength.sessionsPerWeek <= fullBodyBand.maxSessions && recent.some(x => !disjoint(x.archetype,slot.intent.archetypeId) && x.date < slot.date && (Date.parse(slot.date)-Date.parse(x.date))/hourMs < policy.recoveryHours);
+      const tooClose = !!fullBodyBand && p.strength.sessionsPerWeek <= fullBodyBand.maxSessions && recent.some(x => !disjointRegions(x.region,archetypeRegion(slot.intent.archetypeId)) && x.date < slot.date && (Date.parse(slot.date)-Date.parse(x.date))/hourMs < policy.recoveryHours);
       if (!c.days.includes(day) || tooClose) return { status: 'refused', reasons: [strengthReasons.emit('PLAN.PERSONALIZATION_BLOCKED',{ cause: tooClose ? 'strength_recovery_window' : 'unavailable_day' })] };
       const result = original.generate({ ...slot, availableMinutes: Math.min(slot.availableMinutes,c.sessionMinutes) });
       return { ...result, reasons: [...result.reasons, strengthReasons.emit('PLAN.PERSONALIZATION',{ outcome:c.outcome, priorities:c.priorities.map(x=>`${x.zone}:${x.intention}`), policy:policy.version, strategy:policy.goals[c.outcome].strategy, recovery:c.recovery })] };
+    } };
+  }
+  if (ports.strength) {
+    // Reprise RC5 lot 4 — RÉCUPÉRATION des séances Haut A/B et Bas A/B (rotation hypertrophie 4×) : la règle EXISTANTE
+    // `recoveryHours` (politique G2, 36 h) s'applique à la RÉGION sollicitée. Refus d'une séance A/B si une séance de la
+    // même région, ou Full Body, a eu lieu (expositions réelles) ou est prévue plus tôt dans la semaine à moins de
+    // `recoveryHours` ; Haut et Bas restent compatibles (règle `disjoint` existante). Aucun nouveau délai ; les séances
+    // Full Body, Haut et Bas historiques ne passent pas par ce contrôle (comportement antérieur inchangé). Refus SIGNALÉ
+    // (séance non proposée, cause `strength_recovery_window`), jamais un planning incohérent placé en silence.
+    const inner = ports.strength;
+    const hours = personalizationParams()['strength.personalization']?.recoveryHours;
+    if (hours !== undefined) ports.strength = { ...inner, generate: (slot) => {
+      if (archetypeVariant(slot.intent.archetypeId) === null) return inner.generate(slot);
+      // technical-constant: dix caractères du format de date ISO AAAA-MM-JJ
+      const dateLength = 10;
+      // technical-constant: conversion millisecondes → heures
+      const hourMs = 3600000;
+      const region = archetypeRegion(slot.intent.archetypeId);
+      const clash = recentStrengthRegions(state, slot.weekSessions ?? [], dateLength).some((x) => !disjointRegions(x.region, region) && x.date < slot.date && (Date.parse(slot.date) - Date.parse(x.date)) / hourMs < hours);
+      return clash ? { status: 'refused', reasons: [strengthReasons.emit('PLAN.PERSONALIZATION_BLOCKED', { cause: 'strength_recovery_window' })] } : inner.generate(slot);
     } };
   }
   if (env.running) {
@@ -289,3 +309,20 @@ export function planProgrammeWeek(state: AppState, clock: Clock, env: PlannerEnv
   const plannedAt = normalizeInstant(clock.now);
   return writePlannedWeek(state, { ...persistWeek(week, plannedAt, programme.origin, env), ...(p.strength.personalization ? { strengthProfile: p } : {}) }, 'multisport');
 }
+
+/**
+ * Reprise RC5 lot 4 — séances Musculation récentes et leur RÉGION : séances prévues plus tôt dans la semaine (archétype)
+ * et séances réellement faites (expositions, emplacement : `up.` / `ua.` / `ub.` / `str_upper…` ⇒ Haut ; `lo.` / `la.` /
+ * `lb.` / `str_lower…` ⇒ Bas ; sinon Full Body, comme avant).
+ */
+function slotRegion(slotId: string | undefined): ArchetypeRegion {
+  if (slotId === undefined) return 'full';
+  if (/^(up|ua|ub)\./.test(slotId) || slotId.startsWith('str_upper')) return 'upper';
+  if (/^(lo|la|lb)\./.test(slotId) || slotId.startsWith('str_lower')) return 'lower';
+  return 'full';
+}
+function recentStrengthRegions(state: AppState, weekSessions: readonly { readonly date: string; readonly archetypeId: string }[], dateLength: number): { date: string; region: ArchetypeRegion }[] {
+  return [...weekSessions.map((w) => ({ date: w.date, region: archetypeRegion(w.archetypeId) })), ...state.strength.exposures.map((x) => ({ date: x.at.slice(0, dateLength), region: slotRegion(x.slotId) }))];
+}
+/** Haut et Bas sollicitent des régions distinctes ; Full Body chevauche toujours. */
+const disjointRegions = (a: ArchetypeRegion, b: ArchetypeRegion): boolean => (a === 'upper' && b === 'lower') || (a === 'lower' && b === 'upper');

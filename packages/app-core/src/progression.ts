@@ -7,7 +7,7 @@ import { strengthParametersFor, muscleLevel } from './strength-personalization.j
  * Running : la séance réalisée est ajoutée à l'historique déclaré ; l'ancre V19 du moteur en tient compte.
  */
 import type { FingerprintHistoryEntry, ISODateTime, ReasonCode, SessionDraft, SetPrescription } from '@hybridsport/domain';
-import { anchorReviewDue, classifyExposure, closeTrack, closureCause, createTrack, declarableAnchors, exerciseStillAdmissible, exposureEvidence, progressionModelFor, readStrengthParams, resumeTrack, strengthReasons, updateTrack } from '@hybridsport/strength';
+import { anchorReviewDue, archetypeVariant, classifyExposure, closeTrack, closureCause, createTrack, declarableAnchors, exerciseStillAdmissible, exposureEvidence, inheritPredecessorTrack, progressionModelFor, readStrengthParams, resumeTrack, strengthReasons, updateTrack } from '@hybridsport/strength';
 import type { ExecutedItem, PerformedSet, SlotRole, StrengthTrack } from '@hybridsport/strength';
 import { archetypeFromIntentId, isV1Archetype } from '@hybridsport/running';
 import type { RealizedSession, RealizedStructure, RunningReference, RunningSessionArchetype } from '@hybridsport/running';
@@ -124,8 +124,12 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
     } else if (it.refs?.anchor === 'candidate' && !anchorOfSlot && performed.length > 0 && slot && !pain) {
       const model = progressionModelFor(e, role, muscleLevel(p), performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
       const c = createTrack({ tier: 'anchor', archetypeId, slotId: slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role }, params);
-      tracks.set(c.track.trackId, c.track);
-      reasons.push(...c.reasons);
+      // Reprise RC5 lot 4 (D5) — suivi neuf de la rotation Haut A/B et Bas A/B : reprise FIABLE de la borne de cycle d'un
+      // suivi existant du même exercice (Full Body, Haut, Bas, autre variante), sinon aucun transfert (cause tracée).
+      const roleOf = (t: StrengthTrack) => params['strength.archetypes'].find((a) => a.id === t.archetypeId)?.slots.find((z) => z.id === t.slotId)?.role;
+      const inherited = archetypeVariant(archetypeId) !== null ? inheritPredecessorTrack(c.track, role, [...tracks.values()], roleOf) : { track: c.track, reasons: [] };
+      tracks.set(inherited.track.trackId, inherited.track);
+      reasons.push(...c.reasons, ...inherited.reasons);
     } else if (role === 'accessory' && slot?.trackable && performed.length > 0 && !pain) {
       const k = `${archetypeId}/${slot.id}/${e.id}`;
       counts[k] = (counts[k] ?? 0) + 1;

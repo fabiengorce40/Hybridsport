@@ -49,6 +49,16 @@ const toList = () => fireEvent.click(screen.getByRole('button', { name: 'Liste' 
  * RC5 lot 2 — les fixtures sont des données ANTÉRIEURES au lot 2 (format v2, relues aussi par les anciennes builds V2.1) :
  * elles ne portent pas les champs v5 du chronomètre (`clock`, `timing`), retirés ici de l'état généré avant comparaison.
  */
+/**
+ * Reprise RC5 lot 4 — les fixtures sont des données ÉCRITES AVANT le lot 4 (contenu L1b-4, règle de composition 0.1.0),
+ * relues aussi par les anciennes builds : l'état généré par le code courant est comparé après traduction des seuls NOMS
+ * de version vers ceux d'avant le lot 4 (séances, séries, charges et raisons identiques ; profils Full Body, inchangés
+ * par le lot 4). Les identifiants de trace, dérivés de ces noms, sont neutralisés des deux côtés.
+ */
+const asPreLot4 = (v: unknown): unknown => JSON.parse(JSON.stringify(v)
+  .replaceAll('0.8.0-strength-hautbas-ab.personalization-v1', '0.8.0-strength-personalization-v1').replaceAll('0.8.0-strength-hautbas-ab', '0.7.0-strength-l1b4')
+  .replaceAll('fixtures:strength-hautbas-ab-0.8.0', 'fixtures:strength-l1b4-0.7.0').replaceAll('0.2.0-candidate', '0.1.0-candidate').replaceAll(' ; Reprise RC5 lot 4', '')
+  .replace(/"traceId":"t[0-9a-f]+"/g, '"traceId":"T"'));
 const withoutLot2Clock = (st: { programmeLogs?: Record<string, Record<string, unknown>> }) => ({
   ...st, programmeLogs: Object.fromEntries(Object.entries(st.programmeLogs ?? {}).map(([k, l]) => { const { clock: _c, timing: _t, ...rest } = l; return [k, rest]; })),
 });
@@ -226,7 +236,7 @@ describe('R5.1 — Planning en grille', () => {
       const text = storage.getItem(STORAGE_KEY) ?? '';
       const file = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', `${name}.json`);
       if (process.env.R51_WRITE_FIXTURE) writeFileSync(file, text);
-      expect({ ...JSON.parse(readFileSync(file, 'utf8')), schemaVersion: CURRENT_SCHEMA_VERSION }).toEqual(withoutLot2Clock(JSON.parse(text)));
+      expect(asPreLot4({ ...JSON.parse(readFileSync(file, 'utf8')), schemaVersion: CURRENT_SCHEMA_VERSION })).toEqual(asPreLot4(withoutLot2Clock(JSON.parse(text))));
     }
   });
 });

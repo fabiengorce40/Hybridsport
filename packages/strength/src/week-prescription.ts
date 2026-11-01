@@ -48,11 +48,13 @@ export type ExposureAt = Pick<ExerciseExposure, 'exerciseId'> & { readonly at: s
  */
 export function declarableAnchors<T extends AnchorTrack>(tracks: readonly T[], exposures: readonly ExposureAt[], archetypeId: string, params: StrengthParams): T[] {
   const slots = findArchetype(params, archetypeId)?.slots ?? [];
+  const preferred = (t: T): boolean => slots.find((z) => z.id === t.slotId)?.preferred === true;
   const lastUse = (t: T): string => exposures.filter((x) => x.exerciseId === t.exerciseId).map((x) => String(x.at)).sort().at(-1) ?? '';
   const out: T[] = [];
   const seen = new Set<string>();
   const anchors = tracks.filter((t) => t.tier === 'anchor' && t.status === 'active' && t.archetypeId === archetypeId && slots.some((z) => z.id === t.slotId))
-    .sort((a, b) => (lastUse(a) < lastUse(b) ? -1 : lastUse(a) > lastUse(b) ? 1 : a.trackId < b.trackId ? -1 : 1));
+    // RC5.1 — l'ancre d'un emplacement PRÉFÉRÉ passe d'abord : un repli ponctuel (douleur, matériel) ne fait pas alterner A/B.
+    .sort((a, b) => Number(preferred(b)) - Number(preferred(a)) || (lastUse(a) < lastUse(b) ? -1 : lastUse(a) > lastUse(b) ? 1 : a.trackId < b.trackId ? -1 : 1));
   for (const t of anchors) {
     const group = slots.find((z) => z.id === t.slotId)?.choiceGroup ?? `slot:${t.slotId}`;
     if (seen.has(group)) continue;

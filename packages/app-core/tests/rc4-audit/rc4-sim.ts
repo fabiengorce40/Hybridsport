@@ -40,7 +40,16 @@ export interface ProfileSpec {
   readonly rirOffset?: number;
   /** RC4.1 — difficulté ressentie déclarée en fin de course ; `null` : question ignorée (défaut : « comme prévu »). */
   readonly runDifficulty?: 'EASIER' | 'AS_EXPECTED' | 'HARDER' | 'MUCH_HARDER' | null;
+  /**
+   * Reprise RC5 lot 4 — planning perturbé (facultatif) : séance MANQUÉE (jamais démarrée) ou COMMENCÉE puis laissée en
+   * cours (une série, jamais terminée). Absent : toutes les séances planifiées sont faites (comportement antérieur).
+   */
+  readonly disrupt?: (w: number, k: number, v: SessionView) => 'missed' | 'started' | undefined;
+  /** Reprise RC5 lot 4 — action de l'utilisateur la VEILLE d'une semaine (w ≥ 1), avant sa planification (ex. fréquence, jours). */
+  readonly beforeWeek?: (w: number, s: AppState, sunday: Clock) => AppState;
 }
+/** Lundi de la semaine simulée `w` : les 6 premiers sont fixés, les suivants s'en déduisent (bancs de 12 semaines). */
+export const mondayOf = (w: number): string => MONS[w] ?? new Date(Date.parse(`${MONS[0]}T00:00:00Z`) + w * 7 * 86_400_000).toISOString().slice(0, 10);
 
 const base = (o: Partial<ProfileInput>): ProfileInput => ({
   displayName: '', level: 'intermediate', priorities: ['strength'],
@@ -148,7 +157,8 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
   const sessions: SessionRow[] = [];
   const out: WeekRow[] = [];
   for (let w = 0; w < weeks; w++) {
-    const mon = MONS[w] as string;
+    const mon = mondayOf(w);
+    if (w > 0 && spec.beforeWeek) s = spec.beforeWeek(w, s, at(new Date(Date.parse(`${mon}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10), '20:00'));
     if (w > 0) s = ensureBeta0Week(s, at(mon, '06:00'), env);
     onWeekPlanned?.(s, mon);
     const view = [...(selectBeta0Week(s, mon)?.sessions ?? [])].sort((a, b) => ((a.date ?? 'z') < (b.date ?? 'z') ? -1 : 1));
@@ -182,6 +192,8 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
       try {
         const ci = spec.checkIn ? spec.checkIn(w, k, v) : { painAnswer: 'no' as const, fatigue: 'low' as const, recovery: 'good' as const };
         k += 1;
+        const disruption = spec.disrupt?.(w, k - 1, v);
+        if (disruption === 'missed') { row.executed = 'manquée'; continue; }
         row.checkIn = `${ci.painAnswer ?? '?'}/${ci.fatigue ?? '?'}${ci.pains?.length ? `/${ci.pains.map((p) => `${p.area}:${p.level}`).join(',')}` : ''}`;
         const st = startProgrammeSession(s, at(d, '08:00'), v.requestId, env, ci);
         const c = st.checkIns.at(-1);
@@ -189,6 +201,13 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
         s = st;
         if (!s.programmeLogs[v.requestId]) { row.executed = 'non démarrée'; continue; }
         const live = selectProgrammeSession(s, v.requestId)?.session;
+        if (disruption === 'started') {
+          // Séance commencée : une seule série validée, jamais terminée (reste « en cours »).
+          const it = (live?.blocks ?? []).flatMap((b) => b.items).find((x) => x.prescription.type === 'sets');
+          if (it && it.prescription.type === 'sets') s = recordProgrammeSet(s, at(d, '08:20'), v.requestId, { itemId: it.id, setIndex: 0, done: true, reps: topReps(it.prescription.sets[0]?.reps ?? 1), loadKg: workKg[it.exerciseId] ?? START_KG });
+          row.executed = 'commencée, non terminée';
+          continue;
+        }
         if (v.sport === 'strength' || v.sport === 'crosstraining') {
           for (const b of (live?.blocks ?? []).filter((x) => x.kind !== 'warmup' && x.kind !== 'cooldown')) {
             for (const it of b.items) {

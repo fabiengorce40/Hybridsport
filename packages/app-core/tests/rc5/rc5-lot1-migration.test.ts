@@ -11,7 +11,7 @@ import {
   MemoryStorage, personalizedRulesetVersion, personalizedStrengthContent, PREMIGRATION_PREFIX, STORAGE_KEY, strengthContent, strengthContentFor,
   strengthContentRegistry, textHash, withStrengthPersonalization,
 } from '../../src/index.js';
-import type { AppState, KeyValueStorage } from '../../src/index.js';
+import type { AppState, ContentSource, KeyValueStorage } from '../../src/index.js';
 import { clock, profile } from '../fixtures.js';
 
 const NOW = '2026-11-01T09:00:00.000Z';
@@ -98,15 +98,20 @@ describe('Reprise RC5 lot 1 — format v5 et migrations', () => {
 });
 
 describe('Reprise RC5 lot 1 — contenus Strength versionnés', () => {
+  // Lot 4 : le contenu courant est `0.8.0-strength-hautbas-ab` ; L1b-4 reste au registre.
+  const l1b4 = (): ContentSource => { const c = strengthContentRegistry().find((x) => x.ruleset.version === '0.7.0-strength-l1b4'); if (!c) throw new Error('L1b-4 attendu au registre'); return c; };
+
   it('personnalisation sur L1b-4 : nom historique conservé (prescriptions V2.1/V2.2 inchangées)', () => {
-    expect(personalizedRulesetVersion(strengthContent())).toBe(LEGACY_PERSONALIZATION_VERSION);
-    expect(personalizedStrengthContent(strengthContent()).ruleset.version).toBe(LEGACY_PERSONALIZATION_VERSION);
+    expect(personalizedRulesetVersion(l1b4())).toBe(LEGACY_PERSONALIZATION_VERSION);
+    expect(personalizedStrengthContent(l1b4()).ruleset.version).toBe(LEGACY_PERSONALIZATION_VERSION);
   });
 
-  it('personnalisation d’une AUTRE base : version dérivée, jamais le nom historique', () => {
-    const other = strengthContentRegistry().find((c) => c.ruleset.version !== strengthContent().ruleset.version && !c.ruleset.version.includes('personalization'));
-    if (!other) throw new Error('contenu antérieur attendu au registre');
-    expect(personalizedRulesetVersion(other)).toBe(`${other.ruleset.version}+personalization-v1`);
+  it('personnalisation d’une AUTRE base (contenu courant du lot 4) : version dérivée, jamais le nom historique', () => {
+    const other = strengthContent();
+    expect(other.ruleset.version).toBe('0.8.0-strength-hautbas-ab');
+    expect(personalizedRulesetVersion(other)).toBe(`${other.ruleset.version}.personalization-v1`);
+    // Lot 4 : le nom dérivé doit être CHARGEABLE (SemVer) — le contenu personnalisé de cette base se construit.
+    expect(personalizedStrengthContent(other).ruleset.version).toBe(`${other.ruleset.version}.personalization-v1`);
     expect(personalizedRulesetVersion(other)).not.toBe(LEGACY_PERSONALIZATION_VERSION);
   });
 
@@ -121,7 +126,7 @@ describe('Reprise RC5 lot 1 — contenus Strength versionnés', () => {
     }
   });
 
-  it('semaine personnalisée générée aujourd’hui : version historique enregistrée, relue avec le même contenu', () => {
+  it('semaine personnalisée générée aujourd’hui (lot 4) : version dérivée du contenu courant enregistrée, relue avec le même contenu', () => {
     const base = profile({ priorities: ['strength'], availability: [90, 0, 90, 0, 90, 0, 0], strength: { enabled: true, goal: 'hypertrophy', sessionsPerWeek: 3 } });
     const p = withStrengthPersonalization(base, { ...defaultStrengthPersonalization(base), completed: true, outcome: 'muscle', experience: { months: 24, regularSessions: 3, technique: 'confident' } });
     const s = createBeta0Programme(emptyState(), p, clock(), {});
@@ -129,9 +134,16 @@ describe('Reprise RC5 lot 1 — contenus Strength versionnés', () => {
     expect(records.length).toBeGreaterThan(0);
     for (const r of records) {
       const prov = (r.record as { data?: { provenance?: { rulesetVersion: string; catalogVersion: string } } } | undefined)?.data?.provenance;
-      expect(prov?.rulesetVersion).toBe(LEGACY_PERSONALIZATION_VERSION);
+      expect(prov?.rulesetVersion).toBe('0.8.0-strength-hautbas-ab.personalization-v1');
       const content = strengthContentFor(prov?.rulesetVersion ?? '', prov?.catalogVersion ?? '');
       expect(content?.ruleset.document).toEqual(personalizedStrengthContent(strengthContent()).ruleset.document);
     }
+  });
+
+  it('semaine V2.1/V2.2 enregistrée sous le nom historique : toujours relue avec le contenu personnalisé L1b-4 d’origine', () => {
+    const catalog = strengthContent().catalog.version;
+    expect(strengthContentFor(LEGACY_PERSONALIZATION_VERSION, catalog)?.ruleset.document).toEqual(personalizedStrengthContent(l1b4()).ruleset.document);
+    // Les deux contenus personnalisés sont distincts : aucune semaine historique n'est relue avec la rotation A/B.
+    expect(JSON.stringify(personalizedStrengthContent(l1b4()).ruleset.document)).not.toEqual(JSON.stringify(personalizedStrengthContent(strengthContent()).ruleset.document));
   });
 });
