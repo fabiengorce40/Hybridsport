@@ -96,7 +96,7 @@ try {
     await validateOneSet(fresh.page);
     const good = await stored(fresh.page);
     assert.equal(doneSets(good).length, BASE + 1);
-    assert.equal(good.schemaVersion, 4);
+    assert.equal(good.schemaVersion, 5, "format courant (RC5 : v5)");
     await fresh.page.close();
     // L'ancien onglet (V2.1, état en mémoire sans la série) démarre la même séance : écriture non protégée.
     await old.page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Planning', exact: true }).click();

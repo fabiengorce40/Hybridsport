@@ -417,6 +417,17 @@ export const zProgrammeLog = z.object({
   /** FIELD TEST — retour terrain déclaré après la fin (une seule fois ; jamais transmis aux moteurs). Champ additif. */
   field: zFieldFeedback.optional(),
   /**
+   * RC5.4 (format v5) — chronomètre GLOBAL de la séance, HORODATÉ (jamais un compteur) : il court depuis `startedAt` ;
+   * pause MANUELLE de séance (distincte du repos entre séries) = `pausedAt` (pause en cours) et cumul des pauses closes
+   * `pausedS`. Absent : aucune pause (anciennes séances). Champ additif.
+   */
+  clock: z.object({ pausedAt: instant.optional(), pausedS: z.number().nonnegative() }).strict().optional(),
+  /**
+   * RC5.4 (format v5) — durées figées à la FIN de séance : temps actif (hors pauses manuelles), pauses, durée PRÉVUE
+   * (null si indisponible). Absent sur les séances terminées avant RC5.4. Champ additif.
+   */
+  timing: z.object({ activeS: z.number().nonnegative(), pausedS: z.number().nonnegative(), plannedS: z.number().nonnegative().nullable() }).strict().optional(),
+  /**
    * P0 — séance ADAPTÉE au démarrage par le contrôle pré-séance (régénérée par le moteur de la discipline avec l'état du
    * jour, validée par le CORE) : elle remplace la prescription planifiée pour CETTE exécution. Champ additif.
    */
@@ -431,8 +442,8 @@ export type ProgrammeLog = z.infer<typeof zProgrammeLog>;
 
 export const zAppState = z.object({
   // technical-constant: version du schéma persistant de l'état applicatif (contrat de format)
-  // technical-constant: version du format de sauvegarde V2.2
-  schemaVersion: z.literal(4),
+  // technical-constant: version du format de sauvegarde RC5 (v5)
+  schemaVersion: z.literal(5),
   profile: zProfile.nullable(),
   plans: z.record(date, zWeekPlan),
   sessions: z.record(z.string(), zGeneratedSession),
@@ -504,7 +515,7 @@ export const zAppState = z.object({
 export type AppState = z.infer<typeof zAppState>;
 
 // technical-constant: version du schéma persistant de l'état applicatif (contrat de format)
-export const CURRENT_SCHEMA_VERSION = 4;
+export const CURRENT_SCHEMA_VERSION = 5;
 
 export function emptyState(): AppState {
   return {

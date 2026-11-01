@@ -15,6 +15,7 @@ import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import {
+  CURRENT_SCHEMA_VERSION,
   activePainPause, beta0Environment, strengthEnvironmentFor, controlCtTimer, controlHrTimer, controlRest, controlRunPlayer, ctElapsedS, decodeState, ensureBeta0Week, finishProgrammeSession, loadState, MemoryStorage,
   restRemainingS, runPlayerPosition, runPlayerSteps, saveState, selectBeta0Week, selectFreeRuns, selectHistory, selectProgrammeSession, selectRunningProfile, startProgrammeSession,
   STORAGE_KEY,
@@ -69,9 +70,12 @@ describe('RC1 TEST → RC3 : relecture sans perte', () => {
       expect(r.status).toBe('ok');
       if (r.status !== 'ok') return;
       expect(r.migratedFrom).toBe(2);
-      expect(storage.keys()).toEqual([STORAGE_KEY]);
+      // Aucune copie illisible ; copie de sécurité AVANT migration (reprise RC5, D3) identique au texte d'origine.
+      expect(storage.keys().filter((k) => k.startsWith('kairo.unreadable.'))).toEqual([]);
+      expect(storage.keys()).toEqual([r.premigrationKey, STORAGE_KEY]);
+      expect(storage.getItem(r.premigrationKey ?? '')).toBe(raw);
       expect(saveState(storage, r.state)).toEqual({ ok: true });
-      expect(JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}')).toEqual({ ...JSON.parse(raw), schemaVersion: 4 });
+      expect(JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}')).toEqual({ ...JSON.parse(raw), schemaVersion: CURRENT_SCHEMA_VERSION });
       // Profil, journaux, résultats, contrôles, réalisations Running : identiques.
       const before = JSON.parse(raw) as AppState;
       expect(r.state.profile).toEqual(before.profile);

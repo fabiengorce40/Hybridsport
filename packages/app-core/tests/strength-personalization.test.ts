@@ -110,7 +110,7 @@ describe('V2.1 personnalisation réelle dans le moteur existant',()=>{
    const raw=JSON.parse(JSON.stringify({...v2,schemaVersion:version}));
    if(version===1)for(const week of Object.values(raw.planner.weeks) as Array<Record<string,unknown>>)delete week.owner;
    const decoded=decodeState(JSON.stringify(raw));expect(decoded.ok).toBe(true);
-   if(decoded.ok)expect(decoded.state).toEqual({...v2,schemaVersion:4});
+   if(decoded.ok)expect(decoded.state).toEqual({...v2,schemaVersion:CURRENT_SCHEMA_VERSION});
   }
  });
  it('migration v2 → format courant sans modification des profils et programmes existants',()=>{

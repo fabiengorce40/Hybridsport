@@ -66,6 +66,7 @@ const errorCode = (e: unknown): string => (e instanceof AppError ? e.code : (e a
 /** Message affiché quand une action est refusée parce qu'un autre onglet a enregistré entre-temps. */
 export const CONFLICT_TEXT = 'Vos données ont été modifiées dans un autre onglet : elles ont été rechargées. Refaites l’action si besoin.';
 export const RELOADED_TEXT = 'Données mises à jour depuis un autre onglet.';
+export const PREMIGRATION_FAILED_TEXT = 'Vos données ont été mises au nouveau format, mais leur copie de sécurité n’a pas pu être enregistrée (stockage plein ?). Exportez vos données depuis Réglages.';
 /** Délai de confirmation d'un écrasement apparent (écritures d'un autre onglet encore en cours). */
 const OVERWRITE_CONFIRM_MS = 400;
 
@@ -92,7 +93,13 @@ export function StoreProvider({ children, storage: injected, clock = realClock }
   const [load, setLoad] = useState<LoadResult['status']>(initial.current.result.status);
   const [overwrite, setOverwrite] = useState<Overwrite | null>(initial.current.overwrite);
   const [saveError, setSaveError] = useState<string>();
-  const [toast, setToast] = useState<string | undefined>(() => { const c = initial.current?.openError; return c ? ERROR_MESSAGES[c] ?? 'La semaine n’a pas pu être préparée.' : undefined; });
+  const [toast, setToast] = useState<string | undefined>(() => {
+    const init = initial.current;
+    // Reprise RC5 (D3) : copie avant migration impossible (stockage plein…) — signalé, jamais silencieux.
+    if (init?.result.status === 'ok' && init.result.premigrationError) return PREMIGRATION_FAILED_TEXT;
+    const c = init?.openError;
+    return c ? ERROR_MESSAGES[c] ?? 'La semaine n’a pas pu être préparée.' : undefined;
+  });
   const stateRef = useRef(state);
   const baselineRef = useRef<Baseline>(initial.current.baseline);
   const overwriteRef = useRef<Overwrite | null>(initial.current.overwrite);

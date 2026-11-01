@@ -10,7 +10,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { ensureBeta0Week, MemoryStorage, saveState, selectBeta0Week, STORAGE_KEY } from '@hybridsport/app-core';
+import { CURRENT_SCHEMA_VERSION, ensureBeta0Week, MemoryStorage, saveState, selectBeta0Week, STORAGE_KEY } from '@hybridsport/app-core';
 import type { AppState, Clock } from '@hybridsport/app-core';
 import { App } from '../src/App.js';
 import { StoreProvider } from '../src/store.js';
@@ -219,7 +219,7 @@ describe('R5.1 — Planning en grille', () => {
       const text = storage.getItem(STORAGE_KEY) ?? '';
       const file = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', `${name}.json`);
       if (process.env.R51_WRITE_FIXTURE) writeFileSync(file, text);
-      expect({ ...JSON.parse(readFileSync(file, 'utf8')), schemaVersion: 4 }).toEqual(JSON.parse(text));
+      expect({ ...JSON.parse(readFileSync(file, 'utf8')), schemaVersion: CURRENT_SCHEMA_VERSION }).toEqual(JSON.parse(text));
     }
   });
 });

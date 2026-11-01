@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
+  CURRENT_SCHEMA_VERSION,
   CHECKIN_DECISIONS, ensureBeta0Week, finishProgrammeSession, INTERFERENCE_ACCEPTED, maintainedInterference, manualStartAssessment, MemoryStorage,
   recordFieldFeedback, saveState, selectBetaJournal, selectFieldHistory, startProgrammeSession, STORAGE_KEY, zCheckIn,
 } from '../../src/index.js';
@@ -166,7 +167,7 @@ describe('RC4.5 lot C — format (C-1) et état de référence pour la relecture
     expect(saveState(st, done).ok).toBe(true);
     const text = st.getItem(STORAGE_KEY) ?? '';
     if (process.env.LOTC_WRITE_FIXTURE) writeFileSync(FIXTURE, text);
-    expect({ ...JSON.parse(readFileSync(FIXTURE, 'utf8')), schemaVersion: 4 }).toEqual(JSON.parse(text));
+    expect({ ...JSON.parse(readFileSync(FIXTURE, 'utf8')), schemaVersion: CURRENT_SCHEMA_VERSION }).toEqual(JSON.parse(text));
     expect(text).toContain(INTERFERENCE_ACCEPTED);
   });
   it('C-9. états de départ du parcours E2E (lundi 18 h, séance non placée en interférence ; puis pause douleur active)', () => {
@@ -176,7 +177,7 @@ describe('RC4.5 lot C — format (C-1) et état de référence pour la relecture
       const text = st.getItem(STORAGE_KEY) ?? '';
       const file = fileURLToPath(new URL(`./fixtures/${name}.json`, import.meta.url));
       if (process.env.LOTC_WRITE_FIXTURE) writeFileSync(file, text);
-      expect({ ...JSON.parse(readFileSync(file, 'utf8')), schemaVersion: 4 }).toEqual(JSON.parse(text));
+      expect({ ...JSON.parse(readFileSync(file, 'utf8')), schemaVersion: CURRENT_SCHEMA_VERSION }).toEqual(JSON.parse(text));
     }
   });
 });

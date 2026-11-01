@@ -45,6 +45,14 @@ let running: ContentSource | undefined;
  * L1b-4 (tirage complémentaire à temps résiduel), catalogue de test Strength F6.
  */
 export function strengthContent(): ContentSource {
+  return strengthL1B4Content();
+}
+
+/**
+ * Contenu Strength RC4.6 L1b-4 : contenu courant jusqu'à RC5.1, puis conservé au registre. Base de la personnalisation
+ * V2.1/V2.2 (semaines générées sous la version `0.8.0-strength-personalization-v1`).
+ */
+function strengthL1B4Content(): ContentSource {
   strength ??= load(strengthL1B4RulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-l1b4-0.7.0');
   return strength;
 }
@@ -72,8 +80,17 @@ function strengthLockContent(): ContentSource {
  * pour régénérer une séance existante avec ses règles d'origine (jamais rétroactivement avec le contenu courant).
  * Version inconnue ⇒ `undefined` (la séance n'est alors pas régénérable fidèlement : chemin « non reproductible »).
  */
+/**
+ * Reprise RC5 (lot 1) — registre COMPLET des contenus Strength relisibles : contenu courant et sa personnalisation,
+ * puis chaque contenu antérieur et (s'il a servi de base) sa personnalisation. Une version persistée désigne UN seul
+ * contenu (vérifié par test) : les semaines déjà générées sont relues avec leurs règles d'origine.
+ */
+export function strengthContentRegistry(): readonly ContentSource[] {
+  return [strengthContent(), personalizedStrengthContent(strengthContent()), strengthL1B4Content(), personalizedStrengthContent(strengthL1B4Content()), strengthL1V3Content(), strengthF6Content(), strengthLockContent()];
+}
+
 export function strengthContentFor(rulesetVersion: string, catalogVersion: string): ContentSource | undefined {
-  return [strengthContent(), personalizedStrengthContent(strengthContent()), strengthL1V3Content(), strengthF6Content(), strengthLockContent()].find((c) => c.ruleset.version === rulesetVersion && c.catalog.version === catalogVersion);
+  return strengthContentRegistry().find((c) => c.ruleset.version === rulesetVersion && c.catalog.version === catalogVersion);
 }
 
 /** Ruleset de test du CORE (avec les paramètres d'anti-doublon, provisoires) et catalogue de test : ceux des tests Running. */
@@ -88,12 +105,25 @@ export const EQUIPMENT_PRESETS: readonly { readonly id: string; readonly name: s
 
 /** Contenu V2.1 distinct, uniquement pour les profils qui ont choisi la personnalisation. */
 const personalContentCache = new WeakMap<LoadedRuleset, ContentSource>();
+/** Version historique de la personnalisation V2.1/V2.2, construite sur L1b-4 : conservée telle quelle (semaines existantes). */
+export const LEGACY_PERSONALIZATION_VERSION = '0.8.0-strength-personalization-v1';
+/**
+ * Reprise RC5 (lot 1) — version d'un contenu personnalisé DÉRIVÉE de sa base : `<base>+personalization-v1`. Seule la
+ * base L1b-4 garde le nom historique, pour que les semaines V2.1/V2.2 restent relues avec leur contenu d'origine. Sans
+ * cette règle, la personnalisation d'une nouvelle base (RC5.1) porterait le MÊME nom qu'un contenu différent.
+ */
+export function personalizedRulesetVersion(base: ContentSource): string {
+  return base.ruleset.version === strengthL1B4Content().ruleset.version && base.catalog.version === strengthL1B4Content().catalog.version
+    ? LEGACY_PERSONALIZATION_VERSION
+    : `${base.ruleset.version}+personalization-v1`;
+}
+
 export function personalizedStrengthContent(base: ContentSource): ContentSource {
   if (base.ruleset.parameter('strength.personalization')) return base;
   const cached = personalContentCache.get(base.ruleset);
   if (cached) return cached;
   const doc = base.ruleset.document;
-  const r = loadRuleset({ ...doc, rulesetVersion: '0.8.0-strength-personalization-v1', parameters: [...doc.parameters, {
+  const r = loadRuleset({ ...doc, rulesetVersion: personalizedRulesetVersion(base), parameters: [...doc.parameters, {
     id: 'strength.personalization', value: PERSONALIZATION_V1, governance: 'G2', version: '1.0.0', modifiedAt: '2026-10-29', status: 'draft', confidence: 'provisional', provisional: true,
     source: { kind: 'internal_hypothesis' }, justification: 'V2.1 CANDIDATE : politique de personnalisation expérimentale, jamais approuvée en production.',
   }] } as Parameters<typeof loadRuleset>[0]);

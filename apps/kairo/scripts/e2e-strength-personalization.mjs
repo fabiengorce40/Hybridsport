@@ -29,7 +29,7 @@ try {for(const width of [360,390]){
  await page.getByRole('button',{name:'Confirmer ma personnalisation'}).click();await page.getByRole('button',{name:'Continuer',exact:true}).click();await page.getByRole('button',{name:'Continuer',exact:true}).click();
  await page.getByRole('button',{name:'Créer mon programme',exact:true}).click();await page.getByRole('navigation',{name:'Navigation principale'}).waitFor();
  const read=()=>page.evaluate(()=>{const key=Object.keys(localStorage).find(k=>k.endsWith('kairo.state'));return key?JSON.parse(localStorage.getItem(key)):null;});
- const before=await read();assert.equal(before.profile.strength.personalization.priorities[0].zone,'glutes');assert.equal(before.schemaVersion,4);
+ const before=await read();assert.equal(before.profile.strength.personalization.priorities[0].zone,'glutes');assert.equal(before.schemaVersion,5);
  await page.getByRole('button',{name:'Planning',exact:true}).click();
  await page.getByRole('button',{name:/^Musculation :/}).first().click();
  await page.getByRole('button',{name:'Commencer la séance',exact:true}).click();
