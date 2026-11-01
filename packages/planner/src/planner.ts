@@ -208,7 +208,7 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
       const missing = override ? [] : INTENT_FIELDS.filter((f) => !(composed && f === 'archetypeId') && d.intent[f] === undefined);
       // Composition par le moteur : jour réservé avec l'archétype de placement DU MOTEUR, remplacé après composition.
       const declaredPlacement = ports[d.sport]?.composition?.placementArchetypeId;
-      const placement = typeof declaredPlacement === 'function' ? declaredPlacement(d.sessions) : declaredPlacement;
+      const placement = typeof declaredPlacement === 'function' ? declaredPlacement(d.sessions, k) : declaredPlacement;
       const intent = override ?? (missing.length > 0 ? undefined : composed ? (placement === undefined ? undefined : { ...(d.intent as CompositionBase), archetypeId: placement }) : (d.intent as DeclaredIntent));
       requests.push({ requestId: `${input.weekStart}.${d.sport}.${String(k)}`, sport: d.sport, missing, composed, final: !composed, ...(intent ? { intent } : {}), ...(d.station === undefined ? {} : { station: d.station }) });
     }

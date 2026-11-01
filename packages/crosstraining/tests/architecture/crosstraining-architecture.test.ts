@@ -145,6 +145,23 @@ const RUNNING_RC43_R2_CHANGES = [
   'packages/running/src/wave3/progression.ts',
   'packages/running/tests/unit/rc43-free-run-policy.test.ts',
 ];
+/**
+ * RC5 lot 4 (rotation Haut A / Bas A / Haut B / Bas B, commit 0680831) : fixture et tests Strength du lot. OMISSION
+ * HISTORIQUE constatée au lot 4.1 — ces trois fichiers de TEST avaient été ajoutés sans être inscrits ici (test rouge au
+ * commit 0680831). Aucun fichier `src` concerné.
+ */
+const STRENGTH_RC5_LOT4_CHANGES = [
+  'packages/strength/tests/fixtures/hautbas-ab.ts',
+  'packages/strength/tests/unit/lot4-ab.test.ts',
+  'packages/strength/tests/unit/lot4-region-transfer.test.ts',
+];
+/**
+ * RC5 lot 4.1 (qualité de la programmation) : tests Strength de l'allocation de volume `primary_need` (politique de
+ * personnalisation 1.1). Les fichiers `src` modifiés relèvent déjà de la liste V2.1 (personnalisation).
+ */
+const STRENGTH_RC5_LOT41_CHANGES = [
+  'packages/strength/tests/unit/lot41-volume-allocation.test.ts',
+];
 /** V2.1 : évolution Strength explicitement autorisée le 29/10 ; aucun changement CORE, Running ou CT. */
 const STRENGTH_V21_CHANGES = ["packages/strength/tests/unit/science-lock.test.ts", "packages/strength/content/personalization-v1.ts", "packages/strength/src/personalization-contract.ts", "packages/strength/src/personalization.ts", "packages/strength/src/candidates.ts", "packages/strength/src/codes.ts", "packages/strength/src/context.ts", "packages/strength/src/dose.ts", "packages/strength/src/engine.ts", "packages/strength/src/index.ts", "packages/strength/src/params.ts", "packages/strength/src/science/provenance.ts"];
 const CT_C2_AUTHORIZED_CORE_CHANGES = [
@@ -188,6 +205,8 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   ...STRENGTH_RC45_PERF_CHANGES,
   ...STRENGTH_RC46_L1V3_CHANGES,
   ...STRENGTH_RC46_L1B4_CHANGES,
+  ...STRENGTH_RC5_LOT4_CHANGES,
+  ...STRENGTH_RC5_LOT41_CHANGES,
   ...RUNNING_RC43_R2_CHANGES,
 ];
 

@@ -109,9 +109,12 @@ describe('Reprise RC5 lot 1 — contenus Strength versionnés', () => {
   it('personnalisation d’une AUTRE base (contenu courant du lot 4) : version dérivée, jamais le nom historique', () => {
     const other = strengthContent();
     expect(other.ruleset.version).toBe('0.8.0-strength-hautbas-ab');
-    expect(personalizedRulesetVersion(other)).toBe(`${other.ruleset.version}.personalization-v1`);
+    // Lot 4.1 : la base courante est personnalisée par la politique 1.1 (allocation `primary_need`) — nom DISTINCT de
+    // celui de la politique 1.0 (`.personalization-v1`, jamais publié hors du poste local) pour que la provenance désigne
+    // sans ambiguïté la règle appliquée.
+    expect(personalizedRulesetVersion(other)).toBe(`${other.ruleset.version}.personalization-v1-1`);
     // Lot 4 : le nom dérivé doit être CHARGEABLE (SemVer) — le contenu personnalisé de cette base se construit.
-    expect(personalizedStrengthContent(other).ruleset.version).toBe(`${other.ruleset.version}.personalization-v1`);
+    expect(personalizedStrengthContent(other).ruleset.version).toBe(`${other.ruleset.version}.personalization-v1-1`);
     expect(personalizedRulesetVersion(other)).not.toBe(LEGACY_PERSONALIZATION_VERSION);
   });
 
@@ -134,7 +137,7 @@ describe('Reprise RC5 lot 1 — contenus Strength versionnés', () => {
     expect(records.length).toBeGreaterThan(0);
     for (const r of records) {
       const prov = (r.record as { data?: { provenance?: { rulesetVersion: string; catalogVersion: string } } } | undefined)?.data?.provenance;
-      expect(prov?.rulesetVersion).toBe('0.8.0-strength-hautbas-ab.personalization-v1');
+      expect(prov?.rulesetVersion).toBe('0.8.0-strength-hautbas-ab.personalization-v1-1');
       const content = strengthContentFor(prov?.rulesetVersion ?? '', prov?.catalogVersion ?? '');
       expect(content?.ruleset.document).toEqual(personalizedStrengthContent(strengthContent()).ruleset.document);
     }

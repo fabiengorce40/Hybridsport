@@ -353,7 +353,21 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
     const local: ReasonCode[] = [];
     const counters = new Map<string, number>();
     const residualItems = new Set<string>();
-    for (const p of list) {
+    // Lot 4.1 (`primary_need`) — séries RÉSERVÉES, par groupe, pour les emplacements OBLIGATOIRES encore à allouer dans la
+    // séance (une série chacun, poids principal / secondaire) : un exercice antérieur ne prive jamais un mouvement
+    // obligatoire de sa série minimale.
+    const secondaryW = params['strength.volume'].secondaryWeight;
+    const reserveAfter = list.map((_, i) => {
+      const out: Record<string, number> = {};
+      for (const q of list.slice(i + 1)) {
+        if (q.slot.def.status !== 'required') continue;
+        const g = groupsOf(q.exercise, env);
+        for (const x of g.primary) out[x] = (out[x] ?? 0) + 1;
+        for (const x of g.secondary) out[x] = (out[x] ?? 0) + secondaryW;
+      }
+      return out;
+    });
+    for (const [pi, p] of list.entries()) {
       const groups = groupsOf(p.exercise, env).primary;
       const shares = groups.map((g) => remainingShare(g, env)).filter((x): x is number => x !== undefined);
       const need = shares.length > 0 ? Math.min(...shares) - Math.max(0, ...groups.map((g) => allocated[g] ?? 0)) : undefined;
@@ -372,15 +386,46 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
         const split = region !== 'full' ? 2 : 1;
         const remaining = Math.max(1,Math.ceil((ctx.personalizationSessions ?? 1)/split)-prior.filter(s => (region !== 'full' ? archetypeRegion(s.archetypeId) === region : s.archetypeId===env.archetype.id)).length);
         let budget = cell.sets.max;
+        // Lot 4.1 — `primary_need` : besoin des groupes PRINCIPAUX (le plus grand), haut hebdomadaire de chaque groupe (le plus petit).
+        const primaryNeed = params['strength.personalization']?.allocation === 'primary_need';
+        let need: number | undefined;
+        let ceiling = Number.POSITIVE_INFINITY;
+        let ceilingShare = Number.POSITIVE_INFINITY;
+        let needGroup: string | undefined;
+        let limiter: string | undefined;
         for (const {group,weight} of contributions) {
           const t = weeklyTarget(group,env); if (!t) continue;
           const used = (ctx.hardSets.d7[group] ?? 0)+prior.reduce((n,s)=>n+(s.plannedHardSets[group] ?? 0),0);
           const here = allocated[group] ?? 0;
-          const highBudget = Math.max(0,Math.floor((t.high-used-here)/weight));
-          const goalBudget = Math.max(0,Math.floor((Math.max(0,(t.floor-used)/remaining)-here)/weight));
+          // Lot 4.1 (`primary_need`) — cible ET borne haute comptées sur la SEMAINE CIVILE de la séance (`hardSets.week` :
+          // réalisé depuis le lundi, plus le prévu des séances antérieures) : la semaine précédente n'est jamais recomptée
+          // (double comptage du glissant 7 jours). Récupération entre séances : règle de région (36 h), inchangée.
+          const usedWeek = primaryNeed && ctx.hardSets.week ? (ctx.hardSets.week[group] ?? 0)+prior.reduce((n,s)=>n+(s.plannedHardSets[group] ?? 0),0) : used;
+          const reserved = primaryNeed ? (reserveAfter[pi]?.[group] ?? 0) : 0;
+          const highBudget = Math.max(0,Math.floor((t.high-usedWeek-here-reserved)/weight));
+          const goalBudget = Math.max(0,Math.floor((Math.max(0,(t.floor-usedWeek)/remaining)-here)/weight));
           // La couverture requise peut dépasser la part TARGET, jamais le haut hebdomadaire.
           const ownBudget = p.slot.def.status==='required' ? Math.min(highBudget,Math.max(1,goalBudget)) : Math.min(highBudget,goalBudget);
+          if (primaryNeed) {
+            // Haut hebdomadaire : borne ABSOLUE (récupération) et PART de la séance parmi les séances restantes de la région,
+            // comme la cible : une séance ne consomme jamais seule le haut de la semaine.
+            ceiling = Math.min(ceiling, highBudget);
+            const share = Math.max(0, Math.floor((Math.max(0, (t.high - usedWeek) / remaining) - here - reserved) / weight));
+            if (share < ceilingShare || highBudget < ceiling) limiter = group;
+            ceilingShare = Math.min(ceilingShare, share);
+            if (weight === 1 && goalBudget > (need ?? -1)) { need = goalBudget; needGroup = group; }
+            continue;
+          }
           budget=Math.min(budget,ownBudget);
+        }
+        if (primaryNeed) {
+          const goal = Math.min(need ?? cell.sets.max, ceilingShare);
+          // Obligatoire : au moins une série tant que le haut ABSOLU le permet ; sinon refus (comme avant).
+          budget = Math.min(budget, ceiling, p.slot.def.status === 'required' ? Math.max(1, goal) : goal);
+          // Cible INATTEIGNABLE tracée (jamais présentée comme respectée) : le haut hebdomadaire d'un AUTRE groupe borne les
+          // séries d'un groupe principal encore sous sa cible.
+          const wanted = Math.min(cell.sets.max, need ?? 0);
+          if (needGroup !== undefined && limiter !== undefined && limiter !== needGroup && budget < wanted) local.push(strengthReasons.emit('DOSE.VOLUME_LIMITED', { exerciseId: p.exercise.id, group: needGroup, by: limiter, wanted, allowed: Math.max(0, budget) }));
         }
         if (budget<1) {
           if (p.slot.def.status==='required') throw new NoProposal([strengthReasons.emit('PLAN.PERSONALIZATION_BLOCKED',{cause:'weekly_volume_budget_exhausted'})]);

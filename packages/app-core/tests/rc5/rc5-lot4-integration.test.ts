@@ -85,7 +85,7 @@ describe('versionnement : semaines d’avant le lot 4 conservées, nouvelles gé
     expect(next.programmeLogs[id]).toEqual(finished);
     expect(next.planner.weeks[W1]?.requests.find((r) => r.requestId === id)?.record).toEqual(s.planner.weeks[W1]?.requests.find((r) => r.requestId === id)?.record);
     expect(archs(next, W2)).toEqual(['str_upper_b', 'str_lower_b', 'str_upper_a', 'str_lower_a']);
-    for (const r of reqs(next, W2).filter((x) => x.status === 'planned')) expect((r.record?.data as { provenance?: { rulesetVersion?: string } }).provenance?.rulesetVersion).toBe('0.8.0-strength-hautbas-ab.personalization-v1');
+    for (const r of reqs(next, W2).filter((x) => x.status === 'planned')) expect((r.record?.data as { provenance?: { rulesetVersion?: string } }).provenance?.rulesetVersion).toBe('0.8.0-strength-hautbas-ab.personalization-v1-1'); // lot 4.1 : politique 1.1
     // Export / import : identique, semaines d'avant et A/B comprises.
     const d = decodeState(exportState(next));
     expect(d.ok && d.state).toEqual(next);

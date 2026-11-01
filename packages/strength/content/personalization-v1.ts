@@ -31,3 +31,10 @@ export const PERSONALIZATION_V1 = {
     recomposition: { method: 'hypertrophy', strategy: 'Développement musculaire progressif et évolution globale de la composition corporelle', volumeFactor: 0.85 },
   },
 };
+
+/**
+ * Reprise RC5 lot 4.1 — politique V1.1 CANDIDATE : identique à V1, seule la répartition du budget de séries change
+ * (`allocation: 'primary_need'`, voir le contrat). Attachée aux SEULES nouvelles bases de contenu ; V1 reste attachée à
+ * L1b-4 (semaines V2.x relues et régénérées à l'identique).
+ */
+export const PERSONALIZATION_V1_1 = { ...PERSONALIZATION_V1, version: '1.1.0-candidate', allocation: 'primary_need' } as const;

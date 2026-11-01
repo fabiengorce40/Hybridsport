@@ -1,4 +1,4 @@
-import { PERSONALIZATION_V1 } from '../../strength/content/personalization-v1.js';
+import { PERSONALIZATION_V1, PERSONALIZATION_V1_1 } from '../../strength/content/personalization-v1.js';
 /**
  * CONTENU PROVISOIRE de KAIRO V0 — point d'entrée UNIQUE.
  *
@@ -112,15 +112,17 @@ const personalContentCache = new WeakMap<LoadedRuleset, ContentSource>();
 /** Version historique de la personnalisation V2.1/V2.2, construite sur L1b-4 : conservée telle quelle (semaines existantes). */
 export const LEGACY_PERSONALIZATION_VERSION = '0.8.0-strength-personalization-v1';
 /**
- * Reprise RC5 (lot 1, corrigé au lot 4) — version d'un contenu personnalisé DÉRIVÉE de sa base : `<base>.personalization-v1`
- * (identifiant de pré-version SemVer ; le `+` initial était refusé par le chargeur, jamais chargé ni persisté). Seule la
- * base L1b-4 garde le nom historique, pour que les semaines V2.1/V2.2 restent relues avec leur contenu d'origine. Sans
- * cette règle, la personnalisation d'une nouvelle base (RC5.1) porterait le MÊME nom qu'un contenu différent.
+ * Reprise RC5 (lot 1, corrigé aux lots 4 et 4.1) — version d'un contenu personnalisé DÉRIVÉE de sa base :
+ * `<base>.personalization-v1-1` (identifiant de pré-version SemVer ; le `+` initial était refusé par le chargeur, jamais
+ * chargé ni persisté). Lot 4.1 : ces bases reçoivent la politique 1.1 (allocation de volume `primary_need`) ; le nom
+ * `<base>.personalization-v1` du lot 4 n'a jamais quitté le poste local (aucune donnée persistée). Seule la base L1b-4
+ * garde le nom historique ET la politique 1.0, pour que les semaines V2.1/V2.2 restent relues et régénérées avec leur
+ * contenu d'origine. Sans cette règle, la personnalisation d'une nouvelle base porterait le MÊME nom qu'un contenu différent.
  */
 export function personalizedRulesetVersion(base: ContentSource): string {
   return base.ruleset.version === strengthL1B4Content().ruleset.version && base.catalog.version === strengthL1B4Content().catalog.version
     ? LEGACY_PERSONALIZATION_VERSION
-    : `${base.ruleset.version}.personalization-v1`;
+    : `${base.ruleset.version}.personalization-v1-1`;
 }
 
 export function personalizedStrengthContent(base: ContentSource): ContentSource {
@@ -128,8 +130,10 @@ export function personalizedStrengthContent(base: ContentSource): ContentSource 
   const cached = personalContentCache.get(base.ruleset);
   if (cached) return cached;
   const doc = base.ruleset.document;
+  const legacy = personalizedRulesetVersion(base) === LEGACY_PERSONALIZATION_VERSION;
   const r = loadRuleset({ ...doc, rulesetVersion: personalizedRulesetVersion(base), parameters: [...doc.parameters, {
-    id: 'strength.personalization', value: PERSONALIZATION_V1, governance: 'G2', version: '1.0.0', modifiedAt: '2026-10-29', status: 'draft', confidence: 'provisional', provisional: true,
+    // Lot 4.1 — L1b-4 (semaines V2.x) : politique V1 à l'identique ; toute autre base : V1.1 (répartition `primary_need`).
+    id: 'strength.personalization', value: legacy ? PERSONALIZATION_V1 : PERSONALIZATION_V1_1, governance: 'G2', version: legacy ? '1.0.0' : '1.1.0', modifiedAt: legacy ? '2026-10-29' : '2026-11-01', status: 'draft', confidence: 'provisional', provisional: true,
     source: { kind: 'internal_hypothesis' }, justification: 'V2.1 CANDIDATE : politique de personnalisation expérimentale, jamais approuvée en production.',
   }] } as Parameters<typeof loadRuleset>[0]);
   if (!r.ok) throw new Error('Contenu personnalisé Strength invalide');

@@ -17,7 +17,7 @@ import { h2ExposureOf, runHyroxH1 } from '@hybridsport/hyrox';
 import type { HyroxContextInput, HyroxEngine } from '@hybridsport/hyrox';
 import { ARCHETYPE_INTENT_IDS, archetypeFromIntentId, composeRunningWeek, isV1Archetype, parseRunningContext, resolveParameter } from '@hybridsport/running';
 import type { RunningContextInput, RunningParameter } from '@hybridsport/running';
-import { archetypeVariant, personalizedStrengthParams, composeStrengthWeek, declarableAnchors, plannedWeekExposures, readStrengthParams, sessionPlannedHardSets, strengthReasons, strengthWeekPrescription, weekPrescriptionSummary } from '@hybridsport/strength';
+import { personalizedStrengthParams, composeStrengthWeek, declarableAnchors, plannedWeekExposures, readStrengthParams, sessionPlannedHardSets, strengthReasons, strengthWeekPrescription, weekPrescriptionSummary } from '@hybridsport/strength';
 import type { StrengthCompositionRule, StrengthContextInput } from '@hybridsport/strength';
 import { GP_CODES, gpReasons } from './codes.js';
 import { delegateStrengthBlock, expressesStrengthNeed, strengthNeedOf } from './strength-delegation.js';
@@ -97,7 +97,11 @@ export interface SportComposition {
    * l'archétype de complément de la règle du moteur (ou, selon la fréquence déclarée, celui que la règle du moteur
    * attribue en premier). La séance définitive est régénérée après composition.
    */
-  readonly placementArchetypeId: string | ((weeklySessions: number) => string | undefined);
+  /**
+   * Archétype de RÉSERVATION des jours (sonde de placement), remplacé après composition. Lot 4.1 : `index` (1-based) =
+   * rang de la demande dans la semaine, pour les rotations à plusieurs régions (Haut / Bas A/B).
+   */
+  readonly placementArchetypeId: string | ((weeklySessions: number, index?: number) => string | undefined);
   compose(input: { readonly days: readonly CompositionDay[]; readonly base: CompositionBase; readonly hybrid: boolean; readonly mode: PlannerMode; readonly weeklySessions: number }): CompositionResult;
 }
 
@@ -321,7 +325,7 @@ const resolve = <T>(c: Ctx<T>, slot: SlotRequest): T => (typeof c === 'function'
  * provenance de charge, interférence, priorité. S4 : rien de RECALCULABLE depuis la séance elle-même n'est recopié
  * (`DOSE.VOLUME_ALLOCATED` = séries de l'item, `PROGRESSION.ANCHOR_APPLIED` = `refs.anchor` / `refs.progressionTrackId`).
  */
-const STRENGTH_PERSISTED_DECISIONS = /^(SELECT\.(EXERCISE\.CHOSEN|CHOICE_GROUP|CONTINUITY|CONTINUITY_KEPT|SLOT_OMITTED|SUBSTITUTION|PATTERN_FALLBACK|STIMULUS_PRESERVED)|PROGRESSION\.(?!ANCHOR_APPLIED$)|DOSE\.LOAD\.|PLAN\.(STRUCTURE_LOWERED|INTERFERENCE_ASSESSED|VOLUME_IMBALANCE_WEEK|ANCHOR|SPORT_PRIORITY))/;
+const STRENGTH_PERSISTED_DECISIONS = /^(SELECT\.(EXERCISE\.CHOSEN|CHOICE_GROUP|CONTINUITY|CONTINUITY_KEPT|SLOT_OMITTED|SUBSTITUTION|PATTERN_FALLBACK|STIMULUS_PRESERVED)|PROGRESSION\.(?!ANCHOR_APPLIED$)|DOSE\.LOAD\.|DOSE\.VOLUME_LIMITED$|PLAN\.(STRUCTURE_LOWERED|INTERFERENCE_ASSESSED|VOLUME_IMBALANCE_WEEK|ANCHOR|SPORT_PRIORITY))/;
 
 /** C4.3 — séances Cross-training de la semaine réduites à leurs blocs de force délégués (aucun bloc : ignorées). */
 function ctStrengthBlocks(slot: SlotRequest): WeekSession[] {
@@ -461,7 +465,17 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
       // Reprise RC5 lot 4 — une variante A/B (Haut A, Bas B…) réserve le jour sous son archétype de BASE (`str_upper`,
       // `str_lower`) : placement des jours identique à la rotation Haut / Bas d'avant ; la variante (et ses contrôles de
       // récupération) n'est appliquée qu'à la composition, sur l'archétype réellement attribué à chaque date.
-      placementArchetypeId: (weeklySessions) => { const r = run([], weeklySessions, 'CANDIDATE'); const first = r.status === 'composed' ? r.rotation[0] : undefined; return first !== undefined && archetypeVariant(first) !== null ? first.replace(/_[ab]$/, '') : first; },
+      // Lot 4.1 — rotation à plusieurs archétypes (Haut / Bas, A/B) : la k-ième demande est sondée sous l'archétype (de base)
+      // de la k-ième position (Haut, Bas, Haut, Bas), jamais quatre « Haut » cumulés (sonde irréaliste : budgets hebdomadaires
+      // épuisés, refus parasites). Rotation à un seul archétype (Full Body) : inchangée.
+      placementArchetypeId: (weeklySessions, index = 1) => {
+        const r = run([], weeklySessions, 'CANDIDATE');
+        if (r.status !== 'composed') return undefined;
+        const first = r.rotation[0];
+        // technical-constant: une rotation d'au moins deux archétypes (A/B, Haut/Bas) — en deçà, archétype unique
+        if (first === undefined || r.rotation.length < 2) return first;
+        return (r.rotation[(index - 1) % r.rotation.length] ?? first).replace(/_[ab]$/, '');
+      },
       compose({ days, base, mode, weeklySessions }) {
         const r = run(days, weeklySessions, mode);
         if (r.status === 'unresolved') return { status: 'unresolved', reasons: [gpReasons.emit(GP_CODES.COMPOSITION_UNRESOLVED, { sport: 'strength', mode }), ...r.reasons] };

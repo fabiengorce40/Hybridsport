@@ -100,7 +100,13 @@ export function strengthContextAt(state: AppState, p: Profile, date: string, con
     capacities: [],
     tracks: state.strength.tracks.filter((t) => t.status !== 'closed'),
     recentExposures: exposures,
-    hardSets: { d7: hardSetsByGroup(recentDone.map((x) => ({ exerciseId: x.exerciseId, workingSets: x.sets.length })), content) },
+    hardSets: {
+      d7: hardSetsByGroup(recentDone.map((x) => ({ exerciseId: x.exerciseId, workingSets: x.sets.length })), content),
+      // Lot 4.1 — séries réalisées depuis le lundi de la semaine de la séance (part de cible hebdomadaire, sans double
+      // comptage) ; transmises SEULEMENT sous la politique 1.1 (`primary_need`) : contexte inchangé pour tout autre contenu.
+      ...((content.ruleset.parameter('strength.personalization')?.value as { allocation?: string } | undefined)?.allocation === 'primary_need'
+        ? { week: hardSetsByGroup(exposures.filter((x) => dateOf(x.at) >= weekStartOf(date)).map((x) => ({ exerciseId: x.exerciseId, workingSets: x.sets.length })), content) } : {}),
+    },
     week: { otherStrengthSessions: others, neighbors: [], known },
     preferences: { liked: p.strength.personalization?.likedExercises ?? [], disliked: [] },
     continuity: BETA0_STRENGTH_CONTINUITY,

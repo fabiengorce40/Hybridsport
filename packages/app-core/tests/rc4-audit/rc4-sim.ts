@@ -45,6 +45,13 @@ export interface ProfileSpec {
    * cours (une série, jamais terminée). Absent : toutes les séances planifiées sont faites (comportement antérieur).
    */
   readonly disrupt?: (w: number, k: number, v: SessionView) => 'missed' | 'started' | undefined;
+  /**
+   * Reprise RC5 lot 4.1 — performance de l'athlète simulé sur une série de TRAVAIL chargée (facultatif) : répétitions faites
+   * et réserve déclarée. Absent : haut de la fourchette, effort prescrit + `rirOffset` (comportement antérieur).
+   */
+  /** Lot 4.1 — charge de travail de départ par exercice (calibration, kg) ; défaut : 40 kg pour tous (comportement antérieur). */
+  readonly startKg?: Readonly<Record<string, number>>;
+  readonly perform?: (x: { readonly week: number; readonly exerciseId: string; readonly kg: number; readonly reps: number; readonly rir: number | undefined }) => { readonly reps: number; readonly rir: number };
   /** Reprise RC5 lot 4 — action de l'utilisateur la VEILLE d'une semaine (w ≥ 1), avant sa planification (ex. fréquence, jours). */
   readonly beforeWeek?: (w: number, s: AppState, sunday: Clock) => AppState;
 }
@@ -216,11 +223,12 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
               sets.forEach((p, i) => {
                 const prescribed = (p.intensity as { mode?: string; kg?: number; kgRounded?: number } | undefined);
                 // Charge prescrite si elle existe ; poids du corps : aucune charge ; sinon charge de travail suivie (calibration).
-                const kg = prescribed?.mode === 'load' ? prescribed.kg : prescribed?.mode === 'percent_of_reference' ? prescribed.kgRounded : prescribed?.mode === 'bodyweight' ? undefined : (workKg[it.exerciseId] ?? START_KG);
-                s = recordProgrammeSet(s, at(d, '08:20'), v.requestId, { itemId: it.id, setIndex: i, done: true, reps: topReps(p.reps), ...(kg !== undefined ? { loadKg: kg } : {}) });
-                // Effort déclaré = effort prescrit (athlète exactement dans la cible).
+                const kg = prescribed?.mode === 'load' ? prescribed.kg : prescribed?.mode === 'percent_of_reference' ? prescribed.kgRounded : prescribed?.mode === 'bodyweight' ? undefined : (workKg[it.exerciseId] ?? spec.startKg?.[it.exerciseId] ?? START_KG);
                 const rir = prescribedRir(p);
-                if (i === sets.length - 1 && rir !== undefined) { try { s = recordProgrammeSetEffort(s, v.requestId, it.id, i, rir + (spec.rirOffset ?? 0)); } catch { /* effort non demandé */ } }
+                const perf = spec.perform && kg !== undefined && p.kind !== 'rampup' ? spec.perform({ week: w, exerciseId: it.exerciseId, kg, reps: topReps(p.reps), rir }) : undefined;
+                s = recordProgrammeSet(s, at(d, '08:20'), v.requestId, { itemId: it.id, setIndex: i, done: true, reps: perf?.reps ?? topReps(p.reps), ...(kg !== undefined ? { loadKg: kg } : {}) });
+                // Effort déclaré = effort prescrit (athlète exactement dans la cible), ou celui du modèle de performance.
+                if (i === sets.length - 1 && (perf !== undefined || rir !== undefined)) { try { s = recordProgrammeSetEffort(s, v.requestId, it.id, i, perf?.rir ?? (rir ?? 0) + (spec.rirOffset ?? 0)); } catch { /* effort non demandé */ } }
                 if (kg !== undefined) workKg[it.exerciseId] = kg;
               });
             }

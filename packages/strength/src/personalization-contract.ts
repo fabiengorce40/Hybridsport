@@ -29,4 +29,12 @@ export const zPersonalizationPolicy = z.object({
   zones: z.record(id, z.object({ muscles: z.array(id), groups: z.array(id), region: z.enum(['upper', 'lower', 'core']), needs: z.array(id) }).strict()),
   intentions: z.record(z.enum(ZONE_INTENTIONS), z.object({ reps: z.object({ min: z.number().int().positive(), max: z.number().int().positive() }).strict(), rir: z.number().nonnegative(), restMinS: z.number().nonnegative() }).strict()),
   goals: z.record(z.enum(STRENGTH_OUTCOMES), z.object({ method: z.enum(['hypertrophy', 'strength', 'general']), strategy: id, volumeFactor: z.number().positive().max(1) }).strict()),
+  /**
+   * Reprise RC5 lot 4.1 — répartition du budget hebdomadaire de séries d'un exercice. Absent (politique V1, semaines V2.x) :
+   * minimum des parts de TOUS les groupes touchés (comportement historique, conservé à l'identique). `primary_need` : le
+   * besoin vient des groupes PRINCIPAUX de l'exercice (au moins un sous sa cible), le haut hebdomadaire de CHAQUE groupe
+   * touché (pondéré) reste une borne stricte. Corrige le veto d'un groupe déjà satisfait, souvent indirect, sur un muscle
+   * principal sous sa cible (lot 4.1, § 2).
+   */
+  allocation: z.enum(['primary_need']).optional(),
 }).strict();

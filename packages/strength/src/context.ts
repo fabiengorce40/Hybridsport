@@ -107,7 +107,12 @@ export const zStrengthContext = z.object({
   tracks: z.array(zStrengthTrack),
   recentExposures: z.array(zExerciseExposure),
   /** E1 réalisé sur 7 jours, par groupe musculaire (identifiants de données du ruleset). */
-  hardSets: z.object({ d7: z.record(id, nonNeg) }).strict(),
+  /**
+   * `d7` : séries de travail RÉALISÉES sur 7 jours glissants (récupération, borne haute). `week` (lot 4.1, facultatif) :
+   * séries réalisées depuis le DÉBUT de la semaine de planification, avant la séance : seule base de la part de CIBLE
+   * hebdomadaire (les séries de la semaine précédente, déjà comptées pour sa cible, ne le sont pas deux fois).
+   */
+  hardSets: z.object({ d7: z.record(id, nonNeg), week: z.record(id, nonNeg).optional() }).strict(),
   week: z.object({
     otherStrengthSessions: z.array(z.object({ intentId: id, archetypeId: id, plannedHardSets: z.record(id, nonNeg), done: z.boolean() }).strict()),
     neighbors: z.array(z.object({

@@ -46,6 +46,8 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'PROGRESSION.TRACK_CLOSED', categories: ['adaptation'], params: { trackId: S, cause: S }, audience: 'internal', severity: 'info' },
   // Reprise RC5 lot 4 (D5) — reprise de l'état d'un suivi d'un autre archétype (même exercice), ou absence motivée.
   { code: 'PROGRESSION.TRACK_TRANSFERRED', categories: ['information'], params: { trackId: S, fromTrackId: S, cycleStartLoadKg: S }, audience: 'internal', severity: 'info' },
+  // Lot 4.1 — séries d'un groupe principal sous sa cible bornées par le haut hebdomadaire d'un AUTRE groupe (cible inatteignable).
+  { code: 'DOSE.VOLUME_LIMITED', categories: ['information'], params: { exerciseId: S, group: S, by: S, wanted: N, allowed: N }, audience: 'internal', severity: 'notice' },
   { code: 'PROGRESSION.TRACK_TRANSFER_SKIPPED', categories: ['information'], params: { trackId: S, exerciseId: S, cause: S, candidates: L }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.ANCHOR_PROPOSED', categories: ['information'], params: { slot: S, exerciseId: S }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.ANCHOR_NOT_APPLICABLE', categories: ['information'], params: { trackId: S, slot: S }, audience: 'internal', severity: 'notice' },
