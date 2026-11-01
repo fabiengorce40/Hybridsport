@@ -354,7 +354,12 @@ export function compactCrossInputs(slot: SlotRequest): CrossSportInputs | undefi
  */
 export interface StrengthWithinWeekVariationRule { readonly ruleId: string; readonly status: 'TEST_ONLY'; readonly note: string }
 
-export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule }): SportPort {
+export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule;
+  /**
+   * Reprise RC5 lot 4.2 (Q6) — DIAGNOSTIC TEST_ONLY : `first` rejoue la sonde de placement d'avant le lot 4.1 (archétype de
+   * tête pour toutes les demandes) afin de comparer le placement historique au placement par rang. Absent : sonde par rang.
+   */
+  readonly placementProbe?: 'rank' | 'first' }): SportPort {
   // RC4.5 (O1) — paramètres et emplacements résiduels lus UNE fois par port : le contenu d'un port est fixé à sa création.
   let paramsOnce: ReturnType<typeof readStrengthParams>['values'] | undefined;
   const params = () => (paramsOnce ??= readStrengthParams(def.content.ruleset).values);
@@ -473,7 +478,7 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
         if (r.status !== 'composed') return undefined;
         const first = r.rotation[0];
         // technical-constant: une rotation d'au moins deux archétypes (A/B, Haut/Bas) — en deçà, archétype unique
-        if (first === undefined || r.rotation.length < 2) return first;
+        if (first === undefined || r.rotation.length < 2 || def.placementProbe === 'first') return first;
         return (r.rotation[(index - 1) % r.rotation.length] ?? first).replace(/_[ab]$/, '');
       },
       compose({ days, base, mode, weeklySessions }) {

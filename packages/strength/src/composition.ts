@@ -41,6 +41,14 @@ export interface CompositionBand {
    * autre discipline). Déterministe : fonction de la seule date, identique après redémarrage et à chaque replanification.
    */
   readonly alternateWeekly?: boolean;
+  /**
+   * Reprise RC5 lot 4.2 (Q3) — PROPOSITION, INACTIVE dans la règle candidate : semaine COURTE (moins de jours libres que
+   * d'archétypes dans la rotation cyclique, ex. 3 séances placées sur 4 demandées en semaine hybride). Sans cette option,
+   * l'ordre (Haut en tête) fait toujours tomber une séance Bas. `alternate_region` : les semaines impaires commencent un
+   * quart de rotation plus tôt (séance Bas en tête), la séance non placée alterne entre Bas et Haut d'une semaine à
+   * l'autre. Déterministe (parité de la semaine). Activation : décision produit et scientifique (document 09, Q3).
+   */
+  readonly shortWeek?: 'alternate_region';
 }
 export interface StrengthCompositionRule {
   readonly id: string;
@@ -143,8 +151,13 @@ export function composeStrengthWeek(i: StrengthComposeInput): StrengthComposeRes
   // demi-rotation les semaines impaires (`alternateWeekly`). Deux archétypes ou moins : ordre antérieur (priorité).
   // technical-constant: structure — une rotation de deux archétypes n'a pas d'ordre cyclique distinct
   const cyclic = base.length > 2;
+  const first = base.indexOf(byPriority[0] as string);
+  const odd = band.alternateWeekly === true && weekParity(i.days) === 1;
+  const freeDays = i.days.filter((d) => d.lockedArchetypeId === undefined).length;
+  const shortWeek = cyclic && band.shortWeek === 'alternate_region' && freeDays < base.length;
+  // Lot 4.2 (Q3, option inactive par défaut) : semaine courte impaire — un quart de rotation plus tôt (au lieu d'une demie).
   // technical-constant: structure — demi-rotation (moitié de la liste des archétypes)
-  const start = cyclic ? (base.indexOf(byPriority[0] as string) + (band.alternateWeekly === true && weekParity(i.days) === 1 ? base.length / 2 : 0)) % base.length : 0;
+  const start = cyclic ? (first + (odd ? (shortWeek ? base.length - 1 : base.length / 2) : 0)) % base.length : 0;
   const rotation = cyclic ? [...base.slice(start), ...base.slice(0, start)] : byPriority;
   const authority = rule.status === 'approved' ? 'approved' : 'provisional';
   const free = [...i.days].filter((d) => d.lockedArchetypeId === undefined).sort((a, b) => (a.date < b.date ? -1 : 1));
@@ -175,7 +188,8 @@ export function composeStrengthWeek(i: StrengthComposeInput): StrengthComposeRes
     status: 'composed', authority, rotation, slots,
     reasons: [strengthReasons.emit('PLAN.WEEK_COMPOSITION', {
       rule: rule.id, version: rule.version, status: rule.status, band: band.source, sessions: i.weeklySessions, rotation, firstBy: priority[0] ?? 'none', swaps,
-      ...(cyclic ? { weekOrder: start === base.indexOf(byPriority[0] as string) ? 'A' : 'B' } : {}),
+      ...(cyclic ? { weekOrder: start === first ? 'A' : 'B' } : {}),
+      ...(shortWeek ? { shortWeek: band.shortWeek ?? '' } : {}),
     })],
   };
 }

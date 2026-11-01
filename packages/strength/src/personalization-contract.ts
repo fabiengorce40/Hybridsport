@@ -37,4 +37,18 @@ export const zPersonalizationPolicy = z.object({
    * principal sous sa cible (lot 4.1, § 2).
    */
   allocation: z.enum(['primary_need']).optional(),
+  /**
+   * Reprise RC5 lot 4.2 (Q4) — PROPOSITION, absente de toute politique publiée (1.0, 1.1) : départage du critère de
+   * sélection `volume_fit` par le DÉFICIT RELATIF le plus grand parmi les groupes principaux encore sous leur cible
+   * (aujourd'hui : seul le NOMBRE de ces groupes compte, l'égalité tombe sur des critères sans rapport avec le volume).
+   * Activation : décision (document 09, Q4).
+   */
+  volumeFitTieBreak: z.enum(['relative_deficit']).optional(),
+  /**
+   * Reprise RC5 lot 4.2 (Q2) — PROPOSITION, absente de toute politique publiée : la borne HAUTE hebdomadaire est aussi
+   * vérifiée sur 7 jours glissants (`calendar_and_rolling` : le plus contraignant des deux), la CIBLE restant comptée sur la
+   * semaine civile (aucun double comptage de la cible). Garde-fou contre l'accumulation aux frontières de semaine.
+   * Activation : décision (document 09, Q2).
+   */
+  highWindow: z.enum(['calendar_and_rolling']).optional(),
 }).strict();

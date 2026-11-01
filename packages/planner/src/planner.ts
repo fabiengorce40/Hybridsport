@@ -272,7 +272,17 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
     const takenIdx = [...placed.values()].map((x) => dates.indexOf(x.date));
     const gap = (d: string): number => (takenIdx.length === 0 ? 0 : Math.min(...takenIdx.map((i) => Math.abs(i - dates.indexOf(d)))));
     const taken = new Set([...placed.values()].map((x) => x.date));
-    const free = dates.filter((d) => !taken.has(d) && minutesFor(r.sport,d) > 0).sort((a, b) => gap(b) - gap(a) || (a < b ? -1 : 1));
+    // Reprise RC5 lot 4.2 — jours INDISPENSABLES à un AUTRE sport : pour chaque autre sport dont les demandes restantes
+    // sont au moins aussi nombreuses que ses jours encore possibles, ces jours sont essayés EN DERNIER (jamais exclus).
+    // Sans ce départage, l'espacement seul faisait prendre à la Course le dernier jour Musculation choisi par
+    // l'utilisateur, alors que d'autres jours lui convenaient : séance Musculation refusée « faute de jours » (doc 09, Q3).
+    const pending = requests.slice(requests.indexOf(r) + 1).filter((x) => x.sport !== r.sport && x.intent !== undefined && !results.has(x.requestId));
+    const needed = new Set<string>();
+    for (const sport of new Set(pending.map((x) => x.sport))) {
+      const possible = dates.filter((d) => !taken.has(d) && minutesFor(sport, d) > 0);
+      if (possible.length <= pending.filter((x) => x.sport === sport).length) for (const d of possible) needed.add(d);
+    }
+    const free = dates.filter((d) => !taken.has(d) && minutesFor(r.sport,d) > 0).sort((a, b) => Number(needed.has(a)) - Number(needed.has(b)) || gap(b) - gap(a) || (a < b ? -1 : 1));
     // G5 : jour imposé d'abord ; jours imposés à d'AUTRES séances encore non placées essayés en dernier.
     const pinned = pins?.get(r.requestId);
     const reserved = new Set(pins ? [...pins].filter(([id]) => id !== r.requestId && !placed.has(id)).map(([, d]) => d) : []);

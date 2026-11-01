@@ -48,7 +48,9 @@ export interface PlannerEnvironment {
    * `composition` : règle de composition hebdomadaire du MOTEUR Strength (archétype de chaque séance). Absente : intention
    * déclarée exécutée telle quelle (chemin multisport existant).
    */
-  readonly strength?: { readonly engine: SportEngine<unknown>; readonly content: Content; readonly composition?: { readonly rule: StrengthCompositionRule | undefined }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule };
+  readonly strength?: { readonly engine: SportEngine<unknown>; readonly content: Content; readonly composition?: { readonly rule: StrengthCompositionRule | undefined }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule;
+    /** Lot 4.2 (Q6) — diagnostic TEST_ONLY, jamais fixé par l'environnement Beta 0 : sonde de placement historique (`first`). */
+    readonly placementProbe?: 'rank' | 'first' };
   readonly running?: { readonly engine: SportEngine<unknown>; readonly content: Content; readonly composition?: { readonly parameters: readonly RunningParameter[] } };
   /**
    * `transportNeighbours` : voisines (seconde passe) et priorité transportées au contexte CT (C3) ; `simulation` :
@@ -136,7 +138,7 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
   if (env.strength) {
     const source = env.strength.content as ContentSource;
     const content = p.strength.personalization ? personalizedStrengthContent(source) : source;
-    ports.strength = strengthPort({ ...q, engine: env.strength.engine, content, profile: p.strength.personalization ? { ...profile, athleteLevel: muscleLevel(p) } : profile, state: state0, history: state.fingerprints.strength, clock, ...(env.strength.withinWeekVariation ? { withinWeekVariation: env.strength.withinWeekVariation } : {}), ...(env.strength.composition ? { composition: { rule: env.strength.composition.rule, goal: { goal: goals.strength ?? p.strength.goal } } } : {}), baseContext: (slot) => { const b = strengthContextAt(state, p, slot.date, content); return goals.strength ? { ...b, goal: { primary: { goal: goals.strength } } } : b; } });
+    ports.strength = strengthPort({ ...q, engine: env.strength.engine, content, profile: p.strength.personalization ? { ...profile, athleteLevel: muscleLevel(p) } : profile, state: state0, history: state.fingerprints.strength, clock, ...(env.strength.withinWeekVariation ? { withinWeekVariation: env.strength.withinWeekVariation } : {}), ...(env.strength.placementProbe ? { placementProbe: env.strength.placementProbe } : {}), ...(env.strength.composition ? { composition: { rule: env.strength.composition.rule, goal: { goal: goals.strength ?? p.strength.goal } } } : {}), baseContext: (slot) => { const b = strengthContextAt(state, p, slot.date, content); return goals.strength ? { ...b, goal: { primary: { goal: goals.strength } } } : b; } });
   }
   if (ports.strength && p.strength.personalization) {
     const original = ports.strength; const c = p.strength.personalization;

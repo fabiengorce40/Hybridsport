@@ -217,12 +217,12 @@ Observation algorithmique : aucune progression simulée n’est un gain physiolo
 
 ## L41-RUN — Musculation 4× + Course 2×
 
-- Séances : planifiées 36 → 36 ; refusées 12 → 12 (slot_unavailable:PLAN.PLANNER.NOT_ENOUGH_DAYS) ; faites 36 → 36.
-- Durées estimées : moyenne 25 → 28.5 min ; maximum 36 → 34 min (limite 60) ; au-delà : 0.
+- Séances : planifiées 36 → 48 ; refusées 12 → 0 ; faites 36 → 48.
+- Durées estimées : moyenne 25 → 28.9 min ; maximum 36 → 42 min (limite 60) ; au-delà : 0.
 - Récupération (même région) : écart minimal 72 h ; sous 36 h : 0 → 0.
-- Équilibre (séries prévues / semaine, schéma principal) : poussée 3.1 → 5.5, tirage 2.9 → 5.5 (rapport 1.1 → 1) ; genou 1.1 → 2, hanche 1 → 2 (rapport 1.1 → 1).
-- Stabilité : principaux changés 0 → 0 ; tous rangs 2 → 33 sur 154 ; accessoires distincts par archétype 3.3 → 3 ; substitutions 0 → 0.
-- Suivis 15 → 17 (transférés 0 → 0) ; erreurs du banc 0.
+- Équilibre (séries prévues / semaine, schéma principal) : poussée 3.1 → 5.5, tirage 2.9 → 5.5 (rapport 1.1 → 1) ; genou 1.1 → 4, hanche 1 → 3.2 (rapport 1.1 → 1.3).
+- Stabilité : principaux changés 0 → 0 ; tous rangs 2 → 33 sur 172 ; accessoires distincts par archétype 3.3 → 3.5 ; substitutions 0 → 0.
+- Suivis 15 → 19 (transférés 0 → 0) ; erreurs du banc 0.
 
 | Groupe | Cible–haut | Prévu lot 4 | Prévu lot 4.1 | Réalisé lot 4.1 | Écart (séries) | Écart (%) | Fréquence | Cause |
 |---|---|---|---|---|---|---|---|---|
@@ -230,21 +230,21 @@ Observation algorithmique : aucune progression simulée n’est un gain physiolo
 | back | 8–15 | 2.9 | 5.5 | 5.5 | -2.5 | -31 % | 2 | borne haute : arms |
 | shoulders | 6–12 | 6 | 7 | 7 | 1 | 17 % | 2 | atteinte |
 | arms | 5–10 | 5 | 10 | 10 | 5 | 100 % | 2 | atteinte |
-| quads | 8–13 | 3.1 | 4 | 4 | -4 | -50 % | 1 | emplacements / durée / jours |
-| hamstrings | 6–10 | 3 | 3 | 3 | -3 | -50 % | 1 | emplacements / durée / jours |
-| glutes | 5–10 | 2.1 | 4 | 4 | -1 | -20 % | 1 | emplacements / durée / jours |
-| calves | 3–7 | 1 | 1 | 1 | -2 | -67 % | 1 | emplacements / durée / jours |
-| core | 3–7 | 2.8 | 3 | 3 | 0 | 0 % | 3 | atteinte |
+| quads | 8–13 | 3.1 | 5.3 | 5.3 | -2.7 | -34 % | 2 | emplacements / durée / jours |
+| hamstrings | 6–10 | 3 | 4.5 | 4.5 | -1.5 | -25 % | 2 | emplacements / durée / jours |
+| glutes | 5–10 | 2.1 | 7.2 | 7.2 | 2.2 | 44 % | 2 | atteinte |
+| calves | 3–7 | 1 | 1.3 | 1.3 | -1.7 | -57 % | 0.7 | emplacements / durée / jours |
+| core | 3–7 | 2.8 | 3.5 | 3.5 | 0.5 | 17 % | 2.9 | atteinte |
 
 | Exercice (2 premiers de séance) | Lot 4 : première → dernière (n, baisses) | Lot 4.1 : première → dernière (n, baisses) |
 |---|---|---|
-| back_squat | 100 → 105 kg (5, 0) | 100 → 105 kg (5, 0) |
+| back_squat | 100 → 105 kg (5, 0) | 100 → 97.5 kg (11, 1) |
 | barbell_ohp | 45 → 47.5 kg (11, 0) | 45 → 47.5 kg (11, 0) |
 | bench_press | 70 → 75 kg (11, 0) | 70 → 75 kg (11, 0) |
-| leg_press | 140 → 140 kg (5, 0) | 140 → 140 kg (5, 0) |
-| romanian_deadlift | 90 → 95 kg (5, 0) | 90 → 95 kg (5, 0) |
+| leg_press | 140 → 140 kg (5, 0) | 140 → 150 kg (11, 0) |
+| romanian_deadlift | 90 → 95 kg (5, 0) | 90 → 90 kg (11, 1) |
 | seated_cable_row | 60 → 55 kg (11, 1) | 60 → 55 kg (11, 1) |
-| single_leg_rdl_db | 24 → 24 kg (5, 0) | 24 → 24 kg (5, 0) |
+| single_leg_rdl_db | 24 → 24 kg (5, 0) | 24 → 22 kg (11, 1) |
 
 ## L41-FORCE — Force 4× (objectif « devenir plus fort »)
 

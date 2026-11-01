@@ -15,7 +15,7 @@ import { lot41Specs, measureLot41 } from './lot41-bench.js';
 import type { Lot41Measure } from './lot41-bench.js';
 
 const reference = JSON.parse(readFileSync(new URL('./__reports__/lot41-reference-lot4.json', import.meta.url), 'utf8')) as Lot41Measure[];
-const current = lot41Specs().map(measureLot41);
+const current = lot41Specs().map((s) => measureLot41(s));
 const ref = (id: string) => { const r = reference.find((x) => x.id === id); if (!r) throw new Error(`référence absente : ${id}`); return r; };
 /**
  * Baisses de volume prévu face au lot 4 ADMISES parce qu'expliquées (liste FERMÉE, document 08 § 12) :
@@ -106,7 +106,11 @@ describe('Reprise RC5 lot 4.1 — simulations comparatives (14 profils)', () => 
     // Aucune baisse AJOUTÉE face au lot 4. Seule baisse existante (identique au lot 4) : L4-2 développé militaire
     // 47,5 → 42,5 kg en S8 — palier de 2,5 kg (5,5 % à 45 kg) supérieur à la capacité simulée (+0,5 %/sem.) : répétitions
     // manquées, réponse autorégulée attendue (document 08 § 7).
-    for (const b of current.filter((x) => x.id !== 'L41-DIFF')) for (const ex of main) if (b.loads[ex]) expect([b.id, ex, (b.loads[ex]?.drops ?? 0) <= (ref(b.id).loads[ex]?.drops ?? 0)]).toEqual([b.id, ex, true]);
+    // Lot 4.2 (liste FERMÉE, document 09 § Q3 et Q8) : L41-RUN obtient sa 4ᵉ séance (jour Musculation n'est plus pris par la
+    // Course) ; ses séances Bas, allégées par l'interférence de la Course (RIR relevé), voient la charge monter puis
+    // redescendre — hausse décidée sur des séances allégées, sans R4 (conflit scientifique ouvert, non modifié ici).
+    const ACCEPTED_LOAD_DROPS = ['L41-RUN:back_squat', 'L41-RUN:romanian_deadlift'];
+    for (const b of current.filter((x) => x.id !== 'L41-DIFF')) for (const ex of main) if (b.loads[ex] && !ACCEPTED_LOAD_DROPS.includes(`${b.id}:${ex}`)) expect([b.id, ex, (b.loads[ex]?.drops ?? 0) <= (ref(b.id).loads[ex]?.drops ?? 0)]).toEqual([b.id, ex, true]);
     const diff = current.find((x) => x.id === 'L41-DIFF');
     for (const ex of main) if (diff?.loads[ex]) expect(Number(diff.loads[ex]?.last)).toBeLessThan(Number(diff.loads[ex]?.first));
     // Athlète qui stagne : charges des principaux identiques au lot 4 (aucune hausse artificielle introduite).

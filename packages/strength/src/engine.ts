@@ -402,7 +402,9 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
           // (double comptage du glissant 7 jours). Récupération entre séances : règle de région (36 h), inchangée.
           const usedWeek = primaryNeed && ctx.hardSets.week ? (ctx.hardSets.week[group] ?? 0)+prior.reduce((n,s)=>n+(s.plannedHardSets[group] ?? 0),0) : used;
           const reserved = primaryNeed ? (reserveAfter[pi]?.[group] ?? 0) : 0;
-          const highBudget = Math.max(0,Math.floor((t.high-usedWeek-here-reserved)/weight));
+          // Lot 4.2 (Q2, option inactive) : borne haute aussi sur 7 jours glissants (le plus contraignant).
+          const usedHigh = primaryNeed && params['strength.personalization']?.highWindow === 'calendar_and_rolling' ? Math.max(usedWeek, used) : usedWeek;
+          const highBudget = Math.max(0,Math.floor((t.high-usedHigh-here-reserved)/weight));
           const goalBudget = Math.max(0,Math.floor((Math.max(0,(t.floor-usedWeek)/remaining)-here)/weight));
           // La couverture requise peut dépasser la part TARGET, jamais le haut hebdomadaire.
           const ownBudget = p.slot.def.status==='required' ? Math.min(highBudget,Math.max(1,goalBudget)) : Math.min(highBudget,goalBudget);
@@ -410,7 +412,7 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
             // Haut hebdomadaire : borne ABSOLUE (récupération) et PART de la séance parmi les séances restantes de la région,
             // comme la cible : une séance ne consomme jamais seule le haut de la semaine.
             ceiling = Math.min(ceiling, highBudget);
-            const share = Math.max(0, Math.floor((Math.max(0, (t.high - usedWeek) / remaining) - here - reserved) / weight));
+            const share = Math.max(0, Math.floor((Math.max(0, (t.high - usedHigh) / remaining) - here - reserved) / weight));
             if (share < ceilingShare || highBudget < ceiling) limiter = group;
             ceilingShare = Math.min(ceilingShare, share);
             if (weight === 1 && goalBudget > (need ?? -1)) { need = goalBudget; needGroup = group; }

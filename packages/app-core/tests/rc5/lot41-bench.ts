@@ -6,7 +6,7 @@
  */
 import { readStrengthParams } from '@hybridsport/strength';
 import { mondayOf, simulate } from '../rc4-audit/rc4-sim.js';
-import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
+import type { ProfileSpec, SimOut } from '../rc4-audit/rc4-sim.js';
 import { selectBeta0Week, strengthContent, strengthWeekVolume } from '../../src/index.js';
 import type { ProfileInput, StrengthPersonalization } from '../../src/index.js';
 import { capacityAthlete, P1, P2, P3, P4, P5, profileOf, WEEKS } from './lot4-profiles.js';
@@ -21,8 +21,10 @@ const GAIN = 0.005;
 
 const run4 = (o: Partial<ProfileInput>, pers: Partial<StrengthPersonalization>) => profileOf(o, pers);
 /** 14 profils : les 5 du lot 4 (athlète à capacité réelle) et 9 profils du lot 4.1. */
+/** Athlète simulé à capacité réelle (charges de départ réalistes), réutilisé par le banc du lot 4.2. */
+export const lot41Athlete = (s: ProfileSpec, gain = GAIN): ProfileSpec => ({ ...s, rirOffset: undefined, startKg: START_KG, perform: capacityAthlete(gain) } as ProfileSpec);
 export function lot41Specs(): ProfileSpec[] {
-  const athlete = (s: ProfileSpec, gain = GAIN): ProfileSpec => ({ ...s, rirOffset: undefined, startKg: START_KG, perform: capacityAthlete(gain) } as ProfileSpec);
+  const athlete = lot41Athlete;
   return [
     athlete(P1), athlete(P2), athlete(P3), athlete(P4), athlete(P5),
     athlete({ id: 'L41-H3', label: 'Hypertrophie 3× (Full Body)', profile: run4({ strength: { enabled: true, goal: 'hypertrophy', sessionsPerWeek: 3 } }, { days: [0, 2, 4] }) }),
@@ -54,8 +56,9 @@ export interface Lot41Measure {
 }
 
 const avg = (xs: readonly number[]) => (xs.length === 0 ? 0 : Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10);
-export function measureLot41(spec: ProfileSpec): Lot41Measure {
-  const r = simulate(spec, WEEKS);
+/** `sim` (lot 4.2) : simulation déjà calculée (même profil), réutilisée telle quelle ; absente : simulation Beta 0 par défaut. */
+export function measureLot41(spec: ProfileSpec, sim?: SimOut): Lot41Measure {
+  const r = sim ?? simulate(spec, WEEKS);
   const rows = r.sessions.filter((x) => x.sport === 'strength');
   const groups = Object.keys(readStrengthParams(strengthContent().ruleset).values['strength.volume'].muscleGroups);
   const volume: Record<string, { target: number | null; high: number | null; planned: number; done: number; frequency: number; limitedBy: string[] }> = {};

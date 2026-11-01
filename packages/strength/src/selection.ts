@@ -47,7 +47,8 @@ export function criterionValue(c: Criterion, e: Exercise, slot: SlotInstance, en
       // Volume hebdomadaire (E1) : ne pas dépasser le haut SOFT, puis servir d'abord les groupes sous le plancher.
       const roleOf = (slotId: string) => env.archetype.slots.find((s) => s.id === slotId)?.role ?? 'accessory';
       const v = volumeFit(e, slot.def.role, soFar.chosen.map((x) => ({ exercise: x.exercise, role: roleOf(x.slotId) })), env);
-      return [-v.over, v.under];
+      // Lot 4.2 (Q4) — départage par déficit relatif (ordinal), seulement si la politique le déclare (aucune politique publiée).
+      return env.params['strength.personalization']?.volumeFitTieBreak === 'relative_deficit' ? [-v.over, v.under, v.deficitPercent] : [-v.over, v.under];
     }
     case 'goal_relevance': return [supportRelevance(e, env)];
     case 'fatigue_fit': {
