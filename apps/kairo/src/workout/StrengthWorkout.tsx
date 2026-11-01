@@ -32,8 +32,10 @@ export interface StrengthWorkoutProps {
 }
 
 /** Ligne de série : SÉRIE 1 · REPS · KG · ○ — la valeur réellement saisie reste toujours lisible. */
-export function SetLine({ set, label, saved, editable, onRecord }: {
+export function SetLine({ set, label, saved, editable, phaseShown = false, onRecord }: {
   set: SetPrescription; label: string; saved: SetLog | undefined; editable: boolean;
+  /** RC5 lot 3 — la série est présentée sous le titre de sa phase : son type n'est pas répété (« Série de recul »). */
+  phaseShown?: boolean;
   onRecord: (x: { done: boolean; reps?: number; loadKg?: number }) => void;
 }) {
   const prescribedKg = set.intensity?.mode === 'load' ? set.intensity.kg : set.intensity?.mode === 'percent_of_reference' ? set.intensity.kgRounded : undefined;
@@ -50,9 +52,9 @@ export function SetLine({ set, label, saved, editable, onRecord }: {
     ? { done: false, ...(repsN !== undefined ? { reps: repsN } : {}), ...(kgN !== undefined ? { loadKg: kgN } : {}) }
     : { done: true, reps: repsN ?? 0, ...(kgN !== undefined ? { loadKg: kgN } : {}) });
   const warm = set.kind === 'rampup';
-  const target = [`obj. ${repsTarget(set.reps)}`, set.optional ? 'facultative' : '', set.kind !== 'working' && !warm ? setKindLabel(set.kind) : ''].filter(Boolean).join(' · ');
+  const target = [`obj. ${repsTarget(set.reps)}`, set.optional ? 'facultative' : '', set.kind !== 'working' && !warm && !(phaseShown && set.kind === 'backoff') ? setKindLabel(set.kind) : ''].filter(Boolean).join(' · ');
   return (
-    <div className={`k-set ${warm ? 'warm' : ''} ${done ? 'done' : ''}`}>
+    <div className={`k-set ${warm ? 'warm' : ''} ${done ? 'done' : ''}`} data-set-kind={set.kind}>
       <div className="k-set-label"><b>{label}</b><span>{target}</span></div>
       <label className="k-field">
         <input aria-label="Répétitions réalisées" inputMode="numeric" placeholder={typeof set.reps === 'number' ? '—' : repsTarget(set.reps)} value={reps} disabled={!editable || done} onChange={(e) => setReps(e.target.value.replace(/[^0-9]/g, ''))} />
@@ -68,6 +70,22 @@ export function SetLine({ set, label, saved, editable, onRecord }: {
     </div>
   );
 }
+
+/**
+ * RC5 lot 3 — PHASES d'un exercice, lues EXCLUSIVEMENT sur le type de série prescrit par le moteur (`kind`) : montée en
+ * charge (`rampup` : hors volume et progression, comme dans tous les moteurs), travail (`working`, `top_set`, `amrap`),
+ * séries de recul (`backoff`). Aucune série ajoutée, retirée, déplacée ni recalculée : regroupement CONTIGU, indices
+ * d'origine conservés (saisie, validation, RIR et repos inchangés).
+ */
+export type SetPhase = 'warmup' | 'work' | 'backoff';
+export const phaseOf = (s: SetPrescription): SetPhase => (s.kind === 'rampup' ? 'warmup' : s.kind === 'backoff' ? 'backoff' : 'work');
+export function setPhases(sets: readonly SetPrescription[]): { phase: SetPhase; indices: number[] }[] {
+  const out: { phase: SetPhase; indices: number[] }[] = [];
+  sets.forEach((s, i) => { const ph = phaseOf(s); const last = out.at(-1); if (last?.phase === ph) last.indices.push(i); else out.push({ phase: ph, indices: [i] }); });
+  return out;
+}
+export const PHASE_TITLES: Readonly<Record<SetPhase, string>> = { warmup: 'Montée en charge', work: 'Séries de travail', backoff: 'Séries de recul' };
+const PHASE_NOTES: Readonly<Record<SetPhase, string>> = { warmup: 'hors volume et progression', work: 'comptent pour la progression', backoff: 'charge réduite après le travail' };
 
 function setLabels(sets: readonly SetPrescription[]): string[] {
   let warm = 0;
@@ -125,7 +143,9 @@ export function ExerciseCard({ number, item, block, log, editable, current, onRe
 }) {
   const sets = item.prescription.sets;
   const working = sets.filter((s) => s.kind !== 'rampup');
-  const warmups = sets.length - working.length;
+  // RC5 lot 3 — titres de phase seulement si l'exercice en a plusieurs (une seule phase : affichage historique inchangé).
+  const phases = setPhases(sets);
+  const phased = phases.length > 1;
   const first = working[0] ?? sets[0];
   const labels = setLabels(sets);
   const saved = (i: number) => log?.sets.find((x) => x.itemId === item.id && x.setIndex === i);
@@ -140,9 +160,11 @@ export function ExerciseCard({ number, item, block, log, editable, current, onRe
   // Dernière série de TRAVAIL validée : celle dont l'effort est lu par le moteur.
   const lastDone = sets.map((x, i) => ({ x, i })).filter(({ x, i }) => x.kind !== 'rampup' && x.optional !== true && saved(i)?.done === true).at(-1);
   const savedRir = lastDone ? saved(lastDone.i)?.rir : undefined;
+  const line = (i: number, phaseShown: boolean) => (
+    <SetLine key={`${item.id}.${String(i)}`} set={sets[i] as SetPrescription} label={labels[i] ?? ''} saved={saved(i)} editable={editable} phaseShown={phaseShown} onRecord={(x) => { onRecord(item, i, x); if (x.done) revealNextSet(); }} />
+  );
   const notes = [
     effort ? `Intensité : ${effort}.` : '',
-    warmups > 0 ? `${String(warmups)} série${warmups > 1 ? 's' : ''} de montée avant le travail.` : '',
     item.refs?.prescriptionSource === 'calibration' ? 'Première fois : choisissez une charge qui respecte l’intensité indiquée.' : '',
     // Substituts DIRECTS validés par le moteur Strength (contrat de substitution) : affichés tels quels, jamais calculés ici.
     alternativesText(item.alternatives ?? []),
@@ -163,7 +185,12 @@ export function ExerciseCard({ number, item, block, log, editable, current, onRe
       {swap?.substituteId && <div className="small" data-swap="substituted">Remplace {exerciseLabel(swap.fromExerciseId)} (matériel indisponible) · même séries et répétitions, charge à choisir selon l’effort indiqué.</div>}
       {refused && <div className="small" role="status" data-swap="refused">Matériel indisponible : aucun exercice de remplacement validé par KAIRO. Passez cet exercice ; la séance sera enregistrée comme adaptée.</div>}
       <div className="k-sets">
-        {sets.map((set, i) => <SetLine key={`${item.id}.${String(i)}`} set={set} label={labels[i] ?? ''} saved={saved(i)} editable={editable} onRecord={(x) => { onRecord(item, i, x); if (x.done) revealNextSet(); }} />)}
+        {phased ? phases.map(({ phase, indices }) => (
+          <div key={`${item.id}.${phase}.${String(indices[0])}`} className={`k-phase ${phase}`} data-phase={phase} role="group" aria-label={`${PHASE_TITLES[phase]}, ${name}`}>
+            <div className="k-phase-head"><b className="k-phase-title">{PHASE_TITLES[phase]}</b><span>{indices.length} série{indices.length > 1 ? 's' : ''} · {PHASE_NOTES[phase]}</span></div>
+            {indices.map((i) => line(i, true))}
+          </div>
+        )) : sets.map((_, i) => line(i, false))}
       </div>
       {lastDone && onEffort && (editable || savedRir !== undefined) && (
         <EffortRow name={name} setLabel={labels[lastDone.i] ?? ''} setIndex={lastDone.i} itemId={item.id} target={targetRirOf(lastDone.x)} value={savedRir} editable={editable} onEffort={onEffort} />
