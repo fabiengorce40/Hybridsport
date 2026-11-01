@@ -69,6 +69,34 @@ describe('Reprise 2 — écrasement entre onglets et versions', () => {
     expect(b.q.getByText(/modifiées dans un autre onglet/)).toBeTruthy();
   });
 
+  it('RC5 lot 2 — chronomètre global entre deux onglets : une seule pause, jamais relancée par une série, aucune écriture perdue', () => {
+    const storage = seeded();
+    const a = tab(storage);
+    const b = tab(storage);
+    a.click('Commencer la séance');
+    a.click('Commencer la séance');
+    a.click('Mettre en pause le chronomètre global');
+    const pausedAt = Object.values(saved(storage).programmeLogs)[0]?.clock?.pausedAt;
+    expect(pausedAt).toBeDefined();
+    // B (périmé) : son démarrage est refusé sans écriture, il relit l'état ; la séance y apparaît en pause.
+    b.click('Commencer la séance');
+    b.click('Commencer la séance');
+    expect(b.q.getByText(/modifiées dans un autre onglet/)).toBeTruthy();
+    expect(b.q.getByRole('timer', { name: 'Chronomètre global' }).textContent).toMatch(/en pause/);
+    fireEvent.change(b.q.getAllByLabelText('Répétitions réalisées')[0]!, { target: { value: '12' } });
+    fireEvent.change(b.q.getAllByLabelText('Charge (kg)')[0]!, { target: { value: '20' } });
+    fireEvent.click(b.q.getAllByRole('button', { name: 'Cocher la série' })[0]!);
+    expect(doneSets(saved(storage))).toHaveLength(1);
+    expect(Object.values(saved(storage).programmeLogs)[0]?.clock).toEqual({ pausedS: 0, pausedAt });
+    // A (périmé à son tour) : sa reprise est refusée sans écraser la série de B ; après relecture, la reprise s'applique.
+    const before = storage.getItem(STORAGE_KEY);
+    a.click('Reprendre le chronomètre global');
+    expect(storage.getItem(STORAGE_KEY)).toBe(before);
+    a.click('Reprendre le chronomètre global');
+    expect(Object.values(saved(storage).programmeLogs)[0]?.clock).toEqual({ pausedS: 0 });
+    expect(doneSets(saved(storage))).toHaveLength(1);
+  });
+
   it('version sans protection : un écrasement est détecté au chargement, les deux versions des données sont conservées', () => {
     const storage = seeded();
     const a = tab(storage);

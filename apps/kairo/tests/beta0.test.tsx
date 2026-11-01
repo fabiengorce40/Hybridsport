@@ -6,7 +6,7 @@ import { completeStrengthCustomization } from './strength-onboarding.js';
  * import ; statut expérimental ; HYROX absent, Cross-training proposé (C3.5). Horloge injectée (lundi 2026-10-05).
  */
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { createBeta0Programme, emptyState, EQUIPMENT_PRESETS, exportState, finishProgrammeSession, MemoryStorage, saveState, selectBeta0Week, STORAGE_KEY } from '@hybridsport/app-core';
 import type { AppState, Clock, ProfileInput } from '@hybridsport/app-core';
 import { App } from '../src/App.js';
@@ -70,53 +70,82 @@ function openStrength() {
 const CLOCK_JOURNEY_TIMEOUT_MS = 20_000;
 
 describe('onboarding Beta 0 et programme', () => {
-  it('retour au premier plan après une veille indéterminable : demande une remise à zéro du seul chrono', () => {
-    let mono = 1000; let wall = 100000;
+  it('retour au premier plan après une veille (écran verrouillé 1 h) : temps exact, sans remise à zéro ni écriture', () => {
+    // Horloge monotone arrêtée pendant la veille (cas Android) : seul l'horodatage persisté fait foi.
+    let mono = 1000;
     vi.spyOn(performance, 'now').mockImplementation(() => mono);
-    vi.spyOn(Date, 'now').mockImplementation(() => wall);
-    const storage = new MemoryStorage(); onboard(storage, 'Musculation'); openStrength();
+    let time = '07:30:00';
+    const storage = new MemoryStorage(); onboard(storage, 'Musculation'); cleanup();
+    mount(storage, () => ({ today: MONDAY, now: `${MONDAY}T${time}.000Z` })); openStrength();
     const savedBefore = storage.getItem(STORAGE_KEY);
-    mono += 1000; wall += 3600000;
-    fireEvent(document, new Event('visibilitychange'));
-    expect(screen.getByText(/Le temps précédent ne peut pas être récupéré avec certitude/)).toBeTruthy();
+    mono += 1000; time = '08:30:00';
+    act(() => { fireEvent(document, new Event('visibilitychange')); });
+    expect(screen.getByRole('timer', { name: 'Chronomètre global' }).textContent).toMatch(/1:00:00.*écoulé/);
+    expect(screen.queryByText(/Le temps précédent ne peut pas être récupéré/)).toBeNull();
     expect(storage.getItem(STORAGE_KEY)).toBe(savedBefore);
   });
   // Parcours complet en jsdom (onboarding, séance, remontage, import) : ≈ 1,8 s seul, plus de 5 s quand la suite tourne
   // en parallèle (dépassement constaté le 31/10). Délai explicite, assertions inchangées.
-  it('chronomètre global Musculation : pause, reprise, retour et rechargement sans toucher à la séance', async () => {
+  it('chronomètre global Musculation (RC5 lot 2) : persistant, pause volontaire jamais relancée par une série, rechargement, import', async () => {
     const storage = new MemoryStorage();
     onboard(storage, 'Musculation');
+    cleanup();
+    // Horloge pilotée : le temps avance entre les actions (arrière-plan, verrouillage, rechargement).
+    let time = '07:30:00';
+    const live = (): Clock => ({ today: MONDAY, now: `${MONDAY}T${time}.000Z` });
+    mount(storage, live);
     openStrength();
+    const chrono = () => screen.getByRole('timer', { name: 'Chronomètre global' });
+    const logOf = () => Object.values(saved(storage).programmeLogs)[0];
+    time = '07:42:05';
+    click('Mettre en pause le chronomètre global');
+    expect(logOf()?.clock).toEqual({ pausedS: 0, pausedAt: `${MONDAY}T07:42:05Z` });
+    expect(chrono().textContent).toMatch(/12:05.*en pause/);
+    // Série validée PENDANT la pause : enregistrée, la pause est conservée (aucune reprise automatique).
+    time = '07:50:00';
     fireEvent.change(screen.getAllByLabelText('Répétitions réalisées')[0]!, { target: { value: '12' } });
     fireEvent.change(screen.getAllByLabelText('Charge (kg)')[0]!, { target: { value: '20' } });
     fireEvent.click(screen.getAllByRole('button', { name: 'Cocher la série' })[0]!);
-    expect(Object.values(saved(storage).programmeLogs)[0]?.sets[0]).toMatchObject({ done: true, reps: 12, loadKg: 20 });
-    const initial = storage.getItem(STORAGE_KEY);
-    click('Mettre en pause le chronomètre global');
+    expect(logOf()?.sets[0]).toMatchObject({ done: true, reps: 12, loadKg: 20 });
+    expect(logOf()?.clock?.pausedAt).toBe(`${MONDAY}T07:42:05Z`);
     expect(screen.getByRole('button', { name: 'Reprendre le chronomètre global' })).toBeTruthy();
-    expect(storage.getItem(STORAGE_KEY)).toBe(initial);
-    click('Reprendre le chronomètre global');
-    expect(screen.getByRole('button', { name: 'Mettre en pause le chronomètre global' })).toBeTruthy();
+    expect(chrono().textContent).toMatch(/12:05.*en pause/);
+    const paused = storage.getItem(STORAGE_KEY);
+    // Retour puis rechargement complet (fermeture / réouverture) pendant la pause : état relu, rien d'écrit.
     click('Retour');
-    click('Reprendre la séance');
-    expect(screen.getByRole('button', { name: 'Mettre en pause le chronomètre global' })).toBeTruthy();
     cleanup();
-    mount(storage);
+    time = '08:00:00';
+    mount(storage, live);
     click('Reprendre la séance');
-    expect(screen.getByText(/Le temps précédent ne peut pas être récupéré avec certitude/)).toBeTruthy();
-    const beforeReset = storage.getItem(STORAGE_KEY);
-    click('Réinitialiser le chronomètre');
-    expect(screen.getByRole('button', { name: 'Mettre en pause le chronomètre global' })).toBeTruthy();
-    expect(storage.getItem(STORAGE_KEY)).toBe(beforeReset);
-    click('Mettre en pause le chronomètre global');
+    expect(chrono().textContent).toMatch(/12:05.*en pause/);
+    expect(storage.getItem(STORAGE_KEY)).toBe(paused);
+    click('Reprendre le chronomètre global');
+    expect(logOf()?.clock).toEqual({ pausedS: 17 * 60 + 55 });
+    time = '08:10:00';
+    cleanup();
+    mount(storage, live);
+    click('Reprendre la séance');
+    expect(chrono().textContent).toMatch(/22:05.*écoulé/);
+    // Import d'une sauvegarde prise pendant la pause : la pause et sa date reviennent à l'identique.
     click('Retour');
     click('Réglages');
-    fireEvent.change(screen.getByLabelText('Fichier de données à importer'), { target: { files: [new File([beforeReset ?? ''], 'ancienne.json', { type: 'application/json' })] } });
+    fireEvent.change(screen.getByLabelText('Fichier de données à importer'), { target: { files: [new File([paused ?? ''], 'pause.json', { type: 'application/json' })] } });
     await waitFor(() => expect(screen.getByText('Données importées.')).toBeTruthy());
+    expect(logOf()?.clock).toEqual({ pausedS: 0, pausedAt: `${MONDAY}T07:42:05Z` });
     click('Accueil');
     click('Reprendre la séance');
-    expect(screen.getByText(/Le temps précédent ne peut pas être récupéré avec certitude/)).toBeTruthy();
-    expect(Object.values(saved(storage).programmeLogs)[0]?.sets[0]).toMatchObject({ done: true, reps: 12, loadKg: 20 });
+    expect(chrono().textContent).toMatch(/12:05.*en pause/);
+    // Fin de séance pendant la pause : pause close, durées figées, plus de chronomètre ni de commande.
+    click('Terminer la séance');
+    time = '08:20:00';
+    const sheet = within(screen.getByRole('dialog', { name: 'Fin de séance' }));
+    fireEvent.click(sheet.getByRole('radio', { name: 'J’ai adapté la séance' }));
+    fireEvent.click(sheet.getByRole('button', { name: 'Enregistrer' }));
+    const done = logOf();
+    expect(done?.timing).toMatchObject({ activeS: 12 * 60 + 5, pausedS: 37 * 60 + 55 });
+    expect(screen.queryByRole('timer', { name: 'Chronomètre global' })).toBeNull();
+    expect(screen.queryByRole('button', { name: /chronomètre global/ })).toBeNull();
+    expect(document.querySelector('[data-finished-duration]')?.textContent).toBe('12 min 05 · pauses 37 min 55');
   }, CLOCK_JOURNEY_TIMEOUT_MS);
   it('Musculation : programme créé par le chemin Beta 0, semaine affichée, statut expérimental visible', () => {
     const storage = new MemoryStorage();

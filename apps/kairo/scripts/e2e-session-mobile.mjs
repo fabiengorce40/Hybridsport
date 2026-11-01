@@ -41,7 +41,8 @@ try {
     const other = await ctx.newPage();
     await other.goto(url);
     await other.getByRole('button', { name: 'Reprendre la séance' }).click();
-    await other.getByText('Le temps précédent ne peut pas être récupéré avec certitude. Tu peux réinitialiser le chronomètre sans perdre ta séance.').waitFor();
+    // RC5 lot 2 : chronomètre enregistré — le second onglet affiche la même pause, au même temps.
+    if (await other.getByRole('timer', { name: 'Chronomètre global' }).innerText() !== globalPaused) throw new Error(`${width}: le second onglet ne relit pas la pause`);
     await other.close();
     if (await global.innerText() !== globalPaused) throw new Error(`${width}: le second onglet a changé le chrono de la première page`);
     await page.getByRole('button', { name: 'Reprendre le chronomètre global' }).click();
@@ -68,9 +69,10 @@ try {
     await page.getByRole('button', { name: 'Reprendre la séance' }).click();
     await page.getByRole('button', { name: 'Décocher la série' }).first().waitFor();
     await page.getByRole('timer', { name: 'Chrono de repos' }).waitFor();
-    await page.getByText('Le temps précédent ne peut pas être récupéré avec certitude. Tu peux réinitialiser le chronomètre sans perdre ta séance.').waitFor();
-    await page.getByRole('button', { name: 'Réinitialiser le chronomètre' }).click();
+    // RC5 lot 2 : le chronomètre global est relu après rechargement (aucune remise à zéro proposée).
     await page.getByRole('timer', { name: 'Chronomètre global' }).waitFor();
+    if (await page.getByText(/Le temps précédent ne peut pas être récupéré/).count()) throw new Error(`${width}: remise à zéro proposée au rechargement`);
+    if (await page.getByRole('timer', { name: 'Chronomètre global' }).getAttribute('data-paused') !== 'false') throw new Error(`${width}: chronomètre global non relu en cours`);
     if (await page.getByLabel('Répétitions réalisées').first().inputValue() !== '6' || await page.getByLabel('Charge (kg)').first().inputValue() !== '42.5') throw new Error(`${width}: valeurs de série non conservées`);
     if (errors.length) throw new Error(`${width}: ${errors.join('; ')}`);
     console.log(`OK ${width}: série réelle, charge, repos, pause, +15 s, reprise et rechargement`);

@@ -747,6 +747,61 @@ export function controlRest(state: AppState, clock: Clock, requestId: string, ac
   return withLog(state, { ...log, rest });
 }
 
+/**
+ * RC5 lot 2 (RC5.4) — TEMPS ACTIF de la séance (s) à l'instant donné, calculé sur les horodatages PERSISTÉS (jamais un
+ * compteur en mémoire) : de `startedAt` (lancement effectif) à la fin ou maintenant, moins les pauses VOLONTAIRES. Il
+ * continue donc en arrière-plan, écran verrouillé, après rechargement ou fermeture, et ne compte jamais deux fois une
+ * période. Séance terminée : durée figée (`timing.activeS`, sinon fin − début pour les séances antérieures).
+ */
+export function sessionElapsedS(log: ProgrammeLog, nowIso: string): number {
+  if (log.timing) return log.timing.activeS;
+  const end = Date.parse(log.finishedAt ?? nowIso);
+  const c = log.clock;
+  // Pause en cours : le temps actif s'arrête à son début (calcul direct, sans soustraction d'arrondi).
+  const stop = c?.pausedAt ? Math.min(end, Date.parse(c.pausedAt)) : end;
+  return Math.max(0, Math.floor((stop - Date.parse(log.startedAt)) / MS_PER_S - (c?.pausedS ?? 0)));
+}
+
+/** Temps TOTAL écoulé depuis le lancement (pauses comprises), figé à la fin. */
+export function sessionTotalS(log: ProgrammeLog, nowIso: string): number {
+  if (log.timing) return log.timing.activeS + log.timing.pausedS;
+  return Math.max(0, Math.floor((Date.parse(log.finishedAt ?? nowIso) - Date.parse(log.startedAt)) / MS_PER_S));
+}
+
+/** Sports dont le chronomètre global est celui du journal (Course, Cross-training et HYROX ont leur propre chrono). */
+const GLOBAL_CLOCK_SPORTS: readonly ProgrammeLog['sport'][] = ['strength'];
+export const hasGlobalSessionClock = (log: ProgrammeLog): boolean => GLOBAL_CLOCK_SPORTS.includes(log.sport);
+
+/**
+ * Pause VOLONTAIRE de la séance en cours (sans effet si déjà en pause) ; le repos entre séries n'est pas touché. Seule
+ * une reprise explicite (`resumeProgrammeSession`) la lève : valider une série ne la lève JAMAIS.
+ */
+export function pauseProgrammeSession(state: AppState, clock: Clock, requestId: string): AppState {
+  const log = openLog(state, requestId);
+  if (!hasGlobalSessionClock(log) || log.clock?.pausedAt) return state;
+  return withLog(state, { ...log, clock: { pausedS: log.clock?.pausedS ?? 0, pausedAt: normalizeInstant(clock.now) } });
+}
+
+/** Reprise après une pause volontaire : la durée de la pause est ajoutée au cumul (sans effet hors pause). */
+export function resumeProgrammeSession(state: AppState, clock: Clock, requestId: string): AppState {
+  const log = openLog(state, requestId);
+  return log.clock?.pausedAt ? withLog(state, { ...log, clock: closedPause(log.clock, clock.now) }) : state;
+}
+
+function closedPause(c: NonNullable<ProgrammeLog['clock']>, nowIso: string): NonNullable<ProgrammeLog['clock']> {
+  // Même précision que les horodatages enregistrés (seconde) : la durée figée à la fin égale le temps affiché pendant la pause.
+  return { pausedS: c.pausedS + (c.pausedAt ? Math.max(0, (Date.parse(normalizeInstant(nowIso)) - Date.parse(c.pausedAt)) / MS_PER_S) : 0) };
+}
+
+/** Durées figées à la fin (pause en cours close à cet instant) : temps actif, pauses, durée prévue de la séance exécutée. */
+function finalTiming(state: AppState, log: ProgrammeLog, nowIso: string): Partial<Pick<ProgrammeLog, 'clock' | 'timing'>> {
+  const c = log.clock ? closedPause(log.clock, nowIso) : { pausedS: 0 };
+  const activeS = sessionElapsedS({ ...log, clock: c, finishedAt: normalizeInstant(nowIso) }, nowIso);
+  const totalS = Math.max(0, Math.floor((Date.parse(normalizeInstant(nowIso)) - Date.parse(log.startedAt)) / MS_PER_S));
+  // `clock` n'est écrit que s'il existait (aucune écriture inutile pour une séance sans pause).
+  return { ...(log.clock ? { clock: c } : {}), timing: { activeS, pausedS: totalS - activeS, plannedS: selectProgrammeSession(state, log.requestId)?.estimatedDurationS ?? null } };
+}
+
 export interface FinishInput {
   readonly requestId: string;
   readonly completion: 'completed_as_prescribed' | 'modified' | 'abandoned';
@@ -815,7 +870,7 @@ export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishI
   const runPlayer = rp && rp.runningSince !== null
     ? { runPlayer: { ...rp, runningSince: null, accumulatedS: rp.accumulatedS + Math.max(0, (Date.parse(clock.now) - Date.parse(rp.runningSince)) / MS_PER_S) } }
     : {};
-  return withLog(recorded, { ...log, ...runPlayer, rest: null, finishedAt: normalizeInstant(clock.now), outcome });
+  return withLog(recorded, { ...log, ...runPlayer, ...(hasGlobalSessionClock(log) ? finalTiming(s0, log, clock.now) : {}), rest: null, finishedAt: normalizeInstant(clock.now), outcome });
 }
 
 // ——— Historique

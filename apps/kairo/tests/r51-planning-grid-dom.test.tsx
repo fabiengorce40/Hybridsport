@@ -45,6 +45,13 @@ const days = () => Array.from(document.querySelectorAll<HTMLElement>('[data-agen
 const toGrid = () => fireEvent.click(screen.getByRole('button', { name: 'Grille' }));
 const toList = () => fireEvent.click(screen.getByRole('button', { name: 'Liste' }));
 
+/**
+ * RC5 lot 2 — les fixtures sont des données ANTÉRIEURES au lot 2 (format v2, relues aussi par les anciennes builds V2.1) :
+ * elles ne portent pas les champs v5 du chronomètre (`clock`, `timing`), retirés ici de l'état généré avant comparaison.
+ */
+const withoutLot2Clock = (st: { programmeLogs?: Record<string, Record<string, unknown>> }) => ({
+  ...st, programmeLogs: Object.fromEntries(Object.entries(st.programmeLogs ?? {}).map(([k, l]) => { const { clock: _c, timing: _t, ...rest } = l; return [k, rest]; })),
+});
 describe('R5.1 — Planning en grille', () => {
   it('sélecteur Liste / Grille : liste par défaut, bascule accessible (aria-pressed)', () => {
     mount(STATE);
@@ -219,7 +226,7 @@ describe('R5.1 — Planning en grille', () => {
       const text = storage.getItem(STORAGE_KEY) ?? '';
       const file = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', `${name}.json`);
       if (process.env.R51_WRITE_FIXTURE) writeFileSync(file, text);
-      expect({ ...JSON.parse(readFileSync(file, 'utf8')), schemaVersion: CURRENT_SCHEMA_VERSION }).toEqual(JSON.parse(text));
+      expect({ ...JSON.parse(readFileSync(file, 'utf8')), schemaVersion: CURRENT_SCHEMA_VERSION }).toEqual(withoutLot2Clock(JSON.parse(text)));
     }
   });
 });

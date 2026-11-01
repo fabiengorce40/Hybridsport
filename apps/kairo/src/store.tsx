@@ -5,7 +5,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
 import { AppError, baselineOf, detectOverwrite, ensureBeta0Week, ensureCurrentWeek, guardedSave, isBeta0, loadState, MemoryStorage, resolveOverwrite, sameBaseline, STORAGE_KEY } from '@hybridsport/app-core';
-import { SessionClocks } from './clock/session-clock.js';
 import { ERROR_TEXT } from './present.js';
 import { namespaced, STORAGE_NAMESPACE } from './channel.js';
 import type { AppState, Baseline, Clock, KeyValueStorage, LoadResult, Overwrite } from '@hybridsport/app-core';
@@ -32,7 +31,6 @@ function browserStorage(): { storage: KeyValueStorage; persistent: boolean } {
 
 export interface Store {
   readonly state: AppState;
-  readonly sessionClocks: SessionClocks;
   readonly load: LoadResult['status'];
   readonly loadInfo?: string;
   readonly persistent: boolean;
@@ -103,7 +101,6 @@ export function StoreProvider({ children, storage: injected, clock = realClock }
   const stateRef = useRef(state);
   const baselineRef = useRef<Baseline>(initial.current.baseline);
   const overwriteRef = useRef<Overwrite | null>(initial.current.overwrite);
-  const clocks = useRef(new SessionClocks());
 
   /**
    * Relit l'état enregistré (après un conflit ou une écriture d'un autre onglet) ; aucune écriture. Un autre onglet peut
@@ -118,7 +115,6 @@ export function StoreProvider({ children, storage: injected, clock = realClock }
     if (found) { overwriteRef.current = found; setOverwrite(found); return; }
     const result = loadState(storage, clock().now);
     if (result.status !== 'ok') { setLoad(result.status); return; }
-    clocks.current.retain(result.state.programmeLogs);
     stateRef.current = result.state;
     setState(result.state);
   }, [clock]);
@@ -128,7 +124,6 @@ export function StoreProvider({ children, storage: injected, clock = realClock }
     if (overwriteRef.current) return false;
     const r = guardedSave(backend.current.storage, next, baselineRef.current, clock().now);
     if (!r.ok && r.reason === 'conflict') { reload(); setToast(CONFLICT_TEXT); return false; }
-    clocks.current.retain(next.programmeLogs);
     stateRef.current = next;
     setState(next);
     if (r.ok) baselineRef.current = r.baseline;
@@ -155,7 +150,6 @@ export function StoreProvider({ children, storage: injected, clock = realClock }
       return false;
     }
     baselineRef.current = result.baseline;
-    clocks.current.clear();
     stateRef.current = next;
     setState(next);
     setSaveError(undefined);
@@ -209,7 +203,7 @@ export function StoreProvider({ children, storage: injected, clock = realClock }
   const info = initial.current.result;
   const loadInfo = info.status === 'unreadable' ? `${info.problem} — copie conservée sous « ${info.backupKey} »` : info.status === 'newer_version' ? `version ${String(info.version)}` : undefined;
   const value = useMemo<Store>(() => ({
-    state, load, sessionClocks: clocks.current, persistent: backend.current.persistent, clock, apply, reset, dismissToast: () => setToast(undefined),
+    state, load, persistent: backend.current.persistent, clock, apply, reset, dismissToast: () => setToast(undefined),
     resolveOverwrite: chooseAfterOverwrite,
     ...(loadInfo ? { loadInfo } : {}), ...(saveError ? { saveError } : {}), ...(toast ? { toast } : {}), ...(overwrite ? { overwrite: { savedAt: overwrite.savedAt } } : {}),
   }), [state, load, loadInfo, saveError, toast, overwrite, clock, apply, reset, chooseAfterOverwrite]);
