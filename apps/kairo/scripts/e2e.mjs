@@ -7,7 +7,7 @@
  * libre (le temps s'écoule normalement).
  * Usage : node scripts/e2e.mjs [dossier de captures] — le serveur doit tourner sur E2E_URL.
  */
-import { completeStrengthPersonalization, EXPERIENCE } from './lib/strength-onboarding.mjs';
+import { completeStrengthPersonalization, EXPERIENCE, strengthDaysAtAvailability } from './lib/strength-onboarding.mjs';
 import { readFileSync } from 'node:fs';
 import { chromium, devices } from 'playwright';
 
@@ -80,12 +80,14 @@ await page.getByRole('radio', { name: /^Musculation \+ Course/ }).click();
 await shot('02-sports');
 await page.getByRole('button', { name: 'Continuer' }).click();
 // V2.1/V2.2 : personnalisation Musculation obligatoire (7 étapes), choix explicites.
-check(await completeStrengthPersonalization(page, { strengthDays: ['Lundi', 'Mardi', 'Mercredi', 'Vendredi', 'Samedi'] }), 'personnalisation Musculation complétée (7 étapes, jours = disponibilités déclarées)');
+check(await completeStrengthPersonalization(page), 'personnalisation Musculation complétée (7 étapes)');
 await page.getByLabel('Durée (min)').fill('30');
 await page.getByLabel('Distance (km)').fill('5');
 await shot('03-objectifs');
 await page.getByRole('button', { name: 'Continuer' }).click();
 await page.getByLabel('Temps disponible le Mardi').selectOption('60');
+// Reprise 3A : jours Musculation APRÈS les disponibilités ; proposition = tous les jours disponibles (mardi ajouté compris).
+{ const d = await strengthDaysAtAvailability(page); check(d.proposal && JSON.stringify(d.checked) === JSON.stringify(d.available), `jours Musculation proposés = jours disponibles (${d.checked.join(',')})`); }
 await page.getByRole('button', { name: 'Continuer' }).click();
 await shot('04-programme');
 await page.getByRole('button', { name: 'Créer mon programme' }).click();
@@ -879,7 +881,7 @@ async function mobileFit(p, tag) {
   await p.getByLabel('Ajouter du Cross-training').check();
   await p.getByLabel('Ajouter HYROX').check();
   await p.getByRole('button', { name: 'Continuer' }).click();
-  check(await completeStrengthPersonalization(p, { experience: EXPERIENCE.intermediate, strengthDays: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi'] }), `${tag} personnalisation Musculation complétée (7 étapes, jours = disponibilités déclarées)`);
+  check(await completeStrengthPersonalization(p, { experience: EXPERIENCE.intermediate }), `${tag} personnalisation Musculation complétée (7 étapes)`);
   await p.getByRole('radio', { name: /^Mixte/ }).click();
   await p.getByLabel('Séances de Cross-training par semaine').selectOption('1');
   await p.getByLabel('Niveau d’entraînement général').selectOption('intermediate');
@@ -1233,7 +1235,7 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   await p.getByRole('button', { name: 'Continuer' }).click();
   await p.getByLabel('Niveau d’entraînement général').selectOption('intermediate');
   // V2.1/V2.2 : objectif (« Masse musculaire » → « Développer mes muscles »), fréquence et matériel dans l'assistant.
-  check(await completeStrengthPersonalization(p, { sessionsPerWeek: 3, outcome: 'Développer mes muscles', experience: EXPERIENCE.intermediate, strengthDays: ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'], equipmentPreset: 'preset.commercial_gym', onStage: async (stage, w, next) => {
+  check(await completeStrengthPersonalization(p, { sessionsPerWeek: 3, outcome: 'Développer mes muscles', experience: EXPERIENCE.intermediate, equipmentPreset: 'preset.commercial_gym', onStage: async (stage, w, next) => {
     if (stage === 4) {
       const opts = await w.getByLabel('Séances Musculation par semaine').locator('option').evaluateAll((os) => os.map((o) => o.value));
       // Fréquences non prises en charge (5, 6) : plus proposées du tout (V2.0 : affichées désactivées).

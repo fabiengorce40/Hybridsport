@@ -23,7 +23,7 @@ try {
     await page.getByRole('radio', { name: /^Musculation \+ Course/ }).click();
     await page.getByRole('button', { name: 'Continuer' }).click();
     // V2.1/V2.2 : personnalisation Musculation obligatoire (7 étapes), choix explicites.
-    if (!(await completeStrengthPersonalization(page, { strengthDays: ['Lundi', 'Mardi', 'Mercredi', 'Vendredi', 'Samedi'] }))) throw new Error('personnalisation Musculation attendue');
+    if (!(await completeStrengthPersonalization(page))) throw new Error('personnalisation Musculation attendue');
     await page.getByLabel('Durée (min)').fill('30');
     await page.getByLabel('Distance (km)').fill('5');
     await page.getByRole('button', { name: 'Continuer' }).click();

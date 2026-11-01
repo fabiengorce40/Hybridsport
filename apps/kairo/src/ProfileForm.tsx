@@ -55,7 +55,7 @@ export function SportsSection({ p, set }: { p: ProfileInput; set: Setter }) {
   );
 }
 
-export function GoalsSection({ p, set, beta0 = false, legacyStrength = false }: { p: ProfileInput; set: Setter; beta0?: boolean; legacyStrength?: boolean }) {
+export function GoalsSection({ p, set, beta0 = false, legacyStrength = false, strengthDaysLater = false }: { p: ProfileInput; set: Setter; beta0?: boolean; legacyStrength?: boolean; strengthDaysLater?: boolean }) {
   return (
     <div className="stack-3">
       {(!p.strength.enabled || p.running.enabled || p.hyrox.enabled || p.crosstraining.enabled || legacyStrength) && <label className="field">Niveau d’entraînement général
@@ -63,7 +63,7 @@ export function GoalsSection({ p, set, beta0 = false, legacyStrength = false }: 
           {Object.entries(LEVEL_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
         </select>
       </label>}
-      {p.strength.enabled && (legacyStrength && !p.strength.personalization ? <div className="card"><h3>Musculation · programme existant</h3><div className="row wrap">{Object.entries(STRENGTH_GOAL_LABELS).map(([key,label])=><button type="button" className={`chip ${p.strength.goal===key?'on':''}`} key={key} onClick={()=>set(x=>({...x,strength:{...x.strength,goal:key as ProfileInput['strength']['goal']}}))}>{label}</button>)}</div><label className="field">Séances par semaine<select value={p.strength.sessionsPerWeek} onChange={e=>set(x=>({...x,strength:{...x.strength,sessionsPerWeek:Number(e.target.value)}}))}>{strengthSupportedFrequencies().map(n=><option key={n} value={n}>{n}</option>)}</select></label><button type="button" className="btn secondary" onClick={()=>set(x=>withStrengthPersonalization(x,defaultStrengthPersonalization(x)))}>Personnaliser mes résultats et mes priorités</button></div> : <StrengthCustomization p={p} set={set} />)}
+      {p.strength.enabled && (legacyStrength && !p.strength.personalization ? <div className="card"><h3>Musculation · programme existant</h3><div className="row wrap">{Object.entries(STRENGTH_GOAL_LABELS).map(([key,label])=><button type="button" className={`chip ${p.strength.goal===key?'on':''}`} key={key} onClick={()=>set(x=>({...x,strength:{...x.strength,goal:key as ProfileInput['strength']['goal']}}))}>{label}</button>)}</div><label className="field">Séances par semaine<select value={p.strength.sessionsPerWeek} onChange={e=>set(x=>({...x,strength:{...x.strength,sessionsPerWeek:Number(e.target.value)}}))}>{strengthSupportedFrequencies().map(n=><option key={n} value={n}>{n}</option>)}</select></label><button type="button" className="btn secondary" onClick={()=>set(x=>withStrengthPersonalization(x,defaultStrengthPersonalization(x)))}>Personnaliser mes résultats et mes priorités</button></div> : <StrengthCustomization p={p} set={set} daysLater={strengthDaysLater} />)}
       {p.running.enabled && (
         <div className="card">
           <h3>Course à pied</h3>

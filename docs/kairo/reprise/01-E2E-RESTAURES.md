@@ -45,6 +45,8 @@ Le test unitaire « chronomètre global Musculation » reçoit un délai explici
 
 ## Défaut V2.1 révélé : jours Musculation figés avant l'étape Disponibilités
 
+> **Corrigé par la reprise 3A** (`03-JOURS-MUSCULATION.md`). L'option `strengthDays` de l'aide E2E est supprimée : la proposition initiale (tous les jours disponibles) donne d'elle-même les bons jours.
+
 ### Mécanisme
 1. Les « Jours possibles pour la musculation » (`personalization.days`) sont initialisés à l'étape **Objectifs**, à partir des disponibilités **par défaut** (lundi, mercredi, vendredi, samedi).
 2. L'étape **Disponibilités** vient ensuite et ne les resynchronise pas.

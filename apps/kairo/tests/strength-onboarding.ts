@@ -1,6 +1,6 @@
 import { fireEvent, screen } from '@testing-library/react';
 /** Le vrai parcours V2.1, partagé par les tests de séance et de création de programme. */
-export function completeStrengthCustomization(o: { frequency?:number; allDays?:boolean } = {}) {
+export function completeStrengthCustomization(o: { frequency?:number } = {}) {
  const click=(name:string)=>fireEvent.click(screen.getByRole('button',{name}));
  click('Me tonifier et me remettre en forme');click('Suivant · Musculation');
  click('Suivant · Musculation');
@@ -9,8 +9,13 @@ export function completeStrengthCustomization(o: { frequency?:number; allDays?:b
  fireEvent.change(screen.getByLabelText('Maîtrise des mouvements'),{target:{value:'confident'}});
  click('Suivant · Musculation');
  if(o.frequency)fireEvent.change(screen.getByLabelText('Séances Musculation par semaine'),{target:{value:String(o.frequency)}});
- if(o.allDays){for(const el of screen.getAllByLabelText(/^Temps disponible le /))fireEvent.change(el,{target:{value:'90'}}); for(const el of screen.getAllByRole('checkbox'))if(!(el as HTMLInputElement).checked)fireEvent.click(el);}
+ // Reprise 3A : disponibilités et jours Musculation à l'étape « Disponibilités » (voir `openAllDays`).
  click('Suivant · Musculation');
  fireEvent.change(screen.getByLabelText('Lieu d’entraînement'),{target:{value:'preset.full_gym'}});
  click('Suivant · Musculation');click('Suivant · Musculation');click('Confirmer ma personnalisation');
+}
+
+/** Étape « Disponibilités » : 90 min chaque jour ; les jours Musculation suivent la proposition (tous les jours disponibles). */
+export function openAllDays() {
+ for(const el of screen.getAllByLabelText(/^Temps disponible le /))fireEvent.change(el,{target:{value:'90'}});
 }

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { completeStrengthCustomization } from './strength-onboarding.js';
+import { completeStrengthCustomization, openAllDays } from './strength-onboarding.js';
 /**
  * E2E interface → DOM (jsdom, application réelle, backend réel) du bug post-S1 « 4 × Full body » :
  *   A — programme NEUF créé après S1 depuis l'onboarding, 4 séances de musculation : le Planning affiche la composition
@@ -11,7 +11,7 @@ import { completeStrengthCustomization } from './strength-onboarding.js';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryStorage, selectBeta0Week, STORAGE_KEY } from '@hybridsport/app-core';
 import type { AppState, Clock } from '@hybridsport/app-core';
 import { App } from '../src/App.js';
@@ -36,8 +36,11 @@ describe('A — programme neuf après S1 (onboarding UI, 4 séances de musculati
     click('Commencer');
     fireEvent.click(screen.getByRole('radio', { name: /^Musculation Séances/ }));
     click('Continuer');
-    completeStrengthCustomization({ frequency: 4, allDays: true });
+    completeStrengthCustomization({ frequency: 4 });
     click('Continuer');
+    openAllDays();
+    // Proposition initiale : tous les jours disponibles deviennent jours Musculation (sans action supplémentaire).
+    expect(within(screen.getByRole('group', { name: 'Jours possibles pour la musculation' })).getAllByRole('checkbox').every((b) => (b as HTMLInputElement).checked)).toBe(true);
     click('Continuer');
     click('Créer mon programme');
     click('Planning');

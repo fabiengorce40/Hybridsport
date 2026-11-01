@@ -15,3 +15,6 @@
 .sp-exercise { padding:12px 0;border-bottom:1px solid #ffffff18;display:grid;gap:6px; }
 .sp-actions { flex-wrap:wrap;gap:10px; }.sp-actions .btn { flex:1;white-space:normal;min-height:48px; }
 @media(max-width:370px) { .sp-options { grid-template-columns:1fr; } }
+/* Reprise 3A — jours Musculation : cibles tactiles d'au moins 44 px. */
+[data-strength-days] .check{min-height:44px;display:inline-flex;align-items:center;gap:6px;padding:0 4px}
+[data-strength-days] .sp-zones>span{display:inline-flex;align-items:center;gap:2px;white-space:nowrap}

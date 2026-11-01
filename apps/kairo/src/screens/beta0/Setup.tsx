@@ -1,11 +1,12 @@
 import { StrengthPersonalizationSummary } from '../../strength/StrengthCustomization.js';
+import { StrengthDaysSection, strengthDaysBlockers } from '../../strength/StrengthDays.js';
 /**
  * Onboarding Beta 0 : profil → sports (musculation, course, les deux) → objectifs et fréquence → disponibilités →
  * priorité, matériel, durée du programme → création du programme réel (app-core `createBeta0Programme`).
  * Aussi utilisé pour créer un programme depuis un profil V0 existant, ou le recréer (workflow explicite).
  */
 import { useEffect, useMemo, useState } from 'react';
-import { createBeta0Programme, ctIntentFeasibility, hyroxRoleFeasibility, strengthSupportedFrequencies, CT_INTENT_LABELS, DIFFICULTY_LABELS, HR_BALANCED_LABEL, HR_GOAL_LABELS, HR_ROLE_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
+import { withStrengthDays, createBeta0Programme, ctIntentFeasibility, hyroxRoleFeasibility, strengthSupportedFrequencies, CT_INTENT_LABELS, DIFFICULTY_LABELS, HR_BALANCED_LABEL, HR_GOAL_LABELS, HR_ROLE_LABELS, normalizeInstant, previewBeta0Recreation, recreateBeta0Programme, RETURN_STATE_LABELS, RUNNING_GOAL_LABELS, STRENGTH_GOAL_LABELS } from '@hybridsport/app-core';
 import type { Beta0ProgrammeOptions, CtIntentFeasibility, Feedback, HrRoleFeasibility, ProfileInput } from '@hybridsport/app-core';
 import { HrFeasibilityNotice } from './HrFeasibility.js';
 import { PerformanceForm } from '../../running/PerformanceForm.js';
@@ -173,6 +174,18 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const preview = mode === 'recreate' ? previewBeta0Recreation(store.state, store.clock().today) : null;
   const [targetDate, setTargetDate] = useState(preview?.runningTargetDate ?? '');
   useEffect(() => { window.scrollTo(0, 0); }, [step]);
+  // Reprise 3A — jours Musculation choisis APRÈS les disponibilités générales. Tant que l'utilisateur n'a rien choisi,
+  // proposition = tous ses jours disponibles (suivie quand les disponibilités changent) ; une personnalisation déjà
+  // confirmée est une préférence explicite : jamais modifiée sans son action (incompatibilités signalées, à corriger).
+  const [daysTouched, setDaysTouched] = useState(initial?.strength.personalization?.completed === true);
+  const availabilityKey = p.availability.join(',');
+  const hasPersonalization = p.strength.enabled && p.strength.personalization !== undefined;
+  useEffect(() => {
+    if (daysTouched || !hasPersonalization) return;
+    const available = p.availability.flatMap((m, d) => (m > 0 ? [d] : []));
+    if (available.length > 0 && available.join(',') !== p.strength.personalization?.days.join(',')) setP((x) => withStrengthDays(x, available));
+    // Dépendances volontaires : recalcul seulement quand les disponibilités ou l'état changent
+  }, [availabilityKey, hasPersonalization, daysTouched]);
   const [runMin, setRunMin] = useState('');
   const [runKm, setRunKm] = useState('');
   const [runFeel, setRunFeel] = useState<Feedback['difficulty']>('AS_EXPECTED');
@@ -195,7 +208,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
   const ctOk = !p.crosstraining.enabled || (p.crosstraining.intent !== undefined && p.crosstraining.sessionsPerWeek !== undefined && p.crosstraining.returnState !== undefined);
   const hrOk = !p.hyrox.enabled || ((p.hyrox.focus === 'balanced' || p.hyrox.role !== undefined) && p.hyrox.goal !== undefined && p.hyrox.sessionsPerWeek !== undefined && p.hyrox.returnState !== undefined);
   const strengthOk = !p.strength.enabled || (strengthSupportedFrequencies().includes(p.strength.sessionsPerWeek) && (p.strength.personalization?.completed === true || (existing && !p.strength.personalization)));
-  const canNext = step === 0 ? accepted : step === 1 ? choice !== null : step === 2 ? lastRunOk && dateOk && ctOk && hrOk && strengthOk : step === 3 ? p.availability.some((m) => m > 0) : true;
+  const canNext = step === 0 ? accepted : step === 1 ? choice !== null : step === 2 ? lastRunOk && dateOk && ctOk && hrOk && strengthOk : step === 3 ? p.availability.some((m) => m > 0) && strengthDaysBlockers(p).length === 0 : true;
   // RC3.2 A3 — faisabilité des intentions Cross-training, sondée auprès du moteur réel dès que le matériel est connu
   // (recalculée quand le niveau, le matériel ou les disponibilités changent ; coupure déclarée : avis dédié).
   const ctProbeKey = p.crosstraining.enabled && equipmentChosen(p) && (p.crosstraining.returnState ?? 'NONE') === 'NONE' ? JSON.stringify([p.level, p.equipment.items, p.availability]) : null;
@@ -214,7 +227,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
         ...(p.crosstraining.enabled ? missing('Cross-training', [[p.crosstraining.intent !== undefined, 'choisissez une intention'], [p.crosstraining.sessionsPerWeek !== undefined, 'le nombre de séances par semaine'], [p.crosstraining.returnState !== undefined, 'indiquez une éventuelle coupure récente']]) : []),
         ...(p.hyrox.enabled ? missing('HYROX', [[p.hyrox.focus === 'balanced' || p.hyrox.role !== undefined, 'choisissez un type de séance'], [p.hyrox.goal !== undefined, 'choisissez un objectif'], [p.hyrox.sessionsPerWeek !== undefined, 'le nombre de séances par semaine'], [p.hyrox.returnState !== undefined, 'indiquez une éventuelle coupure récente']]) : []),
       ]
-        : step === 3 ? (p.availability.some((m) => m > 0) ? [] : ['Indiquez au moins un jour disponible.'])
+        : step === 3 ? [...(p.availability.some((m) => m > 0) ? [] : ['Indiquez au moins un jour disponible.']), ...strengthDaysBlockers(p)]
           : [
             ...(preview?.sessionInProgress != null ? ['Une séance est en cours : terminez-la ou abandonnez-la avant de recréer le programme.'] : []),
             ...(needsEquipment(p) && !equipmentChosen(p) ? ['Matériel : choisissez votre lieu d’entraînement.'] : []),
@@ -286,7 +299,7 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
       {step === 2 && (
         <>
           <label className="field">Prénom (facultatif)<input type="text" value={p.displayName} maxLength={40} onChange={(e) => setP({ ...p, displayName: e.target.value })} /></label>
-          <GoalsSection p={p} set={set} beta0 legacyStrength={existing} />
+          <GoalsSection p={p} set={set} beta0 legacyStrength={existing} strengthDaysLater />
           {p.crosstraining.enabled && <CtSection p={p} set={set} feasibility={ctFeasibility} />}
           {p.hyrox.enabled && <HrSection p={p} set={set} feasibility={hrFeasibility} />}
           {p.running.enabled && (
@@ -342,7 +355,8 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
       {step === 3 && (
         <>
           <p className="muted small">Temps disponible par jour. Une séance au plus par jour, jamais plus longue que ce temps.</p>
-          {p.strength.personalization?.completed && !p.running.enabled && !p.hyrox.enabled && !p.crosstraining.enabled ? <p>Les disponibilités Musculation sont déjà enregistrées dans votre personnalisation.</p> : <AvailabilitySection p={p} set={set} />}
+          <AvailabilitySection p={p} set={set} />
+          {p.strength.enabled && p.strength.personalization && <StrengthDaysSection p={p} set={set} proposal={!daysTouched} onChoose={() => setDaysTouched(true)} />}
         </>
       )}
 
