@@ -37,3 +37,5 @@ export * from './strength-personalization.js';
 export * from './strength-days.js';
 
 export * from "./strength-replan.js";
+export * from './hybrid-proposals.js';
+export * from './strength-diagnostics.js';

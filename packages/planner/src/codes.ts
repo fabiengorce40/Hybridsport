@@ -40,6 +40,7 @@ export const GP_CODES = {
   DEMAND_PROFILE_NOT_APPROVED: 'RULE.PLANNER.DEMAND_PROFILE_NOT_APPROVED',
   /** Refus du moteur dû au SEUL créneau (trop court) : même demande essayée sur un créneau plus long. */
   SLOT_RETRY: 'PLAN.PLANNER.SLOT_RETRY',
+  RECOVERY_RETRY: 'PLAN.PLANNER.RECOVERY_RETRY',
   /** Composition hebdomadaire du MOTEUR appliquée (autorité : approved | provisional). */
   COMPOSITION_APPLIED: 'PLAN.PLANNER.COMPOSITION_APPLIED',
   /** Composition demandée au moteur mais non gouvernée dans ce mode : aucune composition inventée. */
@@ -80,6 +81,7 @@ export const GP_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: GP_CODES.PROGRAMME_INTENT_INCOMPLETE, categories: ['feasibility'], params: { sport: S, missing: L }, audience: 'user', severity: 'error' },
   { code: GP_CODES.NEIGHBOUR_CONTEXT, categories: ['information'], params: { requestId: S, known: S, neighbours: N, unknown: L }, audience: 'internal', severity: 'info' },
   { code: GP_CODES.DEMAND_PROFILE_NOT_APPROVED, categories: ['business_hard'], params: { sport: S, parameterId: S, mode: S }, audience: 'internal', severity: 'warning' },
+  { code: GP_CODES.RECOVERY_RETRY, categories: ['information'], params: { sport: S, requestId: S, fromDate: S, cause: S }, audience: 'internal', severity: 'info' },
   { code: GP_CODES.SLOT_RETRY, categories: ['information'], params: { sport: S, requestId: S, fromDate: S, fromMinutes: N, causes: L }, audience: 'internal', severity: 'info' },
   { code: GP_CODES.COMPOSITION_APPLIED, categories: ['information'], params: { sport: S, authority: S, role: S, archetypeId: S }, audience: 'internal', severity: 'info' },
   { code: GP_CODES.COMPOSITION_UNRESOLVED, categories: ['business_hard'], params: { sport: S, mode: S }, audience: 'user', severity: 'error' },

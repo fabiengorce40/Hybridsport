@@ -48,7 +48,12 @@ export interface CompositionBand {
    * quart de rotation plus tôt (séance Bas en tête), la séance non placée alterne entre Bas et Haut d'une semaine à
    * l'autre. Déterministe (parité de la semaine). Activation : décision produit et scientifique (document 09, Q3).
    */
-  readonly shortWeek?: 'alternate_region';
+  readonly shortWeek?: 'alternate_region' | 'upper_lower_full' | 'full_body';
+  /*
+   * Lot 4.3 (Q3, PROPOSITIONS, inactives) — `upper_lower_full` : semaine courte = une séance Haut, une séance Bas (ordre
+   * alterné selon la parité) puis Full Body ; `full_body` : toutes les séances de la semaine courte en Full Body. Le
+   * contrôle de récupération (36 h par région, Full Body compris) reste celui du planificateur, inchangé.
+   */
 }
 export interface StrengthCompositionRule {
   readonly id: string;
@@ -154,11 +159,17 @@ export function composeStrengthWeek(i: StrengthComposeInput): StrengthComposeRes
   const first = base.indexOf(byPriority[0] as string);
   const odd = band.alternateWeekly === true && weekParity(i.days) === 1;
   const freeDays = i.days.filter((d) => d.lockedArchetypeId === undefined).length;
-  const shortWeek = cyclic && band.shortWeek === 'alternate_region' && freeDays < base.length;
+  const shortWeek = cyclic && band.shortWeek !== undefined && freeDays > 0 && freeDays < base.length;
   // Lot 4.2 (Q3, option inactive par défaut) : semaine courte impaire — un quart de rotation plus tôt (au lieu d'une demie).
   // technical-constant: structure — demi-rotation (moitié de la liste des archétypes)
-  const start = cyclic ? (first + (odd ? (shortWeek ? base.length - 1 : base.length / 2) : 0)) % base.length : 0;
-  const rotation = cyclic ? [...base.slice(start), ...base.slice(0, start)] : byPriority;
+  const start = cyclic ? (first + (odd ? (shortWeek && band.shortWeek === 'alternate_region' ? base.length - 1 : base.length / 2) : 0)) % base.length : 0;
+  const cycled = cyclic ? [...base.slice(start), ...base.slice(0, start)] : byPriority;
+  // Lot 4.3 (Q3, options inactives) : composition propre à la semaine courte.
+  const fullBody = 'str_full_body';
+  const fbAdmitted = findArchetype(i.params, fullBody) !== undefined && admitted(fullBody);
+  const rotation = shortWeek && band.shortWeek === 'full_body' && fbAdmitted ? [fullBody]
+    : shortWeek && band.shortWeek === 'upper_lower_full' && fbAdmitted ? [...(odd ? [cycled.find((a) => a.startsWith('str_lower')), cycled.find((a) => a.startsWith('str_upper'))] : [cycled.find((a) => a.startsWith('str_upper')), cycled.find((a) => a.startsWith('str_lower'))]).filter((a): a is string => a !== undefined), fullBody]
+      : cycled;
   const authority = rule.status === 'approved' ? 'approved' : 'provisional';
   const free = [...i.days].filter((d) => d.lockedArchetypeId === undefined).sort((a, b) => (a.date < b.date ? -1 : 1));
   const assigned = free.map((d, k) => rotation[k % rotation.length] as string);

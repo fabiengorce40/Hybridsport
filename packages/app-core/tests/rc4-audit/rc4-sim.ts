@@ -54,6 +54,11 @@ export interface ProfileSpec {
   readonly perform?: (x: { readonly week: number; readonly exerciseId: string; readonly kg: number; readonly reps: number; readonly rir: number | undefined }) => { readonly reps: number; readonly rir: number };
   /** Reprise RC5 lot 4 — action de l'utilisateur la VEILLE d'une semaine (w ≥ 1), avant sa planification (ex. fréquence, jours). */
   readonly beforeWeek?: (w: number, s: AppState, sunday: Clock) => AppState;
+  /**
+   * Reprise RC5 lot 4.3 — action de l'utilisateur JUSTE APRÈS la planification de la semaine (lundi 06:00, avant toute
+   * séance), ex. accepter une proposition de replanification (« Appliquer le nouveau planning »). Absent : rien.
+   */
+  readonly afterPlanned?: (w: number, s: AppState, monday: Clock) => AppState;
 }
 /** Lundi de la semaine simulée `w` : les 6 premiers sont fixés, les suivants s'en déduisent (bancs de 12 semaines). */
 export const mondayOf = (w: number): string => MONS[w] ?? new Date(Date.parse(`${MONS[0]}T00:00:00Z`) + w * 7 * 86_400_000).toISOString().slice(0, 10);
@@ -167,6 +172,7 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
     const mon = mondayOf(w);
     if (w > 0 && spec.beforeWeek) s = spec.beforeWeek(w, s, at(new Date(Date.parse(`${mon}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10), '20:00'));
     if (w > 0) s = ensureBeta0Week(s, at(mon, '06:00'), env);
+    if (spec.afterPlanned) s = spec.afterPlanned(w, s, at(mon, '06:00'));
     onWeekPlanned?.(s, mon);
     const view = [...(selectBeta0Week(s, mon)?.sessions ?? [])].sort((a, b) => ((a.date ?? 'z') < (b.date ?? 'z') ? -1 : 1));
     const ins = strengthWeekInsights(s, mon);

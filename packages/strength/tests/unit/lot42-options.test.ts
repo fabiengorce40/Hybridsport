@@ -58,3 +58,24 @@ describe('Q4 / Q2 — options de politique (contrat)', () => {
     expect(zPersonalizationPolicy.safeParse({ ...PERSONALIZATION_V1_1, highWindow: 'rolling' }).success).toBe(false);
   });
 });
+
+describe('Lot 4.3 — semaine courte : Haut / Bas / Full Body et Full Body (options inactives par défaut)', () => {
+  const rule = (shortWeek: 'upper_lower_full' | 'full_body'): StrengthCompositionRule => ({ ...STRENGTH_WEEKLY_COMPOSITION_CANDIDATE, bands: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE.bands.map((b) => ({ ...b, shortWeek })) });
+  it('Haut / Bas / Full Body : semaine paire Haut en tête, impaire Bas en tête ; trace `shortWeek`', () => {
+    const even = composeStrengthWeek(input({ rule: rule('upper_lower_full'), days: days('2026-10-05', 3) }));
+    const odd = composeStrengthWeek(input({ rule: rule('upper_lower_full'), days: days('2026-10-12', 3) }));
+    expect(composed(even)).toEqual(['str_upper_a', 'str_lower_a', 'str_full_body']);
+    expect(composed(odd)).toEqual(['str_lower_b', 'str_upper_b', 'str_full_body']);
+    expect(odd.reasons[0]?.params.shortWeek).toBe('upper_lower_full');
+  });
+  it('Full Body : toutes les séances de la semaine courte', () => {
+    expect(composed(composeStrengthWeek(input({ rule: rule('full_body'), days: days('2026-10-05', 3) })))).toEqual(['str_full_body', 'str_full_body', 'str_full_body']);
+  });
+  it('semaine complète ou appel SANS jour (sonde de placement) : identique à la règle publiée', () => {
+    for (const r of [rule('upper_lower_full'), rule('full_body')]) {
+      expect(composed(composeStrengthWeek(input({ rule: r })))).toEqual(composed(composeStrengthWeek(input({}))));
+      const probe = composeStrengthWeek(input({ rule: r, days: [] }));
+      expect(probe.status === 'composed' ? probe.rotation : null).toEqual((() => { const x = composeStrengthWeek(input({ days: [] })); return x.status === 'composed' ? x.rotation : null; })());
+    }
+  });
+});

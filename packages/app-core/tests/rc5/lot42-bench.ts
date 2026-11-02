@@ -33,7 +33,7 @@ export interface Lot42Variant {
   /** Q2 — borne haute aussi sur 7 jours glissants. */
   readonly highWindow?: 'calendar_and_rolling';
   /** Q3 — semaine courte : alternance de la région non placée. */
-  readonly shortWeek?: 'alternate_region';
+  readonly shortWeek?: 'alternate_region' | 'upper_lower_full' | 'full_body';
   /** Q6 — sonde de placement historique. */
   readonly placementProbe?: 'first';
 }
@@ -79,7 +79,7 @@ export function variantEnv(v: Lot42Variant): ProgrammeEnvironment {
     strength = { ...strength, content: { ...strength.content, ruleset: r.ruleset, catalog } as typeof strength.content };
   }
   if (v.shortWeek) {
-    const rule: StrengthCompositionRule = { ...STRENGTH_WEEKLY_COMPOSITION_CANDIDATE, version: `${STRENGTH_WEEKLY_COMPOSITION_CANDIDATE.version}.sim-shortweek`, bands: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE.bands.map((b) => ({ ...b, shortWeek: v.shortWeek })) };
+    const rule: StrengthCompositionRule = { ...STRENGTH_WEEKLY_COMPOSITION_CANDIDATE, version: `${STRENGTH_WEEKLY_COMPOSITION_CANDIDATE.version}.sim-shortweek-${v.shortWeek}`, bands: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE.bands.map((b) => ({ ...b, shortWeek: v.shortWeek })) };
     strength = { ...strength, composition: { rule } };
   }
   if (v.placementProbe) strength = { ...strength, placementProbe: v.placementProbe };
@@ -122,9 +122,11 @@ const avg = (xs: readonly number[]) => (xs.length === 0 ? 0 : Math.round((xs.red
 export const PUSH_PULL_BAND = { low: 2 / 3, high: 1.5 };
 const DAY = 86_400_000;
 
-export function measureLot42(spec: ProfileSpec, variant: Lot42Variant = VARIANTS[0] as Lot42Variant): Lot42Measure {
+/** `onState` (lot 4.3) : reçoit l'état final de la simulation (lecture seule, diagnostics). */
+export function measureLot42(spec: ProfileSpec, variant: Lot42Variant = VARIANTS[0] as Lot42Variant, onState?: (s: SimOut['state']) => void): Lot42Measure {
   const env = variantEnv(variant);
   const r: SimOut = simulate(spec, WEEKS, env);
+  onState?.(r.state);
   const base = measureLot41(spec, r);
   const rows = r.sessions.filter((x) => x.sport === 'strength');
   const content = strengthContent();

@@ -299,11 +299,19 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
     // Réessai BORNÉ : seulement après un refus dû au SEUL créneau, et seulement vers un créneau plus long ;
     // la demande (sport, intention, station, graine propre au jour) n'est jamais modifiée.
     let slotRetry: { minutes: number; trace: ReasonCode[]; last: { date: string; reasons: readonly ReasonCode[] } } | undefined;
+    const recoveryTrace: ReasonCode[] = [];
+    let lastRecoveryRefusal: { date: string; reasons: readonly ReasonCode[] } | undefined;
     for (const date of candidates) {
       if (slotRetry && (minutes.get(date) ?? 0) <= slotRetry.minutes) continue;
       tried.push(date);
       const out = port.generate({ requestId: r.requestId, date, availableMinutes: minutes.get(date) ?? 0, hybrid, seed: `planner:${r.requestId}:${date}`, intent: r.intent, ...weekArg(r.sport, date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
       if (out.status === 'refused') {
+        // Lot 4.3 (Q7, proposition seulement) : refus dû à la SEULE fenêtre de récupération ⇒ jour suivant, tracé.
+        if (input.retryRecoveryRefusals === true && out.reasons.some((x) => x.params.cause === 'strength_recovery_window') && classifyRefusal(out.reasons) === 'non_retryable_engine_refusal') {
+          recoveryTrace.push(gpReasons.emit(GP_CODES.RECOVERY_RETRY, { sport: r.sport, requestId: r.requestId, fromDate: date, cause: 'strength_recovery_window' }));
+          lastRecoveryRefusal = { date, reasons: out.reasons };
+          continue;
+        }
         if (classifyRefusal(out.reasons) === 'retryable_slot_constraint') {
           const m = minutes.get(date) ?? 0;
           const note = gpReasons.emit(GP_CODES.SLOT_RETRY, { sport: r.sport, requestId: r.requestId, fromDate: date, fromMinutes: m, causes: out.reasons.map((x) => x.code) });
@@ -322,9 +330,15 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
       const p: Placed = { sport: r.sport, date, requestId: r.requestId, stimulus: r.intent.stimulus, archetypeId: r.intent.archetypeId, session: out.session, ...(out.fingerprint ? { fingerprint: out.fingerprint } : {}), structures, demand: port.demand(out.session, input.mode) };
       placed.set(r.requestId, p);
       const placedResult = plannedResult(base, date, out, p);
-      results.set(r.requestId, slotRetry ? { ...placedResult, reasons: [...slotRetry.trace, ...placedResult.reasons] } : placedResult);
+      results.set(r.requestId, slotRetry || recoveryTrace.length > 0 ? { ...placedResult, reasons: [...recoveryTrace, ...(slotRetry?.trace ?? []), ...placedResult.reasons] } : placedResult);
       done = true;
       break;
+    }
+    if (!done && lastRecoveryRefusal) {
+      // Lot 4.3 (Q7) : aucun autre jour ne respecte la récupération — refus du moteur conservé, jours examinés tracés.
+      const { date, reasons } = lastRecoveryRefusal;
+      results.set(r.requestId, { ...base, status: 'refused', category: refusedCategory(reasons), date, reasons: [...recoveryTrace, gpReasons.emit(GP_CODES.ENGINE_REFUSED, { sport: r.sport, requestId: r.requestId, date }), ...reasons] });
+      done = true;
     }
     if (!done && slotRetry && !tried.some((d) => conflicts.some((c) => c.params.sport === r.sport && c.params.date === d))) {
       // Aucun créneau assez long : refus du moteur conservé (dernier créneau essayé), tentatives tracées.
@@ -357,7 +371,8 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
     // Régénération dans l'ORDRE DES DATES : chaque séance composée connaît les séances de sa discipline placées avant elle.
     const dateOf = (x: Request): string => placed.get(x.requestId)?.date ?? '';
     for (const r of own.filter((x) => x.composed).sort((a, b) => (dateOf(a) < dateOf(b) ? -1 : dateOf(a) > dateOf(b) ? 1 : 0))) {
-      const p = placed.get(r.requestId) as Placed;
+      // `let` : seul le réessai Q7 (option des propositions) peut déplacer la séance vers un autre jour autorisé.
+      let p = placed.get(r.requestId) as Placed;
       const base = { requestId: r.requestId, sport: r.sport };
       const slot = res.status === 'composed' ? res.days.find((x) => x.date === p.date) : undefined;
       if (res.status === 'unresolved' || !slot) {
@@ -368,7 +383,19 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
       r.intent = slot.intent;
       r.final = true;
       compositionOf.set(r.requestId, { applied: { authority: res.status === 'composed' ? res.authority : 'provisional', role: slot.role }, reasons: [gpReasons.emit(GP_CODES.COMPOSITION_APPLIED, { sport: r.sport, authority: res.authority, role: slot.role, archetypeId: slot.intent.archetypeId }), ...res.reasons] });
-      const out = port.generate({ requestId: r.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, seed: `planner:${r.requestId}:${p.date}`, intent: slot.intent, ...weekArg(r.sport, p.date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+      let out = port.generate({ requestId: r.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, seed: `planner:${r.requestId}:${p.date}`, intent: slot.intent, ...weekArg(r.sport, p.date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+      // Lot 4.3 (Q7, proposition seulement) : séance COMPOSÉE refusée pour la seule fenêtre de récupération ⇒ jours
+      // autorisés encore libres, dans l'ordre chronologique ; la composition (archétype) est conservée ; tracé.
+      if (out.status === 'refused' && input.retryRecoveryRefusals === true && out.reasons.some((x) => x.params.cause === 'strength_recovery_window') && classifyRefusal(out.reasons) === 'non_retryable_engine_refusal') {
+        const takenNow = new Set([...placed.values()].map((x) => x.date));
+        const trace: ReasonCode[] = [gpReasons.emit(GP_CODES.RECOVERY_RETRY, { sport: r.sport, requestId: r.requestId, fromDate: p.date, cause: 'strength_recovery_window' })];
+        for (const d of dates.filter((x) => !takenNow.has(x) && minutesFor(r.sport, x) > 0)) {
+          const alt = port.generate({ requestId: r.requestId, date: d, availableMinutes: minutes.get(d) ?? 0, hybrid, seed: `planner:${r.requestId}:${d}`, intent: slot.intent, ...weekArg(r.sport, d, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+          if (alt.status === 'planned') { placed.set(r.requestId, { ...p, date: d }); p = placed.get(r.requestId) as Placed; out = alt; compositionOf.set(r.requestId, { applied: compositionOf.get(r.requestId)?.applied as AppliedComposition, reasons: [...trace, ...(compositionOf.get(r.requestId)?.reasons ?? [])] }); break; }
+          trace.push(gpReasons.emit(GP_CODES.RECOVERY_RETRY, { sport: r.sport, requestId: r.requestId, fromDate: d, cause: alt.reasons.some((x) => x.params.cause === 'strength_recovery_window') ? 'strength_recovery_window' : 'engine_refused' }));
+        }
+        if (out.status === 'refused') out = { ...out, reasons: [...trace, ...out.reasons] };
+      }
       if (out.status === 'refused') {
         placed.delete(r.requestId);
         results.set(r.requestId, { ...base, status: 'refused', category: refusedCategory(out.reasons), date: p.date, reasons: [gpReasons.emit(GP_CODES.ENGINE_REFUSED, { sport: r.sport, requestId: r.requestId, date: p.date }), ...out.reasons] });

@@ -45,6 +45,11 @@ export interface PlannerEnvironment {
   /** Ruleset de gouvernance du planificateur ; absent ⇒ décisions d'interférence fail-closed. */
   readonly governance?: LoadedRuleset;
   /**
+   * Reprise RC5 lot 4.3 (Q7) — PROPOSITIONS seulement (`hybrid-proposals.ts`) : réessai d'un autre jour autorisé après un
+   * refus pour la seule fenêtre de récupération Musculation. Jamais fixé par l'environnement Beta 0.
+   */
+  readonly recoveryRetry?: boolean;
+  /**
    * `composition` : règle de composition hebdomadaire du MOTEUR Strength (archétype de chaque séance). Absente : intention
    * déclarée exécutée telle quelle (chemin multisport existant).
    */

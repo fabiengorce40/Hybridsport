@@ -86,9 +86,10 @@ export function previewStrengthWeekReplan(state:AppState,input:ProfileInput,cloc
  const edition=before.governance.filter(r=>r.code==='KAIRO.WEEK_REPLANNED').length+1;
  const idOf=(id:string)=>id.replace(weekStart+'.',`${weekStart}.v22.${String(edition)}.`);
  const mapWeek=(w:WeekSession)=>({...w,requestId:idOf(w.requestId)});
+ // Lot 4.3 — le RANG de la demande est transmis à la sonde de placement (correction du lot 4.1, absente de ce chemin).
  const wrapped:SportPorts=Object.fromEntries(Object.entries(ports).map(([sp,port])=>{
   if(!port)return[sp,port];const total=p[sp as Sport].sessionsPerWeek;const composition=port.composition;const memo=new Map<string,ReturnType<typeof port.generate>>();
-  return[sp,{...port,...(composition?{composition:{...composition,placementArchetypeId:typeof composition.placementArchetypeId==='function'?()=> (composition.placementArchetypeId as (n:number)=>string|undefined)(total??1):composition.placementArchetypeId,compose:args=>composition.compose({...args,weeklySessions:total??args.weeklySessions})}}:{}),generate:slot=>{
+  return[sp,{...port,...(composition?{composition:{...composition,placementArchetypeId:typeof composition.placementArchetypeId==='function'?(_n:number,index?:number)=> (composition.placementArchetypeId as (n:number,i?:number)=>string|undefined)(total??1,index):composition.placementArchetypeId,compose:args=>composition.compose({...args,weeklySessions:total??args.weeklySessions})}}:{}),generate:slot=>{
    const own=fixedSessions.filter(r=>r.sport===sp&&(sp==='strength'||r.date<slot.date)&&!state.programmeState?.results.some(x=>x.requestId===r.requestId));
    const args={...slot,requestId:idOf(slot.requestId),seed:`planner:${idOf(slot.requestId)}:${slot.date}`,sportSessions:total??slot.sportSessions,
     weekSessions:[...own,...(slot.weekSessions??[]).map(mapWeek)]};
@@ -102,7 +103,7 @@ export function previewStrengthWeekReplan(state:AppState,input:ProfileInput,cloc
  let best:AppState|undefined;let bestRank:number[]=[];let tried=0;
  for(const rest of candidates){
   const days=available.map(d=>({...d,availableMinutes:d.date<clock.today||occupied.has(d.date)||d.date===rest?0:d.availableMinutes}));
-  const generated=planMultisportWeek({weekStart,days,demands,mode:env.mode,recent},wrapped,env.governance,clockOf());tried++;
+  const generated=planMultisportWeek({weekStart,days,demands,mode:env.mode,recent,...(env.recoveryRetry===true?{retryRecoveryRefusals:true}:{})},wrapped,env.governance,clockOf());tried++;
   // Map internal planner IDs once, including reasons, neighbours and composition references.
   const raw=persistWeek(generated,normalizeInstant(clock.now),ps.definition.origin,env);
   const mapIds=<T,>(value:T):T=>JSON.parse(JSON.stringify(value,(_key,item:unknown)=>typeof item==='string'?item.replace(new RegExp(weekStart+'\\.(strength|hyrox|running|crosstraining)\\.','g'),`${weekStart}.v22.${String(edition)}.$1.`):item)) as T;

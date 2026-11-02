@@ -62,6 +62,13 @@ export const zPlannerInput = z.object({
      */
     status: z.enum(['executed', 'abandoned', 'missed', 'planned']).optional(),
   }).strict()).default([]),
+  /**
+   * Reprise RC5 lot 4.3 (Q7) — PROPOSITION, absente de toute planification active : un refus pour la SEULE fenêtre de
+   * récupération Musculation (`strength_recovery_window`) est réessayé sur les autres jours autorisés encore libres,
+   * avec trace `PLAN.PLANNER.RECOVERY_RETRY`. Utilisée seulement par les propositions de replanification (aperçu
+   * « Planning actuel / Planning proposé », jamais appliqué sans confirmation). Absent : refus terminal, comme avant.
+   */
+  retryRecoveryRefusals: z.boolean().optional(),
 }).strict();
 export type PlannerInput = z.input<typeof zPlannerInput>;
 export type ParsedPlannerInput = z.infer<typeof zPlannerInput>;
