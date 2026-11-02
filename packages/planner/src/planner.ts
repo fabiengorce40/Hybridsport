@@ -258,7 +258,7 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
     if (done) return { composed: toComposition(done.date, done.out), reasons: [...done.out.reasons] };
     const ref = [...dates].filter((d) => minutesFor(r.sport,d) > 0).sort((a, b) => (minutes.get(b) ?? 0) - (minutes.get(a) ?? 0) || (a < b ? -1 : 1))[0];
     if (ref === undefined) return { reasons: [] };
-    const out = port.generate({ requestId: r.requestId, date: ref, availableMinutes: minutes.get(ref) ?? 0, hybrid, seed: `planner:${r.requestId}:${ref}`, intent: r.intent, ...weekArg(r.sport, ref, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+    const out = port.generate({ requestId: r.requestId, date: ref, availableMinutes: minutes.get(ref) ?? 0, hybrid, ...(r.final ? { final: true } : {}), seed: `planner:${r.requestId}:${ref}`, intent: r.intent, ...weekArg(r.sport, ref, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
     return out.status === 'planned' ? { composed: toComposition(ref, out), reasons: [...out.reasons] } : { reasons: [gpReasons.emit(GP_CODES.ENGINE_REFUSED, { sport: r.sport, requestId: r.requestId, date: ref }), ...out.reasons] };
   };
 
@@ -304,7 +304,7 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
     for (const date of candidates) {
       if (slotRetry && (minutes.get(date) ?? 0) <= slotRetry.minutes) continue;
       tried.push(date);
-      const out = port.generate({ requestId: r.requestId, date, availableMinutes: minutes.get(date) ?? 0, hybrid, seed: `planner:${r.requestId}:${date}`, intent: r.intent, ...weekArg(r.sport, date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+      const out = port.generate({ requestId: r.requestId, date, availableMinutes: minutes.get(date) ?? 0, hybrid, ...(r.final ? { final: true } : {}), seed: `planner:${r.requestId}:${date}`, intent: r.intent, ...weekArg(r.sport, date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
       if (out.status === 'refused') {
         // Lot 4.3 (Q7, proposition seulement) : refus dû à la SEULE fenêtre de récupération ⇒ jour suivant, tracé.
         if (input.retryRecoveryRefusals === true && out.reasons.some((x) => x.params.cause === 'strength_recovery_window') && classifyRefusal(out.reasons) === 'non_retryable_engine_refusal') {
@@ -383,14 +383,14 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
       r.intent = slot.intent;
       r.final = true;
       compositionOf.set(r.requestId, { applied: { authority: res.status === 'composed' ? res.authority : 'provisional', role: slot.role }, reasons: [gpReasons.emit(GP_CODES.COMPOSITION_APPLIED, { sport: r.sport, authority: res.authority, role: slot.role, archetypeId: slot.intent.archetypeId }), ...res.reasons] });
-      let out = port.generate({ requestId: r.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, seed: `planner:${r.requestId}:${p.date}`, intent: slot.intent, ...weekArg(r.sport, p.date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+      let out = port.generate({ requestId: r.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, final: true, seed: `planner:${r.requestId}:${p.date}`, intent: slot.intent, ...weekArg(r.sport, p.date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
       // Lot 4.3 (Q7, proposition seulement) : séance COMPOSÉE refusée pour la seule fenêtre de récupération ⇒ jours
       // autorisés encore libres, dans l'ordre chronologique ; la composition (archétype) est conservée ; tracé.
       if (out.status === 'refused' && input.retryRecoveryRefusals === true && out.reasons.some((x) => x.params.cause === 'strength_recovery_window') && classifyRefusal(out.reasons) === 'non_retryable_engine_refusal') {
         const takenNow = new Set([...placed.values()].map((x) => x.date));
         const trace: ReasonCode[] = [gpReasons.emit(GP_CODES.RECOVERY_RETRY, { sport: r.sport, requestId: r.requestId, fromDate: p.date, cause: 'strength_recovery_window' })];
         for (const d of dates.filter((x) => !takenNow.has(x) && minutesFor(r.sport, x) > 0)) {
-          const alt = port.generate({ requestId: r.requestId, date: d, availableMinutes: minutes.get(d) ?? 0, hybrid, seed: `planner:${r.requestId}:${d}`, intent: slot.intent, ...weekArg(r.sport, d, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+          const alt = port.generate({ requestId: r.requestId, date: d, availableMinutes: minutes.get(d) ?? 0, hybrid, final: true, seed: `planner:${r.requestId}:${d}`, intent: slot.intent, ...weekArg(r.sport, d, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
           if (alt.status === 'planned') { placed.set(r.requestId, { ...p, date: d }); p = placed.get(r.requestId) as Placed; out = alt; compositionOf.set(r.requestId, { applied: compositionOf.get(r.requestId)?.applied as AppliedComposition, reasons: [...trace, ...(compositionOf.get(r.requestId)?.reasons ?? [])] }); break; }
           trace.push(gpReasons.emit(GP_CODES.RECOVERY_RETRY, { sport: r.sport, requestId: r.requestId, fromDate: d, cause: alt.reasons.some((x) => x.params.cause === 'strength_recovery_window') ? 'strength_recovery_window' : 'engine_refused' }));
         }
@@ -426,7 +426,7 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
       const port = ports[r.sport];
       if (!p || !port?.consumesNeighbours || !r.intent) continue;
       const n = neighboursOf(r.sport, p.date, r.requestId);
-      const out = port.generate({ requestId: r.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, seed: `planner:${r.requestId}:${p.date}`, intent: r.intent, neighbours: n, ...weekArg(r.sport, p.date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+      const out = port.generate({ requestId: r.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, final: true, seed: `planner:${r.requestId}:${p.date}`, intent: r.intent, neighbours: n, ...weekArg(r.sport, p.date, r.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
       const base = { requestId: r.requestId, sport: r.sport };
       if (out.status === 'refused') {
         placed.delete(r.requestId);
@@ -593,7 +593,7 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
       if (decided.has(p.requestId) || !port?.consumesNeighbours || !r?.intent || res?.status !== 'planned') continue;
       const n = neighboursOf(p.sport, p.date, p.requestId);
       if (JSON.stringify(n) === JSON.stringify(res.neighbourContext)) continue;
-      const out1 = port.generate({ requestId: p.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, seed: `planner:${p.requestId}:${p.date}`, intent: r.intent, neighbours: n, ...weekArg(p.sport, p.date, p.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+      const out1 = port.generate({ requestId: p.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, final: true, seed: `planner:${p.requestId}:${p.date}`, intent: r.intent, neighbours: n, ...weekArg(p.sport, p.date, p.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
       const stale = (cause: string): void => { out.push({ conflict: `NEIGHBOUR_REFRESH|${p.requestId}`, cause, tried: [] }); };
       if (out1.status === 'refused') { stale('REFRESH_ENGINE_REFUSED'); continue; }
       const structures = port.structures(out1.session);
@@ -623,7 +623,7 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
     else if (candidates.length === 0) tried.push('MOVE:COMPOSITION_ORDER');
     for (const d of candidates) {
       const nctx = hybrid && port.consumesNeighbours ? neighboursOf(n.sport, d, n.requestId) : undefined;
-      const out = port.generate({ requestId: n.requestId, date: d, availableMinutes: minutes.get(d) ?? 0, hybrid, seed: `planner:${n.requestId}:${d}`, intent: r.intent, ...(nctx ? { neighbours: nctx } : {}), ...weekArg(n.sport, d, n.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+      const out = port.generate({ requestId: n.requestId, date: d, availableMinutes: minutes.get(d) ?? 0, hybrid, final: true, seed: `planner:${n.requestId}:${d}`, intent: r.intent, ...(nctx ? { neighbours: nctx } : {}), ...weekArg(n.sport, d, n.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
       if (out.status === 'refused') { tried.push(`MOVE:${d}:ENGINE_REFUSED`); continue; }
       const structures = port.structures(out.session);
       if (conflictsOf(n.sport, d, structures, n.requestId).length > 0) { tried.push(`MOVE:${d}:G4_CONFLICT`); continue; }
@@ -683,7 +683,7 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
     const port = p ? ports[p.sport] : undefined;
     if (!p || !r?.intent || !port) return undefined;
     const n = port.consumesNeighbours ? neighboursOf(p.sport, date, requestId) : undefined;
-    const out = port.generate({ requestId, date, availableMinutes: minutes.get(date) ?? 0, hybrid, seed: `planner:${requestId}:${date}`, intent: r.intent, ...(n ? { neighbours: n } : {}), ...weekArg(p.sport, date, requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+    const out = port.generate({ requestId, date, availableMinutes: minutes.get(date) ?? 0, hybrid, final: true, seed: `planner:${requestId}:${date}`, intent: r.intent, ...(n ? { neighbours: n } : {}), ...weekArg(p.sport, date, requestId), ...(r.station === undefined ? {} : { station: r.station }) });
     if (out.status === 'refused') return undefined;
     const structures = port.structures(out.session);
     return { out, n, next: { ...withFingerprint(p, out.fingerprint), date, session: out.session, structures, demand: port.demand(out.session, input.mode) } };
@@ -701,7 +701,7 @@ export function planCore(raw: PlannerInput, ports: SportPorts, governance: Loade
     if (!port.consumesNeighbours) { tried.push('RECOMPOSE:NO_ENGINE_LEVER'); return undefined; }
     const other = c.members.find((m) => m !== n.requestId);
     const nctx = neighboursOf(n.sport, p.date, n.requestId, other);
-    const out = port.generate({ requestId: n.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, seed: `planner:${n.requestId}:${p.date}`, intent: r.intent, neighbours: nctx, ...weekArg(n.sport, p.date, n.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
+    const out = port.generate({ requestId: n.requestId, date: p.date, availableMinutes: minutes.get(p.date) ?? 0, hybrid, final: true, seed: `planner:${n.requestId}:${p.date}`, intent: r.intent, neighbours: nctx, ...weekArg(n.sport, p.date, n.requestId), ...(r.station === undefined ? {} : { station: r.station }) });
     if (out.status === 'refused') { tried.push('RECOMPOSE:ENGINE_REFUSED'); return undefined; }
     if (JSON.stringify(out.session.blocks) === JSON.stringify(p.session.blocks)) { tried.push('RECOMPOSE:NO_EFFECT'); return undefined; }
     const structures = port.structures(out.session);

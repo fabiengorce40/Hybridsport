@@ -121,6 +121,11 @@ export const zStrengthContext = z.object({
     }).strict()),
     /** Contexte de semaine connu du planificateur (sinon hypothèse prudente, DATA.WEEK_CONTEXT_UNKNOWN). */
     known: z.boolean(),
+    /**
+     * Reprise RC5 lot 4.4 — séances Musculation RÉELLEMENT placées dans la semaine, par région (composition du planificateur).
+     * Lu seulement par l'option candidate `redistributeUnplaced` de la politique de personnalisation ; absent : rien ne change.
+     */
+    placedSessionsByRegion: z.object({ upper: nonNeg, lower: nonNeg, full: nonNeg }).strict().optional(),
   }).strict(),
   preferences: z.object({ liked: z.array(id), disliked: z.array(id) }).strict(),
   /** Incréments réalisables déclarés, par équipement : pas et charge maximale éventuelle. */

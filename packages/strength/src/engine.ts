@@ -18,7 +18,7 @@ import { buildEnv } from './model.js';
 import type { Env } from './model.js';
 import { firstFailingFilter, maxEffortEligible, slotCandidatesFor } from './candidates.js';
 import type { FilterId } from './candidates.js';
-import { decidingCriterion, rankCandidates, rotationReason } from './selection.js';
+import { decidingCriterion, isolationReviewCandidate, rankCandidates, rotationReason } from './selection.js';
 import type { Ranked, SessionSoFar } from './selection.js';
 import type { InterferenceAssessment } from './interference.js';
 import { findStimulusSwap, workingSetsOf } from './stimulus-preservation.js';
@@ -139,6 +139,7 @@ function pickForSlot(slot: SlotInstance, env: Env, soFar: SessionSoFar, usedFami
   const free = (env.incumbentBySlot.get(slot.def.id) ?? []).filter((x) => !placed(x));
   const incumbent = tracked && free.includes(tracked.exerciseId) ? tracked.exerciseId : free[0];
   let kept = false;
+  let review: Ranked | undefined;
   if (incumbent !== undefined && !override) {
     const inRanked = ranked.find((r) => r.exercise.id === incumbent);
     const ie = env.catalog.exercise(incumbent);
@@ -148,11 +149,17 @@ function pickForSlot(slot: SlotInstance, env: Env, soFar: SessionSoFar, usedFami
     else if (!ie) cause = 'catalog_unknown';
     else if (!inRanked) cause = usedFamilies.has(ie.family) ? 'family_in_session' : (firstFailingFilter(ie, usedSlot, env, { technicalCount }) ?? 'not_candidate');
     else { const why = rotationReason(ie, env); if (why) cause = `rotation_reason:${why}`; }
+    // Lot 4.4 (option candidate `isolationReview`, inactive) : réévaluation contrôlée d'une isolation en place.
+    if (cause === undefined && inRanked && slot.def.role === 'accessory' && (!anchor || placed(anchor.exerciseId)) && env.params['strength.personalization']?.isolationReview === 'volume_fit') {
+      review = isolationReviewCandidate(inRanked, ranked, slot, env, soFar);
+      if (review) cause = 'isolation_volume_review';
+    }
     if (cause === undefined && inRanked && (!anchor || placed(anchor.exerciseId))) { chosen = inRanked; substitutedFrom = undefined; kept = true; }
+    else if (review) { chosen = review; substitutedFrom = undefined; }
     reasons.push(strengthReasons.emit('SELECT.CONTINUITY', { slot: slot.def.id, incumbent, chosen: chosen.exercise.id, outcome: chosen.exercise.id === incumbent ? 'kept' : 'replaced', cause: chosen.exercise.id === incumbent ? 'admissible' : (cause ?? 'outranked') }));
   }
   const ordered = [chosen, ...ranked.filter((r) => r !== chosen)];
-  reasons.push(strengthReasons.emit('SELECT.EXERCISE.CHOSEN', { exerciseId: chosen.exercise.id, slot: slot.def.id, decidingCriterion: override ? 'variant' : kept && ranked[0] !== chosen ? 'continuity' : decidingCriterion(ordered, usedSlot, env) }));
+  reasons.push(strengthReasons.emit('SELECT.EXERCISE.CHOSEN', { exerciseId: chosen.exercise.id, slot: slot.def.id, decidingCriterion: override ? 'variant' : review ? 'isolation_review' : kept && ranked[0] !== chosen ? 'continuity' : decidingCriterion(ordered, usedSlot, env) }));
   const track = anchor?.exerciseId === chosen.exercise.id ? anchor : tracked?.exerciseId === chosen.exercise.id ? tracked : undefined;
   return { slot: usedSlot, exercise: chosen.exercise, ranked: ordered, instance: `${slot.def.id}#${String(instance)}`, ...(track ? { track } : {}), ...(substitutedFrom ? { substitutedFrom } : {}), ...(kept ? { kept } : {}) };
 }
@@ -384,7 +391,11 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
         const region = archetypeRegion(env.archetype.id);
         // technical-constant: structure — deux régions (Haut, Bas) se partagent les séances d'une semaine Haut / Bas
         const split = region !== 'full' ? 2 : 1;
-        const remaining = Math.max(1,Math.ceil((ctx.personalizationSessions ?? 1)/split)-prior.filter(s => (region !== 'full' ? archetypeRegion(s.archetypeId) === region : s.archetypeId===env.archetype.id)).length);
+        // Lot 4.4 (option candidate `redistributeUnplaced`) : séances de la région RÉELLEMENT placées (au plus les demandées).
+        const requestedRegion = Math.ceil((ctx.personalizationSessions ?? 1)/split);
+        const placedByRegion = params['strength.personalization']?.redistributeUnplaced === true ? ctx.week.placedSessionsByRegion : undefined;
+        const regionSessions = placedByRegion ? Math.min(requestedRegion, Math.max(1, placedByRegion[region])) : requestedRegion;
+        const remaining = Math.max(1,regionSessions-prior.filter(s => (region !== 'full' ? archetypeRegion(s.archetypeId) === region : s.archetypeId===env.archetype.id)).length);
         let budget = cell.sets.max;
         // Lot 4.1 — `primary_need` : besoin des groupes PRINCIPAUX (le plus grand), haut hebdomadaire de chaque groupe (le plus petit).
         const primaryNeed = params['strength.personalization']?.allocation === 'primary_need';

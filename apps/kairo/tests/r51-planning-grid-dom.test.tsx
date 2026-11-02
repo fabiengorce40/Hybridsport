@@ -57,7 +57,7 @@ const toList = () => fireEvent.click(screen.getByRole('button', { name: 'Liste' 
  */
 const asPreLot4 = (v: unknown): unknown => JSON.parse(JSON.stringify(v)
   .replaceAll('0.8.0-strength-hautbas-ab.personalization-v1', '0.8.0-strength-personalization-v1').replaceAll('0.8.0-strength-hautbas-ab', '0.7.0-strength-l1b4')
-  .replaceAll('fixtures:strength-hautbas-ab-0.8.0', 'fixtures:strength-l1b4-0.7.0').replaceAll('0.2.0-candidate', '0.1.0-candidate').replaceAll(' ; Reprise RC5 lot 4', '')
+  .replaceAll('+catalog-lot44', '').replaceAll('0.3.1-strength-test-f6-lot44', '0.3.0-strength-test-f6').replaceAll('fixtures:strength-hautbas-ab-0.8.0', 'fixtures:strength-l1b4-0.7.0').replaceAll('0.2.0-candidate', '0.1.0-candidate').replaceAll(' ; Reprise RC5 lot 4', '')
   .replace(/"traceId":"t[0-9a-f]+"/g, '"traceId":"T"'));
 const withoutLot2Clock = (st: { programmeLogs?: Record<string, Record<string, unknown>> }) => ({
   ...st, programmeLogs: Object.fromEntries(Object.entries(st.programmeLogs ?? {}).map(([k, l]) => { const { clock: _c, timing: _t, ...rest } = l; return [k, rest]; })),

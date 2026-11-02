@@ -51,4 +51,19 @@ export const zPersonalizationPolicy = z.object({
    * Activation : décision (document 09, Q2).
    */
   highWindow: z.enum(['calendar_and_rolling']).optional(),
+  /**
+   * Reprise RC5 lot 4.4 (chantier C) — PROPOSITION, absente de toute politique publiée : la part de cible et de borne
+   * haute d'une séance se calcule sur les séances de la région RÉELLEMENT placées (`week.placedSessionsByRegion`) et non
+   * sur les séances demandées : le volume d'une séance non placée est redistribué aux séances réalisables, toujours
+   * plafonné par la borne haute hebdomadaire et le budget de durée. Activation : décision (document 11, § 6).
+   */
+  redistributeUnplaced: z.literal(true).optional(),
+  /**
+   * Reprise RC5 lot 4.4 (chantier D) — PROPOSITION, absente de toute politique publiée : réévaluation contrôlée d'une
+   * ISOLATION en place (rôle `accessory`, continuité S4). L'isolation en place est remplacée seulement si ses groupes
+   * principaux ont atteint leur cible de la semaine ET qu'un autre candidat, au moins aussi adapté (charge, rôle) et sans
+   * dépassement supplémentaire, sert un groupe encore sous sa cible. Principaux et secondaires jamais réévalués.
+   * Activation : décision (document 11, § 7).
+   */
+  isolationReview: z.literal('volume_fit').optional(),
 }).strict();

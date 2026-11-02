@@ -33,7 +33,10 @@ const strengthIds = (s: AppState, week: string) => (s.planner.weeks[week]?.reque
 describe('RC4.5 F6 — contenu versionné : aucune régénération rétroactive', () => {
   it('registre : contenu courant (L1-V3), F6 et 4F conservés ; version inconnue ⇒ aucun contenu', () => {
     // RC5.1 : contenu courant = surcouche Haut A/B et Bas A/B (sur L1b-4, sur L1-V3, sur F6) ; antérieurs conservés au registre.
-    expect(CURRENT).toEqual({ ruleset: '0.8.0-strength-hautbas-ab', catalog: F6.catalog });
+    // Lot 4.4 : catalogue courant VERSIONNÉ (2 corrections factuelles) ; la paire précédente (même ruleset, catalogue F6)
+    // reste au registre et relit les semaines déjà générées.
+    expect(CURRENT).toEqual({ ruleset: '0.8.0-strength-hautbas-ab', catalog: '0.3.1-strength-test-f6-lot44' });
+    expect(strengthContentFor('0.8.0-strength-hautbas-ab', F6.catalog)?.catalog.version).toBe(F6.catalog);
     expect(strengthContentFor(LOCK.ruleset, LOCK.catalog)?.ruleset.version).toBe(LOCK.ruleset);
     expect(strengthContentFor(F6.ruleset, F6.catalog)?.ruleset.version).toBe(F6.ruleset);
     expect(strengthContentFor(CURRENT.ruleset, CURRENT.catalog)).toBe(strengthContent());

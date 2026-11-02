@@ -265,11 +265,11 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
           finish = { ...finish, ct: { result } };
         }
         if (v.sport === 'hyrox' && hw) { s = setHrSteps(s, v.requestId, hw.steps.length); finish = { ...finish, hr: { timeCapReached: false } }; }
-        try { s = finishProgrammeSession(s, at(d, '09:30'), finish as never); }
+        try { s = finishProgrammeSession(s, at(d, '09:30'), finish as never, env); }
         catch (e) {
           // Résultat refusé « comme prévu » ⇒ séance déclarée adaptée (constat tracé).
           errors.push(`S${String(w + 1)} ${v.sport} ${d} : fin « comme prévu » refusée (${(e as { code?: string }).code ?? String(e)}), déclarée adaptée`);
-          s = finishProgrammeSession(s, at(d, '09:31'), { ...finish, completion: 'modified' } as never);
+          s = finishProgrammeSession(s, at(d, '09:31'), { ...finish, completion: 'modified' } as never, env);
         }
         s = recordFieldFeedback(s, at(d, '09:40'), v.requestId, { difficulty: 'adapted', tolerance: 'good', perceivedDuration: 'adapted' });
         row.executed = 'réalisée';

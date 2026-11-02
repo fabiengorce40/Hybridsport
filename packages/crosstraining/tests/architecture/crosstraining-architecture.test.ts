@@ -173,6 +173,16 @@ const STRENGTH_RC5_LOT42_CHANGES = [
   'packages/strength/src/volume.ts',
   'packages/strength/tests/unit/lot42-options.test.ts',
 ];
+/**
+ * RC5 lot 4.4 (sécurisation et validation) : catalogue versionné en SURCOUCHE de F6 (deux muscles secondaires ajoutés) ;
+ * options PROPOSÉES et INACTIVES (redistribution, réévaluation d'isolation, lecture R4 / R3 de la progression) dont les
+ * fichiers `src` relèvent déjà des listes ci-dessus. Sans option, comportement strictement identique.
+ */
+const STRENGTH_RC5_LOT44_CHANGES = [
+  'packages/strength/tests/fixtures/catalog-lot44.ts',
+  'packages/strength/tests/unit/catalog-lot44.test.ts',
+  'packages/strength/tests/unit/lot44-r4-reading.test.ts',
+];
 /** V2.1 : évolution Strength explicitement autorisée le 29/10 ; aucun changement CORE, Running ou CT. */
 const STRENGTH_V21_CHANGES = ["packages/strength/tests/unit/science-lock.test.ts", "packages/strength/content/personalization-v1.ts", "packages/strength/src/personalization-contract.ts", "packages/strength/src/personalization.ts", "packages/strength/src/candidates.ts", "packages/strength/src/codes.ts", "packages/strength/src/context.ts", "packages/strength/src/dose.ts", "packages/strength/src/engine.ts", "packages/strength/src/index.ts", "packages/strength/src/params.ts", "packages/strength/src/science/provenance.ts"];
 const CT_C2_AUTHORIZED_CORE_CHANGES = [
@@ -219,6 +229,7 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   ...STRENGTH_RC5_LOT4_CHANGES,
   ...STRENGTH_RC5_LOT41_CHANGES,
   ...STRENGTH_RC5_LOT42_CHANGES,
+  ...STRENGTH_RC5_LOT44_CHANGES,
   ...RUNNING_RC43_R2_CHANGES,
 ];
 

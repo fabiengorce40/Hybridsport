@@ -827,7 +827,7 @@ export interface FinishInput {
  * Fin de séance : construit l'entrée d'exécution RÉELLE (séries saisies, douleur, course) et l'enregistre par
  * `recordSessionExecution` (validation par le contrat du moteur, historique, programme). Refus ⇒ état inchangé.
  */
-export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishInput): AppState {
+export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishInput, env?: ProgrammeEnvironment): AppState {
   // RC4.1 — ressenti Course : une valeur du vocabulaire du contrat, ou rien ; refusé pour un autre sport (jamais ignoré en silence).
   if (f.difficulty !== undefined && !(DIFFICULTIES as readonly string[]).includes(f.difficulty)) throw new AppError('RUN_DIFFICULTY_INVALID');
   const s0 = state.programmeLogs[f.requestId] ? state : startWithoutCheck(state, clock, f.requestId);
@@ -862,7 +862,7 @@ export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishI
     return withLog(recorded, { ...log, ct: { ...rt, runningSince: null, accumulatedS: elapsedS }, rest: null, finishedAt: normalizeInstant(clock.now), outcome: { completion: f.completion, pain: ctPain, ct } });
   }
   const recorded = log.sport === 'strength'
-    ? recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'strength', completion: f.completion, pain, sets: log.sets, painItems: log.painItems })
+    ? recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'strength', completion: f.completion, pain, sets: log.sets, painItems: log.painItems }, env)
     : recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'running', completion: f.completion, pain, ...(f.run ? { run: f.run } : {}), ...(f.difficulty !== undefined ? { difficulty: f.difficulty } : {}) });
   const outcome = { completion: f.completion, pain: f.pain || log.painItems.length > 0, ...(f.run ? { run: { ...f.run } } : {}) };
   // RC3.5 — lecteur Course figé à la fin (temps actif conservé, jamais relancé) ; il n'a rien enregistré lui-même.

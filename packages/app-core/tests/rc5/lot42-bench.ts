@@ -13,7 +13,7 @@ import { loadCatalog, loadRuleset } from '@hybridsport/engine';
 import { readStrengthParams, STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } from '@hybridsport/strength';
 import type { StrengthCompositionRule } from '@hybridsport/strength';
 import { beta0Environment, personalizedStrengthContent, strengthContent, strengthWeekVolume, updateStrengthPersonalization } from '../../src/index.js';
-import type { ProfileInput, ProgrammeEnvironment, StrengthPersonalization } from '../../src/index.js';
+import type { ProfileInput, ProgrammeEnvironment, ProgressionReadingOption, StrengthPersonalization } from '../../src/index.js';
 import { mondayOf, simulate } from '../rc4-audit/rc4-sim.js';
 import type { ProfileSpec, SimOut } from '../rc4-audit/rc4-sim.js';
 import { lot41Athlete, lot41Specs, measureLot41 } from './lot41-bench.js';
@@ -36,6 +36,12 @@ export interface Lot42Variant {
   readonly shortWeek?: 'alternate_region' | 'upper_lower_full' | 'full_body';
   /** Q6 — sonde de placement historique. */
   readonly placementProbe?: 'first';
+  /** Lot 4.4 (C) — redistribution du volume d'une séance non placée (option candidate `redistributeUnplaced`). */
+  readonly redistributeUnplaced?: true;
+  /** Lot 4.4 (D) — réévaluation contrôlée des isolations en place (option candidate `isolationReview`). */
+  readonly isolationReview?: 'volume_fit';
+  /** Lot 4.4 (E) — lecture R4 des séances allégées (option de simulation `progressionReading`). */
+  readonly progression?: ProgressionReadingOption;
 }
 
 const ARMS = ['biceps', 'triceps'];
@@ -56,7 +62,8 @@ export function variantEnv(v: Lot42Variant): ProgrammeEnvironment {
   if (hit) return hit;
   const env = beta0Environment();
   if (!env.strength) throw new Error('environnement Strength attendu');
-  const touchesContent = v.synergists !== undefined || v.secondaryWeight !== undefined || v.volumeFitTieBreak !== undefined || v.highWindow !== undefined;
+  const policyPatch = { ...(v.volumeFitTieBreak ? { volumeFitTieBreak: v.volumeFitTieBreak } : {}), ...(v.highWindow ? { highWindow: v.highWindow } : {}), ...(v.redistributeUnplaced ? { redistributeUnplaced: true } : {}), ...(v.isolationReview ? { isolationReview: v.isolationReview } : {}) };
+  const touchesContent = v.synergists !== undefined || v.secondaryWeight !== undefined || Object.keys(policyPatch).length > 0;
   let strength = env.strength;
   if (touchesContent) {
     const p = personalizedStrengthContent(strengthContent());
@@ -64,7 +71,7 @@ export function variantEnv(v: Lot42Variant): ProgrammeEnvironment {
     const tag = `sim-${v.id.toLowerCase().replace(/[^a-z0-9]/g, '')}`;
     const parameters = doc.parameters.map((x) => {
       if (x.id === 'strength.volume' && v.secondaryWeight !== undefined) return { ...x, value: { ...(x.value as object), secondaryWeight: v.secondaryWeight } };
-      if (x.id === 'strength.personalization' && (v.volumeFitTieBreak !== undefined || v.highWindow !== undefined)) return { ...x, value: { ...(x.value as object), ...(v.volumeFitTieBreak ? { volumeFitTieBreak: v.volumeFitTieBreak } : {}), ...(v.highWindow ? { highWindow: v.highWindow } : {}) } };
+      if (x.id === 'strength.personalization' && Object.keys(policyPatch).length > 0) return { ...x, value: { ...(x.value as object), ...policyPatch } };
       return x;
     });
     const r = loadRuleset({ ...doc, rulesetVersion: `${p.ruleset.version}.${tag}`, parameters } as never);
@@ -83,7 +90,7 @@ export function variantEnv(v: Lot42Variant): ProgrammeEnvironment {
     strength = { ...strength, composition: { rule } };
   }
   if (v.placementProbe) strength = { ...strength, placementProbe: v.placementProbe };
-  const out = { ...env, strength };
+  const out = { ...env, strength, ...(v.progression ? { progressionReading: v.progression } : {}) };
   envCache.set(v.id, out);
   return out;
 }

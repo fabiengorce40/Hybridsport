@@ -5,6 +5,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { F6_CATALOG_VERSION } from '../../../strength/tests/fixtures/f6.js';
 import { describe, expect, it } from 'vitest';
 import {
   createBeta0Programme, CURRENT_SCHEMA_VERSION, decodeState, defaultStrengthPersonalization, emptyState, LEGACY_PERSONALIZATION_VERSION, loadState,
@@ -144,7 +145,7 @@ describe('Reprise RC5 lot 1 — contenus Strength versionnés', () => {
   });
 
   it('semaine V2.1/V2.2 enregistrée sous le nom historique : toujours relue avec le contenu personnalisé L1b-4 d’origine', () => {
-    const catalog = strengthContent().catalog.version;
+    const catalog = F6_CATALOG_VERSION; // contenus historiques : catalogue F6 (lot 4.4 : le catalogue courant est versionné)
     expect(strengthContentFor(LEGACY_PERSONALIZATION_VERSION, catalog)?.ruleset.document).toEqual(personalizedStrengthContent(l1b4()).ruleset.document);
     // Les deux contenus personnalisés sont distincts : aucune semaine historique n'est relue avec la rotation A/B.
     expect(JSON.stringify(personalizedStrengthContent(l1b4()).ruleset.document)).not.toEqual(JSON.stringify(personalizedStrengthContent(strengthContent()).ruleset.document));

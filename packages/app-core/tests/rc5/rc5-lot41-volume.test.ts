@@ -9,6 +9,7 @@
  *   complètes ; Full Body inchangé ;
  * - séance commencée jamais réécrite ; export / import identique ; déterminisme.
  */
+import { F6_CATALOG_VERSION } from '../../../strength/tests/fixtures/f6.js';
 import { describe, expect, it } from 'vitest';
 import { readStrengthParams } from '@hybridsport/strength';
 import {
@@ -37,7 +38,7 @@ describe('versionnement de la politique de personnalisation', () => {
     const cur = personalizedStrengthContent(strengthContent()).ruleset.parameter('strength.personalization');
     expect(cur?.value).toEqual(PERSONALIZATION_V1_1);
     expect(cur?.version).toBe('1.1.0');
-    const legacy = strengthContentFor('0.8.0-strength-personalization-v1', strengthContent().catalog.version)?.ruleset.parameter('strength.personalization');
+    const legacy = strengthContentFor('0.8.0-strength-personalization-v1', F6_CATALOG_VERSION)?.ruleset.parameter('strength.personalization');
     expect(legacy?.value).toEqual(PERSONALIZATION_V1);
     expect(legacy?.version).toBe('1.0.0');
     expect((PERSONALIZATION_V1 as { allocation?: string }).allocation).toBeUndefined();
@@ -52,7 +53,7 @@ describe('versionnement de la politique de personnalisation', () => {
     const p = s1.profile as Parameters<typeof strengthContextAt>[1];
     const cur = strengthContextAt(s1, p, W2, personalizedStrengthContent(strengthContent()));
     expect(cur.hardSets.week).toBeDefined();
-    const legacy = strengthContentFor('0.8.0-strength-personalization-v1', strengthContent().catalog.version);
+    const legacy = strengthContentFor('0.8.0-strength-personalization-v1', F6_CATALOG_VERSION);
     if (!legacy) throw new Error('contenu historique attendu');
     expect(strengthContextAt(s1, p, W2, legacy).hardSets.week).toBeUndefined();
   });

@@ -46,7 +46,7 @@ export function lot43Specs(): ProfileSpec[] {
   ];
 }
 
-export function measureLot43(spec0: ProfileSpec, variant: Lot43Variant): Lot43Measure {
+export function measureLot43(spec0: ProfileSpec, variant: Lot43Variant, onState?: (s: Parameters<typeof rollingVolumeDiagnostic>[0]) => void): Lot43Measure {
   const accepted: string[] = [];
   const env = beta0Environment();
   const spec: ProfileSpec = variant.proposals ? { ...spec0, afterPlanned: (w, s, clock) => {
@@ -57,7 +57,7 @@ export function measureLot43(spec0: ProfileSpec, variant: Lot43Variant): Lot43Me
     return applyHybridProposal(s, p, clock, true, env);
   } } : spec0;
   let lastState: Parameters<typeof rollingVolumeDiagnostic>[0] | undefined;
-  const m = measureLot42(spec, variant.proposals ? (VARIANTS[0] as Lot42Variant) : variant, (st) => { lastState = st; });
+  const m = measureLot42(spec, variant.proposals ? (VARIANTS[0] as Lot42Variant) : variant, (st) => { lastState = st; onState?.(st); });
   const st = lastState;
   const c = strengthContent();
   const equipment = new Set(spec.profile.equipment.items);

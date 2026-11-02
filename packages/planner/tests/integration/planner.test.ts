@@ -233,9 +233,10 @@ describe('déterminisme et frontières adverses', () => {
     const base = strength();
     const spy = { ...base, generate: (slot: Parameters<typeof base.generate>[0]) => { seen.push(slot); return base.generate(slot); } };
     const w = plan([{ sport: 'strength', sessions: 1 }, { sport: 'running', sessions: 1 }], { ...ALL_PORTS(), strength: spy });
-    expect(Object.keys(seen[0] as object).sort()).toEqual(['availableMinutes', 'date', 'hybrid', 'intent', 'requestId', 'seed', 'sportPriority', 'sportSessions']);
+    // Lot 4.4 : `final` (séance finale, intention déclarée ici) — indicateur de transport, aucune décision sportive.
+    expect(Object.keys(seen[0] as object).sort()).toEqual(['availableMinutes', 'date', 'final', 'hybrid', 'intent', 'requestId', 'seed', 'sportPriority', 'sportSessions']);
     // Seconde passe (multisport) : même créneau + contexte voisin, rien d'autre (S3 : fréquence déclarée du programme, pour la trace).
-    expect(Object.keys(seen.at(-1) as object).sort()).toEqual(['availableMinutes', 'date', 'hybrid', 'intent', 'neighbours', 'requestId', 'seed', 'sportPriority', 'sportSessions']);
+    expect(Object.keys(seen.at(-1) as object).sort()).toEqual(['availableMinutes', 'date', 'final', 'hybrid', 'intent', 'neighbours', 'requestId', 'seed', 'sportPriority', 'sportSessions']);
     expect((seen[0] as { sportSessions: number }).sportSessions).toBe(1);
     // S4 : ordre de priorité DÉCLARÉ du programme, transporté tel quel.
     expect((seen[0] as { sportPriority: string[] }).sportPriority).toEqual(['strength', 'running']);

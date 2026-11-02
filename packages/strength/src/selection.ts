@@ -110,6 +110,21 @@ export function rankCandidates(candidates: readonly Exercise[], slot: SlotInstan
   return ranked;
 }
 
+/**
+ * Reprise RC5 lot 4.4 (chantier D, option candidate `isolationReview`) — candidat qui remplacerait une isolation EN PLACE :
+ * seulement si les groupes principaux de l'isolation en place ont atteint leur cible (`volume_fit` : aucun groupe sous
+ * le plancher) et qu'un autre candidat sert un groupe encore sous sa cible, sans dépassement supplémentaire de la borne
+ * haute, et au moins aussi adapté sur les critères qui précèdent (`load_adequacy`, `role_fit`). Premier dans l'ordre du
+ * classement : déterministe. Aucun candidat : l'isolation en place est conservée (continuité S4 inchangée).
+ */
+export function isolationReviewCandidate(incumbent: Ranked, ranked: readonly Ranked[], slot: SlotInstance, env: Env, soFar: SessionSoFar): Ranked | undefined {
+  const vf = (r: Ranked) => criterionValue('volume_fit', r.exercise, slot, env, soFar);
+  const inc = vf(incumbent);
+  if ((inc[1] ?? 0) > 0) return undefined;
+  const notWorse = (r: Ranked) => (['load_adequacy', 'role_fit'] as const).every((c) => compareLex(criterionValue(c, r.exercise, slot, env, soFar), criterionValue(c, incumbent.exercise, slot, env, soFar)) >= 0);
+  return ranked.find((r) => { if (r === incumbent) return false; const v = vf(r); return (v[1] ?? 0) > 0 && (v[0] ?? 0) >= (inc[0] ?? 0) && notWorse(r); });
+}
+
 /** Premier critère qui sépare le gagnant du suivant (trace « pourquoi cet exercice »). */
 export function decidingCriterion(ranked: readonly Ranked[], slot: SlotInstance, env: Env): string {
   const order = env.params['strength.selection.criteriaOrder'][slot.def.role];

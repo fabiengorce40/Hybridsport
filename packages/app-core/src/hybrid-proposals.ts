@@ -135,10 +135,28 @@ function diff(before: readonly Request[], after: readonly Request[], strategy: H
   return out;
 }
 
-/** Rang lexicographique (plus grand = meilleur) : séances Musculation, autres sports, équilibre des régions, déficit. */
-function rank(s: WeekSummary): number[] {
+/**
+ * Lot 4.4 (chantier C) — HIÉRARCHIE EXPLICITE du classement (lexicographique, plus grand = meilleur) :
+ * 1. sécurité : ÉLIMINATOIRE (proposition non sûre jamais recommandée, statut `unsafe_recovery`) ;
+ * 2. disponibilités et 3. séances verrouillées : respectées PAR CONSTRUCTION (jours choisis seulement, séances protégées) ;
+ *    un autre sport qui perdrait une séance rend la proposition non retenue ;
+ * 4. couverture des objectifs musculaires : séries manquantes sous les cibles, somme sur les groupes (moins = mieux) ; le
+ *    nombre de groupes sous leur cible n'est PAS retenu : il pénalise un petit écart (épaules 5 / 6) autant qu'un grand ;
+ * 5. continuité des exercices et performances : exercices principaux absents du planning actuel (moins = mieux) ;
+ * 6. répartition Haut / Bas ; 7. séances Musculation réalisables ; 8. stabilité : séances modifiées (moins = mieux).
+ */
+function rank(s: WeekSummary, newMains: number, changed: number): number[] {
   const balance = Math.min(s.regions.upper + s.regions.full, s.regions.lower + s.regions.full);
-  return [s.strengthPlanned, s.otherPlanned, balance, -s.belowTarget];
+  return [-s.belowTarget, -newMains, balance, s.strengthPlanned, -changed];
+}
+/** Exercices principaux (ancres) des séances Musculation planifiées. */
+function mainExercises(reqs: readonly Request[]): Set<string> {
+  const out = new Set<string>();
+  for (const r of reqs.filter((x) => x.sport === 'strength' && x.status === 'planned')) {
+    const session = (r.record?.data as { session?: { blocks?: readonly { items?: readonly { exerciseId?: string; refs?: { anchor?: string } }[] }[] } } | undefined)?.session;
+    for (const b of session?.blocks ?? []) for (const it of b.items ?? []) if (it.refs?.anchor !== undefined && it.exerciseId) out.add(it.exerciseId);
+  }
+  return out;
 }
 const better = (a: number[], b: number[]) => { for (let i = 0; i < a.length; i++) { const x = a[i] ?? 0; const y = b[i] ?? 0; if (x !== y) return x > y; } return false; };
 
@@ -148,6 +166,7 @@ export function proposeHybridWeekAlternatives(state: AppState, clock: Clock, env
   if (!p) throw new AppError('PROFILE_MISSING');
   const weekStart = weekStartOf(clock.today);
   const current = summarize(state, weekStart);
+  const currentMains = mainExercises(state.planner.weeks[weekStart]?.requests ?? []);
   const recoveryH = strengthParametersFor(p)['strength.personalization']?.recoveryHours ?? 0;
   const before = state.planner.weeks[weekStart]?.requests ?? [];
   const proposals: HybridProposal[] = [];
@@ -164,8 +183,9 @@ export function proposeHybridWeekAlternatives(state: AppState, clock: Clock, env
     const changes = diff(before, preview.after.requests, strategy);
     const otherLost = summary.otherPlanned < current.otherPlanned;
     const unsafe = summary.minRegionGapH !== null && summary.minRegionGapH < recoveryH;
-    const r = rank(summary);
-    const improves = better(r, rank(current));
+    const newMains = [...mainExercises(preview.after.requests)].filter((x) => !currentMains.has(x)).length;
+    const r = rank(summary, newMains, changes.filter((c) => c.kind !== 'kept' && c.kind !== 'unplanned').length);
+    const improves = better(r, rank(current, 0, 0));
     const status: HybridProposal['status'] = unsafe ? 'unsafe_recovery' : otherLost || !improves ? 'no_improvement' : 'valid';
     const detail = unsafe ? `Récupération non respectée : ${String(summary.minRegionGapH)} h entre deux séances sollicitant la même région (minimum ${String(recoveryH)} h).` : otherLost ? 'Un autre sport perdrait une séance.' : !improves ? 'Aucun gain face au planning actuel.' : undefined;
     proposals.push({ strategy, label: LABEL[strategy], status, ...(detail ? { detail } : {}), summary, changes, preview });

@@ -50,7 +50,10 @@ describe('RC4.6 L1-V3 — contenu versionné', () => {
   });
 
   it('registre : L1-V3 conservé (catalogue F6 inchangé) sous le contenu courant (RC5.1) ; F6 conservé et relu', () => {
-    expect(CURRENT).toEqual({ ruleset: '0.8.0-strength-hautbas-ab', catalog: F6.catalog });
+    // Lot 4.4 : catalogue courant VERSIONNÉ (2 corrections factuelles) ; la paire précédente (même ruleset, catalogue F6)
+    // reste au registre et relit les semaines déjà générées.
+    expect(CURRENT).toEqual({ ruleset: '0.8.0-strength-hautbas-ab', catalog: '0.3.1-strength-test-f6-lot44' });
+    expect(strengthContentFor('0.8.0-strength-hautbas-ab', F6.catalog)?.catalog.version).toBe(F6.catalog);
     expect(strengthContentFor(CURRENT.ruleset, CURRENT.catalog)).toBe(strengthContent());
     expect(strengthContentFor('0.6.0-strength-l1v3', F6.catalog)?.ruleset.version).toBe('0.6.0-strength-l1v3');
     expect(strengthContentFor(F6.ruleset, F6.catalog)?.ruleset.version).toBe(F6.ruleset);

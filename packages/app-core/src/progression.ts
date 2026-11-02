@@ -7,8 +7,8 @@ import { strengthParametersFor, muscleLevel } from './strength-personalization.j
  * Running : la séance réalisée est ajoutée à l'historique déclaré ; l'ancre V19 du moteur en tient compte.
  */
 import type { FingerprintHistoryEntry, ISODateTime, ReasonCode, SessionDraft, SetPrescription } from '@hybridsport/domain';
-import { anchorReviewDue, archetypeVariant, classifyExposure, closeTrack, closureCause, createTrack, declarableAnchors, exerciseStillAdmissible, exposureEvidence, inheritPredecessorTrack, progressionModelFor, readStrengthParams, resumeTrack, strengthReasons, updateTrack } from '@hybridsport/strength';
-import type { ExecutedItem, PerformedSet, SlotRole, StrengthTrack } from '@hybridsport/strength';
+import { anchorReviewDue, archetypeVariant, classifyExposure, closeTrack, closureCause, createTrack, declarableAnchors, exerciseStillAdmissible, durableReferenceRir, exposureEvidence, floorReferenceRir, inheritPredecessorTrack, progressionModelFor, readStrengthParams, reassessTrack, resumeTrack, strengthReasons, updateTrack, usesFloor, usesReassessment } from '@hybridsport/strength';
+import type { ExecutedItem, LightenedPolicy, LightenedReading, PerformedSet, SlotRole, StrengthTrack } from '@hybridsport/strength';
 import { archetypeFromIntentId, isV1Archetype } from '@hybridsport/running';
 import type { RealizedSession, RealizedStructure, RunningReference, RunningSessionArchetype } from '@hybridsport/running';
 import type { AppState, GeneratedSession, SessionLog } from './model.js';
@@ -54,6 +54,36 @@ export interface StrengthExecution {
   readonly sessionStatus?: 'completed' | 'modified' | 'abandoned';
 }
 
+/**
+ * Reprise RC5 lot 4.4 (chantier E) — lecture des séances allégées (R4 et variantes) : OPTION DE SIMULATION, jamais
+ * renseignée par le produit (environnement Beta 0 : absente ⇒ progression actuelle strictement inchangée).
+ * - `floorWindow` : expositions consécutives de la track portant le même allègement pour qu'il soit lu comme plancher ;
+ * - `reassessEvery` : R3, réévaluation tous les N expositions de la track (frontière de cycle) ;
+ * - `safetyBelow` : variante `safety`, séances allégées consécutives en dessous avant baisse.
+ */
+export interface ProgressionReadingOption { readonly policy: LightenedPolicy; readonly floorWindow: number; readonly reassessEvery: number; readonly safetyBelow: number }
+
+/** RIR prescrits (première série de travail) des expositions RÉALISÉES de la track, dans l'ordre chronologique. */
+function prescribedRirHistory(state: AppState, trackId: string): number[] {
+  const done = new Set((state.programmeState?.results ?? []).filter((r) => r.completion !== 'missed').map((r) => r.requestId));
+  const rows: { date: string; rir: number }[] = [];
+  for (const w of Object.values(state.planner.weeks)) for (const r of w.requests) {
+    if (r.sport !== 'strength' || !done.has(r.requestId)) continue;
+    const session = (r.record?.data as { session?: SessionDraft } | undefined)?.session;
+    for (const it of session ? mainItems(session) : []) {
+      if (it.refs?.progressionTrackId !== trackId || it.prescription.type !== 'sets') continue;
+      const first = it.prescription.sets.find(isWork);
+      const rir = first ? rirOf(first) : undefined;
+      if (rir !== undefined) rows.push({ date: r.date ?? '', rir });
+    }
+  }
+  return rows.sort((a, b) => (a.date < b.date ? -1 : 1)).map((x) => x.rir);
+}
+const rirOf = (s: SetPrescription): number | undefined => {
+  const i = s.intensity;
+  return i && 'effort' in i && i.effort && 'rir' in i.effort ? i.effort.rir : s.rir;
+};
+
 /** Réalisation appliquée et décisions de progression du moteur Strength qui l'ont produite (trace d'audit). */
 export interface StrengthExecutionOutcome {
   readonly strength: AppState['strength'];
@@ -69,7 +99,7 @@ export function applyStrengthExecution(state: AppState, x: StrengthExecution, at
 }
 
 /** Même application, avec les raisons du moteur (classement de l'exposition, mise à jour / création de track). */
-export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecution, at: ISODateTime): StrengthExecutionOutcome {
+export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecution, at: ISODateTime, readingOption?: ProgressionReadingOption): StrengthExecutionOutcome {
   if (!state.profile) return { strength: state.strength, reasons: [] };
   const reasons: ReasonCode[] = [];
   const log = { sets: x.sets, painItems: x.painItems } as SessionLog;
@@ -104,7 +134,16 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
     const anchorOfSlot = [...tracks.values()].find((t) => t.tier === 'anchor' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === it.refs?.slotId);
     const known = trackId ? tracks.get(trackId) : undefined;
     const update = (t: StrengthTrack, cls: ReturnType<typeof classifyExposure>) => {
-      const u = updateTrack(t, exec, cls, e, params, 'accumulation');
+      // Lot 4.4 (simulation seulement) : lecture des séances allégées ; R3 tous les `reassessEvery` expositions.
+      const base = t.nextPrescription?.rir;
+      const ref = base === undefined ? undefined : durableReferenceRir(base, params, muscleLevel(p), 'accumulation');
+      const current = prescribed[0] ? rirOf(prescribed[0]) : undefined;
+      const history = readingOption && usesFloor(readingOption.policy) ? [...prescribedRirHistory(state, t.trackId), ...(current !== undefined ? [current] : [])] : [];
+      const reading: LightenedReading | undefined = readingOption && ref !== undefined ? { policy: readingOption.policy, referenceRir: ref, safetyBelow: readingOption.safetyBelow, ...(usesFloor(readingOption.policy) ? { floorRir: floorReferenceRir(history, ref, readingOption.floorWindow) } : {}) } : undefined;
+      const u0 = updateTrack(t, exec, cls, e, params, 'accumulation', undefined, reading);
+      const count = exposures.filter((z) => z.exerciseId === t.exerciseId && z.slotId === t.slotId && z.at >= t.openedAt).length + 1;
+      const r3 = readingOption && usesReassessment(readingOption.policy) && count % readingOption.reassessEvery === 0 ? reassessTrack(u0.track, e, params) : undefined;
+      const u = r3 ? { ...u0, track: { ...r3.track, ...(r3.track.nextPrescription?.loadKg !== undefined ? { cycleStartLoadKg: r3.track.nextPrescription.loadKg } : {}) }, reasons: [...u0.reasons, ...r3.reasons] } : u0;
       // S4 — preuve complète de l'exposition (prescrit / réalisé), indépendante de la décision du modèle.
       const ev = exposureEvidence(exec, cls);
       const signed = (v: number | null) => (v === null ? 'n/a' : v > 0 ? `+${String(v)}` : String(v));

@@ -12,6 +12,7 @@ import type { LoadedCatalog, LoadedRuleset } from '@hybridsport/engine';
 import { strengthLockRulesetDocument } from '../../strength/tests/fixtures/ruleset.js';
 import { STRENGTH_PRESETS, strengthCatalogDocument } from '../../strength/tests/fixtures/catalog.js';
 import { strengthF6CatalogDocument, strengthF6RulesetDocument } from '../../strength/tests/fixtures/f6.js';
+import { strengthLot44CatalogDocument } from '../../strength/tests/fixtures/catalog-lot44.js';
 import { strengthL1V3RulesetDocument } from '../../strength/tests/fixtures/l1v3.js';
 import { strengthL1B4RulesetDocument } from '../../strength/tests/fixtures/l1b4.js';
 import { strengthHautBasAbRulesetDocument } from '../../strength/tests/fixtures/hautbas-ab.js';
@@ -36,6 +37,7 @@ function load(rulesetDoc: Parameters<typeof loadRuleset>[0], catalogDoc: Paramet
 
 let strength: ContentSource | undefined;
 let strengthAb: ContentSource | undefined;
+let strengthAb44: ContentSource | undefined;
 let strengthL1V3: ContentSource | undefined;
 let strengthF6: ContentSource | undefined;
 let strengthLock: ContentSource | undefined;
@@ -48,6 +50,15 @@ let running: ContentSource | undefined;
  * préféré, replis conservés), catalogue de test Strength F6. Les archétypes existants sont inchangés.
  */
 export function strengthContent(): ContentSource {
+  strengthAb44 ??= load(strengthHautBasAbRulesetDocument(), strengthLot44CatalogDocument(), 'fixtures:strength-hautbas-ab-0.8.0+catalog-lot44');
+  return strengthAb44;
+}
+
+/**
+ * Reprise RC5 lot 4.4 — contenu courant JUSQU'AU lot 4.3 (ruleset Haut / Bas A/B, catalogue F6), conservé au registre :
+ * les semaines générées avec ce catalogue sont relues et régénérées avec LUI (jamais avec le catalogue corrigé).
+ */
+function strengthAbF6Content(): ContentSource {
   strengthAb ??= load(strengthHautBasAbRulesetDocument(), strengthF6CatalogDocument(), 'fixtures:strength-hautbas-ab-0.8.0');
   return strengthAb;
 }
@@ -90,7 +101,7 @@ function strengthLockContent(): ContentSource {
  * contenu (vérifié par test) : les semaines déjà générées sont relues avec leurs règles d'origine.
  */
 export function strengthContentRegistry(): readonly ContentSource[] {
-  return [strengthContent(), personalizedStrengthContent(strengthContent()), strengthL1B4Content(), personalizedStrengthContent(strengthL1B4Content()), strengthL1V3Content(), strengthF6Content(), strengthLockContent()];
+  return [strengthContent(), personalizedStrengthContent(strengthContent()), strengthAbF6Content(), personalizedStrengthContent(strengthAbF6Content()), strengthL1B4Content(), personalizedStrengthContent(strengthL1B4Content()), strengthL1V3Content(), strengthF6Content(), strengthLockContent()];
 }
 
 export function strengthContentFor(rulesetVersion: string, catalogVersion: string): ContentSource | undefined {

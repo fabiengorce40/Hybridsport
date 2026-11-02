@@ -19,6 +19,7 @@ import type { AppState, Feedback, ProgrammeIntent, SessionLog, SetLog } from './
 import { appPlannerEnvironment, assertEnvironment, buildPorts, clockOf, persistWeek, recentOf } from './planning.js';
 import type { EngineGoals, PlannerEnvironment } from './planning.js';
 import { applyStrengthExecutionTraced, performedSets, realizedRunFrom, testReferenceFrom } from './progression.js';
+import type { ProgressionReadingOption } from './progression.js';
 import { isHyroxComposed, realizeCrossTrainingExecution, realizeHyroxComposed, realizeHyroxStation } from '@hybridsport/planner';
 import { assessStrengthWeekVolume } from '@hybridsport/strength';
 import type { StrengthGoalRef, WeekVolumeAssessment } from '@hybridsport/strength';
@@ -32,6 +33,8 @@ export class ProgrammeError extends AppError {
 /** Environnement du programme : celui du planificateur + gouvernance du programme (politique, horizon glissant). */
 export interface ProgrammeEnvironment extends PlannerEnvironment {
   readonly programmeGovernance?: LoadedRuleset;
+  /** Reprise RC5 lot 4.4 (chantier E) — lecture R4 des séances allégées : SIMULATION seulement, jamais renseignée par le produit. */
+  readonly progressionReading?: ProgressionReadingOption;
 }
 
 const requireProgramme = (s: AppState): ProgrammeState => {
@@ -216,7 +219,7 @@ const reject = (code: string, ...reasons: ReasonCode[]): never => { throw new Pr
  * Identités : séance planifiée = `requestId` ; exécution = une seule par `requestId` (refus explicite sinon) ;
  * occurrence dans l'historique du moteur = `requestId` (un rejeu CT de la semaine suivante est une NOUVELLE occurrence).
  */
-export function recordSessionExecution(state: AppState, clock: Clock, x: SessionExecutionInput): AppState {
+export function recordSessionExecution(state: AppState, clock: Clock, x: SessionExecutionInput, env?: ProgrammeEnvironment): AppState {
   const ps = requireProgramme(state);
   const at = normalizeInstant(clock.now);
   const week = ps.weeks.find((w) => w.requests.some((r) => r.requestId === x.requestId));
@@ -263,7 +266,7 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
           archetypeId: intent.archetypeId, session, sets: [...sets], painItems: [...(x.painItems ?? [])],
           sessionCompleted: x.completion !== 'abandoned', sessionPain: x.pain !== undefined && x.pain !== 'NONE',
           sessionStatus: x.completion === 'abandoned' ? 'abandoned' : x.completion === 'modified' ? 'modified' : 'completed',
-        }, at);
+        }, at, env?.progressionReading);
         s = { ...s, strength: applied.strength };
         progressionTrace = applied.reasons;
         evidence = { history: 'strength', ref: x.requestId };

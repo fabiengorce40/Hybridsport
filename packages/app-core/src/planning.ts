@@ -169,12 +169,19 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
     // `recoveryHours` (politique G2, 36 h) s'applique à la RÉGION sollicitée. Refus d'une séance A/B si une séance de la
     // même région, ou Full Body, a eu lieu (expositions réelles) ou est prévue plus tôt dans la semaine à moins de
     // `recoveryHours` ; Haut et Bas restent compatibles (règle `disjoint` existante). Aucun nouveau délai ; les séances
-    // Full Body, Haut et Bas historiques ne passent pas par ce contrôle (comportement antérieur inchangé). Refus SIGNALÉ
+    // Full Body, Haut et Bas historiques NON personnalisés ne passent pas par ce contrôle (comportement antérieur inchangé ;
+    // lot 4.4 : contrôle étendu à toute séance d'un profil personnalisé, voir ci-dessous). Refus SIGNALÉ
     // (séance non proposée, cause `strength_recovery_window`), jamais un planning incohérent placé en silence.
     const inner = ports.strength;
     const hours = personalizationParams()['strength.personalization']?.recoveryHours;
     if (hours !== undefined) ports.strength = { ...inner, generate: (slot) => {
-      if (archetypeVariant(slot.intent.archetypeId) === null) return inner.generate(slot);
+      // Lot 4.4 (sécurité) — la récupération est évaluée sur l'archétype RÉELLEMENT prescrit : toute séance Musculation
+      // d'un profil PERSONNALISÉ (politique `recoveryHours`), Full Body et Haut / Bas communs compris, quelle que soit la
+      // fréquence demandée (avant : A/B seulement, Full Body seulement à 3 séances ou moins ⇒ Full Body d'une semaine de 4
+      // et Haut / Bas communs non contrôlés). Profils non personnalisés : comportement historique inchangé.
+      // Une SONDE de placement (archétype provisoire, `final` absent) n'est pas la séance prescrite : seule la séance finale
+      // est contrôlée (A/B : contrôlées à toute étape, comme avant).
+      if (archetypeVariant(slot.intent.archetypeId) === null && (!p.strength.personalization || slot.final !== true)) return inner.generate(slot);
       // technical-constant: dix caractères du format de date ISO AAAA-MM-JJ
       const dateLength = 10;
       // technical-constant: conversion millisecondes → heures

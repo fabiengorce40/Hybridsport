@@ -7,10 +7,11 @@
  * - export / import à l'identique ; aucune séance de force, forme générale ou fréquence 1–3 en A/B (D6).
  * Données de test (TEST_ONLY) : une exposition « veille » est ajoutée directement pour reproduire une séance déplacée.
  */
+import { F6_CATALOG_VERSION } from '../../../strength/tests/fixtures/f6.js';
 import { describe, expect, it } from 'vitest';
 import {
   beta0Environment, createBeta0Programme, decodeState, emptyState, ensureBeta0Week, exportState, finishProgrammeSession, recordProgrammeSet, selectBeta0Week,
-  selectProgrammeSession, sessionEnvironment, startProgrammeSession, strengthContent, strengthEnvironmentFor,
+  selectProgrammeSession, sessionEnvironment, startProgrammeSession, strengthEnvironmentFor,
 } from '../../src/index.js';
 import type { AppState, Clock, ProfileInput } from '../../src/index.js';
 import { P1 } from './lot4-profiles.js';
@@ -54,7 +55,7 @@ describe('récupération des séances A/B (règle existante de 36 h, par région
 
 describe('versionnement : semaines d’avant le lot 4 conservées, nouvelles générations en A/B', () => {
   const env = beta0Environment();
-  const legacy = strengthEnvironmentFor(env, '0.7.0-strength-l1b4', strengthContent().catalog.version);
+  const legacy = strengthEnvironmentFor(env, '0.7.0-strength-l1b4', F6_CATALOG_VERSION);
   if (!legacy) throw new Error('contenu L1b-4 attendu au registre');
   // Semaine générée par le contenu d'avant le lot 4 (L1b-4), comme une semaine V2.x existante.
   const old = createBeta0Programme(emptyState(), P1.profile, at(W1), {}, legacy);
