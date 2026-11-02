@@ -59,6 +59,16 @@ export const zPersonalizationPolicy = z.object({
    */
   redistributeUnplaced: z.literal(true).optional(),
   /**
+   * Reprise RC5 lot 4.5 (chantier D) — PROPOSITIONS, absentes de toute politique publiée, lues seulement avec
+   * `redistributeUnplaced` :
+   * - `redistributeScope: 'deficit'` : la part redistribuée ne sert que la CIBLE des groupes sous leur plancher ; la part de
+   *   borne haute d'une séance reste calculée sur les séances demandées (redistribution plus prudente) ;
+   * - `redistributeGuard: 'keep_residual'` : une séance qui perdrait un emplacement à temps résiduel (mollets, tronc…)
+   *   conservé sans redistribution est générée SANS redistribution (stimulation minimale préservée, raison tracée).
+   */
+  redistributeScope: z.enum(['deficit', 'priority']).optional(),
+  redistributeGuard: z.literal('keep_residual').optional(),
+  /**
    * Reprise RC5 lot 4.4 (chantier D) — PROPOSITION, absente de toute politique publiée : réévaluation contrôlée d'une
    * ISOLATION en place (rôle `accessory`, continuité S4). L'isolation en place est remplacée seulement si ses groupes
    * principaux ont atteint leur cible de la semaine ET qu'un autre candidat, au moins aussi adapté (charge, rôle) et sans

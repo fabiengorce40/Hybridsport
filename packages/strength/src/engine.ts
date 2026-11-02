@@ -73,6 +73,33 @@ interface Built {
   readonly coreP50: number;
 }
 
+/**
+ * Lot 4.5 (option `redistributeGuard: 'keep_residual'`, inactive) : séance générée avec redistribution, SAUF si elle perd un
+ * emplacement à temps résiduel que la même séance sans redistribution conserve ; alors la séance sans redistribution
+ * est retenue (raison `DOSE.REDISTRIBUTION_SKIPPED`). Sans l'option : `build` inchangé.
+ */
+function buildGuarded(env: Env, input: Input, overrides: ReadonlyMap<string, string>): Built {
+  const b = build(env, input, overrides);
+  const pp = env.params['strength.personalization'];
+  if (pp?.redistributeUnplaced !== true || pp.redistributeGuard !== 'keep_residual' || input.discipline.week.placedSessionsByRegion === undefined) return b;
+  const { redistributeUnplaced: _r, ...without } = pp;
+  let base: Built;
+  try { base = build({ ...env, params: { ...env.params, 'strength.personalization': without } }, input, overrides); } catch (e) { if (e instanceof NoProposal) return b; throw e; }
+  // Emplacements à temps résiduel RÉELLEMENT placés (`slotIds` ne contient jamais les emplacements résiduels).
+  const residualOf = (x: Built) => new Set(x.picks.filter((q) => isResidual(q.slot.def)).map((q) => q.slot.def.id));
+  const keeps = (x: Built) => { const k = residualOf(x); return [...residualOf(base)].filter((id) => !k.has(id)); };
+  const lost = keeps(b);
+  if (lost.length === 0) return b;
+  // 1) Redistribution conservée, mais seulement sur les emplacements ordinaires de la séance sans redistribution : le
+  //    temps libéré revient aux emplacements résiduels. 2) À défaut, séance sans redistribution.
+  const allowed = new Set(base.picks.filter((q) => !isResidual(q.slot.def) && q.slot.def.status !== 'required').map((q) => q.slot.def.id));
+  try {
+    const within = build(env, input, overrides, allowed);
+    if (keeps(within).length === 0) return { ...within, reasons: [...within.reasons, strengthReasons.emit('DOSE.REDISTRIBUTION_SKIPPED', { cause: 'optional_slots_limited', slots: [...lost].sort() })] };
+  } catch (e) { if (!(e instanceof NoProposal)) throw e; }
+  return { ...base, reasons: [...base.reasons, strengthReasons.emit('DOSE.REDISTRIBUTION_SKIPPED', { cause: 'residual_slot_lost', slots: [...lost].sort() })] };
+}
+
 class NoProposal extends Error {
   constructor(readonly reasons: readonly ReasonCode[], readonly blockingNeeds: readonly { slotId: string; need: string }[] = [], readonly missingData: readonly ('capacities' | 'week_context' | 'tracks' | 'catalog_coverage')[] = []) { super('no_valid_proposal'); }
 }
@@ -151,7 +178,10 @@ function pickForSlot(slot: SlotInstance, env: Env, soFar: SessionSoFar, usedFami
     else { const why = rotationReason(ie, env); if (why) cause = `rotation_reason:${why}`; }
     // Lot 4.4 (option candidate `isolationReview`, inactive) : réévaluation contrôlée d'une isolation en place.
     if (cause === undefined && inRanked && slot.def.role === 'accessory' && (!anchor || placed(anchor.exerciseId)) && env.params['strength.personalization']?.isolationReview === 'volume_fit') {
-      review = isolationReviewCandidate(inRanked, ranked, slot, env, soFar);
+      // Lot 4.5 — anti-oscillation : jamais de retour à un exercice récemment QUITTÉ sur cet emplacement (expositions
+      // réalisées récentes) ; sans cette règle, les séances Full Body d'une même semaine alternaient deux isolations.
+      const left = new Set(env.input.discipline.recentExposures.filter((x) => x.slotId === slot.def.id && x.exerciseId !== incumbent).map((x) => x.exerciseId));
+      review = isolationReviewCandidate(inRanked, ranked.filter((r) => !left.has(r.exercise.id)), slot, env, soFar);
       if (review) cause = 'isolation_volume_review';
     }
     if (cause === undefined && inRanked && (!anchor || placed(anchor.exerciseId))) { chosen = inRanked; substitutedFrom = undefined; kept = true; }
@@ -267,7 +297,7 @@ function mobilityItem(env: Env, itemId: string, seconds: number, primaryPattern:
 }
 
 /** Construit une séance complète dans le budget de durée (spec 05 §15). */
-function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): Built {
+function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>, allowedOptional?: ReadonlySet<string>): Built {
   const reasons: ReasonCode[] = [];
   const ctx = input.discipline;
   const params = env.params;
@@ -293,7 +323,8 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
   const slots = resolveSlots(env.archetype, params, env.goalKey, env.stimulus, recentNeed, (id) => env.anchorBySlot.has(id), feasible);
   // RC4.5 (F6, R1) — emplacements à temps résiduel : écartés de la composition ordinaire (étapes 2 à 4), ajoutés en 5.
   const residual = slots.optional.filter((s) => isResidual(s.def));
-  const ordinary = slots.optional.filter((s) => !isResidual(s.def)).sort((a,b) => Number(b.def.id.includes('.focus.'))-Number(a.def.id.includes('.focus.')));
+  // Lot 4.5 (garde de redistribution, option inactive) : emplacements facultatifs ordinaires limités à ceux de la séance sans redistribution.
+  const ordinary = slots.optional.filter((s) => !isResidual(s.def) && (allowedOptional === undefined || allowedOptional.has(s.def.id))).sort((a,b) => Number(b.def.id.includes('.focus.'))-Number(a.def.id.includes('.focus.')));
   // Explication (S3) : pourquoi ce besoin dans chaque groupe de choix (ancre, déjà présent, exposition, objectif).
   for (const c of slots.choices) reasons.push(strengthReasons.emit('SELECT.CHOICE_GROUP', { group: c.group, need: c.need, cause: c.cause, others: [...c.others] }));
   const dropped = new Set([...env.lowered.keys()].flatMap((s) => params['strength.interference'].perStructure[s]?.dropOptionalNeeds ?? []));
@@ -395,7 +426,16 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
         const requestedRegion = Math.ceil((ctx.personalizationSessions ?? 1)/split);
         const placedByRegion = params['strength.personalization']?.redistributeUnplaced === true ? ctx.week.placedSessionsByRegion : undefined;
         const regionSessions = placedByRegion ? Math.min(requestedRegion, Math.max(1, placedByRegion[region])) : requestedRegion;
-        const remaining = Math.max(1,regionSessions-prior.filter(s => (region !== 'full' ? archetypeRegion(s.archetypeId) === region : s.archetypeId===env.archetype.id)).length);
+        const priorInRegion = prior.filter(s => (region !== 'full' ? archetypeRegion(s.archetypeId) === region : s.archetypeId===env.archetype.id)).length;
+        const remaining = Math.max(1,regionSessions-priorInRegion);
+        // Lot 4.5 (option `redistributeScope: 'deficit'`) : part de borne haute calculée sur les séances DEMANDÉES.
+        const scope = placedByRegion ? params['strength.personalization']?.redistributeScope : undefined;
+        const remainingRequested = Math.max(1,requestedRegion-priorInRegion);
+        // Lot 4.5 (option `redistributeScope: 'priority'`) : groupes des priorités déclarées (zones → muscles → groupes).
+        const zoneMuscles = new Set((ctx.personalization?.priorities ?? []).flatMap((z) => params['strength.personalization']?.zones[z.zone]?.muscles ?? []));
+        const priorityGroups = new Set(Object.entries(params['strength.volume'].muscleGroups).filter(([, ms]) => ms.some((m) => zoneMuscles.has(m))).map(([g]) => g));
+        const goalRemaining = (g: string) => (scope === 'priority' && !priorityGroups.has(g) ? remainingRequested : remaining);
+        const highRemaining = (g: string) => (scope === 'deficit' || (scope === 'priority' && !priorityGroups.has(g)) ? remainingRequested : remaining);
         let budget = cell.sets.max;
         // Lot 4.1 — `primary_need` : besoin des groupes PRINCIPAUX (le plus grand), haut hebdomadaire de chaque groupe (le plus petit).
         const primaryNeed = params['strength.personalization']?.allocation === 'primary_need';
@@ -416,14 +456,14 @@ function build(env: Env, input: Input, overrides: ReadonlyMap<string, string>): 
           // Lot 4.2 (Q2, option inactive) : borne haute aussi sur 7 jours glissants (le plus contraignant).
           const usedHigh = primaryNeed && params['strength.personalization']?.highWindow === 'calendar_and_rolling' ? Math.max(usedWeek, used) : usedWeek;
           const highBudget = Math.max(0,Math.floor((t.high-usedHigh-here-reserved)/weight));
-          const goalBudget = Math.max(0,Math.floor((Math.max(0,(t.floor-usedWeek)/remaining)-here)/weight));
+          const goalBudget = Math.max(0,Math.floor((Math.max(0,(t.floor-usedWeek)/goalRemaining(group))-here)/weight));
           // La couverture requise peut dépasser la part TARGET, jamais le haut hebdomadaire.
           const ownBudget = p.slot.def.status==='required' ? Math.min(highBudget,Math.max(1,goalBudget)) : Math.min(highBudget,goalBudget);
           if (primaryNeed) {
             // Haut hebdomadaire : borne ABSOLUE (récupération) et PART de la séance parmi les séances restantes de la région,
             // comme la cible : une séance ne consomme jamais seule le haut de la semaine.
             ceiling = Math.min(ceiling, highBudget);
-            const share = Math.max(0, Math.floor((Math.max(0, (t.high - usedHigh) / remaining) - here - reserved) / weight));
+            const share = Math.max(0, Math.floor((Math.max(0, (t.high - usedHigh) / highRemaining(group)) - here - reserved) / weight));
             if (share < ceilingShare || highBudget < ceiling) limiter = group;
             ceilingShare = Math.min(ceilingShare, share);
             if (weight === 1 && goalBudget > (need ?? -1)) { need = goalBudget; needGroup = group; }
@@ -780,7 +820,7 @@ export function proposeStrength(input: Input): ProposeResult {
   const lr = [...personalizationReasons,...(registry !== undefined ? [strengthReasons.emit('DATA.SCIENCE_REGISTRY', { version: registry })] : []), ...priority, ...inter.reasons];
   const env = buildEnv(input, params, archetype, goal, gk, inter.lowered, SeededRng.fromSeed(input.context.seed), inter.rirOnly);
   try {
-    const main = build(env, input, new Map());
+    const main = buildGuarded(env, input, new Map());
     const out = [proposal({ ...main, reasons: [...lr, ...main.reasons, ...interferenceSignals(main, env, inter.signals)] }, env, input, loaded, 0)];
     // Alternatives : même séance, seul un emplacement NON ancré change d'exercice (sa première alternative).
     // S4 : un exercice en place conservé (continuité déclarée) n'est jamais varié par une alternative.
@@ -790,7 +830,7 @@ export function proposeStrength(input: Input): ProposeResult {
       const alt = p.ranked[1]?.exercise.id;
       if (!alt) continue;
       try {
-        const b = build(env, input, new Map([[p.instance, alt]]));
+        const b = buildGuarded(env, input, new Map([[p.instance, alt]]));
         out.push(proposal({ ...b, reasons: [...lr, ...b.reasons, ...interferenceSignals(b, env, inter.signals)] }, env, input, loaded, out.length));
       } catch (e) {
         if (!(e instanceof NoProposal)) throw e; // une alternative infaisable est simplement omise

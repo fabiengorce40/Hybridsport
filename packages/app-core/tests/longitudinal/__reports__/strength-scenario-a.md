@@ -254,5 +254,5 @@ Priorité déclarée (programme) : strength ; reçue par Strength : rang 1 ; voi
 - Preuves : réussites exactes ×43, dépassements ×0, sans preuve ×1.
 - Décisions bloquées : réussite exacte ×3 (effort observé ×3, effort inconnu ×0), poids du corps ×0.
 - Effort : expositions avec effort observé ×44, effort inconnu ×0.
-- État persisté (JSON compact, saveState) après 4 semaines : 289 Ko.
+- État persisté (JSON compact, saveState) après 4 semaines : 292 Ko.
 

@@ -34,6 +34,7 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'DOSE.VOLUME_ALLOCATED', categories: ['optimization'], params: { exerciseId: S, sets: N, group: S }, audience: 'internal', severity: 'info' },
   { code: 'DOSE.SESSION_CAP_APPLIED', categories: ['safety'], params: { group: S, cap: N }, audience: 'internal', severity: 'notice' },
   { code: 'DOSE.RAMPUP', categories: ['information'], params: { exerciseId: S, steps: N, knowledge: S }, audience: 'internal', severity: 'info' },
+  { code: 'DOSE.REDISTRIBUTION_SKIPPED', categories: ['information'], params: { cause: S, slots: L }, audience: 'internal', severity: 'info' },
   { code: 'DOSE.TOP_SET', categories: ['information'], params: { exerciseId: S, topKg: N, backoffFraction: N, backoffUnroundedKg: N, backoffKg: N, backoffSets: N }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.ADVANCED', categories: ['adaptation'], params: { trackId: S, variable: S }, audience: 'user', severity: 'info' },
   { code: 'PROGRESSION.HELD', categories: ['adaptation'], params: { trackId: S, cause: S }, audience: 'internal', severity: 'info' },
@@ -65,7 +66,8 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'PROGRESSION.REVIEW_DUE', categories: ['information'], params: { trackId: S, weeks: N }, audience: 'internal', severity: 'notice' },
   { code: 'DATA.SCIENCE_REGISTRY', categories: ['information'], params: { version: S }, audience: 'internal', severity: 'info' },
   { code: 'SELECT.CHOICE_GROUP', categories: ['optimization'], params: { group: S, need: S, cause: S, others: L }, audience: 'internal', severity: 'info' },
-  { code: 'PROGRESSION.EXPOSURE_CLASSIFIED', categories: ['information'], params: { trackId: S, exerciseId: S, exposure: S, success: S, sets: S, repsDelta: S, loadDeltaKg: S, rirDelta: S, rir: S, kind: S, effort: S }, audience: 'internal', severity: 'info' },
+  // Lot 4.5 — trace facultative : RIR prescrit (première série de travail), RIR de référence de la prescription et sa source.
+  { code: 'PROGRESSION.EXPOSURE_CLASSIFIED', categories: ['information'], params: { trackId: S, exerciseId: S, exposure: S, success: S, sets: S, repsDelta: S, loadDeltaKg: S, rirDelta: S, rir: S, kind: S, effort: S, prescribedRir: S, referenceRir: S, referenceSource: S }, optionalParams: ['prescribedRir', 'referenceRir', 'referenceSource'], audience: 'internal', severity: 'info' },
   { code: 'SELECT.CONTINUITY', categories: ['optimization'], params: { slot: S, incumbent: S, chosen: S, outcome: S, cause: S }, audience: 'internal', severity: 'info' },
   { code: 'SELECT.CONTINUITY_KEPT', categories: ['optimization'], params: { exercises: L }, audience: 'internal', severity: 'info' },
   { code: 'PLAN.SPORT_PRIORITY', categories: ['information'], params: { order: L, strengthRank: N, neighbours: L, policy: S }, audience: 'internal', severity: 'info' },

@@ -89,8 +89,8 @@ Chemin réel de l’application ; athlète simulé : séries au haut de la fourc
 | Exercice principal (1er de séance) | Expositions | Première charge (kg) | Dernière charge (kg) | Baisses |
 |---|---|---|---|---|
 | back_squat | 5 | 40 | 40 | 0 |
-| barbell_ohp | 11 | 40 | 45 | 0 |
-| bench_press | 11 | 40 | 45 | 0 |
+| barbell_ohp | 11 | 40 | 40 | 0 |
+| bench_press | 11 | 40 | 40 | 0 |
 | romanian_deadlift | 5 | 40 | 40 | 0 |
 
 ## L4-3 — Matériel limité — haltères et banc, 2 exercices exclus

@@ -129,14 +129,23 @@ describe('options inactives par défaut ; planification identique au commit bfed
     expect(fb.strength?.composition?.rule?.bands.every((b) => b.shortWeek === 'full_body')).toBe(true);
     expect(env.strength?.composition?.rule?.bands.some((b) => b.shortWeek !== undefined)).toBe(false);
   });
-  it('profils L4-1 et L4-2 : mesures identiques au rapport du lot 4.2 (bfedde1, variante A)', () => {
+  it('profils L4-1 et L4-2 : planification identique au rapport du lot 4.2 (bfedde1, variante A) ; charges : seul écart, la référence RIR du lot 4.5', () => {
     const ref = JSON.parse(readFileSync(new URL('./__reports__/lot42-arbitrages.json', import.meta.url), 'utf8')) as Lot42Measure[];
     for (const id of ['L4-1', 'L4-2']) {
       const spec = lot42Specs().find((x) => x.id === id);
       if (!spec) throw new Error(id);
       const now = measureLot42(spec, VARIANTS[0]);
       const old = ref.find((m) => m.variant === 'A' && m.id === id);
-      expect({ v: now.volume, l: now.loads, p: now.planned, r: now.refused }).toEqual({ v: old?.volume, l: old?.loads, p: old?.planned, r: old?.refused });
+      expect({ v: now.volume, p: now.planned, r: now.refused }).toEqual({ v: old?.volume, p: old?.planned, r: old?.refused });
+      // Lot 4.5 (chantier A) : les suivis neufs portent le RIR RÉELLEMENT prescrit. Profil multisport (L4-2, HYROX) :
+      // référence 4 (prudence multisport) au lieu de 2 ⇒ hausses du haut du corps calculées pour l'effort prescrit
+      // (développé 70 → 70 au lieu de 75 ; militaire 45 → 45, sans la baisse d'avant). Profil sans autre sport : identique.
+      if (id === 'L4-1') expect(now.loads).toEqual(old?.loads);
+      else {
+        const changed = Object.keys(now.loads).filter((k) => JSON.stringify(now.loads[k]) !== JSON.stringify(old?.loads[k])).sort();
+        expect(changed).toEqual(['barbell_ohp', 'bench_press']);
+        expect([now.loads.bench_press?.last, now.loads.barbell_ohp?.last, now.loads.barbell_ohp?.drops]).toEqual(['70', '45', 0]);
+      }
     }
   }, 300_000);
 });

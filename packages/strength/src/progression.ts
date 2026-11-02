@@ -10,8 +10,10 @@
  */
 import type { Exercise, ISODateTime, ReasonCode, RepTarget, SetPrescription } from '@hybridsport/domain';
 import type { StrengthTrack } from './context.js';
-import type { ProgressionModel, SlotRole, StrengthParams } from './params.js';
+import type { DoseCell, ProgressionModel, SlotRole, StrengthParams } from './params.js';
 import { exerciseClass } from './model.js';
+import type { StrengthPersonalization } from './personalization-contract.js';
+import { personalizedDoseCell } from './personalization.js';
 import { strengthReasons } from './codes.js';
 import { daysBetween, median, roundDownToStep } from './util.js';
 
@@ -235,7 +237,7 @@ const autoregulatedBasis = (sets: readonly PerformedSet[], params: StrengthParam
  * - séries partielles, données absentes, douleur… : règles actuelles.
  * R3 (réévaluation de fin de cycle) : `reassessTrack`, appelée à la frontière de cycle, jamais ici.
  */
-export const LIGHTENED_POLICIES = ['r4', 'r4_floor', 'r4_r3', 'r4_floor_r3', 'r4_floor_r3_safety'] as const;
+export const LIGHTENED_POLICIES = ['r4', 'r4_floor', 'r4_r3', 'r4_floor_r3', 'r4_floor_r3_safety', 'reference_eval'] as const;
 export type LightenedPolicy = (typeof LIGHTENED_POLICIES)[number];
 export interface LightenedReading {
   readonly policy: LightenedPolicy;
@@ -284,6 +286,9 @@ function lightenedUpdate(track: StrengthTrack, x: ExecutedItem, cls: ExposureCla
   if (prescribed === undefined || prescribed <= ref) return undefined;
   const p = params['strength.progression'];
   const asRef = classifyExposure({ ...x, prescribed: x.prescribed.map((z) => withRir(z, ref)) }, params);
+  // Lot 4.5 — `reference_eval` (proposition) : la séance allégée est JUGÉE contre la référence durable, dans les deux sens
+  // (réussite ⇒ preuve et hausse possible ; en dessous ⇒ compteur et baisse), avec les règles actuelles du modèle.
+  if (r.policy === 'reference_eval') return updateTrackModel(track, x, asRef, e, params, phaseKind, declaredStepKg);
   const resumed: StrengthTrack = track.status === 'suspended' ? { ...track, status: 'active' } : track;
   if (asRef === 'below') {
     const step = stepFor(e, params, declaredStepKg);
@@ -437,6 +442,12 @@ export function createTrack(input: {
   readonly model: ProgressionModel; readonly prescribed: readonly SetPrescription[]; readonly performed: readonly PerformedSet[]; readonly at: ISODateTime;
   /** Stimulus et rôle de l'emplacement : le RIR de référence de la track est celui du PROFIL DE BASE, sans modificateur. */
   readonly stimulus: string; readonly role: SlotRole;
+  /**
+   * Reprise RC5 lot 4.5 (correction) — personnalisation et autres sports DU PROFIL DE LA PRESCRIPTION : la cellule de
+   * référence est la cellule PERSONNALISÉE, celle que le moteur a réellement utilisée (`doseCell`). Absents : profil non
+   * personnalisé (cellule du ruleset, comportement antérieur).
+   */
+  readonly personalization?: StrengthPersonalization; readonly otherSports?: readonly string[];
 }, params: StrengthParams): { track: StrengthTrack; reasons: readonly ReasonCode[] } {
   const work = input.prescribed.filter((s) => s.kind !== 'rampup' && s.optional !== true);
   const first = work[0];
@@ -447,8 +458,7 @@ export function createTrack(input: {
   const e1rm = est.observed ?? est.lowerBound;
   const basis = est.observed !== undefined ? 'observed' as const : est.lowerBound !== undefined ? 'lower_bound' as const : undefined;
   // RIR de référence = profil de base (jamais le RIR de calibration ni un RIR modifié par le niveau / la phase).
-  const profile = params['strength.stimuli'][input.stimulus]?.doseProfile;
-  const cell = profile === undefined ? undefined : params['strength.dose.base'][profile]?.[input.role]?.[exerciseClass(input.exercise, params)];
+  const cell = referenceCell({ exercise: input.exercise, role: input.role, stimulus: input.stimulus, ...(input.personalization ? { personalization: input.personalization } : {}), ...(input.otherSports ? { otherSports: input.otherSports } : {}) }, params);
   const rir = cell?.rir ?? (first ? targetRir(first) : undefined);
   // Double progression sur une prescription à reps FIXES (ex. modèle choisi pour pas grossier) : la plage est
   // celle du profil, sinon la progression en reps serait dégénérée (plage 6–6, simulation 4B).
@@ -465,6 +475,18 @@ export function createTrack(input: {
     ...(basis ? { evidence: { exactStreak: 0, effortKnown: 0, effortUnknown: 0, e1rmBasis: basis } } : {}),
   };
   return { track, reasons: [strengthReasons.emit('PROGRESSION.TRACK_CREATED', { trackId, tier: input.tier, exerciseId: input.exercise.id })] };
+}
+
+/**
+ * Reprise RC5 lot 4.5 (correction) — cellule de dose de RÉFÉRENCE d'une prescription : profil de base (stimulus × rôle ×
+ * classe) PERSONNALISÉ exactement comme le moteur (`doseCell` → `personalizedDoseCell` : priorités, prudence novice /
+ * récupération limitée / multisport). Avant 4.5, `createTrack` lisait la cellule BRUTE : pour un accessoire personnalisé
+ * ou un profil multisport, le RIR de référence de la track (1 ou 2) différait du RIR réellement prescrit (2 à 4).
+ */
+export function referenceCell(input: { readonly exercise: Exercise; readonly role: SlotRole; readonly stimulus: string; readonly personalization?: StrengthPersonalization; readonly otherSports?: readonly string[] }, params: StrengthParams): DoseCell | undefined {
+  const profile = params['strength.stimuli'][input.stimulus]?.doseProfile;
+  const cell = profile === undefined ? undefined : params['strength.dose.base'][profile]?.[input.role]?.[exerciseClass(input.exercise, params)];
+  return cell === undefined ? undefined : personalizedDoseCell(cell, input.exercise, input.role, params, input.personalization, input.otherSports ?? []);
 }
 
 /**

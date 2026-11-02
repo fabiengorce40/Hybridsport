@@ -12,8 +12,8 @@ import type { Exercise } from '@hybridsport/domain';
 import { loadCatalog, loadRuleset } from '@hybridsport/engine';
 import { readStrengthParams, STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } from '@hybridsport/strength';
 import type { StrengthCompositionRule } from '@hybridsport/strength';
-import { beta0Environment, personalizedStrengthContent, strengthContent, strengthWeekVolume, updateStrengthPersonalization } from '../../src/index.js';
-import type { ProfileInput, ProgrammeEnvironment, ProgressionReadingOption, StrengthPersonalization } from '../../src/index.js';
+import { beta0Environment, personalizedStrengthContent, strengthCandidateContent, strengthContent, strengthWeekVolume, updateStrengthPersonalization } from '../../src/index.js';
+import type { ProfileInput, ProgrammeEnvironment, ProgressionReadingOption, StrengthCandidateOptions, StrengthPersonalization } from '../../src/index.js';
 import { mondayOf, simulate } from '../rc4-audit/rc4-sim.js';
 import type { ProfileSpec, SimOut } from '../rc4-audit/rc4-sim.js';
 import { lot41Athlete, lot41Specs, measureLot41 } from './lot41-bench.js';
@@ -38,8 +38,13 @@ export interface Lot42Variant {
   readonly placementProbe?: 'first';
   /** Lot 4.4 (C) — redistribution du volume d'une séance non placée (option candidate `redistributeUnplaced`). */
   readonly redistributeUnplaced?: true;
+  /** Lot 4.5 (D) — portée et garde de la redistribution (options candidates). */
+  readonly redistributeScope?: 'deficit' | 'priority';
+  readonly redistributeGuard?: 'keep_residual';
   /** Lot 4.4 (D) — réévaluation contrôlée des isolations en place (option candidate `isolationReview`). */
   readonly isolationReview?: 'volume_fit';
+  /** Lot 4.5 — contenu CANDIDAT complet (`strengthCandidateContent`, hors registre), mesuré tel quel. */
+  readonly candidate?: StrengthCandidateOptions;
   /** Lot 4.4 (E) — lecture R4 des séances allégées (option de simulation `progressionReading`). */
   readonly progression?: ProgressionReadingOption;
 }
@@ -62,7 +67,7 @@ export function variantEnv(v: Lot42Variant): ProgrammeEnvironment {
   if (hit) return hit;
   const env = beta0Environment();
   if (!env.strength) throw new Error('environnement Strength attendu');
-  const policyPatch = { ...(v.volumeFitTieBreak ? { volumeFitTieBreak: v.volumeFitTieBreak } : {}), ...(v.highWindow ? { highWindow: v.highWindow } : {}), ...(v.redistributeUnplaced ? { redistributeUnplaced: true } : {}), ...(v.isolationReview ? { isolationReview: v.isolationReview } : {}) };
+  const policyPatch = { ...(v.volumeFitTieBreak ? { volumeFitTieBreak: v.volumeFitTieBreak } : {}), ...(v.highWindow ? { highWindow: v.highWindow } : {}), ...(v.redistributeUnplaced ? { redistributeUnplaced: true } : {}), ...(v.redistributeScope ? { redistributeScope: v.redistributeScope } : {}), ...(v.redistributeGuard ? { redistributeGuard: v.redistributeGuard } : {}), ...(v.isolationReview ? { isolationReview: v.isolationReview } : {}) };
   const touchesContent = v.synergists !== undefined || v.secondaryWeight !== undefined || Object.keys(policyPatch).length > 0;
   let strength = env.strength;
   if (touchesContent) {
@@ -84,6 +89,10 @@ export function variantEnv(v: Lot42Variant): ProgrammeEnvironment {
       catalog = c.catalog;
     }
     strength = { ...strength, content: { ...strength.content, ruleset: r.ruleset, catalog } as typeof strength.content };
+  }
+  if (v.candidate) {
+    const c = strengthCandidateContent(v.candidate);
+    strength = { ...strength, content: { ...strength.content, ruleset: c.ruleset, catalog: c.catalog } as typeof strength.content };
   }
   if (v.shortWeek) {
     const rule: StrengthCompositionRule = { ...STRENGTH_WEEKLY_COMPOSITION_CANDIDATE, version: `${STRENGTH_WEEKLY_COMPOSITION_CANDIDATE.version}.sim-shortweek-${v.shortWeek}`, bands: STRENGTH_WEEKLY_COMPOSITION_CANDIDATE.bands.map((b) => ({ ...b, shortWeek: v.shortWeek })) };

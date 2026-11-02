@@ -58,8 +58,8 @@ Observation algorithmique : aucune progression simulée n’est un gain physiolo
 | Exercice (2 premiers de séance) | Lot 4 : première → dernière (n, baisses) | Lot 4.1 : première → dernière (n, baisses) |
 |---|---|---|
 | back_squat | 100 → 102.5 kg (5, 0) | 100 → 105 kg (5, 0) |
-| barbell_ohp | 45 → 47.5 kg (11, 1) | 45 → 47.5 kg (11, 1) |
-| bench_press | 70 → 75 kg (11, 0) | 70 → 75 kg (11, 0) |
+| barbell_ohp | 45 → 47.5 kg (11, 1) | 45 → 45 kg (11, 0) |
+| bench_press | 70 → 75 kg (11, 0) | 70 → 70 kg (11, 0) |
 | leg_press | 140 → 140 kg (5, 0) | 140 → 140 kg (5, 0) |
 | romanian_deadlift | 90 → 95 kg (5, 0) | 90 → 95 kg (5, 0) |
 | seated_cable_row | 60 → 55 kg (11, 1) | 60 → 55 kg (11, 1) |
@@ -238,11 +238,11 @@ Observation algorithmique : aucune progression simulée n’est un gain physiolo
 
 | Exercice (2 premiers de séance) | Lot 4 : première → dernière (n, baisses) | Lot 4.1 : première → dernière (n, baisses) |
 |---|---|---|
-| back_squat | 100 → 105 kg (5, 0) | 100 → 97.5 kg (11, 1) |
-| barbell_ohp | 45 → 47.5 kg (11, 0) | 45 → 47.5 kg (11, 0) |
-| bench_press | 70 → 75 kg (11, 0) | 70 → 75 kg (11, 0) |
+| back_squat | 100 → 105 kg (5, 0) | 100 → 107.5 kg (11, 0) |
+| barbell_ohp | 45 → 47.5 kg (11, 0) | 45 → 45 kg (11, 0) |
+| bench_press | 70 → 75 kg (11, 0) | 70 → 70 kg (11, 0) |
 | leg_press | 140 → 140 kg (5, 0) | 140 → 150 kg (11, 0) |
-| romanian_deadlift | 90 → 95 kg (5, 0) | 90 → 90 kg (11, 1) |
+| romanian_deadlift | 90 → 95 kg (5, 0) | 90 → 95 kg (11, 0) |
 | seated_cable_row | 60 → 55 kg (11, 1) | 60 → 55 kg (11, 1) |
 | single_leg_rdl_db | 24 → 24 kg (5, 0) | 24 → 22 kg (11, 1) |
 

@@ -183,6 +183,14 @@ const STRENGTH_RC5_LOT44_CHANGES = [
   'packages/strength/tests/unit/catalog-lot44.test.ts',
   'packages/strength/tests/unit/lot44-r4-reading.test.ts',
 ];
+/**
+ * RC5 lot 4.5 (progression et politiques candidates) : catalogue CANDIDAT B1 (fixture, hors registre) et tests du RIR de
+ * référence. Fichiers `src` déjà couverts par les listes ci-dessus (progression, moteur, codes, contrat de personnalisation).
+ */
+const STRENGTH_RC5_LOT45_CHANGES = [
+  'packages/strength/tests/fixtures/catalog-b1-candidate.ts',
+  'packages/strength/tests/unit/lot45-reference-rir.test.ts',
+];
 /** V2.1 : évolution Strength explicitement autorisée le 29/10 ; aucun changement CORE, Running ou CT. */
 const STRENGTH_V21_CHANGES = ["packages/strength/tests/unit/science-lock.test.ts", "packages/strength/content/personalization-v1.ts", "packages/strength/src/personalization-contract.ts", "packages/strength/src/personalization.ts", "packages/strength/src/candidates.ts", "packages/strength/src/codes.ts", "packages/strength/src/context.ts", "packages/strength/src/dose.ts", "packages/strength/src/engine.ts", "packages/strength/src/index.ts", "packages/strength/src/params.ts", "packages/strength/src/science/provenance.ts"];
 const CT_C2_AUTHORIZED_CORE_CHANGES = [
@@ -230,6 +238,7 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   ...STRENGTH_RC5_LOT41_CHANGES,
   ...STRENGTH_RC5_LOT42_CHANGES,
   ...STRENGTH_RC5_LOT44_CHANGES,
+  ...STRENGTH_RC5_LOT45_CHANGES,
   ...RUNNING_RC43_R2_CHANGES,
 ];
 

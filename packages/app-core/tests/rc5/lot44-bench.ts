@@ -92,10 +92,16 @@ export function r4Scenarios(): ProfileSpec[] {
 export interface Lot44Measure extends Lot43Measure {
   /** E : décisions de progression relevées (programme), par code / cause. */
   readonly progression: Readonly<Record<string, number>>;
+  /** Lot 4.5 : séquence brute des raisons de progression (seulement si demandée). */
+  readonly audit?: readonly { readonly code: string; readonly params: Readonly<Record<string, unknown>> }[];
+  /** Lot 4.5 : exercices successifs de chaque emplacement d'isolation (archétype / emplacement), seulement si demandé. */
+  readonly isolationSequences?: Readonly<Record<string, readonly string[]>>;
 }
 
-export function measureLot44(s: ProfileSpec, v: Lot43Variant): Lot44Measure {
+export function measureLot44(s: ProfileSpec, v: Lot43Variant, keepAudit = false): Lot44Measure {
   let audit: Record<string, number> = {};
+  let raw: { code: string; params: Record<string, unknown> }[] = [];
+  const iso: Record<string, string[]> = {};
   const m = measureLot43(s, v, (st) => {
     const out: Record<string, number> = {};
     for (const a of st.programmeState?.audit ?? []) {
@@ -105,8 +111,17 @@ export function measureLot44(s: ProfileSpec, v: Lot43Variant): Lot44Measure {
       out[k] = (out[k] ?? 0) + 1;
     }
     audit = out;
+    if (keepAudit) {
+      const reqs = Object.values(st.planner.weeks).flatMap((w) => w.requests).filter((r) => r.sport === 'strength' && r.status === 'planned' && r.date).sort((a, b) => ((a.date ?? '') < (b.date ?? '') ? -1 : 1));
+      for (const r of reqs) {
+        const ses = (r.record?.data as { session?: { blocks: { items: { exerciseId: string; refs?: { slotId?: string } }[] }[] } } | undefined)?.session;
+        const n: Record<string, number> = {};
+        for (const it of (ses?.blocks ?? []).flatMap((b) => b.items)) if (it.refs?.slotId && /\.iso_/.test(it.refs.slotId)) { const k = it.refs.slotId; n[k] = (n[k] ?? 0) + 1; (iso[`${r.intent?.archetypeId ?? ''}/${k}#${String(n[k])}`] ??= []).push(it.exerciseId); }
+      }
+    }
+    if (keepAudit) raw = (st.programmeState?.audit ?? []).filter((a) => a.reason.code.startsWith('PROGRESSION.')).map((a) => ({ code: a.reason.code, params: a.reason.params as Record<string, unknown> }));
   });
-  return { ...m, progression: audit };
+  return { ...m, progression: audit, ...(keepAudit ? { audit: raw, isolationSequences: iso } : {}) };
 }
 
 const f1 = (n: number | null | undefined) => (n === null || n === undefined ? '—' : String(Math.round(n * 10) / 10));

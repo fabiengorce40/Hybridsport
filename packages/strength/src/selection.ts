@@ -115,7 +115,8 @@ export function rankCandidates(candidates: readonly Exercise[], slot: SlotInstan
  * seulement si les groupes principaux de l'isolation en place ont atteint leur cible (`volume_fit` : aucun groupe sous
  * le plancher) et qu'un autre candidat sert un groupe encore sous sa cible, sans dépassement supplémentaire de la borne
  * haute, et au moins aussi adapté sur les critères qui précèdent (`load_adequacy`, `role_fit`). Premier dans l'ordre du
- * classement : déterministe. Aucun candidat : l'isolation en place est conservée (continuité S4 inchangée).
+ * classement : déterministe. Aucun candidat : l'isolation en place est conservée (continuité S4 inchangée). Lot 4.5 :
+ * l'appelant retire les exercices récemment quittés sur cet emplacement (anti-oscillation).
  */
 export function isolationReviewCandidate(incumbent: Ranked, ranked: readonly Ranked[], slot: SlotInstance, env: Env, soFar: SessionSoFar): Ranked | undefined {
   const vf = (r: Ranked) => criterionValue('volume_fit', r.exercise, slot, env, soFar);

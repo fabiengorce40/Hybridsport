@@ -13,6 +13,7 @@ import { strengthLockRulesetDocument } from '../../strength/tests/fixtures/rules
 import { STRENGTH_PRESETS, strengthCatalogDocument } from '../../strength/tests/fixtures/catalog.js';
 import { strengthF6CatalogDocument, strengthF6RulesetDocument } from '../../strength/tests/fixtures/f6.js';
 import { strengthLot44CatalogDocument } from '../../strength/tests/fixtures/catalog-lot44.js';
+import { strengthB1CandidateCatalogDocument } from '../../strength/tests/fixtures/catalog-b1-candidate.js';
 import { strengthL1V3RulesetDocument } from '../../strength/tests/fixtures/l1v3.js';
 import { strengthL1B4RulesetDocument } from '../../strength/tests/fixtures/l1b4.js';
 import { strengthHautBasAbRulesetDocument } from '../../strength/tests/fixtures/hautbas-ab.js';
@@ -150,5 +151,42 @@ export function personalizedStrengthContent(base: ContentSource): ContentSource 
   if (!r.ok) throw new Error('Contenu personnalisé Strength invalide');
   const out = { ...base, ruleset: r.ruleset, origin: 'fixtures:strength-personalization-v1' };
   personalContentCache.set(base.ruleset,out);
+  return out;
+}
+
+/**
+ * Reprise RC5 lot 4.5 — CONTENUS CANDIDATS (B1 + réévaluation des isolations ; redistribution du volume non placé),
+ * construits sur le contenu personnalisé COURANT, avec des versions DISTINCTES et déterministes. Ils ne sont JAMAIS dans
+ * `strengthContentRegistry()` (registre des utilisateurs) : aucune semaine réelle ne peut être générée ni relue avec eux.
+ * Activation (décision) : 1) publier la version au registre (relecture des séances générées), 2) l'utiliser pour les
+ * nouvelles semaines des profils concernés. Le banc du lot 4.5 mesure exactement ces contenus.
+ */
+export interface StrengthCandidateOptions {
+  readonly b1IsolationReview?: true;
+  readonly redistribution?: { readonly scope?: 'deficit' | 'priority'; readonly guard?: 'keep_residual' };
+}
+const candidateCache = new Map<string, ContentSource>();
+export function strengthCandidateContent(o: StrengthCandidateOptions): ContentSource {
+  const tag = [o.b1IsolationReview ? 'b1iso' : '', o.redistribution ? `red${o.redistribution.scope ? `-${o.redistribution.scope}` : ''}${o.redistribution.guard ? '-guard' : ''}` : ''].filter((x) => x !== '').join('-');
+  if (tag === '') throw new Error('Contenu candidat : aucune option');
+  const hit = candidateCache.get(tag);
+  if (hit) return hit;
+  const base = personalizedStrengthContent(strengthContent());
+  const doc = base.ruleset.document;
+  const parameters = doc.parameters.map((x) => (x.id !== 'strength.personalization' ? x : { ...x, version: `${x.version}-candidate-${tag}`, value: {
+    ...(x.value as object),
+    ...(o.b1IsolationReview ? { isolationReview: 'volume_fit' } : {}),
+    ...(o.redistribution ? { redistributeUnplaced: true, ...(o.redistribution.scope ? { redistributeScope: o.redistribution.scope } : {}), ...(o.redistribution.guard ? { redistributeGuard: o.redistribution.guard } : {}) } : {}),
+  } }));
+  const r = loadRuleset({ ...doc, rulesetVersion: `${base.ruleset.version}.candidate-${tag}`, parameters } as Parameters<typeof loadRuleset>[0]);
+  if (!r.ok) throw new Error(`Contenu candidat invalide (${tag})`);
+  let catalog = base.catalog;
+  if (o.b1IsolationReview) {
+    const c = loadCatalog(strengthB1CandidateCatalogDocument());
+    if (!c.ok) throw new Error('Catalogue candidat B1 invalide');
+    catalog = c.catalog;
+  }
+  const out: ContentSource = { ruleset: r.ruleset, catalog, authority: 'provisional', origin: `candidate:${tag}` };
+  candidateCache.set(tag, out);
   return out;
 }
