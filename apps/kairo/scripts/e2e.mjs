@@ -7,6 +7,7 @@
  * libre (le temps s'écoule normalement).
  * Usage : node scripts/e2e.mjs [dossier de captures] — le serveur doit tourner sur E2E_URL.
  */
+import { completeStrengthPersonalization, EXPERIENCE, strengthDaysAtAvailability } from './lib/strength-onboarding.mjs';
 import { readFileSync } from 'node:fs';
 import { chromium, devices } from 'playwright';
 
@@ -78,11 +79,15 @@ check((await text()).includes('HYROX') && (await text()).includes('Cross-trainin
 await page.getByRole('radio', { name: /^Musculation \+ Course/ }).click();
 await shot('02-sports');
 await page.getByRole('button', { name: 'Continuer' }).click();
+// V2.1/V2.2 : personnalisation Musculation obligatoire (7 étapes), choix explicites.
+check(await completeStrengthPersonalization(page), 'personnalisation Musculation complétée (7 étapes)');
 await page.getByLabel('Durée (min)').fill('30');
 await page.getByLabel('Distance (km)').fill('5');
 await shot('03-objectifs');
 await page.getByRole('button', { name: 'Continuer' }).click();
 await page.getByLabel('Temps disponible le Mardi').selectOption('60');
+// Reprise 3A : jours Musculation APRÈS les disponibilités ; proposition = tous les jours disponibles (mardi ajouté compris).
+{ const d = await strengthDaysAtAvailability(page); check(d.proposal && JSON.stringify(d.checked) === JSON.stringify(d.available), `jours Musculation proposés = jours disponibles (${d.checked.join(',')})`); }
 await page.getByRole('button', { name: 'Continuer' }).click();
 await shot('04-programme');
 await page.getByRole('button', { name: 'Créer mon programme' }).click();
@@ -184,7 +189,8 @@ const strengthTitles = (p) => p.getByRole('button', { name: /^Musculation : / })
   await p.getByRole('button', { name: 'Commencer' }).click();
   await p.getByRole('radio', { name: /^Musculation Séances/ }).click();
   await p.getByRole('button', { name: 'Continuer' }).click();
-  await p.locator('.card', { has: p.getByRole('heading', { name: 'Musculation' }) }).getByLabel('Séances par semaine').selectOption('4');
+  // V2.1/V2.2 : la fréquence Musculation se choisit à l'étape « Votre semaine » de la personnalisation.
+  check(await completeStrengthPersonalization(p, { sessionsPerWeek: 4 }), "S1 programme neuf : personnalisation Musculation complétée, 4 séances/semaine");
   await p.getByRole('button', { name: 'Continuer' }).click();
   await p.getByRole('button', { name: 'Continuer' }).click();
   await p.getByRole('button', { name: 'Créer mon programme' }).click();
@@ -875,6 +881,7 @@ async function mobileFit(p, tag) {
   await p.getByLabel('Ajouter du Cross-training').check();
   await p.getByLabel('Ajouter HYROX').check();
   await p.getByRole('button', { name: 'Continuer' }).click();
+  check(await completeStrengthPersonalization(p, { experience: EXPERIENCE.intermediate }), `${tag} personnalisation Musculation complétée (7 étapes)`);
   await p.getByRole('radio', { name: /^Mixte/ }).click();
   await p.getByLabel('Séances de Cross-training par semaine').selectOption('1');
   await p.getByLabel('Niveau d’entraînement général').selectOption('intermediate');
@@ -1227,11 +1234,15 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   await p.getByLabel('Ajouter du Cross-training').check();
   await p.getByRole('button', { name: 'Continuer' }).click();
   await p.getByLabel('Niveau d’entraînement général').selectOption('intermediate');
-  await p.getByRole('button', { name: 'Masse musculaire' }).click();
-  const freq = p.getByLabel('Séances par semaine').first();
-  const opts = await freq.locator('option').evaluateAll((os) => os.map((o) => ({ v: o.value, d: o.disabled, t: o.textContent })));
-  check(opts.filter((o) => o.d).map((o) => o.v).join(',') === '5,6' && opts.some((o) => /pas encore pris en charge/.test(o.t ?? '')), `${tag} 5 et 6 séances affichées comme non prises en charge (${JSON.stringify(opts.map((o) => o.t))})`);
-  await freq.selectOption('3');
+  // V2.1/V2.2 : objectif (« Masse musculaire » → « Développer mes muscles »), fréquence et matériel dans l'assistant.
+  check(await completeStrengthPersonalization(p, { sessionsPerWeek: 3, outcome: 'Développer mes muscles', experience: EXPERIENCE.intermediate, equipmentPreset: 'preset.commercial_gym', onStage: async (stage, w, next) => {
+    if (stage === 4) {
+      const opts = await w.getByLabel('Séances Musculation par semaine').locator('option').evaluateAll((os) => os.map((o) => o.value));
+      // Fréquences non prises en charge (5, 6) : plus proposées du tout (V2.0 : affichées désactivées).
+      check(opts.join(',') === '1,2,3,4', `${tag} seules les fréquences prises en charge sont proposées (${opts.join(',')}) : 5 et 6 impossibles à choisir`);
+    }
+    if (stage === 5) check(await next.isDisabled() && await w.locator('[data-equipment-missing]').isVisible(), `${tag} aucun matériel présélectionné : impossible de poursuivre tant que le lieu n’est pas choisi`);
+  } }), `${tag} personnalisation Musculation complétée (3 séances, salle commerciale)`);
   await p.getByRole('radio', { name: /^Mixte/ }).click();
   await p.getByLabel('Séances de Cross-training par semaine').selectOption('1');
   await p.getByLabel('Durée (min)').fill('30');
@@ -1239,9 +1250,9 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   for (const [i, d] of ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'].entries()) await p.getByLabel(`Temps disponible le ${d}`).selectOption(i === 6 ? '0' : i === 5 ? '90' : '75');
   await p.getByRole('button', { name: 'Continuer' }).click();
   const create = p.getByRole('button', { name: 'Créer mon programme' });
-  check(await create.isDisabled() && await p.locator('[data-equipment-missing]').isVisible(), `${tag} aucun matériel présélectionné : création bloquée tant que le lieu n’est pas choisi`);
+  // Le lieu choisi dans l'assistant est repris tel quel au récapitulatif (aucune valeur supposée).
+  check(await p.getByLabel('Lieu d’entraînement').inputValue() === 'preset.commercial_gym' && !(await create.isDisabled()), `${tag} lieu choisi dans la personnalisation repris au récapitulatif (salle commerciale)`);
   await snap('01-materiel-a-choisir');
-  await p.getByLabel('Lieu d’entraînement').selectOption('preset.commercial_gym');
   await p.locator('[data-equipment-summary] summary').click();
   const eqText = await p.locator('[data-equipment-summary]').innerText();
   check(!/Pec deck|Hack squat|Élévations latérales/.test(eqText), `${tag} salle commerciale : aucune machine pec deck / hack squat supposée (${eqText.slice(0, 80)}…)`);
@@ -1253,7 +1264,14 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   check(!(await p.locator('[data-equipment-confirm]').count()), `${tag} aucun bandeau de confirmation pour un profil neuf`);
   await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Planning', exact: true }).click();
   const cards = await p.getByRole('button', { name: /^Musculation : / }).evaluateAll((bs) => bs.map((b) => b.getAttribute('aria-label') ?? ''));
-  check(cards.length === 3 && cards.every((x) => /Full body [A-C]/.test(x)) && new Set(cards.map((x) => /Full body ([A-C])/.exec(x)?.[1])).size >= 2, `${tag} 3 × Full Body, variantes visibles (${cards.map((x) => x.split(',')[0]).join(' | ')})`);
+  // V2.1 (politique Musculation autorisée le 29/10) : fenêtre de récupération entre deux Full Body. Avec Course et
+  // Cross-training sur la semaine, la 3e séance n'a plus de jour compatible ; elle reste VISIBLE comme non placée, avec
+  // son motif (V2.0 plaçait 3 Full Body dont deux consécutives, lundi et mardi).
+  check(cards.length === 2 && cards.every((x) => /Full body [A-C]/.test(x)) && new Set(cards.map((x) => /Full body ([A-C])/.exec(x)?.[1])).size === 2, `${tag} 2 × Full Body placées, variantes distinctes (${cards.map((x) => x.split(',')[0]).join(' | ')})`);
+  const strengthReqs = Object.values(s0.planner?.weeks ?? {})[0]?.requests.filter((r) => r.sport === 'strength') ?? [];
+  const notPlaced = strengthReqs.filter((r) => r.status !== 'planned');
+  check(strengthReqs.length === 3 && notPlaced.length === 1 && (notPlaced[0].reasons ?? []).some((x) => x.code === 'PLAN.PERSONALIZATION_BLOCKED' && x.params?.cause === 'strength_recovery_window'), `${tag} 3e Musculation demandée non placée, motif « récupération » enregistré (${notPlaced.map((r) => r.status).join(',')})`);
+  check(/votre récupération ou le budget de volume de cette semaine ne permettent pas cette séance/.test(await p.locator('body').innerText()), `${tag} motif de la séance non placée affiché dans le Planning`);
   await snap('03-planning-variantes');
   // Séance 1 : genou P2 ⇒ séance adaptée.
   await p.getByRole('button', { name: /^Musculation : / }).first().click();

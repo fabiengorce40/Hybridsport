@@ -13,6 +13,8 @@ import { StoreProvider } from '../src/store.js';
 
 afterEach(cleanup);
 const MONDAY = '2026-10-05';
+// La saisie de 08:00 est locale : l'identifiant utilise l'instant UTC correspondant.
+const FREE_RUN_ID = `free:${new Date(new Date('2026-10-03T08:00:00').getTime() + 50 * 60_000).toISOString().replace('.000Z', 'Z')}`;
 const clock = (): Clock => ({ today: MONDAY, now: `${MONDAY}T19:30:00.000Z` });
 const mount = (storage: MemoryStorage) => render(<StoreProvider storage={storage} clock={clock}><App /></StoreProvider>);
 const saved = (storage: MemoryStorage): AppState => JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}') as AppState;
@@ -49,7 +51,7 @@ describe('RC4.3 — type de course', () => {
     expect(document.querySelector('[data-free-run-blockers]')?.textContent).toMatch(/Précisez la séance de qualité/);
     fireEvent.click(f.getByRole('radio', { name: 'Côtes' }));
     fireEvent.click(f.getByRole('button', { name: 'Enregistrer la course' }));
-    const id = 'free:2026-10-03T08:50:00Z';
+    const id = FREE_RUN_ID;
     expect(saved(storage).running.freeRunMeta?.[id]).toEqual({ type: 'hills' });
     const card = () => document.querySelector(`[data-free-run="${id}"]`) as HTMLElement;
     expect(card().querySelector('[data-free-run-type-label]')?.textContent).toBe('Type : Qualité · côtes');
@@ -76,7 +78,7 @@ describe('RC4.3 — type de course', () => {
     fill(f);
     fireEvent.click(f.getByRole('radio', { name: 'Footing facile' }));
     fireEvent.click(f.getByRole('button', { name: 'Enregistrer la course' }));
-    const id = 'free:2026-10-03T08:50:00Z';
+    const id = FREE_RUN_ID;
     expect(saved(storage).running.freeRunMeta).toEqual({ [id]: { type: 'easy' } });
     const card = document.querySelector(`[data-free-run="${id}"]`) as HTMLElement;
     fireEvent.click(within(card).getByRole('button', { name: /^Supprimer la course/ }));

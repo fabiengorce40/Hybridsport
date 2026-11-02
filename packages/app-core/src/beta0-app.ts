@@ -1,3 +1,4 @@
+import { withStrengthPersonalization } from './strength-personalization.js';
 /**
  * Façade applicative Beta 0 pour l'interface : création du programme depuis le profil, ouverture de la semaine
  * (clôture des semaines passées, planification de la semaine courante), séance en cours PERSISTÉE (séries
@@ -96,7 +97,8 @@ function carryWeek(ps: ProgrammeState, c: CarriedWeek): ProgrammeState {
  * activé ⇒ déclarations complètes exigées (fréquence, intention / rôle, objectif, coupure) — aucune valeur supposée.
  */
 function beta0Profile(input: ProfileInput): ProfileInput & ReturnType<typeof zProfile.parse> {
-  const profile = zProfile.parse(input);
+  const profile = zProfile.parse(input.strength.personalization ? withStrengthPersonalization(input,input.strength.personalization) : input);
+  if (profile.strength.enabled && profile.strength.personalization && !profile.strength.personalization.completed) throw new AppError('STRENGTH_PERSONALIZATION_INCOMPLETE');
   if (!profile.strength.enabled && !profile.running.enabled && !profile.crosstraining.enabled && !profile.hyrox.enabled) throw new AppError('NO_SPORT_SELECTED');
   if (profile.crosstraining.enabled) ctDeclarations(profile);
   if (profile.hyrox.enabled) hrDeclarations(profile);
@@ -481,6 +483,13 @@ export function startProgrammeSession(state: AppState, clock: Clock, requestId: 
   const v = selectProgrammeSession(state, requestId);
   if (!v) throw new AppError('SESSION_UNAVAILABLE');
   if (v.result) throw new AppError('SESSION_FINISHED');
+  // V2.1 : les contraintes actuelles restent prioritaires sur l'instantané d'une séance ancienne.
+  const personalization = state.profile?.strength.personalization;
+  if (v.sport === 'strength' && personalization) {
+    if (personalization.painNow) throw new AppError('STRENGTH_PERSONALIZATION_PAIN');
+    const conflict = v.session.blocks.flatMap(b => b.items).some(item => personalization.avoidExercises.includes(item.exerciseId) || (strengthContent().catalog.exercise(item.exerciseId)?.painSensitiveAreas ?? []).some(a => personalization.avoidAreas.includes(a)));
+    if (conflict) throw new AppError('STRENGTH_PERSONALIZATION_CONSTRAINT');
+  }
   // Q1 — une prescription de qualité BLOQUÉE n'est jamais exécutable (« Faire maintenant » compris). UNRESOLVED reste
   // exécutable selon la règle produit EXISTANTE de la Beta 0 (séances provisoires acceptées explicitement au profil).
   if (v.quality === 'BLOCKED') throw new AppError('QUALITY_BLOCKED');
@@ -549,6 +558,13 @@ function startWithoutCheck(state: AppState, clock: Clock, requestId: string): Ap
   const v = selectProgrammeSession(state, requestId);
   if (!v) throw new AppError('SESSION_UNAVAILABLE');
   if (v.result) throw new AppError('SESSION_FINISHED');
+  // V2.1 : les contraintes actuelles restent prioritaires sur l'instantané d'une séance ancienne.
+  const personalization = state.profile?.strength.personalization;
+  if (v.sport === 'strength' && personalization) {
+    if (personalization.painNow) throw new AppError('STRENGTH_PERSONALIZATION_PAIN');
+    const conflict = v.session.blocks.flatMap(b => b.items).some(item => personalization.avoidExercises.includes(item.exerciseId) || (strengthContent().catalog.exercise(item.exerciseId)?.painSensitiveAreas ?? []).some(a => personalization.avoidAreas.includes(a)));
+    if (conflict) throw new AppError('STRENGTH_PERSONALIZATION_CONSTRAINT');
+  }
   if (v.quality === 'BLOCKED') throw new AppError('QUALITY_BLOCKED');
   const a = startAssessment(state, clock, requestId);
   if (!a.allowed && a.cause) throw new AppError(START_ERROR[a.cause]);
@@ -731,6 +747,61 @@ export function controlRest(state: AppState, clock: Clock, requestId: string, ac
   return withLog(state, { ...log, rest });
 }
 
+/**
+ * RC5 lot 2 (RC5.4) — TEMPS ACTIF de la séance (s) à l'instant donné, calculé sur les horodatages PERSISTÉS (jamais un
+ * compteur en mémoire) : de `startedAt` (lancement effectif) à la fin ou maintenant, moins les pauses VOLONTAIRES. Il
+ * continue donc en arrière-plan, écran verrouillé, après rechargement ou fermeture, et ne compte jamais deux fois une
+ * période. Séance terminée : durée figée (`timing.activeS`, sinon fin − début pour les séances antérieures).
+ */
+export function sessionElapsedS(log: ProgrammeLog, nowIso: string): number {
+  if (log.timing) return log.timing.activeS;
+  const end = Date.parse(log.finishedAt ?? nowIso);
+  const c = log.clock;
+  // Pause en cours : le temps actif s'arrête à son début (calcul direct, sans soustraction d'arrondi).
+  const stop = c?.pausedAt ? Math.min(end, Date.parse(c.pausedAt)) : end;
+  return Math.max(0, Math.floor((stop - Date.parse(log.startedAt)) / MS_PER_S - (c?.pausedS ?? 0)));
+}
+
+/** Temps TOTAL écoulé depuis le lancement (pauses comprises), figé à la fin. */
+export function sessionTotalS(log: ProgrammeLog, nowIso: string): number {
+  if (log.timing) return log.timing.activeS + log.timing.pausedS;
+  return Math.max(0, Math.floor((Date.parse(log.finishedAt ?? nowIso) - Date.parse(log.startedAt)) / MS_PER_S));
+}
+
+/** Sports dont le chronomètre global est celui du journal (Course, Cross-training et HYROX ont leur propre chrono). */
+const GLOBAL_CLOCK_SPORTS: readonly ProgrammeLog['sport'][] = ['strength'];
+export const hasGlobalSessionClock = (log: ProgrammeLog): boolean => GLOBAL_CLOCK_SPORTS.includes(log.sport);
+
+/**
+ * Pause VOLONTAIRE de la séance en cours (sans effet si déjà en pause) ; le repos entre séries n'est pas touché. Seule
+ * une reprise explicite (`resumeProgrammeSession`) la lève : valider une série ne la lève JAMAIS.
+ */
+export function pauseProgrammeSession(state: AppState, clock: Clock, requestId: string): AppState {
+  const log = openLog(state, requestId);
+  if (!hasGlobalSessionClock(log) || log.clock?.pausedAt) return state;
+  return withLog(state, { ...log, clock: { pausedS: log.clock?.pausedS ?? 0, pausedAt: normalizeInstant(clock.now) } });
+}
+
+/** Reprise après une pause volontaire : la durée de la pause est ajoutée au cumul (sans effet hors pause). */
+export function resumeProgrammeSession(state: AppState, clock: Clock, requestId: string): AppState {
+  const log = openLog(state, requestId);
+  return log.clock?.pausedAt ? withLog(state, { ...log, clock: closedPause(log.clock, clock.now) }) : state;
+}
+
+function closedPause(c: NonNullable<ProgrammeLog['clock']>, nowIso: string): NonNullable<ProgrammeLog['clock']> {
+  // Même précision que les horodatages enregistrés (seconde) : la durée figée à la fin égale le temps affiché pendant la pause.
+  return { pausedS: c.pausedS + (c.pausedAt ? Math.max(0, (Date.parse(normalizeInstant(nowIso)) - Date.parse(c.pausedAt)) / MS_PER_S) : 0) };
+}
+
+/** Durées figées à la fin (pause en cours close à cet instant) : temps actif, pauses, durée prévue de la séance exécutée. */
+function finalTiming(state: AppState, log: ProgrammeLog, nowIso: string): Partial<Pick<ProgrammeLog, 'clock' | 'timing'>> {
+  const c = log.clock ? closedPause(log.clock, nowIso) : { pausedS: 0 };
+  const activeS = sessionElapsedS({ ...log, clock: c, finishedAt: normalizeInstant(nowIso) }, nowIso);
+  const totalS = Math.max(0, Math.floor((Date.parse(normalizeInstant(nowIso)) - Date.parse(log.startedAt)) / MS_PER_S));
+  // `clock` n'est écrit que s'il existait (aucune écriture inutile pour une séance sans pause).
+  return { ...(log.clock ? { clock: c } : {}), timing: { activeS, pausedS: totalS - activeS, plannedS: selectProgrammeSession(state, log.requestId)?.estimatedDurationS ?? null } };
+}
+
 export interface FinishInput {
   readonly requestId: string;
   readonly completion: 'completed_as_prescribed' | 'modified' | 'abandoned';
@@ -756,7 +827,7 @@ export interface FinishInput {
  * Fin de séance : construit l'entrée d'exécution RÉELLE (séries saisies, douleur, course) et l'enregistre par
  * `recordSessionExecution` (validation par le contrat du moteur, historique, programme). Refus ⇒ état inchangé.
  */
-export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishInput): AppState {
+export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishInput, env?: ProgrammeEnvironment): AppState {
   // RC4.1 — ressenti Course : une valeur du vocabulaire du contrat, ou rien ; refusé pour un autre sport (jamais ignoré en silence).
   if (f.difficulty !== undefined && !(DIFFICULTIES as readonly string[]).includes(f.difficulty)) throw new AppError('RUN_DIFFICULTY_INVALID');
   const s0 = state.programmeLogs[f.requestId] ? state : startWithoutCheck(state, clock, f.requestId);
@@ -791,7 +862,7 @@ export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishI
     return withLog(recorded, { ...log, ct: { ...rt, runningSince: null, accumulatedS: elapsedS }, rest: null, finishedAt: normalizeInstant(clock.now), outcome: { completion: f.completion, pain: ctPain, ct } });
   }
   const recorded = log.sport === 'strength'
-    ? recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'strength', completion: f.completion, pain, sets: log.sets, painItems: log.painItems })
+    ? recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'strength', completion: f.completion, pain, sets: log.sets, painItems: log.painItems }, env)
     : recordSessionExecution(s0, clock, { requestId: f.requestId, sport: 'running', completion: f.completion, pain, ...(f.run ? { run: f.run } : {}), ...(f.difficulty !== undefined ? { difficulty: f.difficulty } : {}) });
   const outcome = { completion: f.completion, pain: f.pain || log.painItems.length > 0, ...(f.run ? { run: { ...f.run } } : {}) };
   // RC3.5 — lecteur Course figé à la fin (temps actif conservé, jamais relancé) ; il n'a rien enregistré lui-même.
@@ -799,7 +870,7 @@ export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishI
   const runPlayer = rp && rp.runningSince !== null
     ? { runPlayer: { ...rp, runningSince: null, accumulatedS: rp.accumulatedS + Math.max(0, (Date.parse(clock.now) - Date.parse(rp.runningSince)) / MS_PER_S) } }
     : {};
-  return withLog(recorded, { ...log, ...runPlayer, rest: null, finishedAt: normalizeInstant(clock.now), outcome });
+  return withLog(recorded, { ...log, ...runPlayer, ...(hasGlobalSessionClock(log) ? finalTiming(s0, log, clock.now) : {}), rest: null, finishedAt: normalizeInstant(clock.now), outcome });
 }
 
 // ——— Historique

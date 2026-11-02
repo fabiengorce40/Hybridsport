@@ -6,7 +6,7 @@ import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
  */
 import { useEffect, useState } from 'react';
 import {
-  approxMinutes, controlRest, maintainedInterference, startAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, reportEquipmentUnavailable, runPlayerPosition, runPlayerSteps, selectProgrammeSession, strengthInsightOf, toggleProgrammePainItem,
+  approxMinutes, controlRest, pauseProgrammeSession, resumeProgrammeSession, sessionElapsedS, maintainedInterference, startAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, reportEquipmentUnavailable, runPlayerPosition, runPlayerSteps, selectProgrammeSession, strengthInsightOf, toggleProgrammePainItem,
   adaptationVolumeDeficit,
 } from '@hybridsport/app-core';
 import type { FinishInput, ProgrammeSessionView, SessionItem, SetPrescription } from '@hybridsport/app-core';
@@ -169,11 +169,14 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   const [, setTick] = useState(0);
   const v = selectProgrammeSession(store.state, requestId);
   const running = v?.log !== null && v?.log !== undefined && v.result === null;
-  // Rafraîchissement de l'affichage du temps écoulé (calculé depuis l'horodatage de début, jamais compté).
+  // Rafraîchissement de l'AFFICHAGE seulement (aucune écriture) : le temps est recalculé depuis les horodatages persistés,
+  // jamais compté ; au retour au premier plan (verrouillage, arrière-plan), il est donc exact immédiatement.
   useEffect(() => {
     if (!running) return undefined;
-    const t = setInterval(() => setTick((x) => x + 1), 1000);
-    return () => clearInterval(t);
+    const update = () => setTick((x) => x + 1);
+    const t = setInterval(update, 1000);
+    document.addEventListener('visibilitychange', update);
+    return () => { clearInterval(t); document.removeEventListener('visibilitychange', update); };
   }, [running]);
   if (!v) return <><Topbar title="Séance" onBack={onBack} /><div className="empty">Séance introuvable.</div></>;
   // Cross-training : séance propre au format (prescription persistée lue, jamais de repli Strength ni legacy).
@@ -191,6 +194,11 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   // RC3.5 — lecteur de séance Course : étapes de la séance persistée (adaptée au contrôle avant séance le cas échéant).
   const playerSteps = v.sport === 'running' ? runPlayerSteps(v) : null;
   const elapsed = log && !finished ? Math.max(0, Math.floor((Date.parse(now()) - Date.parse(log.startedAt)) / 1000)) : 0;
+  // RC5 lot 2 — chronomètre GLOBAL unique (Musculation) : horodaté dans le journal de séance (`log.clock`), donc conservé
+  // au rechargement, à la fermeture, à l'export/import et entre onglets. Pause volontaire levée UNIQUEMENT par « Reprendre ».
+  const clockElapsed = log && editable && v.sport === 'strength' ? sessionElapsedS(log, now()) : null;
+  const clockPaused = log?.clock?.pausedAt !== undefined;
+  const clockState = clockPaused ? 'en pause' : 'écoulé';
   const record = (item: SessionItem, _set: SetPrescription | undefined, index: number, x: { done: boolean; reps?: number; loadKg?: number }) =>
     store.apply((s, c) => recordProgrammeSet(s, c, requestId, { itemId: item.id, setIndex: index, ...x }));
 
@@ -204,18 +212,22 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   if (v.sport === 'strength') {
     return (
       <>
-        <Topbar title="" onBack={onBack} right={v.experimental ? <span className="k-pill" title="Certaines règles de planification sont encore en cours de validation.">Beta</span> : undefined} />
+        <Topbar title="" onBack={onBack} right={<div className="row">
+          {clockElapsed !== null && <span className="k-elapsed" role="timer" aria-label="Chronomètre global" aria-live="off" data-session-clock data-elapsed-s={clockElapsed} data-paused={clockPaused ? 'true' : 'false'}>{formatChrono(clockElapsed)} <small>{clockState}</small></span>}
+          {v.experimental && <span className="k-pill" title="Certaines règles de planification sont encore en cours de validation.">Beta</span>}
+        </div>} />
         <div className={`k-workout ${editable && log.rest ? 'with-timer' : ''} ${!started && !finished ? 'with-dock' : ''}`}>
+          {clockElapsed !== null && <button type="button" className="btn secondary" onClick={() => store.apply((s, c) => (clockPaused ? resumeProgrammeSession : pauseProgrammeSession)(s, c, requestId))}>{clockPaused ? 'Reprendre le chronomètre global' : 'Mettre en pause le chronomètre global'}</button>}
           <AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state, requestId)} />
           <StrengthInsightPanel requestId={requestId} />
           <StrengthWorkout
-            v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}${editable ? ` · ${String(Math.floor(elapsed / 60))}:${String(elapsed % 60).padStart(2, '0')}` : ''}`} editable={editable}
+            v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}${clockElapsed !== null ? ` · ${formatChrono(clockElapsed)} ${clockState}` : ''}`} editable={editable}
             onRecord={(item, index, x) => record(item, undefined, index, x)}
             onTogglePain={(itemId) => store.apply((s) => toggleProgrammePainItem(s, requestId, itemId))}
             onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, requestId, itemId, setIndex, rir))}
             onUnavailable={(itemId) => store.apply((s, c) => reportEquipmentUnavailable(s, c, requestId, itemId))}
           />
-          {finished && <div className="k-light"><span className="k-pill done">✓ {STATUS_LABELS[result.completion]}</span><span className="k-light-name">Séance terminée</span></div>}
+          {finished && <div className="k-light"><span className="k-pill done">✓ {STATUS_LABELS[result.completion]}</span><span className="k-light-name">Séance terminée</span>{log?.timing && <span className="k-light-dose" data-finished-duration>{`${durationLabel(log.timing.activeS)}${log.timing.pausedS > 0 ? ` · pauses ${durationLabel(log.timing.pausedS)}` : ''}`}</span>}</div>}
           {!started && !finished && <div className="k-dock"><button className="k-cta" onClick={() => flow.start(requestId)}>{startLabel(v)}</button></div>}
           {editable && <button className="k-cta ghost" onClick={() => setFinishing(true)}>Terminer la séance</button>}
         </div>

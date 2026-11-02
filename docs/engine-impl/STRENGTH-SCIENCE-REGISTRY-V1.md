@@ -3,7 +3,7 @@
 > Document **généré** depuis `packages/strength/src/science/` par `tests/golden/science-docs.test.ts` : ne pas éditer à la main.
 
 - Version du registre : **1.1.0** · ruleset : **0.4.0-strength-science-lock**
-- Gate STRENGTH_SCIENTIFIC_V1_GATE calculé : **PASS_PROVISIONAL** ; verrou STRENGTH_SCIENTIFIC_LOCK_V1 : **LOCKED_PROVISIONAL** (anomalies : 0 ; blocages PRODUCTION : 57)
+- Gate STRENGTH_SCIENTIFIC_V1_GATE calculé : **PASS_PROVISIONAL** ; verrou STRENGTH_SCIENTIFIC_LOCK_V1 : **LOCKED_PROVISIONAL** (anomalies : 0 ; blocages PRODUCTION : 58)
 - Vérification des sources (2026-09-27, complétée le 2026-09-28) : **identité** par recherche web (PMID, titre, auteurs, revue, DOI).
 - **Niveaux de vérification du contenu** : `IDENTITY_ONLY` (aucun résultat extrait) < `SEARCH_SUMMARY` (résultats connus par des résumés de moteur de recherche, y compris secondaires) < `ABSTRACT_VERIFIED` (résumé officiel lu) < `FULL_TEXT_VERIFIED`.
   - PubMed, E-utilities, Europe PMC et les sites des éditeurs restent bloqués par la politique réseau de l’environnement d’exécution (vérifié à nouveau en 4F) : **aucun résumé officiel ni texte intégral n’a été lu**, aucune source ne dépasse `SEARCH_SUMMARY`.
@@ -431,6 +431,7 @@ Règle de non-fausse précision (contrôlée par `validateScienceRegistry`) : le
 
 | Code | Objet | Détail |
 |---|---|---|
+| PROVISIONAL_VALUE | `strength.personalization` | PROGRAMMING_HEURISTIC |
 | PROVISIONAL_VALUE | `strength.needs` | EXPERT_DESIGN_REVIEW |
 | PROVISIONAL_VALUE | `strength.archetypes` | EXPERT_DESIGN_REVIEW |
 | PROVISIONAL_VALUE | `strength.goals` | EXPERT_DESIGN_REVIEW |

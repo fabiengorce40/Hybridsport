@@ -48,11 +48,13 @@ export type ExposureAt = Pick<ExerciseExposure, 'exerciseId'> & { readonly at: s
  */
 export function declarableAnchors<T extends AnchorTrack>(tracks: readonly T[], exposures: readonly ExposureAt[], archetypeId: string, params: StrengthParams): T[] {
   const slots = findArchetype(params, archetypeId)?.slots ?? [];
+  const preferred = (t: T): boolean => slots.find((z) => z.id === t.slotId)?.preferred === true;
   const lastUse = (t: T): string => exposures.filter((x) => x.exerciseId === t.exerciseId).map((x) => String(x.at)).sort().at(-1) ?? '';
   const out: T[] = [];
   const seen = new Set<string>();
   const anchors = tracks.filter((t) => t.tier === 'anchor' && t.status === 'active' && t.archetypeId === archetypeId && slots.some((z) => z.id === t.slotId))
-    .sort((a, b) => (lastUse(a) < lastUse(b) ? -1 : lastUse(a) > lastUse(b) ? 1 : a.trackId < b.trackId ? -1 : 1));
+    // RC5.1 — l'ancre d'un emplacement PRÉFÉRÉ passe d'abord : un repli ponctuel (douleur, matériel) ne fait pas alterner A/B.
+    .sort((a, b) => Number(preferred(b)) - Number(preferred(a)) || (lastUse(a) < lastUse(b) ? -1 : lastUse(a) > lastUse(b) ? 1 : a.trackId < b.trackId ? -1 : 1));
   for (const t of anchors) {
     const group = slots.find((z) => z.id === t.slotId)?.choiceGroup ?? `slot:${t.slotId}`;
     if (seen.has(group)) continue;
@@ -170,7 +172,11 @@ export interface WeekVolumeAssessment {
   readonly status: WeekGoalStatus;
   readonly requestedSessions: number;
   readonly plannedSessions: number;
-  readonly groups: readonly { readonly group: string; readonly target: number | null; readonly high: number | null; readonly planned: number; readonly status: GroupVolumeStatus; readonly aboveHigh: boolean }[];
+  /**
+   * `limitedBy` (lot 4.1) : groupes dont le HAUT hebdomadaire a borné les séries de ce groupe encore sous sa cible (cible
+   * inatteignable dans ces bornes, raison `DOSE.VOLUME_LIMITED`) ; vide sinon.
+   */
+  readonly groups: readonly { readonly group: string; readonly target: number | null; readonly high: number | null; readonly planned: number; readonly status: GroupVolumeStatus; readonly aboveHigh: boolean; readonly limitedBy: readonly string[] }[];
   readonly constraints: readonly WeekVolumeConstraint[];
 }
 
@@ -195,6 +201,7 @@ function constraintsOf(i: WeekVolumeInput): WeekVolumeConstraint[] {
       add(c.startsWith('neighbor:') ? 'interference' : c.startsWith('note:') ? 'planner_note' : c === 'week_unknown' ? 'week_unknown' : c, `${String(r.params.structure)} (${c})`);
     }
     if (r.code === 'SELECT.SLOT_OMITTED') add(`slot_omitted:${String(r.params.cause)}`, String(r.params.slot));
+    if (r.code === 'DOSE.VOLUME_LIMITED') add(`volume_limited_by:${String(r.params.by)}`, String(r.params.group));
   }
   if (i.sessions.length < i.requestedSessions) add('sessions_not_planned', `${String(i.requestedSessions - i.sessions.length)}/${String(i.requestedSessions)}${i.notPlanned.length > 0 ? ` (${[...new Set(i.notPlanned.map((n) => n.category))].sort().join(', ')})` : ''}`);
   return [...out.values()].sort((a, b) => (a.cause === b.cause ? (a.detail < b.detail ? -1 : 1) : a.cause < b.cause ? -1 : 1));
@@ -205,11 +212,14 @@ export function assessStrengthWeekVolume(i: WeekVolumeInput): WeekVolumeAssessme
   const planned: Record<string, number> = {};
   for (const s of i.sessions) for (const [g, v] of Object.entries(sessionPlannedHardSets(s.session, i.params, i.catalog))) planned[g] = (planned[g] ?? 0) + v;
   const constraints = constraintsOf(i);
+  const limited = new Map<string, Set<string>>();
+  for (const s of i.sessions) for (const r of s.reasons) if (r.code === 'DOSE.VOLUME_LIMITED') limited.set(String(r.params.group), (limited.get(String(r.params.group)) ?? new Set()).add(String(r.params.by)));
   const groups = Object.keys(i.params['strength.volume'].muscleGroups).sort().map((g) => {
     const r = range[g];
     const p = planned[g] ?? 0;
     const status: GroupVolumeStatus = r === undefined ? 'no_target' : p >= r.floor ? 'achieved' : constraints.length > 0 ? 'reduced_by_constraint' : 'unmet';
-    return { group: g, target: r?.floor ?? null, high: r?.high ?? null, planned: p, status, aboveHigh: r !== undefined && Number.isFinite(r.high) && p > r.high };
+    const limitedBy = r !== undefined && p < r.floor ? [...(limited.get(g) ?? [])].sort() : [];
+    return { group: g, target: r?.floor ?? null, high: r?.high ?? null, planned: p, status, aboveHigh: r !== undefined && Number.isFinite(r.high) && p > r.high, limitedBy };
   });
   const targeted = groups.filter((g) => g.status !== 'no_target');
   const achieved = targeted.filter((g) => g.status === 'achieved').length;

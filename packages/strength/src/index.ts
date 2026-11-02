@@ -23,3 +23,6 @@ export * from './composition.js';
 export * from './substitution.js';
 export * from './week-prescription.js';
 export * from './science/index.js';
+
+export * from './personalization-contract.js';
+export * from './personalization.js';

@@ -1,3 +1,4 @@
+import { otherStrengthSports, strengthParametersFor, muscleLevel } from './strength-personalization.js';
 /**
  * Adaptation après séance (rôle « ProgressionEngine » extérieur aux moteurs, comme dans le simulateur
  * longitudinal Strength) : uniquement des appels aux fonctions du moteur Strength (`classifyExposure`,
@@ -5,13 +6,13 @@
  *
  * Running : la séance réalisée est ajoutée à l'historique déclaré ; l'ancre V19 du moteur en tient compte.
  */
-import type { FingerprintHistoryEntry, ISODateTime, ReasonCode, SessionDraft, SetPrescription } from '@hybridsport/domain';
-import { anchorReviewDue, classifyExposure, closeTrack, closureCause, createTrack, declarableAnchors, exerciseStillAdmissible, exposureEvidence, progressionModelFor, readStrengthParams, resumeTrack, strengthReasons, updateTrack } from '@hybridsport/strength';
-import type { ExecutedItem, PerformedSet, SlotRole, StrengthTrack } from '@hybridsport/strength';
+import type { Exercise, FingerprintHistoryEntry, ISODateTime, ReasonCode, SessionDraft, SetPrescription } from '@hybridsport/domain';
+import { anchorReviewDue, archetypeVariant, classifyExposure, closeTrack, closureCause, createTrack, declarableAnchors, exerciseStillAdmissible, durableReferenceRir, effortEstimate, exposureEvidence, floorReferenceRir, inheritPredecessorTrack, personalizedStrengthParams, progressionModelFor, readStrengthParams, referenceCell, reassessTrack, resumeTrack, strengthReasons, updateTrack, usesFloor, usesReassessment } from '@hybridsport/strength';
+import type { ExecutedItem, LightenedPolicy, LightenedReading, PerformedSet, SlotRole, StrengthParams, StrengthTrack } from '@hybridsport/strength';
 import { archetypeFromIntentId, isV1Archetype } from '@hybridsport/running';
 import type { RealizedSession, RealizedStructure, RunningReference, RunningSessionArchetype } from '@hybridsport/running';
 import type { AppState, GeneratedSession, SessionLog } from './model.js';
-import { strengthContent } from './provisional-content.js';
+import { strengthContent, strengthContentFor } from './provisional-content.js';
 import { STIMULUS_BY_GOAL } from './planner.js';
 
 const isWork = (s: SetPrescription): boolean => s.kind !== 'rampup' && s.optional !== true;
@@ -53,6 +54,58 @@ export interface StrengthExecution {
   readonly sessionStatus?: 'completed' | 'modified' | 'abandoned';
 }
 
+/**
+ * Reprise RC5 lot 4.4 (chantier E) — lecture des séances allégées (R4 et variantes) : OPTION DE SIMULATION, jamais
+ * renseignée par le produit (environnement Beta 0 : absente ⇒ progression actuelle strictement inchangée).
+ * - `floorWindow` : expositions consécutives de la track portant le même allègement pour qu'il soit lu comme plancher ;
+ * - `reassessEvery` : R3, réévaluation tous les N expositions de la track (frontière de cycle) ;
+ * - `safetyBelow` : variante `safety`, séances allégées consécutives en dessous avant baisse.
+ */
+export interface ProgressionReadingOption {
+  /** Lecture des séances allégées ; absente : règle actuelle. */
+  readonly policy?: LightenedPolicy; readonly floorWindow: number; readonly reassessEvery: number; readonly safetyBelow: number;
+  /**
+   * Lot 4.5 (chantier B, simulation) — estimation de capacité :
+   * - `e1rmMaxRtf` : plage de validité CANDIDATE (répétitions jusqu'à l'échec) au lieu de celle du ruleset (sensibilité) ;
+   * - `outOfRange: 'clamp'` : effort déclaré hors plage lu au PLAFOND de la plage (estimation conservatrice, jamais au-dessus) ;
+   * - `suspendUnreliable` : réussite sans estimation exploitable (ni observée, ni borne) ⇒ décision SUSPENDUE, compteurs intacts.
+   */
+  readonly e1rmMaxRtf?: number; readonly outOfRange?: 'clamp'; readonly suspendUnreliable?: true;
+}
+
+/** Lot 4.5 (simulation) : paramètres d'estimation avec une plage de validité candidate (jamais ceux du ruleset actif). */
+function estimationParams(params: StrengthParams, o: ProgressionReadingOption): StrengthParams {
+  if (o.e1rmMaxRtf === undefined) return params;
+  const l = params['strength.load'];
+  return { ...params, 'strength.load': { ...l, validRepRange: { ...l.validRepRange, max: o.e1rmMaxRtf } } };
+}
+/** Lot 4.5 (simulation) : effort déclaré au-delà de la plage lu au plafond de la plage (estimation conservatrice). */
+function clampToRange(sets: readonly PerformedSet[], params: StrengthParams): PerformedSet[] {
+  const max = params['strength.load'].validRepRange.max;
+  return sets.map((z) => (z.rir !== undefined && z.reps + z.rir > max && z.reps <= max ? { ...z, rir: max - z.reps } : z));
+}
+
+/** RIR prescrits (première série de travail) des expositions RÉALISÉES de la track, dans l'ordre chronologique. */
+function prescribedRirHistory(state: AppState, trackId: string): number[] {
+  const done = new Set((state.programmeState?.results ?? []).filter((r) => r.completion !== 'missed').map((r) => r.requestId));
+  const rows: { date: string; rir: number }[] = [];
+  for (const w of Object.values(state.planner.weeks)) for (const r of w.requests) {
+    if (r.sport !== 'strength' || !done.has(r.requestId)) continue;
+    const session = (r.record?.data as { session?: SessionDraft } | undefined)?.session;
+    for (const it of session ? mainItems(session) : []) {
+      if (it.refs?.progressionTrackId !== trackId || it.prescription.type !== 'sets') continue;
+      const first = it.prescription.sets.find(isWork);
+      const rir = first ? rirOf(first) : undefined;
+      if (rir !== undefined) rows.push({ date: r.date ?? '', rir });
+    }
+  }
+  return rows.sort((a, b) => (a.date < b.date ? -1 : 1)).map((x) => x.rir);
+}
+const rirOf = (s: SetPrescription): number | undefined => {
+  const i = s.intensity;
+  return i && 'effort' in i && i.effort && 'rir' in i.effort ? i.effort.rir : s.rir;
+};
+
 /** Réalisation appliquée et décisions de progression du moteur Strength qui l'ont produite (trace d'audit). */
 export interface StrengthExecutionOutcome {
   readonly strength: AppState['strength'];
@@ -68,15 +121,34 @@ export function applyStrengthExecution(state: AppState, x: StrengthExecution, at
 }
 
 /** Même application, avec les raisons du moteur (classement de l'exposition, mise à jour / création de track). */
-export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecution, at: ISODateTime): StrengthExecutionOutcome {
+export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecution, at: ISODateTime, readingOption?: ProgressionReadingOption): StrengthExecutionOutcome {
   if (!state.profile) return { strength: state.strength, reasons: [] };
   const reasons: ReasonCode[] = [];
   const log = { sets: x.sets, painItems: x.painItems } as SessionLog;
-  const p = state.profile;
-  const params = readStrengthParams(strengthContent().ruleset).values;
+  const week = Object.values(state.planner.weeks).find(w => w.requests.some(r => {
+    const record = r.record?.data as { session?: { id?: string } } | undefined;
+    return record?.session?.id === x.session.id;
+  }));
+  const request = week?.requests.find(r => (r.record?.data as { session?: { id?: string } } | undefined)?.session?.id === x.session.id);
+  const snapshot = request?.strengthProfile ?? week?.strengthProfile;
+  const p = snapshot ?? state.profile;
+  const params = strengthParametersFor(p);
   const catalog = strengthContent().catalog;
   const stimulus = STIMULUS_BY_GOAL[p.strength.goal];
   const archetypeId = x.archetypeId;
+  // Lot 4.5 — RIR de RÉFÉRENCE de la prescription : profil FIGÉ avec la semaine (instantané `strengthProfile`) et contenu de
+  // sa PROVENANCE (versions du ruleset et du catalogue de la séance), jamais le profil courant d'un profil personnalisé.
+  // Instantané absent pour un profil personnalisé (données anciennes) ou contenu inconnu : référence `unknown`, jamais inventée.
+  const prov = (request?.record?.data as { provenance?: { rulesetVersion?: string; catalogVersion?: string } } | undefined)?.provenance;
+  const refContent = prov?.rulesetVersion !== undefined && prov.catalogVersion !== undefined ? strengthContentFor(prov.rulesetVersion, prov.catalogVersion) : undefined;
+  const refSource = refContent === undefined || (snapshot === undefined && p.strength.personalization !== undefined) ? 'unknown' : snapshot !== undefined ? 'prescription_profile' : 'profile';
+  const refParams = refSource !== 'unknown' && refContent ? personalizedStrengthParams(readStrengthParams(refContent.ruleset).values, p.strength.personalization, otherStrengthSports(p)) : undefined;
+  const personalizationOf = p.strength.personalization ? { personalization: p.strength.personalization, otherSports: otherStrengthSports(p) } : {};
+  const referenceRirOf = (e: Exercise, role: SlotRole): number | undefined => {
+    if (!refParams) return undefined;
+    const cell = referenceCell({ exercise: e, role, stimulus, ...personalizationOf }, refParams);
+    return cell === undefined ? undefined : durableReferenceRir(cell.rir, refParams, muscleLevel(p), 'accumulation');
+  };
   const slots = params['strength.archetypes'].find((a) => a.id === archetypeId)?.slots ?? [];
   const tracks = new Map(state.strength.tracks.map((t) => [t.trackId, t]));
   const exposures = [...state.strength.exposures];
@@ -97,7 +169,21 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
     const anchorOfSlot = [...tracks.values()].find((t) => t.tier === 'anchor' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === it.refs?.slotId);
     const known = trackId ? tracks.get(trackId) : undefined;
     const update = (t: StrengthTrack, cls: ReturnType<typeof classifyExposure>) => {
-      const u = updateTrack(t, exec, cls, e, params, 'accumulation');
+      // Lot 4.4 (simulation seulement) : lecture des séances allégées ; R3 tous les `reassessEvery` expositions.
+      // Lot 4.5 : référence de la PRESCRIPTION (instantané + provenance) ; aucune lecture R4 sans référence établie.
+      const ref = referenceRirOf(e, role);
+      const current = prescribed[0] ? rirOf(prescribed[0]) : undefined;
+      const history = readingOption?.policy && usesFloor(readingOption.policy) ? [...prescribedRirHistory(state, t.trackId), ...(current !== undefined ? [current] : [])] : [];
+      const policy = readingOption?.policy;
+      const reading: LightenedReading | undefined = readingOption && policy && ref !== undefined ? { policy, referenceRir: ref, safetyBelow: readingOption.safetyBelow, ...(usesFloor(policy) ? { floorRir: floorReferenceRir(history, ref, readingOption.floorWindow) } : {}) } : undefined;
+      const simParams = readingOption ? estimationParams(params, readingOption) : params;
+      const simExec = readingOption?.outOfRange === 'clamp' ? { ...exec, performed: clampToRange(exec.performed, simParams) } : exec;
+      const est = effortEstimate(simExec.performed, simParams);
+      const suspend = readingOption?.suspendUnreliable === true && t.model === 'autoregulated' && (cls === 'above' || cls === 'on_target') && est.observed === undefined && est.lowerBound === undefined;
+      const u0 = suspend ? { track: t, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: t.trackId, cause: 'estimate_unreliable' })], rotate: false } : updateTrack(t, simExec, cls, e, simParams, 'accumulation', undefined, reading);
+      const count = exposures.filter((z) => z.exerciseId === t.exerciseId && z.slotId === t.slotId && z.at >= t.openedAt).length + 1;
+      const r3 = readingOption?.policy && usesReassessment(readingOption.policy) && count % readingOption.reassessEvery === 0 ? reassessTrack(u0.track, e, params) : undefined;
+      const u = r3 ? { ...u0, track: { ...r3.track, ...(r3.track.nextPrescription?.loadKg !== undefined ? { cycleStartLoadKg: r3.track.nextPrescription.loadKg } : {}) }, reasons: [...u0.reasons, ...r3.reasons] } : u0;
       // S4 — preuve complète de l'exposition (prescrit / réalisé), indépendante de la décision du modèle.
       const ev = exposureEvidence(exec, cls);
       const signed = (v: number | null) => (v === null ? 'n/a' : v > 0 ? `+${String(v)}` : String(v));
@@ -105,6 +191,7 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
         trackId: t.trackId, exerciseId: e.id, exposure: cls, success: ev.success, sets: `${String(ev.sets.performed)}/${String(ev.sets.prescribed)}`,
         repsDelta: signed(ev.repsDelta), loadDeltaKg: signed(ev.loadDeltaKg), rirDelta: signed(ev.rirDelta), rir: ev.rir,
         kind: ev.kind, effort: ev.effort,
+        prescribedRir: current === undefined ? 'n/a' : String(current), referenceRir: ref === undefined ? 'n/a' : String(ref), referenceSource: ref === undefined ? 'unknown' : refSource,
       }), ...u.reasons);
       tracks.set(t.trackId, u.track);
     };
@@ -115,17 +202,21 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
     } else if (it.refs?.substitutedFrom && anchorOfSlot) {
       update(anchorOfSlot, 'substituted');
     } else if (it.refs?.anchor === 'candidate' && !anchorOfSlot && performed.length > 0 && slot && !pain) {
-      const model = progressionModelFor(e, role, p.level, performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
-      const c = createTrack({ tier: 'anchor', archetypeId, slotId: slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role }, params);
-      tracks.set(c.track.trackId, c.track);
-      reasons.push(...c.reasons);
+      const model = progressionModelFor(e, role, muscleLevel(p), performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
+      const c = createTrack({ tier: 'anchor', archetypeId, slotId: slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role, ...personalizationOf }, params);
+      // Reprise RC5 lot 4 (D5) — suivi neuf de la rotation Haut A/B et Bas A/B : reprise FIABLE de la borne de cycle d'un
+      // suivi existant du même exercice (Full Body, Haut, Bas, autre variante), sinon aucun transfert (cause tracée).
+      const roleOf = (t: StrengthTrack) => params['strength.archetypes'].find((a) => a.id === t.archetypeId)?.slots.find((z) => z.id === t.slotId)?.role;
+      const inherited = archetypeVariant(archetypeId) !== null ? inheritPredecessorTrack(c.track, role, [...tracks.values()], roleOf) : { track: c.track, reasons: [] };
+      tracks.set(inherited.track.trackId, inherited.track);
+      reasons.push(...c.reasons, ...inherited.reasons);
     } else if (role === 'accessory' && slot?.trackable && performed.length > 0 && !pain) {
       const k = `${archetypeId}/${slot.id}/${e.id}`;
       counts[k] = (counts[k] ?? 0) + 1;
       const hasTracked = [...tracks.values()].some((t) => t.tier === 'tracked' && t.status !== 'closed' && t.archetypeId === archetypeId && t.slotId === slot.id);
       if ((counts[k] ?? 0) >= params['strength.tracks'].tier2AutoCreateAfter && !hasTracked) {
-        const model = progressionModelFor(e, role, p.level, performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
-        const c = createTrack({ tier: 'tracked', archetypeId, slotId: slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role }, params);
+        const model = progressionModelFor(e, role, muscleLevel(p), performed.find((z) => z.loadKg !== undefined)?.loadKg, params);
+        const c = createTrack({ tier: 'tracked', archetypeId, slotId: slot.id, exercise: e, model, prescribed, performed, at: now, stimulus, role, ...personalizationOf }, params);
         tracks.set(c.track.trackId, c.track);
         reasons.push(...c.reasons);
       }

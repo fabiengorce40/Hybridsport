@@ -10,7 +10,7 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react';
-import { ensureBeta0Week, MemoryStorage, saveState, selectBeta0Week, STORAGE_KEY } from '@hybridsport/app-core';
+import { CURRENT_SCHEMA_VERSION, ensureBeta0Week, MemoryStorage, saveState, selectBeta0Week, STORAGE_KEY } from '@hybridsport/app-core';
 import type { AppState, Clock } from '@hybridsport/app-core';
 import { App } from '../src/App.js';
 import { StoreProvider } from '../src/store.js';
@@ -45,6 +45,25 @@ const days = () => Array.from(document.querySelectorAll<HTMLElement>('[data-agen
 const toGrid = () => fireEvent.click(screen.getByRole('button', { name: 'Grille' }));
 const toList = () => fireEvent.click(screen.getByRole('button', { name: 'Liste' }));
 
+/**
+ * RC5 lot 2 — les fixtures sont des données ANTÉRIEURES au lot 2 (format v2, relues aussi par les anciennes builds V2.1) :
+ * elles ne portent pas les champs v5 du chronomètre (`clock`, `timing`), retirés ici de l'état généré avant comparaison.
+ */
+/**
+ * Reprise RC5 lot 4 — les fixtures sont des données ÉCRITES AVANT le lot 4 (contenu L1b-4, règle de composition 0.1.0),
+ * relues aussi par les anciennes builds : l'état généré par le code courant est comparé après traduction des seuls NOMS
+ * de version vers ceux d'avant le lot 4 (séances, séries, charges et raisons identiques ; profils Full Body, inchangés
+ * par le lot 4). Les identifiants de trace, dérivés de ces noms, sont neutralisés des deux côtés.
+ */
+const asPreLot4 = (v: unknown): unknown => JSON.parse(JSON.stringify(v)
+  .replaceAll('0.8.0-strength-hautbas-ab.personalization-v1', '0.8.0-strength-personalization-v1').replaceAll('0.8.0-strength-hautbas-ab', '0.7.0-strength-l1b4')
+  .replaceAll('+catalog-lot44', '').replaceAll('0.3.1-strength-test-f6-lot44', '0.3.0-strength-test-f6').replaceAll('fixtures:strength-hautbas-ab-0.8.0', 'fixtures:strength-l1b4-0.7.0').replaceAll('0.2.0-candidate', '0.1.0-candidate').replaceAll(' ; Reprise RC5 lot 4', '')
+  .replace(/"traceId":"t[0-9a-f]+"/g, '"traceId":"T"')
+  // Lot 4.5 : trace facultative du RIR de référence (paramètres ajoutés aux décisions de progression), absente des fixtures.
+  .replace(/,"prescribedRir":"[^"]*","referenceRir":"[^"]*","referenceSource":"[^"]*"/g, ''));
+const withoutLot2Clock = (st: { programmeLogs?: Record<string, Record<string, unknown>> }) => ({
+  ...st, programmeLogs: Object.fromEntries(Object.entries(st.programmeLogs ?? {}).map(([k, l]) => { const { clock: _c, timing: _t, ...rest } = l; return [k, rest]; })),
+});
 describe('R5.1 — Planning en grille', () => {
   it('sélecteur Liste / Grille : liste par défaut, bascule accessible (aria-pressed)', () => {
     mount(STATE);
@@ -219,7 +238,7 @@ describe('R5.1 — Planning en grille', () => {
       const text = storage.getItem(STORAGE_KEY) ?? '';
       const file = join(dirname(fileURLToPath(import.meta.url)), 'fixtures', `${name}.json`);
       if (process.env.R51_WRITE_FIXTURE) writeFileSync(file, text);
-      expect(readFileSync(file, 'utf8')).toBe(text);
+      expect(asPreLot4({ ...JSON.parse(readFileSync(file, 'utf8')), schemaVersion: CURRENT_SCHEMA_VERSION })).toEqual(asPreLot4(withoutLot2Clock(JSON.parse(text))));
     }
   });
 });

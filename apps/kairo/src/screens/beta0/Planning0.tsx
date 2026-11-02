@@ -1,3 +1,4 @@
+import { PlacementExplanation, StrengthReplanControl } from '../../strength/StrengthReplan.js';
 import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
 import { useState } from 'react';
 import { addDays, beta0Integrity, weekdayIndex, weekLoadWarnings } from '@hybridsport/app-core';
@@ -70,6 +71,8 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
       )}
       {!week || week.items.length === 0 ? <NoWeek today={today} /> : (
         <>
+          <PlacementExplanation weekStart={week.weekStart} />
+          {week === current && <StrengthReplanControl/>}
           <WeekPlanningNotice planning={week.planning} />
           <RunningTestFallbackNotice fallback={week.runningTestFallback} />
           <WeekLoadNotice warnings={weekLoadWarnings(state, week.weekStart)} items={week.items} />
@@ -102,7 +105,7 @@ const dayLabel = (d: string): string => `${weekdayShort(weekdayIndex(d)).toLower
  */
 export function WeekLoadNotice({ warnings, items }: { warnings: readonly WeekLoadWarning[]; items: readonly SessionItemView[] }) {
   if (warnings.length === 0) return null;
-  const nameOf = (id: string): string => { const x = items.find((i) => i.requestId === id); return x ? `${sessionName(x.sport, x.archetypeId, x.dataError)}${x.date ? ` (${dayLabel(x.date)})` : ''}` : 'séance de la semaine précédente'; };
+  const nameOf = (id: string): string => { const x = items.find((i) => i.requestId === id); return x ? `${sessionName(x.sport, x.archetypeId, x.dataError)}${x.date ? ` (${dayLabel(x.date)})` : ''}` : 'séance conservée ou récente'; };
   const warn = warnings.some((w) => w.kind !== 'consecutive');
   const lines = warnings.map((w) => {
     switch (w.kind) {

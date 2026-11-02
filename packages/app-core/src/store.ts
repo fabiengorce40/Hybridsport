@@ -10,6 +10,7 @@
  */
 import type { AppState } from './model.js';
 import { CURRENT_SCHEMA_VERSION, emptyState, zAppState } from './model.js';
+import { textHash } from './text-hash.js';
 
 export interface KeyValueStorage {
   getItem(key: string): string | null;
@@ -18,10 +19,15 @@ export interface KeyValueStorage {
 
 export const STORAGE_KEY = 'kairo.state';
 export const BACKUP_PREFIX = 'kairo.unreadable.';
+/**
+ * Reprise RC5 (D3) — copie EXACTE d'une sauvegarde de version antérieure, écrite AVANT que la donnée migrée ne soit
+ * enregistrée : `kairo.premigration.v<version>.<empreinte>` (une seule copie par texte, jamais supprimée).
+ */
+export const PREMIGRATION_PREFIX = 'kairo.premigration.';
 
 /** Migrations successives : MIGRATIONS[n] transforme une donnée de version n en version n + 1. */
 // technical-constant: numéro de version du schéma persistant (contrat de format), pas une valeur sportive
-export const MIGRATIONS: Readonly<Record<number, (data: unknown) => unknown>> = { 1: migrateV1toV2 };
+export const MIGRATIONS: Readonly<Record<number, (data: unknown) => unknown>> = { 1: migrateV1toV2, 2: migrateV2toV3, 3: migrateV3toV4, 4: migrateV4toV5 };
 
 type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => v !== null && typeof v === 'object' && !Array.isArray(v);
@@ -47,9 +53,37 @@ export function migrateV1toV2(data: unknown): unknown {
   return { ...data, schemaVersion: 2, sessions, ...(planner === undefined ? {} : { planner }) };
 }
 
+/** Migration V2.1 additive : aucune interprétation du profil, aucune séance recalculée. */
+export function migrateV2toV3(data: unknown): unknown {
+  // technical-constant: versions du format de sauvegarde
+  if (!isObj(data) || data.schemaVersion !== 2) throw new Error('migration v2 → v3 : donnée v2 attendue');
+  // technical-constant: version du format de sauvegarde
+  return { ...data, schemaVersion: 3 };
+}
+
+/** V2.2 : snapshots par séance ; migration additive, aucune séance ni performance modifiée. */
+export function migrateV3toV4(data: unknown): unknown {
+  // technical-constant: versions de format persisté
+  if (!isObj(data) || data.schemaVersion !== 3) throw new Error('migration v3 → v4 : donnée v3 attendue');
+  // technical-constant: version du format V2.2
+  return { ...data, schemaVersion: 4 };
+}
+
+/**
+ * Reprise RC5 (lot 1) : format v5 = v4 + champs RC5 FACULTATIFS (chronomètre de séance horodaté et durées figées des
+ * journaux, RC5.4) ; aucune donnée existante transformée. Numéro relevé pour qu'un lecteur v4 refuse proprement
+ * (« version plus récente ») au lieu de lire ces champs comme une donnée illisible.
+ */
+export function migrateV4toV5(data: unknown): unknown {
+  // technical-constant: versions de format persisté
+  if (!isObj(data) || data.schemaVersion !== 4) throw new Error('migration v4 → v5 : donnée v4 attendue');
+  // technical-constant: version du format RC5
+  return { ...data, schemaVersion: 5 };
+}
+
 export type LoadResult =
   | { readonly status: 'empty'; readonly state: AppState }
-  | { readonly status: 'ok'; readonly state: AppState; readonly migratedFrom?: number }
+  | { readonly status: 'ok'; readonly state: AppState; readonly migratedFrom?: number; readonly premigrationKey?: string; readonly premigrationError?: string }
   | { readonly status: 'unreadable'; readonly state: AppState; readonly backupKey: string; readonly problem: string }
   | { readonly status: 'newer_version'; readonly state: AppState; readonly version: number };
 
@@ -83,7 +117,17 @@ export function loadState(storage: KeyValueStorage, now: string): LoadResult {
   const text = storage.getItem(STORAGE_KEY);
   if (text === null) return { status: 'empty', state: emptyState() };
   const d = decodeState(text);
-  if (d.ok) return d.from === CURRENT_SCHEMA_VERSION ? { status: 'ok', state: d.state } : { status: 'ok', state: d.state, migratedFrom: d.from };
+  if (d.ok && d.from === CURRENT_SCHEMA_VERSION) return { status: 'ok', state: d.state };
+  if (d.ok) {
+    // Sauvegarde AVANT migration : le texte d'origine est conservé tel quel avant toute écriture de la donnée migrée.
+    const premigrationKey = `${PREMIGRATION_PREFIX}v${String(d.from)}.${textHash(text)}`;
+    try {
+      if (storage.getItem(premigrationKey) !== text) storage.setItem(premigrationKey, text);
+      return { status: 'ok', state: d.state, migratedFrom: d.from, premigrationKey };
+    } catch (e) {
+      return { status: 'ok', state: d.state, migratedFrom: d.from, premigrationError: (e as Error).message || 'écriture impossible' };
+    }
+  }
   if (d.newer !== undefined) return { status: 'newer_version', state: emptyState(), version: d.newer };
   const backupKey = `${BACKUP_PREFIX}${now}`;
   storage.setItem(backupKey, text);

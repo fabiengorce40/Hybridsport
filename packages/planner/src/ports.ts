@@ -17,7 +17,7 @@ import { h2ExposureOf, runHyroxH1 } from '@hybridsport/hyrox';
 import type { HyroxContextInput, HyroxEngine } from '@hybridsport/hyrox';
 import { ARCHETYPE_INTENT_IDS, archetypeFromIntentId, composeRunningWeek, isV1Archetype, parseRunningContext, resolveParameter } from '@hybridsport/running';
 import type { RunningContextInput, RunningParameter } from '@hybridsport/running';
-import { composeStrengthWeek, declarableAnchors, plannedWeekExposures, readStrengthParams, sessionPlannedHardSets, strengthReasons, strengthWeekPrescription, weekPrescriptionSummary } from '@hybridsport/strength';
+import { archetypeRegion, personalizedStrengthParams, composeStrengthWeek, declarableAnchors, plannedWeekExposures, readStrengthParams, sessionPlannedHardSets, strengthReasons, strengthWeekPrescription, weekPrescriptionSummary } from '@hybridsport/strength';
 import type { StrengthCompositionRule, StrengthContextInput } from '@hybridsport/strength';
 import { GP_CODES, gpReasons } from './codes.js';
 import { delegateStrengthBlock, expressesStrengthNeed, strengthNeedOf } from './strength-delegation.js';
@@ -48,6 +48,12 @@ export interface SlotRequest {
   readonly station?: string;
   /** Contexte voisin (seconde passe), pour les moteurs qui le consomment. */
   readonly neighbours?: NeighbourContext;
+  /**
+   * Reprise RC5 lot 4.4 — `true` : séance FINALE (intention déclarée, ou archétype attribué par la composition, et toute
+   * régénération ultérieure). Absent : SONDE de placement (archétype provisoire remplacé à la composition). Permet aux
+   * ports de contrôler la séance RÉELLEMENT prescrite (ex. récupération), jamais l'archétype de sonde.
+   */
+  readonly final?: boolean;
   /**
    * Séances de la MÊME discipline déjà placées plus tôt dans la semaine (génération séquentielle, ordre des dates) :
    * expositions PRÉVUES, jamais réalisées. Consommées par les moteurs qui le déclarent (`consumesWeekSessions`).
@@ -97,7 +103,11 @@ export interface SportComposition {
    * l'archétype de complément de la règle du moteur (ou, selon la fréquence déclarée, celui que la règle du moteur
    * attribue en premier). La séance définitive est régénérée après composition.
    */
-  readonly placementArchetypeId: string | ((weeklySessions: number) => string | undefined);
+  /**
+   * Archétype de RÉSERVATION des jours (sonde de placement), remplacé après composition. Lot 4.1 : `index` (1-based) =
+   * rang de la demande dans la semaine, pour les rotations à plusieurs régions (Haut / Bas A/B).
+   */
+  readonly placementArchetypeId: string | ((weeklySessions: number, index?: number) => string | undefined);
   compose(input: { readonly days: readonly CompositionDay[]; readonly base: CompositionBase; readonly hybrid: boolean; readonly mode: PlannerMode; readonly weeklySessions: number }): CompositionResult;
 }
 
@@ -118,6 +128,8 @@ export interface SportPort {
   readonly weekSessionsScope?: 'before' | 'generated';
   /** C4.3 — disciplines dont les séances placées de la semaine sont transmises (`SlotRequest.crossSportWeek`). */
   readonly crossSportWeek?: readonly PlannerSport[];
+  /** Budget déclaré par discipline et par jour ; absent : disponibilité commune inchangée. */
+  availableMinutesFor?(date: string, commonMinutes: number): number;
   generate(slot: SlotRequest): PortOutcome;
   /** Structures sollicitées (dérivées du catalogue par la table GOUVERNÉE du ruleset de la discipline). */
   structures(session: SessionDraft): StructuresResult;
@@ -319,7 +331,7 @@ const resolve = <T>(c: Ctx<T>, slot: SlotRequest): T => (typeof c === 'function'
  * provenance de charge, interférence, priorité. S4 : rien de RECALCULABLE depuis la séance elle-même n'est recopié
  * (`DOSE.VOLUME_ALLOCATED` = séries de l'item, `PROGRESSION.ANCHOR_APPLIED` = `refs.anchor` / `refs.progressionTrackId`).
  */
-const STRENGTH_PERSISTED_DECISIONS = /^(SELECT\.(EXERCISE\.CHOSEN|CHOICE_GROUP|CONTINUITY|CONTINUITY_KEPT|SLOT_OMITTED|SUBSTITUTION|PATTERN_FALLBACK|STIMULUS_PRESERVED)|PROGRESSION\.(?!ANCHOR_APPLIED$)|DOSE\.LOAD\.|PLAN\.(STRUCTURE_LOWERED|INTERFERENCE_ASSESSED|VOLUME_IMBALANCE_WEEK|ANCHOR|SPORT_PRIORITY))/;
+const STRENGTH_PERSISTED_DECISIONS = /^(SELECT\.(EXERCISE\.CHOSEN|CHOICE_GROUP|CONTINUITY|CONTINUITY_KEPT|SLOT_OMITTED|SUBSTITUTION|PATTERN_FALLBACK|STIMULUS_PRESERVED)|PROGRESSION\.(?!ANCHOR_APPLIED$)|DOSE\.LOAD\.|DOSE\.(VOLUME_LIMITED|REDISTRIBUTION_SKIPPED)$|PLAN\.(STRUCTURE_LOWERED|INTERFERENCE_ASSESSED|VOLUME_IMBALANCE_WEEK|ANCHOR|SPORT_PRIORITY))/;
 
 /** C4.3 — séances Cross-training de la semaine réduites à leurs blocs de force délégués (aucun bloc : ignorées). */
 function ctStrengthBlocks(slot: SlotRequest): WeekSession[] {
@@ -348,10 +360,18 @@ export function compactCrossInputs(slot: SlotRequest): CrossSportInputs | undefi
  */
 export interface StrengthWithinWeekVariationRule { readonly ruleId: string; readonly status: 'TEST_ONLY'; readonly note: string }
 
-export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule }): SportPort {
+export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine<unknown>; readonly baseContext: Ctx<StrengthContextInput>; readonly composition?: { readonly rule: StrengthCompositionRule | undefined; readonly goal: StrengthContextInput['goal']['primary'] }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule;
+  /**
+   * Reprise RC5 lot 4.2 (Q6) — DIAGNOSTIC TEST_ONLY : `first` rejoue la sonde de placement d'avant le lot 4.1 (archétype de
+   * tête pour toutes les demandes) afin de comparer le placement historique au placement par rang. Absent : sonde par rang.
+   */
+  readonly placementProbe?: 'rank' | 'first' }): SportPort {
   // RC4.5 (O1) — paramètres et emplacements résiduels lus UNE fois par port : le contenu d'un port est fixé à sa création.
   let paramsOnce: ReturnType<typeof readStrengthParams>['values'] | undefined;
   const params = () => (paramsOnce ??= readStrengthParams(def.content.ruleset).values);
+  // Lot 4.4 — dernière composition NON VIDE de la semaine : séances placées par région (lu par l'option candidate
+  // `redistributeUnplaced` du moteur ; aucun effet sans elle).
+  let lastPlacedByRegion: { upper: number; lower: number; full: number } | undefined;
   const context = (slot: SlotRequest): StrengthContextInput => {
     const resolved = resolve(def.baseContext, slot);
     // S4 — priorité déclarée des sports, au vocabulaire du contrat Strength (sports sans discipline Strength ignorés).
@@ -368,13 +388,16 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
         otherStrengthSessions: [...base.week.otherStrengthSessions, ...[...earlier, ...hosted].map((w) => ({ intentId: `plan.${w.requestId}`, archetypeId: w.archetypeId, plannedHardSets: sessionPlannedHardSets(w.session, params(), def.content.catalog), done: false }))],
       },
     };
-    if (!slot.hybrid) return withWeek;
+    // Lot 4.4 — séances réellement placées par région (dernière composition de la semaine), pour la séance FINALE seulement.
+    const placed = slot.final === true && params()['strength.personalization']?.redistributeUnplaced === true ? lastPlacedByRegion : undefined;
+    const withPlaced: StrengthContextInput = placed ? { ...withWeek, week: { ...withWeek.week, placedSessionsByRegion: placed } } : withWeek;
+    if (!slot.hybrid) return withPlaced;
     const n = slot.neighbours;
     return {
-      ...withWeek,
+      ...withPlaced,
       week: {
-        ...withWeek.week,
-        neighbors: [...withWeek.week.neighbors, ...(n?.neighbours ?? []).map((x) => ({ discipline: x.discipline as StrengthContextInput['week']['neighbors'][number]['discipline'], stimulus: x.stimulus, priority: x.importance === 'key' ? 'key' as const : 'standard' as const, hoursFromThisSession: x.hoursFromThisSession, demand: { ...x.demand } }))],
+        ...withPlaced.week,
+        neighbors: [...withPlaced.week.neighbors, ...(n?.neighbours ?? []).map((x) => ({ discipline: x.discipline as StrengthContextInput['week']['neighbors'][number]['discipline'], stimulus: x.stimulus, priority: x.importance === 'key' ? 'key' as const : 'standard' as const, hoursFromThisSession: x.hoursFromThisSession, demand: { ...x.demand } }))],
         known: withWeek.week.known && n?.known === true,
       },
     };
@@ -394,7 +417,7 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
     extraReasons: (slot, c) => {
       const ctx = c as StrengthContextInput;
       const p = strengthWeekPrescription({
-        params: params(), paramStatus: (id) => def.content.ruleset.parameter(id)?.status ?? 'missing', goal: ctx.goal.primary, level: def.profile.athleteLevel,
+        params: personalizedStrengthParams(params(), ctx.personalization, ctx.otherSports), paramStatus: (id) => def.content.ruleset.parameter(id)?.status ?? 'missing', goal: ctx.goal.primary, level: def.profile.athleteLevel,
         archetypeId: slot.intent.archetypeId, occurrence: (slot.weekSessions ?? []).length + 1, weeklySessions: slot.sportSessions ?? (slot.weekSessions ?? []).length + 1,
         context: { tracks: ctx.tracks, recentExposures: [...ctx.recentExposures, ...plannedExposures(slot)], hardSets: ctx.hardSets, week: ctx.week },
       });
@@ -456,9 +479,27 @@ export function strengthPort(def: Base<unknown> & { readonly engine: SportEngine
     ...withWeek,
     composition: {
       // Réservation des jours : archétype que la règle du moteur attribue en premier pour la fréquence déclarée.
-      placementArchetypeId: (weeklySessions) => { const r = run([], weeklySessions, 'CANDIDATE'); return r.status === 'composed' ? r.rotation[0] : undefined; },
+      // Reprise RC5 lot 4 — une variante A/B (Haut A, Bas B…) réserve le jour sous son archétype de BASE (`str_upper`,
+      // `str_lower`) : placement des jours identique à la rotation Haut / Bas d'avant ; la variante (et ses contrôles de
+      // récupération) n'est appliquée qu'à la composition, sur l'archétype réellement attribué à chaque date.
+      // Lot 4.1 — rotation à plusieurs archétypes (Haut / Bas, A/B) : la k-ième demande est sondée sous l'archétype (de base)
+      // de la k-ième position (Haut, Bas, Haut, Bas), jamais quatre « Haut » cumulés (sonde irréaliste : budgets hebdomadaires
+      // épuisés, refus parasites). Rotation à un seul archétype (Full Body) : inchangée.
+      placementArchetypeId: (weeklySessions, index = 1) => {
+        const r = run([], weeklySessions, 'CANDIDATE');
+        if (r.status !== 'composed') return undefined;
+        const first = r.rotation[0];
+        // technical-constant: une rotation d'au moins deux archétypes (A/B, Haut/Bas) — en deçà, archétype unique
+        if (first === undefined || r.rotation.length < 2 || def.placementProbe === 'first') return first;
+        return (r.rotation[(index - 1) % r.rotation.length] ?? first).replace(/_[ab]$/, '');
+      },
       compose({ days, base, mode, weeklySessions }) {
         const r = run(days, weeklySessions, mode);
+        if (r.status === 'composed' && r.slots.length > 0) {
+          const count = { upper: 0, lower: 0, full: 0 };
+          for (const sl of r.slots) count[archetypeRegion(sl.archetypeId)] += 1;
+          lastPlacedByRegion = count;
+        }
         if (r.status === 'unresolved') return { status: 'unresolved', reasons: [gpReasons.emit(GP_CODES.COMPOSITION_UNRESOLVED, { sport: 'strength', mode }), ...r.reasons] };
         const byDate = new Map(days.map((d) => [d.date, d]));
         return {

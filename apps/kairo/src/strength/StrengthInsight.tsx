@@ -1,9 +1,10 @@
+import { StrengthPersonalizationSummary } from './StrengthCustomization.js';
 /**
  * P1 — « Pourquoi cette séance » (Musculation) : variante, mouvements dominants, groupes sollicités (séries de travail),
  * allègements tracés, variation intra-semaine, signaux de récupération et volume de la semaine. Lecture seule des
  * décisions persistées (app-core) ; aucune valeur calculée ni augmentée ici.
  */
-import { exerciseLabel, strengthInsightOf, strengthWeekInsights } from '@hybridsport/app-core';
+import { exerciseLabel, strengthProfileForWeek, strengthInsightOf, strengthWeekInsights } from '@hybridsport/app-core';
 import type { StrengthWeekInsights } from '@hybridsport/app-core';
 
 type WeekVolumeAssessment = StrengthWeekInsights['volume'];
@@ -38,7 +39,7 @@ export function WeekVolumeCard({ volume }: { volume: WeekVolumeAssessment }) {
       <p className="tiny muted" style={{ margin: 0 }}>Séries de travail prévues par groupe, comparées à un repère expérimental (non validé). KAIRO n’augmente pas le volume automatiquement pour atteindre ce repère, et ne le réduit pas automatiquement au-delà de sa borne haute.</p>
       <ul className="small" style={{ margin: 0 }}>
         {rows.map((g) => (
-          <li key={g.group} data-volume-group={g.group}>{MUSCLE_GROUP_LABELS[g.group] ?? g.group} : {String(Math.round(g.planned * 10) / 10)} séries{g.target !== null ? ` · repère ${String(g.target)}` : ''}{g.target !== null && g.planned < g.target ? ' (en dessous)' : ''}{g.aboveHigh && g.high !== null ? <span data-volume-above-high> · au-dessus de la borne haute ({String(g.high)}), non réduit automatiquement</span> : ''}</li>
+          <li key={g.group} data-volume-group={g.group}>{MUSCLE_GROUP_LABELS[g.group] ?? g.group} : {String(Math.round(g.planned * 10) / 10)} séries{g.target !== null ? ` · repère ${String(g.target)}` : ''}{g.target !== null && g.planned < g.target ? ' (en dessous)' : ''}{g.limitedBy.length > 0 ? <span data-volume-limited-by={g.limitedBy.join(',')}> · repère inatteignable sans dépasser la borne haute de : {g.limitedBy.map((x) => MUSCLE_GROUP_LABELS[x] ?? x).join(', ')}</span> : ''}{g.aboveHigh && g.high !== null ? <span data-volume-above-high> · au-dessus de la borne haute ({String(g.high)}), non réduit automatiquement</span> : ''}</li>
         ))}
       </ul>
     </div>
@@ -50,8 +51,10 @@ export function StrengthWeekCard({ weekStart }: { weekStart: string }) {
   const { state } = useStore();
   const w = strengthWeekInsights(state, weekStart);
   if (!w || w.sessions.length === 0) return null;
+  const profile = strengthProfileForWeek(state,weekStart);
   return (
     <>
+      {profile?.strength.personalization && <StrengthPersonalizationSummary p={profile} />}
       <WeekVolumeCard volume={w.volume} />
       {w.recovery.length > 0 && (
         <div className="card" aria-label="Récupération entre séances de force" data-week-recovery>

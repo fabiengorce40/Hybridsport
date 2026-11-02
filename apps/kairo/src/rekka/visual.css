@@ -11,3 +11,5 @@ html[data-rekka="v2"]{--bg:#04121f;--bg-elevated:#102a3c;--bg-sunken:#03101b;--b
 [data-rekka="v2"] .card.rv-has-emblem{position:relative;padding-left:72px;min-height:83px}.rv-card-emblem{position:absolute;left:8px;top:15px}.rv-card-emblem .rv-emblem{width:56px;height:56px}.rv-sessions{padding-bottom:8px}
 @media(max-width:375px){.rv-sports .rv-emblem{width:50px;height:50px}.rv-sports button{font-size:9px}.rv-header h1{font-size:31px}}
 html[data-rekka="v2"]{--sport-strength:#ff43cc;--sport-running:#37c6ff;--sport-crosstraining:#ffb83d;--sport-hyrox:#dcff35}
+/* RC5 lot 3 : titre de phase de la couleur de la bordure existante de ses séries (montée turquoise, travail vert-jaune). */
+[data-rekka="v2"] .k-phase.work .k-phase-title,[data-rekka="v2"] .k-phase.backoff .k-phase-title{color:#dcff35}

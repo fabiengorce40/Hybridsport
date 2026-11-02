@@ -1,3 +1,4 @@
+import { strengthParametersFor, muscleLevel, strengthProfileForWeek } from './strength-personalization.js';
 /**
  * Programme longitudinal dans l'application : app-core → Programme Engine → planificateur global → moteurs → CORE.
  * L'application ne décide rien de sportif : elle fournit l'état (historique, disponibilités, déclarations), persiste
@@ -18,8 +19,9 @@ import type { AppState, Feedback, ProgrammeIntent, SessionLog, SetLog } from './
 import { appPlannerEnvironment, assertEnvironment, buildPorts, clockOf, persistWeek, recentOf } from './planning.js';
 import type { EngineGoals, PlannerEnvironment } from './planning.js';
 import { applyStrengthExecutionTraced, performedSets, realizedRunFrom, testReferenceFrom } from './progression.js';
+import type { ProgressionReadingOption } from './progression.js';
 import { isHyroxComposed, realizeCrossTrainingExecution, realizeHyroxComposed, realizeHyroxStation } from '@hybridsport/planner';
-import { assessStrengthWeekVolume, readStrengthParams } from '@hybridsport/strength';
+import { assessStrengthWeekVolume } from '@hybridsport/strength';
 import type { StrengthGoalRef, WeekVolumeAssessment } from '@hybridsport/strength';
 import { strengthContent } from './provisional-content.js';
 
@@ -31,6 +33,8 @@ export class ProgrammeError extends AppError {
 /** Environnement du programme : celui du planificateur + gouvernance du programme (politique, horizon glissant). */
 export interface ProgrammeEnvironment extends PlannerEnvironment {
   readonly programmeGovernance?: LoadedRuleset;
+  /** Reprise RC5 lot 4.4 (chantier E) — lecture R4 des séances allégées : SIMULATION seulement, jamais renseignée par le produit. */
+  readonly progressionReading?: ProgressionReadingOption;
 }
 
 const requireProgramme = (s: AppState): ProgrammeState => {
@@ -120,7 +124,7 @@ function planWeekOnce(state: AppState, clock: Clock, env: ProgrammeEnvironment, 
   });
   if (!r.ok) throw new ProgrammeError('PROGRAMME_WEEK_NOT_PLANNABLE', r.reasons);
   // Écriture par la passerelle unique : jamais de remplacement d'une semaine commencée ou clôturée (refus, état inchangé).
-  const written = writePlannedWeek(state, persistWeek(r.value.week, normalizeInstant(clock.now), ps.definition.origin, env), 'programme');
+  const written = writePlannedWeek(state, { ...persistWeek(r.value.week, normalizeInstant(clock.now), ps.definition.origin, env), ...(p.strength.personalization ? { strengthProfile: p } : {}) }, 'programme');
   return { ...written, programmeState: r.value.state };
 }
 
@@ -156,10 +160,9 @@ export function strengthWeekVolume(state: AppState, weekStart: string): WeekVolu
     const d = r.status === 'planned' && r.record ? migrateToCurrent<SessionRecord>(r.record) : undefined;
     return d?.ok ? [{ session: d.value.session, reasons: r.reasons }] : [];
   });
-  const goal = state.programmeState?.definition.goals.find((g) => g.sport === 'strength')?.goal ?? p.strength.goal;
   const content = strengthContent();
   return assessStrengthWeekVolume({
-    params: readStrengthParams(content.ruleset).values, catalog: content.catalog, goal: { goal } as StrengthGoalRef, level: p.level,
+    params: strengthParametersFor(strengthProfileForWeek(state,weekStart)??p), catalog: content.catalog, goal: { goal: (strengthProfileForWeek(state,weekStart)??p).strength.goal } as StrengthGoalRef, level: muscleLevel(strengthProfileForWeek(state,weekStart)??p),
     requestedSessions: reqs.length, sessions, notPlanned: reqs.filter((r) => r.status !== 'planned').map((r) => ({ category: r.category })),
   });
 }
@@ -216,7 +219,7 @@ const reject = (code: string, ...reasons: ReasonCode[]): never => { throw new Pr
  * Identités : séance planifiée = `requestId` ; exécution = une seule par `requestId` (refus explicite sinon) ;
  * occurrence dans l'historique du moteur = `requestId` (un rejeu CT de la semaine suivante est une NOUVELLE occurrence).
  */
-export function recordSessionExecution(state: AppState, clock: Clock, x: SessionExecutionInput): AppState {
+export function recordSessionExecution(state: AppState, clock: Clock, x: SessionExecutionInput, env?: ProgrammeEnvironment): AppState {
   const ps = requireProgramme(state);
   const at = normalizeInstant(clock.now);
   const week = ps.weeks.find((w) => w.requests.some((r) => r.requestId === x.requestId));
@@ -263,7 +266,7 @@ export function recordSessionExecution(state: AppState, clock: Clock, x: Session
           archetypeId: intent.archetypeId, session, sets: [...sets], painItems: [...(x.painItems ?? [])],
           sessionCompleted: x.completion !== 'abandoned', sessionPain: x.pain !== undefined && x.pain !== 'NONE',
           sessionStatus: x.completion === 'abandoned' ? 'abandoned' : x.completion === 'modified' ? 'modified' : 'completed',
-        }, at);
+        }, at, env?.progressionReading);
         s = { ...s, strength: applied.strength };
         progressionTrace = applied.reasons;
         evidence = { history: 'strength', ref: x.requestId };

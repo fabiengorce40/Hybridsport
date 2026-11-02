@@ -66,18 +66,22 @@ export function weeklyProjection(group: string, env: Env, thisSession: Readonly<
  * Adéquation au volume hebdomadaire d'un candidat (règle E1, séries minimales du profil) : nombre de ses
  * groupes primaires qui DÉPASSERAIENT le haut (SOFT) de la cible, et nombre encore SOUS le plancher.
  */
-export function volumeFit(e: Exercise, role: SlotRole, chosen: readonly { readonly exercise: Exercise; readonly role: SlotRole }[], env: Env): { over: number; under: number; groups: number } {
+export function volumeFit(e: Exercise, role: SlotRole, chosen: readonly { readonly exercise: Exercise; readonly role: SlotRole }[], env: Env): { over: number; under: number; groups: number; deficitPercent: number } {
   const session = plannedHardSets(chosen.map((x) => ({ exercise: x.exercise, workingSets: doseCell(x.exercise, x.role, env).cell.sets.min })), env);
   const own = doseCell(e, role, env).cell.sets.min;
   let over = 0;
   let under = 0;
   let groups = 0;
+  // Lot 4.2 (Q4) — plus grand déficit RELATIF (0..1) parmi les groupes principaux sous leur cible ; lu seulement par le
+  // départage facultatif `volumeFitTieBreak` (inactif dans les politiques publiées).
+  let deficit = 0;
   for (const g of groupsOf(e, env).primary) {
     const p = weeklyProjection(g, env, session);
     if (!p) continue;
     groups++;
     if (p.total + own > p.high) over++;
-    if (p.total < p.floor) under++;
+    if (p.total < p.floor) { under++; deficit = Math.max(deficit, (p.floor - p.total) / p.floor); }
   }
-  return { over, under, groups };
+  // technical-constant: résolution ordinale du départage Q4 — déficit relatif en pourcentage entier (aucune valeur sportive)
+  return { over, under, groups, deficitPercent: Math.round(deficit * 100) };
 }

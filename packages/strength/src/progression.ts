@@ -10,8 +10,10 @@
  */
 import type { Exercise, ISODateTime, ReasonCode, RepTarget, SetPrescription } from '@hybridsport/domain';
 import type { StrengthTrack } from './context.js';
-import type { ProgressionModel, SlotRole, StrengthParams } from './params.js';
+import type { DoseCell, ProgressionModel, SlotRole, StrengthParams } from './params.js';
 import { exerciseClass } from './model.js';
+import type { StrengthPersonalization } from './personalization-contract.js';
+import { personalizedDoseCell } from './personalization.js';
 import { strengthReasons } from './codes.js';
 import { daysBetween, median, roundDownToStep } from './util.js';
 
@@ -208,8 +210,8 @@ function predictedRirAt(sets: readonly PerformedSet[], kg: number, reps: number,
  * Mise à jour d'une track après exécution. Variable progressée selon le modèle de la TRACK.
  * `phaseKind = deload` : aucune hausse. Douleur / pause : track suspendue, rien ne baisse.
  */
-export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number): TrackUpdate {
-  const u = updateTrackModel(track, x, cls, e, params, phaseKind, declaredStepKg);
+export function updateTrack(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number, reading?: LightenedReading): TrackUpdate {
+  const u = (reading ? lightenedUpdate(track, x, cls, e, params, phaseKind, reading, declaredStepKg) : undefined) ?? updateTrackModel(track, x, cls, e, params, phaseKind, declaredStepKg);
   // S5 — historique longitudinal des preuves (douleur / pause : inchangé, ce n'est ni une réussite ni un échec).
   if (cls === 'pain' || cls === 'safety_pause') return u;
   const basis = track.model === 'autoregulated' ? autoregulatedBasis(x.performed, params, track.e1rmKg, u.track.e1rmKg) : undefined;
@@ -224,6 +226,110 @@ const autoregulatedBasis = (sets: readonly PerformedSet[], params: StrengthParam
   if (est.observed !== undefined) return 'observed';
   return est.lowerBound !== undefined && after === est.lowerBound && (before === undefined || est.lowerBound > before) ? 'lower_bound' : undefined;
 };
+
+/**
+ * Reprise RC5 lot 4.4 (chantier E) — lecture des séances ALLÉGÉES (R4 et variantes), PROPOSITION NON ACTIVÉE : aucun appel
+ * du produit ne passe `reading` (comportement actuel strictement inchangé). Une séance est allégée quand son RIR prescrit
+ * dépasse le RIR de RÉFÉRENCE (profil de base de la track ; avec l'exception « plancher multisport », l'allègement
+ * RÉCURRENT est la référence de l'athlète, voir `floorReferenceRir`). Sur une séance allégée :
+ * - réussite (classée contre la référence) : preuve comptée, aucune hausse décidée (la hausse attend une séance non allégée) ;
+ * - en dessous : maintien sans compteur ; variante `safety` : compteur, baisse au seuil `safetyBelow` (fatigue persistante) ;
+ * - séries partielles, données absentes, douleur… : règles actuelles.
+ * R3 (réévaluation de fin de cycle) : `reassessTrack`, appelée à la frontière de cycle, jamais ici.
+ */
+export const LIGHTENED_POLICIES = ['r4', 'r4_floor', 'r4_r3', 'r4_floor_r3', 'r4_floor_r3_safety', 'reference_eval'] as const;
+export type LightenedPolicy = (typeof LIGHTENED_POLICIES)[number];
+export interface LightenedReading {
+  readonly policy: LightenedPolicy;
+  /** RIR de référence de la track (profil de base). */
+  readonly referenceRir: number;
+  /** Exception « plancher multisport » : RIR récurrent (voir `floorReferenceRir`) ; ignoré hors variantes `floor`. */
+  readonly floorRir?: number;
+  /** Variante `safety` : séances allégées consécutives en dessous avant baisse. */
+  readonly safetyBelow?: number;
+}
+export const usesFloor = (p: LightenedPolicy): boolean => p === 'r4_floor' || p === 'r4_floor_r3' || p === 'r4_floor_r3_safety';
+export const usesReassessment = (p: LightenedPolicy): boolean => p === 'r4_r3' || p === 'r4_floor_r3' || p === 'r4_floor_r3_safety';
+
+/**
+ * Exception « plancher multisport » : un allègement présent à CHACUNE des `window` dernières expositions (RIR prescrits,
+ * la courante comprise) est durable : sa part commune devient la référence. Moins d'expositions connues : référence de base.
+ */
+export function floorReferenceRir(recentPrescribedRir: readonly number[], baseRir: number, window: number): number {
+  if (recentPrescribedRir.length < window) return baseRir;
+  return Math.max(baseRir, Math.min(...recentPrescribedRir.slice(-window)));
+}
+
+/**
+ * RIR de RÉFÉRENCE d'une exposition (R4, comme 5e119d6) : RIR de base de la track + modificateurs DURABLES (niveau, phase),
+ * combinés selon la politique de conflit du ruleset, comme `computeDose`. Les modificateurs du jour (interférence, état
+ * du jour) n'en font pas partie : ce sont eux qui ALLÈGENT une séance.
+ */
+export function durableReferenceRir(baseRir: number, params: StrengthParams, level: keyof StrengthParams['strength.dose.modifiers']['level'], phase: keyof StrengthParams['strength.dose.modifiers']['phase']): number {
+  const m = params['strength.dose.modifiers'];
+  const deltas = [m.level[level].rirDelta, m.phase[phase].rirDelta].filter((d) => d !== 0);
+  if (deltas.length === 0) return baseRir;
+  return Math.max(0, baseRir + (m.conflictPolicy === 'sum' ? deltas.reduce((a, d) => a + d, 0) : Math.max(...deltas)));
+}
+
+const withRir = (s: SetPrescription, rir: number): SetPrescription => {
+  const i = s.intensity;
+  const intensity = i && 'effort' in i && i.effort && 'rir' in i.effort ? { ...i, effort: { ...i.effort, rir } } : i;
+  return { ...s, ...(intensity ? { intensity } : {}), ...(s.rir !== undefined ? { rir } : {}) } as SetPrescription;
+};
+
+function lightenedUpdate(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, r: LightenedReading, declaredStepKg?: number): TrackUpdate | undefined {
+  if (phaseKind === 'deload' || (cls !== 'above' && cls !== 'on_target' && cls !== 'below')) return undefined;
+  const first = x.prescribed.find((z) => z.kind !== 'rampup' && z.optional !== true);
+  const prescribed = first ? targetRir(first) : undefined;
+  const ref = usesFloor(r.policy) && r.floorRir !== undefined ? Math.max(r.referenceRir, r.floorRir) : r.referenceRir;
+  if (prescribed === undefined || prescribed <= ref) return undefined;
+  const p = params['strength.progression'];
+  const asRef = classifyExposure({ ...x, prescribed: x.prescribed.map((z) => withRir(z, ref)) }, params);
+  // Lot 4.5 — `reference_eval` (proposition) : la séance allégée est JUGÉE contre la référence durable, dans les deux sens
+  // (réussite ⇒ preuve et hausse possible ; en dessous ⇒ compteur et baisse), avec les règles actuelles du modèle.
+  if (r.policy === 'reference_eval') return updateTrackModel(track, x, asRef, e, params, phaseKind, declaredStepKg);
+  const resumed: StrengthTrack = track.status === 'suspended' ? { ...track, status: 'active' } : track;
+  if (asRef === 'below') {
+    const step = stepFor(e, params, declaredStepKg);
+    const safety = r.policy === 'r4_floor_r3_safety' ? (r.safetyBelow ?? p.regressAfterBelow) : undefined;
+    if (safety === undefined) return { track: resumed, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: 'lightened_below' })], rotate: false };
+    const below = resumed.consecutiveBelow + 1;
+    const next = resumed.nextPrescription;
+    if (below >= safety && next?.loadKg !== undefined && step !== undefined) {
+      const kg = Math.max(step, roundDownToStep(next.loadKg * (1 - p.regressionFraction), step));
+      return { track: { ...resumed, consecutiveBelow: 0, consecutiveSuccess: 0, nextPrescription: { ...next, loadKg: kg } }, reasons: [strengthReasons.emit('PROGRESSION.REGRESSED', { trackId: track.trackId })], rotate: false };
+    }
+    return { track: { ...resumed, consecutiveBelow: below, consecutiveSuccess: 0 }, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: 'lightened_below' })], rotate: false };
+  }
+  // Réussite allégée : preuve comptée (plafonnée au nombre requis), estimation e1RM mise à jour (effort observé), aucune hausse.
+  let e1rm = track.e1rmKg;
+  if (track.model === 'autoregulated') {
+    const est = effortEstimate(x.performed, params);
+    if (est.observed !== undefined) e1rm = e1rm === undefined ? est.observed : median([e1rm, est.observed]);
+    if (est.lowerBound !== undefined && (e1rm === undefined || est.lowerBound > e1rm)) e1rm = est.lowerBound;
+  }
+  const success = Math.min(p.evidenceRequired[track.model], resumed.consecutiveSuccess + 1);
+  return { track: { ...resumed, consecutiveSuccess: success, consecutiveBelow: 0, ...(e1rm !== undefined ? { e1rmKg: e1rm } : {}) }, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: 'lightened_evidence' })], rotate: false };
+}
+
+/**
+ * R3 (PROPOSITION non activée) — réévaluation de FIN DE CYCLE d'une track autorégulée : charge recalculée depuis l'e1RM
+ * lissé de la track, jamais en baisse, jamais au-delà du plafond de cycle ni de l'estimation. Aucun appel du produit.
+ */
+export function reassessTrack(track: StrengthTrack, e: Exercise, params: StrengthParams, declaredStepKg?: number): { track: StrengthTrack; reasons: readonly ReasonCode[] } {
+  const next = track.nextPrescription;
+  const step = stepFor(e, params, declaredStepKg);
+  if (track.model !== 'autoregulated' || track.status !== 'active' || !next || next.loadKg === undefined || step === undefined || track.e1rmKg === undefined) return { track, reasons: [] };
+  const pct = params['strength.load'].pctByRepsToFailure[String(Math.round(targetMin(next.reps) + (next.rir ?? 0)))];
+  if (pct === undefined) return { track, reasons: [] };
+  const p = params['strength.progression'];
+  const cap = track.cycleStartLoadKg !== undefined ? Math.max(track.cycleStartLoadKg * (1 + p.cycleCapFraction), track.cycleStartLoadKg + step) : undefined;
+  const target = roundDownToStep(track.e1rmKg * pct, step);
+  const kg = Math.max(next.loadKg, cap !== undefined ? Math.min(target, roundDownToStep(cap, step)) : target);
+  if (kg === next.loadKg) return { track, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: track.trackId, cause: 'reassessed' })] };
+  return { track: { ...track, consecutiveSuccess: 0, nextPrescription: { ...next, loadKg: kg } }, reasons: [strengthReasons.emit('PROGRESSION.ADVANCED', { trackId: track.trackId, variable: 'load' })] };
+}
 
 function updateTrackModel(track: StrengthTrack, x: ExecutedItem, cls: ExposureClass, e: Exercise, params: StrengthParams, phaseKind: string, declaredStepKg?: number): TrackUpdate {
   const p = params['strength.progression'];
@@ -336,6 +442,12 @@ export function createTrack(input: {
   readonly model: ProgressionModel; readonly prescribed: readonly SetPrescription[]; readonly performed: readonly PerformedSet[]; readonly at: ISODateTime;
   /** Stimulus et rôle de l'emplacement : le RIR de référence de la track est celui du PROFIL DE BASE, sans modificateur. */
   readonly stimulus: string; readonly role: SlotRole;
+  /**
+   * Reprise RC5 lot 4.5 (correction) — personnalisation et autres sports DU PROFIL DE LA PRESCRIPTION : la cellule de
+   * référence est la cellule PERSONNALISÉE, celle que le moteur a réellement utilisée (`doseCell`). Absents : profil non
+   * personnalisé (cellule du ruleset, comportement antérieur).
+   */
+  readonly personalization?: StrengthPersonalization; readonly otherSports?: readonly string[];
 }, params: StrengthParams): { track: StrengthTrack; reasons: readonly ReasonCode[] } {
   const work = input.prescribed.filter((s) => s.kind !== 'rampup' && s.optional !== true);
   const first = work[0];
@@ -346,8 +458,7 @@ export function createTrack(input: {
   const e1rm = est.observed ?? est.lowerBound;
   const basis = est.observed !== undefined ? 'observed' as const : est.lowerBound !== undefined ? 'lower_bound' as const : undefined;
   // RIR de référence = profil de base (jamais le RIR de calibration ni un RIR modifié par le niveau / la phase).
-  const profile = params['strength.stimuli'][input.stimulus]?.doseProfile;
-  const cell = profile === undefined ? undefined : params['strength.dose.base'][profile]?.[input.role]?.[exerciseClass(input.exercise, params)];
+  const cell = referenceCell({ exercise: input.exercise, role: input.role, stimulus: input.stimulus, ...(input.personalization ? { personalization: input.personalization } : {}), ...(input.otherSports ? { otherSports: input.otherSports } : {}) }, params);
   const rir = cell?.rir ?? (first ? targetRir(first) : undefined);
   // Double progression sur une prescription à reps FIXES (ex. modèle choisi pour pas grossier) : la plage est
   // celle du profil, sinon la progression en reps serait dégénérée (plage 6–6, simulation 4B).
@@ -364,6 +475,41 @@ export function createTrack(input: {
     ...(basis ? { evidence: { exactStreak: 0, effortKnown: 0, effortUnknown: 0, e1rmBasis: basis } } : {}),
   };
   return { track, reasons: [strengthReasons.emit('PROGRESSION.TRACK_CREATED', { trackId, tier: input.tier, exerciseId: input.exercise.id })] };
+}
+
+/**
+ * Reprise RC5 lot 4.5 (correction) — cellule de dose de RÉFÉRENCE d'une prescription : profil de base (stimulus × rôle ×
+ * classe) PERSONNALISÉ exactement comme le moteur (`doseCell` → `personalizedDoseCell` : priorités, prudence novice /
+ * récupération limitée / multisport). Avant 4.5, `createTrack` lisait la cellule BRUTE : pour un accessoire personnalisé
+ * ou un profil multisport, le RIR de référence de la track (1 ou 2) différait du RIR réellement prescrit (2 à 4).
+ */
+export function referenceCell(input: { readonly exercise: Exercise; readonly role: SlotRole; readonly stimulus: string; readonly personalization?: StrengthPersonalization; readonly otherSports?: readonly string[] }, params: StrengthParams): DoseCell | undefined {
+  const profile = params['strength.stimuli'][input.stimulus]?.doseProfile;
+  const cell = profile === undefined ? undefined : params['strength.dose.base'][profile]?.[input.role]?.[exerciseClass(input.exercise, params)];
+  return cell === undefined ? undefined : personalizedDoseCell(cell, input.exercise, input.role, params, input.personalization, input.otherSports ?? []);
+}
+
+/**
+ * Reprise RC5 lot 4 (D5) — CONTINUITÉ d'un suivi neuf de la rotation Haut A/B et Bas A/B. Candidats : suivis ANCRES
+ * ACTIFS d'un AUTRE archétype, pour le MÊME exercice. Correspondance FIABLE seulement si exactement un candidat a le même
+ * rôle d'emplacement et le même modèle de progression ; alors la borne de cycle du nouveau suivi devient la plus basse des
+ * deux charges RÉELLEMENT réalisées en début de cycle (le plafond de gain du cycle n'est jamais élargi) et la provenance
+ * est tracée (`transferredFrom`). Aucun compteur de réussite n'est repris (il décrit une autre prescription), aucune
+ * charge n'est inventée, aucun suivi d'origine n'est modifié. Sinon : aucun transfert, cause tracée.
+ */
+export function inheritPredecessorTrack(track: StrengthTrack, role: SlotRole, all: readonly StrengthTrack[], roleOf: (t: StrengthTrack) => SlotRole | undefined): { track: StrengthTrack; reasons: readonly ReasonCode[] } {
+  const same = all.filter((t) => t.tier === 'anchor' && t.status === 'active' && t.exerciseId === track.exerciseId && t.archetypeId !== track.archetypeId && t.trackId !== track.trackId);
+  if (same.length === 0) return { track, reasons: [] };
+  const fit = same.filter((t) => roleOf(t) === role && t.model === track.model);
+  const skip = (cause: string) => ({ track, reasons: [strengthReasons.emit('PROGRESSION.TRACK_TRANSFER_SKIPPED', { trackId: track.trackId, exerciseId: track.exerciseId, cause, candidates: same.map((t) => t.trackId).sort() })] });
+  if (fit.length === 0) return skip('role_or_model_differs');
+  if (fit.length > 1) return skip('ambiguous');
+  const from = fit[0] as StrengthTrack;
+  const own = track.cycleStartLoadKg;
+  const theirs = from.cycleStartLoadKg;
+  const cycle = own !== undefined && theirs !== undefined ? Math.min(own, theirs) : own;
+  const next: StrengthTrack = { ...track, ...(cycle !== undefined ? { cycleStartLoadKg: cycle } : {}), transferredFrom: { trackId: from.trackId, archetypeId: from.archetypeId, slotId: from.slotId, ...(theirs !== undefined && cycle === theirs ? { cycleStartLoadKg: theirs } : {}) } };
+  return { track: next, reasons: [strengthReasons.emit('PROGRESSION.TRACK_TRANSFERRED', { trackId: track.trackId, fromTrackId: from.trackId, cycleStartLoadKg: theirs !== undefined && cycle === theirs ? String(theirs) : 'n/a' })] };
 }
 
 /**

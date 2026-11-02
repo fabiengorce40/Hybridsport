@@ -82,8 +82,10 @@ export interface FieldExecution {
   readonly finishedAt: string | null;
   /** Temps entre « Commencer » et « Terminer » (horloge, pauses comprises), s. */
   readonly wallDurationS: number | null;
-  /** Chrono de la séance (Cross-training, HYROX : pauses exclues), s. */
+  /** Chrono de la séance (Cross-training, HYROX, et Musculation depuis RC5 lot 2 : pauses exclues), s. */
   readonly chronoS: number | null;
+  /** RC5 lot 2 — Musculation : pauses volontaires cumulées, figées à la fin (null : séance antérieure, non mesurée). */
+  readonly pausedS: number | null;
   /** Course : durée réellement courue déclarée, s ; distance déclarée, m. */
   readonly runDurationS: number | null;
   readonly distanceM: number | null;
@@ -99,7 +101,9 @@ function executionOf(log: ProgrammeLog | undefined): FieldExecution | null {
   const wall = log.finishedAt ? Math.max(0, Math.round((Date.parse(log.finishedAt) - Date.parse(log.startedAt)) / MS_PER_S)) : null;
   return {
     startedAt: log.startedAt, finishedAt: log.finishedAt ?? null, wallDurationS: wall,
-    chronoS: o?.ct?.elapsedS ?? o?.hr?.elapsedS ?? null, runDurationS: o?.run?.realizedDurationS ?? null, distanceM: o?.run?.distanceM ?? null,
+    // RC5 lot 2 — Musculation : temps actif du chronomètre global (pauses volontaires exclues), figé à la fin ; séances
+    // antérieures sans `timing` : horloge début → fin, inchangée.
+    chronoS: o?.ct?.elapsedS ?? o?.hr?.elapsedS ?? log.timing?.activeS ?? null, pausedS: log.timing?.pausedS ?? null, runDurationS: o?.run?.realizedDurationS ?? null, distanceM: o?.run?.distanceM ?? null,
     completion: o?.completion ?? null, pain: o?.pain ?? false, setsDone: log.sets.filter((x) => x.done).length,
     ctResult: o?.ct?.result ?? null, hrResult: o?.hr?.result ?? null,
   };
@@ -180,6 +184,9 @@ export function selectBetaJournal(state: AppState): readonly BetaJournalEntry[] 
 export interface FieldHistoryEntry extends HistoryEntry {
   readonly manual: boolean;
   readonly durationS: number | null;
+  /** RC5 lot 2 — pauses volontaires (s) et durée PRÉVUE figée à la fin (p50 du CORE) ; null si non mesurées. */
+  readonly pausedS: number | null;
+  readonly plannedDurationS: number | null;
   readonly feedback: FieldFeedback | null;
   /** FIELD TEST P0 — bloc d'entraînement ou séance complète (Cross-training / HYROX), sinon null. */
   readonly composition: CompositionScope | null;
@@ -189,7 +196,8 @@ export function selectFieldHistory(state: AppState): readonly FieldHistoryEntry[
   const requests = new Map(Object.values(state.planner.weeks).flatMap((w) => w.requests.map((r) => [r.requestId, r] as const)));
   return selectHistory(state).map((e) => ({
     ...e, manual: results.some((r) => r.requestId === e.requestId && r.provenance === 'manual_from_unplaced'),
-    durationS: realDurationS(executionOf(state.programmeLogs[e.requestId])), feedback: state.programmeLogs[e.requestId]?.field ?? null,
+    durationS: realDurationS(executionOf(state.programmeLogs[e.requestId])),
+    pausedS: state.programmeLogs[e.requestId]?.timing?.pausedS ?? null, plannedDurationS: state.programmeLogs[e.requestId]?.timing?.plannedS ?? null, feedback: state.programmeLogs[e.requestId]?.field ?? null,
     composition: requests.get(e.requestId) ? compositionScopeOf(requests.get(e.requestId) as Req) : null,
   }));
 }
@@ -253,7 +261,7 @@ export function betaJournalText(state: AppState, meta: BetaJournalMeta): string 
     const head = `${e.date ?? 'sans jour'} · ${e.sport} · ${e.archetypeId ?? '—'}${e.role ? ` (${e.role})` : ''} · ${e.placement}${e.provenance ? ` / ${e.provenance}` : ''} · ${e.status}`;
     lines.push(head);
     if (e.prescription) lines.push(`  prescription : ${[e.prescription.ctFormat, e.prescription.hrTimeCapS !== null ? `time cap ${mmss(e.prescription.hrTimeCapS)}` : null, e.prescription.estimatedDurationS !== null ? `≈ ${mmss(e.prescription.estimatedDurationS)}` : e.prescription.targetDurationS !== null ? `cible ${mmss(e.prescription.targetDurationS)}` : null, e.prescription.exercises.join(' + ')].filter(Boolean).join(' · ')}`);
-    if (e.execution) lines.push(`  exécution : ${e.execution.completion ?? 'en cours'} · durée réelle ${mmss(realDurationS(e.execution))}${e.execution.pain ? ' · DOULEUR' : ''}${e.execution.ctResult ? ` · résultat ${JSON.stringify(e.execution.ctResult)}` : ''}${e.execution.hrResult ? ` · résultat ${JSON.stringify(e.execution.hrResult)}` : ''}`);
+    if (e.execution) lines.push(`  exécution : ${e.execution.completion ?? 'en cours'} · durée réelle ${mmss(realDurationS(e.execution))}${e.execution.pausedS !== null && e.execution.pausedS > 0 ? ` (pauses ${mmss(e.execution.pausedS)})` : ''}${e.execution.pain ? ' · DOULEUR' : ''}${e.execution.ctResult ? ` · résultat ${JSON.stringify(e.execution.ctResult)}` : ''}${e.execution.hrResult ? ` · résultat ${JSON.stringify(e.execution.hrResult)}` : ''}`);
     if (e.composition?.status) lines.push(`  composition : ${e.composition.scope} · ${e.composition.status}${e.composition.notGenerated.length > 0 ? ` (non générés : ${e.composition.notGenerated.join(', ')})` : ''}`);
     // C4 (expérimental) : statut explicite de la séance Cross-training, cause, blocs générés, durée planifiée.
     if (e.composition?.c4) lines.push(`  séance C4 (expérimentale) : ${e.composition.c4.status} · ${e.composition.c4.cause}${e.composition.c4.blocks.length > 0 ? ` · blocs ${e.composition.c4.blocks.map((b) => b.block).join(', ')}` : ''}${e.composition.c4.plannedDurationS !== null ? ` · planifiée ${String(Math.round(e.composition.c4.plannedDurationS))} s` : ''}${e.composition.c4.estimatedDurationS !== null ? ` · estimée ${String(Math.round(e.composition.c4.estimatedDurationS))} s` : ''}`);

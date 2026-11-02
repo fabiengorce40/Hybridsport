@@ -1,3 +1,4 @@
+import { otherStrengthSports } from './strength-personalization.js';
 /**
  * Génération d'une séance planifiée par le moteur RÉEL de sa discipline, via le CORE (`runSportSession`).
  *
@@ -93,14 +94,21 @@ export function strengthContextAt(state: AppState, p: Profile, date: string, con
   const recentDone = exposures.filter((x) => daysBetween(dateOf(x.at), date) < D7);
   return {
     goal: { primary: { goal: p.strength.goal } },
+    ...(p.strength.personalization ? { personalization: p.strength.personalization, personalizationSessions: p.strength.sessionsPerWeek, otherSports: otherStrengthSports(p) } : {}),
     // Périodisation non gouvernée : phase fixe, aucune rampe de volume ni décharge planifiée.
     phase: { kind: 'accumulation', weekInMesocycle: 1, mesocycleLength: 1 },
     capacities: [],
     tracks: state.strength.tracks.filter((t) => t.status !== 'closed'),
     recentExposures: exposures,
-    hardSets: { d7: hardSetsByGroup(recentDone.map((x) => ({ exerciseId: x.exerciseId, workingSets: x.sets.length })), content) },
+    hardSets: {
+      d7: hardSetsByGroup(recentDone.map((x) => ({ exerciseId: x.exerciseId, workingSets: x.sets.length })), content),
+      // Lot 4.1 — séries réalisées depuis le lundi de la semaine de la séance (part de cible hebdomadaire, sans double
+      // comptage) ; transmises SEULEMENT sous la politique 1.1 (`primary_need`) : contexte inchangé pour tout autre contenu.
+      ...((content.ruleset.parameter('strength.personalization')?.value as { allocation?: string } | undefined)?.allocation === 'primary_need'
+        ? { week: hardSetsByGroup(exposures.filter((x) => dateOf(x.at) >= weekStartOf(date)).map((x) => ({ exerciseId: x.exerciseId, workingSets: x.sets.length })), content) } : {}),
+    },
     week: { otherStrengthSessions: others, neighbors: [], known },
-    preferences: { liked: [], disliked: [] },
+    preferences: { liked: p.strength.personalization?.likedExercises ?? [], disliked: [] },
     continuity: BETA0_STRENGTH_CONTINUITY,
   };
 }

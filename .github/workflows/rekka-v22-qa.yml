@@ -1,0 +1,51 @@
+name: REKKA V2.2 QA seule sans publication
+on:
+  push:
+    branches: [codex/rekka-v2-2-replanification]
+    paths: ['apps/kairo/**', 'packages/**', '.github/workflows/rekka-v22-qa.yml']
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm lint
+      - run: pnpm exec vitest run --maxWorkers=2 --reporter=json --outputFile=/tmp/rekka-v22-tests.json
+      - name: Verifier icones et moteurs tiers strictement inchanges
+        run: git diff --exit-code 56959172912973abc72d5577b0feefbe9862f0c1 HEAD -- apps/kairo/resources/android-test-icons packages/hyrox/src packages/running/src packages/crosstraining/src packages/strength/src packages/planner/src packages/engine/src packages/domain/src
+      - run: pnpm kairo:build:beta
+      - working-directory: apps/kairo
+        run: node scripts/prepare-android-test.mjs
+      - name: Build de reference V2.1, seulement pour migration locale jetable
+        run: |
+          git worktree add --detach "$RUNNER_TEMP/rekka-v21-legacy" 56959172912973abc72d5577b0feefbe9862f0c1
+          cd "$RUNNER_TEMP/rekka-v21-legacy"
+          pnpm install --frozen-lockfile
+          GITHUB_SHA=56959172912973abc72d5577b0feefbe9862f0c1 pnpm kairo:build:beta
+          cd apps/kairo
+          GITHUB_SHA=56959172912973abc72d5577b0feefbe9862f0c1 node scripts/prepare-android-test.mjs
+      - run: pnpm --filter @hybridsport/kairo exec playwright install --with-deps chromium
+      - name: Migrations v1/v2/v3 vers v4 et ancien lecteur v3 en lecture protegee
+        run: REKKA_LEGACY_DIST="$RUNNER_TEMP/rekka-v21-legacy/apps/kairo/dist-android-test" node apps/kairo/scripts/e2e-v22-upgrade.mjs
+      - name: Samsung 360/390, series, chrono, profil, apercu, annulation, confirmation
+        run: E2E_SHOTS=/tmp/rekka-v22-shots node apps/kairo/scripts/e2e-strength-personalization.mjs
+      - name: Manifeste, icones, cache hors ligne et stockages conserves
+        run: node apps/kairo/scripts/e2e-android-icons.mjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rekka-v22-qa-sans-deploiement
+          path: |
+            /tmp/rekka-v22-tests.json
+            /tmp/rekka-v22-shots

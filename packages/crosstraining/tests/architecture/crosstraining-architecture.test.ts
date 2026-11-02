@@ -145,7 +145,56 @@ const RUNNING_RC43_R2_CHANGES = [
   'packages/running/src/wave3/progression.ts',
   'packages/running/tests/unit/rc43-free-run-policy.test.ts',
 ];
+/**
+ * RC5 lot 4 (rotation Haut A / Bas A / Haut B / Bas B, commit 0680831) : fixture et tests Strength du lot. OMISSION
+ * HISTORIQUE constatée au lot 4.1 — ces trois fichiers de TEST avaient été ajoutés sans être inscrits ici (test rouge au
+ * commit 0680831). Aucun fichier `src` concerné.
+ */
+const STRENGTH_RC5_LOT4_CHANGES = [
+  'packages/strength/tests/fixtures/hautbas-ab.ts',
+  'packages/strength/tests/unit/lot4-ab.test.ts',
+  'packages/strength/tests/unit/lot4-region-transfer.test.ts',
+];
+/**
+ * RC5 lot 4.1 (qualité de la programmation) : tests Strength de l'allocation de volume `primary_need` (politique de
+ * personnalisation 1.1). Les fichiers `src` modifiés relèvent déjà de la liste V2.1 (personnalisation).
+ */
+const STRENGTH_RC5_LOT41_CHANGES = [
+  'packages/strength/tests/unit/lot41-volume-allocation.test.ts',
+];
+/**
+ * RC5 lot 4.2 (arbitrages scientifiques) : options PROPOSÉES et INACTIVES dans tout contenu publié — semaine courte de la
+ * règle de composition candidate (`shortWeek`, Q3), départage `volume_fit` par déficit relatif (`volumeFitTieBreak`, Q4).
+ * Sans l'option, comportement strictement identique (tests de non-régression du lot 4.2).
+ */
+const STRENGTH_RC5_LOT42_CHANGES = [
+  'packages/strength/src/composition.ts',
+  'packages/strength/src/selection.ts',
+  'packages/strength/src/volume.ts',
+  'packages/strength/tests/unit/lot42-options.test.ts',
+];
+/**
+ * RC5 lot 4.4 (sécurisation et validation) : catalogue versionné en SURCOUCHE de F6 (deux muscles secondaires ajoutés) ;
+ * options PROPOSÉES et INACTIVES (redistribution, réévaluation d'isolation, lecture R4 / R3 de la progression) dont les
+ * fichiers `src` relèvent déjà des listes ci-dessus. Sans option, comportement strictement identique.
+ */
+const STRENGTH_RC5_LOT44_CHANGES = [
+  'packages/strength/tests/fixtures/catalog-lot44.ts',
+  'packages/strength/tests/unit/catalog-lot44.test.ts',
+  'packages/strength/tests/unit/lot44-r4-reading.test.ts',
+];
+/**
+ * RC5 lot 4.5 (progression et politiques candidates) : catalogue CANDIDAT B1 (fixture, hors registre) et tests du RIR de
+ * référence. Fichiers `src` déjà couverts par les listes ci-dessus (progression, moteur, codes, contrat de personnalisation).
+ */
+const STRENGTH_RC5_LOT45_CHANGES = [
+  'packages/strength/tests/fixtures/catalog-b1-candidate.ts',
+  'packages/strength/tests/unit/lot45-reference-rir.test.ts',
+];
+/** V2.1 : évolution Strength explicitement autorisée le 29/10 ; aucun changement CORE, Running ou CT. */
+const STRENGTH_V21_CHANGES = ["packages/strength/tests/unit/science-lock.test.ts", "packages/strength/content/personalization-v1.ts", "packages/strength/src/personalization-contract.ts", "packages/strength/src/personalization.ts", "packages/strength/src/candidates.ts", "packages/strength/src/codes.ts", "packages/strength/src/context.ts", "packages/strength/src/dose.ts", "packages/strength/src/engine.ts", "packages/strength/src/index.ts", "packages/strength/src/params.ts", "packages/strength/src/science/provenance.ts"];
 const CT_C2_AUTHORIZED_CORE_CHANGES = [
+  ...STRENGTH_V21_CHANGES,
   'packages/domain/src/duplicate.ts',
   'packages/domain/src/serialization.ts',
   // HYROX H1 : charge générique facultative sur les doses hors séries (session_record v6).
@@ -185,6 +234,11 @@ const CT_C2_AUTHORIZED_CORE_CHANGES = [
   ...STRENGTH_RC45_PERF_CHANGES,
   ...STRENGTH_RC46_L1V3_CHANGES,
   ...STRENGTH_RC46_L1B4_CHANGES,
+  ...STRENGTH_RC5_LOT4_CHANGES,
+  ...STRENGTH_RC5_LOT41_CHANGES,
+  ...STRENGTH_RC5_LOT42_CHANGES,
+  ...STRENGTH_RC5_LOT44_CHANGES,
+  ...STRENGTH_RC5_LOT45_CHANGES,
   ...RUNNING_RC43_R2_CHANGES,
 ];
 
@@ -214,7 +268,7 @@ describe('frontières', () => {
     }
     const changed = diff.split('\n').map((l) => l.trim()).filter((l) => l.length > 0);
     expect(changed.filter((f) => !CT_C2_AUTHORIZED_CORE_CHANGES.includes(f))).toEqual([]);
-    expect(changed.filter((f) => (f.startsWith('packages/running/') && !RUNNING_RC43_R2_CHANGES.includes(f)) || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f) && !STRENGTH_C42_A2_CHANGES.includes(f) && !STRENGTH_RC45_F6_CHANGES.includes(f) && !STRENGTH_RC45_PERF_CHANGES.includes(f)))).toEqual([]);
+    expect(changed.filter((f) => (f.startsWith('packages/running/') && !RUNNING_RC43_R2_CHANGES.includes(f)) || (f.startsWith('packages/strength/src/') && !STRENGTH_S1_CHANGES.includes(f) && !STRENGTH_S2_CHANGES.includes(f) && !STRENGTH_S3_CHANGES.includes(f) && !STRENGTH_S4_CHANGES.includes(f) && !STRENGTH_S5_CHANGES.includes(f) && !STRENGTH_C42_A2_CHANGES.includes(f) && !STRENGTH_RC45_F6_CHANGES.includes(f) && !STRENGTH_RC45_PERF_CHANGES.includes(f) && !STRENGTH_V21_CHANGES.includes(f) && !STRENGTH_RC5_LOT42_CHANGES.includes(f)))).toEqual([]);
   });
 });
 

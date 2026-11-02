@@ -40,7 +40,28 @@ export interface ProfileSpec {
   readonly rirOffset?: number;
   /** RC4.1 — difficulté ressentie déclarée en fin de course ; `null` : question ignorée (défaut : « comme prévu »). */
   readonly runDifficulty?: 'EASIER' | 'AS_EXPECTED' | 'HARDER' | 'MUCH_HARDER' | null;
+  /**
+   * Reprise RC5 lot 4 — planning perturbé (facultatif) : séance MANQUÉE (jamais démarrée) ou COMMENCÉE puis laissée en
+   * cours (une série, jamais terminée). Absent : toutes les séances planifiées sont faites (comportement antérieur).
+   */
+  readonly disrupt?: (w: number, k: number, v: SessionView) => 'missed' | 'started' | undefined;
+  /**
+   * Reprise RC5 lot 4.1 — performance de l'athlète simulé sur une série de TRAVAIL chargée (facultatif) : répétitions faites
+   * et réserve déclarée. Absent : haut de la fourchette, effort prescrit + `rirOffset` (comportement antérieur).
+   */
+  /** Lot 4.1 — charge de travail de départ par exercice (calibration, kg) ; défaut : 40 kg pour tous (comportement antérieur). */
+  readonly startKg?: Readonly<Record<string, number>>;
+  readonly perform?: (x: { readonly week: number; readonly exerciseId: string; readonly kg: number; readonly reps: number; readonly rir: number | undefined }) => { readonly reps: number; readonly rir: number };
+  /** Reprise RC5 lot 4 — action de l'utilisateur la VEILLE d'une semaine (w ≥ 1), avant sa planification (ex. fréquence, jours). */
+  readonly beforeWeek?: (w: number, s: AppState, sunday: Clock) => AppState;
+  /**
+   * Reprise RC5 lot 4.3 — action de l'utilisateur JUSTE APRÈS la planification de la semaine (lundi 06:00, avant toute
+   * séance), ex. accepter une proposition de replanification (« Appliquer le nouveau planning »). Absent : rien.
+   */
+  readonly afterPlanned?: (w: number, s: AppState, monday: Clock) => AppState;
 }
+/** Lundi de la semaine simulée `w` : les 6 premiers sont fixés, les suivants s'en déduisent (bancs de 12 semaines). */
+export const mondayOf = (w: number): string => MONS[w] ?? new Date(Date.parse(`${MONS[0]}T00:00:00Z`) + w * 7 * 86_400_000).toISOString().slice(0, 10);
 
 const base = (o: Partial<ProfileInput>): ProfileInput => ({
   displayName: '', level: 'intermediate', priorities: ['strength'],
@@ -148,8 +169,10 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
   const sessions: SessionRow[] = [];
   const out: WeekRow[] = [];
   for (let w = 0; w < weeks; w++) {
-    const mon = MONS[w] as string;
+    const mon = mondayOf(w);
+    if (w > 0 && spec.beforeWeek) s = spec.beforeWeek(w, s, at(new Date(Date.parse(`${mon}T00:00:00Z`) - 86_400_000).toISOString().slice(0, 10), '20:00'));
     if (w > 0) s = ensureBeta0Week(s, at(mon, '06:00'), env);
+    if (spec.afterPlanned) s = spec.afterPlanned(w, s, at(mon, '06:00'));
     onWeekPlanned?.(s, mon);
     const view = [...(selectBeta0Week(s, mon)?.sessions ?? [])].sort((a, b) => ((a.date ?? 'z') < (b.date ?? 'z') ? -1 : 1));
     const ins = strengthWeekInsights(s, mon);
@@ -182,6 +205,8 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
       try {
         const ci = spec.checkIn ? spec.checkIn(w, k, v) : { painAnswer: 'no' as const, fatigue: 'low' as const, recovery: 'good' as const };
         k += 1;
+        const disruption = spec.disrupt?.(w, k - 1, v);
+        if (disruption === 'missed') { row.executed = 'manquée'; continue; }
         row.checkIn = `${ci.painAnswer ?? '?'}/${ci.fatigue ?? '?'}${ci.pains?.length ? `/${ci.pains.map((p) => `${p.area}:${p.level}`).join(',')}` : ''}`;
         const st = startProgrammeSession(s, at(d, '08:00'), v.requestId, env, ci);
         const c = st.checkIns.at(-1);
@@ -189,6 +214,13 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
         s = st;
         if (!s.programmeLogs[v.requestId]) { row.executed = 'non démarrée'; continue; }
         const live = selectProgrammeSession(s, v.requestId)?.session;
+        if (disruption === 'started') {
+          // Séance commencée : une seule série validée, jamais terminée (reste « en cours »).
+          const it = (live?.blocks ?? []).flatMap((b) => b.items).find((x) => x.prescription.type === 'sets');
+          if (it && it.prescription.type === 'sets') s = recordProgrammeSet(s, at(d, '08:20'), v.requestId, { itemId: it.id, setIndex: 0, done: true, reps: topReps(it.prescription.sets[0]?.reps ?? 1), loadKg: workKg[it.exerciseId] ?? START_KG });
+          row.executed = 'commencée, non terminée';
+          continue;
+        }
         if (v.sport === 'strength' || v.sport === 'crosstraining') {
           for (const b of (live?.blocks ?? []).filter((x) => x.kind !== 'warmup' && x.kind !== 'cooldown')) {
             for (const it of b.items) {
@@ -197,11 +229,12 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
               sets.forEach((p, i) => {
                 const prescribed = (p.intensity as { mode?: string; kg?: number; kgRounded?: number } | undefined);
                 // Charge prescrite si elle existe ; poids du corps : aucune charge ; sinon charge de travail suivie (calibration).
-                const kg = prescribed?.mode === 'load' ? prescribed.kg : prescribed?.mode === 'percent_of_reference' ? prescribed.kgRounded : prescribed?.mode === 'bodyweight' ? undefined : (workKg[it.exerciseId] ?? START_KG);
-                s = recordProgrammeSet(s, at(d, '08:20'), v.requestId, { itemId: it.id, setIndex: i, done: true, reps: topReps(p.reps), ...(kg !== undefined ? { loadKg: kg } : {}) });
-                // Effort déclaré = effort prescrit (athlète exactement dans la cible).
+                const kg = prescribed?.mode === 'load' ? prescribed.kg : prescribed?.mode === 'percent_of_reference' ? prescribed.kgRounded : prescribed?.mode === 'bodyweight' ? undefined : (workKg[it.exerciseId] ?? spec.startKg?.[it.exerciseId] ?? START_KG);
                 const rir = prescribedRir(p);
-                if (i === sets.length - 1 && rir !== undefined) { try { s = recordProgrammeSetEffort(s, v.requestId, it.id, i, rir + (spec.rirOffset ?? 0)); } catch { /* effort non demandé */ } }
+                const perf = spec.perform && kg !== undefined && p.kind !== 'rampup' ? spec.perform({ week: w, exerciseId: it.exerciseId, kg, reps: topReps(p.reps), rir }) : undefined;
+                s = recordProgrammeSet(s, at(d, '08:20'), v.requestId, { itemId: it.id, setIndex: i, done: true, reps: perf?.reps ?? topReps(p.reps), ...(kg !== undefined ? { loadKg: kg } : {}) });
+                // Effort déclaré = effort prescrit (athlète exactement dans la cible), ou celui du modèle de performance.
+                if (i === sets.length - 1 && (perf !== undefined || rir !== undefined)) { try { s = recordProgrammeSetEffort(s, v.requestId, it.id, i, perf?.rir ?? (rir ?? 0) + (spec.rirOffset ?? 0)); } catch { /* effort non demandé */ } }
                 if (kg !== undefined) workKg[it.exerciseId] = kg;
               });
             }
@@ -232,11 +265,11 @@ export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = b
           finish = { ...finish, ct: { result } };
         }
         if (v.sport === 'hyrox' && hw) { s = setHrSteps(s, v.requestId, hw.steps.length); finish = { ...finish, hr: { timeCapReached: false } }; }
-        try { s = finishProgrammeSession(s, at(d, '09:30'), finish as never); }
+        try { s = finishProgrammeSession(s, at(d, '09:30'), finish as never, env); }
         catch (e) {
           // Résultat refusé « comme prévu » ⇒ séance déclarée adaptée (constat tracé).
           errors.push(`S${String(w + 1)} ${v.sport} ${d} : fin « comme prévu » refusée (${(e as { code?: string }).code ?? String(e)}), déclarée adaptée`);
-          s = finishProgrammeSession(s, at(d, '09:31'), { ...finish, completion: 'modified' } as never);
+          s = finishProgrammeSession(s, at(d, '09:31'), { ...finish, completion: 'modified' } as never, env);
         }
         s = recordFieldFeedback(s, at(d, '09:40'), v.requestId, { difficulty: 'adapted', tolerance: 'good', perceivedDuration: 'adapted' });
         row.executed = 'réalisée';

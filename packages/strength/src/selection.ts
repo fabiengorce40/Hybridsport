@@ -47,7 +47,8 @@ export function criterionValue(c: Criterion, e: Exercise, slot: SlotInstance, en
       // Volume hebdomadaire (E1) : ne pas dépasser le haut SOFT, puis servir d'abord les groupes sous le plancher.
       const roleOf = (slotId: string) => env.archetype.slots.find((s) => s.id === slotId)?.role ?? 'accessory';
       const v = volumeFit(e, slot.def.role, soFar.chosen.map((x) => ({ exercise: x.exercise, role: roleOf(x.slotId) })), env);
-      return [-v.over, v.under];
+      // Lot 4.2 (Q4) — départage par déficit relatif (ordinal), seulement si la politique le déclare (aucune politique publiée).
+      return env.params['strength.personalization']?.volumeFitTieBreak === 'relative_deficit' ? [-v.over, v.under, v.deficitPercent] : [-v.over, v.under];
     }
     case 'goal_relevance': return [supportRelevance(e, env)];
     case 'fatigue_fit': {
@@ -107,6 +108,22 @@ export function rankCandidates(candidates: readonly Exercise[], slot: SlotInstan
     if (winner) return [winner, ...ranked.filter((r) => r !== winner)];
   }
   return ranked;
+}
+
+/**
+ * Reprise RC5 lot 4.4 (chantier D, option candidate `isolationReview`) — candidat qui remplacerait une isolation EN PLACE :
+ * seulement si les groupes principaux de l'isolation en place ont atteint leur cible (`volume_fit` : aucun groupe sous
+ * le plancher) et qu'un autre candidat sert un groupe encore sous sa cible, sans dépassement supplémentaire de la borne
+ * haute, et au moins aussi adapté sur les critères qui précèdent (`load_adequacy`, `role_fit`). Premier dans l'ordre du
+ * classement : déterministe. Aucun candidat : l'isolation en place est conservée (continuité S4 inchangée). Lot 4.5 :
+ * l'appelant retire les exercices récemment quittés sur cet emplacement (anti-oscillation).
+ */
+export function isolationReviewCandidate(incumbent: Ranked, ranked: readonly Ranked[], slot: SlotInstance, env: Env, soFar: SessionSoFar): Ranked | undefined {
+  const vf = (r: Ranked) => criterionValue('volume_fit', r.exercise, slot, env, soFar);
+  const inc = vf(incumbent);
+  if ((inc[1] ?? 0) > 0) return undefined;
+  const notWorse = (r: Ranked) => (['load_adequacy', 'role_fit'] as const).every((c) => compareLex(criterionValue(c, r.exercise, slot, env, soFar), criterionValue(c, incumbent.exercise, slot, env, soFar)) >= 0);
+  return ranked.find((r) => { if (r === incumbent) return false; const v = vf(r); return (v[1] ?? 0) > 0 && (v[0] ?? 0) >= (inc[0] ?? 0) && notWorse(r); });
 }
 
 /** Premier critère qui sépare le gagnant du suivant (trace « pourquoi cet exercice »). */

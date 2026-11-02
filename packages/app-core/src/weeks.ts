@@ -52,3 +52,25 @@ export function writePlannedWeek(state: AppState, week: Omit<PersistedWeek, 'own
   if (current && current.owner !== owner && current.owner === 'programme') throw new WeekWriteError('WEEK_OWNED_BY_PROGRAMME', [{ code: 'KAIRO.WEEK_OWNED_BY_PROGRAMME', params: { weekStart: week.weekStart, owner } }]);
   return { ...state, planner: { weeks: { ...state.planner.weeks, [week.weekStart]: { ...week, owner } } } };
 }
+
+/** V2.2 : protection par séance, plus stricte que le seul statut de semaine. */
+export function protectedWeekRequests(state: AppState, weekStart: string, today: string): readonly string[] {
+  return (state.planner.weeks[weekStart]?.requests ?? []).filter(r => {
+    const id = (r.record?.data as { session?: { id?: string } } | undefined)?.session?.id;
+    return (r.date !== undefined && r.date < today) || state.programmeLogs[r.requestId] !== undefined ||
+      state.programmeState?.results.some(x => x.requestId === r.requestId) ||
+      state.logs[r.requestId] !== undefined || (id !== undefined && state.logs[id] !== undefined) ||
+      state.fingerprints.strength.some(x=>x.fingerprint.sessionId===r.requestId||x.fingerprint.sessionId===id);
+  }).map(r => r.requestId);
+}
+
+/** Passerelle dédiée au remplacement EXPLICITEMENT confirmé, sans assouplir writePlannedWeek. */
+export function writeReplannedWeek(state: AppState, week: PersistedWeek, today: string, confirmed: boolean): AppState {
+  assertPlanningAllowed(state);
+  const old = state.planner.weeks[week.weekStart];
+  if (!confirmed || !old || old.owner !== 'programme' || week.owner !== old.owner || plannedWeekStatus(state, week.weekStart) === 'closed') throw new AppError('REPLAN_NOT_ALLOWED');
+  for (const id of protectedWeekRequests(state, week.weekStart, today)) {
+    if (JSON.stringify(old.requests.find(r=>r.requestId===id)) !== JSON.stringify(week.requests.find(r=>r.requestId===id))) throw new AppError('REPLAN_PROTECTED_SESSION');
+  }
+  return { ...state, planner: { ...state.planner, weeks: { ...state.planner.weeks, [week.weekStart]: week } } };
+}

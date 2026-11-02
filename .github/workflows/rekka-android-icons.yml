@@ -1,0 +1,74 @@
+# Publication unique effectuee au commit 0d526ac ; ce workflow est maintenant en lecture seule.
+name: REKKA ESSAI icone officielle verification lecture seule
+on:
+  push:
+    branches: [codex/rekka-continuation-20261027]
+    paths: ['.github/workflows/rekka-android-icons.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: 0d526ac52e095f3dd4bc3d2e6a3c9278073ee883
+      - name: Verifier Cloudflare sans publication
+        env:
+          CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CF_ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          python3 - <<'PY'
+          import os,json,urllib.request
+          base='https://api.cloudflare.com/client/v4/accounts/'+os.environ['CF_ACCOUNT']+'/pages/projects/'
+          def project(name):
+              req=urllib.request.Request(base+name,headers={'Authorization':'Bearer '+os.environ['CF_TOKEN']})
+              with urllib.request.urlopen(req,timeout=30) as r: d=json.load(r)
+              assert d['success']
+              return d['result']
+          test=project('rekka-v2-android-test'); beta=project('rekka-beta')
+          assert test['id']!=beta['id'] and test['subdomain']=='rekka-v2-android-test.pages.dev' and beta['subdomain']=='rekka-beta.pages.dev'
+          assert not test.get('source') and test['production_branch']=='android-test'
+          assert set(test.get('domains',[])) <= {'rekka-v2-android-test.pages.dev'}
+          assert test['canonical_deployment']['deployment_trigger']['metadata']['commit_hash']=='0d526ac52e095f3dd4bc3d2e6a3c9278073ee883'
+          assert beta['canonical_deployment']['deployment_trigger']['metadata']['commit_hash'].startswith('bc19fb1')
+          assert beta['canonical_deployment']['created_on']<'2026-10-28T23:10:00Z'
+          for cfg in test.get('deployment_configs',{}).values():
+              for key in ('env_vars','kv_namespaces','d1_databases','r2_buckets','services','durable_object_namespaces','hyperdrive_bindings','vectorize_bindings','ai_bindings','analytics_engine_datasets','queues','mtls_certificates','vpc_services'):
+                  assert not cfg.get(key)
+          print('OK : projet ESSAI reconnu et isole, deploiement 0d526ac, BETA bc19fb1 conservee.')
+          PY
+      - name: Manifeste et tous les fichiers officiels servis
+        run: |
+          python3 - <<'PY'
+          import json,pathlib,urllib.request,hashlib
+          base='https://rekka-v2-android-test.pages.dev/'
+          def get(path):
+              req=urllib.request.Request(base+path,headers={'User-Agent':'Mozilla/5.0 REKKA-PWA-Verification','Cache-Control':'no-cache'})
+              with urllib.request.urlopen(req,timeout=30) as r:
+                  expected=base if path=='index.html' else base+path
+                  assert r.geturl()==expected, 'URL finale inattendue : '+path
+                  return r.read()
+          assert json.loads(get('version.json'))==dict(commit='0d526ac52e095f3dd4bc3d2e6a3c9278073ee883',channel='android-test')
+          m=json.loads(get('manifest.webmanifest'))
+          assert m['id']=='./?kairo-channel=android-test' and m['scope']==m['start_url']=='./'
+          assert m['name']==m['short_name']=='REKKA ESSAI'
+          assert m['theme_color']=='#071127' and m['background_color']=='#000000'
+          prefix='icons/rekka-v2-city-v1/'
+          expected=[dict(src=prefix+f'icon-{s}.png',sizes=f'{s}x{s}',type='image/png',purpose='any') for s in (48,72,96,192,512)]
+          expected.append(dict(src=prefix+'icon-512-maskable.png',sizes='512x512',type='image/png',purpose='maskable'))
+          assert m['icons']==expected
+          metadata=json.loads(pathlib.Path('apps/kairo/resources/android-test-icons/icons.json').read_text())
+          for file,sha in metadata['files'].items():
+              assert hashlib.sha256(get(prefix+file)).hexdigest()==sha,file
+          assert hashlib.sha256(get('favicon.ico')).hexdigest()==metadata['files']['favicon.ico']
+          sw=get('sw.js').decode(); html=get('index.html').decode()
+          assert 'rekka-android-test-icons-'+metadata['source_sha256'][:12] in sw
+          assert "k.startsWith('rekka-android-test-')" in sw and 'rekka-beta-' not in sw
+          assert all(prefix+file in sw for file in metadata['files'])
+          assert prefix+'icon-48.png' in html and prefix+'icon-180.png' in html
+          assert all(old not in (sw+html+json.dumps(m)) for old in ['./icon.svg','./icon-192.png','./icon-512.png'])
+          with urllib.request.urlopen('https://fabiengorce40.github.io/Hybridsport/version.json',timeout=30) as r: assert json.load(r)['commit'].startswith('f9f7e2e')
+          print('OK : manifeste Cloudflare, PNG 48/72/96/180/192/512 et maskable, favicon, worker, SHA-256 source officielle et production inchangee.')
+          PY

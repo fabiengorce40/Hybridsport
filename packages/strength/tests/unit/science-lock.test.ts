@@ -235,7 +235,8 @@ describe('registre 1.1.0 (F15–F18)', () => {
       const p = SCIENCE_REGISTRY.parameters.find((x) => x.parameterId === id);
       expect(p?.status, id).toBeDefined();
     }
-    expect(used.length).toBe(DECLARED_STRENGTH_PARAMETERS.length);
+    // Le contrat V2.1 est facultatif et absent du ruleset historique verrouillé.
+    expect(used.sort()).toEqual(DECLARED_STRENGTH_PARAMETERS.filter(p => p.id !== 'strength.personalization').map(p => p.id).sort());
     expect(validateScienceRegistry(SCIENCE_REGISTRY, DECLARED_STRENGTH_PARAMETERS)).toEqual([]);
   });
 });

@@ -18,7 +18,7 @@ const clock = (): Clock => ({ today: '2026-10-05', now: '2026-10-05T07:30:00.000
 const fullGym = EQUIPMENT_PRESETS.find((p) => p.id === 'preset.full_gym')?.equipment ?? [];
 
 describe('alternatives dans la séance', () => {
-  it('séance Haut du corps : tractions sans alternative ; rowing machine → une alternative ; développé couché → alternatives compatibles', () => {
+  it('séance Haut du corps A (lot 4 : poussée et tirage horizontaux) : tirages sans alternative ; développé couché → alternatives compatibles', () => {
     const storage = new MemoryStorage();
     saveState(storage, createBeta0Programme(emptyState(), {
       displayName: '', level: 'intermediate', priorities: ['strength'], strength: { enabled: true, goal: 'hypertrophy', sessionsPerWeek: 4 },
@@ -31,9 +31,12 @@ describe('alternatives dans la séance', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Commencer la séance' }));
     fireEvent.click(within(screen.getByRole('dialog', { name: 'Avant de commencer' })).getByRole('button', { name: 'Passer' }));
     const section = (id: string) => screen.getByRole('region', { name: new RegExp(`: ${exerciseLabel(id)}$`) }).textContent ?? '';
-    expect(section('ex.pull_up')).not.toMatch(/Alternative/);
+    // Reprise RC5 lot 4 — Haut A : tirage horizontal (poulie) en tirage principal, tirage vertical (poulie haute) en accessoire.
+    expect(section('ex.seated_cable_row')).not.toMatch(/Alternative/);
+    expect(section('ex.lat_pulldown')).not.toMatch(/Alternative/);
     expect(section('ex.bench_press')).toContain(`Alternatives prévues (compatibles) : ${exerciseLabel('ex.db_bench_press')}, ${exerciseLabel('ex.machine_chest_press')}.`);
-    expect(section('ex.machine_row')).toContain(`Alternative prévue : ${exerciseLabel('ex.seated_cable_row')}.`);
+    // Les tractions et le rowing machine (une alternative) sont en Haut B ; le singulier reste vérifié par le test de texte.
+    expect(screen.queryByRole('region', { name: new RegExp(`: ${exerciseLabel('ex.pull_up')}$`) })).toBeNull();
   });
 
   it('texte : aucune ⇒ vide ; une ⇒ singulier ; plusieurs ⇒ « compatibles » (aucun calcul dans React)', () => {

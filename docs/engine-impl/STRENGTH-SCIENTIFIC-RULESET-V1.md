@@ -4,13 +4,14 @@
 
 - Ruleset : **0.4.0-strength-science-lock** (étend `0.2.0-strength-test` sans en modifier aucune valeur ; succède au candidat 4E `0.3.0-strength-science-candidate`, qui reste reproductible) · registre **1.1.0**
 - Verrou STRENGTH_SCIENTIFIC_LOCK_V1 : chaque paramètre a UNE catégorie principale (colonne « Statut ») ; aucune valeur numérique n’est `SUPPORTED` parce qu’un mécanisme général l’est.
-- 38 paramètres : EXPERT_DESIGN_REVIEW 12 · PRODUCT_GUARDRAIL 2 · PROGRAMMING_HEURISTIC 17 · SAFETY_SIGNOFF_REQUIRED 4 · TECHNICAL 3
-- Changements : new_policy 9 · reclassified 12 · unchanged 17 (`unchanged` = valeur et statut conservés ; `reclassified` = valeur conservée, statut précisé ; `new_policy` = paramètre facultatif introduit, absent en 0.2.0)
+- 39 paramètres : EXPERT_DESIGN_REVIEW 12 · PRODUCT_GUARDRAIL 2 · PROGRAMMING_HEURISTIC 18 · SAFETY_SIGNOFF_REQUIRED 4 · TECHNICAL 3
+- Changements : new_policy 10 · reclassified 12 · unchanged 17 (`unchanged` = valeur et statut conservés ; `reclassified` = valeur conservée, statut précisé ; `new_policy` = paramètre facultatif introduit, absent en 0.2.0)
 - **Aucune valeur existante n’est modifiée.** Les 7 écarts validés en phase 4C sont conservés. Toutes les valeurs restent **provisoires** : aucune validation formelle.
 - Absence d’un paramètre facultatif = **sémantique du ruleset 0.2.0** (comportement historique reproduit à l’identique, testé), jamais une valeur par défaut sportive.
 
 | Paramètre | Gouvernance | Statut | Changement | Sources |
 |---|---|---|---|---|
+| `strength.personalization` | G2 | PROGRAMMING_HEURISTIC | new_policy | 0 |
 | `strength.needs` | G2 | EXPERT_DESIGN_REVIEW | unchanged | 0 |
 | `strength.archetypes` | G2 | EXPERT_DESIGN_REVIEW | unchanged | 1 |
 | `strength.goals` | G2 | EXPERT_DESIGN_REVIEW | unchanged | 0 |
@@ -49,6 +50,26 @@
 | `strength.session.stimulusPreservation` | G2 | EXPERT_DESIGN_REVIEW | new_policy | 1 |
 | `strength.tracks.horizon` | G2 | EXPERT_DESIGN_REVIEW | new_policy | 1 |
 | `strength.session.durationPriority` | G2 | PRODUCT_GUARDRAIL | new_policy | 1 |
+
+## `strength.personalization`
+
+| Champ | Valeur |
+|---|---|
+| Ancienne valeur (0.2.0) | *absent (sémantique 0.2.0)* |
+| Valeur 4E (0.3.0) | *absent (sémantique 0.2.0)* |
+| Valeur 4F (0.4.0) | *absent (sémantique 0.2.0)* |
+| Lecture | V2.1 optionnelle : intentions ciblées, expérience et récupération ; absente des rulesets historiques. |
+| Statut | `PROGRAMMING_HEURISTIC` — heuristique de programmation (aucune valeur démontrée) |
+| Gouvernance | G2 · visa expert requis · visa sécurité non requis · provisoire oui |
+| Sources | aucune (type le plus fort : expert_design) |
+| Population | Sans objet (choix de conception du moteur) |
+| Critère | Sans objet (aucune mesure d’effet) |
+| Confiance | very_low |
+| Incertitude | Plages et facteurs expérimentaux à revoir par un expert ; pas de perte de graisse localisée ni de traitement médical. |
+| Justification | Politique candidate de personnalisation demandée par le produit ; aucune efficacité clinique revendiquée. |
+| Si la preuve reste insuffisante | Refus si la personnalisation est demandée sans politique explicite ; comportement historique inchangé quand elle est absente. |
+| Revendications | — |
+| Version du paramètre | — · revue 2026-10-29 |
 
 ## `strength.needs`
 

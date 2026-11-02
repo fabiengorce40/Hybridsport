@@ -11,6 +11,8 @@ const L = 'string[]' as const;
 const B = 'boolean' as const;
 
 export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
+  { code: 'PLAN.PERSONALIZATION_BLOCKED', categories: ['feasibility'], params: { cause: S }, audience: 'user', severity: 'error' },
+  { code: 'PLAN.PERSONALIZATION', categories: ['information'], params: { outcome: S, priorities: L, policy: S, strategy: S, recovery: S }, audience: 'user', severity: 'info' },
   { code: 'PLAN.ANCHOR_CHOICE_GROUP_CONFLICT', categories: ['technical'], params: { group: S, trackIds: L }, audience: 'internal', severity: 'error' },
   { code: 'PLAN.ANCHOR_NOT_DECLARABLE', categories: ['technical'], params: { trackId: S, cause: S }, audience: 'internal', severity: 'error' },
   { code: 'SELECT.EXERCISE.CHOSEN', categories: ['optimization'], params: { exerciseId: S, slot: S, decidingCriterion: S }, audience: 'internal', severity: 'info' },
@@ -32,6 +34,7 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'DOSE.VOLUME_ALLOCATED', categories: ['optimization'], params: { exerciseId: S, sets: N, group: S }, audience: 'internal', severity: 'info' },
   { code: 'DOSE.SESSION_CAP_APPLIED', categories: ['safety'], params: { group: S, cap: N }, audience: 'internal', severity: 'notice' },
   { code: 'DOSE.RAMPUP', categories: ['information'], params: { exerciseId: S, steps: N, knowledge: S }, audience: 'internal', severity: 'info' },
+  { code: 'DOSE.REDISTRIBUTION_SKIPPED', categories: ['information'], params: { cause: S, slots: L }, audience: 'internal', severity: 'info' },
   { code: 'DOSE.TOP_SET', categories: ['information'], params: { exerciseId: S, topKg: N, backoffFraction: N, backoffUnroundedKg: N, backoffKg: N, backoffSets: N }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.ADVANCED', categories: ['adaptation'], params: { trackId: S, variable: S }, audience: 'user', severity: 'info' },
   { code: 'PROGRESSION.HELD', categories: ['adaptation'], params: { trackId: S, cause: S }, audience: 'internal', severity: 'info' },
@@ -42,6 +45,11 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'PROGRESSION.RESUMED', categories: ['adaptation'], params: { trackId: S }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.TRACK_CREATED', categories: ['information'], params: { trackId: S, tier: S, exerciseId: S }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.TRACK_CLOSED', categories: ['adaptation'], params: { trackId: S, cause: S }, audience: 'internal', severity: 'info' },
+  // Reprise RC5 lot 4 (D5) — reprise de l'état d'un suivi d'un autre archétype (même exercice), ou absence motivée.
+  { code: 'PROGRESSION.TRACK_TRANSFERRED', categories: ['information'], params: { trackId: S, fromTrackId: S, cycleStartLoadKg: S }, audience: 'internal', severity: 'info' },
+  // Lot 4.1 — séries d'un groupe principal sous sa cible bornées par le haut hebdomadaire d'un AUTRE groupe (cible inatteignable).
+  { code: 'DOSE.VOLUME_LIMITED', categories: ['information'], params: { exerciseId: S, group: S, by: S, wanted: N, allowed: N }, audience: 'internal', severity: 'notice' },
+  { code: 'PROGRESSION.TRACK_TRANSFER_SKIPPED', categories: ['information'], params: { trackId: S, exerciseId: S, cause: S, candidates: L }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.ANCHOR_PROPOSED', categories: ['information'], params: { slot: S, exerciseId: S }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.ANCHOR_NOT_APPLICABLE', categories: ['information'], params: { trackId: S, slot: S }, audience: 'internal', severity: 'notice' },
   { code: 'PROGRESSION.ANCHOR_APPLIED', categories: ['information'], params: { trackId: S, exerciseId: S }, audience: 'internal', severity: 'info' },
@@ -58,14 +66,15 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'PROGRESSION.REVIEW_DUE', categories: ['information'], params: { trackId: S, weeks: N }, audience: 'internal', severity: 'notice' },
   { code: 'DATA.SCIENCE_REGISTRY', categories: ['information'], params: { version: S }, audience: 'internal', severity: 'info' },
   { code: 'SELECT.CHOICE_GROUP', categories: ['optimization'], params: { group: S, need: S, cause: S, others: L }, audience: 'internal', severity: 'info' },
-  { code: 'PROGRESSION.EXPOSURE_CLASSIFIED', categories: ['information'], params: { trackId: S, exerciseId: S, exposure: S, success: S, sets: S, repsDelta: S, loadDeltaKg: S, rirDelta: S, rir: S, kind: S, effort: S }, audience: 'internal', severity: 'info' },
+  // Lot 4.5 — trace facultative : RIR prescrit (première série de travail), RIR de référence de la prescription et sa source.
+  { code: 'PROGRESSION.EXPOSURE_CLASSIFIED', categories: ['information'], params: { trackId: S, exerciseId: S, exposure: S, success: S, sets: S, repsDelta: S, loadDeltaKg: S, rirDelta: S, rir: S, kind: S, effort: S, prescribedRir: S, referenceRir: S, referenceSource: S }, optionalParams: ['prescribedRir', 'referenceRir', 'referenceSource'], audience: 'internal', severity: 'info' },
   { code: 'SELECT.CONTINUITY', categories: ['optimization'], params: { slot: S, incumbent: S, chosen: S, outcome: S, cause: S }, audience: 'internal', severity: 'info' },
   { code: 'SELECT.CONTINUITY_KEPT', categories: ['optimization'], params: { exercises: L }, audience: 'internal', severity: 'info' },
   { code: 'PLAN.SPORT_PRIORITY', categories: ['information'], params: { order: L, strengthRank: N, neighbours: L, policy: S }, audience: 'internal', severity: 'info' },
   { code: 'PROGRESSION.DECISION_BLOCKED', categories: ['information'], params: { trackId: S, model: S, situation: S, capability: S, rir: S, exactStreak: N }, audience: 'internal', severity: 'notice' },
   { code: 'PROGRESSION.METHOD_UNGOVERNED', categories: ['information'], params: { trackId: S, exerciseId: S, repsReached: N, methods: L, capability: S, effort: S }, audience: 'internal', severity: 'notice' },
   { code: 'PLAN.WEEK_PRESCRIPTION', categories: ['information'], params: { archetype: S, occurrence: N, weeklySessions: N, plannedBefore: N, belowFloor: L, atOrAboveHigh: L, noTarget: L, anchors: L, volumeRule: S, progressionRule: S, phase: S, blocked: L }, audience: 'internal', severity: 'info' },
-  { code: 'PLAN.WEEK_COMPOSITION', categories: ['information'], params: { rule: S, version: S, status: S, band: S, sessions: N, rotation: L, firstBy: S, swaps: L }, audience: 'internal', severity: 'info' },
+  { code: 'PLAN.WEEK_COMPOSITION', categories: ['information'], params: { rule: S, version: S, status: S, band: S, sessions: N, rotation: L, firstBy: S, swaps: L, weekOrder: S, shortWeek: S }, optionalParams: ['weekOrder', 'shortWeek'], audience: 'internal', severity: 'info' },
   { code: 'RULE.WEEK_COMPOSITION_UNGOVERNED', categories: ['business_hard'], params: { sessions: N, goal: S, cause: S }, audience: 'user', severity: 'error' },
   { code: 'STATE.REFERENCE_CONFLICT', categories: ['information'], params: { exerciseId: S }, audience: 'internal', severity: 'info' },
 ];

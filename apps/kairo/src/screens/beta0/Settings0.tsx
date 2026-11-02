@@ -1,3 +1,4 @@
+import { StrengthProfileScreen } from '../../strength/StrengthProfile.js';
 import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
 import { useRef, useState } from 'react';
 import { BUILD_DATE, BUILD_ID } from '../../version.js';
@@ -24,12 +25,13 @@ export function DataSection() {
   const single = import.meta.env.VITE_TARGET === 'single';
   const onImport = async (f: File | undefined) => {
     if (!f) return;
-    const d = decodeState(await readText(f));
+    let text: string;
+    try { text = await readText(f); } catch { setMessage('Import impossible : le fichier ne peut pas être lu. Rien n’a été modifié.'); return; }
+    const d = decodeState(text);
     if (!d.ok) { setMessage(`Import impossible : fichier illisible ou d’une version plus récente. Rien n’a été modifié.`); return; }
     let next = d.state;
     try { next = openWeek(d.state, store.clock()); } catch { /* état importé conservé tel quel */ }
-    store.reset(next);
-    setMessage('Données importées.');
+    setMessage(store.reset(next) ? 'Données importées.' : 'Import impossible : l’enregistrement a échoué. Les données actuelles sont conservées.');
   };
   return (
     <>
@@ -130,7 +132,9 @@ export function FieldTestCard() {
 export function Settings0() {
   const store = useStore();
   const [runningProfile, setRunningProfile] = useState(false);
+  const [strengthProfile,setStrengthProfile] = useState(false);
   const [journal, setJournal] = useState(false);
+  if (strengthProfile) return <StrengthProfileScreen onBack={() => setStrengthProfile(false)} />;
   if (runningProfile) return <RunningProfileScreen onBack={() => setRunningProfile(false)} />;
   if (journal) return <JournalBeta onBack={() => setJournal(false)} />;
   return (
@@ -150,6 +154,7 @@ export function Settings0() {
           <div className="small muted">Vos performances récentes et ce que KAIRO en déduit</div>
         </button>
       )}
+      {store.state.profile?.strength.enabled && <button className="card button-card" onClick={() => setStrengthProfile(true)}><h3>Ma musculation</h3><div className="small muted">Objectif, priorités musculaires et récupération · sans effacer vos performances</div></button>}
       <DataSection />
       <BetaResetSection />
       <div className="section-title">À propos de la Beta</div>

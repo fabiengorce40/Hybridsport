@@ -92,7 +92,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
       {extra.length > 0 && (
         <div className="card" aria-label="Séances supplémentaires disponibles" data-extra={extra.length}>
           <strong>{extra.length === 1 ? '1 séance supplémentaire disponible' : `${String(extra.length)} séances supplémentaires disponibles`}</strong>
-          <span className="tiny muted">Non planifiée cette semaine faute de créneau compatible : vous pouvez la faire quand vous voulez.</span>
+          <span className="tiny muted">Non planifiée faute de créneau compatible. Consultez les contraintes et avertissements avant de choisir un autre jour.</span>
           {extra.map((x) => (
             <button key={x.requestId} className="btn secondary" onClick={() => onOpen(x.requestId)}>
               {x.display === 'in_progress' ? 'Reprendre' : 'Voir'} : {sportName(x.sport)} · {sessionName(x.sport, x.archetypeId, x.dataError)}

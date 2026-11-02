@@ -6,6 +6,7 @@ import type { Exercise } from '@hybridsport/domain';
 import { slotAccepts } from '@hybridsport/engine';
 import type { Env } from './model.js';
 import type { SlotInstance } from './archetypes.js';
+import { focusAccepts } from './personalization.js';
 import { levelIndex } from './util.js';
 
 export const FILTERS = ['F1_deprecated', 'F2_slot', 'F2b_prescription', 'F3_equipment', 'F4_restriction', 'F5_pain', 'F6_user_exclusion', 'F7_skill', 'F7b_novice_technical', 'F8_discipline', 'F9_context', 'F10_primary_load'] as const;
@@ -24,14 +25,15 @@ export interface CumulativeState {
 export function firstFailingFilter(e: Exercise, slot: SlotInstance, env: Env, cumulative: CumulativeState): FilterId | undefined {
   const c = env.input.constraints;
   if (e.status !== 'active') return 'F1_deprecated';
-  if (!slotAccepts(e, slot.requirement, env.catalog)) return 'F2_slot';
+  if (!focusAccepts(e, slot.def.id, env.params) || !slotAccepts(e, slot.requirement, env.catalog)) return 'F2_slot';
   // V1 : séries à répétitions, maintien (gainage) ou porté en distance ; les autres formes ne sont pas candidates.
   if (!['sets', 'hold', 'distance'].includes(e.defaultPrescriptionType) && e.movementType !== 'mobility') return 'F2b_prescription';
   if (!env.catalog.isFeasibleWith(e, env.equipment)) return 'F3_equipment';
   if (e.contraindicationTags.some((t) => c.restrictions.includes(t))) return 'F4_restriction';
   if (e.painSensitiveAreas.some((a) => c.areaRestrictions.some((r) => r.area === a && r.action === 'exclude'))) return 'F5_pain';
   if (e.movementTags.some((m) => c.restrictedMovements.includes(m))) return 'F5_pain';
-  if (c.excludedExercises.includes(e.id)) return 'F6_user_exclusion';
+  if (env.input.discipline.personalization?.avoidAreas.some(a => e.painSensitiveAreas.includes(a))) return 'F5_pain';
+  if (env.input.discipline.personalization?.avoidExercises.includes(e.id) || c.excludedExercises.includes(e.id)) return 'F6_user_exclusion';
   if (e.skillLevel > env.params['strength.selection.skillCeiling'][env.level]) return 'F7_skill';
   const tech = env.params['strength.novice.technicalUnderFatigue'];
   if (tech.levels.includes(env.level) && e.cost.technical >= tech.minTechnical

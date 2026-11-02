@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import {
+  CURRENT_SCHEMA_VERSION,
   CHECKIN_DECISIONS, ensureBeta0Week, finishProgrammeSession, INTERFERENCE_ACCEPTED, maintainedInterference, manualStartAssessment, MemoryStorage,
   recordFieldFeedback, saveState, selectBetaJournal, selectFieldHistory, startProgrammeSession, STORAGE_KEY, zCheckIn,
 } from '../../src/index.js';
@@ -29,6 +30,23 @@ const blockedOf = (s: AppState): AppState => ({ ...s, planner: { weeks: Object.f
 const pained = finishProgrammeSession(startProgrammeSession(s0, D('05'), '2026-10-05.strength.1'), D('05', '19:00'), { requestId: '2026-10-05.strength.1', completion: 'modified', pain: true });
 const FIXTURE = fileURLToPath(new URL('./fixtures/lotc-maintained-state.json', import.meta.url));
 
+/**
+ * RC5 lot 2 — les fixtures sont des données ANTÉRIEURES au lot 2 (format v2, relues aussi par les anciennes builds V2.1) :
+ * elles ne portent pas les champs v5 du chronomètre (`clock`, `timing`), retirés ici de l'état généré avant comparaison.
+ */
+/**
+ * Reprise RC5 lot 4 — les fixtures sont des données ÉCRITES AVANT le lot 4 (contenu L1b-4, règle de composition 0.1.0),
+ * relues aussi par les anciennes builds : l'état généré par le code courant est comparé après traduction des seuls NOMS
+ * de version vers ceux d'avant le lot 4 (séances, séries, charges et raisons identiques ; profils Full Body, inchangés
+ * par le lot 4). Les identifiants de trace, dérivés de ces noms, sont neutralisés des deux côtés.
+ */
+const asPreLot4 = (v: unknown): unknown => JSON.parse(JSON.stringify(v)
+  .replaceAll('0.8.0-strength-hautbas-ab.personalization-v1', '0.8.0-strength-personalization-v1').replaceAll('0.8.0-strength-hautbas-ab', '0.7.0-strength-l1b4')
+  .replaceAll('+catalog-lot44', '').replaceAll('0.3.1-strength-test-f6-lot44', '0.3.0-strength-test-f6').replaceAll('fixtures:strength-hautbas-ab-0.8.0', 'fixtures:strength-l1b4-0.7.0').replaceAll('0.2.0-candidate', '0.1.0-candidate').replaceAll(' ; Reprise RC5 lot 4', '')
+  .replace(/"traceId":"t[0-9a-f]+"/g, '"traceId":"T"'));
+const withoutLot2Clock = (st: { programmeLogs?: Record<string, Record<string, unknown>> }) => ({
+  ...st, programmeLogs: Object.fromEntries(Object.entries(st.programmeLogs ?? {}).map(([k, l]) => { const { clock: _c, timing: _t, ...rest } = l; return [k, rest]; })),
+});
 describe('RC4.5 lot C — avertissement d’interférence maintenable', () => {
   it('C-2. interférence M3 au démarrage manuel : avertissement maintenable ; sans confirmation, refus inchangé ; état intact', () => {
     const a = manualStartAssessment(s0, D('05'), U);
@@ -166,7 +184,7 @@ describe('RC4.5 lot C — format (C-1) et état de référence pour la relecture
     expect(saveState(st, done).ok).toBe(true);
     const text = st.getItem(STORAGE_KEY) ?? '';
     if (process.env.LOTC_WRITE_FIXTURE) writeFileSync(FIXTURE, text);
-    expect(readFileSync(FIXTURE, 'utf8')).toBe(text);
+    expect(asPreLot4({ ...JSON.parse(readFileSync(FIXTURE, 'utf8')), schemaVersion: CURRENT_SCHEMA_VERSION })).toEqual(asPreLot4(JSON.parse(text)));
     expect(text).toContain(INTERFERENCE_ACCEPTED);
   });
   it('C-9. états de départ du parcours E2E (lundi 18 h, séance non placée en interférence ; puis pause douleur active)', () => {
@@ -176,7 +194,7 @@ describe('RC4.5 lot C — format (C-1) et état de référence pour la relecture
       const text = st.getItem(STORAGE_KEY) ?? '';
       const file = fileURLToPath(new URL(`./fixtures/${name}.json`, import.meta.url));
       if (process.env.LOTC_WRITE_FIXTURE) writeFileSync(file, text);
-      expect(readFileSync(file, 'utf8')).toBe(text);
+      expect(asPreLot4({ ...JSON.parse(readFileSync(file, 'utf8')), schemaVersion: CURRENT_SCHEMA_VERSION })).toEqual(asPreLot4(withoutLot2Clock(JSON.parse(text))));
     }
   });
 });

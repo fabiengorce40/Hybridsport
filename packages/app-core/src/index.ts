@@ -7,6 +7,7 @@ export * from './running-week.js';
 export * from './progression.js';
 export * from './app.js';
 export * from './store.js';
+export * from './write-guard.js';
 export * from './labels.js';
 export type { SessionDraft, SessionItem, SetPrescription } from '@hybridsport/domain';
 export * from './planning.js';
@@ -31,3 +32,10 @@ export * from './week-load.js';
 export * from './readiness-persisted.js';
 export * from './equipment.js';
 export * from './strength-insight.js';
+
+export * from './strength-personalization.js';
+export * from './strength-days.js';
+
+export * from "./strength-replan.js";
+export * from './hybrid-proposals.js';
+export * from './strength-diagnostics.js';

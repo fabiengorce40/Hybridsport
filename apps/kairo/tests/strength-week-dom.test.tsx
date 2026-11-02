@@ -1,4 +1,5 @@
 // @vitest-environment jsdom
+import { completeStrengthCustomization, openAllDays } from './strength-onboarding.js';
 /**
  * E2E interface → DOM (jsdom, application réelle, backend réel) du bug post-S1 « 4 × Full body » :
  *   A — programme NEUF créé après S1 depuis l'onboarding, 4 séances de musculation : le Planning affiche la composition
@@ -26,6 +27,8 @@ const click = (name: string | RegExp) => fireEvent.click(screen.getByRole('butto
 const saved = (storage: MemoryStorage): AppState => JSON.parse(storage.getItem(STORAGE_KEY) ?? '{}') as AppState;
 /** Titres des séances de musculation affichées dans le Planning, dans l'ordre des jours (DOM). */
 const strengthCards = () => screen.getAllByRole('button', { name: /^Musculation : / }).map((b) => (b.getAttribute('aria-label') ?? '').replace(/^Musculation : /, '').replace(/, [^,]+$/, '').replace(/ [A-Z]$/, ''));
+// Lot 4 (mécanisme RC5.1) — libellés COMPLETS (Haut du corps A / B, Bas du corps A / B) : sans retrait de la lettre de variante.
+const strengthLabels = () => screen.queryAllByRole('button', { name: /^Musculation : / }).map((b) => (b.getAttribute('aria-label') ?? '').replace(/^Musculation : /, '').replace(/, [^,]+$/, ''));
 
 describe('A — programme neuf après S1 (onboarding UI, 4 séances de musculation)', () => {
   it('Planning : Haut / Bas en alternance, identique à la composition renvoyée par selectBeta0Week ; aucun Full body', () => {
@@ -35,12 +38,12 @@ describe('A — programme neuf après S1 (onboarding UI, 4 séances de musculati
     click('Commencer');
     fireEvent.click(screen.getByRole('radio', { name: /^Musculation Séances/ }));
     click('Continuer');
-    const card = screen.getByRole('heading', { name: 'Musculation' }).closest('.card') as HTMLElement;
-    fireEvent.change(within(card).getByLabelText('Séances par semaine'), { target: { value: '4' } });
+    completeStrengthCustomization({ frequency: 4 });
     click('Continuer');
+    openAllDays();
+    // Proposition initiale : tous les jours disponibles deviennent jours Musculation (sans action supplémentaire).
+    expect(within(screen.getByRole('group', { name: 'Jours possibles pour la musculation' })).getAllByRole('checkbox').every((b) => (b as HTMLInputElement).checked)).toBe(true);
     click('Continuer');
-    // P1 — lieu d'entraînement choisi explicitement (aucune présélection).
-    fireEvent.change(screen.getByLabelText('Lieu d’entraînement'), { target: { value: 'preset.full_gym' } });
     click('Créer mon programme');
     click('Planning');
     const shown = strengthCards();
@@ -66,7 +69,8 @@ describe('B — programme créé avant S1 (AppState réel pré-S1), application 
     const storage = preS1Storage();
     mount(storage, '2026-10-05');
     click('Planning');
-    expect(strengthCards()).toEqual(['Haut du corps', 'Bas du corps', 'Haut du corps', 'Bas du corps']);
+    // Lot 4 (mécanisme RC5.1) — semaine calendaire paire : ordre A.
+    expect(strengthLabels()).toEqual(['Haut du corps A', 'Bas du corps A', 'Haut du corps B', 'Bas du corps B']);
     expect(screen.getByText(/replanifiée avec la nouvelle version de KAIRO/)).toBeTruthy();
     expect(screen.queryByText(/Full body/)).toBeNull();
     expect(saved(storage).planner.weeks['2026-10-05']?.planningVersion).toBe('beta0-m31');
@@ -81,7 +85,8 @@ describe('B — programme créé avant S1 (AppState réel pré-S1), application 
     cleanup();
     mount(storage, '2026-10-12');
     click('Planning');
-    expect(strengthCards()).toEqual(['Haut du corps', 'Bas du corps', 'Haut du corps', 'Bas du corps']);
+    // Lot 4 (mécanisme RC5.1) — semaine calendaire impaire : ordre B.
+    expect(strengthLabels()).toEqual(['Haut du corps B', 'Bas du corps B', 'Haut du corps A', 'Bas du corps A']);
     expect(screen.queryByText(/version précédente/)).toBeNull();
   });
 });
@@ -92,6 +97,7 @@ describe('libellés : aucun repli silencieux', () => {
     expect(sessionName('strength', null)).toBe('Erreur de données : archétype absent');
     expect(sessionName('strength', null, 'ARCHETYPE_MISMATCH')).toBe('Erreur de données : archétype incohérent');
     expect(['str_full_body', 'str_upper', 'str_lower'].map((a) => sessionName('strength', a))).toEqual(['Full body', 'Haut du corps', 'Bas du corps']);
+    expect(['str_upper_a', 'str_upper_b', 'str_lower_a', 'str_lower_b'].map((a) => sessionName('strength', a))).toEqual(['Haut du corps A', 'Haut du corps B', 'Bas du corps A', 'Bas du corps B']);
   });
 
   it('Réglages : version de l’application affichée', () => {

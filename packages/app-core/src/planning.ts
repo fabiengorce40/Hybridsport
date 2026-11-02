@@ -1,3 +1,6 @@
+import { muscleLevel, personalizationParams } from './strength-personalization.js';
+import { personalizedStrengthContent } from './provisional-content.js';
+import { strengthReasons } from '@hybridsport/strength';
 /**
  * Chemin applicatif MULTISPORT : profil → intention de programme → planificateur global → moteurs → CORE →
  * semaine persistée (session_record). L'application ne choisit ni exercice, ni dose, ni station, ne duplique aucune
@@ -8,7 +11,8 @@
  */
 import { toEnvelope } from '@hybridsport/engine';
 import type { ISODateTime, ReasonCode, SessionDraft } from '@hybridsport/domain';
-import { findArchetype, readStrengthParams, StrengthEngine } from '@hybridsport/strength';
+import { archetypeRegion, archetypeVariant, findArchetype, readStrengthParams, StrengthEngine } from '@hybridsport/strength';
+import type { ArchetypeRegion } from '@hybridsport/strength';
 import type { StrengthCompositionRule } from '@hybridsport/strength';
 import { crossTrainingPort, hyroxHistoriesOf, hyroxPort, planMultisportWeek, runningPort, strengthPort } from '@hybridsport/planner';
 import type { QualityAssessment } from '@hybridsport/engine';
@@ -41,10 +45,17 @@ export interface PlannerEnvironment {
   /** Ruleset de gouvernance du planificateur ; absent ⇒ décisions d'interférence fail-closed. */
   readonly governance?: LoadedRuleset;
   /**
+   * Reprise RC5 lot 4.3 (Q7) — PROPOSITIONS seulement (`hybrid-proposals.ts`) : réessai d'un autre jour autorisé après un
+   * refus pour la seule fenêtre de récupération Musculation. Jamais fixé par l'environnement Beta 0.
+   */
+  readonly recoveryRetry?: boolean;
+  /**
    * `composition` : règle de composition hebdomadaire du MOTEUR Strength (archétype de chaque séance). Absente : intention
    * déclarée exécutée telle quelle (chemin multisport existant).
    */
-  readonly strength?: { readonly engine: SportEngine<unknown>; readonly content: Content; readonly composition?: { readonly rule: StrengthCompositionRule | undefined }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule };
+  readonly strength?: { readonly engine: SportEngine<unknown>; readonly content: Content; readonly composition?: { readonly rule: StrengthCompositionRule | undefined }; readonly withinWeekVariation?: StrengthWithinWeekVariationRule;
+    /** Lot 4.2 (Q6) — diagnostic TEST_ONLY, jamais fixé par l'environnement Beta 0 : sonde de placement historique (`first`). */
+    readonly placementProbe?: 'rank' | 'first' };
   readonly running?: { readonly engine: SportEngine<unknown>; readonly content: Content; readonly composition?: { readonly parameters: readonly RunningParameter[] } };
   /**
    * `transportNeighbours` : voisines (seconde passe) et priorité transportées au contexte CT (C3) ; `simulation` :
@@ -130,8 +141,55 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
   const qualityEnv = env.authority === 'beta0_experimental' ? 'SIMULATION_ONLY' as const : env.authority === 'test_only' ? 'TEST_ONLY' as const : undefined;
   const q = qualityEnv ? { qualityEnv } : {};
   if (env.strength) {
-    const content = env.strength.content as ContentSource;
-    ports.strength = strengthPort({ ...q, engine: env.strength.engine, content, profile, state: state0, history: state.fingerprints.strength, clock, ...(env.strength.withinWeekVariation ? { withinWeekVariation: env.strength.withinWeekVariation } : {}), ...(env.strength.composition ? { composition: { rule: env.strength.composition.rule, goal: { goal: goals.strength ?? p.strength.goal } } } : {}), baseContext: (slot) => { const b = strengthContextAt(state, p, slot.date, content); return goals.strength ? { ...b, goal: { primary: { goal: goals.strength } } } : b; } });
+    const source = env.strength.content as ContentSource;
+    const content = p.strength.personalization ? personalizedStrengthContent(source) : source;
+    ports.strength = strengthPort({ ...q, engine: env.strength.engine, content, profile: p.strength.personalization ? { ...profile, athleteLevel: muscleLevel(p) } : profile, state: state0, history: state.fingerprints.strength, clock, ...(env.strength.withinWeekVariation ? { withinWeekVariation: env.strength.withinWeekVariation } : {}), ...(env.strength.placementProbe ? { placementProbe: env.strength.placementProbe } : {}), ...(env.strength.composition ? { composition: { rule: env.strength.composition.rule, goal: { goal: goals.strength ?? p.strength.goal } } } : {}), baseContext: (slot) => { const b = strengthContextAt(state, p, slot.date, content); return goals.strength ? { ...b, goal: { primary: { goal: goals.strength } } } : b; } });
+  }
+  if (ports.strength && p.strength.personalization) {
+    const original = ports.strength; const c = p.strength.personalization;
+    const policy = personalizationParams()['strength.personalization'];
+    if (!policy) throw new AppError('STRENGTH_PERSONALIZATION_POLICY_MISSING');
+    ports.strength = { ...original, availableMinutesFor: (date,common) => { const weekday = new Date(`${date}T12:00:00Z`).getUTCDay(); const day = (weekday+p.availability.length-1)%p.availability.length; return c.days.includes(day) ? Math.min(common,c.sessionMinutes) : 0; }, generate: slot => {
+      const weekday = new Date(`${slot.date}T12:00:00Z`).getUTCDay();
+      const day = (weekday+p.availability.length-1)%p.availability.length;
+      // technical-constant: dix caractères du format de date ISO AAAA-MM-JJ
+      const dateLength = 10;
+      const recent = recentStrengthRegions(state, slot.weekSessions ?? [], dateLength);
+      // technical-constant: conversion millisecondes → heures
+      const hourMs = 3600000;
+      const fullBodyBand = env.strength?.composition?.rule?.bands.find(b => b.rotation.length === 1 && b.rotation.includes('str_full_body'));
+      const tooClose = !!fullBodyBand && p.strength.sessionsPerWeek <= fullBodyBand.maxSessions && recent.some(x => !disjointRegions(x.region,archetypeRegion(slot.intent.archetypeId)) && x.date < slot.date && (Date.parse(slot.date)-Date.parse(x.date))/hourMs < policy.recoveryHours);
+      if (!c.days.includes(day) || tooClose) return { status: 'refused', reasons: [strengthReasons.emit('PLAN.PERSONALIZATION_BLOCKED',{ cause: tooClose ? 'strength_recovery_window' : 'unavailable_day' })] };
+      const result = original.generate({ ...slot, availableMinutes: Math.min(slot.availableMinutes,c.sessionMinutes) });
+      return { ...result, reasons: [...result.reasons, strengthReasons.emit('PLAN.PERSONALIZATION',{ outcome:c.outcome, priorities:c.priorities.map(x=>`${x.zone}:${x.intention}`), policy:policy.version, strategy:policy.goals[c.outcome].strategy, recovery:c.recovery })] };
+    } };
+  }
+  if (ports.strength) {
+    // Reprise RC5 lot 4 — RÉCUPÉRATION des séances Haut A/B et Bas A/B (rotation hypertrophie 4×) : la règle EXISTANTE
+    // `recoveryHours` (politique G2, 36 h) s'applique à la RÉGION sollicitée. Refus d'une séance A/B si une séance de la
+    // même région, ou Full Body, a eu lieu (expositions réelles) ou est prévue plus tôt dans la semaine à moins de
+    // `recoveryHours` ; Haut et Bas restent compatibles (règle `disjoint` existante). Aucun nouveau délai ; les séances
+    // Full Body, Haut et Bas historiques NON personnalisés ne passent pas par ce contrôle (comportement antérieur inchangé ;
+    // lot 4.4 : contrôle étendu à toute séance d'un profil personnalisé, voir ci-dessous). Refus SIGNALÉ
+    // (séance non proposée, cause `strength_recovery_window`), jamais un planning incohérent placé en silence.
+    const inner = ports.strength;
+    const hours = personalizationParams()['strength.personalization']?.recoveryHours;
+    if (hours !== undefined) ports.strength = { ...inner, generate: (slot) => {
+      // Lot 4.4 (sécurité) — la récupération est évaluée sur l'archétype RÉELLEMENT prescrit : toute séance Musculation
+      // d'un profil PERSONNALISÉ (politique `recoveryHours`), Full Body et Haut / Bas communs compris, quelle que soit la
+      // fréquence demandée (avant : A/B seulement, Full Body seulement à 3 séances ou moins ⇒ Full Body d'une semaine de 4
+      // et Haut / Bas communs non contrôlés). Profils non personnalisés : comportement historique inchangé.
+      // Une SONDE de placement (archétype provisoire, `final` absent) n'est pas la séance prescrite : seule la séance finale
+      // est contrôlée (A/B : contrôlées à toute étape, comme avant).
+      if (archetypeVariant(slot.intent.archetypeId) === null && (!p.strength.personalization || slot.final !== true)) return inner.generate(slot);
+      // technical-constant: dix caractères du format de date ISO AAAA-MM-JJ
+      const dateLength = 10;
+      // technical-constant: conversion millisecondes → heures
+      const hourMs = 3600000;
+      const region = archetypeRegion(slot.intent.archetypeId);
+      const clash = recentStrengthRegions(state, slot.weekSessions ?? [], dateLength).some((x) => !disjointRegions(x.region, region) && x.date < slot.date && (Date.parse(slot.date) - Date.parse(x.date)) / hourMs < hours);
+      return clash ? { status: 'refused', reasons: [strengthReasons.emit('PLAN.PERSONALIZATION_BLOCKED', { cause: 'strength_recovery_window' })] } : inner.generate(slot);
+    } };
   }
   if (env.running) {
     ports.running = runningPort({
@@ -150,7 +208,7 @@ export function buildPorts(state: AppState, p: Profile, programme: ProgrammeInte
     const sc = env.strength?.content as ContentSource | undefined;
     const blockPort = rule && env.strength && sc ? strengthPort({
       ...q, engine: env.strength.engine, content: sc, profile, state: state0, history: state.fingerprints.strength, clock,
-      baseContext: (slot) => ({ ...strengthContextAt(state, p, slot.date, sc), goal: { primary: { goal: 'support' as const, supportFor: 'crosstraining' as const } }, blockMode: { host: 'crosstraining' as const } }),
+      baseContext: (slot) => { const { personalization: _personalization, personalizationSessions: _sessions, otherSports: _other, ...base } = strengthContextAt(state, p, slot.date, sc); return { ...base, goal: { primary: { goal: 'support' as const, supportFor: 'crosstraining' as const } }, blockMode: { host: 'crosstraining' as const } }; },
     }) : undefined;
     ports.crosstraining = crossTrainingPort({
       ...(blockPort && rule ? { strengthBlocks: { port: blockPort, rule } } : {}),
@@ -263,5 +321,22 @@ export function planProgrammeWeek(state: AppState, clock: Clock, env: PlannerEnv
     demands: programme.sports.map((s) => ({ sport: s.sport, sessions: s.sessions, intent: { ...s.intent }, ...(s.station === undefined ? {} : { station: s.station }) })),
   }, buildPorts(state, p, programme, env), env.governance, clockOf());
   const plannedAt = normalizeInstant(clock.now);
-  return writePlannedWeek(state, persistWeek(week, plannedAt, programme.origin, env), 'multisport');
+  return writePlannedWeek(state, { ...persistWeek(week, plannedAt, programme.origin, env), ...(p.strength.personalization ? { strengthProfile: p } : {}) }, 'multisport');
 }
+
+/**
+ * Reprise RC5 lot 4 — séances Musculation récentes et leur RÉGION : séances prévues plus tôt dans la semaine (archétype)
+ * et séances réellement faites (expositions, emplacement : `up.` / `ua.` / `ub.` / `str_upper…` ⇒ Haut ; `lo.` / `la.` /
+ * `lb.` / `str_lower…` ⇒ Bas ; sinon Full Body, comme avant).
+ */
+function slotRegion(slotId: string | undefined): ArchetypeRegion {
+  if (slotId === undefined) return 'full';
+  if (/^(up|ua|ub)\./.test(slotId) || slotId.startsWith('str_upper')) return 'upper';
+  if (/^(lo|la|lb)\./.test(slotId) || slotId.startsWith('str_lower')) return 'lower';
+  return 'full';
+}
+function recentStrengthRegions(state: AppState, weekSessions: readonly { readonly date: string; readonly archetypeId: string }[], dateLength: number): { date: string; region: ArchetypeRegion }[] {
+  return [...weekSessions.map((w) => ({ date: w.date, region: archetypeRegion(w.archetypeId) })), ...state.strength.exposures.map((x) => ({ date: x.at.slice(0, dateLength), region: slotRegion(x.slotId) }))];
+}
+/** Haut et Bas sollicitent des régions distinctes ; Full Body chevauche toujours. */
+const disjointRegions = (a: ArchetypeRegion, b: ArchetypeRegion): boolean => (a === 'upper' && b === 'lower') || (a === 'lower' && b === 'upper');

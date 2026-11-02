@@ -5,6 +5,7 @@
  * Validé à la frontière par `parseStrengthContext` (schéma strict).
  */
 import { z } from 'zod';
+import { zStrengthPersonalization } from './personalization-contract.js';
 import { DEMAND_LEVELS, DISCIPLINES, isISODateTime, zRepTarget } from '@hybridsport/domain';
 import { createCoreRegistry } from '@hybridsport/engine';
 import type { ContextParse } from '@hybridsport/engine';
@@ -75,6 +76,13 @@ export const zStrengthTrack = z.object({
     exactStreak: z.number().int().nonnegative(), effortKnown: z.number().int().nonnegative(), effortUnknown: z.number().int().nonnegative(),
     e1rmBasis: z.enum(['observed', 'lower_bound']).optional(),
   }).strict().optional(),
+  /**
+   * Reprise RC5 lot 4 (D5) — RÉFÉRENCE INITIALE TRANSFÉRÉE (jamais une performance) : suivi d'un autre archétype dont ce
+   * suivi a repris la borne de cycle (`cycleStartLoadKg`, charge réellement réalisée en début de cycle), lors d'une
+   * correspondance FIABLE (même exercice, même rôle, même modèle, candidat unique). L'historique réel reste dans les
+   * expositions et dans le suivi d'origine, inchangé. Absent : aucun transfert (cas antérieurs ou ambigus).
+   */
+  transferredFrom: z.object({ trackId: id, archetypeId: id, slotId: id, cycleStartLoadKg: z.number().positive().optional() }).strict().optional(),
 }).strict();
 export type StrengthTrack = z.infer<typeof zStrengthTrack>;
 
@@ -89,6 +97,9 @@ export const zExerciseExposure = z.object({
 export type ExerciseExposure = z.infer<typeof zExerciseExposure>;
 
 export const zStrengthContext = z.object({
+  personalization: zStrengthPersonalization.optional(),
+  personalizationSessions: z.number().int().positive().optional(),
+  otherSports: z.array(z.string()).optional(),
   goal: z.object({ primary: zGoalRef, secondary: zGoalRef.optional() }).strict(),
   phase: z.object({ kind: z.enum(PHASE_KINDS), weekInMesocycle: z.number().int().positive(), mesocycleLength: z.number().int().positive() }).strict()
     .refine((p) => p.weekInMesocycle <= p.mesocycleLength, 'weekInMesocycle ≤ mesocycleLength'),
@@ -96,7 +107,12 @@ export const zStrengthContext = z.object({
   tracks: z.array(zStrengthTrack),
   recentExposures: z.array(zExerciseExposure),
   /** E1 réalisé sur 7 jours, par groupe musculaire (identifiants de données du ruleset). */
-  hardSets: z.object({ d7: z.record(id, nonNeg) }).strict(),
+  /**
+   * `d7` : séries de travail RÉALISÉES sur 7 jours glissants (récupération, borne haute). `week` (lot 4.1, facultatif) :
+   * séries réalisées depuis le DÉBUT de la semaine de planification, avant la séance : seule base de la part de CIBLE
+   * hebdomadaire (les séries de la semaine précédente, déjà comptées pour sa cible, ne le sont pas deux fois).
+   */
+  hardSets: z.object({ d7: z.record(id, nonNeg), week: z.record(id, nonNeg).optional() }).strict(),
   week: z.object({
     otherStrengthSessions: z.array(z.object({ intentId: id, archetypeId: id, plannedHardSets: z.record(id, nonNeg), done: z.boolean() }).strict()),
     neighbors: z.array(z.object({
@@ -105,6 +121,11 @@ export const zStrengthContext = z.object({
     }).strict()),
     /** Contexte de semaine connu du planificateur (sinon hypothèse prudente, DATA.WEEK_CONTEXT_UNKNOWN). */
     known: z.boolean(),
+    /**
+     * Reprise RC5 lot 4.4 — séances Musculation RÉELLEMENT placées dans la semaine, par région (composition du planificateur).
+     * Lu seulement par l'option candidate `redistributeUnplaced` de la politique de personnalisation ; absent : rien ne change.
+     */
+    placedSessionsByRegion: z.object({ upper: nonNeg, lower: nonNeg, full: nonNeg }).strict().optional(),
   }).strict(),
   preferences: z.object({ liked: z.array(id), disliked: z.array(id) }).strict(),
   /** Incréments réalisables déclarés, par équipement : pas et charge maximale éventuelle. */
