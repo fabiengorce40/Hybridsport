@@ -81,6 +81,8 @@ try {
   await page.getByText(/Nouvelle version de (KAIRO|REKKA) disponible/).waitFor({ timeout: 30000 });
   check(true, 'bandeau « Nouvelle version disponible » affiché par la build A');
   await page.getByRole('button', { name: 'Mettre à jour' }).click();
+  // Attendre la page RECHARGÉE (sinon l'ancienne page, encore affichée, serait lue) ; limite = échec visible.
+  await page.waitForFunction((old) => { const r = document.querySelector('.k-test-ribbon'); return r !== null && r.getAttribute('data-beta-build') !== old; }, OLD_BUILD, { timeout: 60000 }).catch(() => undefined);
   await page.waitForLoadState('load');
   await page.locator('.k-test-ribbon').waitFor();
   check(await page.locator('.k-test-ribbon').getAttribute('data-beta-build') === NEW_BUILD, `build B exécutée après « Mettre à jour » (${OLD_BUILD} → ${NEW_BUILD})`);

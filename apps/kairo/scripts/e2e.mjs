@@ -210,7 +210,7 @@ const strengthTitles = (p) => p.getByRole('button', { name: /^Musculation : / })
   check(kept.length === 4 && kept.every((x) => x === 'Full body'), `S1 programme pré-S1 : semaine INCHANGÉE à l’ouverture (${kept.join(', ')})`);
   check((await p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'))).planner?.weeks?.['2026-10-05']?.planningVersion === undefined, 'S1 programme pré-S1 : aucune écriture de la semaine sans accord');
   await p.getByRole('button', { name: 'Voir la proposition' }).click();
-  check(await p.getByRole('region', { name: 'Planning actuel' }).isVisible() && await p.getByRole('region', { name: 'Planning proposé' }).isVisible(), 'S1 programme pré-S1 : comparaison planning actuel / proposé');
+  check(await p.getByRole('region', { name: 'Planning actuel', exact: true }).isVisible() && await p.getByRole('region', { name: 'Planning proposé', exact: true }).isVisible(), 'S1 programme pré-S1 : comparaison planning actuel / proposé');
   await p.getByRole('button', { name: 'Appliquer le nouveau planning' }).click();
   const titles = await strengthTitles(p);
   check(titles.join(',') === 'Haut du corps,Bas du corps,Haut du corps,Bas du corps', `S1 programme pré-S1 : semaine régénérée dans le DOM (${titles.join(', ')})`);
@@ -323,6 +323,10 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
   await p.goto(URL_);
   const tag = '[S5 effort, Galaxy S9+]';
   const st = () => p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
+  // FAST TRACK V1 : la semaine pré-S1 n'est plus régénérée sans accord ; l'athlète applique la proposition.
+  await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  await p.getByRole('button', { name: 'Voir la proposition' }).click();
+  await p.getByRole('button', { name: 'Appliquer le nouveau planning' }).click();
   await p.getByRole('button', { name: /^Musculation : Haut du corps/ }).first().click();
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
   await passCheck(p);
