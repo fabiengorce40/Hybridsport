@@ -53,7 +53,8 @@ const repsOf = (r: unknown): string => {
 };
 
 /** Mesure d'un profil à partir d'une simulation (chemin réel). `env` : environnement à évaluer (référence par défaut). */
-export function measureProfile(spec: ProfileSpec, env = beta0Environment()): ProfileQuality {
+// Référence figée RC4.6 : lecture de progression ANTÉRIEURE à l'activation (FAST TRACK V1, D2), comparaisons inchangées.
+export function measureProfile(spec: ProfileSpec, env = beta0Environment({ progressionPolicy: null })): ProfileQuality {
   // R-A mesuré À LA PLANIFICATION de chaque semaine (aucune séance de la semaine réalisée) : en fin de simulation, les
   // progressions ont évolué depuis et ne peuvent pas être relues à leur état d'alors (écarts attribués à tort au planificateur).
   const repro: Record<string, number> = {};

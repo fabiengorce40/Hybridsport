@@ -51,9 +51,9 @@ describe('options de stabilisation (simulation)', () => {
     }
     void LARGE;
   }, 300_000);
-  it('environnement Beta 0 : aucune option de stabilisation, aucune cause de maintien du lot 4.6', () => {
-    expect(beta0Environment().progressionReading).toBeUndefined();
-    const rs = audit(simulate(S('E-FPERS'), W).state);
+  it('environnement Beta 0 ANTÉRIEUR à l’activation (références) : aucune option de stabilisation, aucune cause de maintien du lot 4.6', () => {
+    expect(beta0Environment({ progressionPolicy: null }).progressionReading).toBeUndefined();
+    const rs = audit(simulate(S('E-FPERS'), W, beta0Environment({ progressionPolicy: null })).state);
     for (const c of ['hysteresis', 'large_step_deferred', 'estimate_unreliable']) expect(rs.some((r) => r.code === 'PROGRESSION.HELD' && r.params.cause === c)).toBe(false);
   }, 300_000);
 });

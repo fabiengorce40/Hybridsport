@@ -104,6 +104,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
       <EquipmentConfirm onEdit={() => onEditProgramme?.()} />
       {state.safety.activePain && <PainPause onGo={() => onGo('settings')} />}
       {week && <WeekPlanningNotice planning={week.planning} />}
+      {week?.planning?.status === 'stale_replaceable' && <Notice><span role="status">Un nouveau planning est proposé pour cette semaine. Rien n’est modifié sans votre accord : ouvrez le Planning pour comparer.</span></Notice>}
       {week && <RunningTestFallbackNotice fallback={week.runningTestFallback} />}
 
       {week && planned.length > 0 && (

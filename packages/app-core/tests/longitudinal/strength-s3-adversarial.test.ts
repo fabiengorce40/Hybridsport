@@ -8,7 +8,7 @@
  */
 import { describe, expect, it } from 'vitest';
 import {
-  BETA0_PLANNING_VERSION, clearPain, closeProgrammeWeekInApp, createBeta0Programme, decodeState, emptyState, ensureBeta0Week, EQUIPMENT_PRESETS, exportState, finishProgrammeSession, loadState,
+  applyStaleWeekProposal, BETA0_PLANNING_VERSION, staleWeekProposal, clearPain, closeProgrammeWeekInApp, createBeta0Programme, decodeState, emptyState, ensureBeta0Week, EQUIPMENT_PRESETS, exportState, finishProgrammeSession, loadState,
   MemoryStorage, recordProgrammeSet, recordSessionExecution, recreateBeta0Programme, saveState, startProgrammeSession,
 } from '../../src/index.js';
 import type { AppState, PersistedWeek, ProfileInput, SetLog } from '../../src/index.js';
@@ -240,7 +240,11 @@ describe('Strength S3 — cas adverses (contexte et programme)', () => {
 
   it('25 bis. semaine planifiée AVANT S3 (beta0-s1) : non commencée ⇒ régénérée (tracé) ; commencée ⇒ conservée telle quelle', () => {
     const asS1 = (x: AppState): AppState => ({ ...x, planner: { ...x.planner, weeks: { ...x.planner.weeks, [W[1]]: { ...(x.planner.weeks[W[1]] as PersistedWeek), planningVersion: 'beta0-s1' } } } });
-    const fresh = ensureBeta0Week(asS1(W2), clock(W[1], '06:00:00'));
+    const opened = ensureBeta0Week(asS1(W2), clock(W[1], '06:00:00'));
+    expect(opened.planner.weeks[W[1]]?.planningVersion).toBe('beta0-s1');
+    const proposal = staleWeekProposal(opened, clock(W[1], '06:00:00'));
+    if (!proposal) throw new Error('proposition attendue');
+    const fresh = applyStaleWeekProposal(opened, proposal, clock(W[1], '06:00:00'));
     expect(fresh.planner.weeks[W[1]]?.planningVersion).toBe(BETA0_PLANNING_VERSION);
     expect(fullAudit(fresh).some((r) => r.code === 'KAIRO.WEEK_REPLANNED_STALE')).toBe(true);
     const started = asS1(exec(W2, ALL).s);

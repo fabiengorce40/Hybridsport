@@ -1,4 +1,4 @@
-import { withStrengthPersonalization } from './strength-personalization.js';
+import { personalizationParams, withStrengthPersonalization } from './strength-personalization.js';
 /**
  * Façade applicative Beta 0 pour l'interface : création du programme depuis le profil, ouverture de la semaine
  * (clôture des semaines passées, planification de la semaine courante), séance en cours PERSISTÉE (séries
@@ -12,8 +12,12 @@ import { requestAssessment, weekIndexOf, withinProgramme, zProgrammeState } from
 import type { ProgrammeResult, ProgrammeState } from '@hybridsport/programme';
 import { logFreeRun } from './app.js';
 import type { Clock } from './app.js';
-import { beta0Environment, compositionScopeOf, ctDeclarations, hrDeclarations, legacyBeta0StrengthIntent, prescribedArchetype, LEGACY_BETA0_STRENGTH_ARCHETYPE, programmeDefinitionFromProfile, weekPlanning } from './beta0.js';
-import { STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } from '@hybridsport/strength';
+import { beta0Environment, compositionScopeOf, ctDeclarations, hrDeclarations, legacyBeta0StrengthIntent, prescribedArchetype, LEGACY_BETA0_STRENGTH_ARCHETYPE, programmeDefinitionFromProfile, STALE_WEEK_KEPT, weekPlanning } from './beta0.js';
+import { weekChanges } from './week-changes.js';
+import type { WeekChange } from './week-changes.js';
+import { weekLoadWarnings } from './week-load.js';
+import type { WeekLoadWarning } from './week-load.js';
+import { archetypeRegion, STRENGTH_WEEKLY_COMPOSITION_CANDIDATE } from '@hybridsport/strength';
 import { addDays, dateOf, normalizeInstant, weekStartOf } from './dates.js';
 import { AppError } from './errors.js';
 import { DIFFICULTIES, emptyState, zProfile } from './model.js';
@@ -22,6 +26,7 @@ import type { AppState, CtRuntime, Feedback, HrRuntime, PersistedWeek, ProfileIn
 import { hrStationsOf, hrWorkoutOf } from './hr-workout.js';
 import type { HrWorkout } from './hr-workout.js';
 import { closeProgrammeWeekInApp, planProgrammeCurrentWeek, portInputs, ProgrammeError, recordSessionExecution, startProgramme } from './programme.js';
+import type { SessionExecutionInput } from './programme.js';
 import { buildPorts, clockOf, recentOf } from './planning.js';
 import { manualPlacementConflicts } from '@hybridsport/planner';
 import { strengthWeekBoundary } from './progression.js';
@@ -280,13 +285,67 @@ export function ensureBeta0Week(state: AppState, clock: Clock, env: ProgrammeEnv
   if (!ps || !withinProgramme(ps, cur) || activePainPause(s)) return s;
   const existing = ps.weeks.find((w) => w.weekIndex === cur);
   if (!existing) return planProgrammeCurrentWeek(strengthBoundary(s, clock, cur), clock, env, cur, { pastDaysUnavailable: true });
-  const planning = env.planningVersion ? weekPlanning(s, existing.plannerRef, clock.today, env.planningVersion) : null;
-  if (planning?.status !== 'stale_replaceable') return s;
-  const replanned = planProgrammeCurrentWeek(strengthBoundary(s, clock, cur), clock, env, cur, { pastDaysUnavailable: true });
-  const rps = replanned.programmeState;
-  if (!rps) return replanned;
-  const reason = { code: 'KAIRO.WEEK_REPLANNED_STALE', params: { weekStart: existing.plannerRef, fromVersion: planning.version ?? 'unversioned', toVersion: env.planningVersion ?? '' } };
-  return { ...replanned, programmeState: { ...rps, audit: [...rps.audit, { at: normalizeInstant(clock.now), weekIndex: cur, reason }] } };
+  // FAST TRACK V1 — une semaine planifiée par une version antérieure et non commencée n'est JAMAIS régénérée ici :
+  // l'utilisateur voit une PROPOSITION (`staleWeekProposal`) et choisit « Appliquer » ou « Conserver ».
+  return s;
+}
+
+/**
+ * FAST TRACK V1 — proposition de replanification d'une semaine planifiée par une version antérieure du chemin et non
+ * commencée (`weekPlanning` : `stale_replaceable`). Calculée À LA DEMANDE, jamais écrite : planning actuel / proposé,
+ * changements, avertissements de récupération. `null` : aucune proposition (semaine à jour, commencée, conservée…).
+ */
+export interface StaleWeekProposal {
+  readonly weekStart: string;
+  readonly fromVersion: string;
+  readonly toVersion: string;
+  readonly before: PersistedWeek;
+  readonly after: PersistedWeek;
+  readonly next: AppState;
+  readonly changes: readonly WeekChange[];
+  readonly warningsBefore: readonly WeekLoadWarning[];
+  readonly warningsAfter: readonly WeekLoadWarning[];
+  readonly source: string;
+  readonly today: string;
+}
+function staleContext(state: AppState, clock: Clock, env: ProgrammeEnvironment) {
+  const ps = state.programmeState;
+  if (!ps || !state.profile || !env.planningVersion || activePainPause(state)) return null;
+  const cur = weekIndexOf(ps, clock.today);
+  if (!withinProgramme(ps, cur)) return null;
+  const existing = ps.weeks.find((w) => w.weekIndex === cur);
+  if (!existing) return null;
+  const planning = weekPlanning(state, existing.plannerRef, clock.today, env.planningVersion);
+  if (planning?.status !== 'stale_replaceable') return null;
+  return { cur, weekStart: existing.plannerRef, fromVersion: planning.version ?? 'unversioned', toVersion: env.planningVersion };
+}
+export function staleWeekProposal(state: AppState, clock: Clock, env: ProgrammeEnvironment = beta0Environment()): StaleWeekProposal | null {
+  const c = staleContext(state, clock, env);
+  const before = c ? state.planner.weeks[c.weekStart] : undefined;
+  if (!c || !before) return null;
+  const next = planProgrammeCurrentWeek(strengthBoundary(state, clock, c.cur), clock, env, c.cur, { pastDaysUnavailable: true });
+  const after = next.planner.weeks[c.weekStart];
+  if (!after) return null;
+  return { weekStart: c.weekStart, fromVersion: c.fromVersion, toVersion: c.toVersion, before, after, next, changes: weekChanges(before, after), warningsBefore: weekLoadWarnings(state, c.weekStart), warningsAfter: weekLoadWarnings(next, c.weekStart), source: JSON.stringify(state), today: clock.today };
+}
+/** « Appliquer le nouveau planning » : seulement si rien n'a changé depuis l'aperçu (sinon `REPLAN_STALE`), puis tracé. */
+export function applyStaleWeekProposal(state: AppState, proposal: StaleWeekProposal, clock: Clock, env: ProgrammeEnvironment = beta0Environment()): AppState {
+  if (JSON.stringify(state) !== proposal.source || clock.today !== proposal.today) throw new AppError('REPLAN_STALE');
+  const fresh = staleWeekProposal(state, clock, env);
+  if (!fresh || JSON.stringify(fresh.after.requests) !== JSON.stringify(proposal.after.requests)) throw new AppError('REPLAN_STALE');
+  const rps = fresh.next.programmeState;
+  if (!rps) return fresh.next;
+  const reason = { code: 'KAIRO.WEEK_REPLANNED_STALE', params: { weekStart: fresh.weekStart, fromVersion: fresh.fromVersion, toVersion: fresh.toVersion, confirmedBy: 'user' } };
+  const i = weekIndexOf(rps, clock.today);
+  return { ...fresh.next, programmeState: { ...rps, audit: [...rps.audit, { at: normalizeInstant(clock.now), weekIndex: i, reason }] } };
+}
+/** « Conserver mon planning » : choix tracé ; la semaine reste telle quelle et la proposition n'est plus faite pour elle. */
+export function keepStaleWeek(state: AppState, clock: Clock, env: ProgrammeEnvironment = beta0Environment()): AppState {
+  const c = staleContext(state, clock, env);
+  const ps = state.programmeState;
+  if (!c || !ps) throw new AppError('REPLAN_NOT_ALLOWED');
+  const reason = { code: STALE_WEEK_KEPT, params: { weekStart: c.weekStart, fromVersion: c.fromVersion, toVersion: c.toVersion } };
+  return { ...state, programmeState: { ...ps, audit: [...ps.audit, { at: normalizeInstant(clock.now), weekIndex: c.cur, reason }] }, revision: state.revision + 1 };
 }
 
 // ——— Séance du programme
@@ -437,6 +496,105 @@ export function startAssessment(state: AppState, clock: Clock, requestId: string
   const conflicts = manualPlacementConflicts({ sport: v.sport, date: clock.today, session: v.session }, others, buildPorts(state, p, intent, env, goals), env.governance, env.mode, clockOf());
   return conflicts.length === 0 ? START_OK : refuse('INTERFERENCE', conflicts.map((c) => ({ withSport: String(c.params.withSport), withDate: String(c.params.withDate), structure: String(c.params.structure), rule: String(c.params.rule) })));
 }
+/**
+ * FAST TRACK V1 — séance MANQUÉE ou à REPORTER (séance planifiée, ni commencée ni enregistrée, semaine en cours) :
+ * - déclarer « non réalisée » : résultat `missed` déclaré (jamais une réalisation, aucune progression lue) ;
+ * - reporter : seulement vers un jour DE LA MÊME SEMAINE, à partir d'aujourd'hui, disponible (profil), sans autre séance
+ *   prévue ce jour-là ET sans conflit de récupération selon la règle gouvernée du planificateur (même contrôle que le
+ *   démarrage d'une séance non placée). Aucune accumulation : une séance par jour, séances manquées jamais rattrapées
+ *   automatiquement, prescription inchangée. Pause douleur ⇒ aucun report (planification suspendue).
+ */
+export const SESSION_POSTPONED = 'KAIRO.SESSION_POSTPONED';
+export interface MissedSessionOptions {
+  readonly requestId: string;
+  readonly sport: PlannedRequest['sport'];
+  readonly date: string;
+  /** Jours de report admis (aucun conflit), dans l'ordre. */
+  readonly postpone: readonly string[];
+  /** Jours examinés mais refusés, avec la cause lisible. */
+  readonly refused: readonly { readonly date: string; readonly cause: 'unavailable' | 'occupied' | 'recovery' }[];
+  /** Report impossible pour toute la semaine (pause douleur, programme absent). */
+  readonly postponeBlocked: 'ACTIVE_PAIN' | null;
+}
+function missedContext(state: AppState, clock: Clock, requestId: string) {
+  const weekStart = weekStartOf(clock.today);
+  const week = state.planner.weeks[weekStart];
+  const r = week?.requests.find((x) => x.requestId === requestId);
+  const ps = state.programmeState;
+  if (!week || !r || r.status !== 'planned' || !r.date || !ps || !state.profile) return null;
+  if (ps.results.some((x) => x.requestId === requestId) || state.programmeLogs[requestId]) return null;
+  if (ps.weeks.find((w) => w.plannerRef === weekStart)?.closedAt) return null;
+  return { weekStart, week, r: r as PlannedRequest & { date: string }, ps, p: state.profile };
+}
+export function missedSessionOptions(state: AppState, clock: Clock, requestId: string, env: ProgrammeEnvironment = beta0Environment()): MissedSessionOptions | null {
+  const c = missedContext(state, clock, requestId);
+  if (!c) return null;
+  const base = { requestId, sport: c.r.sport, date: c.r.date };
+  if (activePainPause(state)) return { ...base, postpone: [], refused: [], postponeBlocked: 'ACTIVE_PAIN' };
+  const session = recordOf(c.r)?.session;
+  if (!session) return { ...base, postpone: [], refused: [], postponeBlocked: null };
+  const results = new Map(c.ps.results.map((x) => [x.requestId, x]));
+  const others = [
+    ...c.week.requests.flatMap((r) => {
+      if (r.requestId === requestId) return [];
+      const x = results.get(r.requestId);
+      const s = recordOf(r)?.session;
+      if (!s) return [];
+      if (r.status === 'planned' && r.date && x?.completion !== 'missed') return [{ sport: r.sport, date: r.date, session: s }];
+      if (r.status === 'unplaced' && x?.provenance === 'manual_from_unplaced') return [{ sport: r.sport, date: x.date, session: s }];
+      return [];
+    }),
+    ...recentOf(state, c.p, c.weekStart).filter((x) => x.status !== 'missed').map((x) => ({ sport: x.sport, date: x.date, session: x.session })),
+  ];
+  const { intent, goals } = portInputs(c.ps);
+  const ports = buildPorts(state, c.p, intent, env, goals);
+  const postpone: string[] = []; const refused: { date: string; cause: 'unavailable' | 'occupied' | 'recovery' }[] = [];
+  // Récupération Musculation (règle EXISTANTE `recoveryHours`, politique G2) : même région ou Full Body, AVANT comme APRÈS
+  // le jour visé, séances prévues (non manquées) et réalisées de cette semaine et de la précédente. Haut / Bas compatibles.
+  const hours = personalizationParams()['strength.personalization']?.recoveryHours;
+  const myRegion = c.r.sport === 'strength' ? archetypeRegion(prescribedArchetype(c.r).archetypeId ?? '') : null;
+  const strengthNeighbours = [c.weekStart, addDays(c.weekStart, -DAYS_PER_WEEK)].flatMap((ws) => (state.planner.weeks[ws]?.requests ?? []).flatMap((r) => {
+    if (r.requestId === requestId || r.sport !== 'strength') return [];
+    const x = results.get(r.requestId);
+    const d = x && x.completion !== 'missed' ? x.date : r.status === 'planned' && x?.completion !== 'missed' ? r.date : undefined;
+    return d ? [{ date: d, region: archetypeRegion(prescribedArchetype(r).archetypeId ?? '') }] : [];
+  }));
+  // technical-constant: conversion millisecondes → heures
+  const HOUR_MS = 3600000;
+  const strengthTooClose = (date: string) => myRegion !== null && hours !== undefined && strengthNeighbours.some((n) => !((n.region === 'upper' && myRegion === 'lower') || (n.region === 'lower' && myRegion === 'upper')) && Math.abs(Date.parse(date) - Date.parse(n.date)) / HOUR_MS < hours);
+  c.p.availability.forEach((minutes, i) => {
+    const date = addDays(c.weekStart, i);
+    if (date < clock.today || date === c.r.date) return;
+    if (minutes <= 0) { refused.push({ date, cause: 'unavailable' }); return; }
+    if (c.week.requests.some((r) => r.requestId !== requestId && r.status === 'planned' && r.date === date && results.get(r.requestId)?.completion !== 'missed')) { refused.push({ date, cause: 'occupied' }); return; }
+    const conflicts = manualPlacementConflicts({ sport: c.r.sport, date, session }, others, ports, env.governance, env.mode, clockOf());
+    if (conflicts.length > 0 || strengthTooClose(date)) refused.push({ date, cause: 'recovery' }); else postpone.push(date);
+  });
+  return { ...base, postpone, refused, postponeBlocked: null };
+}
+/** « Je ne l'ai pas faite » : séance conservée comme NON RÉALISÉE (résultat déclaré), jamais transformée en réalisation. */
+export function declareSessionMissed(state: AppState, clock: Clock, requestId: string, env: ProgrammeEnvironment = beta0Environment()): AppState {
+  const c = missedContext(state, clock, requestId);
+  if (!c) throw new AppError('MISSED_NOT_ALLOWED');
+  return recordSessionExecution(state, clock, { requestId, sport: c.r.sport, completion: 'missed' } as SessionExecutionInput, env);
+}
+/** Report confirmé vers un jour ADMIS par `missedSessionOptions` (recalculé ici : un jour devenu incompatible est refusé). */
+export function postponeSession(state: AppState, clock: Clock, requestId: string, to: string, env: ProgrammeEnvironment = beta0Environment()): AppState {
+  const c = missedContext(state, clock, requestId);
+  const o = missedSessionOptions(state, clock, requestId, env);
+  if (!c || !o || !o.postpone.includes(to)) throw new AppError('POSTPONE_NOT_ALLOWED');
+  const from = c.r.date;
+  const days = c.week.days.map((d) => {
+    if (d.date === from && d.requestId === requestId) { const { requestId: _r, sport: _s, ...rest } = d; return { ...rest, status: 'empty' as const }; }
+    if (d.date === to) return { ...d, status: 'planned' as const, requestId, sport: c.r.sport };
+    return d;
+  });
+  const week = { ...c.week, days, requests: c.week.requests.map((r) => (r.requestId === requestId ? { ...r, date: to } : r)) };
+  const reason = { code: SESSION_POSTPONED, params: { requestId, from, to } };
+  const ps = zProgrammeState.parse({ ...c.ps, weeks: c.ps.weeks.map((w) => (w.plannerRef === c.weekStart ? { ...w, requests: w.requests.map((r) => (r.requestId === requestId ? { ...r, date: to } : r)) } : w)), audit: [...c.ps.audit, { at: normalizeInstant(clock.now), weekIndex: weekIndexOf(c.ps, clock.today), reason }] });
+  return { ...state, planner: { ...state.planner, weeks: { ...state.planner.weeks, [c.weekStart]: week } }, programmeState: ps, revision: state.revision + 1 };
+}
+
 /** RC4.5 (lot C) — raison du contrôle avant séance : interférence non bloquante maintenue par l'athlète. */
 export const INTERFERENCE_ACCEPTED = 'KAIRO.MANUAL_START_INTERFERENCE_ACCEPTED';
 /**
@@ -827,7 +985,7 @@ export interface FinishInput {
  * Fin de séance : construit l'entrée d'exécution RÉELLE (séries saisies, douleur, course) et l'enregistre par
  * `recordSessionExecution` (validation par le contrat du moteur, historique, programme). Refus ⇒ état inchangé.
  */
-export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishInput, env?: ProgrammeEnvironment): AppState {
+export function finishProgrammeSession(state: AppState, clock: Clock, f: FinishInput, env: ProgrammeEnvironment = beta0Environment()): AppState {
   // RC4.1 — ressenti Course : une valeur du vocabulaire du contrat, ou rien ; refusé pour un autre sport (jamais ignoré en silence).
   if (f.difficulty !== undefined && !(DIFFICULTIES as readonly string[]).includes(f.difficulty)) throw new AppError('RUN_DIFFICULTY_INVALID');
   const s0 = state.programmeLogs[f.requestId] ? state : startWithoutCheck(state, clock, f.requestId);

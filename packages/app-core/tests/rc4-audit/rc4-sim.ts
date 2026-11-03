@@ -150,7 +150,7 @@ export function simulateOnce(spec: ProfileSpec, weeks: number = MONS.length, glo
   const key = `${JSON.stringify(spec)}|${String(spec.checkIn ?? '')}|${String(weeks)}|${String(globalPlacement)}`;
   const hit = cache.get(key);
   if (hit) return hit;
-  const r = simulate(spec, weeks, beta0Environment({ globalPlacement }));
+  const r = simulate(spec, weeks, beta0Environment({ globalPlacement, progressionPolicy: null }));
   cache.set(key, r);
   return r;
 }
@@ -160,7 +160,7 @@ export function simulateOnce(spec: ProfileSpec, weeks: number = MONS.length, glo
  * `onWeekPlanned` (RC4.6 L0, observation seulement) : appelé avec l'état juste après la planification de chaque semaine,
  * avant toute séance de cette semaine ; il ne modifie rien.
  */
-export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = beta0Environment(), onWeekPlanned?: (state: AppState, monday: string) => void): SimOut {
+export function simulate(spec: ProfileSpec, weeks: number = MONS.length, env = beta0Environment({ progressionPolicy: null }), onWeekPlanned?: (state: AppState, monday: string) => void): SimOut {
   const content = strengthContent();
   const params = readStrengthParams(content.ruleset).values;
   const errors: string[] = [];

@@ -3,7 +3,7 @@
  * simulées, relisibles (identifiant dans la trace, conservé par export / import), baisses toujours possibles.
  */
 import { describe, expect, it } from 'vitest';
-import { beta0Environment, decodeState, exportState, PROGRESSION_POLICIES, withProgressionPolicy } from '../../src/index.js';
+import { BETA0_PROGRESSION_POLICY, beta0Environment, decodeState, exportState, PROGRESSION_POLICIES, withProgressionPolicy } from '../../src/index.js';
 import type { AppState } from '../../src/index.js';
 import { simulate } from '../rc4-audit/rc4-sim.js';
 import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
@@ -19,11 +19,15 @@ const classified = (s: AppState) => (s.programmeState?.audit ?? []).map((a) => a
 const loads = (s: AppState) => s.strength.tracks.map((t) => [t.trackId, t.nextPrescription?.loadKg ?? null]);
 
 describe('politiques de progression versionnées', () => {
-  it('inactives par défaut : l’environnement BÊTA ne lit aucune politique, aucune trace ne porte d’identifiant', () => {
-    expect(beta0Environment().progressionReading).toBeUndefined();
-    const st = simulate(S('E-PROG'), W).state;
+  it('BÊTA (D2) : `progression-stab-1` active par défaut ; référence antérieure : aucune politique, aucun identifiant', () => {
+    expect(beta0Environment().progressionReading).toBe(PROGRESSION_POLICIES['progression-stab-1']);
+    expect(BETA0_PROGRESSION_POLICY).toBe('progression-stab-1');
+    expect(beta0Environment({ progressionPolicy: null }).progressionReading).toBeUndefined();
+    const st = simulate(S('E-PROG'), W, beta0Environment({ progressionPolicy: null })).state;
     expect(classified(st).length).toBeGreaterThan(0);
     expect(classified(st).some((r) => 'progressionPolicy' in r.params)).toBe(false);
+    const active = simulate(S('E-PROG'), W, beta0Environment()).state;
+    expect(classified(active).every((r) => r.params.progressionPolicy === 'progression-stab-1')).toBe(true);
   }, 300_000);
   it('mêmes paramètres que les variantes simulées (B-CLAMP, P-CLSTAB)', () => {
     const strip = (o: object | undefined) => { const { policyId: _p, ...rest } = (o ?? {}) as { policyId?: string }; return rest; };

@@ -284,14 +284,14 @@ export function Setup({ initial, mode = 'create', onDone, onCancel }: { initial?
         <div className="stack" role="radiogroup" aria-label="Sports">
           {CHOICES.map((c) => (
             <button key={c.id} type="button" role="radio" aria-checked={choice === c.id} className={`option ${choice === c.id ? 'on' : ''}`} onClick={() => setP(withChoice(p, c.id, first, c.id === 'crosstraining' ? true : p.crosstraining.enabled && choice !== 'crosstraining', c.id === 'hyrox' ? true : p.hyrox.enabled && choice !== 'hyrox'))}>
-              <div><div className="t">{c.title}</div><div className="tiny">{c.detail}</div></div>
+              <div><div className="t">{c.title}{(c.id === 'crosstraining' || c.id === 'hyrox') && <> <span className="badge sim" data-experimental-sport>Expérimental</span></>}</div><div className="tiny">{c.detail}{(c.id === 'crosstraining' || c.id === 'hyrox') ? ' — règles en cours de validation, aucune progression automatique' : ''}</div></div>
             </button>
           ))}
           {choice !== null && choice !== 'crosstraining' && choice !== 'hyrox' && (
-            <label className="check"><input type="checkbox" checked={p.crosstraining.enabled} onChange={(e) => setP(withChoice(p, choice, first, e.target.checked))} />Ajouter du Cross-training</label>
+            <label className="check"><input type="checkbox" checked={p.crosstraining.enabled} onChange={(e) => setP(withChoice(p, choice, first, e.target.checked))} />Ajouter du Cross-training (expérimental)</label>
           )}
           {choice !== null && choice !== 'hyrox' && (
-            <label className="check"><input type="checkbox" checked={p.hyrox.enabled} onChange={(e) => setP(withChoice(p, choice, first, p.crosstraining.enabled, e.target.checked))} />Ajouter HYROX</label>
+            <label className="check"><input type="checkbox" checked={p.hyrox.enabled} onChange={(e) => setP(withChoice(p, choice, first, p.crosstraining.enabled, e.target.checked))} />Ajouter HYROX (expérimental)</label>
           )}
         </div>
       )}

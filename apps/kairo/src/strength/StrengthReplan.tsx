@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { beta0Environment, exerciseLabel, replanSessionDetails, confirmStrengthWeekReplan, previewStrengthWeekReplan, requestProfileOrigin, weekPlacementExplanation, weekLoadWarnings, weekStartOf } from '@hybridsport/app-core';
+import { beta0Environment, exerciseLabel, replanSessionDetails, confirmStrengthWeekReplan, previewStrengthWeekReplan, requestProfileOrigin, weekChanges, weekPlacementExplanation, weekLoadWarnings, weekStartOf } from '@hybridsport/app-core';
+import { WeekCompare } from '../planning/WeekProposal.js';
 import type { AppState, PersistedWeek, ProfileInput, WeekReplanPreview } from '@hybridsport/app-core';
 import { useStore } from '../store.js';
 import { Notice } from '../ui.js';
@@ -24,14 +25,14 @@ export function StrengthReplanControl({profile,onConfirmed}:{profile?:ProfileInp
  return <section className="card" aria-label="Recalcul de la semaine"><h3>Appliquer à cette semaine</h3>
  <p className="small">Prévisualisez le remplacement des séances Musculation/HYROX futures non commencées. Les séances réalisées, commencées ou avec performances restent verrouillées. Les autres sports restent en place.</p>
  <button className="btn secondary block" onClick={start}>Recalculer ma semaine</button>
- {preview&&<div aria-label="Prévisualisation du planning"><h4>Avant</h4><Rows state={store.state} week={preview.before} lockedIds={preview.protectedIds}/><h4>Après proposé</h4><Rows state={preview.next} week={preview.after} lockedIds={preview.protectedIds}/>
+ {preview&&<div aria-label="Prévisualisation du planning"><WeekCompare before={preview.before} after={preview.after} changes={weekChanges(preview.before,preview.after)} warningsBefore={weekLoadWarnings(store.state,preview.weekStart)} warningsAfter={weekLoadWarnings(preview.next,preview.weekStart)}/><details><summary>Détail des prescriptions</summary><h4>Avant</h4><Rows state={store.state} week={preview.before} lockedIds={preview.protectedIds}/><h4>Après proposé</h4><Rows state={preview.next} week={preview.after} lockedIds={preview.protectedIds}/></details>
  <p className="small">{preview.protectedIds.length} séance(s) protégée(s). {preview.alternativesTried} organisations examinées. Les avertissements de récupération restent visibles : la proposition n’est pas une garantie de placer toutes les demandes.</p>
  <PlacementExplanation state={preview.next} weekStart={preview.weekStart}/>
  <ul className="small">{weekLoadWarnings(preview.next,preview.weekStart).map((w,i)=><li key={i}>{w.kind==='consecutive'?`${w.days} jours consécutifs : récupération à surveiller.`:w.kind==='multisport_conflict'?`${w.items.length} conflit(s) musculaire(s) restant(s) entre sports : consultez les séances concernées avant de les maintenir.`:w.kind==='full_body_consecutive'?'Des séances corps entier restent consécutives.':'Aucun jour de repos dans cette semaine.'}</li>)}</ul>
  <Notice>La confirmation enregistre aussi vos objectifs pour les prochaines semaines. Aucun changement n’est enregistré tant que vous n’avez pas confirmé.</Notice>
  <label className="small"><input type="checkbox" checked={accepted} onChange={e=>setAccepted(e.target.checked)}/> Je confirme le remplacement des séances futures affichées et j’ai pris connaissance des avertissements.</label>
- <button className="btn primary block" disabled={!accepted} onClick={()=>{let failure='';const ok=store.apply((s,c)=>{try{return confirmStrengthWeekReplan(s,preview,c,true,beta0Environment());}catch(e){failure=messages[(e as Error).message]??'Confirmation refusée : prévisualisez de nouveau.';throw e;}});if(ok){setPreview(null);onConfirmed?.();setMessage('Semaine recalculée. Séances protégées et performances conservées.');}else setMessage(failure);}}>Confirmer le nouveau planning</button>
- <button className="btn ghost block" onClick={()=>{setPreview(null);setAccepted(false);setMessage('Prévisualisation annulée. Aucune donnée modifiée.');}}>Annuler la replanification</button></div>}
+ <button className="btn primary block" disabled={!accepted} onClick={()=>{let failure='';const ok=store.apply((s,c)=>{try{return confirmStrengthWeekReplan(s,preview,c,true,beta0Environment());}catch(e){failure=messages[(e as Error).message]??'Confirmation refusée : prévisualisez de nouveau.';throw e;}});if(ok){setPreview(null);onConfirmed?.();setMessage('Semaine recalculée. Séances protégées et performances conservées.');}else setMessage(failure);}}>Appliquer le nouveau planning</button>
+ <button className="btn ghost block" onClick={()=>{setPreview(null);setAccepted(false);setMessage('Planning conservé. Aucune donnée modifiée.');}}>Conserver mon planning</button></div>}
  {message&&<p role="status">{message}</p>}
  </section>;
 }

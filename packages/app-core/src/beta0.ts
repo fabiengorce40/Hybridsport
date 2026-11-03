@@ -29,6 +29,8 @@ import { ROTATION_SIMULATION_IDS, rotationGovernance } from '../../programme/tes
 import { ctBeta0 } from '../../planner/tests/ct-beta0.js';
 import { hrBeta0 } from '../../planner/tests/hr-beta0.js';
 import { AppError } from './errors.js';
+import { PROGRESSION_POLICIES } from './progression-policies.js';
+import type { ProgressionPolicyId } from './progression-policies.js';
 import { ctWorkoutOf } from './ct-workout.js';
 import type { SessionDraft } from '@hybridsport/domain';
 import { addDays, daysBetween, weekStartOf } from './dates.js';
@@ -110,7 +112,13 @@ export const BETA0_CT_COMPOSITE_DEMAND = { ruleId: 'planner.crosstraining.compos
  * `globalPlacement: false` — RC4.4 : environnement SANS le second passage G5 (paramètre absent, identifiant de simulation
  * absent), soit exactement le placement V0 ; utilisé par les comparaisons et les preuves de non-régression.
  */
-export function beta0Environment(options: { readonly globalPlacement?: boolean } = {}): ProgrammeEnvironment {
+/** Politique de progression active de la BÊTA (FAST TRACK V1, D2). */
+export const BETA0_PROGRESSION_POLICY = 'progression-stab-1' satisfies ProgressionPolicyId;
+/**
+ * `progressionPolicy` : politique de progression (défaut : `BETA0_PROGRESSION_POLICY`) ; `null` = lecture ANTÉRIEURE à
+ * l'activation (bancs et références figées des lots 4 à 4.6, comparaisons de politiques). Jamais `null` dans le produit.
+ */
+export function beta0Environment(options: { readonly globalPlacement?: boolean; readonly progressionPolicy?: ProgressionPolicyId | null } = {}): ProgrammeEnvironment {
   const g5 = options.globalPlacement ?? true;
   const g = beta0RunningGovernance();
   const ct = ctBeta0(simulationMark);
@@ -136,6 +144,10 @@ export function beta0Environment(options: { readonly globalPlacement?: boolean }
       content: withDemand(runningContent(), undefined, simulationMark),
       composition: { parameters: g.parameters },
     },
+    // FAST TRACK V1 (décision D2, validée pour la BÊTA) — politique de progression Musculation VERSIONNÉE `progression-stab-1`
+    // (lecture au plafond de la plage, hystérésis, report des grands sauts) : appliquée aux NOUVELLES décisions seulement,
+    // identifiant tracé dans chaque décision ; historiques jamais réécrits ; R4 non activé ; plage de validité inchangée.
+    ...(options.progressionPolicy === null ? {} : { progressionReading: PROGRESSION_POLICIES[options.progressionPolicy ?? BETA0_PROGRESSION_POLICY] }),
   };
 }
 
@@ -286,7 +298,9 @@ export function legacyBeta0StrengthIntent(ps: ProgrammeState): { readonly sessio
  *   cours, aucune séance planifiée à une date déjà passée, semaine non clôturée : régénération SÛRE ;
  * - `stale_kept` : version antérieure mais semaine commencée : JAMAIS remplacée (cause donnée), affichée comme telle.
  */
-export type WeekPlanningCause = 'closed' | 'results' | 'session_in_progress' | 'past_sessions';
+export type WeekPlanningCause = 'closed' | 'results' | 'session_in_progress' | 'past_sessions' | 'kept_by_user';
+/** FAST TRACK V1 — choix « Conserver mon planning » pour une semaine planifiée par une version antérieure (audit). */
+export const STALE_WEEK_KEPT = 'KAIRO.WEEK_STALE_KEPT';
 export interface WeekPlanning {
   readonly version: string | null;
   readonly status: 'current' | 'stale_replaceable' | 'stale_kept';
@@ -303,6 +317,7 @@ export function weekPlanning(state: AppState, weekStart: string, today: string, 
   if ((state.programmeState?.results ?? []).some((r) => ids.has(r.requestId))) return kept('results');
   if (Object.keys(state.programmeLogs).some((id) => ids.has(id))) return kept('session_in_progress');
   if (w.requests.some((r) => r.status === 'planned' && r.date !== undefined && r.date < today)) return kept('past_sessions');
+  if ((state.programmeState?.audit ?? []).some((a) => a.reason.code === STALE_WEEK_KEPT && a.reason.params.weekStart === weekStart && a.reason.params.toVersion === currentVersion)) return kept('kept_by_user');
   return { version, status: 'stale_replaceable', cause: null };
 }
 /** Nombre de semaines du lundi `startWeek` jusqu'à la semaine contenant `date` incluse (calendrier seulement). */

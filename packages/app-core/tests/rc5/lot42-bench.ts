@@ -65,7 +65,8 @@ const envCache = new Map<string, ProgrammeEnvironment>();
 export function variantEnv(v: Lot42Variant): ProgrammeEnvironment {
   const hit = envCache.get(v.id);
   if (hit) return hit;
-  const env = beta0Environment();
+  // Bancs des lots 4.2 à 4.6 : variante A = lecture de progression ANTÉRIEURE à l'activation (références comparables).
+  const env = beta0Environment({ progressionPolicy: null });
   if (!env.strength) throw new Error('environnement Strength attendu');
   const policyPatch = { ...(v.volumeFitTieBreak ? { volumeFitTieBreak: v.volumeFitTieBreak } : {}), ...(v.highWindow ? { highWindow: v.highWindow } : {}), ...(v.redistributeUnplaced ? { redistributeUnplaced: true } : {}), ...(v.redistributeScope ? { redistributeScope: v.redistributeScope } : {}), ...(v.redistributeGuard ? { redistributeGuard: v.redistributeGuard } : {}), ...(v.isolationReview ? { isolationReview: v.isolationReview } : {}) };
   const touchesContent = v.synergists !== undefined || v.secondaryWeight !== undefined || Object.keys(policyPatch).length > 0;

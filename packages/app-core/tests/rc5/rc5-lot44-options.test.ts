@@ -29,7 +29,9 @@ const p50 = (s: AppState, date: string) => (strength(s).find((x) => x.date === d
 describe('options inactives par défaut', () => {
   it('environnement Beta 0 : aucune lecture R4 ; politique publiée sans redistribution ni réévaluation d’isolation', () => {
     const env = beta0Environment();
-    expect(env.progressionReading).toBeUndefined();
+    // FAST TRACK V1 (D2) : seule la politique `progression-stab-1` est active ; jamais de lecture R4 (séances allégées).
+    expect(env.progressionReading?.policy).toBeUndefined();
+    expect(env.progressionReading?.policyId).toBe('progression-stab-1');
     const policy = JSON.stringify(env.strength?.content.ruleset.document.parameters.find((x) => x.id === 'strength.personalization')?.value ?? {});
     expect(policy).not.toContain('redistributeUnplaced');
     expect(policy).not.toContain('isolationReview');

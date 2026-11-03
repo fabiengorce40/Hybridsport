@@ -11,7 +11,7 @@ import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import {
   BETA0_PLANNING_VERSION, createBeta0Programme, decodeState, emptyState, ensureBeta0Week, exportState, legacyBeta0StrengthIntent, prescribedArchetype,
-  recordSessionExecution, selectBeta0Week, startProgrammeSession, upgradeLegacyBeta0Programme, weekPlanning,
+  applyStaleWeekProposal, keepStaleWeek, recordSessionExecution, selectBeta0Week, staleWeekProposal, startProgrammeSession, upgradeLegacyBeta0Programme, weekPlanning,
 } from '../src/index.js';
 import type { AppState } from '../src/index.js';
 import { clock, profile } from './fixtures.js';
@@ -69,8 +69,19 @@ describe('mise à niveau de l’intention Strength héritée', () => {
 });
 
 describe('semaine planifiée par une version antérieure', () => {
-  it('ouverte le lundi, non commencée ⇒ régénérée : Haut / Bas / Haut / Bas, version courante, audit, visible', () => {
-    const s = ensureBeta0Week(preS1(), clock(MON));
+  it('ouverte le lundi, non commencée ⇒ RIEN ne change sans accord ; proposition actuel / proposé ; « Appliquer » ⇒ Haut / Bas / Haut / Bas, tracé', () => {
+    const before = ensureBeta0Week(preS1(), clock(MON));
+    // FAST TRACK V1 : aucune régénération silencieuse à l'ouverture.
+    expect(before.planner.weeks[MON]).toEqual(preS1().planner.weeks[MON]);
+    expect(audit(before)).toEqual(['KAIRO.PROGRAMME_STRENGTH_INTENT_UPGRADED']);
+    expect(selectBeta0Week(before, MON)?.planning).toMatchObject({ status: 'stale_replaceable' });
+    const p = staleWeekProposal(before, clock(MON));
+    if (!p) throw new Error('proposition attendue');
+    expect(before.planner.weeks[MON]).toEqual(preS1().planner.weeks[MON]);
+    expect(p.changes.filter((c) => c.sport === 'strength').map((c) => [c.kind, c.to, c.archetypeTo])).toEqual([
+      ['replaced', '2026-10-05', 'str_upper_a'], ['replaced', '2026-10-07', 'str_lower_a'], ['replaced', '2026-10-08', 'str_upper_b'], ['replaced', '2026-10-09', 'str_lower_b'],
+    ]);
+    const s = applyStaleWeekProposal(before, p, clock(MON));
     // Lot 4 (mécanisme RC5.1) — hypertrophie 4× : Haut A → Bas A → Haut B → Bas B ; ordre B/A les semaines calendaires impaires.
     expect(strengthDays(s, MON)).toEqual([['2026-10-05', 'str_upper_a'], ['2026-10-07', 'str_lower_a'], ['2026-10-08', 'str_upper_b'], ['2026-10-09', 'str_lower_b']]);
     expect(s.planner.weeks[MON]?.planningVersion).toBe(BETA0_PLANNING_VERSION);
@@ -79,8 +90,28 @@ describe('semaine planifiée par une version antérieure', () => {
     const v = selectBeta0Week(s, MON);
     expect(v?.planning).toMatchObject({ status: 'current', replannedAt: '2026-10-05T07:30:00Z' });
     expect(v?.sessions.filter((x) => x.sport === 'strength').every((x) => x.compositionAuthority === 'provisional' && x.compositionRule === 'strength.rules.weeklyComposition@0.2.0-candidate' && x.dataError === null)).toBe(true);
-    // Réouverture : rien ne change (idempotent).
+    // Réouverture : rien ne change (idempotent), plus aucune proposition.
     expect(ensureBeta0Week(s, clock(MON))).toEqual(s);
+    expect(staleWeekProposal(s, clock(MON))).toBeNull();
+  });
+
+  it('« Conserver mon planning » : semaine inchangée, choix tracé, plus de proposition ; semaine suivante à la version courante', () => {
+    const before = ensureBeta0Week(preS1(), clock(MON));
+    const kept = keepStaleWeek(before, clock(MON));
+    expect(kept.planner.weeks[MON]).toEqual(preS1().planner.weeks[MON]);
+    expect(selectBeta0Week(kept, MON)?.planning).toMatchObject({ status: 'stale_kept', cause: 'kept_by_user' });
+    expect(staleWeekProposal(kept, clock(MON))).toBeNull();
+    expect(ensureBeta0Week(kept, clock(MON))).toEqual(kept);
+    const next = ensureBeta0Week(kept, clock(NEXT_MON));
+    expect(selectBeta0Week(next, NEXT_MON)?.planning).toMatchObject({ version: BETA0_PLANNING_VERSION, status: 'current' });
+  });
+
+  it('aperçu périmé (état modifié entre l’aperçu et la confirmation) ⇒ refus REPLAN_STALE, rien n’est écrit', () => {
+    const before = ensureBeta0Week(preS1(), clock(MON));
+    const p = staleWeekProposal(before, clock(MON));
+    if (!p) throw new Error('proposition attendue');
+    const changed = { ...before, revision: before.revision + 1 };
+    expect(() => applyStaleWeekProposal(changed, p, clock(MON))).toThrow('REPLAN_STALE');
   });
 
   it('ouverte le mercredi (séance de lundi passée) ⇒ CONSERVÉE (4 × Full body), signalée ; semaine suivante en S1', () => {
@@ -111,7 +142,10 @@ describe('semaine planifiée par une version antérieure', () => {
   });
 
   it('export / import après mise à niveau : identique (version et audit conservés)', () => {
-    const s = ensureBeta0Week(preS1(), clock(MON));
+    const b = ensureBeta0Week(preS1(), clock(MON));
+    const p = staleWeekProposal(b, clock(MON));
+    if (!p) throw new Error('proposition attendue');
+    const s = applyStaleWeekProposal(b, p, clock(MON));
     const d = decodeState(exportState(s));
     if (!d.ok) throw new Error(d.problem);
     expect(d.state).toEqual(s);

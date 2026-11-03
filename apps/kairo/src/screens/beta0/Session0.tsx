@@ -19,6 +19,7 @@ import { BLOCK_LABELS, RunStructureView, SetRow } from '../Session.js';
 import { StrengthWorkout } from '../../workout/StrengthWorkout.js';
 import { CrossTrainingWorkout } from '../../workout/CrossTrainingWorkout.js';
 import { AdaptationNotice, useStartFlow } from '../../precheck/PreSessionCheck.js';
+import { MissedSessionCard } from '../../planning/MissedSession.js';
 import { StrengthInsightPanel } from '../../strength/StrengthInsight.js';
 import { HyroxWorkout } from '../../workout/HyroxWorkout.js';
 import { ExperimentalBadge } from './common.js';
@@ -148,6 +149,7 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
     <>
       {REKKA_V2 && v && <VisualHeader title={sportName(v.sport)} sport={v.sport} />}
       <SessionBody requestId={requestId} onBack={onBack} />
+      {v && v.placement === 'planned' && !v.log && !v.result && <MissedSessionCard requestId={requestId} />}
       {v && (quality || done || refused || warning || maintained) && (
         <div className="field-after">
           {refused && <Notice tone="warn"><span role="status" data-manual-refused>{refused}</span></Notice>}

@@ -29,6 +29,7 @@ export * from './start-check.js';
 export * from './reproducibility.js';
 export * from './free-run-load.js';
 export * from './week-load.js';
+export * from './week-changes.js';
 export * from './readiness-persisted.js';
 export * from './equipment.js';
 export * from './strength-insight.js';

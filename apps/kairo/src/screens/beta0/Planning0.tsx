@@ -1,4 +1,5 @@
 import { PlacementExplanation, StrengthReplanControl } from '../../strength/StrengthReplan.js';
+import { StaleWeekProposalCard } from '../../planning/WeekProposal.js';
 import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
 import { useState } from 'react';
 import { addDays, beta0Integrity, weekdayIndex, weekLoadWarnings } from '@hybridsport/app-core';
@@ -73,6 +74,7 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
         <>
           <PlacementExplanation weekStart={week.weekStart} />
           {week === current && <StrengthReplanControl/>}
+          {week === current && week.planning?.status === 'stale_replaceable' && <StaleWeekProposalCard />}
           <WeekPlanningNotice planning={week.planning} />
           <RunningTestFallbackNotice fallback={week.runningTestFallback} />
           <WeekLoadNotice warnings={weekLoadWarnings(state, week.weekStart)} items={week.items} />

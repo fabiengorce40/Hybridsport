@@ -34,8 +34,9 @@ const KEPT_CAUSES: Readonly<Record<string, string>> = {
 };
 export function weekPlanningText(p: Beta0WeekView['planning']): string | null {
   if (!p) return null;
+  if (p.status === 'stale_kept' && p.cause === 'kept_by_user') return 'Vous avez choisi de conserver le planning de cette semaine. La semaine prochaine utilisera la nouvelle composition.';
   if (p.status === 'stale_kept') return `Cette semaine a été planifiée par une version précédente de KAIRO. Elle est conservée telle quelle car ${KEPT_CAUSES[p.cause ?? ''] ?? 'elle est commencée'} : la semaine prochaine utilisera la nouvelle composition.`;
-  if (p.replannedAt) return 'Cette semaine a été replanifiée avec la nouvelle version de KAIRO : aucune séance n’avait commencé.';
+  if (p.replannedAt) return 'Cette semaine a été replanifiée avec votre accord : aucune séance n’avait commencé.';
   return null;
 }
 

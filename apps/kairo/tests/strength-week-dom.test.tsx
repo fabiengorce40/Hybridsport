@@ -65,13 +65,17 @@ describe('B — programme créé avant S1 (AppState réel pré-S1), application 
     expect((s.planner.weeks['2026-10-05']?.requests ?? []).filter((r) => r.sport === 'strength').map((r) => r.intent?.archetypeId)).toEqual(Array(4).fill('str_full_body'));
   });
 
-  it('ouverte le lundi (semaine non commencée) : régénérée, Planning Haut / Bas / Haut / Bas et avis de replanification', () => {
+  it('ouverte le lundi (semaine non commencée) : AUCUNE régénération sans accord ; « Appliquer le nouveau planning » ⇒ Haut / Bas / Haut / Bas et avis', () => {
     const storage = preS1Storage();
     mount(storage, '2026-10-05');
     click('Planning');
+    // FAST TRACK V1 : la semaine reste telle quelle, une proposition est affichée.
+    expect(strengthCards()).toEqual(['Full body', 'Full body', 'Full body', 'Full body']);
+    click('Voir la proposition');
+    click('Appliquer le nouveau planning');
     // Lot 4 (mécanisme RC5.1) — semaine calendaire paire : ordre A.
     expect(strengthLabels()).toEqual(['Haut du corps A', 'Bas du corps A', 'Haut du corps B', 'Bas du corps B']);
-    expect(screen.getByText(/replanifiée avec la nouvelle version de KAIRO/)).toBeTruthy();
+    expect(screen.getByText(/replanifiée avec votre accord/)).toBeTruthy();
     expect(screen.queryByText(/Full body/)).toBeNull();
     expect(saved(storage).planner.weeks['2026-10-05']?.planningVersion).toBe('beta0-m31');
   });
