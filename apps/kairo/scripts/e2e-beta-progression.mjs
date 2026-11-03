@@ -33,35 +33,54 @@ try {
   await page.getByRole('button', { name: 'Créer mon programme', exact: true }).click();
   await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
 
-  await page.getByRole('button', { name: 'Planning', exact: true }).click();
-  await page.getByRole('button', { name: /^Musculation :/ }).first().click();
-  await page.getByRole('button', { name: 'Commencer la séance', exact: true }).click();
-  const main = page.getByRole('button', { name: 'Démarrer le bloc principal', exact: true });
-  if (await main.count()) await main.click();
-  // Toutes les séries de travail : répétitions et charge saisies, cochées (rien n'est déduit de la prescription).
-  let guard = 0;
-  while (await page.getByRole('button', { name: 'Cocher la série', exact: true }).count()) {
-    if ((guard += 1) > 60) fail('trop de séries');
-    const reps = page.getByLabel('Répétitions réalisées').first();
-    if (await reps.isEditable() && (await reps.inputValue()) === '') await reps.fill('8');
-    const kg = page.getByLabel('Charge (kg)').first();
-    if (await kg.count() && await kg.isEditable() && (await kg.inputValue()) === '') await kg.fill('20');
-    await page.getByRole('button', { name: 'Cocher la série', exact: true }).first().click();
-    const skip = page.getByRole('button', { name: 'Passer', exact: true });
-    if (await skip.count()) await skip.first().click();
+  // Séance Musculation n° `nth` du planning : séries saisies et cochées, fin « comme prévu » (ou adaptée si demandé).
+  async function doSession(nth) {
+    await page.getByRole('button', { name: 'Planning', exact: true }).click();
+    await page.getByRole('button', { name: /^Musculation :/ }).nth(nth).click();
+    await page.getByRole('button', { name: 'Commencer la séance', exact: true }).click();
+    const main = page.getByRole('button', { name: 'Démarrer le bloc principal', exact: true });
+    if (await main.count()) await main.click();
+    let guard = 0;
+    for (;;) {
+      const row = page.locator('.k-set:not(.done)').filter({ has: page.getByRole('button', { name: 'Cocher la série', exact: true }) }).first();
+      if (!(await row.count())) break;
+      if ((guard += 1) > 80) fail('trop de séries');
+      const reps = row.getByLabel('Répétitions réalisées');
+      if (await reps.count() && (await reps.inputValue()) === '') await reps.fill('8');
+      const kg = row.getByLabel('Charge (kg)');
+      if (await kg.count() && (await kg.inputValue()) === '') await kg.fill('20');
+      await row.getByRole('button', { name: 'Cocher la série', exact: true }).click();
+      const skip = page.getByRole('button', { name: 'Passer', exact: true });
+      if (await skip.count()) await skip.first().click();
+    }
+    await page.getByRole('button', { name: 'Terminer la séance', exact: true }).click();
+    const asPlanned = page.getByRole('radio', { name: 'Tout s’est passé comme prévu', exact: true });
+    if (await asPlanned.count()) await asPlanned.click(); else await page.getByRole('radio', { name: 'J’ai adapté la séance', exact: true }).click();
+    await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
+    await page.getByText('Séance terminée', { exact: true }).first().waitFor();
+    await page.getByRole('button', { name: 'Retour', exact: true }).click();
   }
-  await page.getByRole('button', { name: 'Terminer la séance', exact: true }).click();
-  const asPlanned = page.getByRole('radio', { name: 'Tout s’est passé comme prévu', exact: true });
-  if (await asPlanned.count()) await asPlanned.click(); else await page.getByRole('radio', { name: 'J’ai adapté la séance', exact: true }).click();
-  await page.getByRole('button', { name: 'Enregistrer', exact: true }).click();
-  await page.getByText('Séance terminée', { exact: true }).first().waitFor();
-  check(true, 'séance Musculation terminée et enregistrée (aucun blocage en fin de séance)');
+  await doSession(0);
+  check(true, 'séance 1 terminée et enregistrée (suivis de charge créés, aucun blocage)');
+  // Deuxième séance (même rotation, deux jours plus tard) : premières DÉCISIONS de progression sur les suivis créés.
+  await page.clock.setSystemTime(new Date('2026-10-07T08:00:00+02:00'));
+  await page.reload();
+  await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+  await doSession(1);
+  check(true, 'séance 2 terminée et enregistrée (aucun blocage en fin de séance)');
+  // Troisième séance (vendredi) : mêmes emplacements que la première ⇒ décisions de progression sur ses suivis.
+  await page.clock.setSystemTime(new Date('2026-10-09T08:00:00+02:00'));
+  await page.reload();
+  await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+  await doSession(2);
+  check(true, 'séance 3 terminée et enregistrée (décisions de progression, aucun blocage en fin de séance)');
 
   const s = await read();
   const decisions = (s?.programmeState?.audit ?? []).filter((a) => a.reason.code === 'PROGRESSION.EXPOSURE_CLASSIFIED');
   check(s?.schemaVersion === 5, 'données au format 5');
+  if (process.env.E2E_DEBUG) console.log('DBG', JSON.stringify({ codes: (s?.programmeState?.audit ?? []).map((a) => a.reason.code), results: s?.programmeState?.results, logs: Object.values(s?.programmeLogs ?? {}).map((l) => ({ sets: l.sets?.length, done: l.sets?.filter((x) => x.done).length })) }).slice(0, 1500));
   check(decisions.length > 0 && decisions.every((a) => a.reason.params.progressionPolicy === 'progression-stab-1'), `${String(decisions.length)} décision(s) de progression tracée(s) « progression-stab-1 »`);
-  check((s?.programmeState?.results ?? []).length === 1 && (s?.strength?.tracks ?? []).length > 0, 'résultat enregistré, suivis de charge créés');
+  check((s?.programmeState?.results ?? []).length === 3 && (s?.strength?.tracks ?? []).length > 0, 'résultat enregistré, suivis de charge créés');
   await page.reload();
   await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
   const again = await read();

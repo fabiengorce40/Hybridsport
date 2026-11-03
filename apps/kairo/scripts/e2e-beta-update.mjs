@@ -1,4 +1,4 @@
-/* global localStorage, document, Event -- exécutés dans la page */
+/* global localStorage, document, Event, navigator -- exécutés dans la page */
 /**
  * REKKA BÊTA — MISE À JOUR sans perte de données : la BÊTA (build A) est utilisée (programme créé, état utilisateur
  * importé, préférences), puis une NOUVELLE build B est publiée (commande `E2E_REBUILD_CMD` : reconstruit `dist-beta` avec
@@ -63,6 +63,9 @@ await page.evaluate(() => document.dispatchEvent(new Event('visibilitychange')))
 await page.getByText(/Nouvelle version de KAIRO disponible/).waitFor({ timeout: 30000 });
 check(true, 'bandeau « Nouvelle version disponible » affiché');
 await page.getByRole('button', { name: 'Mettre à jour' }).click();
+// Le rechargement suit la demande de nouveau service worker : attendre la page RECHARGÉE (sinon l'ancienne page, encore
+// affichée, serait lue), avec une limite qui fait échouer une mise à jour qui ne se produit pas.
+await page.waitForFunction((old) => { const r = document.querySelector('.k-test-ribbon'); return r !== null && r.getAttribute('data-beta-build') !== old; }, oldBuild, { timeout: 60000 }).catch(() => undefined);
 await page.waitForLoadState('load');
 await page.locator('.k-test-ribbon').waitFor();
 const shown = await page.locator('.k-test-ribbon').getAttribute('data-beta-build');
@@ -76,5 +79,14 @@ if (process.env.E2E_EXPECT_REKKA_V2 === '1') {
 }
 await page.getByRole('button', { name: 'Planning', exact: true }).click();
 check(await page.locator('[data-planning-grid]').isVisible(), 'préférence Grille conservée après la mise à jour');
+// Hors ligne APRÈS la mise à jour : la nouvelle build redémarre sans réseau, données intactes.
+await page.evaluate(async () => { await navigator.serviceWorker.ready; });
+await page.waitForFunction(() => Boolean(navigator.serviceWorker.controller));
+await ctx.setOffline(true);
+await page.reload();
+await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
+check(await page.locator('.k-test-ribbon').getAttribute('data-beta-build') === NEW_BUILD, 'hors ligne après la mise à jour : la nouvelle build redémarre');
+check(JSON.stringify(await dump()) === JSON.stringify(before), 'hors ligne après la mise à jour : données identiques');
+await ctx.setOffline(false);
 await browser.close();
 console.log('E2E MISE À JOUR BÊTA OK');

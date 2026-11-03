@@ -178,7 +178,7 @@ Volume Musculation prévu (séries de travail / semaine, moyenne S1–S6 ; cible
 
 | quads | hamstrings | glutes | calves | chest | back | shoulders | arms | core |
 |---|---|---|---|---|---|---|---|---|
-| 4.3 (10–18) | 4.3 (8–14) | 7.5 (6–14) | 0.7 (4–10) | 12.7 (10–20) | 10.8 (10–20) | 14.3 (8–16) | 16.8 (6–14) | 9.1 (4–10) |
+| 4.3 (10–18) | 4.3 (8–14) | 7.5 (6–14) | 0.7 (4–10) | 13.2 (10–20) | 10.8 (10–20) | 14.0 (8–16) | 16.8 (6–14) | 9.1 (4–10) |
 
 Course (structure prescrite par semaine) :
 

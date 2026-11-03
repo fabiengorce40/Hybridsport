@@ -51,7 +51,7 @@ describe('RC3.2 — boutons désactivés expliqués', () => {
     expect(button('Continuer').disabled).toBe(false);
     // Retour terrain : HYROX ajouté mais non complété ⇒ Continuer grisé SANS explication auparavant.
     fireEvent.click(button('Retour'));
-    fireEvent.click(screen.getByLabelText('Ajouter HYROX'));
+    fireEvent.click(screen.getByLabelText(/^Ajouter HYROX/));
     fireEvent.click(button('Continuer'));
     expect(button('Continuer').disabled).toBe(true);
     expect(blockers()).toMatch(/HYROX : choisissez un type de séance, choisissez un objectif/);

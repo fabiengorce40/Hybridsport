@@ -135,6 +135,14 @@ jobs:
         env:
           SITE_URL: ${{ needs.deploy.outputs.site }}
         run: E2E_URL="${SITE_URL}/" node apps/kairo/scripts/e2e-offline-smoke.mjs
+      - name: Progression Musculation active (progression-stab-1) — séances réelles, décisions tracées
+        env:
+          SITE_URL: ${{ needs.deploy.outputs.site }}
+        run: E2E_URL="${SITE_URL}/" node apps/kairo/scripts/e2e-beta-progression.mjs
+      - name: HYROX et Cross-training (expérimentaux) — accès, garde-fous, séances, chronomètres, historique
+        env:
+          SITE_URL: ${{ needs.deploy.outputs.site }}
+        run: E2E_URL="${SITE_URL}/" E2E_REKKA_V2=1 node apps/kairo/scripts/e2e-beta-ct-hyrox.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

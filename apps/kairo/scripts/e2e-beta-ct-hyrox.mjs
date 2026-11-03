@@ -44,6 +44,9 @@ try {
   check(await p.getByText(/aucune règle de reprise HYROX n’est encore validée : aucune séance ne sera proposée/).isVisible(), 'coupure : avertissement explicite (règle de reprise non validée)');
   await p.getByRole('button', { name: 'Continuer' }).click();
   await p.getByRole('button', { name: 'Continuer' }).click();
+  if (await p.getByLabel('Lieu d’entraînement').count()) await p.getByLabel('Lieu d’entraînement').selectOption('preset.full_gym');
+  const blockers = await p.locator('[data-next-blockers]').count() ? await p.locator('[data-next-blockers]').innerText() : '';
+  check(blockers === '', `création possible (${blockers})`);
   await p.getByRole('button', { name: 'Créer mon programme' }).click();
   await p.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
   const st = await p.evaluate(() => JSON.parse(localStorage.getItem('rekka-beta:kairo.state') ?? localStorage.getItem('kairo.state') ?? '{}'));

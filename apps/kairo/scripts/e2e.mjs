@@ -200,14 +200,21 @@ const strengthTitles = (p) => p.getByRole('button', { name: /^Musculation : / })
   await c.close();
 }
 
-// B — programme créé AVANT S1 (AppState réel pré-S1) ouvert un lundi : semaine non commencée régénérée.
+// B — programme créé AVANT S1 (AppState réel pré-S1) ouvert un lundi : semaine non commencée JAMAIS régénérée sans
+// accord (FAST TRACK V1) ; proposition « Planning actuel / Planning proposé », puis « Appliquer le nouveau planning ».
 {
   const pre = readFileSync(new URL('../../../packages/app-core/tests/fixtures/pre-s1-state.json', import.meta.url), 'utf8');
   const { c, p } = await freshPage(pre);
   await p.getByRole('button', { name: 'Planning', exact: true }).click();
+  const kept = await strengthTitles(p);
+  check(kept.length === 4 && kept.every((x) => x === 'Full body'), `S1 programme pré-S1 : semaine INCHANGÉE à l’ouverture (${kept.join(', ')})`);
+  check((await p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'))).planner?.weeks?.['2026-10-05']?.planningVersion === undefined, 'S1 programme pré-S1 : aucune écriture de la semaine sans accord');
+  await p.getByRole('button', { name: 'Voir la proposition' }).click();
+  check(await p.getByRole('region', { name: 'Planning actuel' }).isVisible() && await p.getByRole('region', { name: 'Planning proposé' }).isVisible(), 'S1 programme pré-S1 : comparaison planning actuel / proposé');
+  await p.getByRole('button', { name: 'Appliquer le nouveau planning' }).click();
   const titles = await strengthTitles(p);
   check(titles.join(',') === 'Haut du corps,Bas du corps,Haut du corps,Bas du corps', `S1 programme pré-S1 : semaine régénérée dans le DOM (${titles.join(', ')})`);
-  check((await p.locator('body').innerText()).includes('replanifiée avec la nouvelle version de KAIRO'), 'S1 programme pré-S1 : avis de replanification visible');
+  check((await p.locator('body').innerText()).includes('replanifiée avec votre accord'), 'S1 programme pré-S1 : avis de replanification visible');
   const st = await p.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
   check(st.planner?.weeks?.['2026-10-05']?.planningVersion === 'beta0-m31', 'S1 programme pré-S1 : semaine persistée à la version courante');
   await c.close();
