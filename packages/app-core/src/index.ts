@@ -41,3 +41,4 @@ export * from "./strength-replan.js";
 export * from './hybrid-proposals.js';
 export * from './strength-diagnostics.js';
 export * from './progression-policies.js';
+export * from './progress-view.js';

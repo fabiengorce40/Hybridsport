@@ -1,6 +1,5 @@
 /** Presentation only: approved artwork, backed by existing application selectors. */
 import type { Sport } from '@hybridsport/app-core';
-import { selectFieldHistory, selectFreeRuns } from '@hybridsport/app-core';
 export { REKKA_V2 } from './flag.js';
 import { useStore } from '../store.js';
 import { weekOf, SessionCard0 } from '../screens/beta0/common.js';
@@ -32,9 +31,4 @@ export function VisualHeader({ title, sport, profile = false }: { title: string;
 export function LiveSessions({onOpen}:{onOpen:(id:string)=>void}) {
  const {state,clock}=useStore();const week=weekOf(state,clock().today);
  return <section className="screen rv-sessions" aria-label="Mes séances"><VisualHeader title="Séances"/>{!week?.items.length&&<p className="empty">Aucune séance disponible cette semaine.</p>}{week?.items.map(v=><SessionCard0 key={v.requestId} v={v} onOpen={onOpen}/>)}</section>;
-}
-export function LiveProgress() {
- const {state}=useStore();const entries=selectFieldHistory(state).filter(e=>e.completion!=='missed');const runs=selectFreeRuns(state);
- const seconds=entries.reduce((n,e)=>n+(e.durationS??e.run?.realizedDurationS??0),0)+runs.reduce((n,r)=>n+r.durationS,0);
- return <section className="rv-metrics" aria-label="Progression réelle"><div><b>{entries.length+runs.length}</b><span>séances enregistrées</span></div><div><b>{Math.floor(seconds/3600)} h {Math.floor(seconds%3600/60)}</b><span>durée renseignée</span></div><div><b>{new Set([...entries.map(e=>e.sport),...(runs.length?['running']:[])]).size}</b><span>sports pratiqués</span></div></section>;
 }
