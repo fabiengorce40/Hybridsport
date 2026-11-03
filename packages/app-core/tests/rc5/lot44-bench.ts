@@ -96,12 +96,15 @@ export interface Lot44Measure extends Lot43Measure {
   readonly audit?: readonly { readonly code: string; readonly params: Readonly<Record<string, unknown>> }[];
   /** Lot 4.5 : exercices successifs de chaque emplacement d'isolation (archétype / emplacement), seulement si demandé. */
   readonly isolationSequences?: Readonly<Record<string, readonly string[]>>;
+  /** Lot 4.6 : charges réalisées successives (première série de travail) par exercice et emplacement, seulement si demandé. */
+  readonly loadSequences?: Readonly<Record<string, readonly number[]>>;
 }
 
 export function measureLot44(s: ProfileSpec, v: Lot43Variant, keepAudit = false): Lot44Measure {
   let audit: Record<string, number> = {};
   let raw: { code: string; params: Record<string, unknown> }[] = [];
   const iso: Record<string, string[]> = {};
+  const loadSeq: Record<string, number[]> = {};
   const m = measureLot43(s, v, (st) => {
     const out: Record<string, number> = {};
     for (const a of st.programmeState?.audit ?? []) {
@@ -119,9 +122,10 @@ export function measureLot44(s: ProfileSpec, v: Lot43Variant, keepAudit = false)
         for (const it of (ses?.blocks ?? []).flatMap((b) => b.items)) if (it.refs?.slotId && /\.iso_/.test(it.refs.slotId)) { const k = it.refs.slotId; n[k] = (n[k] ?? 0) + 1; (iso[`${r.intent?.archetypeId ?? ''}/${k}#${String(n[k])}`] ??= []).push(it.exerciseId); }
       }
     }
+    if (keepAudit) for (const x of [...st.strength.exposures].sort((a, b) => (a.at < b.at ? -1 : 1))) { const kg = x.sets[0]?.loadKg; if (kg !== undefined) (loadSeq[`${x.exerciseId}/${x.slotId ?? ''}`] ??= []).push(kg); }
     if (keepAudit) raw = (st.programmeState?.audit ?? []).filter((a) => a.reason.code.startsWith('PROGRESSION.')).map((a) => ({ code: a.reason.code, params: a.reason.params as Record<string, unknown> }));
   });
-  return { ...m, progression: audit, ...(keepAudit ? { audit: raw, isolationSequences: iso } : {}) };
+  return { ...m, progression: audit, ...(keepAudit ? { audit: raw, isolationSequences: iso, loadSequences: loadSeq } : {}) };
 }
 
 const f1 = (n: number | null | undefined) => (n === null || n === undefined ? '—' : String(Math.round(n * 10) / 10));

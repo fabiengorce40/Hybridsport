@@ -70,7 +70,15 @@ export interface ProgressionReadingOption {
    * - `outOfRange: 'clamp'` : effort déclaré hors plage lu au PLAFOND de la plage (estimation conservatrice, jamais au-dessus) ;
    * - `suspendUnreliable` : réussite sans estimation exploitable (ni observée, ni borne) ⇒ décision SUSPENDUE, compteurs intacts.
    */
-  readonly e1rmMaxRtf?: number; readonly outOfRange?: 'clamp'; readonly suspendUnreliable?: true;
+  readonly e1rmMaxRtf?: number; readonly outOfRange?: 'clamp' | 'bound'; readonly suspendUnreliable?: true;
+  /**
+   * Lot 4.6 (simulation) — stabilisation :
+   * - `outOfRange: 'bound'` : effort déclaré hors plage lu comme BORNE INFÉRIEURE de l'e1RM (charge × (1 + plafond /
+   *   diviseur)) : relève l'estimation qu'il contredit, ne la baisse jamais, jamais une estimation ponctuelle ;
+   * - `hysteresis` : après une baisse, aucune hausse avant ce nombre d'expositions de la track (anti-oscillation) ;
+   * - `deferLargeStep` : une hausse dont le saut relatif dépasse cette fraction est REPORTÉE une fois (preuve supplémentaire).
+   */
+  readonly hysteresis?: number; readonly deferLargeStep?: number;
 }
 
 /** Lot 4.5 (simulation) : paramètres d'estimation avec une plage de validité candidate (jamais ceux du ruleset actif). */
@@ -83,6 +91,39 @@ function estimationParams(params: StrengthParams, o: ProgressionReadingOption): 
 function clampToRange(sets: readonly PerformedSet[], params: StrengthParams): PerformedSet[] {
   const max = params['strength.load'].validRepRange.max;
   return sets.map((z) => (z.rir !== undefined && z.reps + z.rir > max && z.reps <= max ? { ...z, rir: max - z.reps } : z));
+}
+
+/** Lot 4.6 (simulation) : borne inférieure de l'e1RM des séries dont l'effort déclaré dépasse la plage de validité. */
+function outOfRangeBound(sets: readonly PerformedSet[], params: StrengthParams): number | undefined {
+  const l = params['strength.load'];
+  const b = sets.flatMap((z) => (z.rir !== undefined && z.loadKg !== undefined && z.loadKg > 0 && z.reps + z.rir > l.validRepRange.max ? [z.loadKg * (1 + l.validRepRange.max / l.e1rmDivisor)] : []));
+  return b.length > 0 ? Math.max(...b) : undefined;
+}
+
+type AuditEntry = { readonly reason: { readonly code: string; readonly params: Readonly<Record<string, unknown>> } };
+type Update = { readonly track: StrengthTrack; readonly reasons: readonly ReasonCode[]; readonly rotate: boolean };
+/**
+ * Lot 4.6 (simulation) — stabilisation d'une HAUSSE décidée : hystérésis après une baisse récente, report d'un saut relatif
+ * trop grand. La hausse devient un maintien tracé (`PROGRESSION.HELD`), compteurs de preuves conservés ; jamais de baisse.
+ */
+function stabilize(before: StrengthTrack, u: Update, o: ProgressionReadingOption, audit: readonly AuditEntry[], pending: readonly ReasonCode[]): Update {
+  const prev = before.nextPrescription?.loadKg; const next = u.track.nextPrescription?.loadKg;
+  if (prev === undefined || next === undefined || next <= prev) return u;
+  const mine = [...audit.map((a) => a.reason), ...pending].filter((r) => r.params.trackId === before.trackId);
+  const hold = (cause: string): Update => ({ track: { ...before, consecutiveSuccess: Math.max(before.consecutiveSuccess, u.track.consecutiveSuccess), ...(u.track.e1rmKg !== undefined ? { e1rmKg: u.track.e1rmKg } : {}), ...(u.track.evidence ? { evidence: u.track.evidence } : {}) }, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: before.trackId, cause })], rotate: false });
+  if (o.hysteresis !== undefined) {
+    let since = 0;
+    for (let i = mine.length - 1; i >= 0; i--) {
+      const r = mine[i];
+      if (r?.code === 'PROGRESSION.REGRESSED') { if (since < o.hysteresis) return hold('hysteresis'); break; }
+      if (r?.code === 'PROGRESSION.EXPOSURE_CLASSIFIED') since += 1;
+    }
+  }
+  if (o.deferLargeStep !== undefined && (next - prev) / prev > o.deferLargeStep) {
+    const last = [...mine].reverse().find((r) => r.code !== 'PROGRESSION.EXPOSURE_CLASSIFIED');
+    if (!(last?.code === 'PROGRESSION.HELD' && last.params.cause === 'large_step_deferred')) return hold('large_step_deferred');
+  }
+  return u;
 }
 
 /** RIR prescrits (première série de travail) des expositions RÉALISÉES de la track, dans l'ordre chronologique. */
@@ -180,7 +221,11 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
       const simExec = readingOption?.outOfRange === 'clamp' ? { ...exec, performed: clampToRange(exec.performed, simParams) } : exec;
       const est = effortEstimate(simExec.performed, simParams);
       const suspend = readingOption?.suspendUnreliable === true && t.model === 'autoregulated' && (cls === 'above' || cls === 'on_target') && est.observed === undefined && est.lowerBound === undefined;
-      const u0 = suspend ? { track: t, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: t.trackId, cause: 'estimate_unreliable' })], rotate: false } : updateTrack(t, simExec, cls, e, simParams, 'accumulation', undefined, reading);
+      // Lot 4.6 (simulation) : borne inférieure de l'e1RM pour un effort déclaré hors plage.
+      const bound = readingOption?.outOfRange === 'bound' && t.model === 'autoregulated' ? outOfRangeBound(exec.performed, simParams) : undefined;
+      const tb = bound !== undefined && (t.e1rmKg === undefined || bound > t.e1rmKg) ? { ...t, e1rmKg: bound } : t;
+      const u00 = suspend ? { track: t, reasons: [strengthReasons.emit('PROGRESSION.HELD', { trackId: t.trackId, cause: 'estimate_unreliable' })], rotate: false } : updateTrack(tb, simExec, cls, e, simParams, 'accumulation', undefined, reading);
+      const u0 = readingOption ? stabilize(t, u00, readingOption, state.programmeState?.audit ?? [], reasons) : u00;
       const count = exposures.filter((z) => z.exerciseId === t.exerciseId && z.slotId === t.slotId && z.at >= t.openedAt).length + 1;
       const r3 = readingOption?.policy && usesReassessment(readingOption.policy) && count % readingOption.reassessEvery === 0 ? reassessTrack(u0.track, e, params) : undefined;
       const u = r3 ? { ...u0, track: { ...r3.track, ...(r3.track.nextPrescription?.loadKg !== undefined ? { cycleStartLoadKg: r3.track.nextPrescription.loadKg } : {}) }, reasons: [...u0.reasons, ...r3.reasons] } : u0;

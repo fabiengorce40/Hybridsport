@@ -8,7 +8,8 @@ import type { ProfileInput, StrengthPersonalization } from '../../src/index.js';
 import type { ProfileSpec } from '../rc4-audit/rc4-sim.js';
 
 // technical-constant: TEST_ONLY — durée du banc (semaines) et seuil de récupération de la politique (heures)
-export const WEEKS = 12;
+/** Durée des simulations (semaines) ; lot 4.6 : `SIM_WEEKS` pour les scénarios prolongés (24), 12 par défaut. */
+export const WEEKS = Number(process.env.SIM_WEEKS ?? 12);
 export const RECOVERY_H = 36;
 const eq = (id: string): string[] => [...(EQUIPMENT_PRESETS.find((p) => p.id === id)?.equipment ?? [])];
 const FULL = [...new Set([...eq('preset.hybrid_race_gym'), ...eq('preset.full_gym')])];

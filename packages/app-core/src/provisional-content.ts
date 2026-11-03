@@ -105,8 +105,13 @@ export function strengthContentRegistry(): readonly ContentSource[] {
   return [strengthContent(), personalizedStrengthContent(strengthContent()), strengthAbF6Content(), personalizedStrengthContent(strengthAbF6Content()), strengthL1B4Content(), personalizedStrengthContent(strengthL1B4Content()), strengthL1V3Content(), strengthF6Content(), strengthLockContent()];
 }
 
-export function strengthContentFor(rulesetVersion: string, catalogVersion: string): ContentSource | undefined {
-  return strengthContentRegistry().find((c) => c.ruleset.version === rulesetVersion && c.catalog.version === catalogVersion);
+/**
+ * Lot 4.6 — `candidates: true` : la recherche inclut aussi les contenus CANDIDATS préparés (`strengthCandidateRegistry`),
+ * chaîne de lecture prête pour une activation future. Défaut (tous les appels du produit) : registre des utilisateurs seul.
+ */
+export function strengthContentFor(rulesetVersion: string, catalogVersion: string, o: { readonly candidates?: true } = {}): ContentSource | undefined {
+  const pool = o.candidates === true ? [...strengthContentRegistry(), ...strengthCandidateRegistry()] : strengthContentRegistry();
+  return pool.find((c) => c.ruleset.version === rulesetVersion && c.catalog.version === catalogVersion);
 }
 
 /** Ruleset de test du CORE (avec les paramètres d'anti-doublon, provisoires) et catalogue de test : ceux des tests Running. */
@@ -189,4 +194,14 @@ export function strengthCandidateContent(o: StrengthCandidateOptions): ContentSo
   const out: ContentSource = { ruleset: r.ruleset, catalog, authority: 'provisional', origin: `candidate:${tag}` };
   candidateCache.set(tag, out);
   return out;
+}
+
+/** Lot 4.6 — contenus candidats PRÉPARÉS (hors registre des utilisateurs) : B1 + réévaluation, redistribution avec garde (deux portées). */
+export const STRENGTH_CANDIDATES: readonly StrengthCandidateOptions[] = [
+  { b1IsolationReview: true },
+  { redistribution: { guard: 'keep_residual' } },
+  { redistribution: { scope: 'deficit', guard: 'keep_residual' } },
+];
+export function strengthCandidateRegistry(): readonly ContentSource[] {
+  return STRENGTH_CANDIDATES.map((o) => strengthCandidateContent(o));
 }
