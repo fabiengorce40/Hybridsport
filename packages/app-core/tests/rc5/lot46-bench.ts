@@ -68,11 +68,16 @@ export function measureLot46(s: ProfileSpec, v: Lot43Variant): Lot46Measure {
   return { ...rest, weeks: WEEKS, reversals, roundTrips, increases, largeSteps: large, maxStepPct: Math.round(maxStep * 1000) / 10, finalLoadSum: Math.round(finalSum * 10) / 10 };
 }
 
-/** Plan d'exécution : `scope` = 'progression' (14 scénarios + 20 profils pour A et P-STAB), 'b1' ou 'red'. */
-export function lot46Plan(scope: 'progression' | 'b1' | 'red'): { variant: Lot43Variant; specs: ProfileSpec[] }[] {
+/**
+ * Plan d'exécution : `scope` = 'progression' (14 scénarios + 20 profils pour A et P-STAB), 'b1', 'red', ou 'profiles'
+ * (FAST TRACK : B-CLAMP et P-CLSTAB sur les 20 profils, pour repérer les profils qui régressent).
+ */
+export type Lot46Scope = 'progression' | 'b1' | 'red' | 'profiles';
+export function lot46Plan(scope: Lot46Scope): { variant: Lot43Variant; specs: ProfileSpec[] }[] {
   const all20 = lot43Specs();
   const only = (ids: readonly string[]) => all20.filter((x) => ids.includes(x.id));
   if (scope === 'b1') return B1_VARIANTS.map((variant) => ({ variant, specs: only(B1_PROFILES) }));
+  if (scope === 'profiles') return P_VARIANTS.filter((v) => ['B-CLAMP', 'P-CLSTAB'].includes(v.id)).map((variant) => ({ variant, specs: all20 }));
   if (scope === 'red') return RED_VARIANTS.map((variant) => ({ variant, specs: only(RED_PROFILES) }));
   return P_VARIANTS.map((variant) => ({ variant, specs: ['A', 'P-STAB', 'P-BOUND'].includes(variant.id) ? [...lot45Scenarios(), ...all20] : lot45Scenarios() }));
 }

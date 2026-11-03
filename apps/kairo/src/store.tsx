@@ -4,7 +4,7 @@
  */
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import type { ReactNode } from 'react';
-import { AppError, baselineOf, detectOverwrite, ensureBeta0Week, ensureCurrentWeek, guardedSave, isBeta0, loadState, MemoryStorage, resolveOverwrite, sameBaseline, STORAGE_KEY } from '@hybridsport/app-core';
+import { AppError, baselineOf, detectOverwrite, ensureBeta0Week, ensureCurrentWeek, guardedSave, isBeta0, keepCopyBeforeReplace, loadState, MemoryStorage, resolveOverwrite, sameBaseline, STORAGE_KEY } from '@hybridsport/app-core';
 import { ERROR_TEXT } from './present.js';
 import { namespaced, STORAGE_NAMESPACE } from './channel.js';
 import type { AppState, Baseline, Clock, KeyValueStorage, LoadResult, Overwrite } from '@hybridsport/app-core';
@@ -39,8 +39,11 @@ export interface Store {
   readonly clock: () => Clock;
   /** Applique une transition d'app-core ; renvoie false si elle est refusée (message affiché). */
   apply(f: (s: AppState, clock: Clock) => AppState): boolean;
-  /** Recommencer (après lecture impossible : la sauvegarde illisible est déjà conservée à part). */
-  reset(next: AppState): boolean;
+  /**
+   * Remplacement complet (après lecture impossible : la sauvegarde illisible est déjà conservée à part). `keepCopy` :
+   * copie exacte des données enregistrées AVANT le remplacement (import, effacement) ; copie impossible ⇒ rien n'est remplacé.
+   */
+  reset(next: AppState, o?: { readonly keepCopy?: true }): boolean;
   /** Données réécrites par une version non protégée (ancien onglet) : date de la dernière écriture protégée. */
   readonly overwrite?: { readonly savedAt: string };
   /** Choix de l'utilisateur après un écrasement ; la version écartée reste conservée sur l'appareil. */
@@ -142,8 +145,12 @@ export function StoreProvider({ children, storage: injected, clock = realClock }
   }, [clock, commit]);
 
   // Pour un remplacement complet, conserver l'état courant si la sauvegarde échoue.
-  const reset = useCallback((next: AppState): boolean => {
+  const reset = useCallback((next: AppState, o?: { readonly keepCopy?: true }): boolean => {
     if (overwriteRef.current) return false;
+    if (o?.keepCopy) {
+      const copy = keepCopyBeforeReplace(backend.current.storage);
+      if (!copy.ok) { setSaveError(copy.error); return false; }
+    }
     const result = guardedSave(backend.current.storage, next, baselineRef.current, clock().now);
     if (!result.ok) {
       if (result.reason === 'conflict') { reload(); setToast(CONFLICT_TEXT); } else setSaveError(result.error);

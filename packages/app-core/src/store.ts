@@ -24,6 +24,24 @@ export const BACKUP_PREFIX = 'kairo.unreadable.';
  * enregistrée : `kairo.premigration.v<version>.<empreinte>` (une seule copie par texte, jamais supprimée).
  */
 export const PREMIGRATION_PREFIX = 'kairo.premigration.';
+/**
+ * FAST TRACK V1 — copie EXACTE des données enregistrées, écrite AVANT un remplacement complet demandé par l'utilisateur
+ * (import d'un fichier, effacement) : `kairo.beforereplace.<empreinte>` (une seule copie par texte, jamais supprimée).
+ */
+export const BEFORE_REPLACE_PREFIX = 'kairo.beforereplace.';
+
+/** Conserve la donnée actuellement enregistrée avant un remplacement ; aucune donnée ⇒ rien à conserver. Échec ⇒ erreur. */
+export function keepCopyBeforeReplace(storage: KeyValueStorage): { ok: true; key?: string } | { ok: false; error: string } {
+  try {
+    const text = storage.getItem(STORAGE_KEY);
+    if (text === null) return { ok: true };
+    const key = `${BEFORE_REPLACE_PREFIX}${textHash(text)}`;
+    if (storage.getItem(key) !== text) storage.setItem(key, text);
+    return { ok: true, key };
+  } catch (e) {
+    return { ok: false, error: (e as Error).message || 'écriture impossible' };
+  }
+}
 
 /** Migrations successives : MIGRATIONS[n] transforme une donnée de version n en version n + 1. */
 // technical-constant: numéro de version du schéma persistant (contrat de format), pas une valeur sportive

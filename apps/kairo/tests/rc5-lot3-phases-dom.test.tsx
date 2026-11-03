@@ -135,6 +135,7 @@ describe('RC5 lot 3 — séance réelle', () => {
     mount(seeded());
     fireEvent.click(screen.getByRole('button', { name: 'Réglages' }));
     fireEvent.change(screen.getByLabelText('Fichier de données à importer'), { target: { files: [new File([exported], 's.json', { type: 'application/json' })] } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Remplacer mes données' }));
     await waitFor(() => expect(screen.getByText('Données importées.')).toBeTruthy());
     fireEvent.click(screen.getByRole('button', { name: 'Accueil' }));
     fireEvent.click(screen.getByRole('button', { name: 'Reprendre la séance' }));

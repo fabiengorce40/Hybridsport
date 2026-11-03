@@ -4,6 +4,7 @@ import { useRef, useState } from 'react';
 import { BUILD_DATE, BUILD_ID } from '../../version.js';
 import { JournalBeta } from '../../field/JournalBeta.js';
 import { BETA0_PLANNING_VERSION, BETA0_RESET_CONFIRMATION, clearPain, decodeState, emptyState, exportState, isBeta0, resetBeta0Data } from '@hybridsport/app-core';
+import type { AppState } from '@hybridsport/app-core';
 import { openWeek, useStore } from '../../store.js';
 import { download } from '../Profile.js';
 import { Notice } from '../../ui.js';
@@ -17,11 +18,24 @@ const readText = (f: Blob): Promise<string> => new Promise((resolve, reject) => 
 });
 
 /** Export / import : contrat app-core uniquement (format versionné, migrations dans app-core). */
+const SPORT_LABELS = { strength: 'Musculation', running: 'Course', hyrox: 'HYROX', crosstraining: 'Cross-training' } as const;
+/** Résumé lisible d'un jeu de données (comparaison avant remplacement) : sports, séances réalisées. */
+export function dataSummary(s: AppState): string {
+  const p = s.profile;
+  if (!p) return 'aucun profil';
+  const sports = (Object.keys(SPORT_LABELS) as (keyof typeof SPORT_LABELS)[]).filter((k) => p[k].enabled).map((k) => SPORT_LABELS[k]);
+  const done = (s.programmeState?.results ?? []).filter((r) => r.completion !== 'missed').length;
+  return `${sports.join(', ') || 'aucun sport'} — ${String(done)} séance${done > 1 ? 's' : ''} réalisée${done > 1 ? 's' : ''}`;
+}
+
 export function DataSection() {
   const store = useStore();
   const file = useRef<HTMLInputElement>(null);
   const [confirmReset, setConfirmReset] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // FAST TRACK V1 — import CONFIRMÉ : fichier lu et validé, puis comparaison actuel / fichier ; rien n'est remplacé avant
+  // l'accord explicite, et les données actuelles sont copiées sur l'appareil avant le remplacement.
+  const [pending, setPending] = useState<AppState | null>(null);
   const single = import.meta.env.VITE_TARGET === 'single';
   const onImport = async (f: File | undefined) => {
     if (!f) return;
@@ -29,9 +43,14 @@ export function DataSection() {
     try { text = await readText(f); } catch { setMessage('Import impossible : le fichier ne peut pas être lu. Rien n’a été modifié.'); return; }
     const d = decodeState(text);
     if (!d.ok) { setMessage(`Import impossible : fichier illisible ou d’une version plus récente. Rien n’a été modifié.`); return; }
-    let next = d.state;
-    try { next = openWeek(d.state, store.clock()); } catch { /* état importé conservé tel quel */ }
-    setMessage(store.reset(next) ? 'Données importées.' : 'Import impossible : l’enregistrement a échoué. Les données actuelles sont conservées.');
+    setMessage(null);
+    setPending(d.state);
+  };
+  const confirmImport = (imported: AppState) => {
+    let next = imported;
+    try { next = openWeek(imported, store.clock()); } catch { /* état importé conservé tel quel */ }
+    setPending(null);
+    setMessage(store.reset(next, { keepCopy: true }) ? 'Données importées.' : 'Import impossible : l’enregistrement a échoué. Les données actuelles sont conservées.');
   };
   return (
     <>
@@ -46,13 +65,22 @@ export function DataSection() {
             <input ref={file} type="file" accept="application/json,.json" aria-label="Fichier de données à importer" style={{ display: 'none' }} onChange={(e) => { void onImport(e.target.files?.[0]); e.target.value = ''; }} />
           </>
         )}
+      {pending && (
+        <div className="card" role="dialog" aria-label="Confirmer l’import">
+          <span className="small">Importer ce fichier remplacera vos données actuelles. Elles seront d’abord copiées sur cet appareil.</span>
+          <span className="small"><b>Données actuelles :</b> {dataSummary(store.state)}</span>
+          <span className="small"><b>Fichier :</b> {dataSummary(pending)}</span>
+          <button className="btn secondary" onClick={() => download(`kairo-${store.clock().today}.json`, exportState(store.state))}>Exporter d’abord mes données actuelles</button>
+          <div className="row"><button className="btn ghost" onClick={() => { setPending(null); setMessage('Import annulé. Rien n’a été modifié.'); }}>Annuler</button><button className="btn primary" onClick={() => confirmImport(pending)}>Remplacer mes données</button></div>
+        </div>
+      )}
       {message && <div className="small" role="status">{message}</div>}
       {!confirmReset
         ? <button className="btn danger" onClick={() => setConfirmReset(true)}>Effacer toutes les données</button>
         : (
           <div className="card">
             <span className="small">Tout effacer (profil, programme, historique) ? Exportez d’abord si besoin. Action irréversible.</span>
-            <div className="row"><button className="btn ghost" onClick={() => setConfirmReset(false)}>Annuler</button><button className="btn danger" onClick={() => store.reset(emptyState())}>Tout effacer</button></div>
+            <div className="row"><button className="btn ghost" onClick={() => setConfirmReset(false)}>Annuler</button><button className="btn danger" onClick={() => { if (!store.reset(emptyState(), { keepCopy: true })) setMessage('Effacement impossible : la copie de sécurité n’a pas pu être enregistrée. Rien n’a été effacé.'); }}>Tout effacer</button></div>
           </div>
         )}
     </>

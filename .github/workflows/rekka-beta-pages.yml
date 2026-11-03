@@ -131,6 +131,10 @@ jobs:
           SITE_URL: ${{ needs.deploy.outputs.site }}
           PROD_URL: https://fabiengorce40.github.io/Hybridsport/
         run: mkdir -p shots && E2E_URL="${SITE_URL}/" E2E_PROD_URL="${PROD_URL}" E2E_REKKA_V2=1 E2E_EXPECT_BUILD="${GITHUB_SHA}" node apps/kairo/scripts/e2e-beta.mjs shots
+      - name: Hors ligne dès la première visite (cache du service worker complet) et après rechargement
+        env:
+          SITE_URL: ${{ needs.deploy.outputs.site }}
+        run: E2E_URL="${SITE_URL}/" node apps/kairo/scripts/e2e-offline-smoke.mjs
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -68,6 +68,7 @@ try {
   await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
   await page.getByRole('button', { name: /^(Réglages|Profil)$/ }).click();
   await page.getByLabel('Fichier de données à importer').setInputFiles(FIXTURE);
+  { const ok = page.getByRole('button', { name: 'Remplacer mes données' }); await Promise.race([ok.waitFor().then(() => ok.click()).catch(() => {}), page.getByText('Données importées.', { exact: true }).waitFor().catch(() => {})]); } // import confirmé (FAST TRACK V1) ; anciennes builds : import direct
   await page.getByText('Données importées.').waitFor();
   const baseline = await exportData();
   const storedBefore = await page.evaluate((k) => localStorage.getItem(k), KEY);

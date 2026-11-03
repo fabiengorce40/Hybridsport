@@ -79,6 +79,8 @@ export interface ProgressionReadingOption {
    * - `deferLargeStep` : une hausse dont le saut relatif dépasse cette fraction est REPORTÉE une fois (preuve supplémentaire).
    */
   readonly hysteresis?: number; readonly deferLargeStep?: number;
+  /** FAST TRACK V1 — identifiant de la politique versionnée (`PROGRESSION_POLICIES`), recopié dans la trace des décisions. */
+  readonly policyId?: string;
 }
 
 /** Lot 4.5 (simulation) : paramètres d'estimation avec une plage de validité candidate (jamais ceux du ruleset actif). */
@@ -237,6 +239,7 @@ export function applyStrengthExecutionTraced(state: AppState, x: StrengthExecuti
         repsDelta: signed(ev.repsDelta), loadDeltaKg: signed(ev.loadDeltaKg), rirDelta: signed(ev.rirDelta), rir: ev.rir,
         kind: ev.kind, effort: ev.effort,
         prescribedRir: current === undefined ? 'n/a' : String(current), referenceRir: ref === undefined ? 'n/a' : String(ref), referenceSource: ref === undefined ? 'unknown' : refSource,
+        ...(readingOption?.policyId !== undefined ? { progressionPolicy: readingOption.policyId } : {}),
       }), ...u.reasons);
       tracks.set(t.trackId, u.track);
     };

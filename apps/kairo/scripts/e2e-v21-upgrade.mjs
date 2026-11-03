@@ -42,6 +42,7 @@ try{
   const cachesNow=await page.evaluate(()=>caches.keys());assert.ok(cachesNow.includes(newCache));assert.ok(!cachesNow.includes(oldCache));
   // Persist the v3 export via the actual import path, only in this throwaway context.
   await page.getByLabel('Fichier de données à importer').setInputFiles({name:'fictitious-v3-roundtrip.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(migrated))});
+  { const ok = page.getByRole('button', { name: 'Remplacer mes données' }); await Promise.race([ok.waitFor().then(() => ok.click()).catch(() => {}), page.getByText('Données importées.', { exact: true }).waitFor().catch(() => {})]); } // import confirmé (FAST TRACK V1) ; anciennes builds : import direct
   await page.getByText('Données importées.',{exact:true}).waitFor();assert.deepEqual(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key),migrated);
   assert.deepEqual(errors,[]);await context.close();
   // The exact currently published v2 app must refuse this v3 data and never overwrite it.

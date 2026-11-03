@@ -8,7 +8,7 @@ import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { lot46Plan, measureLot46 } from './lot46-bench.js';
-import type { Lot46Measure } from './lot46-bench.js';
+import type { Lot46Measure, Lot46Scope } from './lot46-bench.js';
 import { reportLot46 } from './lot46-report.js';
 import type { Lot45Measure } from './lot45-bench.js';
 
@@ -33,7 +33,7 @@ describe.runIf(process.env.LOT46_MERGE === '1')('rapport du lot 4.6 (fusion des 
 
 describe.runIf(process.env.LOT46_BENCH === '1')('banc du lot 4.6 (sur demande)', () => {
   it('variantes × profils', () => {
-    const scope = (process.env.LOT46_SCOPE ?? 'progression') as 'progression' | 'b1' | 'red';
+    const scope = (process.env.LOT46_SCOPE ?? 'progression') as Lot46Scope;
     const shard = process.env.LOT46_SHARD === undefined || process.env.LOT46_SHARD === '' ? undefined : process.env.LOT46_SHARD;
     const ids = shard?.split(',');
     const all = lot46Plan(scope).filter((p) => !ids || ids.includes(p.variant.id)).flatMap((p) => p.specs.map((s) => measureLot46(s, p.variant)));

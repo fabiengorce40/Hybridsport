@@ -67,7 +67,7 @@ export const STRENGTH_REASON_CODES: readonly ReasonCodeDefinition[] = [
   { code: 'DATA.SCIENCE_REGISTRY', categories: ['information'], params: { version: S }, audience: 'internal', severity: 'info' },
   { code: 'SELECT.CHOICE_GROUP', categories: ['optimization'], params: { group: S, need: S, cause: S, others: L }, audience: 'internal', severity: 'info' },
   // Lot 4.5 — trace facultative : RIR prescrit (première série de travail), RIR de référence de la prescription et sa source.
-  { code: 'PROGRESSION.EXPOSURE_CLASSIFIED', categories: ['information'], params: { trackId: S, exerciseId: S, exposure: S, success: S, sets: S, repsDelta: S, loadDeltaKg: S, rirDelta: S, rir: S, kind: S, effort: S, prescribedRir: S, referenceRir: S, referenceSource: S }, optionalParams: ['prescribedRir', 'referenceRir', 'referenceSource'], audience: 'internal', severity: 'info' },
+  { code: 'PROGRESSION.EXPOSURE_CLASSIFIED', categories: ['information'], params: { trackId: S, exerciseId: S, exposure: S, success: S, sets: S, repsDelta: S, loadDeltaKg: S, rirDelta: S, rir: S, kind: S, effort: S, prescribedRir: S, referenceRir: S, referenceSource: S, progressionPolicy: S }, optionalParams: ['prescribedRir', 'referenceRir', 'referenceSource', 'progressionPolicy'], audience: 'internal', severity: 'info' },
   { code: 'SELECT.CONTINUITY', categories: ['optimization'], params: { slot: S, incumbent: S, chosen: S, outcome: S, cause: S }, audience: 'internal', severity: 'info' },
   { code: 'SELECT.CONTINUITY_KEPT', categories: ['optimization'], params: { exercises: L }, audience: 'internal', severity: 'info' },
   { code: 'PLAN.SPORT_PRIORITY', categories: ['information'], params: { order: L, strengthRank: N, neighbours: L, policy: S }, audience: 'internal', severity: 'info' },

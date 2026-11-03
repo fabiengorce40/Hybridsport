@@ -34,7 +34,7 @@ export function reportLot46(all: readonly Lot46Measure[], ref45: readonly Lot45M
     }
     out.push('', `### Détail par scénario (${String(w)} semaines) : squat · soulevé de terre roumain · développé couché ; changements de sens`, '', `| Scénario | ${vs.join(' | ')} |`, `|---|${vs.map(() => '---|').join('')}`);
     for (const id of scenarios) out.push(`| ${id} | ${vs.map((v) => { const m = by(v, id, w); return m ? `${ld(m, 'back_squat')} · ${ld(m, 'romanian_deadlift')} · ${ld(m, 'bench_press')} ; ${String(m.reversals)}` : '—'; }).join(' | ')} |`);
-    const pv = ['A', 'P-BOUND', 'P-STAB'].filter((v) => profiles.some((id) => by(v, id, w)));
+    const pv = ['A', 'P-BOUND', 'P-STAB', 'B-CLAMP', 'P-CLSTAB'].filter((v) => profiles.some((id) => by(v, id, w)));
     if (pv.length > 0) {
       out.push('', `### 20 profils (${String(w)} semaines) : changements de sens · hausses suivies d’un « en dessous » · somme des charges finales`, '', `| Profil | ${pv.join(' | ')} |`, `|---|${pv.map(() => '---|').join('')}`);
       for (const id of profiles) out.push(`| ${id} | ${pv.map((v) => { const m = by(v, id, w); return m ? `${String(m.reversals)} · ${String(m.belowAfterIncrease)} · ${f1(m.finalLoadSum)}` : '—'; }).join(' | ')} |`);

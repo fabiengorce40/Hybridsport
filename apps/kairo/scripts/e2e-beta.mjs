@@ -70,7 +70,7 @@ if (EXPECT_BUILD) check(shown === EXPECT_BUILD && ribbonText.includes(EXPECT_BUI
 else check(Boolean(shown), `identifiant de build affiché (${shown})`);
 check(await page.title() === LABEL, 'titre de la page = identité BÊTA');
 const manifest = await page.evaluate(async () => { const l = document.querySelector('link[rel=manifest]'); return l ? (await fetch(l.href)).json() : null; });
-check(manifest?.name === LABEL && manifest.short_name === 'REKKA β' && manifest.id === './?kairo-channel=beta' && manifest.theme_color === '#0E5E52' && manifest.display === 'standalone', 'manifeste PWA : nom, nom court, identifiant, couleur et mode application propres à la BÊTA');
+check(manifest?.name === LABEL && manifest.short_name === 'REKKA β' && manifest.id === './?kairo-channel=beta' && manifest.theme_color === '#04121f' && manifest.display === 'standalone', 'manifeste PWA : nom, nom court, identifiant, couleur et mode application propres à la BÊTA');
 const swText = await page.evaluate(async () => (await fetch('./sw.js', { cache: 'no-store' })).text());
 check(swText.includes("const CACHE = 'rekka-beta-1';") && swText.includes("k.startsWith('rekka-beta-')") && !swText.includes("'kairo-beta0-2'"), 'service worker : cache propre, suppression limitée à ses propres caches');
 check(await page.evaluate(async () => Boolean((await navigator.serviceWorker.ready).active)), 'service worker BÊTA actif');
@@ -91,6 +91,7 @@ await page.getByRole('button', { name: 'Créer mon programme' }).click();
 await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
 await page.getByRole('button', { name: visualName('Réglages'), exact: true }).click();
 await page.getByLabel('Fichier de données à importer').setInputFiles(USER_STATE);
+{ const ok = page.getByRole('button', { name: 'Remplacer mes données' }); await Promise.race([ok.waitFor().then(() => ok.click()).catch(() => {}), page.getByText('Données importées.', { exact: true }).waitFor().catch(() => {})]); } // import confirmé (FAST TRACK V1) ; anciennes builds : import direct
 await page.getByText('Données importées.').waitFor();
 check(true, 'état utilisateur importé par « Importer mes données »');
 const imported = await page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? '{}'), `${PREFIX}kairo.state`);

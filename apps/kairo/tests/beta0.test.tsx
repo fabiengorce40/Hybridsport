@@ -130,6 +130,7 @@ describe('onboarding Beta 0 et programme', () => {
     click('Retour');
     click('Réglages');
     fireEvent.change(screen.getByLabelText('Fichier de données à importer'), { target: { files: [new File([paused ?? ''], 'pause.json', { type: 'application/json' })] } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Remplacer mes données' }));
     await waitFor(() => expect(screen.getByText('Données importées.')).toBeTruthy());
     expect(logOf()?.clock).toEqual({ pausedS: 0, pausedAt: `${MONDAY}T07:42:05Z` });
     click('Accueil');
@@ -512,6 +513,7 @@ describe('douleur, persistance, import', () => {
     mount(target);
     click('Réglages');
     fireEvent.change(screen.getByLabelText('Fichier de données à importer'), { target: { files: [new File([json], 'kairo.json', { type: 'application/json' })] } });
+    fireEvent.click(await screen.findByRole('button', { name: 'Remplacer mes données' }));
     await waitFor(() => expect(screen.getByText('Données importées.')).toBeTruthy());
     expect(saved(target).programmeState?.definition.priorities).toEqual(['strength', 'running']);
     const bad = new File(['{"schemaVersion":99}'], 'x.json');

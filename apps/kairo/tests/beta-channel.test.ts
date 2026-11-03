@@ -55,4 +55,8 @@ describe('REKKA BÊTA — données', () => {
     expect(sw).not.toMatch(/localStorage|indexedDB/);
     expect(vite).toContain("keys.filter((k) => k.startsWith('rekka-beta-') && k !== CACHE)");
   });
+  it('FAST TRACK V1 — hors ligne dès la première visite : la BÊTA met en cache tous les fichiers de sa build à l’installation', () => {
+    expect(vite).toContain("readdirSync(join(outDir, 'assets'))");
+    expect(sw).toContain("c.addAll(['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png'])");
+  });
 });

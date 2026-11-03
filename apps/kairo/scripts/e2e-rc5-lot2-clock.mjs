@@ -198,6 +198,7 @@ try {
     allErrors.push(dev.errors);
     await dev.page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Profil', exact: true }).click();
     await dev.page.getByLabel('Fichier de données à importer').setInputFiles({ name: 'sauvegarde.json', mimeType: 'application/json', buffer: Buffer.from(exported) });
+    { const ok = dev.page.getByRole('button', { name: 'Remplacer mes données' }); await Promise.race([ok.waitFor().then(() => ok.click()).catch(() => {}), dev.page.getByText('Données importées.', { exact: true }).waitFor().catch(() => {})]); } // import confirmé (FAST TRACK V1) ; anciennes builds : import direct
     await dev.page.getByText('Données importées.').waitFor();
     assert.deepEqual((await logById(dev.page, id)).timing, done.timing);
     await dev.page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Progression', exact: true }).click();
