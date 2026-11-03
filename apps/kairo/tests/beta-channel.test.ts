@@ -60,3 +60,36 @@ describe('REKKA BÊTA — données', () => {
     expect(sw).toContain("c.addAll(['./', './index.html', './manifest.webmanifest', './icon.svg', './icon-192.png'])");
   });
 });
+
+describe('REKKA BÊTA — Chantier D : identité PWA REKKA', () => {
+  const manifest = JSON.parse(readFileSync(new URL('../public/manifest.webmanifest', import.meta.url), 'utf8')) as { id?: string; start_url: string; scope: string; background_color: string; icons: { src: string }[] };
+  const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  it('identifiant, start_url et scope de la BÊTA inchangés (mise à jour sur place, jamais d’installation en double)', () => {
+    expect(vite).toContain("id: './?kairo-channel=beta'");
+    expect(vite).not.toMatch(/start_url:|scope:/);
+  });
+  it('icônes REKKA officielles sous des noms NOUVEAUX (192, 512, maskable) et fond de lancement bleu nuit', () => {
+    for (const f of ['rekka-icon-192.png', 'rekka-icon-512.png', 'rekka-icon-192-maskable.png', 'rekka-icon-512-maskable.png']) expect(vite).toContain(`src: '${f}'`);
+    expect(vite).toContain("purpose: 'maskable'");
+    expect(vite).toContain("const REKKA_ICON_DIR = 'resources/android-test-icons';");
+    expect(vite).toContain('background_color: BETA_COLOR, icons: REKKA_MANIFEST_ICONS');
+    expect(vite).toContain("const BETA_COLOR = '#04121f';");
+    expect(vite).toContain("'<link rel=\"apple-touch-icon\" href=\"./rekka-apple-touch-icon.png\" />'");
+  });
+  it('service worker BÊTA : icônes REKKA dans la liste de préchargement, garde de transformation conservée', () => {
+    expect(vite).toContain("...Object.keys(REKKA_ICON_FILES).map((f) => `./${f}`), ...assets");
+    expect(vite).toContain("!next.includes('\"./rekka-icon-512-maskable.png\"')");
+    expect(vite).toContain("throw new Error('service worker : transformation du canal BÊTA impossible')");
+  });
+  it('production inchangée : plugin réservé à la variable BÊTA, manifeste et page KAIRO d’origine', () => {
+    expect(vite).toContain("plugins: [react(), ...(BETA ? [betaChannel()] : [])]");
+    expect(manifest.id).toBeUndefined();
+    expect(manifest.start_url).toBe('./');
+    expect(manifest.scope).toBe('./');
+    expect(manifest.background_color).toBe('#0B0B0D');
+    expect(manifest.icons.map((i) => i.src)).toEqual(['icon-192.png', 'icon-512.png', 'icon-512-maskable.png', 'icon.svg']);
+    expect(html).toContain('<link rel="icon" href="./icon.svg" type="image/svg+xml" />');
+    expect(html).toContain('<link rel="apple-touch-icon" href="./icon-192.png" />');
+    expect(html).not.toContain('rekka-');
+  });
+});

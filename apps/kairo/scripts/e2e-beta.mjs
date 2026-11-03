@@ -71,6 +71,12 @@ else check(Boolean(shown), `identifiant de build affiché (${shown})`);
 check(await page.title() === LABEL, 'titre de la page = identité BÊTA');
 const manifest = await page.evaluate(async () => { const l = document.querySelector('link[rel=manifest]'); return l ? (await fetch(l.href)).json() : null; });
 check(manifest?.name === LABEL && manifest.short_name === 'REKKA β' && manifest.id === './?kairo-channel=beta' && manifest.theme_color === '#04121f' && manifest.display === 'standalone', 'manifeste PWA : nom, nom court, identifiant, couleur et mode application propres à la BÊTA');
+// Chantier D : icônes REKKA (noms nouveaux), fond de lancement bleu nuit ; chaque icône servie en image (200).
+const icons = manifest?.icons ?? [];
+check(manifest?.background_color === '#04121f' && manifest.start_url === './' && manifest.scope === './', 'manifeste PWA : fond de lancement bleu nuit, start_url et scope inchangés');
+check(icons.length > 0 && icons.every((i) => /^rekka-/.test(i.src)) && icons.some((i) => i.sizes === '192x192') && icons.some((i) => i.sizes === '512x512') && icons.some((i) => (i.purpose ?? '').split(' ').includes('maskable')), `manifeste PWA : icônes REKKA 192, 512 et maskable (${icons.map((i) => i.src).join(', ')})`);
+const iconResponses = await page.evaluate(async (srcs) => Promise.all(srcs.map(async (s) => { const r = await fetch(new URL(s, document.querySelector('link[rel=manifest]').href), { cache: 'no-store' }); return { s, status: r.status, type: r.headers.get('content-type') ?? '' }; })), icons.map((i) => i.src));
+check(iconResponses.every((r) => r.status === 200 && r.type.startsWith('image/')), `icônes du manifeste servies en image (${iconResponses.map((r) => `${r.s}=${String(r.status)} ${r.type}`).join(' ; ')})`);
 const swText = await page.evaluate(async () => (await fetch('./sw.js', { cache: 'no-store' })).text());
 check(swText.includes("const CACHE = 'rekka-beta-1';") && swText.includes("k.startsWith('rekka-beta-')") && !swText.includes("'kairo-beta0-2'"), 'service worker : cache propre, suppression limitée à ses propres caches');
 check(await page.evaluate(async () => Boolean((await navigator.serviceWorker.ready).active)), 'service worker BÊTA actif');
