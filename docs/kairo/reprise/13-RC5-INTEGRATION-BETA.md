@@ -119,7 +119,20 @@ Sur la branche d'intégration (`cd1e6f4`), avant tout push :
 
 ## 8. Publication
 
-Complétée après la publication (section suivante du compte rendu).
+| Élément | Valeur |
+|---|---|
+| Push | `claude/rekka-beta` `bc19fb1..097bacb`, avance rapide (aucun force push, aucun commit distant écrasé) ; branche `claude/rekka-rc5-beta-integration` publiée |
+| Commit publié | **`097bacbad88da635cf6fa74bbc43e8193dcd07b8`** |
+| Workflow | `REKKA BÊTA (Cloudflare Pages, isolé)`, exécution **n° 7** (`41549896817`) : **succès** (03/11, 00:02 → 00:12 UTC) |
+| Travail `deploy` | `pnpm check` vert (6 min 47 s), build BÊTA, marqueur `version.json` (canal beta), garde du projet (site existant = BÊTA REKKA), déploiement Cloudflare Pages |
+| Déploiement | `https://068389ee.rekka-beta.pages.dev` |
+| **URL BÊTA stable** | **`https://rekka-beta.pages.dev`** |
+| Travail `verify` | `version.json` = `097bacb`, canal beta ; E2E complet sur l'adresse HTTPS stable : identité, isolation de la production, état utilisateur, Planning en liste et en grille à 360 et 390 px (aucun débordement, aucun texte coupé, aucune erreur de page), « version affichée = version publiée (097bacb) » → **« E2E REKKA BÊTA OK »** ; captures : artefact `rekka-beta-e2e-captures` (55 fichiers) |
+| Production | `claude/crosstraining-c1-c2-spike-vbg8dv` à `f9f7e2e` : **inchangée**, aucun déploiement de production |
+| Paramètres Cloudflare | **inchangés** (workflow existant, aucun accès direct au jeton) |
+
+- **Service worker et cache :** le canal BÊTA garde son service worker (`rekka-beta-1`) ; la mise à jour passe par `version.json`, le bandeau « Nouvelle version disponible » et « Mettre à jour ».
+- **Fichiers servis :** les ressources sont hachées et la navigation est revalidée (`no-cache`). Aucune ancienne build ne reste servie après « Mettre à jour » (E2E de mise à jour).
 
 ## 9. Procédure de retour arrière
 
