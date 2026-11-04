@@ -80,7 +80,7 @@ export function App() {
         {tab === 'plan' && <Planning0 onOpen={setOpen} onGo={setTab} />}
         {tab === 'history' && <History0 onOpen={setOpen} />}
         {tab === 'programme' && <>{REKKA_V2 && <LiveSessions onOpen={setOpen} />}<Programme0 onEdit={() => setEditing(true)} /></>}
-        {(tab === 'settings' || tab === 'profile' || tab === 'run') && <Settings0 />}
+        {(tab === 'settings' || tab === 'profile' || tab === 'run') && <Settings0 onEditProfile={() => setEditing(true)} />}
         <TabBar tabs={BETA0_TABS} tab={tab} onChange={(t) => { setOpen(null); setTab(t); }} />
       </div>
       {open && (

@@ -1,3 +1,4 @@
+import { SOBER_V3 } from '../../sober/flag.js';
 import { PlacementExplanation, StrengthReplanControl } from '../../strength/StrengthReplan.js';
 import { StaleWeekProposalCard } from '../../planning/WeekProposal.js';
 import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
@@ -72,8 +73,7 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
       )}
       {!week || week.items.length === 0 ? <NoWeek today={today} /> : (
         <>
-          <PlacementExplanation weekStart={week.weekStart} />
-          {week === current && <StrengthReplanControl/>}
+          {SOBER_V3 ? <details className="v3-planning-options"><summary>Organisation et replanification</summary><PlacementExplanation weekStart={week.weekStart}/>{week===current && <StrengthReplanControl/>}</details> : <><PlacementExplanation weekStart={week.weekStart}/>{week===current && <StrengthReplanControl/>}</>}
           {week === current && week.planning?.status === 'stale_replaceable' && <StaleWeekProposalCard />}
           <WeekPlanningNotice planning={week.planning} />
           <RunningTestFallbackNotice fallback={week.runningTestFallback} />

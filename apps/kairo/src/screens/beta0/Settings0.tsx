@@ -1,9 +1,11 @@
+import { ProfileIcon } from '../../sober/ProfileIcon.js';
+import { SOBER_V3 } from '../../sober/flag.js';
 import { StrengthProfileScreen } from '../../strength/StrengthProfile.js';
 import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
 import { useRef, useState } from 'react';
 import { BUILD_DATE, BUILD_ID } from '../../version.js';
 import { JournalBeta } from '../../field/JournalBeta.js';
-import { BETA0_PLANNING_VERSION, BETA0_RESET_CONFIRMATION, clearPain, decodeState, emptyState, exportState, isBeta0, resetBeta0Data } from '@hybridsport/app-core';
+import { BETA0_PLANNING_VERSION, BETA0_RESET_CONFIRMATION, equipmentLabel, clearPain, decodeState, emptyState, exportState, isBeta0, resetBeta0Data } from '@hybridsport/app-core';
 import type { AppState } from '@hybridsport/app-core';
 import { openWeek, useStore } from '../../store.js';
 import { download } from '../Profile.js';
@@ -157,14 +159,40 @@ export function FieldTestCard() {
   );
 }
 
-export function Settings0() {
+export function Settings0({ onEditProfile }: { onEditProfile?: () => void }) {
   const store = useStore();
   const [runningProfile, setRunningProfile] = useState(false);
   const [strengthProfile,setStrengthProfile] = useState(false);
   const [journal, setJournal] = useState(false);
+  const [panel, setPanel] = useState<string | null>(null);
   if (strengthProfile) return <StrengthProfileScreen onBack={() => setStrengthProfile(false)} />;
   if (runningProfile) return <RunningProfileScreen onBack={() => setRunningProfile(false)} />;
   if (journal) return <JournalBeta onBack={() => setJournal(false)} />;
+  if (SOBER_V3) {
+    const p = store.state.profile;
+    const cards = [
+      ['objectives','◎','Mes objectifs','Objectifs et personnalisation sportive'],
+      ['availability','▦','Mes disponibilités',`${p?.availability.length ?? 0} créneaux déclarés`],
+      ['equipment','⚊','Mon matériel',`${p?.equipment?.items.length ?? 0} équipements déclarés`],
+      ['sports','↗','Mes sports',Object.entries(SPORT_LABELS).filter(([key])=>p?.[key as keyof typeof SPORT_LABELS].enabled).map(([,label])=>label).join(' · ')],
+      ['data','▤','Données & sauvegardes','Export, import, restauration'],
+      ['settings','⚙','Paramètres','Application et outils de test'],
+    ];
+    const title = cards.find(c=>c[0]===panel)?.[2];
+    return <div className="screen v3-profile">
+      {panel ? <><button className="btn ghost" onClick={()=>setPanel(null)}>← Retour au profil</button><h1 className="screen-title">{title}</h1></> : <VisualHeader title="Profil" profile/>}
+      <PainCard/>
+      {!panel && <div className="v3-profile-menu">{cards.map(([id,,label,sub])=><button key={id} className="card button-card v3-profile-link" onClick={()=>setPanel(id??null)}><span aria-hidden="true"><ProfileIcon kind={id??'settings'}/></span><span><strong>{label}</strong><small>{sub}</small></span><span aria-hidden="true">›</span></button>)}</div>}
+      {panel==='objectives' && <>
+        {p?.strength.enabled && <button className="card button-card" onClick={()=>setStrengthProfile(true)}><h3>Ma musculation</h3><p>Objectif, priorités musculaires et récupération</p></button>}
+        {p?.running.enabled && <button className="card button-card" onClick={()=>setRunningProfile(true)}><h3>Profil Course</h3><p>Performances et références</p></button>}
+        <button className="btn secondary" onClick={onEditProfile}>Modifier mon programme</button>
+      </>}
+      {['availability','equipment','sports'].includes(panel??'') && <div className="card"><p>{panel==='equipment' ? (p?.equipment?.items.map(id=>equipmentLabel(id)).join(' · ') || 'Aucun matériel déclaré') : panel==='availability' ? (p?.availability.map((minutes,i)=>`${['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][i]} : ${minutes} min`).join(' · ') || 'Aucun créneau déclaré') : cards[3]?.[3]}</p><button className="btn primary" onClick={onEditProfile}>Modifier mon programme</button></div>}
+      {panel==='data' && <DataSection/>}
+      {panel==='settings' && <><FieldTestCard/>{isBeta0(store.state)&&<button className="card button-card" onClick={()=>setJournal(true)}>Journal Beta</button>}<BetaResetSection/><div className="card small muted"><p>Beta expérimentale : HYROX et Cross-training restent expérimentaux. REKKA ne remplace pas un avis médical. Une séance par jour au plus ; aucune règle de récupération universelle n’est appliquée.</p><span aria-label="Version de l’application">Version : {BUILD_ID}</span></div></>}
+    </div>;
+  }
   return (
     <div className="screen">
       {REKKA_V2 ? <VisualHeader title="Profil" profile /> : <h1 className="screen-title">Réglages</h1>}

@@ -49,7 +49,7 @@ try {for(const width of [360,390]){
  await page.getByRole('radio',{name:'J’ai adapté la séance',exact:true}).click();await page.getByRole('button',{name:'Enregistrer',exact:true}).click();
  await page.getByText('Séance terminée',{exact:true}).first().waitFor();await page.getByRole('button',{name:'Retour',exact:true}).click();
  const performed=await read();assert.ok(Object.keys(performed.programmeLogs).length>0);
- await page.reload();await page.getByRole('button',{name:/^(Profil|Réglages)$/}).click();await page.getByRole('button',{name:/^Ma musculation/}).click();
+ await page.reload();await page.getByRole('button',{name:/^(Profil|Réglages)$/}).click();const objectives=page.getByRole('button',{name:/Mes objectifs/});if(await objectives.count())await objectives.click();await page.getByRole('button',{name:/^Ma musculation/}).click();
  await page.getByRole('button',{name:'Modifier mes priorités',exact:true}).click();await page.getByRole('button',{name:'Fessiers',exact:true}).click();await page.getByRole('button',{name:'Pectoraux',exact:true}).click();
  await page.getByRole('button',{name:'Confirmer ces modifications'}).click();await page.getByRole('button',{name:'Appliquer aux prochaines semaines'}).click();await page.getByRole('status').filter({hasText:'Objectifs enregistrés'}).waitFor();
  const after=await read();assert.equal(after.profile.strength.personalization.priorities[0].zone,'chest');assert.deepEqual(after.strength,performed.strength);assert.deepEqual(after.programmeLogs,performed.programmeLogs);

@@ -1,3 +1,4 @@
+import { SOBER_V3 } from '../../sober/flag.js';
 import { REKKA_V2, SportEmblem } from '../../rekka/visual.js';
 /** Lectures et composants communs Beta 0 (présentation uniquement : projection de `selectBeta0Week`). */
 import { useState } from 'react';
@@ -108,8 +109,9 @@ export function SessionCard0({ v, onOpen, highlight = false, dateLabel }: { v: S
   }
   return (
     <button className={`card button-card ${highlight ? 'accent' : ''} ${REKKA_V2 ? 'rv-has-emblem' : ''}`} data-request={v.requestId} data-status={v.display} onClick={() => onOpen(v.requestId)} aria-label={`${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`} {...(dateLabel ? { 'aria-describedby': `date-${v.requestId}` } : {})}>
-      {REKKA_V2 && <span className="rv-card-emblem"><SportEmblem sport={v.sport} /></span>}
-      <div className="row between">
+      {REKKA_V2 && !SOBER_V3 && <span className="rv-card-emblem"><SportEmblem sport={v.sport} /></span>}
+      <div className="row between v3-session-card-heading">
+        {SOBER_V3 && !dateLabel && <SportEmblem sport={v.sport}/>}
         {dateLabel ? <span className="small catalog-date" id={`date-${v.requestId}`} data-catalog-date>{dateLabel}</span> : <span className="small muted">{sportName(v.sport)}</span>}
         <span className="row">{isTest(v.archetypeId) && <span className="badge test">TEST</span>}<StatusPill status={v.display} /></span>
       </div>

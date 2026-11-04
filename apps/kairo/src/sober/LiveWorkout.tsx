@@ -3,7 +3,7 @@ import { exerciseLabel, intensityLabel } from '@hybridsport/app-core';
 import type { ReactNode } from 'react';
 import type { StrengthWorkoutProps, SetsItem } from '../workout/StrengthWorkout.js';
 import { SetLine, EffortRow, LightBlock, alternativesText, isSets, targetRirOf, phaseOf, PHASE_TITLES } from '../workout/StrengthWorkout.js';
-import { Anatomy, SoberLogo, muscleText } from './Artwork.js';
+import { muscleText } from './Artwork.js';
 interface Props extends StrengthWorkoutProps {onBack:()=>void;onFinish:()=>void;restTimer:ReactNode;trainingLabel:string;elapsedSeconds:number|null}
 export function LiveWorkout({v,title,editable,onRecord,onTogglePain,onEffort,onUnavailable,onBack,onFinish,restTimer,trainingLabel,elapsedSeconds,context,preparation,sessionClock,eyebrow}:Props){
  const main=v.session.blocks.filter(b=>!['warmup','cooldown'].includes(b.kind)).flatMap(block=>block.items.filter(isSets).map(item=>({block,item})));
@@ -15,13 +15,13 @@ export function LiveWorkout({v,title,editable,onRecord,onTogglePain,onEffort,onU
  const selectedEntry=main[selected];
  const total=main.reduce((n,{item})=>n+item.prescription.sets.length,0);const done=main.reduce((n,{item})=>n+item.prescription.sets.filter((_,i)=>saved(item.id,i)?.done).length,0);
  return <main className="v3-workout v3-active" data-live-workout="v3" data-sport="strength" aria-label="Séance en cours">
- <header className="v3-toolbar"><button onClick={onBack} aria-label="Retour">←</button><SoberLogo/><button aria-label="Commandes de séance" aria-expanded={menu} onClick={()=>setMenu(!menu)}>⋮</button></header>
+ <header className="v3-toolbar"><button onClick={onBack} aria-label="Retour">←</button><button aria-label="Commandes de séance" aria-expanded={menu} onClick={()=>setMenu(!menu)}>⋮</button></header>
  <nav className="v3-exercise-nav" aria-label="Exercices"><p>Exercice {main.length?selected+1:0} / {main.length}<span>{done}/{total} séries</span></p><div>{main.map(({item},i)=><button key={item.id} aria-label={`Aller à l’exercice ${i+1} : ${exerciseLabel(item.exerciseId)}`} aria-current={selected===i?'step':undefined} data-complete={complete(item)} onClick={()=>setSelected(i)}><span className="sr-only">{i+1}</span></button>)}</div></nav>
  <div className="sr-only" role="progressbar" aria-label="Séries validées" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done}/>{context}
  {main.map(({item},cardIndex)=>{
  const sets=item.prescription.sets;const current=sets.findIndex((_,i)=>!saved(item.id,i)?.done);const active=setSelection[item.id]??Math.max(0,current);const name=exerciseLabel(item.exerciseId);let number=0,warm=0;
  return <section className="v3-exercise" key={item.id} hidden={selected!==cardIndex} aria-label={`Exercice ${cardIndex+1} : ${name}`}>
- <div className="v3-exercise-heading"><div><h1>{name}</h1><p>{muscleText(item.exerciseId)}</p></div><Anatomy exerciseId={item.exerciseId}/></div>
+ <div className="v3-exercise-heading"><div><h1>{name}</h1><p>{muscleText(item.exerciseId)}</p></div></div>
  <div className="v3-sets">{sets.map((set,i)=><Fragment key={`${item.id}.${i}`}>{(i===0||phaseOf(sets[i-1]??set)!==phaseOf(set))&&<div className="v3-phase" data-set-phase={phaseOf(set)}>{PHASE_TITLES[phaseOf(set)]}{phaseOf(set)==='warmup'&&<small> · hors volume et progression</small>}</div>}<SetLine key={`${item.id}.${i}`} phaseShown appearance="v3" current={i===current} selected={i===active} position={i+1} total={sets.length} onSelect={()=>setSetSelection(s=>({...s,[item.id]:i}))} onPrevious={i?()=>setSetSelection(s=>({...s,[item.id]:i-1})):undefined} onNext={i<sets.length-1?()=>setSetSelection(s=>({...s,[item.id]:i+1})):undefined} set={set} label={set.kind==='rampup'?`Montée ${++warm}`:`Série ${++number}`} saved={saved(item.id,i)} editable={editable} onRecord={x=>{
  onRecord(item,i,x);if(x.done){const next=sets.findIndex((_,n)=>n!==i&&!saved(item.id,n)?.done);if(next>=0)setSetSelection(s=>({...s,[item.id]:next}));else{const nextExercise=main.findIndex(({item:it},n)=>n!==cardIndex&&!complete(it));if(nextExercise>=0)setSelected(nextExercise);}}else setSetSelection(s=>({...s,[item.id]:i}));
  requestAnimationFrame(()=>document.querySelector<HTMLElement>('.v3-exercise:not([hidden]) .v3-series-row[data-current="true"] .v3-series-select')?.focus({preventScroll:true}));

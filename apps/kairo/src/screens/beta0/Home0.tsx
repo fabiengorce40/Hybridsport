@@ -1,3 +1,4 @@
+import { SOBER_V3 } from '../../sober/flag.js';
 import { REKKA_V2, RekkaBrand, SportLinks } from '../../rekka/visual.js';
 import { confirmEquipment, equipmentLabel, equipmentNeedsConfirmation, EQUIPMENT_PRESETS, programmeStatusAt, weekdayIndex } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
@@ -74,18 +75,19 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
   const paused = state.safety.activePain !== null;
   const extra = (week?.items ?? []).filter((x) => x.placement === 'composed_unplaced' && (x.display === 'not_planned' || x.display === 'in_progress'));
   return (
-    <div className="screen">
+    <div className={`screen ${SOBER_V3 ? "v3-home" : ""}`}>
       <div className="hero">
         {REKKA_V2 ? <RekkaBrand /> : <div className="hero-brand">KAI<span>RO</span></div>}
+        {SOBER_V3 && <button className="v3-home-settings" aria-label="Paramètres" onClick={()=>onGo('settings')}>⚙</button>}
         <p className="small">{formatDate(today)}</p>
-        <h1>{name ? `${name}, ` : ''}{next ? (next.date === today ? 'c’est le moment.' : 'prochaine séance.') : 'rien de prévu.'}</h1>
-        {next && <SessionCard0 v={next} onOpen={onOpen} highlight />}
+        {!SOBER_V3 && <h1>{name ? `${name}, ` : ''}{next ? (next.date === today ? 'c’est le moment.' : 'prochaine séance.') : 'rien de prévu.'}</h1>}
+        <div className={SOBER_V3 ? "v3-today" : undefined}>{next && <SessionCard0 v={next} onOpen={onOpen} highlight />}
         {next && (
           <button className="btn primary block" onClick={() => onOpen(next.requestId)}>
             {next.display === 'in_progress' ? 'Reprendre la séance' : next.date === today && !paused ? 'Commencer la séance' : `Voir la séance${next.date === today ? '' : ` de ${formatDate(next.date ?? today).split(' ')[0] ?? ''}`}`}
           </button>
         )}
-      </div>
+      </div></div>
 
       {REKKA_V2 && <SportLinks onPlanning={() => onGo('plan')} />}
       {/* FIELD TEST — séances composées mais non placées : visibles sans remplacer la séance prévue. */}

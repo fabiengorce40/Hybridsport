@@ -1,3 +1,4 @@
+import { SOBER_V3 } from '../../sober/flag.js';
 /**
  * Chantier C — écran Progression (présentation seulement) : projection de `progressView`, lecture pure des données
  * persistées. Aucune progression inventée : HYROX et Cross-training n'affichent que des faits (nombre, durées, dates).
@@ -55,6 +56,7 @@ function Section({ sport, title, children }: { sport: Sport; title: string; chil
 }
 
 function StrengthPanel({ view }: { view: ProgressView['strength'] }) {
+  const [metric, setMetric] = useState<'load'|'reps'|'volume'>('load');
   const [picked, setPicked] = useState<string | null>(null);
   if (view.exercises.length === 0) return <p className="pv-empty">Aucune séance de musculation réalisée pour l’instant. Tes séries saisies apparaîtront ici.</p>;
   const ex = view.exercises.find((e) => e.exerciseId === picked) ?? view.exercises[0];
@@ -64,18 +66,21 @@ function StrengthPanel({ view }: { view: ProgressView['strength'] }) {
   const loadedSessions = ex.sessions.filter((s) => s.topLoadKg !== undefined);
   return (
     <>
-      <div className="pv-chips" role="group" aria-label="Choisir un exercice">
+      {SOBER_V3 ? <label className="v3-exercise-picker"><span className="sr-only">Choisir un exercice</span><select value={ex.exerciseId} onChange={e=>setPicked(e.target.value)}>{view.exercises.map(e=><option key={e.exerciseId} value={e.exerciseId}>{exerciseLabel(e.exerciseId)}</option>)}</select></label> : <div className="pv-chips" role="group" aria-label="Choisir un exercice">
         {view.exercises.map((e) => (
           <button key={e.exerciseId} type="button" className="pv-chip" aria-pressed={e.exerciseId === ex.exerciseId} onClick={() => setPicked(e.exerciseId)}>
             {exerciseLabel(e.exerciseId)}{e.main ? <span className="pv-tag"> · principal</span> : null}
           </button>
         ))}
-      </div>
+      </div>}
       <div className="pv-card" data-progress-exercise={ex.exerciseId}>
-        <h3 className="pv-sub">{name}</h3>
+        {!SOBER_V3 && <h3 className="pv-sub">{name}</h3>}
+        {SOBER_V3 && <div className="v3-metric-tabs" role="group" aria-label="Indicateur">{([['load','Charge'],['reps','Répétitions'],['volume','Volume']] as const).map(([id,label])=><button key={id} aria-pressed={metric===id} onClick={()=>setMetric(id)}>{label}</button>)}</div>}
+        {SOBER_V3 && metric!=='load' && <Sparkline sport="strength" values={ex.sessions.map(s=>metric==='reps'?s.bestReps:s.volumeKg)} label={`${name} : ${metric==='reps'?'répétitions maximales':'volume en kg'} par séance : ${ex.sessions.map(s=>`${formatDateShort(s.date)} ${metric==='reps'?s.bestReps:s.volumeKg}`).join(', ')}`}/>}
+
         {loads.length > 0 ? (
           <>
-            <Sparkline sport="strength" values={loads} label={`${name} : charge maximale par séance, ${loadedSessions.map((s) => `${formatDateShort(s.date)} ${kg(s.topLoadKg ?? 0)}`).join(', ')}`} />
+            {(!SOBER_V3 || metric==='load') && <Sparkline sport="strength" values={loads} label={`${name} : charge maximale par séance, ${loadedSessions.map((s) => `${formatDateShort(s.date)} ${kg(s.topLoadKg ?? 0)}`).join(', ')}`} />}
             <dl className="pv-kv">
               <div><dt>Première</dt><dd className="num">{kg(ex.trend.firstTopLoadKg ?? 0)}</dd></div>
               <div><dt>Dernière</dt><dd className="num">{kg(ex.trend.lastTopLoadKg ?? 0)}</dd></div>
@@ -154,6 +159,7 @@ const SECTIONS: readonly { readonly sport: Sport; readonly title: string }[] = [
 
 export function Progress0() {
   const { state, clock } = useStore();
+  const [selectedSport,setSelectedSport] = useState<Sport>('strength');
   const today = clock().today;
   const view = useMemo(() => progressView(state, { today }), [state, today]);
   const p = state.profile;
@@ -165,7 +171,8 @@ export function Progress0() {
   return (
     <div className="pv" data-progress-view>
       {view.empty && <p className="pv-empty" data-progress-empty>Aucune séance réalisée pour l’instant. Termine une séance pour suivre ta progression ici.</p>}
-      {shown.map((x) => (
+      {SOBER_V3 && <div className="v3-sport-tabs" role="group" aria-label="Sport de progression">{SECTIONS.map(x=><button key={x.sport} data-sport={x.sport} aria-pressed={selectedSport===x.sport} onClick={()=>setSelectedSport(x.sport)}>{x.title}</button>)}</div>}
+      {(SOBER_V3 ? SECTIONS.filter(x=>x.sport===selectedSport) : shown).map((x) => (
         <Section key={x.sport} sport={x.sport} title={x.title}>
           {x.sport === 'strength' && <StrengthPanel view={view.strength} />}
           {x.sport === 'running' && <RunningPanel view={view.running} />}

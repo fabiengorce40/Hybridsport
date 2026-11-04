@@ -23,7 +23,7 @@ const types={'.html':'text/html','.js':'text/javascript','.css':'text/css','.web
 const server=createServer((req,res)=>{const pathname=new URL(req.url,'http://localhost').pathname;const path=resolve(current,'.'+(pathname==='/'?'/index.html':pathname));if(!path.startsWith(current+'/')){res.writeHead(403).end();return;}try{res.setHeader('Content-Type',types[extname(path)]??'application/octet-stream');res.setHeader('Cache-Control','no-cache');res.end(readFileSync(path));}catch{res.writeHead(404).end();}});
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const url=`http://127.0.0.1:${server.address().port}/`;
 const browser=await chromium.launch();
-async function exported(page){await page.getByRole('button',{name:/^(Profil|Réglages)$/}).click();const event=page.waitForEvent('download');await page.getByRole('button',{name:'Exporter mes données',exact:true}).click();return JSON.parse(readFileSync(await(await event).path(),'utf8'));}
+async function exported(page){await page.getByRole('button',{name:/^(Profil|Réglages)$/}).click();const data=page.getByRole('button',{name:/Données & sauvegardes/});if(await data.count())await data.click();const event=page.waitForEvent('download');await page.getByRole('button',{name:'Exporter mes données',exact:true}).click();return JSON.parse(readFileSync(await(await event).path(),'utf8'));}
 try{
  for(const version of (process.env.REKKA_LEGACY_VERSIONS??'1,2,3').split(',').map(Number)){
   current=legacy;const context=await browser.newContext({viewport:{width:360,height:800},locale:'fr-FR',timezoneId:'Europe/Paris'});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
