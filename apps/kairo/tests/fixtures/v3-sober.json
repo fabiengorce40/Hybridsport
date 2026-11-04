@@ -1716,67 +1716,7 @@
               "role": "ROTATION"
             }
           }
-        ],
-        "closedAt": "2026-10-12T05:30:00Z",
-        "adherence": {
-          "total": {
-            "requested": 7,
-            "planned": 7,
-            "notPlanned": 0,
-            "completed": 7,
-            "completedAsPrescribed": 7,
-            "modified": 0,
-            "abandoned": 0,
-            "missed": 0,
-            "painReported": 0
-          },
-          "bySport": {
-            "strength": {
-              "requested": 3,
-              "planned": 3,
-              "notPlanned": 0,
-              "completed": 3,
-              "completedAsPrescribed": 3,
-              "modified": 0,
-              "abandoned": 0,
-              "missed": 0,
-              "painReported": 0
-            },
-            "running": {
-              "requested": 2,
-              "planned": 2,
-              "notPlanned": 0,
-              "completed": 2,
-              "completedAsPrescribed": 2,
-              "modified": 0,
-              "abandoned": 0,
-              "missed": 0,
-              "painReported": 0
-            },
-            "crosstraining": {
-              "requested": 1,
-              "planned": 1,
-              "notPlanned": 0,
-              "completed": 1,
-              "completedAsPrescribed": 1,
-              "modified": 0,
-              "abandoned": 0,
-              "missed": 0,
-              "painReported": 0
-            },
-            "hyrox": {
-              "requested": 1,
-              "planned": 1,
-              "notPlanned": 0,
-              "completed": 1,
-              "completedAsPrescribed": 1,
-              "modified": 0,
-              "abandoned": 0,
-              "missed": 0,
-              "painReported": 0
-            }
-          }
-        }
+        ]
       },
       {
         "weekIndex": 1,

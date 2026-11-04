@@ -31,7 +31,7 @@ Statuts : FAIT (commit local) · EN COURS · À FAIRE · DÉCISION (attend un ar
 
 | ID | Chantier | Prio | Tâche | Statut | Preuve, branche, dépendance |
 |---|---|---|---|---|---|
-| FT-01 | E | — | Vérifier les références Git et le statut Cloudflare | FAIT | Doc 15 § 0 |
+| FT-01 | E | — | Vérifier les références Git et le statut Cloudflare | PARTIEL | HEAD vérifiés par Work ; HTTP BÊTA 403 et paramètres Pages non vérifiables, doc 18 |
 | FT-02 | E | — | Audit global V1 (4 sports, 20 parcours) | FAIT | Doc 15 |
 | FT-03 | D | P0 | Import confirmé, comparaison, copie exacte avant remplacement ; effacement protégé | FAIT | `Settings0.tsx`, `store.tsx`, `app-core/store.ts` ; `import-failure-dom` (4 tests) |
 | FT-04 | D | P1 | Hors ligne dès la première visite (précache BÊTA) ; test du cache du SW et étape post-déploiement | FAIT | `vite.config.ts`, `e2e-offline-smoke.mjs`, `rekka-beta-pages.yml`. À confirmer sur Android |
@@ -55,7 +55,7 @@ Statuts : FAIT (commit local) · EN COURS · À FAIRE · DÉCISION (attend un ar
 | FT-22 | A | P2 | Incréments de charge reliés à l'équipement déclaré | REPORTÉ | Sans palier inventé |
 | FT-23 | E | P1 | Publication jalon 2 sur la BÊTA existante (avance rapide de `claude/rekka-beta`) | voir journal | Doc 17 § 8 |
 | FT-24 | B | P1 | Reporter / replanifier aussi la Course depuis la proposition (au-delà du report d'une séance) | À FAIRE (jalon 3) | Dépend de FT-10 (fait) |
-| FT-25 | C | P1 | Audit final interface 360 / 390 px (Progression, propositions, séance manquée) | À FAIRE (jalon 3) | Mesure navigateur |
+| FT-25 | C | P1 | Audit final interface 360 / 390 px (Progression, propositions, séance manquée) | PARTIEL (Work V3) | Rendu mesuré 360/390/1024, hors jalon 3 privé inaccessible ; doc 19 |
 | FT-26 | E | P1 | Validation terrain Android (installation, séances complètes, hors ligne, sauvegarde) | À FAIRE (jalon 4) | Requiert la BÊTA publiée |
 
 ## Derniers contrôles (jalon 2, build BÊTA locale `c0ffee0`)
@@ -104,9 +104,11 @@ Il n'y avait aucun défaut produit derrière ces échecs.
 | WORK-01 | P1 V1 | Défaut report dimanche/lundi reproduit : récupération 24 h acceptée au lieu de 36 h | Correction métier séparément autorisée puis tests frontière hebdomadaire |
 | WORK-02 | P1 V1 | Défaut report séance ~51 min sur disponibilité 15 min reproduit | Correction métier séparément autorisée puis test durée |
 | WORK-03 | P1 | Jalon 3 `ca60bcd` / `claude/rekka-v1-rc-j3` inaccessible à Work | Rendre le commit disponible, comparer avant intégration finale ; rien d'écrasé |
-| WORK-04 | P1 | Refonte V3 réelle portée depuis f2218c5 en branche isolée ; QA locale en cours | Rapport 19 et validation graphique |
+| WORK-04 | P1 | Refonte V3 réelle portée depuis f2218c5 en branche isolée ; QA locale exécutée : suite complète 3328 réussis / 11 ignorés, 8 ciblés finaux, Chromium 360/390/1024 | Rapport 19 et validation graphique |
 | WORK-05 | P1 | Vérification Cloudflare/HEAD servi bloquée ; aucun connecteur, HTTP 403 | Lecture seule du compte avant publication ; workflow actuel autorise création si absent |
 | WORK-06 | P1 | Résilience copie prémigration / quota : limites de code à reproduire | Chantier données distinct ; aucune migration modifiée en V3 |
 | WORK-07 | P2 | Commentaire « aucune politique active » périmé | Mise à jour documentaire hors moteurs |
 
 Chemin critique : résoudre/valider WORK-01/02 et les décisions sportives ouvertes, récupérer le jalon 3, comparer au candidat V3, finaliser QA/validation visuelle, vérifier l'isolation Cloudflare, puis autorisation distincte de publication. Android réel reste un jalon terrain. Les chantiers graphiques, données et contrôles de récupération sont parallélisables dans des fichiers distincts ; aucune nouvelle politique scientifique activée. Les résultats ci-dessus `3321` sont ceux du rapport Claude historique ; voir rapport 18 pour les exécutions indépendantes.
+
+Validation indépendante : base f2218c5 3321 tests réussis / 11 ignorés ; V3 3328 / 11 et 8 ciblés finaux. Mise à jour PWA, précache, migrations 1/2/3/4→5, parité de séance et secours schéma5 vérifiés localement. WORK-04 reste en attente de validation graphique ; WORK-01/02/03/05/06 et le terrain Android ne sont pas levés. Aucun jalon 3 privé déclaré atteint par Work.

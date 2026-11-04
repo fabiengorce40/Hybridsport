@@ -67,3 +67,50 @@ Aucun P0 démontré rendant dangereuse une adaptation uniquement visuelle. Conti
 La Course utilise les décisions produit `MINIMAL_STEP` (60 s / une répétition, deux séances tolérées et une seule variable) et des garde-fous HOLD ; la décrire comme systématiquement figée serait inexact. La première exposition HILLS reste bloquée dans l'attente de sources. HYROX/CT demeurent expérimentaux ; leur gouvernance de test BÊTA n'est pas une approbation production.
 
 Deuxième sonde exécutée : une prescription de 54 min (estimation médiane 50,8 min) est proposée puis acceptée sur une disponibilité de 15 min, sans changer la prescription. Deux tests de démonstration exécutés, 2/2 : ils établissent les deux défauts préexistants et ne les corrigent pas.
+
+## QA indépendante réellement exécutée
+
+| Contrôle | Résultat | Portée |
+|---|---|---|
+| Typage, ESLint, build BÊTA initiale | Réussis | f2218c5, nouvelle exécution Work |
+| Suite complète BÊTA initiale | 3321 réussis, 11 ignorés / 3332, 309 fichiers | Work, un worker et fichiers sérialisés ; délais inchangés |
+| E2E BÊTA complet + progression | Réussis | Vraie build f2218c5, parcours du workflow et 3 séances / traçage progression-stab-1 |
+| Suite complète du premier candidat V3 | 3328 réussis, 11 ignorés / 3339 | Aucun échec ; 7 tests UI ajoutés |
+| Dernier ajustement de présentation RIR | 8 tests ciblés réussis, typage et ESLint réussis | Numéro de série de travail après une montée ; l'indice persistant reste identique |
+| V3 Chromium | Réussi à 360, 390 et 1024 px | Vraie route PWA, saisie/dévalidation, 200,5 kg, navigation/brouillons, chronos global/repos, focus, reduced-motion, hors ligne |
+| Parité BÊTA / V3 | État entier identique | Même fixture schéma 5, heure figée et actions réelles démarrage/saisie/validation |
+| Course / HYROX / CT / récupération / planning | Parcours concernés réussis | Lecteurs dédiés et garde-fous expérimentaux conservés |
+| Personnalisation / replanification | Réussi à 360/390 | Aperçu sans écriture, annulation, confirmation, séances réalisées protégées |
+| Migrations navigateur | 1/2/3/4 → 5 réussies | Vraies anciennes builds, IndexedDB, données riches, export/import confirmé, ancien lecteur refuse v5 sans écraser |
+| Mise à jour réelle locale | Réussie | Build BÊTA schéma 5 → V3, stockage exact, précache complet, rechargement hors ligne |
+| Retour arrière | Réussi | Secours f2218c5 schéma 5 lit la sauvegarde fictive V3, séries et performances intactes |
+| Sondes de défauts de report | 2/2 reproduisent les défauts | Ces succès de sonde ne signifient pas que les règles de récupération/durée sont correctes |
+
+### Les vingt parcours
+
+| Parcours | Preuve actuelle / limite |
+|---|---|
+| Installation | Manifeste et installabilité Chromium vérifiés ; installation physique Samsung non exécutée |
+| Onboarding / choix des sports | E2E initial et V3 personnalisation, garde-fous HYROX/CT |
+| Profil / modification | Chromium 360/390, priorités, maintien des historiques et des semaines |
+| Planning | Vue liste/grille et vraie ouverture de séance ; couleurs calculées |
+| Présentation / séance active | Route Session0, jamais un prototype isolé |
+| Chronomètres / reprise | Échéances, pause/reprise/+15/passage, onglet arrière-plan, rechargement ; Android veille réelle non exécutée |
+| Validation / dévalidation | Reps et charge décimale exactes, indices et RIR après montée vérifiés |
+| Fin de séance | Fin adaptée et trois séances comme prévu, décisions progression-stab-1 enregistrées et relues |
+| Progression / historique | Vraies courbes et données connues, séances après rechargement |
+| Séance manquée | Aperçu de déclaration annulable sans écriture, confirmation réelle sans performance ajoutée ; report : deux défauts établis |
+| Replanification | Aperçu/annulation/application et protection des réalisations ; Course complète toujours ouverte |
+| Import/export / sauvegarde/restauration | Vraies opérations sur données fictives, confirmation avant remplacement, migrations et secours schéma 5 |
+| Hors ligne / mise à jour PWA | Précache et redémarrage testés après première visite et après changement de build |
+| Reprise après interruption | Navigation, brouillons, rechargement et horloges persistées ; pas de preuve de toutes les restrictions Android système |
+
+Les 11 tests ignorés sont hérités du socle ; ils ne sont pas comptés comme réussis. Les journaux et le JSON complet permettent de les identifier. Les contrôles navigateur ne remplacent pas une validation physique Samsung. Le bundle reste important (environ 4,61 Mo de livraison totale, incluant ressources historiques conservées ; JavaScript minifié ~1,56 Mo). Avertissement de chunk >1000 kB conservé, aucun seuil relevé pour le masquer.
+
+### Échecs intermédiaires expliqués
+
+Le harnais de progression détectait le type de lecteur avant la fermeture du précontrôle : il attend désormais explicitement la vraie transition avant de saisir les séries. Les assertions de progression ont été conservées et le parcours de trois séances repasse. Une fixture visuelle historique portait une semaine déjà clôturée ; seule cette fixture fictive a été rendue cohérente avec sa date de scénario pour tester la déclaration de séance manquée. La confirmation est vérifiée dans l'état persistant, le composant de déclaration étant démonté quand la séance n'est plus déclarable. Aucun délai arbitrairement augmenté, aucune règle métier modifiée pour faire passer un test.
+
+## Conclusion V1
+
+Aucun nouveau P0 démontré ; cela n'est pas une certification d'absence de risque. Deux P1 de report sont prouvés, la replanification Course complète reste ouverte et les limites de stockage nécessitent des sondes dédiées. La validation Android, le jalon 3 non partagé et le déploiement effectivement servi restent non vérifiables ici. Ces points restent sur le chemin critique V1. La présentation V3 peut être proposée à validation locale sans les dissimuler.

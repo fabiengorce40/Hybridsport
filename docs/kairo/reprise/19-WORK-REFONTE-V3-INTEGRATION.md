@@ -35,3 +35,25 @@ La seule cible future reste `rekka-beta` existante. Vérifier en lecture seule l
 Construire l'artefact V3 au SHA approuvé, écrire `version.json` avec `commit` complet et `channel:beta`, vérifier le manifeste (id/scope/start_url inchangés), l'intégrité de l'artefact et la route. Le workflow actuel utilise le build historique : l'activation V3 ou un envoi de l'artefact vérifié doit être préparé et autorisé explicitement. Aucun réglage Cloudflare modifié pendant cette mission.
 
 Secours : artefact de `f2218c5` compatible **schéma 5**, même origine et même identité PWA. Tester sa lecture d'une sauvegarde fictive V3, sans réinitialisation. Ne pas revenir au secours V2.4.4 schéma 4. Le retour de code ne restaure pas les données ; conserver les exports, ne jamais vider le stockage. Les deux anomalies P1 du report restent des conditions V1 distinctes du visuel.
+
+## Résultats locaux et version
+
+Commit du code applicatif testé : `a5ec75d94557330cdc65722651a402447fc38fca` ; branche `codex/rekka-v3-sober-fast-track-integration`. Les commits suivants de rapport/fixtures conservent le même arbre `apps/kairo/src` et les mêmes packages métier ; le manifeste de livraison externe indique le HEAD complet final. Aucun push, fusion ou déploiement.
+
+- Suite complète candidat : **3328 réussis, 11 ignorés**. Après le dernier ajustement de libellé RIR, **8 tests ciblés** réussis, TypeScript et ESLint réussis.
+- E2E V3 360/390/1024 : six vues, pas de débordement, cibles actives de séance ≥44 px, charge 200,5 conservée, brouillons et dévalidation, commandes et focus, chronos global/repos et arrière-plan, reprise et hors ligne.
+- Parité persistante exacte avec f2218c5 pour mêmes fixture/heure/actions ; les données et décisions ne sont pas calculées dans les nouveaux composants.
+- Trois séances générées réelles : 3 décisions `progression-stab-1`, rechargées identiquement. Les fixtures de comparaison visuelle sont construites et fictives ; elles ne constituent pas une preuve de qualité de génération.
+- Course, HYROX, CT, récupération, planning, personnalisation/replanification et garde-fous expérimentaux : parcours concernés réussis.
+- Migration navigateur 1/2/3/4 →5 ; import confirmé et données conservées ; mise à jour f2218c5 →V3, précache et rechargement hors ligne ; secours f2218c5 schéma 5 testé.
+- Couleurs réellement peintes des pictogrammes : rgb(220,255,53), rgb(57,221,235), rgb(255,67,139), rgb(139,92,246). Typographie calculée du titre de séance : REKKA Inter ; fond rgb(8,20,26).
+
+Le libellé RIR compte correctement les séries de travail après les montées tout en transmettant l'indice originel. Les runners temporaires générés sont exclus de Git/ESLint ; leurs sources réelles restent contrôlées. Aucun script métier ou test utile supprimé.
+
+Les captures sont fournies dans le dossier de validation `REKKA-WORK-V3-PREUVES-QA.zip` : six vues à 390 px, variantes 360/1024, vues complètes, avant/après BÊTA, références recadrées, superpositions et différences RGB, gros plan et démonstration GIF du chrono, couleurs des quatre sports. Les comparaisons utilisent une largeur commune de 390 px, sans bordures de téléphone ni bandeau BÊTA dans la référence ; elles ne donnent aucun score de fidélité, car les contenus et ressources diffèrent.
+
+### Limites restant à valider
+
+Ressources exactes d'illustration et de pinceau absentes ; reconstruction SVG, logo historique réutilisé, dimensions supplémentaires pour les informations RC5 et l'accessibilité. Les décorations manga ne sont plus affichées dans les en-têtes V3, mais certains anciens assets restent dans le bundle/précache pour compatibilité. Livraison mesurée ~4,61 Mo contre ~4,57 Mo pour la BÊTA initiale (environ +42 ko), 19 assets ; warning de chunk conservé. Optimisation P2, pas de promesse de mesure sur appareil réel.
+
+Les deux P1 de report décrits au rapport 18 ne sont pas corrigés. Cloudflare non vérifié et commit Claude ca60bcd non accessible. Le candidat est **intégré localement et proposé pour revue graphique**, il n'est pas une autorisation ni une certification de publication V1.
