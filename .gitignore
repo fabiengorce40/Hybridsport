@@ -13,3 +13,5 @@ dist-prototype/
 dist-android-test/
 
 apps/kairo/dist-beta-v3/
+
+apps/kairo/scripts/.e2e-parcours-*.mjs

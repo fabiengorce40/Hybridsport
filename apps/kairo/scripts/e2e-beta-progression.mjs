@@ -18,7 +18,6 @@ try {
   const ctx = await browser.newContext({ viewport: { width: 390, height: 844 }, locale: 'fr-FR', timezoneId: 'Europe/Paris' });
   const page = await ctx.newPage();
   const errors = []; page.on('pageerror', (e) => errors.push(e.message));
-  await page.addLocatorHandler(page.locator('[data-checkin-form]'), async () => { await page.locator('[data-checkin-form]').getByRole('button', { name: 'Passer' }).click(); });
   await page.clock.install({ time: new Date('2026-10-05T08:00:00+02:00') });
   await page.clock.resume();
   const read = () => page.evaluate(() => { const k = Object.keys(localStorage).find((x) => x.endsWith('kairo.state') && !x.includes('.state.')); return k ? JSON.parse(localStorage.getItem(k) ?? 'null') : null; });
@@ -38,6 +37,8 @@ try {
     await page.getByRole('button', { name: 'Planning', exact: true }).click();
     await page.getByRole('button', { name: /^Musculation :/ }).nth(nth).click();
     await page.getByRole('button', { name: 'Commencer la séance', exact: true }).click();
+    await page.locator('[data-checkin-form]').getByRole('button',{name:'Passer',exact:true}).click();
+    await page.locator('[data-live-workout="v3"],.k-workout').first().waitFor({state:'visible'});
     const main = page.getByRole('button', { name: 'Démarrer le bloc principal', exact: true });
     if (await main.count()) await main.click();
     const v3=await page.locator('[data-live-workout="v3"]').count()>0;
