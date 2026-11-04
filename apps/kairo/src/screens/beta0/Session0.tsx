@@ -1,3 +1,6 @@
+import { SOBER_V3 } from '../../sober/flag.js';
+import { StrengthPreview } from '../../sober/StrengthPreview.js';
+import { LiveWorkout } from '../../sober/LiveWorkout.js';
 import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
 /**
  * Séance du programme Beta 0. Strength : exercices, séries, saisie réelle (répétitions, charge), validation série par
@@ -147,7 +150,7 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
   const maintained = v?.log ? maintainedInterference(store.state, requestId) : null;
   return (
     <>
-      {REKKA_V2 && v && <VisualHeader title={sportName(v.sport)} sport={v.sport} />}
+      {REKKA_V2 && v && (!SOBER_V3 || v.sport !== 'strength') && <VisualHeader title={sportName(v.sport)} sport={v.sport} />}
       <SessionBody requestId={requestId} onBack={onBack} />
       {v && v.placement === 'planned' && !v.log && !v.result && <MissedSessionCard requestId={requestId} />}
       {v && (quality || done || refused || warning || maintained) && (
@@ -209,9 +212,14 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
       if (store.apply((s, c) => finishProgrammeSession(s, c, { requestId, ...f }))) setFinishing(false);
     }} />
   );
-  const timer = editable && <RestTimer0 rest={log.rest} now={now} onAction={(a) => store.apply((s, c) => controlRest(s, c, requestId, a))} />;
+  const timer = editable && <RestTimer0 layout={SOBER_V3&&v.sport==='strength'?'large':'compact'} rest={log.rest} now={now} onAction={(a) => store.apply((s, c) => controlRest(s, c, requestId, a))} />;
 
   if (v.sport === 'strength') {
+    if(SOBER_V3&&!started&&!finished)return <><StrengthPreview v={v} title={name} goalLabel={store.state.profile?.strength.goal==='hypertrophy'?'Volume & hypertrophie':store.state.profile?.strength.goal==='strength'?'Développer ma force':'Forme générale'} onBack={onBack} onStart={()=>flow.start(requestId)} context={<AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state,requestId)}/>} preparation={<StrengthInsightPanel requestId={requestId}/>}/>{flow.sheet}</>;
+    if(SOBER_V3&&editable)return <><LiveWorkout v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}`} trainingLabel={role??'Musculation'} editable={editable} elapsedSeconds={clockElapsed} onBack={onBack} onFinish={()=>setFinishing(true)} restTimer={timer}
+      sessionClock={clockElapsed!==null&&<><span className="k-elapsed" role="timer" aria-label="Chronomètre global" aria-live="off" data-session-clock data-elapsed-s={clockElapsed} data-paused={clockPaused?'true':'false'}>{formatChrono(clockElapsed)} <small>{clockState}</small></span><button onClick={()=>store.apply((s,c)=>(clockPaused?resumeProgrammeSession:pauseProgrammeSession)(s,c,requestId))}>{clockPaused?'Reprendre le chronomètre global':'Mettre en pause le chronomètre global'}</button></>}
+      context={<AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state,requestId)}/>} preparation={<StrengthInsightPanel requestId={requestId}/>}
+      onRecord={(item,index,x)=>record(item,undefined,index,x)} onTogglePain={itemId=>store.apply(s=>toggleProgrammePainItem(s,requestId,itemId))} onEffort={(itemId,setIndex,rir)=>store.apply(s=>recordProgrammeSetEffort(s,requestId,itemId,setIndex,rir))} onUnavailable={itemId=>store.apply((s,c)=>reportEquipmentUnavailable(s,c,requestId,itemId))}/>{finishSheet}{flow.sheet}</>;
     return (
       <>
         <Topbar title="" onBack={onBack} right={<div className="row">

@@ -7,11 +7,11 @@
 - la production (`f9f7e2e`) n'est jamais touchée ;
 - aucune politique scientifique n'est activée sans décision (seule `progression-stab-1` est autorisée, sur la BÊTA).
 
-## État des références (dernière vérification : 3 novembre 2026)
+## État des références (dernière vérification indépendante : 4 novembre 2026)
 
 | Référence | Commit | Note |
 |---|---|---|
-| BÊTA publiée (`claude/rekka-beta`, rekka-beta.pages.dev) | `097bacb` | Exécution n° 7 réussie (CI). Pas encore de validation sur appareil. |
+| BÊTA distante (`claude/rekka-beta`) | `f2218c57d037ef322ba83d3ae2a85549a7dc6fd9` | HEAD distant vérifié par Work ; version servie non vérifiable (HTTP 403). |
 | Production (`claude/crosstraining-c1-c2-spike-vbg8dv`) | `f9f7e2e` | Intouchable. |
 | Lot 4.6 (local) | `d59d91d` | Non poussé. |
 | FAST TRACK | `claude/rekka-v1-fast-track` | Jalon 2 intégré ; voir le journal et le doc 17. |
@@ -96,3 +96,17 @@ Il n'y avait aucun défaut produit derrière ces échecs.
 | 2026-11-03 | `claude/rekka-lot46-progression-stabilization` | `d59d91d` | Lot 4.6 (simulation, rien d'activé). |
 | 2026-11-03 | `claude/rekka-v1-fast-track` | (ce commit) | Audit V1, tableau, FT-03 à FT-08. Local, non poussé. |
 | 2026-11-03 | `claude/rekka-v1-fast-track` | `8d93350` … | Jalon 2 : replanification confirmée, séances manquées, Progression, identité PWA, E2E HYROX / CT, `progression-stab-1` active. |
+
+## Reprise indépendante Work — 4 novembre 2026
+
+| ID | Priorité | État / prochaine action | Dépendance |
+|---|---|---|---|
+| WORK-01 | P1 V1 | Défaut report dimanche/lundi reproduit : récupération 24 h acceptée au lieu de 36 h | Correction métier séparément autorisée puis tests frontière hebdomadaire |
+| WORK-02 | P1 V1 | Défaut report séance ~51 min sur disponibilité 15 min reproduit | Correction métier séparément autorisée puis test durée |
+| WORK-03 | P1 | Jalon 3 `ca60bcd` / `claude/rekka-v1-rc-j3` inaccessible à Work | Rendre le commit disponible, comparer avant intégration finale ; rien d'écrasé |
+| WORK-04 | P1 | Refonte V3 réelle portée depuis f2218c5 en branche isolée ; QA locale en cours | Rapport 19 et validation graphique |
+| WORK-05 | P1 | Vérification Cloudflare/HEAD servi bloquée ; aucun connecteur, HTTP 403 | Lecture seule du compte avant publication ; workflow actuel autorise création si absent |
+| WORK-06 | P1 | Résilience copie prémigration / quota : limites de code à reproduire | Chantier données distinct ; aucune migration modifiée en V3 |
+| WORK-07 | P2 | Commentaire « aucune politique active » périmé | Mise à jour documentaire hors moteurs |
+
+Chemin critique : résoudre/valider WORK-01/02 et les décisions sportives ouvertes, récupérer le jalon 3, comparer au candidat V3, finaliser QA/validation visuelle, vérifier l'isolation Cloudflare, puis autorisation distincte de publication. Android réel reste un jalon terrain. Les chantiers graphiques, données et contrôles de récupération sont parallélisables dans des fichiers distincts ; aucune nouvelle politique scientifique activée. Les résultats ci-dessus `3321` sont ceux du rapport Claude historique ; voir rapport 18 pour les exécutions indépendantes.

@@ -5,6 +5,8 @@
  * série, RIR, charge ni repos n'est calculé ou modifié ici.
  */
 import { useId, useState } from 'react';
+import type { ReactNode } from 'react';
+import { FittedNumericInput } from '../sober/FittedNumericInput.js';
 import { approxMinutes, exerciseLabel, intensityLabel, setKindLabel } from '@hybridsport/app-core';
 import type { ProgrammeSessionView, SessionItem, SetLog, SetPrescription } from '@hybridsport/app-core';
 import { BLOCK_LABELS } from '../screens/Session.js';
@@ -19,6 +21,9 @@ const clockOf = (s: number): string => `${String(Math.floor(s / 60))}:${two(s % 
 const repsTarget = (r: SetPrescription['reps']): string => (typeof r === 'number' ? String(r) : `${String(r.min)}–${String(r.max)}`);
 
 export interface StrengthWorkoutProps {
+  readonly context?: ReactNode;
+  readonly sessionClock?: ReactNode;
+  readonly preparation?: ReactNode;
   readonly v: ProgrammeSessionView;
   readonly title: string;
   readonly eyebrow: string;
@@ -32,7 +37,10 @@ export interface StrengthWorkoutProps {
 }
 
 /** Ligne de série : SÉRIE 1 · REPS · KG · ○ — la valeur réellement saisie reste toujours lisible. */
-export function SetLine({ set, label, saved, editable, phaseShown = false, onRecord }: {
+export function SetLine({ set, label, saved, editable, phaseShown = false, onRecord, appearance, current = false, selected = false, onSelect, onPrevious, onNext, position, total }: {
+  appearance?: 'v3'; current?: boolean; selected?: boolean;
+  onSelect?: () => void; onPrevious?: () => void; onNext?: () => void;
+  position?: number; total?: number;
   set: SetPrescription; label: string; saved: SetLog | undefined; editable: boolean;
   /** RC5 lot 3 — la série est présentée sous le titre de sa phase : son type n'est pas répété (« Série de recul »). */
   phaseShown?: boolean;
@@ -53,6 +61,33 @@ export function SetLine({ set, label, saved, editable, phaseShown = false, onRec
     : { done: true, reps: repsN ?? 0, ...(kgN !== undefined ? { loadKg: kgN } : {}) });
   const warm = set.kind === 'rampup';
   const target = [`obj. ${repsTarget(set.reps)}`, set.optional ? 'facultative' : '', set.kind !== 'working' && !warm && !(phaseShown && set.kind === 'backoff') ? setKindLabel(set.kind) : ''].filter(Boolean).join(' · ');
+  // V3 is an alternate rendering of the SAME local values, guards and callback above.
+  // RC5 phase/type/objective remain visible; the prescribed order and indices never change.
+  if (appearance === 'v3') {
+    const prescriptionId = `${chargeErrorId}-prescription`;
+    const description = `${PHASE_TITLES[phaseOf(set)]} · ${target} · ${intensityLabel(set)}`;
+    return <div className="v3-set" data-state={done ? 'done' : current ? 'current' : 'upcoming'} data-set-kind={set.kind}>
+      {selected && <div className="v3-set-editor">
+        <header><button disabled={!onPrevious} onClick={onPrevious} aria-label="Série précédente">‹</button><strong>{label} / {total}</strong><button disabled={!onNext} onClick={onNext} aria-label="Série suivante">›</button></header>
+        <p className="v3-set-prescription" id={prescriptionId}>{description}{warm ? ' · hors volume et progression' : ''}</p>
+        <div className="v3-editor-fields">
+          <label>Charge<FittedNumericInput aria-label="Charge (kg)" aria-invalid={invalidKg || undefined} aria-describedby={invalidKg ? `${prescriptionId} ${chargeErrorId}` : prescriptionId} inputMode="decimal" value={kg} placeholder="—" disabled={!editable || done} onChange={e => setKg(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}/><small>kg</small></label>
+          <label>Répétitions<FittedNumericInput aria-label="Répétitions réalisées" aria-describedby={prescriptionId} inputMode="numeric" placeholder={typeof set.reps === 'number' ? '—' : repsTarget(set.reps)} value={reps} disabled={!editable || done} onChange={e => setReps(e.target.value.replace(/[^0-9]/g, ''))}/></label>
+          <span>Récupération<strong>{clockOf(set.restAfterS)}</strong></span>
+        </div>
+      </div>}
+      <div className="v3-series-row" data-current={selected} data-done={done}>
+        <button className="v3-series-select" onClick={onSelect} aria-label={`Choisir ${label}`} aria-pressed={selected} title={description}>
+          <span>{warm ? `Éch. ${position}` : `S${label.replace(/[^0-9]/g, '')}`}</span>
+          <strong>{kg !== '' ? `${kg} kg` : '— kg'} × {reps !== '' ? reps : repsTarget(set.reps)}{set.optional ? ' · facultative' : ''}<small className="sr-only"> · {description}</small></strong>
+        </button>
+        <button className="v3-toggle" aria-label={done ? 'Décocher la série' : 'Cocher la série'} aria-pressed={done} disabled={!editable || (!done && !valid)} onClick={toggle}><span aria-hidden="true">{done ? '✓' : ''}</span></button>
+      </div>
+      {selected && <button className="v3-primary v3-commit" aria-label={done ? 'Dévalider la série active' : 'Valider la série active'} disabled={!editable || (!done && !valid)} onClick={toggle}>{done ? '↶ Dévalider la série' : '✓ Valider la série'}</button>}
+      {selected && editable && !done && invalidKg && <small className="v3-input-error" role="alert" id={chargeErrorId}>Saisissez une charge valide, par exemple 12,5 kg.</small>}
+      {selected && editable && !done && repsN === undefined && <small className="v3-input-error" data-reps-required>Saisissez les répétitions réalisées pour valider la série{typeof set.reps === 'number' ? '' : ` (objectif ${repsTarget(set.reps)})`}.</small>}
+    </div>;
+  }
   return (
     <div className={`k-set ${warm ? 'warm' : ''} ${done ? 'done' : ''}`} data-set-kind={set.kind}>
       <div className="k-set-label"><b>{label}</b><span>{target}</span></div>
@@ -95,7 +130,7 @@ function setLabels(sets: readonly SetPrescription[]): string[] {
 
 // technical-constant: échelle de saisie des répétitions en réserve proposée (valeurs EXACTES, aucune borne « + »)
 const RIR_CHOICES = [0, 1, 2, 3, 4, 5] as const;
-const targetRirOf = (s: SetPrescription | undefined): number | undefined => {
+export const targetRirOf = (s: SetPrescription | undefined): number | undefined => {
   const e = s?.intensity && 'effort' in s.intensity ? s.intensity.effort : undefined;
   return e && 'rir' in e ? e.rir : s?.rir;
 };
@@ -214,7 +249,7 @@ export function ExerciseCard({ number, item, block, log, editable, current, onRe
 }
 
 /** Bloc léger (échauffement, retour au calme) : une ligne compacte par élément. */
-function LightBlock({ block }: { block: Block }) {
+export function LightBlock({ block }: { block: Block }) {
   return (
     <>
       {block.items.map((it) => {

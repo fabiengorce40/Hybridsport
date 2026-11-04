@@ -1,3 +1,4 @@
+import { SOBER_V3 } from './sober/flag.js';
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './App.js';
@@ -10,6 +11,8 @@ import './design/rekka-v2.css';
 import './design/rekka-components.css';
 import { applyTheme } from './design/theme.js';
 import './rekka/visual.css';
+import './sober/sober.css';
+if(SOBER_V3)document.documentElement.dataset.rekkaVisual='v3';
 import { REKKA_V2 } from './rekka/visual.js';
 if (REKKA_V2) document.documentElement.dataset.rekka = 'v2';
 

@@ -1,3 +1,5 @@
+import { SOBER_V3 } from './sober/flag.js';
+import { Mountains, RecoveryBrush } from './sober/Artwork.js';
 /**
  * Chrono de repos Beta 0 (KAIRO Design System) : l'état (échéance horodatée, pause) est PERSISTÉ dans l'état applicatif
  * (app-core) ; le temps restant est RECALCULÉ à chaque affichage depuis l'heure courante. L'intervalle ne sert qu'au
@@ -13,7 +15,7 @@ const REFRESH_MS = 250;
 const R = 32;
 const CIRC = 2 * Math.PI * R;
 
-export function RestTimer0({ rest, now, onAction }: { rest: Rest | null; now: () => string; onAction: (a: 'pause' | 'resume' | 'extend' | 'skip') => void }) {
+export function RestTimer0({ rest, now, onAction, layout='compact' }: { layout?: 'large'|'compact'; rest: Rest | null; now: () => string; onAction: (a: 'pause' | 'resume' | 'extend' | 'skip') => void }) {
   const [, setTick] = useState(0);
   const buzzed = useRef<string | null>(null);
   useEffect(() => {
@@ -33,6 +35,13 @@ export function RestTimer0({ rest, now, onAction }: { rest: Rest | null; now: ()
   const mm = String(Math.floor(shown / 60)).padStart(2, '0');
   const ss = String(shown % 60).padStart(2, '0');
   const frac = rest.totalS > 0 ? Math.max(0, Math.min(1, remaining / rest.totalS)) : 0;
+  if(SOBER_V3) {
+    const label=paused?'Repos en pause':over?'Repos terminé':'REPOS';
+    const time=<div className={`k-rest-time ${over?'over':''}`} aria-label={`${over?'Dépassé de':'Reste'} ${mm} min ${ss} s`}>{over?'+':''}{Number(mm)}:{ss}</div>;
+    return <section className={`k-rest rw-rest v3-rest v3-rest--${layout}`} data-paused={paused} data-over={over} role="timer" aria-live="off" aria-label="Chrono de repos">
+    <Mountains/><h2>RÉCUPÉRATION</h2><div className="v3-rest-core"><span className="v3-adjust-spacer" aria-hidden="true"/><div className="v3-rest-orbit"><RecoveryBrush/><div className="v3-rest-readout">{time}<button aria-label={paused?'Reprendre le repos':'Mettre le repos en pause'} onClick={()=>onAction(paused?'resume':'pause')}>{paused?'▶':'Ⅱ'}</button></div></div><button className="v3-adjust" aria-label={`Ajouter ${REST_EXTENSION_S} secondes`} onClick={()=>onAction('extend')}>+{REST_EXTENSION_S} s</button></div><button className="v3-skip" aria-label={over?'OK':'Passer'} title="Arrêter le repos" onClick={()=>onAction('skip')}>{over?'OK':'▷ Passer'}</button><small className="v3-rest-context">{label} · {exerciseLabel(rest.exerciseId)}</small>
+  </section>;
+  }
   return (
     <div className="k-rest" role="timer" aria-live="off" aria-label="Chrono de repos">
       <div className="k-rest-top">
