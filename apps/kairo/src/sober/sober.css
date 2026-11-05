@@ -79,11 +79,9 @@ html[data-rekka="v2"][data-rekka-visual="v3"] .tabbar{background:#090c0df5;borde
 [data-rekka-visual="v3"] .pv-section[data-sport="crosstraining"] .pv-title{color:var(--text)}
 [data-rekka-visual="v3"] .pv-chip{min-height:44px}
 [data-rekka-visual="v3"] .sport-crosstraining :is(.catalog-name,.agenda-sport){color:var(--text)}
-/* Final approved carbon composition. All overlays are static native CSS, no image texture/download. */
-[data-rekka-visual="v3"] body{background-color:#090c0d;background-image:repeating-linear-gradient(142deg,transparent 0 2px,#ffffff03 2px 3px,transparent 3px 8px),linear-gradient(145deg,transparent 25%,#333a3c15 26%,transparent 42%,#333a3c0d 64%,transparent 65%);background-attachment:fixed}
+/* Official supplied chalk photograph, shared by every V3 page and session overlay. */
 [data-rekka-visual="v3"] .app,[data-rekka-visual="v3"] .screen{background:transparent}
 [data-rekka-visual="v3"] .screen{padding:24px 18px 95px;max-width:680px;margin:auto}
-[data-rekka-visual="v3"] .screen::before{content:"";position:fixed;pointer-events:none;z-index:-1;width:290px;height:290px;right:-165px;bottom:25px;border:20px solid #343b3d22;border-radius:50%;box-shadow:0 0 0 5px #89919410,inset 0 0 0 20px #343b3d19,inset 0 0 0 23px #89919410}
 [data-rekka-visual="v3"] :is(.card,.notice,.pv-section,.pv-card){background-color:#12191be8;border-color:#30383b}
 [data-rekka-visual="v3"] .v3-page-header{min-height:0;margin:22px 0 24px;padding:0;border:0;background:none;overflow:visible}
 [data-rekka-visual="v3"] .v3-page-header h1{font-size:29px;font-weight:750}
@@ -162,12 +160,11 @@ html[data-rekka="v2"][data-rekka-visual="v3"] .v3-exercise-tile h2{font-size:15p
 [data-rekka-visual="v3"] .v3-today>.rv-has-emblem{padding-left:0}
 [data-rekka-visual="v3"] .v3-today .rv-card-emblem{position:static;display:inline-flex;width:24px;height:24px;margin:0 8px 0 0}
 [data-rekka-visual="v3"] .v3-today .rv-card-emblem .rv-emblem{width:24px;height:24px;border:0;background:none}
-:root[data-rekka-visual="v3"]{--carbon-backdrop:repeating-linear-gradient(142deg,transparent 0 2px,#ffffff03 2px 3px,transparent 3px 8px),linear-gradient(145deg,#090c0d 20%,#171d20 30%,#090d0f 45%,#111719 65%,#090c0d 75%)}
-:root[data-theme="v2"][data-rekka-visual="v3"] body,[data-rekka-visual="v3"] .overlay{background:var(--carbon-backdrop);background-attachment:fixed;background-color:#090c0d}
+:root[data-rekka-visual="v3"]{--carbon-backdrop:linear-gradient(#00000055,#00000055),url("./assets/magnesie-officielle.png")}
+:root[data-theme="v2"][data-rekka-visual="v3"] body,[data-rekka-visual="v3"] .overlay{background:var(--carbon-backdrop);background-attachment:fixed;background-size:cover;background-position:center center;background-repeat:no-repeat;background-color:#090c0d}
 [data-rekka-visual="v3"] .screen{isolation:isolate}
 [data-rekka-visual="v3"] .hero{margin:0;width:100%}
 .v3-today .rv-card-emblem+.row{display:inline-flex;vertical-align:middle;width:calc(100% - 36px)}
-.v3-workout::before{content:"";position:fixed;pointer-events:none;z-index:-1;width:290px;height:290px;right:-165px;bottom:25px;border:20px solid #343b3d22;border-radius:50%;box-shadow:0 0 0 5px #89919410,inset 0 0 0 20px #343b3d19,inset 0 0 0 23px #89919410}
 [data-rekka-visual="v3"] body{background-color:#090c0d}
 [data-rekka-visual="v3"] .v3-profile-link{flex-direction:row;justify-content:flex-start}
 [data-rekka-visual="v3"] .v3-session-card-heading{justify-content:flex-start;gap:8px;width:100%}
@@ -179,7 +176,6 @@ html[data-rekka="v2"][data-rekka-visual="v3"] .v3-exercise-tile h2{font-size:15p
 /* No stacking context on screens: recovery/replanning dialogs must remain above the tab bar. */
 [data-rekka-visual="v3"] .screen{isolation:auto}
 [data-rekka-visual="v3"] .screen::before{display:none}
-:root[data-rekka-visual="v3"]{--carbon-backdrop:radial-gradient(circle at calc(100% + 100px) calc(100% - 90px),transparent 0 155px,#68727810 156px 158px,#343b3d22 159px 179px,transparent 180px 199px,#343b3d19 200px 220px,transparent 221px),repeating-linear-gradient(142deg,transparent 0 2px,#ffffff03 2px 3px,transparent 3px 8px),linear-gradient(145deg,#090c0d 20%,#171d20 30%,#090d0f 45%,#111719 65%,#090c0d 75%)}
 /* Bundled condensed sport face matches the board hierarchy; body/inputs keep the readable UI face. */
 html[data-rekka="v2"][data-rekka-visual="v3"] :is(.v3-page-header h1,.v3-preview-title h1,.v3-exercise-heading h1,.v3-exercise-tile h2,.v3-today h3,.catalog-name,.v3-profile-link strong){font-family:"REKKA Barlow Condensed",sans-serif;font-weight:700;letter-spacing:0}
 html[data-rekka="v2"][data-rekka-visual="v3"] .v3-page-header h1{font-size:32px}
