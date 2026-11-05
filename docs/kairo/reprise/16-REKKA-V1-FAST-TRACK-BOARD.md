@@ -96,6 +96,7 @@ Il n'y avait aucun défaut produit derrière ces échecs.
 | 2026-11-03 | `claude/rekka-lot46-progression-stabilization` | `d59d91d` | Lot 4.6 (simulation, rien d'activé). |
 | 2026-11-03 | `claude/rekka-v1-fast-track` | (ce commit) | Audit V1, tableau, FT-03 à FT-08. Local, non poussé. |
 | 2026-11-03 | `claude/rekka-v1-fast-track` | `8d93350` … | Jalon 2 : replanification confirmée, séances manquées, Progression, identité PWA, E2E HYROX / CT, `progression-stab-1` active. |
+| 2026-11-05 | `claude/rekka-v3-beta-integration` → `claude/rekka-beta` | voir doc 21 | V3 (`2996c24`) intégrée sur la BÊTA, WORK-01/02/07 corrigés, E2E adaptés, suite complète verte. |
 
 ## Reprise indépendante Work — 4 novembre 2026
 

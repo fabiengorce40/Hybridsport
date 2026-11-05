@@ -32,7 +32,27 @@ Aucune politique scientifique nouvelle n'est activée ; seule `progression-stab-
 
 ## 3. Contrôles
 
-Voir § 5 (résultats de la build V3 locale, version `c0ffee0`).
+Les contrôles portent sur la build BÊTA V3 locale (version `c0ffee0`) et ont tous réussi.
+
+| Contrôle | Résultat |
+|---|---|
+| `pnpm check` (TypeScript, lint, tests) | 3338 réussis, 11 ignorés |
+| Migrations navigateur 1/2/3 → 5 et 1…4 → 5 (`e2e-v22-upgrade`) | OK (3 + 4 PASS) |
+| Sécurité des données, multi-onglets (`e2e-storage-guard`) | OK |
+| Mise à jour depuis `bc19fb1` (format 2 → 5) | OK |
+| Mise à jour depuis la BÊTA publiée `f2218c5` vers V3, données identiques, redémarrage hors ligne | OK |
+| Test d'écran V3 (360 / 390 / 1024 px) | OK |
+| Lots 2 (chronomètre), 3 (phases), 4 (rotation A/B) | OK |
+| Personnalisation, séance mobile, répétitions mobile, jours de Musculation | OK |
+| Hors ligne dès la première visite | OK |
+| Progression `progression-stab-1` (3 séances réelles) | OK |
+| HYROX et Cross-training (expérimental) | OK |
+| E2E BÊTA du workflow (`e2e-beta.mjs` + `e2e.mjs`) | OK (349 contrôles) |
+| Parcours base, cross, hyrox, recovery, planning | OK |
+| `e2e.mjs` sur la build standard | 313 contrôles OK |
+| Chronomètre global, stockage auxiliaire | OK |
+
+**Non applicable.** `e2e-sober-upgrade` exige la suppression du cache de l'ancienne build. Avec des artefacts ESSAI Android (`rekka-android-test-*`) comme base, cette exigence ne s'applique pas : le service worker BÊTA ne supprime, par conception, que les caches `rekka-beta-*`. Les assertions de données de ce script passent. La mise à jour réelle BÊTA → BÊTA est couverte par la ligne `f2218c5` → V3 du tableau.
 
 ## 4. Publication
 
