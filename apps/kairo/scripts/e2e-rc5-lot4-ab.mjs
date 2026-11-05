@@ -8,6 +8,7 @@
  * Usage : E2E_URL=<build BÊTA> E2E_REKKA_V2=1 node scripts/e2e-rc5-lot4-ab.mjs [dossier de captures]
  */
 import { chromium } from 'playwright';
+import { openCommands, nextSetLine } from './lib/v3-ui.mjs';
 import { completeStrengthPersonalization, EXPERIENCE } from './lib/strength-onboarding.mjs';
 
 const URL_ = process.env.E2E_URL ?? 'http://127.0.0.1:4174/';
@@ -63,13 +64,15 @@ try {
     await page.getByRole('button', { name: 'Commencer la séance' }).first().click();
     const checkin = page.locator('[data-checkin-form]');
     if (await checkin.count()) await checkin.getByRole('button', { name: 'Passer', exact: true }).click();
+    await page.locator('[data-live-workout="v3"], .k-workout').first().waitFor();
+    await openCommands(page);
     await page.getByRole('timer', { name: 'Chronomètre global' }).waitFor();
-    const line = page.locator('.k-set').filter({ has: page.getByRole('button', { name: 'Cocher la série', exact: true }) }).first();
+    const line = await nextSetLine(page);
     if (await line.getByLabel('Répétitions réalisées').inputValue() === '') await line.getByLabel('Répétitions réalisées').fill('8');
     if (await line.getByLabel('Charge (kg)').inputValue() === '') await line.getByLabel('Charge (kg)').fill('30');
     await line.getByRole('button', { name: 'Cocher la série', exact: true }).click();
     await page.getByRole('timer', { name: 'Chrono de repos' }).waitFor();
-    check(await page.locator('[data-phase]').count() > 0 || await page.locator('.k-set').count() > 0, `${tag} séries affichées (phases du lot 3 si prescrites)`);
+    check(await page.locator('[data-phase]').count() > 0 || await page.locator('.k-set, .v3-set').count() > 0, `${tag} séries affichées (phases du lot 3 si prescrites)`);
     check(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), `${tag} séance sans débordement horizontal`);
     if (shots) await page.screenshot({ path: `${shots}/lot4-${String(width)}-02-haut-a.png` });
 

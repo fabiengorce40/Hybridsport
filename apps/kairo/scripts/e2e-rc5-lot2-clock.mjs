@@ -9,6 +9,7 @@
  * Usage : node apps/kairo/scripts/e2e-rc5-lot2-clock.mjs (build attendue : `pnpm kairo:build:beta` puis prepare-android-test).
  */
 import { chromium } from 'playwright';
+import { openCommands, nextSetLine, openProfilePanel } from './lib/v3-ui.mjs';
 import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, resolve } from 'node:path';
@@ -40,8 +41,8 @@ const stored = async (page) => JSON.parse((await raw(page)) ?? '{}');
 const openLog = async (page) => Object.values((await stored(page)).programmeLogs ?? {}).find((l) => l.sport === 'strength' && !l.finishedAt);
 const logById = async (page, id) => (await stored(page)).programmeLogs?.[id];
 const timer = (page) => page.getByRole('timer', { name: 'Chronomètre global' });
-const elapsed = async (page) => Number(await timer(page).getAttribute('data-elapsed-s'));
-const paused = async (page) => (await timer(page).getAttribute('data-paused')) === 'true';
+const elapsed = async (page) => { await openCommands(page); return Number(await timer(page).getAttribute('data-elapsed-s')); };
+const paused = async (page) => { await openCommands(page); return (await timer(page).getAttribute('data-paused')) === 'true'; };
 const noHScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 /** Avance l'horloge de la page comme une mise en veille, puis simule le retour au premier plan. */
 async function background(page, mmss) {
@@ -60,12 +61,14 @@ async function openTab(context) {
 }
 async function resumeSession(page) {
   await page.getByRole('button', { name: 'Reprendre la séance', exact: true }).first().click();
+  await page.locator('[data-live-workout="v3"], .k-workout').first().waitFor();
+  await openCommands(page);
   await timer(page).waitFor();
 }
 /** Coche la première série non validée (répétitions et charge remplies si vides). */
 async function checkNextSet(page) {
   const before = await page.getByRole('button', { name: 'Décocher la série', exact: true }).count();
-  const line = page.locator('.k-set').filter({ has: page.getByRole('button', { name: 'Cocher la série', exact: true }) }).first();
+  const line = await nextSetLine(page);
   const reps = line.getByLabel('Répétitions réalisées');
   if (await reps.inputValue() === '') await reps.fill('8');
   const load = line.getByLabel('Charge (kg)');
@@ -93,6 +96,8 @@ try {
     if (await check.count()) await check.getByRole('button', { name: 'Passer', exact: true }).click();
     const main = page.getByRole('button', { name: 'Démarrer le bloc principal', exact: true });
     if (await main.count()) await main.click();
+    await page.locator('[data-live-workout="v3"], .k-workout').first().waitFor();
+    await openCommands(page);
     await timer(page).waitFor();
     const id = (await openLog(page)).requestId;
     assert.ok((await elapsed(page)) <= 2);
@@ -110,6 +115,7 @@ try {
     await checkNextSet(page);
     const rest = page.getByRole('timer', { name: 'Chrono de repos' });
     await rest.waitFor();
+    await openCommands(page);
     assert.ok(await timer(page).isVisible());
     const restBefore = (await logById(page, id)).rest;
     await page.getByRole('button', { name: 'Mettre en pause le chronomètre global' }).click();
@@ -146,6 +152,7 @@ try {
     assert.equal(await paused(t2.page), true);
     await t2.page.getByRole('button', { name: 'Reprendre le chronomètre global' }).click();
     await page.getByText('Données mises à jour depuis un autre onglet.').waitFor();
+    await openCommands(page);
     await page.getByRole('button', { name: 'Mettre en pause le chronomètre global' }).waitFor();
     const afterResume = (await logById(page, id)).clock;
     assert.equal(afterResume.pausedAt, undefined);
@@ -165,6 +172,7 @@ try {
     ok(`${W} : fermeture puis réouverture — 4 min comptées (${String(ec)} → ${String(er)} s)`);
 
     // 8. Fin de séance PENDANT une pause : pause close, durées figées.
+    await openCommands(page);
     await page.getByRole('button', { name: 'Mettre en pause le chronomètre global' }).click();
     await page.getByRole('button', { name: 'Reprendre le chronomètre global' }).waitFor();
     const frozen = await elapsed(page);
@@ -197,6 +205,7 @@ try {
     const dev = await openTab(other);
     allErrors.push(dev.errors);
     await dev.page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Profil', exact: true }).click();
+    await openProfilePanel(dev.page);
     await dev.page.getByLabel('Fichier de données à importer').setInputFiles({ name: 'sauvegarde.json', mimeType: 'application/json', buffer: Buffer.from(exported) });
     { const ok = dev.page.getByRole('button', { name: 'Remplacer mes données' }); await Promise.race([ok.waitFor().then(() => ok.click()).catch(() => {}), dev.page.getByText('Données importées.', { exact: true }).waitFor().catch(() => {})]); } // import confirmé (FAST TRACK V1) ; anciennes builds : import direct
     await dev.page.getByText('Données importées.').waitFor();

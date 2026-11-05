@@ -9,6 +9,7 @@
  * Usage : node apps/kairo/scripts/e2e-rc5-lot3-phases.mjs [dossier de captures] [préfixe]
  */
 import { chromium } from 'playwright';
+import { isV3, openCommands, closeCommands, sessionCommand } from './lib/v3-ui.mjs';
 import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, resolve } from 'node:path';
@@ -35,6 +36,85 @@ const ok = (m) => console.log(`ok  ${m}`);
 const stored = (page) => page.evaluate((k) => JSON.parse(localStorage.getItem(k) ?? '{}'), KEY);
 const noHScroll = (page) => page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth);
 
+/**
+ * Rendu V3 : mêmes vérifications que l'ancien rendu (phases titrées, séries inchangées, cibles ≥ 44 px, validation
+ * des montées puis d'une série de travail, repos + chronomètre global, rechargement, montées hors exposition).
+ */
+async function v3Phases(page, W, shot) {
+  await openCommands(page);
+  await page.getByRole('timer', { name: 'Chronomètre global' }).waitFor();
+  await closeCommands(page);
+  const index = await page.locator('.v3-exercise').evaluateAll((xs) => xs.findIndex((x) => x.querySelector('[data-set-kind="rampup"]')));
+  assert.ok(index >= 0, 'un exercice avec montées en charge');
+  const goTo = () => page.getByRole('navigation', { name: 'Exercices' }).getByRole('button').nth(index).click();
+  await goTo();
+  const section = page.locator('.v3-exercise').nth(index);
+  const label = await section.getAttribute('aria-label');
+  await shot('01-exercice', section);
+  if (captureOnly) return;
+  const id = Object.values((await stored(page)).programmeLogs).find((l) => l.sport === 'strength' && !l.finishedAt).requestId;
+  const req = Object.values((await stored(page)).planner.weeks).flatMap((w) => w.requests).find((r) => r.requestId === id);
+  assert.ok(req);
+  const warmHead = section.locator('.v3-phase[data-set-phase="warmup"]');
+  const workHead = section.locator('.v3-phase[data-set-phase="work"]');
+  assert.ok((await warmHead.innerText()).includes('Montée en charge') && await warmHead.isVisible());
+  assert.ok((await workHead.innerText()).includes('Séries de travail') && await workHead.isVisible());
+  const kinds = await section.locator('.v3-set').evaluateAll((xs) => xs.map((x) => x.getAttribute('data-set-kind')));
+  assert.ok(kinds.includes('rampup') && kinds.some((k) => k !== 'rampup'));
+  ok(`${W} : phases titrées, ${String(kinds.length)} séries (${kinds.join(', ')}) — aucune ajoutée ni retirée`);
+  const small = await section.locator('button.v3-toggle, button.v3-series-select').evaluateAll((xs) => xs.filter((x) => x.getBoundingClientRect().height < 44).length);
+  assert.equal(small, 0);
+  const headFont = await warmHead.evaluate((x) => Number.parseFloat(getComputedStyle(x).fontSize));
+  assert.ok(headFont >= 11);
+  assert.ok(await noHScroll(page));
+  ok(`${W} : boutons de validation ≥ 44 px, titres lisibles (${String(headFont)} px), aucun défilement horizontal`);
+  const fillAndCheck = async (i, reps, kg) => {
+    const line = section.locator('.v3-set').nth(i);
+    if (!(await line.locator('.v3-set-editor').count())) await line.locator('.v3-series-select').click();
+    const r = line.getByLabel('Répétitions réalisées'); if (await r.inputValue() === '') await r.fill(reps);
+    const k = line.getByLabel('Charge (kg)'); if (await k.count() && await k.inputValue() === '') await k.fill(kg);
+    await line.getByRole('button', { name: 'Cocher la série' }).click();
+    const rest = page.getByRole('timer', { name: 'Chrono de repos' });
+    if (await rest.isVisible()) { const skip = rest.getByRole('button', { name: /^(Passer|OK)$/ }); if (await skip.count()) await skip.first().click(); }
+  };
+  const firstWork = kinds.findIndex((k) => k !== 'rampup');
+  for (let i = 0; i < kinds.length; i++) if (kinds[i] === 'rampup') await fillAndCheck(i, '5', '20');
+  { const line = section.locator('.v3-set').nth(firstWork); await line.locator('.v3-series-select').click();
+    const r = line.getByLabel('Répétitions réalisées'); if (await r.inputValue() === '') await r.fill('8');
+    const k = line.getByLabel('Charge (kg)'); if (await k.inputValue() === '') await k.fill('40');
+    await line.getByRole('button', { name: 'Cocher la série' }).click(); }
+  await page.getByRole('timer', { name: 'Chrono de repos' }).waitFor();
+  await openCommands(page);
+  assert.ok(await page.getByRole('timer', { name: 'Chronomètre global' }).isVisible());
+  await closeCommands(page);
+  await shot('02-validation', section);
+  const done = (await stored(page)).programmeLogs[id].sets.filter((x) => x.done).length;
+  assert.equal(done, await page.locator('.v3-toggle[aria-pressed="true"]').count());
+  ok(`${W} : montées et série de travail validées (${String(done)}), repos lancé, chronomètre global présent`);
+  await page.reload();
+  await page.getByRole('button', { name: 'Reprendre la séance', exact: true }).first().click();
+  await openCommands(page);
+  await page.getByRole('timer', { name: 'Chronomètre global' }).waitFor();
+  await closeCommands(page);
+  await goTo();
+  const again = page.locator(`.v3-exercise[aria-label="${label}"]`);
+  assert.equal(await page.locator('.v3-toggle[aria-pressed="true"]').count(), done);
+  assert.equal(await again.locator('.v3-phase[data-set-phase="warmup"]').count(), 1);
+  ok(`${W} : rechargement — phases et séries validées conservées`);
+  const exposBefore = (await stored(page)).strength.exposures.length;
+  await (await sessionCommand(page, 'Terminer la séance')).click();
+  await page.getByRole('radio', { name: 'J’ai adapté la séance' }).click();
+  await page.getByRole('button', { name: 'Enregistrer' }).click();
+  await page.getByText('Séance terminée').first().waitFor();
+  const after = await stored(page);
+  assert.ok(after.programmeLogs[id].finishedAt);
+  const newSets = after.strength.exposures.slice(exposBefore).flatMap((x) => x.sets ?? []);
+  assert.equal(newSets.length, 1, JSON.stringify(after.strength.exposures.slice(exposBefore)));
+  await shot('03-terminee');
+  assert.ok(await noHScroll(page));
+  ok(`${W} : séance terminée — montées hors exposition`);
+}
+
 const browser = await chromium.launch();
 try {
   for (const width of [360, 390]) {
@@ -56,6 +136,8 @@ try {
     if (await check.count()) await check.getByRole('button', { name: 'Passer', exact: true }).click();
     const main = page.getByRole('button', { name: 'Démarrer le bloc principal', exact: true });
     if (await main.count()) await main.click();
+    await page.locator('[data-live-workout="v3"], .k-workout').first().waitFor();
+    if (await isV3(page)) { await v3Phases(page, W, shot); assert.deepEqual(errors, []); ok(`${W} : aucune erreur JavaScript`); await context.close(); continue; }
     await page.getByRole('timer', { name: 'Chronomètre global' }).waitFor();
     // Premier exercice qui comporte des montées en charge (prescrites par le moteur).
     const section = page.locator('section.k-ex').filter({ has: page.locator('[data-set-kind="rampup"], .k-set.warm') }).first();

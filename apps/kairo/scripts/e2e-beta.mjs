@@ -96,6 +96,8 @@ await page.addLocatorHandler(page.locator('[data-equipment-missing]'), async () 
 await page.getByRole('button', { name: 'Créer mon programme' }).click();
 await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
 await page.getByRole('button', { name: visualName('Réglages'), exact: true }).click();
+// REKKA V3 : import / export dans Profil → « Données & sauvegardes » (écran précédent : section visible directement).
+if (await page.getByRole('button', { name: /Données & sauvegardes/ }).count()) await page.getByRole('button', { name: /Données & sauvegardes/ }).click();
 await page.getByLabel('Fichier de données à importer').setInputFiles(USER_STATE);
 { const ok = page.getByRole('button', { name: 'Remplacer mes données' }); await Promise.race([ok.waitFor().then(() => ok.click()).catch(() => {}), page.getByText('Données importées.', { exact: true }).waitFor().catch(() => {})]); } // import confirmé (FAST TRACK V1) ; anciennes builds : import direct
 await page.getByText('Données importées.').waitFor();

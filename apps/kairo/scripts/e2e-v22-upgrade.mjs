@@ -6,6 +6,7 @@
  */
 import { Buffer } from 'node:buffer';
 import { chromium } from 'playwright';
+import { openProfilePanel } from './lib/v3-ui.mjs';
 import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { resolve, extname } from 'node:path';
@@ -27,7 +28,7 @@ const server=createServer((req,res)=>{const pathname=new URL(req.url,'http://loc
 await new Promise(r=>server.listen(0,'127.0.0.1',r));const url=`http://127.0.0.1:${server.address().port}/`;
 const LEGACY_SCHEMA=Number(process.env.REKKA_LEGACY_SCHEMA??3);const TARGET_SCHEMA=Number(process.env.REKKA_TARGET_SCHEMA??5);
 const browser=await chromium.launch();
-async function exported(page){await page.getByRole('button',{name:/^(Profil|Réglages)$/}).click();const event=page.waitForEvent('download');await page.getByRole('button',{name:'Exporter mes données',exact:true}).click();return JSON.parse(readFileSync(await(await event).path(),'utf8'));}
+async function exported(page){await page.getByRole('button',{name:/^(Profil|Réglages)$/}).click();await openProfilePanel(page);const event=page.waitForEvent('download');await page.getByRole('button',{name:'Exporter mes données',exact:true}).click();return JSON.parse(readFileSync(await(await event).path(),'utf8'));}
 try{
  for(const version of Array.from({length:LEGACY_SCHEMA},(_,i)=>i+1)){
   current=legacy;const context=await browser.newContext({viewport:{width:360,height:800},locale:'fr-FR',timezoneId:'Europe/Paris'});const page=await context.newPage();const errors=[];page.on('pageerror',e=>errors.push(e.message));
@@ -48,6 +49,7 @@ try{
   assert.equal(await page.evaluate(()=>new Promise(resolve=>{const r=indexedDB.open('rekka-v21-upgrade-probe');r.onsuccess=()=>{const db=r.result;const g=db.transaction('data').objectStore('data').get('sentinel');g.onsuccess=()=>{db.close();resolve(g.result);};};})),'kept');
   const cachesNow=await page.evaluate(()=>caches.keys());assert.ok(cachesNow.includes(newCache));assert.ok(!cachesNow.includes(oldCache));
   // Persist the v4 export via the actual import path, only in this throwaway context.
+  await openProfilePanel(page);
   await page.getByLabel('Fichier de données à importer').setInputFiles({name:'fictitious-current-roundtrip.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify(migrated))});
   { const ok = page.getByRole('button', { name: 'Remplacer mes données' }); await Promise.race([ok.waitFor().then(() => ok.click()).catch(() => {}), page.getByText('Données importées.', { exact: true }).waitFor().catch(() => {})]); } // import confirmé (FAST TRACK V1) ; anciennes builds : import direct
   await page.getByText('Données importées.',{exact:true}).waitFor();assert.deepEqual(await page.evaluate(key=>JSON.parse(localStorage.getItem(key)),key),migrated);

@@ -17,7 +17,18 @@ try {
     await page.getByRole('button', { name: 'Planning', exact: true }).click();
     await page.locator('[data-planning-catalog] button[data-request="2026-10-12.strength.1"]').click();
     await page.getByRole('button', { name: 'Commencer la séance' }).click();
-    const input = page.locator('input[placeholder="12–20"]').first();
+    await page.locator('[data-live-workout="v3"], .k-workout').first().waitFor();
+    const v3 = await page.locator('[data-live-workout="v3"]').count() > 0;
+    const input = page.locator(v3 ? '.v3-exercise:not([hidden]) input[placeholder="12–20"]' : 'input[placeholder="12–20"]').first();
+    if (v3) {
+      // V3 : seul l'éditeur de la série choisie porte la plage ; on parcourt exercices et séries jusqu'à la trouver.
+      const nav = page.getByRole('navigation', { name: 'Exercices' }).getByRole('button');
+      search: for (let e = 0; e < await nav.count(); e++) {
+        await nav.nth(e).click();
+        const selects = page.locator('.v3-exercise:not([hidden]) .v3-series-select');
+        for (let i = 0; i < await selects.count(); i++) { await selects.nth(i).click(); if (await input.count()) break search; }
+      }
+    }
     await input.waitFor();
     await input.scrollIntoViewIfNeeded();
     const fit = await input.evaluate((el) => {
@@ -27,7 +38,8 @@ try {
       ctx2d.font = `${css.fontWeight} ${css.fontSize} ${css.fontFamily}`;
       return ctx2d.measureText(el.placeholder).width <= el.clientWidth;
     });
-    const objective = input.locator('xpath=../..').locator('.k-set-label span');
+    const objective = v3 ? page.locator('.v3-exercise:not([hidden]) .v3-set-prescription') : input.locator('xpath=../..').locator('.k-set-label span');
+    if (v3 && !/12–20/.test(await objective.innerText())) throw new Error(`${width}: objectif 12–20 absent de la prescription`);
     const visible = await objective.evaluate((el) => el.scrollWidth <= el.clientWidth && el.scrollHeight <= el.clientHeight && getComputedStyle(el).textOverflow !== 'ellipsis');
     if (!fit || !visible) throw new Error(`${width}: plage 12–20 tronquée (champ=${String(fit)}, objectif=${String(visible)})`);
     if (await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)) throw new Error(`${width}: débordement horizontal`);

@@ -16,6 +16,7 @@ import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, resolve } from 'node:path';
 import { chromium } from 'playwright';
+import { openProfilePanel } from './lib/v3-ui.mjs';
 
 const env = (k) => { const v = process.env[k]; if (!v) throw new Error(`${k} requis`); return v; };
 const OLD = resolve(env('REKKA_OLD_DIST')); const NEW = resolve(env('REKKA_NEW_DIST'));
@@ -47,6 +48,7 @@ try {
   await page.clock.resume();
   const exportData = async () => {
     await page.getByRole('button', { name: /^(Réglages|Profil)$/ }).click();
+    await openProfilePanel(page);
     const ev = page.waitForEvent('download');
     await page.getByRole('button', { name: 'Exporter mes données', exact: true }).click();
     return JSON.parse(readFileSync(await (await ev).path(), 'utf8'));
@@ -67,6 +69,7 @@ try {
   await page.getByRole('button', { name: 'Créer mon programme' }).click();
   await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
   await page.getByRole('button', { name: /^(Réglages|Profil)$/ }).click();
+  await openProfilePanel(page);
   await page.getByLabel('Fichier de données à importer').setInputFiles(FIXTURE);
   { const ok = page.getByRole('button', { name: 'Remplacer mes données' }); await Promise.race([ok.waitFor().then(() => ok.click()).catch(() => {}), page.getByText('Données importées.', { exact: true }).waitFor().catch(() => {})]); } // import confirmé (FAST TRACK V1) ; anciennes builds : import direct
   await page.getByText('Données importées.').waitFor();

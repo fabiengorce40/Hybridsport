@@ -56,6 +56,51 @@ const shot = async (n) => { if (shots) await page.screenshot({ path: `${shots}/$
 const text = () => page.locator('body').innerText();
 const state = () => page.evaluate(() => JSON.parse(localStorage.getItem('kairo.state') ?? '{}'));
 
+
+/** REKKA V3 : le Profil est un menu (Mes objectifs, Données & sauvegardes, Paramètres…) ; ouvre l'entrée qui contient l'élément. */
+async function profileReveal(p, loc) {
+  if (await loc.count() && await loc.first().isVisible()) return loc.first();
+  for (const entry of [/^Paramètres/, /^Données & sauvegardes/, /^Mes objectifs/]) {
+    const back = p.getByRole('button', { name: '← Retour au profil' });
+    if (await back.count()) await back.click();
+    const e = p.getByRole('button', { name: entry });
+    if (!(await e.count())) continue;
+    await e.first().click();
+    if (await loc.count() && await loc.first().isVisible()) return loc.first();
+  }
+  return loc.first();
+}
+
+/** REKKA V3 : certaines commandes de séance (fin, chronomètre global) sont dans le menu « ⋮ Commandes de séance ». */
+async function sessionCommand(p, name) {
+  const b = p.getByRole('button', { name, exact: true });
+  if (!(await b.count()) || !(await b.first().isVisible())) {
+    const menu = p.getByRole('button', { name: 'Commandes de séance' });
+    if (await menu.count() && (await menu.getAttribute('aria-expanded')) !== 'true') await menu.click();
+  }
+  return b.first();
+}
+
+// V3 : la série de travail se choisit puis se saisit dans l’éditeur ; l’effort (RIR) est dans « ⋮ Commandes de séance ».
+const isV3 = (p) => p.evaluate(() => document.querySelector('[data-live-workout="v3"]') !== null);
+async function firstWorkLine(p) {
+  if (await isV3(p)) {
+    const ex = p.locator('.v3-exercise:not([hidden])');
+    const line = ex.locator('.v3-set:not([data-set-kind="rampup"])').first();
+    await line.locator('.v3-series-select').click();
+    return { ex, line };
+  }
+  const ex = p.locator('section.k-ex').first();
+  return { ex, line: ex.locator('.k-set:not(.warm)').first() };
+}
+async function effortGroup(p, ex) {
+  if (!(await isV3(p))) return ex.getByRole('group', { name: /Répétitions en réserve/ });
+  const menu = p.getByRole('button', { name: 'Commandes de séance' });
+  if ((await menu.getAttribute('aria-expanded')) !== 'true') await menu.click();
+  const d = p.locator('.v3-commands details.v3-extra');
+  if (!(await d.evaluate((x) => x.open))) await d.locator('summary').click();
+  return d.getByRole('group', { name: /Répétitions en réserve/ });
+}
 // PWA : manifest et service worker.
 await page.goto(URL_);
 const manifest = await page.evaluate(async () => { const l = document.querySelector('link[rel=manifest]'); return l ? (await fetch(l.href)).json() : null; });
@@ -128,7 +173,7 @@ await page.getByRole('button', { name: 'Reprendre la séance' }).click();
 check(await page.getByRole('button', { name: 'Décocher la série' }).count() === 1, 'rechargement : la série validée est conservée, aucune autre supposée faite');
 check(await page.getByRole('timer', { name: 'Chrono de repos' }).isVisible(), 'rechargement : chrono conservé (échéance horodatée)');
 await page.getByRole('button', { name: 'Passer' }).click();
-await page.getByRole('button', { name: 'Terminer la séance' }).click();
+await (await sessionCommand(page, 'Terminer la séance')).click();
 await page.getByRole('radio', { name: 'J’ai adapté la séance' }).click();
 await shot('08-fin');
 await page.getByRole('button', { name: 'Enregistrer' }).click();
@@ -145,7 +190,7 @@ await shot('10-course');
 await page.getByRole('button', { name: 'Commencer la séance' }).click();
 await passCheck(page);
 await startMain(page);
-await page.getByRole('button', { name: 'Terminer la séance' }).click();
+await (await sessionCommand(page, 'Terminer la séance')).click();
 await page.getByRole('radio', { name: 'Tout s’est passé comme prévu' }).click();
 await page.getByLabel(/Durée totale courue/).fill('31');
 await page.getByLabel(/Distance/).fill('5.3');
@@ -229,7 +274,7 @@ const strengthTitles = (p) => p.getByRole('button', { name: /^Musculation : / })
   const before = await strengthTitles(p);
   check(before.join(',') === 'Full body,Full body,Full body,Full body' && (await p.locator('body').innerText()).includes('version précédente de KAIRO'), `reset Beta : avant, semaine pré-S1 conservée et signalée (${before.join(', ')})`);
   await p.getByRole('button', { name: visualName('Réglages'), exact: true }).click();
-  await p.getByRole('button', { name: 'Recréer mon programme de test' }).click();
+  await (await profileReveal(p, p.getByRole('button', { name: 'Recréer mon programme de test' }))).click();
   check(await p.getByRole('button', { name: 'Effacer et recréer' }).isDisabled(), 'reset Beta : impossible sans confirmation explicite');
   await p.getByLabel(/Je comprends que ces données seront définitivement effacées/).check();
   await p.getByRole('button', { name: 'Effacer et recréer' }).click();
@@ -331,16 +376,15 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
   await passCheck(p);
   await startMain(p);
-  const ex = p.locator('section.k-ex').first();
-  const line = ex.locator('.k-set:not(.warm)').first();
+  const { ex, line } = await firstWorkLine(p);
   await line.getByLabel('Répétitions réalisées').fill('6');
   if ((await line.getByLabel('Charge (kg)').inputValue()) === '') await line.getByLabel('Charge (kg)').fill('40');
-  check(await ex.getByRole('group', { name: /Répétitions en réserve/ }).count() === 0, `${tag} aucune saisie d’effort avant une série de travail validée`);
+  check(await p.getByRole('group', { name: /Répétitions en réserve/ }).count() === 0, `${tag} aucune saisie d’effort avant une série de travail validée`);
   await line.getByRole('button', { name: 'Cocher la série' }).click();
   const timer = p.getByRole('timer', { name: 'Chrono de repos' });
   check(await timer.isVisible(), `${tag} chrono de repos démarré par la validation de la série`);
   const restBefore = Object.values((await st()).programmeLogs ?? {})[0]?.rest;
-  const effort = ex.getByRole('group', { name: /Répétitions en réserve/ });
+  const effort = await effortGroup(p, ex);
   check(await effort.isVisible(), `${tag} pastilles « reps en réserve » sous la série validée`);
   // Playwright refuse un clic sur un élément recouvert (barre de navigation, chrono) : le clic prouve l'accessibilité.
   await effort.getByRole('button', { name: '2 répétitions en réserve' }).click();
@@ -351,10 +395,10 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
   check(JSON.stringify(log1?.rest) === JSON.stringify(restBefore) && await timer.isVisible(), `${tag} chrono inchangé par la saisie d’effort`);
   await p.reload();
   await p.getByRole('button', { name: 'Reprendre la séance' }).click();
-  check(await p.locator('section.k-ex').first().getByRole('button', { name: '3 répétitions en réserve' }).getAttribute('aria-pressed') === 'true', `${tag} rechargement : RIR observé conservé et réaffiché`);
+  check(await (await effortGroup(p, p.locator('section.k-ex').first())).getByRole('button', { name: '3 répétitions en réserve' }).getAttribute('aria-pressed') === 'true', `${tag} rechargement : RIR observé conservé et réaffiché`);
   const nav = p.getByRole('navigation', { name: 'Navigation principale' });
   check(await nav.count() === 0 || !(await nav.isVisible()), `${tag} séance plein écran : aucune barre de navigation par-dessus les pastilles`);
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   await p.getByRole('radio', { name: 'J’ai adapté la séance' }).click();
   await p.getByRole('button', { name: 'Enregistrer' }).click();
   await p.getByText('Séance terminée').first().waitFor();
@@ -433,7 +477,7 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
   check((await p.getByRole('group', { name: 'Tours complets' }).innerText()).includes('2'), `${tag} rechargement : score conservé`);
   await p.getByRole('button', { name: 'Reprendre' }).click();
   await p.clock.fastForward('09:00');
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
   await sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }).click();
   await sheet.getByRole('button', { name: 'Enregistrer' }).click();
@@ -463,7 +507,7 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
   const t2 = await timer.innerText();
   check(t2.includes('EN PAUSE'), `${tag} EMOM : pause conservée après rechargement`);
   await p.getByRole('button', { name: 'Reprendre' }).click();
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   await sheet.getByRole('radio', { name: 'J’ai arrêté la séance' }).click();
   await sheet.getByRole('button', { name: 'Enregistrer' }).click();
   const after = await st();
@@ -484,7 +528,7 @@ for (const deviceName of ['Galaxy S9+', 'Pixel 7']) {
   await p.waitForTimeout(1200);
   check(JSON.stringify((await st()).programmeLogs) === writes0, `${tag} 30 min de chrono : aucune écriture d’état (horodatage seul)`);
   check((await timer.innerText()).includes('TIME CAP ATTEINT'), `${tag} For time : time cap atteint signalé (descriptif)`);
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   await sheet.getByRole('radio', { name: 'Time cap atteint' }).click();
   await sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }).click();
   await sheet.getByRole('button', { name: 'Enregistrer' }).click();
@@ -605,7 +649,7 @@ async function hrNoOverlap(p, tag) {
   for (let k = 0; k < 40 && await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).isEnabled(); k += 1) await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).click();
   check(await p.getByText('Toutes les étapes sont validées').isVisible(), `${tag} toutes les étapes validées`);
   await p.clock.fastForward('15:00');
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
   await sheet.getByRole('radio', { name: /J’ai adapté la séance/ }).click();
   await sheet.getByRole('button', { name: 'Enregistrer' }).click();
@@ -652,7 +696,7 @@ async function hrNoOverlap(p, tag) {
   await p.locator('.card', { hasText: 'En cours' }).first().click();
   check(!(await timer.innerText()).includes('EN PAUSE') && /Étape 2 \//.test(await p.locator('body').innerText()), `${tag} rechargement chrono en marche : position et chrono conservés`);
   for (let k = 0; k < 40 && await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).isEnabled(); k += 1) await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).click();
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
   await sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }).click();
   await sheet.getByRole('button', { name: 'Enregistrer' }).click();
@@ -676,7 +720,7 @@ async function hrNoOverlap(p, tag) {
   await p.waitForTimeout(1200);
   check(JSON.stringify((await hrState(p)).programmeLogs) === writes0, `${tagC} 95 min de chrono : aucune écriture d’état (horodatage seul)`);
   check((await timer.innerText()).includes('TIME CAP ATTEINT'), `${tagC} time cap atteint signalé (descriptif)`);
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   check(await sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }).count() === 0, `${tagC} séance incomplète : « comme prévu » non proposé`);
   await sheet.getByRole('radio', { name: /Time cap atteint/ }).click();
   await sheet.getByRole('button', { name: 'Enregistrer' }).click();
@@ -705,7 +749,7 @@ async function hrNoOverlap(p, tag) {
   await p.getByRole('button', { name: /Étape faite/ }).click();
   await p.getByRole('button', { name: /Étape faite/ }).click();
   await p.clock.fastForward('09:00');
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
   await sheet.getByRole('radio', { name: 'J’ai arrêté la séance' }).click();
   await sheet.getByLabel('J’ai ressenti une douleur').check();
@@ -809,7 +853,7 @@ async function mobileFit(p, tag) {
   await p.locator('.card', { hasText: 'En cours' }).first().click();
   check(/Étape 2 \//.test(await p.locator('body').innerText()), `${tag} rechargement : séance non placée reprise à l’étape 2`);
   for (let k = 0; k < 40 && await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).isEnabled(); k += 1) await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).click();
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
   await sheet.getByRole('radio', { name: 'Tout s’est passé comme prévu' }).click();
   await sheet.getByRole('button', { name: 'Enregistrer' }).click();
@@ -929,14 +973,14 @@ async function mobileFit(p, tag) {
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
   await passCheck(p);
   await startMain(p);
-  const line = p.locator('section.k-ex').first().locator('.k-set:not(.warm)').first();
+  const { line } = await firstWorkLine(p);
   await line.getByLabel('Répétitions réalisées').fill('8');
   if ((await line.getByLabel('Charge (kg)').inputValue()) === '') await line.getByLabel('Charge (kg)').fill('30');
   await line.getByRole('button', { name: 'Cocher la série' }).click();
   await p.reload();
   await p.getByRole('button', { name: 'Reprendre la séance' }).click();
   check(await p.getByRole('button', { name: 'Décocher la série' }).count() === 1, `${tag} Strength : rechargement, série conservée`);
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   await p.getByRole('radio', { name: 'J’ai adapté la séance' }).click();
   await p.getByRole('button', { name: 'Enregistrer' }).click();
   await p.getByText('Séance terminée').first().waitFor();
@@ -969,7 +1013,7 @@ async function mobileFit(p, tag) {
   const plus = p.getByRole('button', { name: /plus un/ }).first();
   if (await plus.count() > 0) await plus.click();
   await p.clock.fastForward('10:00');
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
   await sheet.getByRole('radio', { name: 'J’ai adapté la séance' }).click();
   await sheet.getByRole('button', { name: 'Enregistrer' }).click();
@@ -983,7 +1027,7 @@ async function mobileFit(p, tag) {
   await startMain(p);
   for (let k = 0; k < 40 && await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).isEnabled(); k += 1) await p.getByRole('button', { name: /[ÉéEe]tape faite/ }).click();
   await p.clock.fastForward('12:00');
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   await sheet.getByRole('radio', { name: /J’ai adapté la séance/ }).click();
   await sheet.getByRole('button', { name: 'Enregistrer' }).click();
   await feedback({ tolerance: 'Moyenne', comment: 'Stations enchaînées, transitions non chronométrées : OK.' });
@@ -1005,7 +1049,7 @@ async function mobileFit(p, tag) {
   check(JSON.stringify((await st()).planner) === before, `${tag} Voir : aucune écriture`);
   await p.getByRole('button', { name: 'Faire maintenant' }).click();
   await passCheck(p);
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   await p.getByRole('radio', { name: 'Tout s’est passé comme prévu' }).click();
   await p.getByLabel(/Durée totale courue/).fill('28');
   await p.getByRole('button', { name: 'Enregistrer' }).click();
@@ -1017,18 +1061,18 @@ async function mobileFit(p, tag) {
   await p.getByRole('button', { name: 'Retour' }).click();
   // 23–24. Journal Beta + export.
   await nav('Réglages');
-  check((await p.getByLabel('KAIRO FIELD TEST').innerText()).includes('Planification beta0-m31'), `${tag} Réglages : KAIRO FIELD TEST, version, planification`);
-  await p.getByRole('button', { name: /Journal Beta/ }).click();
+  check((await (await profileReveal(p, p.getByLabel('KAIRO FIELD TEST'))).innerText()).includes('Planification beta0-m31'), `${tag} Réglages : KAIRO FIELD TEST, version, planification`);
+  await (await profileReveal(p, p.getByRole('button', { name: /Journal Beta/ }))).click();
   const jt = await body();
   check(jt.includes('4 réalisées') && jt.includes('4 retours terrain') && jt.includes('faite manuellement') && !CODES.test(jt), `${tag} Journal Beta : 4 séances réalisées, 4 retours, provenance manuelle lisible, aucun code`);
   await fit('journal');
   if (shots) await p.screenshot({ path: `${shots}/ft-03-journal.png`, fullPage: true });
-  const [dl] = await Promise.all([p.waitForEvent('download'), p.getByRole('button', { name: 'Exporter le journal Beta (JSON)' }).click()]);
+  const [dl] = await Promise.all([p.waitForEvent('download'), (await profileReveal(p, p.getByRole('button', { name: 'Exporter le journal Beta (JSON)' }))).click()]);
   const j = JSON.parse(readFileSync(await dl.path(), 'utf8'));
   const done = j.journal.filter((e) => e.execution?.finishedAt);
   check(j.kind === 'kairo.field_journal' && j.planningVersion === 'beta0-m31' && done.length === 4 && done.every((e) => e.feedback?.provenance === 'USER_REPORTED_FIELD_FEEDBACK' && e.quality?.verdict && e.prescription), `${tag} export JSON : 4 séances avec prescription, exécution, retour terrain, qualité Q1`);
   check(j.journal.some((e) => e.provenance === 'manual_from_unplaced') && j.weeks.length === 1 && j.profile && j.profile.displayName === undefined && j.programme?.audit, `${tag} export JSON : séance manuelle, semaines, profil sans prénom, décisions du programme`);
-  const [dt] = await Promise.all([p.waitForEvent('download'), p.getByRole('button', { name: 'Exporter le journal Beta (texte)' }).click()]);
+  const [dt] = await Promise.all([p.waitForEvent('download'), (await profileReveal(p, p.getByRole('button', { name: 'Exporter le journal Beta (texte)' }))).click()]);
   const txt = readFileSync(await dt.path(), 'utf8');
   check(txt.startsWith('KAIRO FIELD TEST') && txt.includes('retour terrain : difficulté difficile'), `${tag} export texte lisible`);
   // 25–26. Rechargement complet : tout est conservé.
@@ -1063,7 +1107,7 @@ async function p0Block(p, { tag, cardName, label, missing, content, full, shot }
   const steps = p.getByRole('button', { name: /[ÉéEe]tape faite/ });
   for (let k = 0; k < 40 && await steps.count() > 0 && await steps.isEnabled(); k += 1) await steps.click();
   await p.clock.fastForward('12:00');
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
   await sheet.getByRole('radio', { name: /J’ai adapté la séance/ }).click();
   await sheet.getByRole('button', { name: 'Enregistrer' }).click();
@@ -1081,9 +1125,9 @@ async function p0Block(p, { tag, cardName, label, missing, content, full, shot }
   const h = await p.locator('body').innerText();
   check(h.includes('Bloc d’entraînement (pas une séance complète)') && h.includes(`contenu ${content.toLowerCase()}`), `${tag} historique : bloc d’entraînement, ressenti du contenu`);
   await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: visualName('Réglages'), exact: true }).click();
-  await p.getByRole('button', { name: /Journal Beta/ }).click();
+  await (await profileReveal(p, p.getByRole('button', { name: /Journal Beta/ }))).click();
   check((await p.locator('body').innerText()).includes('Bloc d’entraînement seulement : séance complète non composée par KAIRO'), `${tag} Journal Beta : bloc d’entraînement signalé`);
-  const [dl] = await Promise.all([p.waitForEvent('download'), p.getByRole('button', { name: 'Exporter le journal Beta (JSON)' }).click()]);
+  const [dl] = await Promise.all([p.waitForEvent('download'), (await profileReveal(p, p.getByRole('button', { name: 'Exporter le journal Beta (JSON)' }))).click()]);
   const j = JSON.parse(readFileSync(await dl.path(), 'utf8'));
   const e = j.journal.find((x) => x.feedback?.contentAmount);
   check(e?.composition?.scope === 'TRAINING_BLOCK' && e.composition.status === 'FULL_SESSION_COMPOSITION_UNRESOLVED', `${tag} export : FULL_SESSION_COMPOSITION_UNRESOLVED (${JSON.stringify(e?.composition)})`);
@@ -1122,7 +1166,7 @@ async function c4Full(p, tag) {
   await p.waitForTimeout(1200);
   check(!((await timer.textContent()) ?? '').includes('PRÊT'), `${tag} bloc principal démarré explicitement`);
   if (shots) await p.screenshot({ path: `${shots}/c4-ct-bloc-principal.png` });
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
   await sheet.getByRole('radio', { name: /J’ai adapté la séance/ }).click();
   await sheet.getByRole('button', { name: 'Enregistrer' }).click();
@@ -1132,8 +1176,8 @@ async function c4Full(p, tag) {
   check(log?.ct?.blocksDone?.length === nw && log.outcome?.ct?.elapsedS >= 300 && s1.crosstraining?.realized?.length === 1, `${tag} fin : blocs validés et résultat du bloc principal persistés (${JSON.stringify(log?.ct)})`);
   await p.getByRole('button', { name: 'Retour' }).click();
   await p.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: visualName('Réglages'), exact: true }).click();
-  await p.getByRole('button', { name: /Journal Beta/ }).click();
-  const [dl] = await Promise.all([p.waitForEvent('download'), p.getByRole('button', { name: 'Exporter le journal Beta (JSON)' }).click()]);
+  await (await profileReveal(p, p.getByRole('button', { name: /Journal Beta/ }))).click();
+  const [dl] = await Promise.all([p.waitForEvent('download'), (await profileReveal(p, p.getByRole('button', { name: 'Exporter le journal Beta (JSON)' }))).click()]);
   const j = JSON.parse(readFileSync(await dl.path(), 'utf8'));
   const e = j.journal.find((x) => x.sport === 'crosstraining' && x.composition?.c4);
   check(e?.composition?.scope === 'FULL_SESSION' && e.composition.c4.status === 'FULL_SESSION' && e.composition.c4.blocks.length >= 2, `${tag} export : statut C4 FULL_SESSION et blocs (${JSON.stringify(e?.composition?.c4?.status)})`);
@@ -1174,7 +1218,7 @@ async function c43Strength(p, tag) {
   if (await rest.isVisible()) await rest.getByRole('button', { name: /^(Passer|OK)$/ }).click();
   await p.getByRole('button', { name: 'Démarrer le bloc principal' }).click();
   await p.clock.fastForward('05:00');
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   const sheet = p.getByRole('dialog', { name: 'Fin de séance' });
   await sheet.getByRole('radio', { name: /J’ai adapté la séance/ }).click();
   await sheet.getByRole('button', { name: 'Enregistrer' }).click();
@@ -1286,6 +1330,7 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   await snap('03-planning-variantes');
   // Séance 1 : genou P2 ⇒ séance adaptée.
   await p.getByRole('button', { name: /^Musculation : / }).first().click();
+  if (await p.locator('details.v3-objective:not([open]) > summary').count()) await p.locator('details.v3-objective > summary').click();
   check(await p.locator('[data-strength-insight]').isVisible(), `${tag} séance : variante, mouvements dominants et groupes sollicités expliqués`);
   await p.getByRole('button', { name: 'Commencer la séance' }).click();
   const dlg = p.getByRole('dialog', { name: 'Avant de commencer' });
@@ -1306,20 +1351,24 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   const s1 = await st();
   check(s1.checkIns?.at(-1)?.decision === 'adapted' && s1.checkIns.at(-1).pains[0]?.area === 'knee', `${tag} contrôle persisté (décision adaptée)`);
   // Case de validation : contraste, surface tactile ; aide sur les répétitions obligatoires.
-  const chk = await p.locator('.k-check').first().evaluate((b) => { const cs = window.getComputedStyle(b); const r = b.getBoundingClientRect(); return { border: cs.borderTopColor, w: r.width, h: r.height }; });
+  const chk = await p.locator('.k-check, .v3-toggle').first().evaluate((b) => { const cs = window.getComputedStyle(b); const r = b.getBoundingClientRect(); return { border: cs.borderTopColor, w: r.width, h: r.height }; });
   check(chk.w >= 44 && chk.h >= 44 && chk.border !== 'rgb(36, 36, 40)', `${tag} case de série ≥ 44 px, bordure contrastée (${JSON.stringify(chk)})`);
   const hint = p.locator('[data-reps-required]').first();
   if (await hint.count()) check(/Saisissez les répétitions/.test(await hint.innerText()), `${tag} répétitions obligatoires expliquées`);
   // Matériel indisponible (si l'exercice est présent) : substitut validé ou refus explicite.
   const unav = p.getByRole('button', { name: /^Matériel indisponible pour / }).first();
+  const v3 = await isV3(p);
+  if (v3) await effortGroup(p, null);
   if (await unav.count()) {
     await unav.click();
     const sw = p.locator('[data-swap]').first();
     check(await sw.isVisible(), `${tag} matériel indisponible ⇒ ${await sw.getAttribute('data-swap')} (${(await sw.innerText()).slice(0, 90)})`);
     await snap('07-materiel-indisponible');
   }
+  if (v3 && (await p.getByRole('button', { name: 'Commandes de séance' }).getAttribute('aria-expanded')) === 'true') await p.getByRole('button', { name: 'Fermer le message', exact: true }).click();
   // Première série : répétitions + charge, validée ⇒ repos ; la série suivante n'est jamais sous le chrono.
-  const firstLine = p.locator('.k-set').filter({ has: p.getByRole('button', { name: 'Cocher la série', exact: true }) }).first();
+  const firstLine = v3 ? p.locator('.v3-exercise:not([hidden]) .v3-set').filter({ has: p.getByRole('button', { name: 'Cocher la série', exact: true }) }).first() : p.locator('.k-set').filter({ has: p.getByRole('button', { name: 'Cocher la série', exact: true }) }).first();
+  if (v3) await firstLine.locator('.v3-series-select').click();
   const reps = firstLine.getByLabel('Répétitions réalisées');
   if ((await reps.inputValue()) === '') await reps.fill('8');
   await firstLine.getByLabel('Charge (kg)').fill('40');
@@ -1329,7 +1378,7 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   await p.waitForTimeout(700);
   const cover = await p.evaluate(() => {
     const t = document.querySelector('.k-rest')?.getBoundingClientRect();
-    const next = [...document.querySelectorAll('.k-set:not(.done)')].find((x) => x.querySelector('.k-check'));
+    const next = [...document.querySelectorAll('.k-set:not(.done), .v3-exercise:not([hidden]) .v3-set:not([data-state="done"])')].find((x) => x.querySelector('.k-check, .v3-toggle'));
     const r = next?.getBoundingClientRect();
     return t && r ? { timerTop: Math.round(t.top), nextBottom: Math.round(r.bottom), nextTop: Math.round(r.top) } : null;
   });
@@ -1337,7 +1386,7 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   await snap('08-repos-serie-suivante-visible');
   const pageEnd = await p.evaluate(() => { const sc = document.querySelector('.overlay') ?? document.scrollingElement; sc?.scrollTo?.(0, 1e6); window.scrollTo(0, 1e6); return true; });
   await p.waitForTimeout(400);
-  const hidden = await p.evaluate(() => { const t = document.querySelector('.k-rest')?.getBoundingClientRect(); if (!t) return -1; return [...document.querySelectorAll('.k-workout button, .k-workout input')].filter((e) => { const r = e.getBoundingClientRect(); return r.height > 0 && r.bottom > t.top && r.top < t.bottom; }).length; });
+  const hidden = await p.evaluate(() => { const t = document.querySelector('.k-rest')?.getBoundingClientRect(); if (!t) return -1; return [...document.querySelectorAll('.k-workout button, .k-workout input, [data-live-workout="v3"] button, [data-live-workout="v3"] input')].filter((e) => { const r = e.getBoundingClientRect(); return !e.closest('.k-rest') && r.height > 0 && r.bottom > t.top && r.top < t.bottom; }).length; });
   check(pageEnd && hidden === 0, `${tag} bas de page : aucun contrôle sous le chrono (${String(hidden)})`);
   // Rechargement : série, charge et chrono conservés.
   await p.reload();
@@ -1346,7 +1395,7 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   const s2 = await st();
   const log = Object.values(s2.programmeLogs ?? {})[0];
   check(log?.sets?.some((x) => x.done && x.loadKg === 40) && (await rest.isVisible()) && (await p.locator('[data-adaptation]').isVisible()), `${tag} rechargement : série (40 kg), chrono et séance adaptée conservés`);
-  await p.getByRole('button', { name: 'Terminer la séance' }).click();
+  await (await sessionCommand(p, 'Terminer la séance')).click();
   const fin = p.getByRole('dialog', { name: 'Fin de séance' });
   await fin.getByRole('radio', { name: /J’ai adapté la séance/ }).click();
   await fin.getByRole('button', { name: 'Enregistrer' }).click();
@@ -1580,7 +1629,7 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   const { c, p } = await freshPage(readFileSync(new URL('../../../packages/app-core/tests/fixtures/pre-s1-state.json', import.meta.url), 'utf8'));
   const published = await p.evaluate(async () => { try { const r = await fetch('./version.json', { cache: 'no-store' }); return r.ok ? (await r.json()).commit : null; } catch { return null; } });
   await p.getByRole('button', { name: visualName('Réglages'), exact: true }).click();
-  const shown = await p.getByLabel('Version de l’application').innerText();
+  const shown = await (await profileReveal(p, p.getByLabel('Version de l’application'))).innerText();
   if (published) check(shown === `Version : ${published.slice(0, 7)}`, `version affichée = version publiée (${shown} / ${published.slice(0, 7)})`);
   else console.log(`--  version.json absent (build locale) : ${shown}`);
   await c.close();

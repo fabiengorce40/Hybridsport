@@ -12,6 +12,7 @@ import { completeStrengthPersonalization } from './lib/strength-onboarding.mjs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
+import { openProfilePanel } from './lib/v3-ui.mjs';
 
 const URL_ = process.env.E2E_URL ?? 'http://localhost:4174/';
 const NEW_BUILD = (process.env.E2E_NEW_BUILD ?? '').slice(0, 7);
@@ -46,6 +47,7 @@ await page.addLocatorHandler(page.locator('[data-equipment-missing]'), async () 
 await page.getByRole('button', { name: 'Créer mon programme' }).click();
 await page.getByRole('navigation', { name: 'Navigation principale' }).waitFor();
 await page.getByRole('button', { name: /^(Réglages|Profil)$/ }).click();
+await openProfilePanel(page);
 await page.getByLabel('Fichier de données à importer').setInputFiles(USER_STATE);
 { const ok = page.getByRole('button', { name: 'Remplacer mes données' }); await Promise.race([ok.waitFor().then(() => ok.click()).catch(() => {}), page.getByText('Données importées.', { exact: true }).waitFor().catch(() => {})]); } // import confirmé (FAST TRACK V1) ; anciennes builds : import direct
 await page.getByText('Données importées.').waitFor();
