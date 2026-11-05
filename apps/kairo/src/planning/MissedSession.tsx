@@ -8,7 +8,7 @@ import { useStore } from '../store.js';
 import { Notice } from '../ui.js';
 
 const day = (d: string) => new Date(`${d}T12:00:00Z`).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
-const CAUSE: Readonly<Record<string, string>> = { unavailable: 'jour non disponible', occupied: 'une autre séance est déjà prévue', recovery: 'récupération insuffisante' };
+const CAUSE: Readonly<Record<string, string>> = { unavailable: 'jour non disponible', too_short: 'durée disponible insuffisante pour cette séance', occupied: 'une autre séance est déjà prévue', recovery: 'récupération insuffisante' };
 
 export function MissedSessionCard({ requestId }: { requestId: string }) {
   const store = useStore();

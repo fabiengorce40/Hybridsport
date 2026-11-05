@@ -499,7 +499,8 @@ export function startAssessment(state: AppState, clock: Clock, requestId: string
 /**
  * FAST TRACK V1 — séance MANQUÉE ou à REPORTER (séance planifiée, ni commencée ni enregistrée, semaine en cours) :
  * - déclarer « non réalisée » : résultat `missed` déclaré (jamais une réalisation, aucune progression lue) ;
- * - reporter : seulement vers un jour DE LA MÊME SEMAINE, à partir d'aujourd'hui, disponible (profil), sans autre séance
+ * - reporter : seulement vers un jour DE LA MÊME SEMAINE, à partir d'aujourd'hui, disponible (profil) pour au moins la
+ *   durée estimée de la séance, sans autre séance
  *   prévue ce jour-là ET sans conflit de récupération selon la règle gouvernée du planificateur (même contrôle que le
  *   démarrage d'une séance non placée). Aucune accumulation : une séance par jour, séances manquées jamais rattrapées
  *   automatiquement, prescription inchangée. Pause douleur ⇒ aucun report (planification suspendue).
@@ -512,7 +513,7 @@ export interface MissedSessionOptions {
   /** Jours de report admis (aucun conflit), dans l'ordre. */
   readonly postpone: readonly string[];
   /** Jours examinés mais refusés, avec la cause lisible. */
-  readonly refused: readonly { readonly date: string; readonly cause: 'unavailable' | 'occupied' | 'recovery' }[];
+  readonly refused: readonly { readonly date: string; readonly cause: 'unavailable' | 'too_short' | 'occupied' | 'recovery' }[];
   /** Report impossible pour toute la semaine (pause douleur, programme absent). */
   readonly postponeBlocked: 'ACTIVE_PAIN' | null;
 }
@@ -545,15 +546,26 @@ export function missedSessionOptions(state: AppState, clock: Clock, requestId: s
       return [];
     }),
     ...recentOf(state, c.p, c.weekStart).filter((x) => x.status !== 'missed').map((x) => ({ sport: x.sport, date: x.date, session: x.session })),
+    // Séances DÉJÀ planifiées de la semaine suivante (report vers la fin de semaine : récupération au changement de semaine).
+    ...(state.planner.weeks[addDays(c.weekStart, DAYS_PER_WEEK)]?.requests ?? []).flatMap((r) => {
+      const s = recordOf(r)?.session;
+      return s && r.status === 'planned' && r.date && results.get(r.requestId)?.completion !== 'missed' ? [{ sport: r.sport, date: r.date, session: s }] : [];
+    }),
   ];
   const { intent, goals } = portInputs(c.ps);
   const ports = buildPorts(state, c.p, intent, env, goals);
-  const postpone: string[] = []; const refused: { date: string; cause: 'unavailable' | 'occupied' | 'recovery' }[] = [];
+  const postpone: string[] = []; const refused: { date: string; cause: 'unavailable' | 'too_short' | 'occupied' | 'recovery' }[] = [];
+  // Durée nécessaire : estimation du moteur (p50) si disponible, sinon le temps pour lequel la séance a été composée.
+  const record = recordOf(c.r);
+  // technical-constant: secondes par minute (conversion d'unités)
+  const SECONDS_PER_MINUTE = 60;
+  const neededS = record?.durationEstimate.availability === 'AVAILABLE' ? record.durationEstimate.p50 : session.availableTimeS;
   // Récupération Musculation (règle EXISTANTE `recoveryHours`, politique G2) : même région ou Full Body, AVANT comme APRÈS
-  // le jour visé, séances prévues (non manquées) et réalisées de cette semaine et de la précédente. Haut / Bas compatibles.
+  // le jour visé, séances prévues (non manquées) et réalisées de la semaine précédente, de cette semaine et de la suivante
+  // (si déjà planifiée). Haut / Bas compatibles.
   const hours = personalizationParams()['strength.personalization']?.recoveryHours;
   const myRegion = c.r.sport === 'strength' ? archetypeRegion(prescribedArchetype(c.r).archetypeId ?? '') : null;
-  const strengthNeighbours = [c.weekStart, addDays(c.weekStart, -DAYS_PER_WEEK)].flatMap((ws) => (state.planner.weeks[ws]?.requests ?? []).flatMap((r) => {
+  const strengthNeighbours = [addDays(c.weekStart, -DAYS_PER_WEEK), c.weekStart, addDays(c.weekStart, DAYS_PER_WEEK)].flatMap((ws) => (state.planner.weeks[ws]?.requests ?? []).flatMap((r) => {
     if (r.requestId === requestId || r.sport !== 'strength') return [];
     const x = results.get(r.requestId);
     const d = x && x.completion !== 'missed' ? x.date : r.status === 'planned' && x?.completion !== 'missed' ? r.date : undefined;
@@ -566,6 +578,7 @@ export function missedSessionOptions(state: AppState, clock: Clock, requestId: s
     const date = addDays(c.weekStart, i);
     if (date < clock.today || date === c.r.date) return;
     if (minutes <= 0) { refused.push({ date, cause: 'unavailable' }); return; }
+    if (minutes * SECONDS_PER_MINUTE < neededS) { refused.push({ date, cause: 'too_short' }); return; }
     if (c.week.requests.some((r) => r.requestId !== requestId && r.status === 'planned' && r.date === date && results.get(r.requestId)?.completion !== 'missed')) { refused.push({ date, cause: 'occupied' }); return; }
     const conflicts = manualPlacementConflicts({ sport: c.r.sport, date, session }, others, ports, env.governance, env.mode, clockOf());
     if (conflicts.length > 0 || strengthTooClose(date)) refused.push({ date, cause: 'recovery' }); else postpone.push(date);

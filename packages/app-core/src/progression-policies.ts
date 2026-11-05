@@ -1,7 +1,6 @@
 /**
- * FAST TRACK V1 — politiques de progression CANDIDATES, versionnées et relisibles (lot 4.6). AUCUNE n'est active :
- * `beta0Environment()` ne renseigne jamais `progressionReading`. Activation = décision explicite du propriétaire du produit,
- * par `withProgressionPolicy` sur l'environnement (jamais par défaut). Chaque décision prise sous une politique porte son
+ * FAST TRACK V1 — politiques de progression versionnées et relisibles (lot 4.6). Décision D2 : `progression-stab-1` est
+ * ACTIVE sur la BÊTA (`BETA0_PROGRESSION_POLICY` dans `beta0Environment`) ; `progression-clamp-1` reste candidate. Chaque décision prise sous une politique porte son
  * identifiant dans la trace (`progressionPolicy`), sans changement de schéma (paramètres libres de l'audit).
  *
  * Paramètres = ceux des variantes simulées (banc du lot 4.6, 14 scénarios + 20 profils, 12 et 24 semaines) :

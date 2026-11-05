@@ -3,7 +3,7 @@
  * même semaine (disponible, libre, sans conflit de récupération), aucune accumulation, pause douleur respectée.
  */
 import { describe, expect, it } from 'vitest';
-import { createBeta0Programme, declareSessionMissed, emptyState, missedSessionOptions, postponeSession, selectBeta0Week, selectHistory, SESSION_POSTPONED } from '../src/index.js';
+import { addDays, createBeta0Programme, declareSessionMissed, decodeState, emptyState, exportState, missedSessionOptions, postponeSession, selectBeta0Week, selectHistory, SESSION_POSTPONED } from '../src/index.js';
 import type { AppState } from '../src/index.js';
 import { clock, profile } from './fixtures.js';
 
@@ -78,4 +78,44 @@ describe('séance manquée', () => {
     const started = { ...s, programmeLogs: { ...s.programmeLogs, [r.requestId]: { requestId: r.requestId, startedAt: `${MON}T07:00:00Z`, sets: [], painItems: [] } } } as unknown as AppState;
     expect(missedSessionOptions(started, clock(MON), r.requestId)).toBeNull();
   });
+
+  it('P1 corrigé — récupération au changement de semaine : un Full Body n’est pas reporté au dimanche quand un Full Body est déjà planifié le lundi suivant', () => {
+    // Musculation seule (3 × Full Body) : le dimanche est libre, seule la récupération peut le refuser.
+    const base = createBeta0Programme(emptyState(), profile({ priorities: ['strength'], strength: { enabled: true, goal: 'hypertrophy', sessionsPerWeek: 3 }, running: { ...profile().running, enabled: false }, availability: [60, 60, 60, 60, 60, 60, 60] }), clock(MON), {});
+    const week = base.planner.weeks[MON];
+    if (!week) throw new Error('semaine attendue');
+    const NEXT = addDays(MON, 7);
+    const shift = (d?: string) => (d ? addDays(d, 7) : d);
+    // Semaine suivante DÉJÀ planifiée (copie décalée, identifiants distincts) ; état validé par le schéma 5.
+    const next = { ...week, weekStart: NEXT, days: week.days.map((d) => ({ ...d, date: addDays(d.date, 7), ...(d.requestId ? { requestId: d.requestId.replace(MON, NEXT) } : {}) })), requests: week.requests.map((r) => ({ ...r, requestId: r.requestId.replace(MON, NEXT), ...(r.date ? { date: shift(r.date) } : {}) })) };
+    const decoded = decodeState(exportState({ ...base, planner: { ...base.planner, weeks: { ...base.planner.weeks, [NEXT]: next } } }));
+    if (!decoded.ok) throw new Error(decoded.problem);
+    const SAT = addDays(MON, 5); const SUN = addDays(MON, 6);
+    const reqs = (decoded.state.planner.weeks[MON]?.requests ?? []).filter((r) => r.status === 'planned' && r.sport === 'strength');
+    const sunday = reqs.find((r) => r.date === SUN);
+    const fb = reqs.find((r) => r.date !== SUN && (r.date ?? '') > MON);
+    if (!sunday || !fb) throw new Error('Full Body du dimanche et du milieu de semaine attendus');
+    // Le Full Body du dimanche n'a pas été fait : le dimanche est libre ; un Full Body est prévu le lundi suivant.
+    const s = declareSessionMissed(decoded.state, clock(SAT), sunday.requestId);
+    expect(next.requests.some((r) => r.status === 'planned' && r.sport === 'strength' && r.date === NEXT)).toBe(true);
+    const o = missedSessionOptions(s, clock(SAT), fb.requestId);
+    expect(o?.postpone).not.toContain(SUN);
+    expect(o?.refused).toContainEqual({ date: SUN, cause: 'recovery' });
+  });
+
+  it('P1 corrigé — durée : une séance n’est jamais reportée sur un jour dont la disponibilité est inférieure à sa durée estimée', () => {
+    const s0 = programme();
+    const p = s0.profile;
+    if (!p) throw new Error('profil');
+    // Samedi et dimanche : 15 min seulement.
+    const s = { ...s0, profile: { ...p, availability: [60, 60, 60, 60, 60, 15, 15] } };
+    const fb = (s.planner.weeks[MON]?.requests ?? []).find((r) => r.status === 'planned' && r.sport === 'strength');
+    if (!fb) throw new Error('séance attendue');
+    const o = missedSessionOptions(s, clock(MON), fb.requestId);
+    for (const d of [addDays(MON, 5), addDays(MON, 6)]) {
+      expect(o?.postpone).not.toContain(d);
+      expect(o?.refused.find((x) => x.date === d)?.cause).toBe('too_short');
+    }
+  });
 });
+

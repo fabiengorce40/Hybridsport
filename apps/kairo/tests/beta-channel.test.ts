@@ -25,6 +25,11 @@ describe('REKKA BÊTA — workflow isolé', () => {
     expect(wf).not.toMatch(/branches: \[claude\/crosstraining-c1-c2-spike-vbg8dv\]|branches: \[claude\/kairo-rc1-test-env\]|branches: \[claude\/kairo-r51-preview\]/);
     expect(wf).toContain('pnpm kairo:build:beta');
   });
+  it('REKKA V3 (planche carbone) : la build publiée par le workflow BÊTA active explicitement le rendu V3', () => {
+    const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { scripts: Record<string, string> };
+    expect(pkg.scripts['build:beta']).toBe('VITE_KAIRO_CHANNEL=beta VITE_REKKA_THEME=v2 VITE_REKKA_VISUAL=v3 vite build --outDir dist-beta');
+    expect(pkg.scripts.build).toBe('vite build');
+  });
   it('garde anti-écrasement : un projet existant qui ne publie pas la BÊTA n’est jamais remplacé', () => {
     expect(wf).toContain(`grep -q '"channel":"beta"'`);
     expect(wf).toContain('déploiement refusé pour ne rien écraser');
