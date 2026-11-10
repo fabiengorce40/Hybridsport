@@ -35,12 +35,45 @@ export function RestTimer0({ rest, now, onAction, layout='compact' }: { layout?:
   const mm = String(Math.floor(shown / 60)).padStart(2, '0');
   const ss = String(shown % 60).padStart(2, '0');
   const frac = rest.totalS > 0 ? Math.max(0, Math.min(1, remaining / rest.totalS)) : 0;
-  if(SOBER_V3) {
-    const label=paused?'Repos en pause':over?'Repos terminé':'REPOS';
-    const time=<div className={`k-rest-time ${over?'over':''}`} aria-label={`${over?'Dépassé de':'Reste'} ${mm} min ${ss} s`}>{over?'+':''}{Number(mm)}:{ss}</div>;
-    return <section className={`k-rest rw-rest v3-rest v3-rest--${layout}`} data-paused={paused} data-over={over} role="timer" aria-live="off" aria-label="Chrono de repos">
-    <h2>RÉCUPÉRATION</h2><div className="v3-rest-core"><span className="v3-adjust-spacer" aria-hidden="true"/><div className="v3-rest-orbit"><RecoveryBrush/><div className="v3-rest-readout">{time}<button aria-label={paused?'Reprendre le repos':'Mettre le repos en pause'} onClick={()=>onAction(paused?'resume':'pause')}>{paused?'▶':'Ⅱ'}</button></div></div><button className="v3-adjust" aria-label={`Ajouter ${REST_EXTENSION_S} secondes`} onClick={()=>onAction('extend')}>+{REST_EXTENSION_S} s</button></div><button className="v3-skip" aria-label={over?'OK':'Passer'} title="Arrêter le repos" onClick={()=>onAction('skip')}>{over?'OK':'▷ Passer'}</button><small className="v3-rest-context">{label} · {exerciseLabel(rest.exerciseId)}</small>
-  </section>;
+  if (SOBER_V3) {
+    const label = paused ? 'Repos en pause' : over ? 'Repos terminé' : 'Repos';
+    // The original brush is revealed clockwise in proportion to the remaining prescribed rest.
+    // The timer deadline, pause and extension are still owned exclusively by app-core.
+    const angle = Math.round(frac * 36000) / 100;
+    const mask = `conic-gradient(#000 0deg ${angle}deg, transparent ${angle}deg 360deg)`;
+    return <section className={`k-rest rw-rest v3-rest v3-rest--${layout} v31-rest`}
+      data-paused={paused} data-over={over} data-rest-fraction={frac.toFixed(3)}
+      role="timer" aria-live="off" aria-label="Chrono de repos">
+      <div className="v31-rest-main">
+        <div className="v3-rest-orbit v31-rest-orbit">
+          <svg className="v31-rest-track" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43"/></svg>
+          <div className="v31-rest-progress" style={{ WebkitMaskImage: mask, maskImage: mask }}>
+            <RecoveryBrush/>
+          </div>
+          <div className="v31-rest-readout">
+            <small>{label}</small>
+            <div className={`k-rest-time ${over ? 'over' : ''}`}
+              aria-label={`${over ? 'Dépassé de' : 'Reste'} ${mm} min ${ss} s`}>
+              {over ? '+' : ''}{Number(mm)}:{ss}
+            </div>
+            <button className="v31-rest-play" aria-label={paused ? 'Reprendre le repos' : 'Mettre le repos en pause'}
+              onClick={() => onAction(paused ? 'resume' : 'pause')}>
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                {paused ? <path d="M8 6L18 12L8 18Z"/> : <><rect x="7" y="6" width="3.5" height="12" rx="1"/><rect x="13.5" y="6" width="3.5" height="12" rx="1"/></>}
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div className="v31-rest-side">
+          <button className="v31-rest-add" aria-label={`Ajouter ${REST_EXTENSION_S} secondes`}
+            onClick={() => onAction('extend')}>+{REST_EXTENSION_S} s</button>
+          <button className="v31-rest-skip" aria-label={over ? 'OK' : 'Passer'} onClick={() => onAction('skip')}>
+            {over ? 'OK' : 'Passer'}
+          </button>
+        </div>
+      </div>
+      <span className="v31-rest-exercise">{exerciseLabel(rest.exerciseId)}</span>
+    </section>;
   }
   return (
     <div className="k-rest" role="timer" aria-live="off" aria-label="Chrono de repos">
