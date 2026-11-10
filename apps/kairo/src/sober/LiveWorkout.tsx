@@ -37,7 +37,12 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
   const progress = total > 0 ? (done / total) * 100 : 0;
   const expandExercise = (index: number) => {
     setSelected(index);
-    requestAnimationFrame(() => document.getElementById(`v31-exercise-${index}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    const scroll = () => {
+      const target = document.getElementById(`v31-exercise-${index}`);
+      if (typeof target?.scrollIntoView === 'function') target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    if (typeof requestAnimationFrame === 'function') requestAnimationFrame(scroll);
+    else scroll();
   };
 
   return <main className="v3-workout v3-active v31-workout" data-live-workout="v3" data-sport="strength" aria-label="Séance en cours">
