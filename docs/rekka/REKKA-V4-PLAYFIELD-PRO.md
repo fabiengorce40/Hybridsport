@@ -64,6 +64,44 @@ fonctionnelle priment sur les animations.
   ou workflow de déploiement modifié.
 - Comparaison des SHA distants BÊTA et production après l’audit.
 
-**État : le code graphique est en cours d’intégration. Aucun test de build
-n’a encore été exécuté pour les changements V4. Aucun déploiement ni
-fusion n’est autorisé par cette mission.**
+
+
+
+## Finalisation et QA (10 novembre 2026)
+
+### Isolation
+- **Drapeau explicite** `PLAYFIELD_V4` (`src/playfield/flag.ts`), au-dessus de `SOBER_V3` (canal BÊTA + `VITE_REKKA_VISUAL=v3`).
+  - Il est activé par `VITE_REKKA_SKIN=playfield-pro`, présent seulement dans `build:beta` de cette branche.
+  - `build:beta:v31` reconstruit la V3.1 à l'identique, pour comparaison.
+- **Builds non concernées** : production, préparation ESSAI et builds historiques. Toutes les règles de `playfield.css` sont sous `html[data-rekka-theme="playfield-pro"]`, sauf les classes propres `pf-*`.
+- **Déploiement** : aucun workflow n'écoute `codex/rekka-v4-playfield-pro`.
+
+### Corrections apportées
+- **Jetons de couleur.** Les jetons V3 (`:root[data-rekka][data-rekka-visual]`, spécificité 0,3,0) écrasaient ceux de V4. Conséquences : fond carbone et textes blancs sur blanc dans le bilan. Un bloc de spécificité 0,3,1 rétablit la palette claire pour `--k-*`, `--r-*` et les sports.
+- **Couleurs de sport.** Les néons V3 sont remplacés par des déclinaisons lisibles : Musculation `#1647C8`, Course `#D9473A`, HYROX `#B07A00`, Cross-training `#6D4BD8`. Les accents du Planning sont colorés par discipline.
+- **Contrastes (≥ 4,5:1) et cibles (≥ 44 px), écran par écran :**
+  - titres de groupe du Planning, volet de replanification ;
+  - état vide de la Progression ;
+  - chevrons du Profil ;
+  - objectif et chevrons du Détail exercice ;
+  - guidage de saisie ;
+  - case « douleur » de fin de séance ;
+  - en-tête, navigation, séries, coches et pastilles du bilan.
+- **Bilan de séance (nouveau, `SessionSummary`).** Il n'affiche que des faits enregistrés :
+  - issue déclarée et durée active figée ;
+  - séries de travail validées et exercices terminés ;
+  - montées en charge à part (hors volume) ;
+  - douleurs déclarées et avertissement d'arrêt.
+
+  Aucun record, calorie ou score.
+- **Illustration de barre.** La barre passe désormais devant la face du disque jusqu'au moyeu, et le manchon ressort derrière l'épaisseur. Tout reste sur l'axe y = 214 ; l'inscription « 20 KG » n'est plus masquée. Sur l'accueil, l'illustration est un fond discret à droite, sous un voile qui préserve le contraste du texte.
+- **Performance Android.** Aucun flou d'arrière-plan (en-tête de séance, repos flottant, fond de feuille). Pas de filtre recalculé sous le masque de l'anneau de repos.
+
+### Écarts connus avec la maquette
+- **Maquettes non consultables.** Les maquettes Playfield Pro validées dans la conversation ne sont pas accessibles dans l'environnement de travail. La comparaison s'est faite sur ce document et sur les références du dépôt ; aucune fidélité au pixel n'est revendiquée.
+- **Pas d'illustration de développé couché avec un pratiquant.** Le dépôt n'en contient aucune, et aucune n'a été dessinée : seule la barre chargée, géométriquement vérifiée, est utilisée.
+- **Chronomètres.** Les corrections V3.1.1 (`claude/rekka-v3-1-1-timers`, non publiées) ne sont pas incluses : cette branche part de la BÊTA `3aa5629`. Les coûts de rendu sont toutefois neutralisés sous V4.
+- **Rangée de points du bilan.** L'écran de lecture d'une séance terminée garde sa navigation d'exercices `01…06` (composant existant), restylée.
+
+### Contrôles
+Voir le rapport de mission : `pnpm check`, E2E complets, sept écrans à 360 / 390 / 412 / 1024 px (`scripts/e2e-v4-screens.mjs`), migrations, mise à jour depuis la BÊTA V3.1 `3aa5629`, parité des données avec `3aa5629`.
