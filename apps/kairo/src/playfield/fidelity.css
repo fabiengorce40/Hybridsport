@@ -1,0 +1,470 @@
+/**
+ * REKKA V4 Playfield Pro — fidelity pass.
+ * Visual-only overrides based on the validated seven-screen board.
+ * Mounted after playfield.css; isolated behind the explicit build skin.
+ */
+html[data-rekka-theme="playfield-pro"] {
+  --pf-radius-card:20px;
+  --pf-outline:#DEE3EE;
+  --pf-soft:#F4F6FA;
+  --pf-deep:#0E1B35;
+  --pf-gold:#FDCB32;
+  --pf-royal:#1647C8;
+  --pf-elevation:0 5px 17px #15234B0D;
+}
+html[data-rekka-theme="playfield-pro"] body {
+  background:#FFF9EF!important;
+  background-image:linear-gradient(170deg,#FFF8ED 0%,#FFFCF7 46%,#F7F9FF 100%)!important;
+}
+html[data-rekka-theme="playfield-pro"] .screen {max-width:620px;margin-inline:auto}
+html[data-rekka-theme="playfield-pro"] :is(.card,.pv-card,.notice) {
+  border-radius:var(--pf-radius-card);box-shadow:var(--pf-elevation);
+}
+html[data-rekka-theme="playfield-pro"] :is(.btn,.button-card,.v31-series-row,button) {
+  -webkit-tap-highlight-color:transparent;
+}
+html[data-rekka-theme="playfield-pro"] :is(button,summary,input):focus-visible {
+  outline:3px solid #FA6A58!important;outline-offset:2px;
+}
+/* HOME — match the validated editorial hierarchy, keep the real data. */
+html[data-rekka-theme="playfield-pro"] .v3-home .hero {padding:0;gap:0}
+html[data-rekka-theme="playfield-pro"] .pf-brand {height:58px!important;margin:0 58px 10px 0}
+html[data-rekka-theme="playfield-pro"] .pf-logo-mark {width:39px;height:39px}
+html[data-rekka-theme="playfield-pro"] .pf-logo-wordmark {
+  font-style:italic;font-weight:900;letter-spacing:-.07em;font-size:30px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-greeting {margin:3px 0 9px}
+html[data-rekka-theme="playfield-pro"] .pf-greeting h1 {
+  font-size:clamp(27px,6.8vw,37px)!important;
+  font-weight:900!important;letter-spacing:-.045em!important;line-height:1.12;
+  margin:0 0 4px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-greeting p {font-size:14px;line-height:1.3}
+html[data-rekka-theme="playfield-pro"] .hero>p.small {
+  font-size:12px;margin:8px 0 13px;color:#506079;
+}
+html[data-rekka-theme="playfield-pro"] .v3-today {
+  position:relative;isolation:isolate;overflow:hidden;
+  border:0!important;border-radius:22px!important;
+  padding:17px 16px 14px!important;margin:0!important;
+  background:linear-gradient(105deg,#1647C8 0%,#1647C8 48%,#1749BEED 67%,#1438A4B0 100%),
+    url("./assets/barbell-hero.svg") right -84px center/auto 75% no-repeat,#1647C8!important;
+  box-shadow:0 12px 23px #1647C824!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-today::before {
+  content:"";position:absolute;z-index:-1;pointer-events:none;
+  width:155px;height:115px;right:-48px;top:-58px;transform:rotate(-24deg);
+  background:#FDCB32;border-radius:0 0 70% 42%;
+}
+html[data-rekka-theme="playfield-pro"] .v3-today>.card {
+  min-height:0!important;padding:0!important;box-shadow:none!important;background:none!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-session {display:block;color:#fff}
+html[data-rekka-theme="playfield-pro"] .pf-hero-top {
+  display:flex;align-items:center;justify-content:space-between;gap:10px;min-height:31px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-tag {
+  padding:6px 10px;border-radius:8px;background:#FFFFFF26;
+  color:#fff;font-size:11px;font-weight:850;letter-spacing:.025em;text-transform:uppercase;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-top .badge {
+  max-width:48%;color:#fff!important;background:#FFFFFF24!important;
+  border:1px solid #FFFFFF3A!important;font-size:11px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-sport {
+  display:block;color:#E5EEFF;margin:15px 0 1px;font-size:12px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-open {
+  width:100%;border:0;background:none!important;color:#fff!important;
+  display:flex;align-items:center;justify-content:space-between;text-align:left;
+  padding:0!important;margin:0!important;min-height:49px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-open strong {
+  font-family:"REKKA Inter",system-ui,sans-serif;font-size:clamp(24px,6.8vw,33px);
+  line-height:1.1;letter-spacing:-.04em;font-weight:900;color:#fff;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-open>span {
+  display:grid;place-items:center;border-radius:13px;background:#FFFFFF22;
+  width:34px;height:34px;font-size:25px;flex:none;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-meta {color:#F6F8FF!important;margin:5px 0 13px;font-size:13px}
+html[data-rekka-theme="playfield-pro"] .pf-hero-context {
+  background:#071F6C48;border-radius:9px;margin:4px 0 12px;
+  color:#fff!important;border:1px solid #FFFFFF27;
+  font-size:12px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-context>summary {
+  display:flex;align-items:center;min-height:36px;padding:3px 9px;
+  cursor:pointer;color:#FFFFFF!important;font-weight:700;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-context>div {
+  border-top:1px solid #FFFFFF28;padding:4px 10px 7px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-context p {
+  color:#fff!important;font-size:12px;line-height:1.4;margin:7px 0;
+}
+html[data-rekka-theme="playfield-pro"] .v3-today>.btn.primary {
+  min-height:51px;border-radius:999px;font-weight:900;letter-spacing:-.01em;
+  font-size:15px!important;box-shadow:0 4px 10px #0E1B3533!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-today>.btn.primary::before {
+  content:"▶";font-size:13px;margin-right:10px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-home-metrics {
+  margin:12px 0 15px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-home-metrics>div {
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:83px;padding:9px 5px;background:#fff;border-radius:16px;
+  border:1px solid #F0EDEC;box-shadow:var(--pf-elevation);text-align:center;
+}
+html[data-rekka-theme="playfield-pro"] .pf-home-metrics strong {
+  display:block;color:#0E1B35;font-size:25px;line-height:1.1;font-weight:900;
+  font-variant-numeric:tabular-nums;
+}
+html[data-rekka-theme="playfield-pro"] .pf-home-metrics strong span {color:#1647C8;font-size:.68em}
+html[data-rekka-theme="playfield-pro"] .pf-home-metrics small {
+  margin-top:5px;color:#485874;font-size:10px;line-height:1.25;font-weight:650;
+}
+html[data-rekka-theme="playfield-pro"] .rv-sports {margin:5px 0 17px;gap:7px}
+html[data-rekka-theme="playfield-pro"] .rv-sports button {
+  border:1px solid #F0ECED!important;box-shadow:0 3px 10px #15234B0C!important;
+  min-height:70px!important;border-radius:15px!important;padding:7px 1px!important;
+}
+html[data-rekka-theme="playfield-pro"] .rv-sports button span:last-child {
+  font-size:10px!important;letter-spacing:-.03em;line-height:1.2;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .card[aria-label="Progression de la semaine"] {
+  padding:15px;border-radius:22px;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .card[aria-label="Progression de la semaine"] .row strong{
+  font-size:18px;color:#0E1B35;font-weight:900;
+}
+html[data-rekka-theme="playfield-pro"] .pf-week-sports {margin:14px 0 11px;display:grid;gap:12px}
+html[data-rekka-theme="playfield-pro"] .pf-week-sport {
+  display:grid;grid-template-columns:1fr auto;grid-template-rows:auto 6px;
+  column-gap:8px;row-gap:5px;align-items:center;color:#0E1B35;font-size:13px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-week-sport>span {font-weight:750}
+html[data-rekka-theme="playfield-pro"] .pf-week-sport>strong {font-weight:900}
+html[data-rekka-theme="playfield-pro"] .pf-week-sport-bar {
+  grid-column:1/-1;background:#E7EAF1;border-radius:99px;overflow:hidden;height:6px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-week-sport-bar>span {
+  display:block;width:0;height:100%;background:#1647C8;border-radius:99px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-week-sport[data-sport="running"] .pf-week-sport-bar>span{background:#FA6A58}
+html[data-rekka-theme="playfield-pro"] .pf-week-sport[data-sport="hyrox"] .pf-week-sport-bar>span{background:#E5A900}
+html[data-rekka-theme="playfield-pro"] .pf-week-sport[data-sport="crosstraining"] .pf-week-sport-bar>span{background:#725AD4}
+html[data-rekka-theme="playfield-pro"] .weekstrip .c {min-height:57px!important;padding:5px 2px!important}
+html[data-rekka-theme="playfield-pro"] .tabbar {
+  border-radius:21px 21px 0 0!important;box-shadow:0 -5px 23px #0E1B3510!important;
+}
+html[data-rekka-theme="playfield-pro"] .tabbar button {
+  min-height:58px!important;font-size:11px!important;padding:5px 2px!important;
+}
+/* ACTIVE SESSION — approach reference proportions without sacrificing direct editing. */
+html[data-rekka-theme="playfield-pro"] .v31-workout{
+  padding:7px 12px 150px!important;max-width:590px;
+}
+html[data-rekka-theme="playfield-pro"] .v31-sticky-top{
+  position:sticky!important;top:0;border-radius:20px!important;
+  padding:7px 9px 9px!important;box-shadow:0 6px 14px #11265014!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-toolbar{
+  min-height:44px;height:44px!important;margin:0 0 6px!important;
+  display:flex;gap:8px;align-items:center;
+}
+html[data-rekka-theme="playfield-pro"] .v31-toolbar h1{
+  font-size:17px!important;font-weight:900!important;line-height:1.2;
+  white-space:nowrap;text-overflow:ellipsis;overflow:hidden;min-width:0;
+}
+html[data-rekka-theme="playfield-pro"] .v31-toolbar button {
+  min-width:44px!important;min-height:44px!important;width:44px;height:44px;
+  border-radius:12px!important;background:#F1F4FA!important;color:#0E1B35!important;
+  font-size:22px!important;flex:none;
+}
+html[data-rekka-theme="playfield-pro"] .v31-session-bar {
+  min-height:52px!important;border-radius:15px!important;padding:5px 11px!important;
+  background:linear-gradient(115deg,#1647C8 10%,#073492 100%)!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-session-title{
+  font-size:15px!important;font-weight:850;color:#fff!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-session-clock .k-elapsed{
+  color:#fff!important;font-size:17px!important;font-weight:900;
+}
+html[data-rekka-theme="playfield-pro"] .v31-session-clock button {
+  height:44px!important;width:44px!important;border-radius:50%!important;
+  background:#FDCB32!important;color:#0E1B35!important;display:grid;place-items:center;
+}
+html[data-rekka-theme="playfield-pro"] .v31-session-clock button svg{
+  display:block;margin:auto;transform:none;
+}
+html[data-rekka-theme="playfield-pro"] .v31-overview{margin:12px 3px 15px!important}
+html[data-rekka-theme="playfield-pro"] .v31-overview p {
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  margin-bottom:8px;font-size:12px;
+}
+html[data-rekka-theme="playfield-pro"] .v31-overview strong{font-size:16px;font-weight:850}
+html[data-rekka-theme="playfield-pro"] .v31-progress {
+  height:8px!important;border-radius:99px;overflow:hidden;background:#E3E7F2!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-progress>span {
+  display:block;height:100%;border-radius:99px;background:#1647C8!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-exercise-list{gap:10px!important}
+html[data-rekka-theme="playfield-pro"] .v31-exercise{
+  overflow:hidden;border-radius:18px!important;box-shadow:0 4px 13px #11265013!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-exercise[data-expanded="true"]{
+  border:2px solid #FDCB32!important;box-shadow:0 7px 19px #E0B22815!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-exercise-summary {
+  min-height:66px!important;padding:9px 11px!important;gap:10px;
+}
+html[data-rekka-theme="playfield-pro"] .v31-exercise-index {
+  width:36px!important;height:36px!important;font-size:19px!important;
+  border-radius:10px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-exercise-name strong {
+  font-size:clamp(15px,4.3vw,18px)!important;line-height:1.15;font-weight:900;
+}
+html[data-rekka-theme="playfield-pro"] .v31-exercise-name small {
+  font-size:11px!important;line-height:1.25;color:#52617C!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-exercise-count{font-size:12px!important}
+html[data-rekka-theme="playfield-pro"] .v31-chevron{font-size:19px!important}
+html[data-rekka-theme="playfield-pro"] .v31-sets{
+  padding:1px 9px 10px!important;display:block;
+}
+html[data-rekka-theme="playfield-pro"] .v31-sets[hidden]{display:none!important}
+html[data-rekka-theme="playfield-pro"] .pf-exercise-illustration{
+  margin:4px 0 10px;overflow:hidden;border-radius:14px;max-height:137px;
+  border:1px solid #E1E8F2;background:#EFF4FC;
+}
+html[data-rekka-theme="playfield-pro"] .pf-bench-art {
+  width:100%;height:137px;display:block;object-fit:cover;
+}
+html[data-rekka-theme="playfield-pro"] .v3-phase{
+  margin-top:9px!important;margin-bottom:7px!important;font-size:12px!important;
+  font-weight:800!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-phase small{font-size:10px!important}
+html[data-rekka-theme="playfield-pro"] .v31-series-row{
+  min-height:51px!important;grid-template-columns:54px minmax(0,1.3fr) 12px minmax(0,1fr) 42px;
+  gap:4px!important;padding:3px!important;margin-bottom:6px!important;
+  border-radius:12px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-series-label,
+html[data-rekka-theme="playfield-pro"] .v31-series-label>span{
+  width:100%;min-width:0!important;font-size:13px!important;min-height:44px;
+  font-weight:850!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-field{
+  height:44px;display:flex;align-items:center;
+  background:#fff!important;border-radius:10px!important;
+  border:1px solid #E0E5F0!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-field input{
+  min-width:0;width:100%;height:44px;min-height:44px;
+  font-size:16px!important;font-variant-numeric:tabular-nums;text-align:center;
+}
+html[data-rekka-theme="playfield-pro"] .v31-field:focus-within{
+  border:2px solid #1647C8!important;box-shadow:0 0 0 3px #1647C81F!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-toggle{
+  min-width:44px;min-height:44px;display:grid;place-items:center;
+}
+html[data-rekka-theme="playfield-pro"] .v31-set-guidance,
+html[data-rekka-theme="playfield-pro"] .v3-input-hint{
+  font-size:11px!important;color:#56667D!important;line-height:1.35;
+  margin:2px 3px 7px;
+}
+html[data-rekka-theme="playfield-pro"] .v31-finish{
+  margin:14px 0!important;min-height:52px!important;font-weight:900!important;
+}
+/* FLOATING TIMER — 91 px compact dock; never obscures the next line by > 150 px. */
+html[data-rekka-theme="playfield-pro"] .v31-rest {
+  position:fixed!important;bottom:calc(10px + env(safe-area-inset-bottom,0px))!important;
+  left:50%!important;transform:translateX(-50%)!important;
+  width:min(566px,calc(100vw - 24px))!important;max-width:none!important;
+  min-height:0!important;padding:9px 11px!important;
+  border-radius:20px!important;border:1px solid #2A5BC8!important;
+  background:linear-gradient(115deg,#1647C8,#0C3389)!important;
+  box-shadow:0 11px 22px #0B245647!important;
+  overflow:hidden;contain:layout;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-main{
+  display:grid!important;grid-template-columns:78px minmax(0,1fr);align-items:center;
+  justify-content:stretch!important;gap:12px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest .v31-rest-orbit{
+  position:relative;width:78px!important;height:78px!important;min-width:78px;
+  margin:0!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-track circle{
+  stroke:#6784C6!important;stroke-width:7!important;opacity:.82!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-progress{
+  width:100%;height:100%;inset:0;pointer-events:none;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-progress .p242-orbit-ink{
+  stroke:#FDCB32!important;fill:#FDCB32!important;filter:none!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-readout>small{
+  color:#EBF1FF!important;font-size:9px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest .k-rest-time{
+  font-size:23px!important;line-height:1.1;font-weight:900!important;font-variant-numeric:tabular-nums;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-play{
+  width:34px!important;min-width:34px!important;height:34px!important;min-height:34px!important;
+  padding:0!important;margin:0!important;border-radius:50%;display:grid!important;place-items:center!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-play::before{inset:1px!important}
+html[data-rekka-theme="playfield-pro"] .v31-rest-play svg{
+  width:17px!important;height:17px!important;display:block!important;margin:auto!important;
+  transform:none!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-exercise{
+  position:absolute;top:13px;left:104px;right:13px;
+  text-align:left;font-size:12px!important;font-weight:800!important;
+  color:#fff!important;max-width:calc(100% - 117px);
+  white-space:nowrap;text-overflow:ellipsis;overflow:hidden;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-side{
+  margin-top:24px;display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:7px!important;align-items:center;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-side button{
+  width:100%;min-width:0!important;min-height:44px!important;border-radius:999px!important;
+  padding:8px 4px!important;font-size:12px!important;font-weight:850;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-add{
+  background:#FDCB32!important;border-color:#FDCB32!important;color:#0E1B35!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-skip{
+  border:1px solid #FFFFFF99!important;background:#FFFFFF1C!important;color:#fff!important;
+}
+/* PLANNING / PROGRESSION / PROFILE — consistent cards and editorial spacing. */
+html[data-rekka-theme="playfield-pro"] .v3-page-header{
+  margin:10px 0 13px!important;min-height:0!important;padding:0!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-page-header h1{
+  font-size:29px!important;font-weight:900!important;letter-spacing:-.045em!important;
+}
+html[data-rekka-theme="playfield-pro"] .view-switch,
+html[data-rekka-theme="playfield-pro"] .v3-sport-tabs,
+html[data-rekka-theme="playfield-pro"] .v3-metric-tabs{
+  background:#F1F2F5!important;border-radius:999px!important;border:0!important;
+  padding:3px!important;gap:2px!important;
+}
+html[data-rekka-theme="playfield-pro"] .view-switch button[aria-pressed="true"],
+html[data-rekka-theme="playfield-pro"] .v3-sport-tabs button[aria-pressed="true"],
+html[data-rekka-theme="playfield-pro"] .v3-metric-tabs button[aria-pressed="true"]{
+  background:#FDCB32!important;color:#0E1B35!important;border-radius:999px!important;
+  box-shadow:none!important;
+}
+html[data-rekka-theme="playfield-pro"] .week-nav{
+  background:#fff!important;border-radius:15px!important;
+  box-shadow:var(--pf-elevation)!important;
+}
+html[data-rekka-theme="playfield-pro"] [data-catalog-entry]>.card {
+  box-shadow:0 3px 9px #14234A0B!important;margin-bottom:8px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-menu{gap:9px!important}
+html[data-rekka-theme="playfield-pro"] .v3-profile-link{
+  min-height:67px!important;padding:12px 14px!important;gap:13px!important;
+  border-radius:16px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-link strong{
+  font-family:"REKKA Inter",system-ui,sans-serif!important;
+  font-size:15px!important;font-weight:850!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-link small{
+  font-size:11px!important;color:#53617A!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-link>span:first-child{
+  display:grid;place-items:center;width:40px!important;height:40px!important;
+  border-radius:12px;background:#EFF3FE;color:#1647C8!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-hero{
+  display:flex;align-items:center;gap:13px;margin:0 0 14px;
+  padding:14px;border-radius:19px;background:#fff;border:1px solid #E4E8F0;
+  box-shadow:var(--pf-elevation);
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-avatar{
+  width:55px;height:55px;border-radius:50%;
+  display:grid;place-items:center;background:linear-gradient(135deg,#1647C8,#456EE1);
+  color:#fff;font-weight:900;font-size:24px;flex:none;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-hero strong{display:block;font-size:18px;font-weight:900}
+html[data-rekka-theme="playfield-pro"] .pf-profile-hero span{display:block;font-size:12px;color:#52617C;margin-top:4px}
+html[data-rekka-theme="playfield-pro"] .pv-card{
+  border-radius:18px!important;box-shadow:var(--pf-elevation)!important;
+}
+html[data-rekka-theme="playfield-pro"] .pv-kv{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pv-kv>div{
+  background:#F3F6FD;border:1px solid #E5EAF4;border-radius:13px;padding:11px;
+}
+html[data-rekka-theme="playfield-pro"] .pv-kv dd{font-size:19px;font-weight:900}
+html[data-rekka-theme="playfield-pro"] .pv-spark{
+  min-height:128px!important;background:repeating-linear-gradient(to top,#1647C812 0 1px,transparent 1px 28px)!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-preview-title h1{
+  font-size:30px!important;font-weight:900!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-preview-exercise{
+  border-radius:16px!important;box-shadow:var(--pf-elevation)!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-exercise-tile{min-height:68px!important}
+html[data-rekka-theme="playfield-pro"] .v3-exercise-tile h2{
+  font-size:16px!important;line-height:1.15!important;
+}
+/* COMPLETION SHEET — clear selection cards, not an unstyled system dialog. */
+html[data-rekka-theme="playfield-pro"] .sheet{
+  padding:21px 18px calc(21px + env(safe-area-inset-bottom,0px))!important;
+  border-radius:25px 25px 0 0!important;
+}
+html[data-rekka-theme="playfield-pro"] .sheet h2{
+  font-size:25px!important;letter-spacing:-.045em!important;margin:0 0 4px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-finish-subtitle{
+  margin:0 0 14px;font-size:13px;color:#52617C;
+}
+html[data-rekka-theme="playfield-pro"] .sheet .option{
+  border-radius:15px!important;min-height:54px!important;
+  padding:11px 14px!important;font-size:14px!important;font-weight:750!important;
+  text-align:left!important;
+}
+html[data-rekka-theme="playfield-pro"] .sheet .option[aria-checked="true"]{
+  border-color:#FDCB32!important;background:#FFF7D7!important;
+  box-shadow:inset 4px 0 0 #FDCB32;
+}
+html[data-rekka-theme="playfield-pro"] .sheet label.check{
+  background:#F8F9FC;border:1px solid #E3E7EF;border-radius:13px;
+  padding:8px 12px;margin:11px 0;
+}
+html[data-rekka-theme="playfield-pro"] .sheet .btn.primary{
+  min-height:51px!important;font-size:15px!important;font-weight:900!important;
+}
+html[data-rekka-theme="playfield-pro"] .sheet .btn.secondary{
+  min-height:51px!important;font-weight:850!important;
+}
+@media(max-width:375px){
+  html[data-rekka-theme="playfield-pro"] .pf-home-metrics>div{padding:8px 2px}
+  html[data-rekka-theme="playfield-pro"] .pf-home-metrics small{font-size:9px}
+  html[data-rekka-theme="playfield-pro"] .v31-series-row{
+    grid-template-columns:47px minmax(0,1.25fr) 8px minmax(0,1fr) 40px;gap:2px!important;
+  }
+  html[data-rekka-theme="playfield-pro"] .v31-exercise-summary{gap:5px!important;padding:8px 7px!important}
+  html[data-rekka-theme="playfield-pro"] .v31-exercise-name strong{font-size:15px!important}
+  html[data-rekka-theme="playfield-pro"] .v31-rest-side{gap:5px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  html[data-rekka-theme="playfield-pro"] *,html[data-rekka-theme="playfield-pro"] *::before,
+  html[data-rekka-theme="playfield-pro"] *::after{scroll-behavior:auto!important;animation:none!important;transition:none!important}
+}
