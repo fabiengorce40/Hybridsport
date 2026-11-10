@@ -78,6 +78,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
     <div className={`screen ${SOBER_V3 ? "v3-home" : ""}`}>
       <div className="hero">
         {REKKA_V2 ? <RekkaBrand /> : <div className="hero-brand">KAI<span>RO</span></div>}
+        {SOBER_V3 && <div className="pf-greeting"><h1>Bonjour, {name?.trim() || 'sportif'} <span aria-hidden="true">👋</span></h1><p>Prêt pour ta séance ?</p></div>}
         {SOBER_V3 && <button className="v3-home-settings" aria-label="Paramètres" onClick={()=>onGo('settings')}>⚙</button>}
         <p className="small">{formatDate(today)}</p>
         {!SOBER_V3 && <h1>{name ? `${name}, ` : ''}{next ? (next.date === today ? 'c’est le moment.' : 'prochaine séance.') : 'rien de prévu.'}</h1>}
