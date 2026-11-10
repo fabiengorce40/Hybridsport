@@ -602,3 +602,12 @@ html[data-rekka-theme="playfield-pro"] .pf-planning-session b{
 html[data-rekka-theme="playfield-pro"] .pf-planning-session[data-sport="running"]{border-left-color:#FA6A58}
 html[data-rekka-theme="playfield-pro"] .pf-planning-session[data-sport="hyrox"]{border-left-color:#E5A900}
 html[data-rekka-theme="playfield-pro"] .pf-planning-session[data-sport="crosstraining"]{border-left-color:#7860D4}
+
+/* Do not bury safety signals in the collapsible placement rationale. */
+html[data-rekka-theme="playfield-pro"] .pf-hero-alert{
+  background:#FFF1DD;border:1px solid #FFC785;color:#603600!important;
+  padding:8px 9px;border-radius:10px;font-size:12px;font-weight:750;line-height:1.35;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-top .badge.test{
+  color:#0E1B35!important;background:#FDCB32!important;border:0!important;
+}
