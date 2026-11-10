@@ -199,6 +199,8 @@ html[data-rekka="v2"][data-rekka-visual="v3"] .v3-workout :is(.v3-preview-title 
 .v31-session-clock .k-elapsed small{display:none}
 .v31-session-clock button{position:relative;display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border:1px solid #9eb439;border-radius:50%;background:#1b2729;color:#DCFF35}
 .v31-playpause{width:18px;height:18px;display:block;fill:currentColor}
+/* Espacement repris de la rangée de points supprimée : la barre principale ne touche pas la première carte. */
+.v31-overview{margin:0 0 16px}
 .v31-overview p{display:flex;justify-content:space-between;gap:8px;margin:0 0 7px;color:#c0cbd1;font-size:12px}
 .v31-overview p strong{font-size:14px;color:#f3f7f9}
 .v31-progress{height:7px;border-radius:999px;background:#344248;overflow:hidden}
