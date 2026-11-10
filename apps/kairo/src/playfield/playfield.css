@@ -148,7 +148,7 @@ html[data-rekka-theme="playfield-pro"] [data-catalog-entry]>.card{
   background:#fff!important;color:#0E1B35!important;border:1px solid #E3E6EF!important;
   border-radius:16px;box-shadow:var(--pf-shadow);
 }
-html[data-rekka-theme="playfield-pro"] .catalog-toggle{border-left-color:#1647C8;border-radius:12px;color:#0E1B35}
+html[data-rekka-theme="playfield-pro"] .catalog-toggle{border-left-color:var(--sport-color,#1647C8);border-radius:12px;color:#0E1B35}
 html[data-rekka-theme="playfield-pro"] .catalog-group{background:transparent}
 html[data-rekka-theme="playfield-pro"] .view-switch{
   padding:4px;border:1px solid #E3E6EF;border-radius:999px;background:#FFF;overflow:hidden;

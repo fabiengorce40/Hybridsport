@@ -146,7 +146,9 @@ try {
     assert.equal(await row1.getAttribute('data-done'), 'true');
     const check = await row1.locator('.v31-check-main').evaluate((p) => ({ off: getComputedStyle(p).strokeDashoffset, color: getComputedStyle(p).stroke }));
     assert.equal(Number.parseFloat(check.off), 0);
-    assert.equal(check.color, 'rgb(220, 255, 53)');
+    // Coche : néon en V3.1 ; bleu nuit sur pastille jaune en V4 Playfield Pro (thème réellement actif).
+    const pf = await page.evaluate(() => document.documentElement.dataset.rekkaTheme === 'playfield-pro');
+    assert.equal(check.color, pf ? 'rgb(14, 27, 53)' : 'rgb(220, 255, 53)');
     const afterSets = (await stored(page)).programmeLogs[ID].sets;
     const changed = afterSets.filter((s) => JSON.stringify(s) !== JSON.stringify(beforeSets.find((b) => b.itemId === s.itemId && b.setIndex === s.setIndex)));
     assert.equal(changed.length, 1);
