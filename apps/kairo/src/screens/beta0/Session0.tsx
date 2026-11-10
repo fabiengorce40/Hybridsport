@@ -23,7 +23,7 @@ import { StrengthWorkout } from '../../workout/StrengthWorkout.js';
 import { CrossTrainingWorkout } from '../../workout/CrossTrainingWorkout.js';
 import { AdaptationNotice, useStartFlow } from '../../precheck/PreSessionCheck.js';
 import { MissedSessionCard } from '../../planning/MissedSession.js';
-import { PlayPauseIcon } from '../../sober/PlayPauseIcon.js';
+import { SessionClock } from '../../sober/SessionClock.js';
 import { StrengthInsightPanel } from '../../strength/StrengthInsight.js';
 import { HyroxWorkout } from '../../workout/HyroxWorkout.js';
 import { ExperimentalBadge } from './common.js';
@@ -167,6 +167,9 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
   );
 }
 
+// technical-constant: rafraîchissement lent (ms) de la séance V3 Musculation (minutes affichées dans le menu)
+const SLOW_REFRESH_MS = 30_000;
+
 function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => void }) {
   const store = useStore();
   // P0 — tout NOUVEAU démarrage passe par le contrôle pré-séance (reprise d'une séance commencée : directe).
@@ -177,13 +180,16 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   const running = v?.log !== null && v?.log !== undefined && v.result === null;
   // Rafraîchissement de l'AFFICHAGE seulement (aucune écriture) : le temps est recalculé depuis les horodatages persistés,
   // jamais compté ; au retour au premier plan (verrouillage, arrière-plan), il est donc exact immédiatement.
+  // V3 Musculation : le chronomètre global et le repos se rafraîchissent SEULS, alignés sur la seconde (SessionClock,
+  // RestTimer0) ; la séance entière n'est donc plus re-rendue chaque seconde (seulement les minutes du menu, 30 s).
+  const selfTicking = SOBER_V3 && v?.sport === 'strength';
   useEffect(() => {
     if (!running) return undefined;
     const update = () => setTick((x) => x + 1);
-    const t = setInterval(update, 1000);
+    const t = setInterval(update, selfTicking ? SLOW_REFRESH_MS : 1000);
     document.addEventListener('visibilitychange', update);
     return () => { clearInterval(t); document.removeEventListener('visibilitychange', update); };
-  }, [running]);
+  }, [running, selfTicking]);
   if (!v) return <><Topbar title="Séance" onBack={onBack} /><div className="empty">Séance introuvable.</div></>;
   // Cross-training : séance propre au format (prescription persistée lue, jamais de repli Strength ni legacy).
   if (v.sport === 'crosstraining') return <CrossTrainingWorkout v={v} onBack={onBack} />;
@@ -218,7 +224,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   if (v.sport === 'strength') {
     if(SOBER_V3&&!started&&!finished)return <><StrengthPreview v={v} title={name} goalLabel={store.state.profile?.strength.goal==='hypertrophy'?'Volume & hypertrophie':store.state.profile?.strength.goal==='strength'?'Développer ma force':'Forme générale'} onBack={onBack} onStart={()=>flow.start(requestId)} context={<AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state,requestId)}/>} preparation={<StrengthInsightPanel requestId={requestId}/>}/>{flow.sheet}</>;
     if(SOBER_V3&&editable)return <><LiveWorkout v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}`} trainingLabel={role??'Musculation'} editable={editable} elapsedSeconds={clockElapsed} onBack={onBack} onFinish={()=>setFinishing(true)} restTimer={timer}
-      sessionClock={clockElapsed!==null&&<><span className="k-elapsed" role="timer" aria-label="Chronomètre global" aria-live="off" data-session-clock data-elapsed-s={clockElapsed} data-paused={clockPaused?'true':'false'}>{formatChrono(clockElapsed)} <small>{clockState}</small></span><button className="v31-clock-toggle" aria-label={clockPaused?'Reprendre le chronomètre global':'Mettre en pause le chronomètre global'} onClick={()=>store.apply((s,c)=>(clockPaused?resumeProgrammeSession:pauseProgrammeSession)(s,c,requestId))}><PlayPauseIcon paused={clockPaused}/></button></>}
+      sessionClock={clockElapsed!==null&&<SessionClock log={log} now={now} onToggle={()=>store.apply((s,c)=>(clockPaused?resumeProgrammeSession:pauseProgrammeSession)(s,c,requestId))}/>}
       context={<AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state,requestId)}/>} preparation={<StrengthInsightPanel requestId={requestId}/>}
       onRecord={(item,index,x)=>record(item,undefined,index,x)} onTogglePain={itemId=>store.apply(s=>toggleProgrammePainItem(s,requestId,itemId))} onEffort={(itemId,setIndex,rir)=>store.apply(s=>recordProgrammeSetEffort(s,requestId,itemId,setIndex,rir))} onUnavailable={itemId=>store.apply((s,c)=>reportEquipmentUnavailable(s,c,requestId,itemId))}/>{finishSheet}{flow.sheet}</>;
     return (
