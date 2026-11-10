@@ -64,28 +64,43 @@ export function SetLine({ set, label, saved, editable, phaseShown = false, onRec
   // V3 is an alternate rendering of the SAME local values, guards and callback above.
   // RC5 phase/type/objective remain visible; the prescribed order and indices never change.
   if (appearance === 'v3') {
-    const prescriptionId = `${chargeErrorId}-prescription`;
     const description = `${PHASE_TITLES[phaseOf(set)]} · ${target} · ${intensityLabel(set)}`;
-    return <div className="v3-set" data-state={done ? 'done' : current ? 'current' : 'upcoming'} data-set-kind={set.kind}>
-      {selected && <div className="v3-set-editor">
-        <header><button disabled={!onPrevious} onClick={onPrevious} aria-label="Série précédente">‹</button><strong>{label} / {total}</strong><button disabled={!onNext} onClick={onNext} aria-label="Série suivante">›</button></header>
-        <p className="v3-set-prescription" id={prescriptionId}>{description}{warm ? ' · hors volume et progression' : ''}</p>
-        <div className="v3-editor-fields">
-          <label>Charge<FittedNumericInput aria-label="Charge (kg)" aria-invalid={invalidKg || undefined} aria-describedby={invalidKg ? `${prescriptionId} ${chargeErrorId}` : prescriptionId} inputMode="decimal" value={kg} placeholder="—" disabled={!editable || done} onChange={e => setKg(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}/><small>kg</small></label>
-          <label>Répétitions<FittedNumericInput aria-label="Répétitions réalisées" aria-describedby={prescriptionId} inputMode="numeric" placeholder={typeof set.reps === 'number' ? '—' : repsTarget(set.reps)} value={reps} disabled={!editable || done} onChange={e => setReps(e.target.value.replace(/[^0-9]/g, ''))}/></label>
-          <span>Récupération<strong>{clockOf(set.restAfterS)}</strong></span>
-        </div>
-      </div>}
-      <div className="v3-series-row" data-current={selected} data-done={done}>
-        <button className="v3-series-select" onClick={onSelect} aria-label={`Choisir ${label}`} aria-pressed={selected} title={description}>
+    const prescriptionId = `${chargeErrorId}-prescription`;
+    return <div className="v3-set v31-set" data-state={done ? 'done' : current ? 'current' : 'upcoming'} data-set-kind={set.kind}>
+      <span id={prescriptionId} className="sr-only">{description}{warm ? ' · hors volume et progression' : ''}</span>
+      <div className="v3-series-row v31-series-row" data-current={current} data-selected={selected} data-done={done}>
+        <button className="v3-series-select v31-series-label" onClick={onSelect}
+          aria-label={`Sélectionner ${label}`} aria-pressed={selected} title={description}>
           <span>{warm ? `Éch. ${position}` : `S${label.replace(/[^0-9]/g, '')}`}</span>
-          <strong>{kg !== '' ? `${kg} kg` : '— kg'} × {reps !== '' ? reps : repsTarget(set.reps)}{set.optional ? ' · facultative' : ''}<small className="sr-only"> · {description}</small></strong>
         </button>
-        <button className="v3-toggle" aria-label={done ? 'Décocher la série' : 'Cocher la série'} aria-pressed={done} disabled={!editable || (!done && !valid)} onClick={toggle}><span aria-hidden="true">{done ? '✓' : ''}</span></button>
+        <label className="v31-field v31-field-kg">
+          <span className="sr-only">Charge de {label} en kilogrammes</span>
+          <FittedNumericInput aria-label={`Charge (kg) ${label}`}
+            aria-invalid={invalidKg || undefined}
+            aria-describedby={invalidKg ? `${prescriptionId} ${chargeErrorId}` : prescriptionId}
+            inputMode="decimal" value={kg} placeholder="—" disabled={!editable || done}
+            onFocus={onSelect} onChange={e => setKg(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}/>
+          <small aria-hidden="true">kg</small>
+        </label>
+        <span className="v31-times" aria-hidden="true">×</span>
+        <label className="v31-field v31-field-reps">
+          <span className="sr-only">Répétitions de {label}</span>
+          <FittedNumericInput aria-label={`Répétitions réalisées ${label}`}
+            aria-describedby={prescriptionId} inputMode="numeric"
+            value={reps} placeholder={typeof set.reps === 'number' ? '—' : repsTarget(set.reps)}
+            disabled={!editable || done} onFocus={onSelect}
+            onChange={e => setReps(e.target.value.replace(/[^0-9]/g, ''))}/>
+        </label>
+        <button className="v3-toggle v31-toggle" aria-label={done ? 'Décocher la série' : 'Cocher la série'}
+          aria-pressed={done} disabled={!editable || (!done && !valid)} onClick={toggle}>
+          <span aria-hidden="true"><svg className="v31-brush-check" viewBox="0 0 32 32" focusable="false">
+            <path className="v31-check-main" d="M5 17 Q9 20 12 24 Q19 13 27 8"/>
+            <path className="v31-check-feather" d="M12 23 Q20 15 28 10"/>
+          </svg></span>
+        </button>
       </div>
-      {selected && <button className="v3-primary v3-commit" aria-label={done ? 'Dévalider la série active' : 'Valider la série active'} disabled={!editable || (!done && !valid)} onClick={toggle}>{done ? '↶ Dévalider la série' : '✓ Valider la série'}</button>}
-      {selected && editable && !done && invalidKg && <small className="v3-input-error" role="alert" id={chargeErrorId}>Saisissez une charge valide, par exemple 12,5 kg.</small>}
-      {selected && editable && !done && repsN === undefined && <small className="v3-input-error" data-reps-required>Saisissez les répétitions réalisées pour valider la série{typeof set.reps === 'number' ? '' : ` (objectif ${repsTarget(set.reps)})`}.</small>}
+      {editable && !done && invalidKg && <small className="v3-input-error" role="alert" id={chargeErrorId}>Saisissez une charge valide, par exemple 12,5 kg.</small>}
+      {editable && !done && repsN === undefined && <small className="v3-input-error" data-reps-required>Saisissez les répétitions réalisées pour valider {label}{typeof set.reps === 'number' ? '' : ` (objectif ${repsTarget(set.reps)})`}.</small>}
     </div>;
   }
   return (
