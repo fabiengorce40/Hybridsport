@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs';
 import { render, screen, cleanup } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import { PlayfieldLogo } from '../src/playfield/PlayfieldLogo.js';
+import { PlayfieldBenchArt } from '../src/playfield/ExerciseArt.js';
 
 afterEach(cleanup);
 const css = readFileSync('apps/kairo/src/playfield/playfield.css', 'utf8');
@@ -61,4 +62,25 @@ it('le bilan ne compte que les séries réellement validées ; montées à part 
   expect(text).toContain('Douleur signalée en fin de séance.');
   expect(text).toContain('Douleur notée sur 1 exercice.');
   expect(text).not.toMatch(/record|calorie|kcal|score/i);
+});
+
+it('V4 fidelity keeps the approved palette isolated and removes the old neon identity', () => {
+  const fidelity = readFileSync('apps/kairo/src/playfield/fidelity.css', 'utf8');
+  expect(fidelity).toContain('html[data-rekka-theme="playfield-pro"]');
+  expect(fidelity).toContain('#1647C8');
+  expect(fidelity).toContain('#FDCB32');
+  expect(fidelity).not.toContain('#DCFF35');
+  expect(fidelity).not.toContain('magnesie-officielle');
+  expect(fidelity).toContain('.v31-rest-main');
+  expect(fidelity).toContain('.pf-week-sports');
+});
+
+it('V4 differentiates a straight barbell from two independent dumbbells', () => {
+  const r = render(<PlayfieldBenchArt dumbbells />);
+  expect(screen.getByRole('img', { name: /deux haltères indépendants/i })).toBeTruthy();
+  expect(r.container.querySelectorAll('g').length).toBe(2);
+  r.rerender(<PlayfieldBenchArt dumbbells={false} />);
+  expect(screen.getByRole('img', { name: /barre droite.*disques alignés/i })).toBeTruthy();
+  expect(r.container.querySelectorAll('g').length).toBe(2);
+  expect(r.container.querySelector('img')).toBeNull();
 });
