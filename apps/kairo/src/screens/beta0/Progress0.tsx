@@ -1,4 +1,7 @@
 import { SOBER_V3 } from '../../sober/flag.js';
+import { PLAYFIELD_V4 } from '../../playfield/flag.js';
+import { placedOf, weekOf } from './common.js';
+import { isDone } from '../../present.js';
 /**
  * Chantier C — écran Progression (présentation seulement) : projection de `progressView`, lecture pure des données
  * persistées. Aucune progression inventée : HYROX et Cross-training n'affichent que des faits (nombre, durées, dates).
@@ -163,6 +166,26 @@ export function Progress0() {
   const today = clock().today;
   const view = useMemo(() => progressView(state, { today }), [state, today]);
   const p = state.profile;
+  // V4: real registered data and canonical week selector only.
+  const week = weekOf(state, today);
+  const placed = placedOf(week?.days ?? []);
+  const doneWeek = placed.filter(s => isDone(s.display)).length;
+  const percentWeek = placed.length ? Math.round(doneWeek / placed.length * 100) : 0;
+  const strengthDone = new Set(view.strength.exercises.flatMap(e => e.sessions.map(s => s.requestId))).size;
+  const actualSports = [
+    { id:'strength', name:'Musculation', count:strengthDone, color:'#1647C8' },
+    { id:'running', name:'Course', count:view.running.sessions.length, color:'#FA6A58' },
+    { id:'hyrox', name:'HYROX', count:view.hyrox.sessionsDone, color:'#FDCB32' },
+    { id:'crosstraining', name:'Cross-training', count:view.crosstraining.sessionsDone, color:'#7860D4' },
+  ];
+  const totalDone = actualSports.reduce((n,x) => n+x.count,0);
+  let cursor = 0;
+  const sportSegments = actualSports.map(s => {
+    const start=cursor;
+    cursor+= totalDone ? s.count/totalDone*100 : 0;
+    return `${s.color} ${start}% ${cursor}%`;
+  });
+  const sportRing = totalDone ? `conic-gradient(${sportSegments.join(', ')})` : '#E6EAF3';
   const has: Record<Sport, boolean> = {
     strength: view.strength.exercises.length > 0, running: view.running.sessions.length > 0, hyrox: view.hyrox.sessionsDone > 0, crosstraining: view.crosstraining.sessionsDone > 0,
   };
@@ -170,7 +193,36 @@ export function Progress0() {
   const shown = SECTIONS.filter((x) => has[x.sport] || (p ? p[x.sport].enabled : false));
   return (
     <div className="pv" data-progress-view>
-      {view.empty && <p className="pv-empty" data-progress-empty>Aucune séance réalisée pour l’instant. Termine une séance pour suivre ta progression ici.</p>}
+      {PLAYFIELD_V4 && <section className="pf-progress-dashboard" aria-label="Bilan réel de progression">
+         <div className="pf-progress-week">
+           <div className="pf-progress-ring" role="img" aria-label={`${percentWeek} % des séances planifiées réalisées cette semaine`}
+             style={{background:`conic-gradient(#FDCB32 0% ${percentWeek}%, #E4E8F0 ${percentWeek}% 100%)`}}>
+             <span>{percentWeek}%</span>
+           </div>
+           <div><strong>{doneWeek} / {placed.length} séances</strong><span>cette semaine</span>
+             <small>Séances réellement planifiées et validées.</small>
+           </div>
+         </div>
+         <div className="pf-progress-facts">
+           <div><strong>{strengthDone}</strong><small>séances de musculation</small></div>
+           <div><strong>{view.running.sessions.length}</strong><small>courses enregistrées</small></div>
+           <div><strong>{view.hyrox.sessionsDone + view.crosstraining.sessionsDone}</strong><small>séances HYROX / CT</small></div>
+         </div>
+         <div className="pf-progress-distribution">
+           <strong>Répartition des séances enregistrées</strong>
+           <div className="pf-progress-distribution-body">
+             <div className="pf-progress-donut" role="img" aria-label={`Répartition sur ${totalDone} séances enregistrées`} style={{background:sportRing}}>
+               <span>{totalDone}</span>
+             </div>
+             <div className="pf-progress-legend">
+               {actualSports.map(s=><div key={s.id}>
+                 <i style={{background:s.color}} aria-hidden="true"/><span>{s.name}</span><strong>{s.count}</strong>
+               </div>)}
+             </div>
+           </div>
+         </div>
+       </section>}
+       {view.empty && <p className="pv-empty" data-progress-empty>Aucune séance réalisée pour l’instant. Termine une séance pour suivre ta progression ici.</p>}
       {SOBER_V3 && <div className="v3-sport-tabs" role="group" aria-label="Sport de progression">{SECTIONS.map(x=><button key={x.sport} data-sport={x.sport} aria-pressed={selectedSport===x.sport} onClick={()=>setSelectedSport(x.sport)}>{x.title}</button>)}</div>}
       {(SOBER_V3 ? SECTIONS.filter(x=>x.sport===selectedSport) : shown).map((x) => (
         <Section key={x.sport} sport={x.sport} title={x.title}>
