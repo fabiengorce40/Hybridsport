@@ -46,7 +46,8 @@ async function v3Phases(page, W, shot) {
   await closeCommands(page);
   const index = await page.locator('.v3-exercise').evaluateAll((xs) => xs.findIndex((x) => x.querySelector('[data-set-kind="rampup"]')));
   assert.ok(index >= 0, 'un exercice avec montées en charge');
-  const goTo = () => page.getByRole('navigation', { name: 'Exercices' }).getByRole('button').nth(index).click();
+  // V3.1 : on déplie la carte de l'exercice (sans la replier si elle l'est déjà).
+  const goTo = async () => { const sum = page.locator(`#v31-exercise-${String(index)} .v31-exercise-summary`); if ((await sum.getAttribute('aria-expanded')) !== 'true') await sum.click(); };
   await goTo();
   const section = page.locator('.v3-exercise').nth(index);
   const label = await section.getAttribute('aria-label');

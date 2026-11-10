@@ -203,9 +203,6 @@ html[data-rekka="v2"][data-rekka-visual="v3"] .v3-workout :is(.v3-preview-title 
 .v31-overview p strong{font-size:14px;color:#f3f7f9}
 .v31-progress{height:7px;border-radius:999px;background:#344248;overflow:hidden}
 .v31-progress>span{height:100%;display:block;border-radius:inherit;background:#DCFF35;transition:width .18s ease}
-.v31-workout .v3-exercise-nav{margin:4px 0 14px}
-.v31-workout .v3-exercise-nav>div{gap:7px}
-.v31-workout .v3-exercise-nav button{height:44px}
 .v31-exercise-list{display:flex;flex-direction:column;gap:10px}
 .v31-exercise{scroll-margin-top:128px;border:1px solid #435054;background:linear-gradient(115deg,#162023f5,#0e1719ec);border-radius:17px;overflow:hidden}
 .v31-exercise[data-expanded="true"]{border-color:#DCFF35;box-shadow:0 0 0 1px #DCFF353c}
@@ -242,6 +239,8 @@ html[data-rekka="v2"][data-rekka-visual="v3"] .v3-workout :is(.v3-preview-title 
 .v31-series-row[data-done="true"] .v31-check-main,.v31-series-row[data-done="true"] .v31-check-feather{stroke-dashoffset:0}
 @media (prefers-reduced-motion:reduce){.v31-check-main,.v31-check-feather,.v31-progress>span{transition:none!important}}
 .v31-workout .v3-input-error{display:block;padding:3px 6px;color:#ffbb8f;font-size:11px}
+/* Guidage (pas une erreur) : ton neutre ; l'orange reste réservé aux vraies alertes. */
+.v31-workout .v3-input-hint{display:block;padding:3px 6px;color:#b9c7cf;font-size:11px}
 .v31-exercise-details{margin-top:8px;font-size:13px}
 .v31-exercise-details summary{min-height:44px;display:flex;align-items:center;color:#c0cbd1}
 .v31-finish{margin:18px 0 12px;min-height:54px}

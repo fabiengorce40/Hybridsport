@@ -69,13 +69,6 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
         <span style={{ width: `${progress}%` }} />
       </div>
     </div>
-    <nav className="v3-exercise-nav" aria-label="Exercices">
-      <div>{main.map(({ item }, i) => <button key={item.id}
-        aria-label={`Aller à l’exercice ${i + 1} : ${exerciseLabel(item.exerciseId)}`}
-        aria-current={selected === i ? 'step' : undefined}
-        data-complete={complete(item)}
-        onClick={() => expandExercise(i)}><span className="sr-only">{i + 1}</span></button>)}</div>
-    </nav>
     {context}
 
     <div className="v31-exercise-list">

@@ -22,9 +22,10 @@ try {
     const input = page.locator(v3 ? '.v3-exercise[data-expanded="true"] input[placeholder="12–20"]' : 'input[placeholder="12–20"]').first();
     if (v3) {
       // V3 : seul l'éditeur de la série choisie porte la plage ; on parcourt exercices et séries jusqu'à la trouver.
-      const nav = page.getByRole('navigation', { name: 'Exercices' }).getByRole('button');
+      // V3.1 : chaque carte d'exercice se déplie depuis son en-tête (sans replier celle déjà ouverte).
+      const nav = page.locator('.v31-exercise-summary');
       search: for (let e = 0; e < await nav.count(); e++) {
-        await nav.nth(e).click();
+        if ((await nav.nth(e).getAttribute('aria-expanded')) !== 'true') await nav.nth(e).click();
         const selects = page.locator('.v3-exercise[data-expanded="true"] .v3-series-select');
         for (let i = 0; i < await selects.count(); i++) { await selects.nth(i).click(); if (await input.count() && await input.isVisible()) break search; }
       }

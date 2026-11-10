@@ -69,7 +69,7 @@ try {
     await openCommands(page);
     if (!await page.getByRole('timer', { name: 'Chronomètre global' }).isVisible()) throw new Error(`${width}: temps écoulé non visible`);
     await closeCommands(page);
-    const smallNavigation = await page.locator('.k-nav-dot, .v3-exercise-nav button').evaluateAll((buttons) => buttons.filter((button) => button.getBoundingClientRect().height < 44 || button.getBoundingClientRect().width < 44).length);
+    const smallNavigation = await page.locator('.k-nav-dot, .v31-exercise-summary').evaluateAll((buttons) => buttons.filter((button) => button.getBoundingClientRect().height < 44 || button.getBoundingClientRect().width < 44).length);
     if (smallNavigation > 0) throw new Error(`${width}: ${smallNavigation} cibles de navigation trop petites`);
     if (shots) await page.screenshot({ path: `${shots}/${width}-seance-en-cours.png` });
     if (await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth)) throw new Error(`${width}: débordement horizontal`);

@@ -104,7 +104,7 @@ export function SetLine({ set, label, saved, editable, phaseShown = false, onRec
         </button>
       </div>
       {editable && !done && invalidKg && <small className="v3-input-error" role="alert" id={chargeErrorId}>Saisissez une charge valide, par exemple 12,5 kg.</small>}
-      {selected && editable && !done && repsN === undefined && <small className="v3-input-error" data-reps-required>Saisissez les répétitions réalisées pour valider {label}{typeof set.reps === 'number' ? '' : ` (objectif ${repsTarget(set.reps)})`}.</small>}
+      {selected && editable && !done && repsN === undefined && <small className="v3-input-hint" data-reps-required>Saisissez les répétitions réalisées pour valider {label}{typeof set.reps === 'number' ? '' : ` (objectif ${repsTarget(set.reps)})`}.</small>}
     </div>;
   }
   return (
