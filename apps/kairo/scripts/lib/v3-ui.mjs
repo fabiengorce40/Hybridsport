@@ -1,7 +1,7 @@
 /**
  * Aides E2E pour le rendu V3 de la BÊTA (`VITE_REKKA_VISUAL=v3`). Sans effet sur l'ancien rendu :
- * - le chronomètre global et « Terminer la séance » sont dans le menu « ⋮ Commandes de séance » (dialogue modal) ;
- * - la saisie d'une série se fait dans l'éditeur de la série choisie ;
+ * - le chronomètre global est dans l'en-tête fixe ; « Terminer la séance » est dans le bas de page et le menu ;
+ * - la saisie d'une série se fait directement dans sa ligne ;
  * - l'export / import est dans le panneau « Données & sauvegardes » du Profil.
  * Les assertions des scripts restent inchangées : seuls les accès aux contrôles déplacés sont adaptés.
  */
@@ -25,9 +25,13 @@ export async function closeCommands(page) {
 
 /** Bouton de séance qui peut se trouver dans le menu V3 (« Terminer la séance », pause du chronomètre global…). */
 export async function sessionCommand(page, name) {
-  const b = page.getByRole('button', { name, exact: true });
-  if (!(await b.count()) || !(await b.first().isVisible())) await openCommands(page);
-  return b.first();
+  const modal = page.getByRole('dialog', { name: 'Commandes de séance' });
+  if (await modal.count()) {
+    const inside = modal.getByRole('button', { name, exact: true });
+    if (await inside.count()) return inside.first();
+    await closeCommands(page);
+  }
+  return page.getByRole('button', { name, exact: true }).first();
 }
 
 /**
@@ -38,9 +42,9 @@ export async function nextSetLine(page, { scope = page, legacy = '.k-set', workO
   const cocher = page.getByRole('button', { name: 'Cocher la série', exact: true });
   if (await isV3(page)) {
     await closeCommands(page);
-    const sel = workOnly ? '.v3-exercise:not([hidden]) .v3-set:not([data-set-kind="rampup"])' : '.v3-exercise:not([hidden]) .v3-set';
+    const sel = workOnly ? '.v3-exercise[data-expanded="true"] .v31-set:not([data-set-kind="rampup"])'
+      : '.v3-exercise[data-expanded="true"] .v31-set';
     const line = scope.locator(sel).filter({ has: cocher }).first();
-    if ((await line.locator('.v3-set-editor').count()) === 0) await line.locator('.v3-series-select').click();
     return line;
   }
   return scope.locator(legacy).filter({ has: cocher }).first();
