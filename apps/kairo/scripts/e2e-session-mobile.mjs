@@ -35,7 +35,7 @@ try {
     await page.getByRole('button', { name: /^Musculation : Full body/ }).first().click();
     await page.getByRole('button', { name: 'Commencer la séance' }).click();
     await page.locator('[data-live-workout="v3"], .k-workout').first().waitFor();
-    await openCommands(page);
+    await closeCommands(page);
     await page.getByRole('button', { name: 'Mettre en pause le chronomètre global' }).click();
     const global = page.getByRole('timer', { name: 'Chronomètre global' });
     const globalPaused = await global.innerText();
@@ -83,7 +83,7 @@ try {
     if (await page.getByText(/Le temps précédent ne peut pas être récupéré/).count()) throw new Error(`${width}: remise à zéro proposée au rechargement`);
     if (await page.getByRole('timer', { name: 'Chronomètre global' }).getAttribute('data-paused') !== 'false') throw new Error(`${width}: chronomètre global non relu en cours`);
     // V3 : l'éditeur affiche la série choisie ; la série validée est rouverte pour relire ses valeurs.
-    if (await isV3(page)) { await closeCommands(page); await page.locator('.v3-exercise:not([hidden]) .v3-series-select').first().click(); }
+    if (await isV3(page)) { await closeCommands(page); await page.locator('.v3-exercise[data-expanded="true"] .v3-series-select').first().click(); }
     if (await page.getByLabel('Répétitions réalisées').first().inputValue() !== '6' || await page.getByLabel('Charge (kg)').first().inputValue() !== '42.5') throw new Error(`${width}: valeurs de série non conservées`);
     if (errors.length) throw new Error(`${width}: ${errors.join('; ')}`);
     console.log(`OK ${width}: série réelle, charge, repos, pause, +15 s, reprise et rechargement`);
