@@ -1,11 +1,12 @@
 import { SOBER_V3 } from '../../sober/flag.js';
+import { PLAYFIELD_V4 } from '../../playfield/flag.js';
 import { PlacementExplanation, StrengthReplanControl } from '../../strength/StrengthReplan.js';
 import { StaleWeekProposalCard } from '../../planning/WeekProposal.js';
 import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
 import { useState } from 'react';
 import { addDays, beta0Integrity, weekdayIndex, weekLoadWarnings } from '@hybridsport/app-core';
 import type { AppState, WeekLoadWarning } from '@hybridsport/app-core';
-import { sessionName, STRUCTURE_LABELS } from '../../present.js';
+import { sessionName, STRUCTURE_LABELS, STATUS_LABELS, isDone } from '../../present.js';
 import { useStore } from '../../store.js';
 import { formatDate, formatDateShort, Notice, weekdayShort } from '../../ui.js';
 import { ExperimentalBadge, placedOf, RunningTestFallbackNotice, SessionCard0, weekOf, WeekPlanningNotice } from './common.js';
@@ -71,7 +72,23 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
           {week !== current && <button type="button" className="btn ghost" onClick={() => setShown(null)}>Revenir à la semaine en cours</button>}
         </div>
       )}
-      {!week || week.items.length === 0 ? <NoWeek today={today} /> : (
+      {PLAYFIELD_V4 && week && <section className="pf-planning-week" aria-label="Semaine du programme">
+         <h2>Ma semaine <small>{week.days.reduce((n,d)=>n+d.sessions.length,0)} séance(s)</small></h2>
+         <div className="pf-planning-days">{week.days.map(({date,sessions})=><div className="pf-planning-day" key={date} data-date={date}>
+           <div className="pf-planning-day-name"><strong>{weekdayShort(weekdayIndex(date))}</strong><small>{Number(date.slice(8))}</small></div>
+           <div className="pf-planning-day-sessions">
+             {sessions.length===0 ? <span className="pf-planning-empty">Aucune séance planifiée</span> :
+               sessions.map(s=><button key={s.requestId} type="button" className="pf-planning-session"
+                 data-sport={s.sport} onClick={()=>onOpen(s.requestId)}
+                 aria-label={`${sessionName(s.sport,s.archetypeId,s.dataError)}, ${STATUS_LABELS[s.display]}`}>
+                 <span>{sessionName(s.sport,s.archetypeId,s.dataError)}</span>
+                 <small>{STATUS_LABELS[s.display]}</small>
+                 <b aria-hidden="true">{isDone(s.display)?'✓':'›'}</b>
+               </button>)}
+           </div>
+         </div>)}</div>
+       </section>}
+       {!week || week.items.length === 0 ? <NoWeek today={today} /> : (
         <>
           {SOBER_V3 ? <details className="v3-planning-options"><summary>Organisation et replanification</summary><PlacementExplanation weekStart={week.weekStart}/>{week===current && <StrengthReplanControl/>}</details> : <><PlacementExplanation weekStart={week.weekStart}/>{week===current && <StrengthReplanControl/>}</>}
           {week === current && week.planning?.status === 'stale_replaceable' && <StaleWeekProposalCard />}
