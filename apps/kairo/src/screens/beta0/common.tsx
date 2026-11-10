@@ -110,10 +110,10 @@ export function SessionCard0({ v, onOpen, highlight = false, dateLabel, hero = f
       isBlock(v.composition) ? blockCardText : null,
       isFullC4(v.composition) && v.composition ? fullSessionCardText(v.composition) : null,
     ].filter((s): s is string => Boolean(s));
-    return <div className="pf-hero-session" data-pf-hero data-request={v.requestId} data-status={v.display}>
+    return <div className="pf-hero-session" data-pf-hero data-status={v.display}>
       <div className="pf-hero-top"><span className="pf-hero-tag">Prochaine séance</span><StatusPill status={v.display}/></div>
       <span className="pf-hero-sport">{sportName(v.sport)}</span>
-      <button type="button" className="pf-hero-open" onClick={() => onOpen(v.requestId)}
+      <button type="button" className="pf-hero-open" data-request={v.requestId} onClick={() => onOpen(v.requestId)}
         aria-label={`Voir ${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`}>
         <strong>{name}</strong><span aria-hidden="true">›</span>
       </button>
