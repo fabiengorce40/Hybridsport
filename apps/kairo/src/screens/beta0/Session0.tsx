@@ -88,6 +88,7 @@ function FinishSheet({ v, player, onCancel, onSubmit }: { v: ProgrammeSessionVie
     <div className="sheet-backdrop" role="dialog" aria-modal="true" aria-label="Fin de séance">
       <div className="sheet">
         <h2 style={{ margin: 0 }}>Fin de séance</h2>
+        {PLAYFIELD_V4 && <p className="pf-finish-subtitle">Comment s'est passée ta séance ?</p>}
         <div className="stack" role="radiogroup" aria-label="Déroulement">
           {COMPLETIONS.map((c) => <button key={c.id} type="button" role="radio" aria-checked={completion === c.id} className={`option ${completion === c.id ? 'on' : ''}`} onClick={() => setCompletion(c.id)}><span className="t">{c.label}</span></button>)}
         </div>
