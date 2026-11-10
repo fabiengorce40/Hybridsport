@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="430" viewBox="0 0 760 430" role="img" aria-label="Barre olympique avec disques correctement alignés">
+<defs>
+  <linearGradient id="bar" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#EFF4FA"/><stop offset=".4" stop-color="#5D80B4"/><stop offset=".65" stop-color="#132847"/><stop offset="1" stop-color="#748DB2"/></linearGradient>
+  <linearGradient id="disc" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#284A85"/><stop offset=".54" stop-color="#0C234C"/><stop offset="1" stop-color="#06142D"/></linearGradient>
+  <linearGradient id="rim" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#FDCB32"/><stop offset=".55" stop-color="#E89434"/><stop offset="1" stop-color="#A35A1E"/></linearGradient>
+  <filter id="shadow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="13"/></filter>
+</defs>
+<!-- All components share the same physical bar axis y=214. -->
+<ellipse cx="470" cy="342" rx="255" ry="43" fill="#07102B" opacity=".4" filter="url(#shadow)"/>
+<rect x="44" y="207" width="647" height="14" rx="7" fill="url(#bar)"/>
+<path d="M45 209h615" stroke="#EAF1FF" stroke-width="2" opacity=".5"/>
+<!-- Left collar, coaxial with shaft. -->
+<rect x="92" y="199" width="34" height="30" rx="5" fill="#A4B2C8"/>
+<rect x="98" y="198" width="12" height="32" rx="3" fill="#2A4268"/>
+<!-- Depth stack of plates, all centered at y=214 -->
+<g transform="translate(565 214)">
+  <ellipse cx="47" cy="0" rx="77" ry="149" fill="#05152D"/>
+  <ellipse cx="30" cy="0" rx="75" ry="151" fill="#14305A"/>
+  <path d="M13 -146q43 -18 57 0v292q-30 22-57 0" fill="url(#rim)"/>
+  <ellipse cx="10" cy="0" rx="77" ry="151" fill="#061833" stroke="#92A5C1" stroke-width="3"/>
+  <ellipse cx="1" cy="0" rx="69" ry="140" fill="url(#disc)" stroke="#456AA4" stroke-width="7"/>
+  <ellipse cx="1" cy="0" rx="50" ry="115" fill="none" stroke="#112A54" stroke-width="8"/>
+  <ellipse cx="1" cy="0" rx="20" ry="30" fill="#0C1B35" stroke="#7897C4" stroke-width="7"/>
+  <ellipse cx="1" cy="0" rx="9" ry="12" fill="#CDD9E9"/>
+  <text x="0" y="-38" fill="#DCEAFF" font-family="Arial,sans-serif" font-size="28" font-weight="800" text-anchor="middle">20</text>
+  <text x="0" y="-12" fill="#DCEAFF" font-family="Arial,sans-serif" font-size="17" font-weight="700" text-anchor="middle">KG</text>
+</g>
+<!-- Exposed tip extends out from the plate hub along the same horizontal y-axis -->
+<rect x="564" y="208" width="107" height="12" rx="5" fill="url(#bar)"/>
+<rect x="658" y="198" width="29" height="32" rx="5" fill="#465F81" stroke="#B5C7E1" stroke-width="2"/>
+</svg>
