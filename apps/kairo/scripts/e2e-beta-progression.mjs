@@ -47,11 +47,11 @@ try {
       if(v3){
         if(!(await page.locator('.v3-series-row[data-done="false"]').count()))break;
         if((guard+=1)>80)fail('trop de séries');
-        const exercise=page.locator('.v3-exercise:not([hidden])');
-        await exercise.locator('.v3-series-row[data-done="false"] .v3-series-select').first().click();
-        const reps=exercise.getByLabel('Répétitions réalisées',{exact:true});if((await reps.inputValue())==='')await reps.fill('8');
-        const kg=exercise.getByLabel('Charge (kg)',{exact:true});if((await kg.inputValue())==='')await kg.fill('20');
-        await page.getByRole('button',{name:'Valider la série active',exact:true}).click();
+        // V3.1 : saisie directe dans la ligne de la prochaine série de l'exercice déplié.
+        const row=page.locator('.v3-exercise[data-expanded="true"] .v3-series-row[data-done="false"]').first();
+        const reps=row.getByLabel('Répétitions réalisées');if((await reps.inputValue())==='')await reps.fill('8');
+        const kg=row.getByLabel('Charge (kg)');if((await kg.inputValue())==='')await kg.fill('20');
+        await row.getByRole('button',{name:'Cocher la série',exact:true}).click();
       }else{
         const row=page.locator('.k-set:not(.done)').filter({has:page.getByRole('button',{name:'Cocher la série',exact:true})}).first();
         if(!(await row.count()))break;if((guard+=1)>80)fail('trop de séries');
@@ -61,7 +61,6 @@ try {
       }
       const skip=page.getByRole('button',{name:'Passer',exact:true});if(await skip.count())await skip.first().click();
     }
-    if(v3)await page.getByRole('button',{name:'Commandes de séance',exact:true}).click();
     await page.getByRole('button', { name: 'Terminer la séance', exact: true }).click();
     const asPlanned = page.getByRole('radio', { name: 'Tout s’est passé comme prévu', exact: true });
     if (await asPlanned.count()) await asPlanned.click(); else await page.getByRole('radio', { name: 'J’ai adapté la séance', exact: true }).click();

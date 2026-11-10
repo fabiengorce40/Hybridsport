@@ -1,5 +1,6 @@
 import { SOBER_V3 } from './sober/flag.js';
 import { RecoveryBrush } from './sober/Artwork.js';
+import { PlayPauseIcon } from './sober/PlayPauseIcon.js';
 /**
  * Chrono de repos Beta 0 (KAIRO Design System) : l'état (échéance horodatée, pause) est PERSISTÉ dans l'état applicatif
  * (app-core) ; le temps restant est RECALCULÉ à chaque affichage depuis l'heure courante. L'intervalle ne sert qu'au
@@ -36,11 +37,13 @@ export function RestTimer0({ rest, now, onAction, layout='compact' }: { layout?:
   const ss = String(shown % 60).padStart(2, '0');
   const frac = rest.totalS > 0 ? Math.max(0, Math.min(1, remaining / rest.totalS)) : 0;
   if (SOBER_V3) {
-    const label = paused ? 'Repos en pause' : over ? 'Repos terminé' : 'Repos';
-    // The original brush is revealed clockwise in proportion to the remaining prescribed rest.
-    // The timer deadline, pause and extension are still owned exclusively by app-core.
-    const angle = Math.round(frac * 36000) / 100;
-    const mask = `conic-gradient(#000 0deg ${angle}deg, transparent ${angle}deg 360deg)`;
+    // Libellé court : il tient dans l'anneau à 360 px (l'état complet est porté par les libellés accessibles).
+    const label = paused ? 'En pause' : over ? 'Terminé' : 'Repos';
+    // Anneau dégressif : la part écoulée est effacée depuis midi dans le sens horaire ; la part visible est
+    // exactement la proportion restante (remaining / totalS). Échéance, pause et +15 s (qui augmente totalS) restent
+    // la propriété exclusive d'app-core : l'anneau est recalculé à chaque rendu depuis l'horloge réelle.
+    const erased = Math.round((1 - frac) * 36000) / 100;
+    const mask = `conic-gradient(transparent 0deg ${erased}deg, #000 ${erased}deg 360deg)`;
     return <section className={`k-rest rw-rest v3-rest v3-rest--${layout} v31-rest`}
       data-paused={paused} data-over={over} data-rest-fraction={frac.toFixed(3)}
       role="timer" aria-live="off" aria-label="Chrono de repos">
@@ -58,9 +61,7 @@ export function RestTimer0({ rest, now, onAction, layout='compact' }: { layout?:
             </div>
             <button className="v31-rest-play" aria-label={paused ? 'Reprendre le repos' : 'Mettre le repos en pause'}
               onClick={() => onAction(paused ? 'resume' : 'pause')}>
-              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-                {paused ? <path d="M8 6L18 12L8 18Z"/> : <><rect x="7" y="6" width="3.5" height="12" rx="1"/><rect x="13.5" y="6" width="3.5" height="12" rx="1"/></>}
-              </svg>
+              <PlayPauseIcon paused={paused}/>
             </button>
           </div>
         </div>

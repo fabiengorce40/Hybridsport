@@ -45,7 +45,7 @@ try {for(const width of [360,390]){
  await page.getByRole('button',{name:'Ajouter 15 secondes',exact:true}).click();await page.getByRole('button',{name:'Reprendre le repos',exact:true}).click();
  await page.reload();await page.getByRole('button',{name:'Reprendre la séance',exact:true}).click();
  assert.equal(await page.getByRole('button',{name:'Décocher la série',exact:true}).count(),1);await page.getByRole('timer',{name:'Chrono de repos'}).waitFor();
- await page.getByRole('button',{name:'Passer',exact:true}).click();if(await page.locator('[data-live-workout="v3"]').count())await page.getByRole('button',{name:'Commandes de séance',exact:true}).click();await page.getByRole('button',{name:'Terminer la séance',exact:true}).click();
+ await page.getByRole('button',{name:'Passer',exact:true}).click();await page.getByRole('button',{name:'Terminer la séance',exact:true}).first().click();
  await page.getByRole('radio',{name:'J’ai adapté la séance',exact:true}).click();await page.getByRole('button',{name:'Enregistrer',exact:true}).click();
  await page.getByText('Séance terminée',{exact:true}).first().waitFor();await page.getByRole('button',{name:'Retour',exact:true}).click();
  const performed=await read();assert.ok(Object.keys(performed.programmeLogs).length>0);

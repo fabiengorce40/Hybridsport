@@ -13,6 +13,9 @@ interface Props extends StrengthWorkoutProps {
   elapsedSeconds: number | null;
 }
 
+/** Identité d'une consigne de série (type, objectif, intensité) : sert à ne pas la répéter ligne après ligne. */
+const prescriptionKey = (set: SetsItem['prescription']['sets'][number]) => JSON.stringify([set.kind, set.reps, set.intensity, set.optional === true]);
+
 /** V3.1: all exercise cards remain visible; only their set tables are collapsible. */
 export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffort, onUnavailable, onBack, onFinish, restTimer, trainingLabel, elapsedSeconds, context, preparation, sessionClock, eyebrow }: Props) {
   const main = v.session.blocks
@@ -20,7 +23,8 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
     .flatMap(block => block.items.filter(isSets).map(item => ({ block, item })));
   const saved = (id: string, i: number) => v.log?.sets.find(s => s.itemId === id && s.setIndex === i);
   const complete = (item: SetsItem) => item.prescription.sets.every((_, i) => saved(item.id, i)?.done);
-  const [selected, setSelected] = useState(() => Math.max(0, main.findIndex(({ item }) => !complete(item))));
+  // Carte dépliée (null : toutes repliées). Les cartes repliées restent montées : aucun brouillon n'est perdu.
+  const [selected, setSelected] = useState<number | null>(() => Math.max(0, main.findIndex(({ item }) => !complete(item))));
   const [setSelection, setSetSelection] = useState<Record<string, number>>({});
   const [menu, setMenu] = useState(false);
   const commands = useRef<HTMLDivElement>(null);
@@ -31,7 +35,8 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
     return () => previous?.focus({ preventScroll: true });
   }, [menu]);
 
-  const selectedEntry = main[selected];
+  const optionsIndex = selected ?? Math.max(0, main.findIndex(({ item }) => !complete(item)));
+  const selectedEntry = main[optionsIndex];
   const total = main.reduce((n, { item }) => n + item.prescription.sets.length, 0);
   const done = main.reduce((n, { item }) => n + item.prescription.sets.filter((_, i) => saved(item.id, i)?.done).length, 0);
   const progress = total > 0 ? (done / total) * 100 : 0;
@@ -87,7 +92,7 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
           id={`v31-exercise-${cardIndex}`} data-expanded={expanded} data-complete={complete(item)}
           aria-label={`Exercice ${cardIndex + 1} : ${name}`}>
           <button className="v31-exercise-summary" aria-expanded={expanded}
-            aria-controls={`v31-sets-${cardIndex}`} onClick={() => setSelected(cardIndex)}>
+            aria-controls={`v31-sets-${cardIndex}`} onClick={() => setSelected(expanded ? null : cardIndex)}>
             <span className="v31-exercise-index">{cardIndex + 1}</span>
             <span className="v31-exercise-name"><strong>{name}</strong><small>{muscleText(item.exerciseId)}</small></span>
             <span className="v31-exercise-count">{completed}/{sets.length}</span>
@@ -101,6 +106,7 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
                   {phaseOf(set) === 'warmup' && <small> · hors volume et progression</small>}
                 </div>}
               <SetLine phaseShown appearance="v3" current={i === current} selected={i === active}
+                prescriptionShown={i === 0 || prescriptionKey(sets[i - 1] ?? set) !== prescriptionKey(set)}
                 position={i + 1} total={sets.length}
                 onSelect={() => setSetSelection(s => ({ ...s, [item.id]: i }))}
                 onPrevious={i ? () => setSetSelection(s => ({ ...s, [item.id]: i - 1 })) : undefined}
@@ -111,10 +117,20 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
                   onRecord(item, i, x);
                   if (x.done) {
                     const next = sets.findIndex((_, n) => n !== i && !saved(item.id, n)?.done);
-                    if (next >= 0) setSetSelection(s => ({ ...s, [item.id]: next }));
+                    if (next >= 0) {
+                      setSetSelection(s => ({ ...s, [item.id]: next }));
+                      // Défilement minimal (« nearest ») : la série suivante reste au-dessus du chrono flottant
+                      // grâce à sa marge de défilement basse (CSS) ; aucun saut si elle est déjà visible.
+                      const reveal = () => {
+                        const row = document.querySelectorAll<HTMLElement>(`#v31-sets-${cardIndex} .v31-set`)[next];
+                        if (typeof row?.scrollIntoView === 'function') row.scrollIntoView({ block: 'nearest' });
+                      };
+                      if (typeof requestAnimationFrame === 'function') requestAnimationFrame(reveal); else reveal();
+                    }
                     else {
                       const nextExercise = main.findIndex(({ item: it }, n) => n !== cardIndex && !complete(it));
-                      if (nextExercise >= 0) setSelected(nextExercise);
+                      // Exercice terminé : l'exercice suivant est déplié et amené sous l'en-tête (défilement explicite).
+                      if (nextExercise >= 0) expandExercise(nextExercise);
                     }
                   } else setSetSelection(s => ({ ...s, [item.id]: i }));
                 }} />

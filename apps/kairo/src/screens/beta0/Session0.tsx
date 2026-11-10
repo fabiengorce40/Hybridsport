@@ -23,6 +23,7 @@ import { StrengthWorkout } from '../../workout/StrengthWorkout.js';
 import { CrossTrainingWorkout } from '../../workout/CrossTrainingWorkout.js';
 import { AdaptationNotice, useStartFlow } from '../../precheck/PreSessionCheck.js';
 import { MissedSessionCard } from '../../planning/MissedSession.js';
+import { PlayPauseIcon } from '../../sober/PlayPauseIcon.js';
 import { StrengthInsightPanel } from '../../strength/StrengthInsight.js';
 import { HyroxWorkout } from '../../workout/HyroxWorkout.js';
 import { ExperimentalBadge } from './common.js';
@@ -217,7 +218,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   if (v.sport === 'strength') {
     if(SOBER_V3&&!started&&!finished)return <><StrengthPreview v={v} title={name} goalLabel={store.state.profile?.strength.goal==='hypertrophy'?'Volume & hypertrophie':store.state.profile?.strength.goal==='strength'?'Développer ma force':'Forme générale'} onBack={onBack} onStart={()=>flow.start(requestId)} context={<AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state,requestId)}/>} preparation={<StrengthInsightPanel requestId={requestId}/>}/>{flow.sheet}</>;
     if(SOBER_V3&&editable)return <><LiveWorkout v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}`} trainingLabel={role??'Musculation'} editable={editable} elapsedSeconds={clockElapsed} onBack={onBack} onFinish={()=>setFinishing(true)} restTimer={timer}
-      sessionClock={clockElapsed!==null&&<><span className="k-elapsed" role="timer" aria-label="Chronomètre global" aria-live="off" data-session-clock data-elapsed-s={clockElapsed} data-paused={clockPaused?'true':'false'}>{formatChrono(clockElapsed)} <small>{clockState}</small></span><button onClick={()=>store.apply((s,c)=>(clockPaused?resumeProgrammeSession:pauseProgrammeSession)(s,c,requestId))}>{clockPaused?'Reprendre le chronomètre global':'Mettre en pause le chronomètre global'}</button></>}
+      sessionClock={clockElapsed!==null&&<><span className="k-elapsed" role="timer" aria-label="Chronomètre global" aria-live="off" data-session-clock data-elapsed-s={clockElapsed} data-paused={clockPaused?'true':'false'}>{formatChrono(clockElapsed)} <small>{clockState}</small></span><button className="v31-clock-toggle" aria-label={clockPaused?'Reprendre le chronomètre global':'Mettre en pause le chronomètre global'} onClick={()=>store.apply((s,c)=>(clockPaused?resumeProgrammeSession:pauseProgrammeSession)(s,c,requestId))}><PlayPauseIcon paused={clockPaused}/></button></>}
       context={<AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state,requestId)}/>} preparation={<StrengthInsightPanel requestId={requestId}/>}
       onRecord={(item,index,x)=>record(item,undefined,index,x)} onTogglePain={itemId=>store.apply(s=>toggleProgrammePainItem(s,requestId,itemId))} onEffort={(itemId,setIndex,rir)=>store.apply(s=>recordProgrammeSetEffort(s,requestId,itemId,setIndex,rir))} onUnavailable={itemId=>store.apply((s,c)=>reportEquipmentUnavailable(s,c,requestId,itemId))}/>{finishSheet}{flow.sheet}</>;
     return (

@@ -9,7 +9,9 @@
  * Usage : node apps/kairo/scripts/e2e-rc5-lot2-clock.mjs (build attendue : `pnpm kairo:build:beta` puis prepare-android-test).
  */
 import { chromium } from 'playwright';
-import { openCommands, nextSetLine, openProfilePanel } from './lib/v3-ui.mjs';
+import { closeCommands, nextSetLine, openProfilePanel } from './lib/v3-ui.mjs';
+// V3.1 : le chronomètre global est dans l'en-tête fixe ; le menu de séance est simplement refermé s'il est ouvert.
+const openCommands = closeCommands;
 import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, resolve } from 'node:path';

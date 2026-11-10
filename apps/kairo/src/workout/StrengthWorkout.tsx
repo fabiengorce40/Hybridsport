@@ -37,8 +37,10 @@ export interface StrengthWorkoutProps {
 }
 
 /** Ligne de série : SÉRIE 1 · REPS · KG · ○ — la valeur réellement saisie reste toujours lisible. */
-export function SetLine({ set, label, saved, editable, phaseShown = false, onRecord, appearance, current = false, selected = false, onSelect, position }: {
+export function SetLine({ set, label, saved, editable, phaseShown = false, onRecord, appearance, current = false, selected = false, onSelect, position, prescriptionShown = true }: {
   appearance?: 'v3'; current?: boolean; selected?: boolean;
+  /** V3.1 : consigne visible une seule fois par groupe de séries identiques (toujours lue par les lecteurs d'écran). */
+  prescriptionShown?: boolean;
   onSelect?: () => void; onPrevious?: () => void; onNext?: () => void;
   position?: number; total?: number;
   set: SetPrescription; label: string; saved: SetLog | undefined; editable: boolean;
@@ -67,7 +69,7 @@ export function SetLine({ set, label, saved, editable, phaseShown = false, onRec
     const description = `${PHASE_TITLES[phaseOf(set)]} · ${target} · ${intensityLabel(set)}`;
     const prescriptionId = `${chargeErrorId}-prescription`;
     return <div className="v3-set v31-set" data-state={done ? 'done' : current ? 'current' : 'upcoming'} data-set-kind={set.kind}>
-      {typeof set.reps === 'number' && !set.optional
+      {(typeof set.reps === 'number' && !set.optional) || !prescriptionShown
         ? <span id={prescriptionId} className="sr-only">{description}{warm ? ' · hors volume et progression' : ''}</span>
         : <small id={prescriptionId} className="v31-set-prescription">{description}{warm ? ' · hors volume et progression' : ''}</small>}
       <div className="v3-series-row v31-series-row" data-current={current} data-selected={selected} data-done={done}>
@@ -102,7 +104,7 @@ export function SetLine({ set, label, saved, editable, phaseShown = false, onRec
         </button>
       </div>
       {editable && !done && invalidKg && <small className="v3-input-error" role="alert" id={chargeErrorId}>Saisissez une charge valide, par exemple 12,5 kg.</small>}
-      {editable && !done && repsN === undefined && <small className="v3-input-error" data-reps-required>Saisissez les répétitions réalisées pour valider {label}{typeof set.reps === 'number' ? '' : ` (objectif ${repsTarget(set.reps)})`}.</small>}
+      {selected && editable && !done && repsN === undefined && <small className="v3-input-error" data-reps-required>Saisissez les répétitions réalisées pour valider {label}{typeof set.reps === 'number' ? '' : ` (objectif ${repsTarget(set.reps)})`}.</small>}
     </div>;
   }
   return (

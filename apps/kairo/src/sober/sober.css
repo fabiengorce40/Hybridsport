@@ -197,9 +197,8 @@ html[data-rekka="v2"][data-rekka-visual="v3"] .v3-workout :is(.v3-preview-title 
 .v31-session-clock{display:flex;align-items:center;gap:5px;flex:none}
 .v31-session-clock .k-elapsed{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:17px;font-weight:750;color:#f3f7f9}
 .v31-session-clock .k-elapsed small{display:none}
-.v31-session-clock button{position:relative;display:grid;place-items:center;font-size:0!important;width:44px;height:44px;min-height:44px;padding:0;border:1px solid #9eb439;border-radius:50%;background:#1b2729;color:#DCFF35}
-.v31-session-clock button::after{content:"Ⅱ";font-size:21px;line-height:1}
-.v31-session-clock .k-elapsed[data-paused="true"]+button::after{content:"▶";font-size:17px}
+.v31-session-clock button{position:relative;display:grid;place-items:center;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;border:1px solid #9eb439;border-radius:50%;background:#1b2729;color:#DCFF35}
+.v31-playpause{width:18px;height:18px;display:block;fill:currentColor}
 .v31-overview p{display:flex;justify-content:space-between;gap:8px;margin:0 0 7px;color:#c0cbd1;font-size:12px}
 .v31-overview p strong{font-size:14px;color:#f3f7f9}
 .v31-progress{height:7px;border-radius:999px;background:#344248;overflow:hidden}
@@ -219,8 +218,9 @@ html[data-rekka="v2"][data-rekka-visual="v3"] .v3-workout :is(.v3-preview-title 
 .v31-chevron{flex:none;width:22px;color:#e3edf0;font-size:27px;line-height:1;text-align:center}
 .v31-sets{padding:0 10px 12px;gap:6px!important;display:flex;flex-direction:column}
 .v31-sets[hidden]{display:none!important}
-.v31-sets .v3-phase{font-size:12px;margin-top:4px;padding:9px 3px 3px;border-top:1px solid #334044}
-.v31-set{display:block!important}
+.v31-sets .v3-phase{order:0;font-size:12px;margin-top:4px;padding:9px 3px 3px;border-top:1px solid #334044}
+.v31-sets .v3-phase:first-child{border-top:0;margin-top:0;padding-top:2px}
+.v31-set{display:block!important;scroll-margin-top:136px;scroll-margin-bottom:184px}
 .v31-set-prescription{display:block;margin:2px 4px 5px;color:#c0cbd1;font-size:11px;line-height:1.35;white-space:normal}
 .v31-series-row{display:grid!important;grid-template-columns:55px minmax(0,1.4fr) 12px minmax(0,1fr) 44px;gap:5px;align-items:center;padding:4px!important;min-height:54px!important;border:1px solid #39464b!important;border-radius:11px;overflow:visible!important}
 .v31-series-row[data-current="true"]{border-color:#DCFF35!important}
@@ -235,10 +235,12 @@ html[data-rekka="v2"][data-rekka-visual="v3"] .v3-workout :is(.v3-preview-title 
 .v31-times{font-size:14px;color:#b9c7cf;text-align:center}
 .v31-toggle{display:grid;place-items:center;width:44px;height:44px}
 .v31-toggle>span{width:31px!important;height:31px!important;display:grid;place-items:center}
-.v31-brush-check{width:28px;height:28px;fill:none;stroke:#071013;stroke-linecap:round;stroke-linejoin:round}
+.v31-brush-check{width:34px;height:34px;fill:none;stroke:#DCFF35;stroke-linecap:round;stroke-linejoin:round;overflow:visible;filter:drop-shadow(0 0 1px #0008)}
+.v31-series-row[data-done="true"] .v31-toggle>span{background:transparent!important;border-color:#DCFF3566!important}
 .v31-check-main{stroke-width:5;stroke-dasharray:40;stroke-dashoffset:40;transition:stroke-dashoffset .22s ease}
 .v31-check-feather{stroke-width:1.5;stroke-dasharray:26;stroke-dashoffset:26;transition:stroke-dashoffset .18s ease .08s}
 .v31-series-row[data-done="true"] .v31-check-main,.v31-series-row[data-done="true"] .v31-check-feather{stroke-dashoffset:0}
+@media (prefers-reduced-motion:reduce){.v31-check-main,.v31-check-feather,.v31-progress>span{transition:none!important}}
 .v31-workout .v3-input-error{display:block;padding:3px 6px;color:#ffbb8f;font-size:11px}
 .v31-exercise-details{margin-top:8px;font-size:13px}
 .v31-exercise-details summary{min-height:44px;display:flex;align-items:center;color:#c0cbd1}
@@ -252,14 +254,17 @@ html[data-rekka="v2"][data-rekka-visual="v3"] .v3-workout :is(.v3-preview-title 
 .v31-rest-progress{position:absolute;inset:0;pointer-events:none}
 .v31-rest-progress .v3-brush-ring{position:absolute;inset:0;display:block;width:100%;height:100%}
 .v31-rest-readout{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
-.v31-rest-readout>small{font-size:10px;color:#c0cbd1}
+.v31-rest-readout>small{font-size:10px;color:#c0cbd1;max-width:72%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 [data-rekka-visual="v3"] .v31-rest .k-rest-time{font-size:27px;line-height:1.1;font-weight:800;color:#fff}
 .v31-rest-play{position:relative;width:44px;height:44px;min-width:44px;min-height:44px;margin-top:0;border:0;border-radius:50%;background:transparent;display:grid;place-items:center}
 .v31-rest-play::before{content:"";position:absolute;inset:6px;border:1px solid #cedce0;border-radius:50%}
-.v31-rest-play svg{width:18px;height:18px;display:block;fill:#f3f7f9;transform:none}
+.v31-rest-play .v31-playpause{fill:#f3f7f9}
 .v31-rest-side{display:flex;flex-direction:column;align-items:stretch;gap:8px}
 .v31-rest-side button{min-width:90px;min-height:44px;border-radius:24px;font-size:14px;font-weight:700}
 .v31-rest-add{border:1px solid #DCFF35;background:transparent;color:#DCFF35}
 .v31-rest-skip{border:1px solid #64757c;background:#253034;color:#f3f7f9}
 .v31-rest-exercise{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#b9c7cf;text-align:center}
 @media(max-width:370px){.v31-workout .v31-exercise-summary{gap:6px;padding:9px 8px}.v31-workout .v31-sets{padding:0 7px 9px}.v31-workout .v31-series-row{gap:3px;grid-template-columns:49px minmax(0,1.4fr) 10px minmax(0,1fr) 44px}.v31-workout .v31-series-label,.v31-workout .v31-series-label>span{width:49px;min-width:49px}.v31-exercise-name strong{font-size:20px}.v31-exercise-count{font-size:11px}}
+
+/* V3.1 : écrans peu hauts (≤ 700 px, ex. 360 × 640) — chrono flottant plus compact, la saisie reste dégagée. */
+@media (max-height:700px){[data-rekka-visual="v3"] .v31-rest .v31-rest-orbit{height:84px;width:84px}[data-rekka-visual="v3"] .v31-rest .k-rest-time{font-size:22px}.v31-rest-readout>small{display:none}.v31-rest-play{width:44px;height:44px}.v31-set{scroll-margin-bottom:150px}.v31-rest-exercise{display:none}}

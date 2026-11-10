@@ -73,6 +73,12 @@ async function profileReveal(p, loc) {
 
 /** REKKA V3 : certaines commandes de séance (fin, chronomètre global) sont dans le menu « ⋮ Commandes de séance ». */
 async function sessionCommand(p, name) {
+  // V3.1 : menu ouvert ⇒ sa commande (le bas de page est recouvert par le dialogue modal).
+  const modal = p.getByRole('dialog', { name: 'Commandes de séance' });
+  if (await modal.count()) {
+    const inside = modal.getByRole('button', { name, exact: true });
+    if (await inside.count()) return inside.first();
+  }
   const b = p.getByRole('button', { name, exact: true });
   if (!(await b.count()) || !(await b.first().isVisible())) {
     const menu = p.getByRole('button', { name: 'Commandes de séance' });
@@ -85,7 +91,7 @@ async function sessionCommand(p, name) {
 const isV3 = (p) => p.evaluate(() => document.querySelector('[data-live-workout="v3"]') !== null);
 async function firstWorkLine(p) {
   if (await isV3(p)) {
-    const ex = p.locator('.v3-exercise:not([hidden])');
+    const ex = p.locator('.v3-exercise[data-expanded="true"]');
     const line = ex.locator('.v3-set:not([data-set-kind="rampup"])').first();
     await line.locator('.v3-series-select').click();
     return { ex, line };
@@ -1367,7 +1373,7 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   }
   if (v3 && (await p.getByRole('button', { name: 'Commandes de séance' }).getAttribute('aria-expanded')) === 'true') await p.getByRole('button', { name: 'Fermer le message', exact: true }).click();
   // Première série : répétitions + charge, validée ⇒ repos ; la série suivante n'est jamais sous le chrono.
-  const firstLine = v3 ? p.locator('.v3-exercise:not([hidden]) .v3-set').filter({ has: p.getByRole('button', { name: 'Cocher la série', exact: true }) }).first() : p.locator('.k-set').filter({ has: p.getByRole('button', { name: 'Cocher la série', exact: true }) }).first();
+  const firstLine = v3 ? p.locator('.v3-exercise[data-expanded="true"] .v3-set').filter({ has: p.getByRole('button', { name: 'Cocher la série', exact: true }) }).first() : p.locator('.k-set').filter({ has: p.getByRole('button', { name: 'Cocher la série', exact: true }) }).first();
   if (v3) await firstLine.locator('.v3-series-select').click();
   const reps = firstLine.getByLabel('Répétitions réalisées');
   if ((await reps.inputValue()) === '') await reps.fill('8');
@@ -1378,7 +1384,7 @@ for (const sport of ['ct', 'ct_strength', 'hyrox']) {
   await p.waitForTimeout(700);
   const cover = await p.evaluate(() => {
     const t = document.querySelector('.k-rest')?.getBoundingClientRect();
-    const next = [...document.querySelectorAll('.k-set:not(.done), .v3-exercise:not([hidden]) .v3-set:not([data-state="done"])')].find((x) => x.querySelector('.k-check, .v3-toggle'));
+    const next = [...document.querySelectorAll('.k-set:not(.done), .v3-exercise[data-expanded="true"] .v3-set:not([data-state="done"])')].find((x) => x.querySelector('.k-check, .v3-toggle'));
     const r = next?.getBoundingClientRect();
     return t && r ? { timerTop: Math.round(t.top), nextBottom: Math.round(r.bottom), nextTop: Math.round(r.top) } : null;
   });
