@@ -1,4 +1,6 @@
 import { SOBER_V3 } from '../../sober/flag.js';
+import { PLAYFIELD_V4 } from '../../playfield/flag.js';
+import { SessionSummary } from '../../playfield/SessionSummary.js';
 import { StrengthPreview } from '../../sober/StrengthPreview.js';
 import { LiveWorkout } from '../../sober/LiveWorkout.js';
 import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
@@ -229,6 +231,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
         </div>} />
         <div className={`k-workout ${editable && log.rest ? 'with-timer' : ''} ${!started && !finished ? 'with-dock' : ''}`}>
           {clockElapsed !== null && <button type="button" className="btn secondary" onClick={() => store.apply((s, c) => (clockPaused ? resumeProgrammeSession : pauseProgrammeSession)(s, c, requestId))}>{clockPaused ? 'Reprendre le chronomètre global' : 'Mettre en pause le chronomètre global'}</button>}
+          {PLAYFIELD_V4 && finished && <SessionSummary v={v} statusLabel={STATUS_LABELS[result.completion]} />}
           <AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state, requestId)} />
           <StrengthInsightPanel requestId={requestId} />
           <StrengthWorkout

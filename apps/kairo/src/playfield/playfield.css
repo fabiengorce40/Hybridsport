@@ -165,7 +165,7 @@ html[data-rekka-theme="playfield-pro"] .v31-workout{
 }
 html[data-rekka-theme="playfield-pro"] .v31-sticky-top{
   background:#FFFFFFF7!important;border:1px solid #E7EAF1;border-radius:20px;
-  box-shadow:0 8px 22px #0E1B351A;backdrop-filter:blur(12px);padding:6px 10px 8px;
+  box-shadow:0 8px 22px #0E1B351A;padding:6px 10px 8px;
 }
 html[data-rekka-theme="playfield-pro"] .v31-toolbar h1{
   font-family:"REKKA Inter",system-ui,sans-serif!important;font-size:17px!important;
@@ -364,7 +364,7 @@ html[data-rekka-theme="playfield-pro"] .v3-prescription{
   border-color:#E4E8F0;color:#4F5D75;background:#FFFCF7;
 }
 html[data-rekka-theme="playfield-pro"] .sheet-backdrop{
-  background:#0E1B35B5!important;backdrop-filter:blur(7px);
+  background:#0E1B35B5!important;backdrop-filter:none!important;
 }
 html[data-rekka-theme="playfield-pro"] .sheet{
   background:#FFFCF7!important;color:#0E1B35!important;border:1px solid #ECE8E4!important;
@@ -406,3 +406,91 @@ html[data-rekka-theme="playfield-pro"] :is(.v31-set,.v31-exercise,.v3-preview-ex
   html[data-rekka-theme="playfield-pro"] .v31-exercise-name strong{font-size:15px!important}
   html[data-rekka-theme="playfield-pro"] .v31-rest-side button{min-width:84px}
 }
+
+/* ───────────────────────── V4 — finalisation (lot A–D) ─────────────────────────
+   1. Jetons : les jetons V3 sont posés sur :root[data-rekka][data-rekka-visual] (spécificité 0,3,0) et écrasaient
+      ceux de Playfield Pro (0,1,1) : ancien fond carbone dans le bilan, textes blancs sur blanc. Ce bloc (0,3,1),
+      chargé après sober.css, rétablit la palette claire officielle pour TOUS les composants (k-*, r-*, sports). */
+html:root[data-rekka-theme="playfield-pro"][data-rekka-visual]{
+  --bg:#FFF7EA;--bg-elevated:#FFFFFF;--bg-sunken:#F2F3F8;--bg-card:#FFFFFF;
+  --text:#0E1B35;--text-2:#54627F;--text-3:#5D6A84;--border:#E3E6EF;--border-strong:#C9D0DF;
+  --accent:#1647C8;--accent-pressed:#0F379E;--accent-subtle:#E6EDFB;
+  --r-bg:#FFF7EA;--r-bg-deep:#FFF1DC;--r-surface-1:#FFFFFF;--r-surface-2:#F4F6FB;--r-surface-3:#E9EDF6;
+  --r-text:#0E1B35;--r-text-2:#54627F;--r-text-3:#5D6A84;--r-line:#E3E6EF;--r-line-strong:#C9D0DF;
+  --r-accent:#1647C8;--r-accent-soft:#E6EDFB;--r-accent-line:#1647C866;
+  --k-bg:#FFF7EA;--k-surface-1:#FFFFFF;--k-surface-2:#F4F6FB;--k-surface-3:#E9EDF6;
+  --k-text:#0E1B35;--k-text-2:#54627F;--k-text-3:#5D6A84;
+  --k-accent:#1647C8;--k-accent-soft:#E6EDFB;--k-accent-line:#1647C866;
+  /* Sports : déclinaisons de la palette (texte lisible sur crème et blanc). */
+  --sport-strength:#1647C8;--sport-running:#D9473A;--sport-hyrox:#B07A00;--sport-crosstraining:#6D4BD8;
+}
+html[data-rekka-theme="playfield-pro"] .rv-sports button:nth-child(1),html[data-rekka-theme="playfield-pro"] .v3-sport-tabs button[data-sport="strength"],html[data-rekka-theme="playfield-pro"] .sport-strength{--sport-color:#1647C8}
+html[data-rekka-theme="playfield-pro"] .rv-sports button:nth-child(2),html[data-rekka-theme="playfield-pro"] .v3-sport-tabs button[data-sport="running"],html[data-rekka-theme="playfield-pro"] .sport-running{--sport-color:#D9473A}
+html[data-rekka-theme="playfield-pro"] .rv-sports button:nth-child(3),html[data-rekka-theme="playfield-pro"] .v3-sport-tabs button[data-sport="hyrox"],html[data-rekka-theme="playfield-pro"] .sport-hyrox{--sport-color:#B07A00}
+html[data-rekka-theme="playfield-pro"] .rv-sports button:nth-child(4),html[data-rekka-theme="playfield-pro"] .v3-sport-tabs button[data-sport="crosstraining"],html[data-rekka-theme="playfield-pro"] .sport-crosstraining{--sport-color:#6D4BD8}
+html[data-rekka-theme="playfield-pro"] .r-sport-icon{color:var(--sport-color,#1647C8)}
+
+/* 2. Accueil : l'illustration reste un fond discret à droite ; le texte garde un contraste élevé. */
+html[data-rekka-theme="playfield-pro"] .v3-today{
+  background:linear-gradient(90deg,#1647C8 0%,#1647C8 48%,#1647C8D0 72%,#1647C8A6 100%),
+    url("./assets/barbell-hero.svg") right -70px top 18px/auto 62% no-repeat,#1647C8;
+}
+html[data-rekka-theme="playfield-pro"] .v3-today .r-sport-icon,html[data-rekka-theme="playfield-pro"] .v3-today .rv-emblem{color:#FFFFFF!important;--sport-color:#FFFFFF}
+
+/* 3. Planning, Progression, Profil, Détail : textes secondaires lisibles (≥ 4,5:1), pictos cohérents. */
+html[data-rekka-theme="playfield-pro"] .catalog-toggle .catalog-name{color:var(--pf-ink)!important}
+html[data-rekka-theme="playfield-pro"] .catalog-toggle .catalog-chevron,html[data-rekka-theme="playfield-pro"] .button-card>span,
+html[data-rekka-theme="playfield-pro"] .v3-chevron{color:#54627F!important}
+html[data-rekka-theme="playfield-pro"] details>summary{color:var(--pf-ink)}
+html[data-rekka-theme="playfield-pro"] .pv-empty{color:#54627F!important}
+html[data-rekka-theme="playfield-pro"] .v3-objective .v3-target{color:#1647C8!important;border-color:#1647C8!important}
+html[data-rekka-theme="playfield-pro"] .v3-objective summary small{color:#54627F!important}
+html[data-rekka-theme="playfield-pro"] .v3-exercise-tile{border-color:#C9D0DF!important}
+
+/* 4. Séance : guidage de saisie neutre mais lisible ; l'orange reste aux erreurs. */
+html[data-rekka-theme="playfield-pro"] .v31-workout .v3-input-hint{color:#54627F!important}
+
+/* 5. Fin de séance : douleur déclarée lisible, case et libellé confortables au doigt. */
+html[data-rekka-theme="playfield-pro"] .sheet label.check{color:var(--pf-ink)!important;min-height:44px;display:flex;align-items:center;gap:12px}
+html[data-rekka-theme="playfield-pro"] .sheet label.check input{accent-color:#1647C8;width:24px;height:24px}
+
+/* 6. Bilan (séance terminée, lecture) : contrôles ≥ 44 px, coches et pastilles lisibles. */
+html[data-rekka-theme="playfield-pro"] .topbar .btn.ghost{min-width:44px;min-height:44px}
+html[data-rekka-theme="playfield-pro"] .k-field input{min-height:44px}
+html[data-rekka-theme="playfield-pro"] .k-check{color:#1647C8}
+html[data-rekka-theme="playfield-pro"] .k-check.on{background:#1647C8!important;border-color:#1647C8!important;color:#FFFFFF!important}
+html[data-rekka-theme="playfield-pro"] .field-chips .chip{background:#FFFFFF!important;color:var(--pf-ink)!important;border:1px solid #C9D0DF!important}
+html[data-rekka-theme="playfield-pro"] .field-chips .chip[aria-pressed="true"]{background:#1647C8!important;color:#FFFFFF!important;border-color:#1647C8!important}
+html[data-rekka-theme="playfield-pro"] .topbar .btn.ghost{height:44px}
+html[data-rekka-theme="playfield-pro"] .k-nav .k-nav-count{color:#54627F!important}
+/* Bilan / lecture d'une séance terminée (StrengthWorkout) : en-tête, navigation et séries dans la palette claire. */
+html[data-rekka-theme="playfield-pro"] .k-head{background:#FFFFFF!important;border-bottom:1px solid #E3E6EF!important;color:var(--pf-ink)}
+html[data-rekka-theme="playfield-pro"] .k-nav{background:#FFF7EA!important;border-top-color:#E3E6EF!important;box-shadow:0 8px 12px -10px #0E1B3533!important}
+html[data-rekka-theme="playfield-pro"] .k-nav-dot{background:#FFFFFF!important;color:#1647C8!important;border:1px solid #C9D0DF!important}
+html[data-rekka-theme="playfield-pro"] .k-nav-dot.current{background:#1647C8!important;color:#FFFFFF!important;border-color:#1647C8!important}
+html[data-rekka-theme="playfield-pro"] .k-nav-dot.done{background:#E6EDFB!important;color:#1647C8!important}
+html[data-rekka-theme="playfield-pro"] .k-set:not(.warm){border-left:3px solid #1647C8!important}
+html[data-rekka-theme="playfield-pro"] .k-set.warm{border-left:3px solid #FDCB32!important}
+/* En-tête de séance (lecture / bilan) et bilan V4. */
+html[data-rekka-theme="playfield-pro"] .topbar{background:#FFFFFFF2!important;backdrop-filter:none!important;border-bottom:1px solid #E3E6EF!important;color:var(--pf-ink)}
+html[data-rekka-theme="playfield-pro"] .pf-summary{background:#1647C8;color:#FFFFFF;border-radius:22px;padding:16px 16px 14px;box-shadow:0 13px 22px #1647C82A}
+html[data-rekka-theme="playfield-pro"] .pf-summary header{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:12px}
+html[data-rekka-theme="playfield-pro"] .pf-summary h2{margin:0;font-size:22px;font-weight:850;color:#FFFFFF}
+.pf-summary-status{background:#FDCB32;color:#0E1B35;border-radius:999px;padding:6px 12px;font-weight:800;font-size:13px;white-space:nowrap}
+.pf-summary-status[data-completion="abandoned"]{background:#FA6A58;color:#0E1B35}
+.pf-summary-stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 10px}
+.pf-summary-stats>div{background:#FFFFFF1F;border-radius:14px;padding:10px 8px;min-width:0}
+.pf-summary-stats dt{font-size:11px;color:#E6EDFB;margin:0 0 4px}
+.pf-summary-stats dd{margin:0;font-size:22px;font-weight:850;font-variant-numeric:tabular-nums;color:#FFFFFF}
+.pf-summary-stats small{display:block;font-size:11px;color:#E6EDFB;margin-top:2px}
+.pf-summary p{margin:6px 0 0;font-size:13px;color:#F3F6FF}
+.pf-summary .pf-summary-warn{background:#FFF1E8;color:#7A2A12;border-radius:10px;padding:8px 10px}
+/* Coût de rendu Android (cf. V3.1.1) : aucune couche floutée ni filtre recalculé sous le masque de l'anneau. */
+html[data-rekka-theme="playfield-pro"] .v31-rest,html[data-rekka-theme="playfield-pro"] .v31-sticky-top{backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+html[data-rekka-theme="playfield-pro"] .v31-rest{contain:layout}
+html[data-rekka-theme="playfield-pro"] .v31-rest .p242-orbit-ink{filter:none!important}
+/* Planning : volet « Organisation et replanification » au même gabarit que les cartes. */
+html[data-rekka-theme="playfield-pro"] details.v3-planning-options>summary{padding:0 16px;min-height:48px;display:flex;align-items:center;font-weight:700}
+/* Bilan / lecture : titres d'exercice et de séance dans la typographie V4 (pas de capitales géantes héritées). */
+html[data-rekka-theme="playfield-pro"] .k-ex-name,html[data-rekka-theme="playfield-pro"] .k-title{text-transform:none!important;letter-spacing:-.02em!important;font-family:"REKKA Inter",system-ui,sans-serif!important}
+html[data-rekka-theme="playfield-pro"] .k-title{font-size:30px!important;line-height:1.1!important}

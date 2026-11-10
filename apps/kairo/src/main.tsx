@@ -13,9 +13,10 @@ import { applyTheme } from './design/theme.js';
 import './rekka/visual.css';
 import './sober/sober.css';
 import './playfield/playfield.css';
+import { PLAYFIELD_V4 } from './playfield/flag.js';
 if(SOBER_V3)document.documentElement.dataset.rekkaVisual='v3';
-// Isolated Playfield Pro branch: presentation-only marker, never active in production builds.
-if(SOBER_V3)document.documentElement.dataset.rekkaTheme='playfield-pro';
+// REKKA V4 Playfield Pro : marqueur de présentation, actif seulement avec le drapeau de build explicite.
+if(PLAYFIELD_V4)document.documentElement.dataset.rekkaTheme='playfield-pro';
 import { REKKA_V2 } from './rekka/visual.js';
 if (REKKA_V2) document.documentElement.dataset.rekka = 'v2';
 

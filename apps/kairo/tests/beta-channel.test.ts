@@ -27,7 +27,9 @@ describe('REKKA BÊTA — workflow isolé', () => {
   });
   it('REKKA V3 (planche carbone) : la build publiée par le workflow BÊTA active explicitement le rendu V3', () => {
     const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8')) as { scripts: Record<string, string> };
-    expect(pkg.scripts['build:beta']).toBe('VITE_KAIRO_CHANNEL=beta VITE_REKKA_THEME=v2 VITE_REKKA_VISUAL=v3 vite build --outDir dist-beta');
+    expect(pkg.scripts['build:beta']).toBe('VITE_KAIRO_CHANNEL=beta VITE_REKKA_THEME=v2 VITE_REKKA_VISUAL=v3 VITE_REKKA_SKIN=playfield-pro vite build --outDir dist-beta');
+    // Référence V3.1 conservée pour comparaison (même ossature, sans la présentation Playfield Pro).
+    expect(pkg.scripts['build:beta:v31']).toBe('VITE_KAIRO_CHANNEL=beta VITE_REKKA_THEME=v2 VITE_REKKA_VISUAL=v3 vite build --outDir dist-beta-v31');
     expect(pkg.scripts.build).toBe('vite build');
   });
   it('garde anti-écrasement : un projet existant qui ne publie pas la BÊTA n’est jamais remplacé', () => {
