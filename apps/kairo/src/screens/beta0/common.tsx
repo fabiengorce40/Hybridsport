@@ -114,7 +114,7 @@ export function SessionCard0({ v, onOpen, highlight = false, dateLabel, hero = f
       <div className="pf-hero-top"><span className="pf-hero-tag">Prochaine séance</span><StatusPill status={v.display}/></div>
       <span className="pf-hero-sport">{sportName(v.sport)}</span>
       <button type="button" className="pf-hero-open" data-request={v.requestId} onClick={() => onOpen(v.requestId)}
-        aria-label={`Voir ${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`}>
+        aria-label={`${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`}>
         <strong>{name}</strong><span aria-hidden="true">›</span>
       </button>
       <p className="pf-hero-meta">{[v.date ? formatDate(v.date) : null, durationText(v)].filter(Boolean).join(' · ')}</p>
