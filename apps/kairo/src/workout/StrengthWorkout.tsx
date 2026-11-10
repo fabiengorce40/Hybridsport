@@ -67,7 +67,9 @@ export function SetLine({ set, label, saved, editable, phaseShown = false, onRec
     const description = `${PHASE_TITLES[phaseOf(set)]} · ${target} · ${intensityLabel(set)}`;
     const prescriptionId = `${chargeErrorId}-prescription`;
     return <div className="v3-set v31-set" data-state={done ? 'done' : current ? 'current' : 'upcoming'} data-set-kind={set.kind}>
-      <span id={prescriptionId} className="sr-only">{description}{warm ? ' · hors volume et progression' : ''}</span>
+      {typeof set.reps === 'number' && !set.optional
+        ? <span id={prescriptionId} className="sr-only">{description}{warm ? ' · hors volume et progression' : ''}</span>
+        : <small id={prescriptionId} className="v31-set-prescription">{description}{warm ? ' · hors volume et progression' : ''}</small>}
       <div className="v3-series-row v31-series-row" data-current={current} data-selected={selected} data-done={done}>
         <button className="v3-series-select v31-series-label" onClick={onSelect}
           aria-label={`Sélectionner ${label}`} aria-pressed={selected} title={description}>
