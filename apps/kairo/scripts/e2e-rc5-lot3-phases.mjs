@@ -70,7 +70,7 @@ async function v3Phases(page, W, shot) {
   ok(`${W} : boutons de validation ≥ 44 px, titres lisibles (${String(headFont)} px), aucun défilement horizontal`);
   const fillAndCheck = async (i, reps, kg) => {
     const line = section.locator('.v3-set').nth(i);
-    if (!(await line.locator('.v3-set-editor').count())) await line.locator('.v3-series-select').click();
+    // V3.1 : champs directement accessibles dans la ligne, sans éditeur secondaire.
     const r = line.getByLabel('Répétitions réalisées'); if (await r.inputValue() === '') await r.fill(reps);
     const k = line.getByLabel('Charge (kg)'); if (await k.count() && await k.inputValue() === '') await k.fill(kg);
     await line.getByRole('button', { name: 'Cocher la série' }).click();
