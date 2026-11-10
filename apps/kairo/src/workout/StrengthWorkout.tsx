@@ -37,7 +37,7 @@ export interface StrengthWorkoutProps {
 }
 
 /** Ligne de série : SÉRIE 1 · REPS · KG · ○ — la valeur réellement saisie reste toujours lisible. */
-export function SetLine({ set, label, saved, editable, phaseShown = false, onRecord, appearance, current = false, selected = false, onSelect, onPrevious, onNext, position, total }: {
+export function SetLine({ set, label, saved, editable, phaseShown = false, onRecord, appearance, current = false, selected = false, onSelect, position }: {
   appearance?: 'v3'; current?: boolean; selected?: boolean;
   onSelect?: () => void; onPrevious?: () => void; onNext?: () => void;
   position?: number; total?: number;
