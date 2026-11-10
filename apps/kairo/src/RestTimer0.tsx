@@ -1,6 +1,7 @@
 import { SOBER_V3 } from './sober/flag.js';
 import { RecoveryBrush } from './sober/Artwork.js';
 import { PlayPauseIcon } from './sober/PlayPauseIcon.js';
+import { useAlignedSecond } from './sober/useAlignedSecond.js';
 /**
  * Chrono de repos Beta 0 (KAIRO Design System) : l'état (échéance horodatée, pause) est PERSISTÉ dans l'état applicatif
  * (app-core) ; le temps restant est RECALCULÉ à chaque affichage depuis l'heure courante. L'intervalle ne sert qu'au
@@ -19,8 +20,11 @@ const CIRC = 2 * Math.PI * R;
 export function RestTimer0({ rest, now, onAction, layout='compact' }: { layout?: 'large'|'compact'; rest: Rest | null; now: () => string; onAction: (a: 'pause' | 'resume' | 'extend' | 'skip') => void }) {
   const [, setTick] = useState(0);
   const buzzed = useRef<string | null>(null);
+  // V3 : un rendu par seconde affichée, aligné sur l'échéance persistante (ceil((échéance − maintenant) / 1 s) change
+  // exactement aux multiples d'une seconde avant l'échéance). Ancien rendu : sondage inchangé.
+  useAlignedSecond(SOBER_V3 && rest && rest.pausedRemainingS === undefined ? Date.parse(rest.endsAt) : null, () => Date.parse(now()));
   useEffect(() => {
-    if (!rest || rest.pausedRemainingS !== undefined) return undefined;
+    if (SOBER_V3 || !rest || rest.pausedRemainingS !== undefined) return undefined;
     const t = setInterval(() => setTick((x) => x + 1), REFRESH_MS);
     return () => clearInterval(t);
   }, [rest]);
