@@ -114,9 +114,7 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
                   } else setSetSelection(s => ({ ...s, [item.id]: i }));
                 }} />
             </Fragment>)}
-            <div className="v31-exercise-details"><ExerciseOptions v={v} item={item} block={block}
-              editable={editable} onEffort={onEffort} onUnavailable={onUnavailable}
-              onTogglePain={onTogglePain}/></div>
+
           </div>
         </section>;
       })}
