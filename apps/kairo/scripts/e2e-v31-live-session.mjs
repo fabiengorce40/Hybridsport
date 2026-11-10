@@ -164,7 +164,8 @@ try {
     const box = await rest.boundingBox();
     assert.ok(box.y + box.height <= height + 1 && box.y > height / 2, 'repos ancré en bas de l’écran');
     await shot('06-repos-debut');
-    await page.clock.runFor(Math.round(r0.totalS / 2) * 1000);
+    // +50 ms : l'affichage se met à jour juste APRÈS la frontière de seconde (alignement V3.1.1, marge de 15 ms).
+    await page.clock.runFor(Math.round(r0.totalS / 2) * 1000 + 50);
     const r50 = await ring(page);
     ringCoherent(r50, `${W} mi-repos`);
     assert.ok(Math.abs(r50.shown - 0.5) <= 0.01, `≈ 50 % (${String(r50.shown)})`);
@@ -183,12 +184,12 @@ try {
     assert.equal(re.totalS, rp2.totalS + 15);
     assert.equal(re.remaining, rp2.remaining + 15);
     await page.getByRole('button', { name: 'Reprendre le repos', exact: true }).click();
-    await page.clock.runFor(3000);
+    await page.clock.runFor(3050);
     ringCoherent(await ring(page), `${W} reprise`);
     const prescriptionAfter = (await stored(page)).programmeLogs[ID];
     assert.ok(prescriptionAfter, 'journal de séance présent');
     await page.evaluate(() => { Object.defineProperty(document, 'visibilityState', { value: 'hidden', configurable: true }); document.dispatchEvent(new Event('visibilitychange')); });
-    await page.clock.runFor(4000);
+    await page.clock.runFor(4050);
     await page.evaluate(() => { Object.defineProperty(document, 'visibilityState', { value: 'visible', configurable: true }); document.dispatchEvent(new Event('visibilitychange')); });
     ringCoherent(await ring(page), `${W} retour d’onglet`);
     await page.reload();

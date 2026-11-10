@@ -123,3 +123,29 @@ Proposition, sans modifier le moteur ni les prescriptions :
 4. Pause, reprise, +15 s, « Passer ».
 5. Deux onglets.
 6. Fluidité du défilement pendant un repos actif.
+
+## 7. Résultats des tests (build BÊTA locale de la branche)
+
+| Contrôle | Résultat |
+|---|---|
+| `pnpm check` (TypeScript, ESLint, unitaires) | 3338 réussis, 11 ignorés (déjà présents), 0 échec |
+| `tests/aligned-second.test.tsx` (nouveau) | 4/4 |
+| `tests/v3-sober.test.tsx` | 10/10 |
+| Migrations 3 → 5 et 4 → 5 | OK |
+| Sécurité des données (multi-onglets) | OK |
+| Mise à jour depuis `bc19fb1` (format 2 → 5) | OK |
+| Mise à jour depuis `c42db7a` vers la branche, puis hors ligne | OK |
+| Parité des données avec `c42db7a` | Identique |
+| `e2e-v31-live-session` (360 / 390 / 412 / 1024) | 36/36, après réglage du test |
+| `e2e-sober-v3` | 4 PASS, après réglage du test |
+| Lots 2 (chronomètre), 3, 4 ; séance et répétitions mobile ; personnalisation ; jours | OK |
+| Progression, HYROX / CT, hors ligne | OK |
+| E2E du workflow BÊTA (`e2e-beta.mjs`) | OK |
+| 5 parcours | OK |
+| `e2e.mjs` (build standard) | 313 OK |
+| Chronomètre global, stockage auxiliaire | OK |
+
+**Réglage des tests.**
+- `e2e-v31-live-session` et `e2e-sober-v3` lisaient la valeur exactement à l'instant de la frontière de seconde, avec une horloge simulée.
+- L'affichage est désormais mis à jour 15 ms après cette frontière, par construction : on s'assure ainsi que la nouvelle valeur est atteinte.
+- Les lectures sont donc décalées de 50 à 100 ms. Aucune assertion n'est assouplie.
