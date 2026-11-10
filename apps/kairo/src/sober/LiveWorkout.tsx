@@ -74,7 +74,7 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
     {context}
 
     <div className="v31-exercise-list">
-      {main.map(({ item, block }, cardIndex) => {
+      {main.map(({ item }, cardIndex) => {
         const sets = item.prescription.sets;
         const current = sets.findIndex((_, i) => !saved(item.id, i)?.done);
         const active = setSelection[item.id] ?? Math.max(0, current);
