@@ -72,6 +72,11 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
   const next = nextOf(planned, today);
   const done = planned.filter((x) => isDone(x.display)).length;
   const name = state.profile?.displayName;
+  const sportStats = (['strength', 'running', 'hyrox', 'crosstraining'] as const).map(sport => {
+    const sessions = planned.filter(s => s.sport === sport);
+    return { sport, total: sessions.length, done: sessions.filter(s => isDone(s.display)).length };
+  }).filter(s => s.total > 0);
+  const weeklyPercent = planned.length > 0 ? Math.round((done / planned.length) * 100) : 0;
   // Pause douleur : aucune nouvelle séance (politique app-core) ; la reprise d'une séance commencée reste proposée.
   const paused = state.safety.activePain !== null;
   const extra = (week?.items ?? []).filter((x) => x.placement === 'composed_unplaced' && (x.display === 'not_planned' || x.display === 'in_progress'));
@@ -83,7 +88,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
         {SOBER_V3 && <button className="v3-home-settings" aria-label="Paramètres" onClick={()=>onGo('settings')}>⚙</button>}
         <p className="small">{formatDate(today)}</p>
         {!SOBER_V3 && <h1>{name ? `${name}, ` : ''}{next ? (next.date === today ? 'c’est le moment.' : 'prochaine séance.') : 'rien de prévu.'}</h1>}
-        <div className={SOBER_V3 ? "v3-today" : undefined}>{next && <SessionCard0 v={next} onOpen={onOpen} highlight />}
+        <div className={SOBER_V3 ? "v3-today" : undefined}>{next && <SessionCard0 v={next} onOpen={onOpen} highlight hero={PLAYFIELD_V4} />}
         {next && (
           <button className="btn primary block" onClick={() => onOpen(next.requestId)}>
             {next.display === 'in_progress' ? 'Reprendre la séance' : next.date === today && !paused ? 'Commencer la séance' : `Voir la séance${next.date === today ? '' : ` de ${formatDate(next.date ?? today).split(' ')[0] ?? ''}`}`}
@@ -91,6 +96,11 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
         )}
       </div></div>
 
+      {PLAYFIELD_V4 && planned.length > 0 && <section className="pf-home-metrics" aria-label="Statistiques réelles de la semaine">
+        <div><strong>{done}<span>/{planned.length}</span></strong><small>séances réalisées</small></div>
+        <div><strong>{weeklyPercent}<span> %</span></strong><small>de la semaine</small></div>
+        <div><strong>{sportStats.length}</strong><small>discipline{sportStats.length > 1 ? 's' : ''} planifiée{sportStats.length > 1 ? 's' : ''}</small></div>
+      </section>}
       {REKKA_V2 && <SportLinks onPlanning={() => onGo('plan')} />}
       {/* FIELD TEST — séances composées mais non placées : visibles sans remplacer la séance prévue. */}
       {extra.length > 0 && (
@@ -115,7 +125,13 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
         <div className="card" aria-label="Progression de la semaine">
           <div className="row between"><strong>Cette semaine</strong><span className="num">{done} / {planned.length} séances</span></div>
           <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={planned.length} aria-valuenow={done} aria-label="Séances terminées"><div style={{ width: `${String(Math.round((done / planned.length) * 100))}%` }} /></div>
-          <button className="weekstrip" style={{ background: 'none', border: 0, padding: 0 }} onClick={() => onGo('plan')} aria-label={`Ouvrir le planning. ${stripSummary(week.days)}`}>
+          {PLAYFIELD_V4 && <div className="pf-week-sports" aria-label="Répartition réelle des séances prévues">
+             {sportStats.map(({ sport, total, done: doneSport }) => <div className="pf-week-sport" key={sport} data-sport={sport}>
+               <span>{sportName(sport)}</span><strong>{doneSport}/{total}</strong>
+               <div className="pf-week-sport-bar" aria-hidden="true"><span style={{ width: `${total ? Math.round(doneSport / total * 100) : 0}%` }} /></div>
+             </div>)}
+           </div>}
+           <button className="weekstrip" style={{ background: 'none', border: 0, padding: 0 }} onClick={() => onGo('plan')} aria-label={`Ouvrir le planning. ${stripSummary(week.days)}`}>
             {week.days.map(({ date: d, sessions: s }) => (
               <div key={d} data-date={d} data-sessions={s.length} className={`c ${s.length > 0 ? 'has' : ''} ${d === today ? 'today' : ''}`} aria-hidden="true">
                 <div className="tiny">{weekdayShort(weekdayIndex(d))}</div>
