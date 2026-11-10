@@ -184,3 +184,81 @@ html[data-rekka="v2"][data-rekka-visual="v3"] .v3-exercise-tile h2{font-size:18p
 html[data-rekka="v2"][data-rekka-visual="v3"] .v3-today h3{font-size:26px}
 html[data-rekka="v2"][data-rekka-visual="v3"] .v3-profile-link strong{font-size:19px}
 html[data-rekka="v2"][data-rekka-visual="v3"] .v3-workout :is(.v3-preview-title h1,.v3-exercise-heading h1,.v3-exercise-tile h2){font-family:"REKKA Barlow Condensed",sans-serif;letter-spacing:0}
+
+
+/* REKKA V3.1 - architecture 08 + input 04: BÊTA visual only. */
+[data-rekka-visual="v3"] .v31-workout{max-width:600px;width:100%;padding:8px 14px 182px}
+.v31-sticky-top{position:sticky;top:0;z-index:55;background:#0b1113f2;border:1px solid #313c40;border-radius:15px;padding:5px 10px 8px;margin:0 0 12px;backdrop-filter:blur(12px)}
+.v31-toolbar{margin:0!important;height:42px!important;display:flex;gap:6px;align-items:center;justify-content:space-between}
+.v31-toolbar h1{margin:0;min-width:0;flex:1;text-align:center;font-size:16px!important;line-height:1.25;font-weight:750}
+.v31-toolbar>button{flex:none;min-width:44px;min-height:44px}
+.v31-session-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;border-top:1px solid #303a3e;padding-top:7px}
+.v31-session-title{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#c0cbd1;font-size:13px}
+.v31-session-clock{display:flex;align-items:center;gap:5px;flex:none}
+.v31-session-clock .k-elapsed{font-variant-numeric:tabular-nums;white-space:nowrap;font-size:17px;font-weight:750;color:#f3f7f9}
+.v31-session-clock .k-elapsed small{display:none}
+.v31-session-clock button{position:relative;display:grid;place-items:center;font-size:0!important;width:44px;height:44px;min-height:44px;padding:0;border:1px solid #9eb439;border-radius:50%;background:#1b2729;color:#DCFF35}
+.v31-session-clock button::after{content:"Ⅱ";font-size:21px;line-height:1}
+.v31-session-clock .k-elapsed[data-paused="true"]+button::after{content:"▶";font-size:17px}
+.v31-overview p{display:flex;justify-content:space-between;gap:8px;margin:0 0 7px;color:#c0cbd1;font-size:12px}
+.v31-overview p strong{font-size:14px;color:#f3f7f9}
+.v31-progress{height:7px;border-radius:999px;background:#344248;overflow:hidden}
+.v31-progress>span{height:100%;display:block;border-radius:inherit;background:#DCFF35;transition:width .18s ease}
+.v31-workout .v3-exercise-nav{margin:4px 0 14px}
+.v31-workout .v3-exercise-nav>div{gap:7px}
+.v31-workout .v3-exercise-nav button{height:44px}
+.v31-exercise-list{display:flex;flex-direction:column;gap:10px}
+.v31-exercise{scroll-margin-top:128px;border:1px solid #435054;background:linear-gradient(115deg,#162023f5,#0e1719ec);border-radius:17px;overflow:hidden}
+.v31-exercise[data-expanded="true"]{border-color:#DCFF35;box-shadow:0 0 0 1px #DCFF353c}
+.v31-exercise-summary{display:flex;width:100%;min-height:74px;align-items:center;gap:10px;padding:10px 12px;border:0;background:transparent;color:#f3f7f9;text-align:left}
+.v31-exercise-index{flex:none;width:34px;height:34px;border-radius:7px;background:#DCFF35;color:#0d1618;font-size:19px;font-weight:900;display:grid;place-items:center;transform:rotate(-3deg)}
+.v31-exercise-name{display:grid;gap:4px;min-width:0;flex:1}
+.v31-exercise-name strong{font-family:"REKKA Barlow Condensed",sans-serif;font-size:23px;font-weight:750;line-height:1.05;white-space:normal}
+.v31-exercise-name small{color:#b9c7cf;font-size:12px}
+.v31-exercise-count{flex:none;color:#c2cdd3;font-size:12px;white-space:nowrap}
+.v31-chevron{flex:none;width:22px;color:#e3edf0;font-size:27px;line-height:1;text-align:center}
+.v31-sets{padding:0 10px 12px;gap:6px!important;display:flex;flex-direction:column}
+.v31-sets[hidden]{display:none!important}
+.v31-sets .v3-phase{font-size:12px;margin-top:4px;padding:9px 3px 3px;border-top:1px solid #334044}
+.v31-set{display:block!important}
+.v31-series-row{display:grid!important;grid-template-columns:55px minmax(0,1.4fr) 12px minmax(0,1fr) 44px;gap:5px;align-items:center;padding:4px!important;min-height:54px!important;border:1px solid #39464b!important;border-radius:11px;overflow:visible!important}
+.v31-series-row[data-current="true"]{border-color:#DCFF35!important}
+.v31-series-label{padding:0!important;min-height:44px;width:55px;justify-content:center;flex:initial!important}
+.v31-series-label>span{height:44px!important;width:55px;min-width:55px!important;font-size:13px!important;border-radius:7px!important}
+.v31-field{display:flex;align-items:center;position:relative;min-width:0;width:100%;gap:1px;border-radius:8px;border:1px solid #53636b;background:#0e1417;min-height:44px;padding:0 5px}
+.v31-field:focus-within{border-color:#DCFF35;box-shadow:0 0 0 1px #DCFF35}
+.v31-field input{font-variant-numeric:tabular-nums;width:100%;min-width:0;height:44px;min-height:44px;text-align:center;border:0;outline:0;background:transparent;color:#fff;font-weight:800;font-size:17px;line-height:1;padding:0}
+.v31-field input:focus-visible{outline:none!important}
+.v31-field small{font-size:10px;color:#c0cbd1;flex:none}
+.v31-field:has(input:disabled){opacity:.65}
+.v31-times{font-size:14px;color:#b9c7cf;text-align:center}
+.v31-toggle{display:grid;place-items:center;width:44px;height:44px}
+.v31-toggle>span{width:31px!important;height:31px!important;display:grid;place-items:center}
+.v31-brush-check{width:28px;height:28px;fill:none;stroke:#071013;stroke-linecap:round;stroke-linejoin:round}
+.v31-check-main{stroke-width:5;stroke-dasharray:40;stroke-dashoffset:40;transition:stroke-dashoffset .22s ease}
+.v31-check-feather{stroke-width:1.5;stroke-dasharray:26;stroke-dashoffset:26;transition:stroke-dashoffset .18s ease .08s}
+.v31-series-row[data-done="true"] .v31-check-main,.v31-series-row[data-done="true"] .v31-check-feather{stroke-dashoffset:0}
+.v31-workout .v3-input-error{display:block;padding:3px 6px;color:#ffbb8f;font-size:11px}
+.v31-exercise-details{margin-top:8px;font-size:13px}
+.v31-exercise-details summary{min-height:44px;display:flex;align-items:center;color:#c0cbd1}
+.v31-finish{margin:18px 0 12px;min-height:54px}
+.v31-rest-host{margin:0;height:0}
+[data-rekka-visual="v3"] .v31-rest{position:fixed;left:50%;bottom:max(12px,env(safe-area-inset-bottom));transform:translateX(-50%);width:min(390px,calc(100vw - 24px));min-height:0;max-width:none;display:block;z-index:60;padding:7px 10px 6px;border:1px solid #506064;background:#10181bf5;border-radius:20px;box-shadow:0 12px 34px #000a;backdrop-filter:blur(12px);overflow:visible}
+.v31-rest-main{display:flex;justify-content:space-evenly;align-items:center;gap:12px}
+[data-rekka-visual="v3"] .v31-rest .v31-rest-orbit{height:108px;width:108px;flex:none;position:relative}
+.v31-rest-track{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.v31-rest-track circle{fill:none;stroke:#485558;stroke-width:6;opacity:.65}
+.v31-rest-progress{position:absolute;inset:0;pointer-events:none}
+.v31-rest-progress .v3-brush-ring{position:absolute;inset:0;display:block;width:100%;height:100%}
+.v31-rest-readout{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.v31-rest-readout>small{font-size:10px;color:#c0cbd1}
+[data-rekka-visual="v3"] .v31-rest .k-rest-time{font-size:27px;line-height:1.1;font-weight:800;color:#fff}
+.v31-rest-play{position:relative;width:44px;height:44px;min-width:44px;min-height:44px;margin-top:0;border:0;border-radius:50%;background:transparent;display:grid;place-items:center}
+.v31-rest-play::before{content:"";position:absolute;inset:6px;border:1px solid #cedce0;border-radius:50%}
+.v31-rest-play svg{width:18px;height:18px;display:block;fill:#f3f7f9;transform:none}
+.v31-rest-side{display:flex;flex-direction:column;align-items:stretch;gap:8px}
+.v31-rest-side button{min-width:90px;min-height:44px;border-radius:24px;font-size:14px;font-weight:700}
+.v31-rest-add{border:1px solid #DCFF35;background:transparent;color:#DCFF35}
+.v31-rest-skip{border:1px solid #64757c;background:#253034;color:#f3f7f9}
+.v31-rest-exercise{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;color:#b9c7cf;text-align:center}
+@media(max-width:370px){.v31-workout .v31-exercise-summary{gap:6px;padding:9px 8px}.v31-workout .v31-sets{padding:0 7px 9px}.v31-workout .v31-series-row{gap:3px;grid-template-columns:49px minmax(0,1.4fr) 10px minmax(0,1fr) 44px}.v31-workout .v31-series-label,.v31-workout .v31-series-label>span{width:49px;min-width:49px}.v31-exercise-name strong{font-size:20px}.v31-exercise-count{font-size:11px}}
