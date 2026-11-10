@@ -1,4 +1,5 @@
 import { SOBER_V3 } from '../../sober/flag.js';
+import { PLAYFIELD_V4 } from '../../playfield/flag.js';
 import { REKKA_V2, SportEmblem } from '../../rekka/visual.js';
 /** Lectures et composants communs Beta 0 (présentation uniquement : projection de `selectBeta0Week`). */
 import { useState } from 'react';
@@ -95,8 +96,34 @@ export function durationText(v: SessionItemView): string | null {
  * de carte (le sport est donné par la catégorie) et sont annoncés aux lecteurs d'écran ; le libellé accessible reste celui
  * de la carte (sport, nom, statut).
  */
-export function SessionCard0({ v, onOpen, highlight = false, dateLabel }: { v: SessionItemView; onOpen: (id: string) => void; highlight?: boolean; dateLabel?: string }) {
+export function SessionCard0({ v, onOpen, highlight = false, dateLabel, hero = false }: { v: SessionItemView; onOpen: (id: string) => void; highlight?: boolean; dateLabel?: string; hero?: boolean }) {
   const name = sessionTitle(v);
+  // V4 Home: concise editorial hero; all prescription and placement warnings remain
+  // available in an explicit details control, without embedding controls in a button.
+  if (PLAYFIELD_V4 && hero && v.display !== 'not_planned') {
+    const notes = [
+      v.pain ? 'Douleur signalée' : null,
+      v.repeatFlagged ? 'Identique à une séance récente avec les contraintes actuelles.' : null,
+      v.arbitration ? arbitrationText(v, formatDate) : null,
+      v.globalPlacement ? globalPlacementText(v, formatDate) : null,
+      qualityShortText(v.quality?.verdict) || null,
+      isBlock(v.composition) ? blockCardText : null,
+      isFullC4(v.composition) && v.composition ? fullSessionCardText(v.composition) : null,
+    ].filter((s): s is string => Boolean(s));
+    return <div className="pf-hero-session" data-pf-hero data-request={v.requestId} data-status={v.display}>
+      <div className="pf-hero-top"><span className="pf-hero-tag">Prochaine séance</span><StatusPill status={v.display}/></div>
+      <span className="pf-hero-sport">{sportName(v.sport)}</span>
+      <button type="button" className="pf-hero-open" onClick={() => onOpen(v.requestId)}
+        aria-label={`Voir ${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`}>
+        <strong>{name}</strong><span aria-hidden="true">›</span>
+      </button>
+      <p className="pf-hero-meta">{[v.date ? formatDate(v.date) : null, durationText(v)].filter(Boolean).join(' · ')}</p>
+      {notes.length > 0 && <details className="pf-hero-context">
+        <summary>Pourquoi cette séance ?</summary>
+        <div>{notes.map((note, i) => <p key={i}>{note}</p>)}</div>
+      </details>}
+    </div>;
+  }
   if (v.display === 'not_planned' && v.placement === 'composed_unplaced') return <UnplacedCard v={v} onOpen={onOpen} />;
   if (v.display === 'not_planned') {
     return (
