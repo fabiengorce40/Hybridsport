@@ -1,5 +1,6 @@
 import { ProfileIcon } from '../../sober/ProfileIcon.js';
 import { SOBER_V3 } from '../../sober/flag.js';
+import { PLAYFIELD_V4 } from '../../playfield/flag.js';
 import { StrengthProfileScreen } from '../../strength/StrengthProfile.js';
 import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
 import { useRef, useState } from 'react';
@@ -181,6 +182,12 @@ export function Settings0({ onEditProfile }: { onEditProfile?: () => void }) {
     const title = cards.find(c=>c[0]===panel)?.[2];
     return <div className="screen v3-profile">
       {panel ? <><button className="btn ghost" onClick={()=>setPanel(null)}>← Retour au profil</button><h1 className="screen-title">{title}</h1></> : <VisualHeader title="Profil" profile/>}
+      {PLAYFIELD_V4 && !panel && <section className="pf-profile-hero" aria-label="Résumé du profil">
+        <div className="pf-profile-avatar" aria-hidden="true">{(p?.displayName?.trim() || 'R').slice(0,1).toLocaleUpperCase('fr-FR')}</div>
+        <div><strong>{p?.displayName?.trim() || 'Mon profil'}</strong>
+          <span>{Object.entries(SPORT_LABELS).filter(([key])=>p?.[key as keyof typeof SPORT_LABELS].enabled).length} disciplines activées · Programme personnel</span>
+        </div>
+      </section>}
       <PainCard/>
       {!panel && <div className="v3-profile-menu">{cards.map(([id,,label,sub])=><button key={id} className="card button-card v3-profile-link" onClick={()=>setPanel(id??null)}><span aria-hidden="true"><ProfileIcon kind={id??'settings'}/></span><span><strong>{label}</strong><small>{sub}</small></span><span aria-hidden="true">›</span></button>)}</div>}
       {panel==='objectives' && <>
