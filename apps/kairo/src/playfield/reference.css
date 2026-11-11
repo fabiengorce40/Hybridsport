@@ -971,3 +971,24 @@ html[data-rekka-theme="playfield-pro"] .v31-toggle{
    width:auto!important;min-width:44px!important;flex:1!important;margin-inline:0!important;
  }
 }
+
+
+/* Match board's five-entry profile with a real settings control. */
+html[data-rekka-theme="playfield-pro"] .pf-profile-heading{position:relative}
+html[data-rekka-theme="playfield-pro"] .pf-profile-heading .v3-page-header{
+  padding-right:55px!important;margin:5px 0 12px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-settings{
+  position:absolute;right:0;top:3px;width:44px;min-width:44px;height:44px;min-height:44px;
+  border-radius:13px;background:#fff!important;border:1px solid #E7E9EF!important;
+  box-shadow:0 3px 8px #10254B16;color:#0E1B35!important;font-size:20px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-hero{
+  background:#fff!important;border:1px solid #E7EAF1!important;min-height:82px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-menu>.v3-profile-link{
+  min-height:61px!important;padding:8px 12px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-menu>.v3-profile-link small{
+  display:none!important;
+}
