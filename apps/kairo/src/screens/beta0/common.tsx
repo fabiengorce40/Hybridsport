@@ -96,7 +96,7 @@ export function durationText(v: SessionItemView): string | null {
  * de carte (le sport est donné par la catégorie) et sont annoncés aux lecteurs d'écran ; le libellé accessible reste celui
  * de la carte (sport, nom, statut).
  */
-export function SessionCard0({ v, onOpen, highlight = false, dateLabel, hero = false }: { v: SessionItemView; onOpen: (id: string) => void; highlight?: boolean; dateLabel?: string; hero?: boolean }) {
+export function SessionCard0({ v, onOpen, highlight = false, dateLabel, hero = false, heroProgress }: { v: SessionItemView; onOpen: (id: string) => void; highlight?: boolean; dateLabel?: string; hero?: boolean; heroProgress?: { done: number; total: number } | null }) {
   const name = sessionTitle(v);
   // V4 Home: concise editorial hero; all prescription and placement warnings remain
   // available in an explicit details control, without embedding controls in a button.
@@ -118,6 +118,12 @@ export function SessionCard0({ v, onOpen, highlight = false, dateLabel, hero = f
         <strong>{name}</strong><span aria-hidden="true">›</span>
       </button>
       <p className="pf-hero-meta">{[v.date ? formatDate(v.date) : null, durationText(v)].filter(Boolean).join(' · ')}</p>
+      {heroProgress && heroProgress.total > 0 && <div className="pf-hero-series">
+        <strong>{heroProgress.done}/{heroProgress.total} séries</strong>
+        <div className="pf-hero-series-dots" aria-label={`${heroProgress.done} séries validées sur ${heroProgress.total}`} role="img">
+          {Array.from({length:Math.min(8,heroProgress.total)},(_,i)=><span key={i} className={i/Math.min(8,heroProgress.total)<heroProgress.done/heroProgress.total?'on':''}/>)}
+        </div>
+      </div>}
       {v.pain && <p className="pf-hero-alert" role="alert">Douleur signalée : vérifiez les consignes avant la séance.</p>}
       {notes.length > 0 && <details className="pf-hero-context">
         <summary>Pourquoi cette séance ?</summary>
