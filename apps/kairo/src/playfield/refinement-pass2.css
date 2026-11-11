@@ -279,3 +279,91 @@ html[data-rekka-theme="playfield-pro"] .v3-profile-link strong{
   html[data-rekka-theme="playfield-pro"] .pf-profile-avatar{width:62px!important;height:62px!important;min-width:62px!important}
   html[data-rekka-theme="playfield-pro"] .pf-home-metrics small{font-size:9px!important}
 }
+
+
+/* Keep the progression graph as a premium editorial panel, not an empty axis
+   or a synthetic six-point series. Every plotted marker represents a real log. */
+html[data-rekka-theme="playfield-pro"] .pf-progress-week{
+  background:#FFFDF9!important;
+  border-radius:20px!important;
+  padding:12px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-week>div:last-child{
+  align-self:center;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-facts{
+  gap:7px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-facts>div{
+  padding:9px 5px!important;
+  border-radius:15px!important;
+  box-shadow:0 3px 9px #1020400D!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-fact-icon{
+  display:block;
+  color:#1647C8;font-weight:900;font-size:24px;line-height:1;
+  margin-bottom:5px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-fact-icon--coral{
+  color:#FA6A58;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-fact-icon--yellow{
+  color:#DCA900;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-facts strong{
+  font-weight:950!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-distribution{
+  background:#FFFDF9!important;
+  border-radius:19px!important;
+  box-shadow:0 5px 13px #162A4F10!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-chart-title{
+  margin:0 0 9px;
+  display:flex;flex-direction:column;gap:2px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-chart-title h3{
+  margin:0!important;color:#0E1B35!important;
+  font-size:17px;font-weight:950;
+  letter-spacing:-.03em;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-chart-title p{
+  margin:0;color:#465C7E;font-size:11px;
+  line-height:1.3;
+}
+html[data-rekka-theme="playfield-pro"] .pf-spark-chart{
+  width:100%!important;height:auto!important;
+  min-height:125px;display:block;overflow:visible;
+  padding:3px 0!important;
+  background:transparent!important;
+}
+html[data-rekka-theme="playfield-pro"] .pv-card[data-progress-exercise]{
+  border-radius:18px!important;
+  padding:12px!important;
+  background:#FFFDF9!important;
+}
+/* Weekly agenda is one uninterrupted, elegant list with colored categories.
+   The re-planning controls remain available behind the dedicated disclosure. */
+html[data-rekka-theme="playfield-pro"] .pf-planning-week{
+  border-radius:16px!important;
+  box-shadow:0 4px 13px #0E1B3510!important;
+  background:#FFFDF9!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-day{
+  border-bottom:1px solid #F0EDE8!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-day:last-child{
+  border-bottom:0!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-session[data-sport="strength"]{
+  border-left-color:#1647C8!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-session[data-sport="running"]{
+  border-left-color:#FA6A58!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-session[data-sport="hyrox"]{
+  border-left-color:#FDCB32!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-session[data-sport="crosstraining"]{
+  border-left-color:#7860D4!important;
+}
