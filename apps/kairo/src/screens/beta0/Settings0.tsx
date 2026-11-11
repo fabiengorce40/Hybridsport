@@ -1,6 +1,7 @@
 import { ProfileIcon } from '../../sober/ProfileIcon.js';
 import { SOBER_V3 } from '../../sober/flag.js';
 import { PLAYFIELD_V4 } from '../../playfield/flag.js';
+import profileIllustration from '../../rekka/assets/avatar.webp';
 import { StrengthProfileScreen } from '../../strength/StrengthProfile.js';
 import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
 import { useRef, useState } from 'react';
@@ -191,7 +192,7 @@ export function Settings0({ onEditProfile }: { onEditProfile?: () => void }) {
       {panel ? <><button className="btn ghost" onClick={()=>setPanel(null)}>← Retour au profil</button><h1 className="screen-title">{title ?? (panel==='settings' ? 'Paramètres':'Profil sportif')}</h1></> :
         <div className="pf-profile-heading"><VisualHeader title="Profil" profile/>{PLAYFIELD_V4 && <button type="button" className="pf-profile-settings" onClick={()=>setPanel('settings')} aria-label="Paramètres">⚙</button>}</div>}
       {PLAYFIELD_V4 && !panel && <section className="pf-profile-hero" aria-label="Résumé du profil">
-        <div className="pf-profile-avatar" aria-hidden="true">{(p?.displayName?.trim() || 'R').slice(0,1).toLocaleUpperCase('fr-FR')}</div>
+        <div className="pf-profile-avatar"><img src={profileIllustration} alt="Illustration de profil sportif" width={72} height={72}/></div>
         <div><strong>{p?.displayName?.trim() || 'Mon profil'}</strong>
           <span>{Object.entries(SPORT_LABELS).filter(([key])=>p?.[key as keyof typeof SPORT_LABELS].enabled).length} disciplines activées · Programme personnel</span>
         </div>
