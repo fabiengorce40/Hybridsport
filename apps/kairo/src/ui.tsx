@@ -1,5 +1,4 @@
 import { REKKA_V2 } from './rekka/flag.js';
-import { PLAYFIELD_V4 } from './playfield/flag.js';
 /** Composants communs (présentation uniquement). */
 import type { ReactNode } from 'react';
 import { sessionName } from './present.js';
