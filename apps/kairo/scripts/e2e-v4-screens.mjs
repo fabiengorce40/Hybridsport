@@ -49,7 +49,7 @@ const audit = (page) => page.evaluate(() => {
 const browser = await chromium.launch();
 const report = {};
 try {
-  for (const width of [360, 390, 412, 1024]) {
+  for (const width of [390, 360, 412, 1024]) {
     const W = `${String(width)} px`;
     const height = width === 360 ? 740 : width === 1024 ? 900 : 844;
     const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: width === 390 ? 2 : 1, locale: 'fr-FR', timezoneId: 'Europe/Paris', isMobile: width < 1000, hasTouch: width < 1000 });
