@@ -88,7 +88,7 @@ export function SetLine({ set, label, saved, editable, phaseShown = false, onRec
           aria-label={`Sélectionner ${label}`} aria-pressed={selected} title={description}>
           <span>{warm ? `Éch. ${position}` : `S${label.replace(/[^0-9]/g, '')}`}</span>
         </button>
-        <div className={PLAYFIELD_V4 ? 'pf-stepper pf-stepper-load' : 'pf-stepper-off'}>
+        <div className={PLAYFIELD_V4 ? 'pf-stepper pf-stepper-load' : 'pf-stepper-off'} style={!PLAYFIELD_V4 ? {display:'contents'} : undefined}>
           {PLAYFIELD_V4 && <button type="button" className="pf-step" aria-label={`Diminuer charge de ${label}`}
             disabled={!editable || done} onClick={()=>moveLoad(-2.5)}>−</button>}
           <label className="v31-field v31-field-kg">
@@ -104,7 +104,7 @@ export function SetLine({ set, label, saved, editable, phaseShown = false, onRec
             disabled={!editable || done} onClick={()=>moveLoad(2.5)}>+</button>}
         </div>
         <span className="v31-times" aria-hidden="true">×</span>
-        <div className={PLAYFIELD_V4 ? 'pf-stepper pf-stepper-reps' : 'pf-stepper-off'}>
+        <div className={PLAYFIELD_V4 ? 'pf-stepper pf-stepper-reps' : 'pf-stepper-off'} style={!PLAYFIELD_V4 ? {display:'contents'} : undefined}>
           {PLAYFIELD_V4 && <button type="button" className="pf-step" aria-label={`Diminuer répétitions de ${label}`}
             disabled={!editable || done} onClick={()=>moveReps(-1)}>−</button>}
           <label className="v31-field v31-field-reps">
