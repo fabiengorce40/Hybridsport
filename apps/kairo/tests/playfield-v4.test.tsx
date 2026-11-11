@@ -4,6 +4,8 @@ import { render, screen, cleanup } from '@testing-library/react';
 import { afterEach, expect, it } from 'vitest';
 import { PlayfieldLogo } from '../src/playfield/PlayfieldLogo.js';
 import { PlayfieldBenchArt } from '../src/playfield/ExerciseArt.js';
+import { PlayfieldAnatomy } from '../src/playfield/PlayfieldAnatomy.js';
+import { PLAYFIELD_TABS } from '../src/ui.js';
 
 afterEach(cleanup);
 const css = readFileSync('apps/kairo/src/playfield/playfield.css', 'utf8');
@@ -83,4 +85,24 @@ it('V4 differentiates a straight barbell from two independent dumbbells', () => 
   expect(screen.getByRole('img', { name: /barre droite.*disques alignés/i })).toBeTruthy();
   expect(r.container.querySelectorAll('g').length).toBe(2);
   expect(r.container.querySelector('img')).toBeNull();
+});
+
+it('la navigation Playfield officielle offre exactement quatre onglets réels', () => {
+  expect(PLAYFIELD_TABS).toEqual(['home', 'plan', 'history', 'settings']);
+});
+
+it('le détail de séance a une illustration anatomique accessible et réutilisable', () => {
+  const r = render(<PlayfieldAnatomy target="chest"/>);
+  expect(screen.getByRole('img', {name:/illustration indicative du haut du corps/i})).toBeTruthy();
+  expect(r.container.querySelectorAll('svg')).toHaveLength(1);
+  expect(r.container.querySelector('img')).toBeNull();
+});
+
+it('la couche Playfield de référence est bien indépendante de l’identité historique', () => {
+  const reference = readFileSync('apps/kairo/src/playfield/reference.css', 'utf8');
+  expect(reference).toContain('html[data-rekka-theme="playfield-pro"]');
+  for(const c of ['#1647C8','#FDCB32','#FA6A58','#FFF7EA','#0E1B35'])expect(reference).toContain(c);
+  for(const selector of ['.pf-stepper','.pf-next-exercise','.pf-progress-period','.pf-planning-week','.pf-detail-toolbar','.pf-summary-celebration','.pf-profile-heading'])expect(reference).toContain(selector);
+  expect(reference).not.toContain('#DCFF35');
+  expect(reference).not.toContain('magnesie-officielle');
 });
