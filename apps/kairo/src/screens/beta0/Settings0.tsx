@@ -1,7 +1,7 @@
 import { ProfileIcon } from '../../sober/ProfileIcon.js';
 import { SOBER_V3 } from '../../sober/flag.js';
 import { PLAYFIELD_V4 } from '../../playfield/flag.js';
-import profileIllustration from '../../rekka/assets/avatar.webp';
+
 import { StrengthProfileScreen } from '../../strength/StrengthProfile.js';
 import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
 import { useRef, useState } from 'react';
@@ -193,7 +193,33 @@ export function Settings0({ onEditProfile }: { onEditProfile?: () => void }) {
       {panel ? <><button className="btn ghost" onClick={()=>setPanel(null)}>← Retour au profil</button><h1 className="screen-title">{title ?? (panel==='settings' ? 'Paramètres':'Profil sportif')}</h1></> :
         <div className="pf-profile-heading"><VisualHeader title="Profil" profile/>{PLAYFIELD_V4 && <button type="button" className="pf-profile-settings" onClick={()=>setPanel('settings')} aria-label="Paramètres">⚙</button>}</div>}
       {PLAYFIELD_V4 && !panel && <section className="pf-profile-hero" aria-label="Résumé du profil">
-        <div className="pf-profile-avatar"><img src={profileIllustration} alt="Illustration de profil sportif" width={72} height={72}/></div>
+        <div className="pf-profile-avatar">
+          <svg className="pf-profile-athlete" viewBox="0 0 84 84" role="img" aria-label="Illustration de profil : sportif de dos avec un sac à dos en extérieur">
+            <defs>
+              <linearGradient id="pf-avatar-sky" x1="0" x2="1" y1="0" y2="1">
+                <stop stopColor="#87D2ED"/><stop offset=".44" stopColor="#729ACF"/><stop offset="1" stopColor="#EBA270"/>
+              </linearGradient>
+              <linearGradient id="pf-avatar-jacket" x1="0" x2=".8" y1="0" y2="1">
+                <stop stopColor="#223A62"/><stop offset=".55" stopColor="#142444"/><stop offset="1" stopColor="#071A33"/>
+              </linearGradient>
+              <linearGradient id="pf-avatar-pack" x1="0" x2="1" y1="0" y2=".8">
+                <stop stopColor="#384B6E"/><stop offset=".55" stopColor="#1B2A4B"/><stop offset="1" stopColor="#09182E"/>
+              </linearGradient>
+            </defs>
+            <circle cx="42" cy="42" r="42" fill="url(#pf-avatar-sky)"/>
+            <path d="M0 50Q23 31 44 49Q58 32 84 48V84H0Z" fill="#6789A1" opacity=".65"/>
+            <path d="M0 58Q23 45 39 59Q62 39 84 54V84H0Z" fill="#395B79" opacity=".6"/>
+            <path d="M34 24Q37 14 48 17Q58 20 57 30L54 39Q44 42 38 34Z" fill="#B57958"/>
+            <path d="M33 26Q36 14 49 14Q59 16 58 26Q53 22 49 20Q41 23 33 26Z" fill="#171D2B"/>
+            <path d="M39 36L37 47L55 47L51 36" fill="#A97757"/>
+            <path d="M19 67Q19 50 33 43Q49 37 62 47Q74 52 74 69L80 86H8Z" fill="url(#pf-avatar-jacket)"/>
+            <path d="M27 48L23 83M61 48L66 82" fill="none" stroke="#687FA0" strokeWidth="3" opacity=".75"/>
+            <path d="M33 43Q43 37 55 44L61 52Q65 63 63 80L29 80Q27 62 30 52Z" fill="url(#pf-avatar-pack)" stroke="#8590A8" strokeWidth="2"/>
+            <path d="M33 53Q45 47 58 54L58 73Q45 68 33 75Z" fill="#253D60" stroke="#516487" strokeWidth="1.6"/>
+            <path d="M34 65Q47 61 58 66M35 71Q45 73 57 70" stroke="#6D85AA" strokeWidth="1.6" opacity=".65"/>
+            <path d="M34 46L33 64M57 46L59 64" stroke="#A6AEC0" strokeWidth="3" fill="none" opacity=".8"/>
+          </svg>
+        </div>
         <div><strong>{p?.displayName?.trim() || 'Mon profil'}</strong>
           <span className="pf-profile-subtitle">Programme personnalisé · {activeSportsCount} sport{activeSportsCount>1?'s':''} actif{activeSportsCount>1?'s':''}</span>
           <div className="pf-profile-sport-progress" role="progressbar" aria-label="Sports activés sur les quatre disciplines disponibles" aria-valuemin={0} aria-valuemax={4} aria-valuenow={activeSportsCount}>
