@@ -105,7 +105,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
         {SOBER_V3 && <button className="v3-home-settings" aria-label="Paramètres" onClick={()=>onGo('settings')}>{PLAYFIELD_V4 ? <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2.3"/><circle cx="12" cy="12" r="2.3"/><circle cx="19" cy="12" r="2.3"/></svg> : '⚙'}</button>}
         <p className="small">{formatDate(today)}</p>
         {!SOBER_V3 && <h1>{name ? `${name}, ` : ''}{next ? (next.date === today ? 'c’est le moment.' : 'prochaine séance.') : 'rien de prévu.'}</h1>}
-        <div className={SOBER_V3 ? "v3-today" : undefined}>{next && <SessionCard0 v={next} onOpen={onOpen} highlight hero={PLAYFIELD_V4} heroProgress={heroProgress} />}
+        <div className={SOBER_V3 ? "v3-today" : undefined}>{next && <SessionCard0 v={next} onOpen={onOpen} highlight dateLabel={PLAYFIELD_V4 && next.date === today ? 'Aujourd’hui' : undefined} hero={PLAYFIELD_V4} heroProgress={heroProgress} />}
         {next && (
           <button className="btn primary block" onClick={() => onOpen(next.requestId)}>
             {next.display === 'in_progress' ? 'Reprendre la séance' : next.date === today && !paused ? 'Commencer la séance' : `Voir la séance${next.date === today ? '' : ` de ${formatDate(next.date ?? today).split(' ')[0] ?? ''}`}`}

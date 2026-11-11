@@ -117,7 +117,7 @@ export function SessionCard0({ v, onOpen, highlight = false, dateLabel, hero = f
         aria-label={`${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`}>
         <strong>{name}</strong><span aria-hidden="true">›</span>
       </button>
-      <p className="pf-hero-meta"><HomeCalendar/>{[v.date ? formatDate(v.date) : null, durationText(v)].filter(Boolean).join(' · ')}</p>
+      <p className="pf-hero-meta"><HomeCalendar/>{[dateLabel ?? (v.date ? formatDate(v.date) : null), durationText(v)].filter(Boolean).join(' · ')}</p>
       {heroProgress && heroProgress.total > 0 && <div className="pf-hero-series">
         <strong>{heroProgress.done}/{heroProgress.total} séries</strong>
         <div className="pf-hero-series-dots" aria-label={`${heroProgress.done} séries validées sur ${heroProgress.total}`} role="img">

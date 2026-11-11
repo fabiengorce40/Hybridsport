@@ -2,6 +2,7 @@
 html[data-rekka-theme="playfield-pro"] .screen.v3-home {
   --home-scale: min(1vw, 3.9px);
   position: relative;
+  gap: 0;
   padding: 4px 12px 94px !important;
   background: #fcf6ed;
 }
@@ -12,13 +13,13 @@ html[data-rekka-theme="playfield-pro"] .v3-home .hero {
 }
 html[data-rekka-theme="playfield-pro"] .v3-home .hero::before {
   content: "";
+  display: block !important;
   position: absolute;
   width: calc(29 * var(--home-scale));
-  height: calc(23 * var(--home-scale));
+  height: calc(22.5 * var(--home-scale));
   right: -12px;
   top: calc(13 * var(--home-scale));
-  background: linear-gradient(165deg, #ffcd13 62%, #0860ed 79%, #85b8fb);
-  clip-path: path("M 114 0 C 86 39 45 64 0 89 L 114 89 Z");
+  background: url("./assets/rekka-home-accent.webp") right center / contain no-repeat;
   pointer-events: none;
 }
 html[data-rekka-theme="playfield-pro"] .v3-home .pf-brand {
@@ -63,7 +64,7 @@ html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-tag svg {
   width: 19px;
   height: 19px;
 }
-html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-flags .k-pill,
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-flags .st-planned,
 html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-open > span {
   display: none !important;
 }
@@ -83,8 +84,8 @@ html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-series-dots:not(:has(.o
   background: #ffce19;
 }
 html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-details:not([open]) {
-  top: -134px !important;
-  right: 51px !important;
+  top: -154px !important;
+  right: 57px !important;
 }
 html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-details > summary {
   border-radius: 16px !important;
@@ -100,7 +101,7 @@ html[data-rekka-theme="playfield-pro"] .v3-home .pf-home-metrics {
   margin: 11px 0 9px !important;
 }
 html[data-rekka-theme="playfield-pro"] .v3-home .pf-home-metrics > div {
-  min-height: 107px !important;
+  min-height: calc(27.4 * var(--home-scale)) !important;
   border-radius: 20px !important;
   background: #fffbf5 !important;
 }
@@ -145,4 +146,52 @@ html[data-rekka-theme="playfield-pro"] .v3-home + .tabbar > button {
 html[data-rekka-theme="playfield-pro"] .v3-home + .tabbar > button svg {
   width: 24px !important;
   height: 24px !important;
+}
+
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-logo {
+  width: calc(41 * var(--home-scale));
+  height: calc(9.5 * var(--home-scale));
+  background: url("./assets/rekka-home-logo.webp") left center / contain no-repeat;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-logo > * {
+  visibility: hidden;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-greeting h1 > span {
+  display: inline-block;
+  width: 1.04em;
+  height: 1.09em;
+  vertical-align: -.12em;
+  background: url("./assets/rekka-home-wave.webp") center / contain no-repeat;
+  color: transparent;
+}
+
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-week-sport-icon > .r-sport-glyph {
+  width: 100%;
+  height: 100%;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-week-sport[data-sport="running"] .r-sport-glyph {
+  --sport-color: #f45839;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-home-week > .row {
+  margin-bottom: 0 !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-home-week .pf-week-sports {
+  margin-top: 2px !important;
+}
+@media (max-width: 375px) {
+  html[data-rekka-theme="playfield-pro"] .v3-home .pf-brand {
+    margin-bottom: 7px !important;
+  }
+  html[data-rekka-theme="playfield-pro"] .v3-home .pf-greeting {
+    margin-bottom: 9px !important;
+  }
+  html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-open {
+    min-height: 48px !important;
+  }
+  html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-meta {
+    margin-bottom: 15px !important;
+  }
+  html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-details:not([open]) {
+    top: -143px !important;
+  }
 }
