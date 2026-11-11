@@ -144,7 +144,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
           <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={planned.length} aria-valuenow={done} aria-label="Séances terminées"><div style={{ width: `${String(Math.round((done / planned.length) * 100))}%` }} /></div>
           {PLAYFIELD_V4 && <div className="pf-week-sports" aria-label="Répartition réelle des séances prévues">
              {sportStats.map(({ sport, total, done: doneSport }) => <div className="pf-week-sport" key={sport} data-sport={sport}>
-               <span className="pf-week-name"><SportIcon sport={sport} label={false}/>{sportName(sport)}</span><strong>{doneSport}/{total}</strong>
+               <SportIcon sport={sport} className="pf-week-sport-icon" label={false}/><span className="pf-week-name">{sportName(sport)}</span><strong>{doneSport}/{total}</strong>
                <div className="pf-week-sport-bar" aria-hidden="true"><span style={{ width: `${total ? Math.round(doneSport / total * 100) : 0}%` }} /></div>
              </div>)}
            </div>}
