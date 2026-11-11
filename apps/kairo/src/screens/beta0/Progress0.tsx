@@ -214,7 +214,7 @@ export function Progress0() {
          <div className="pf-progress-week">
            <div className="pf-progress-ring" role="img"
              aria-label={period==='week' ? `${percentWeek} % des séances planifiées réalisées cette semaine` : `${scopedCount} séance(s) réalisées ${periodTitle}`}
-             style={{background:period==='week' ? `conic-gradient(#FDCB32 0% ${percentWeek}%, #E4E8F0 ${percentWeek}% 100%)` : 'conic-gradient(#1647C8 0% 75%, #FDCB32 75% 100%)'}}>
+             style={{background:period==='week' ? `conic-gradient(#FDCB32 0% ${percentWeek}%, #E4E8F0 ${percentWeek}% 100%)` : 'conic-gradient(#E4E8F0 0% 100%)'}}>
              <span>{scopeValue}</span>
            </div>
            <div><strong>{period==='week' ? `${doneWeek} / ${placed.length} séances` : `${scopedCount} séance(s)`}</strong><span>{periodTitle}</span>
