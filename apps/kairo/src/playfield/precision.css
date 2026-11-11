@@ -557,3 +557,92 @@ html[data-rekka-theme="playfield-pro"] .pf-summary-celebration{
 html[data-rekka-theme="playfield-pro"] .pf-summary-celebration h2{
   font-size:23px!important;
 }
+
+
+/* Final reference alignment: Planning title + right-aligned calendar control. */
+html[data-rekka-theme="playfield-pro"] .pf-planning-heading{
+  position:relative;
+  display:flex;
+  align-items:center;
+  min-height:50px;
+  padding-right:54px;
+  margin:0 0 2px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-heading .v3-page-header{
+  margin:0!important;
+  flex:1;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-heading .v3-page-header h1{
+  font-size:21px!important;
+  font-weight:950!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-week-picker{
+  position:absolute!important;
+  right:0;top:1px;
+  width:44px;min-width:44px;height:44px;min-height:44px;
+  padding:0!important;
+  border:1px solid #E4E7F0!important;
+  border-radius:12px!important;
+  background:#fff!important;
+  box-shadow:0 3px 9px #14264F16!important;
+  display:grid;place-items:center;
+  color:#112B59!important;
+  font-size:21px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-week-chooser:not([open]){
+  display:none!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-week-chooser[open]{
+  background:#fff!important;
+  border:1px solid #E7E9EE!important;
+  border-radius:14px!important;
+  padding:6px 10px!important;
+  margin:0 0 8px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-week-chooser>summary{
+  display:flex;align-items:center;justify-content:space-between;
+  min-height:44px;
+  list-style:none;cursor:pointer;
+  font-size:12px!important;
+  color:#1647C8!important;
+  font-weight:850!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-week-chooser>summary::-webkit-details-marker{display:none}
+html[data-rekka-theme="playfield-pro"] .pf-week-chooser .week-nav{
+  margin:5px 0 8px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-heading .v3-page-header h1{
+  font-size:21px!important;
+  font-weight:950!important;
+  margin:0!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-heading .v3-page-header p{
+  display:none!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-hero{
+  margin:7px 0 10px!important;
+  background:transparent!important;
+  border:0!important;
+  box-shadow:none!important;
+  padding:4px 0!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-avatar{
+  width:57px!important;height:57px!important;
+  border-radius:50%!important;
+  overflow:hidden;
+  background:#E9EEF8!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-avatar img{
+  width:100%;height:100%;
+  display:block;
+  object-fit:cover;
+  border-radius:50%;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-hero strong{
+  font-size:17px!important;
+  font-weight:950!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-hero span{
+  margin-top:3px!important;
+  font-size:11px!important;
+}
