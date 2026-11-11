@@ -95,6 +95,7 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
             <span className="v31-chevron" aria-hidden="true">{expanded ? '⌃' : '⌄'}</span>
           </button>
           <div className="v3-sets v31-sets" id={`v31-sets-${cardIndex}`} hidden={!expanded}>
+            {PLAYFIELD_V4 && <div className="pf-set-columns" aria-hidden="true"><span>Série</span><span>Charge</span><span>Répétitions</span><span>Statut</span></div>}
             {PLAYFIELD_V4 && benchArt && <div className="pf-exercise-illustration"><PlayfieldBenchArt dumbbells={/db_|dumbbell/i.test(item.exerciseId)} /></div>}
             {sets.map((set, i) => <Fragment key={`${item.id}.${i}`}>
               {(i === 0 || phaseOf(sets[i - 1] ?? set) !== phaseOf(set)) &&
@@ -138,6 +139,10 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
       })}
     </div>
 
+    {PLAYFIELD_V4 && main.length > 1 && <button type="button" className="pf-next-exercise"
+      onClick={()=>expandExercise((optionsIndex+1)%main.length)} aria-label={`Ouvrir exercice suivant : ${exerciseLabel(main[(optionsIndex+1)%main.length]?.item.exerciseId ?? '')}`}>
+      <span aria-hidden="true">‹</span><span><small>Exercice suivant</small><strong>{exerciseLabel(main[(optionsIndex+1)%main.length]?.item.exerciseId ?? '')}</strong></span><span aria-hidden="true">›</span>
+    </button>}
     <button className="v3-primary v31-finish" onClick={onFinish}>Terminer la séance</button>
     <div className="v3-rest-host v31-rest-host">{restTimer}</div>
 
