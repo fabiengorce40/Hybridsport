@@ -1,7 +1,8 @@
 import { REKKA_V2, LiveSessions } from './rekka/visual.js';
 import { useEffect, useState } from 'react';
 import { useStore } from './store.js';
-import { AuthorityBanner, BETA0_TABS, Notice, TabBar } from './ui.js';
+import { AuthorityBanner, BETA0_TABS, PLAYFIELD_TABS, Notice, TabBar } from './ui.js';
+import { PLAYFIELD_V4 } from './playfield/flag.js';
 import type { Tab } from './ui.js';
 import { Setup } from './screens/beta0/Setup.js';
 import { Home0 } from './screens/beta0/Home0.js';
@@ -81,7 +82,7 @@ export function App() {
         {tab === 'history' && <History0 onOpen={setOpen} />}
         {tab === 'programme' && <>{REKKA_V2 && <LiveSessions onOpen={setOpen} />}<Programme0 onEdit={() => setEditing(true)} /></>}
         {(tab === 'settings' || tab === 'profile' || tab === 'run') && <Settings0 onEditProfile={() => setEditing(true)} />}
-        <TabBar tabs={BETA0_TABS} tab={tab} onChange={(t) => { setOpen(null); setTab(t); }} />
+        <TabBar tabs={PLAYFIELD_V4 ? PLAYFIELD_TABS : BETA0_TABS} tab={tab} onChange={(t) => { setOpen(null); setTab(t); }} />
       </div>
       {open && (
         <div className="overlay">
