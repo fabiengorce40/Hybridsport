@@ -1,4 +1,5 @@
 import { SOBER_V3 } from './sober/flag.js';
+import { PLAYFIELD_V4 } from './playfield/flag.js';
 import { RecoveryBrush } from './sober/Artwork.js';
 import { PlayPauseIcon } from './sober/PlayPauseIcon.js';
 import { useAlignedSecond } from './sober/useAlignedSecond.js';
@@ -17,7 +18,7 @@ const REFRESH_MS = 250;
 const R = 32;
 const CIRC = 2 * Math.PI * R;
 
-export function RestTimer0({ rest, now, onAction, layout='compact' }: { layout?: 'large'|'compact'; rest: Rest | null; now: () => string; onAction: (a: 'pause' | 'resume' | 'extend' | 'skip') => void }) {
+export function RestTimer0({ rest, now, onAction, layout='compact', nextSeriesText }: { layout?: 'large'|'compact'; rest: Rest | null; now: () => string; nextSeriesText?: string | null; onAction: (a: 'pause' | 'resume' | 'extend' | 'skip') => void }) {
   const [, setTick] = useState(0);
   const buzzed = useRef<string | null>(null);
   // V3 : un rendu par seconde affichée, aligné sur l'échéance persistante (ceil((échéance − maintenant) / 1 s) change
@@ -70,6 +71,7 @@ export function RestTimer0({ rest, now, onAction, layout='compact' }: { layout?:
           </div>
         </div>
         <div className="v31-rest-side">
+          {PLAYFIELD_V4 && <div className="pf-rest-next"><small>{nextSeriesText ? 'Prochaine série' : 'Repos en cours'}</small><strong>{nextSeriesText || exerciseLabel(rest.exerciseId)}</strong></div>}
           <button className="v31-rest-add" aria-label={`Ajouter ${REST_EXTENSION_S} secondes`}
             onClick={() => onAction('extend')}>+{REST_EXTENSION_S} s</button>
           <button className="v31-rest-skip" aria-label={over ? 'OK' : 'Passer'} onClick={() => onAction('skip')}>
