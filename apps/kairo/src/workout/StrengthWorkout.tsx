@@ -7,6 +7,7 @@
 import { useId, useState } from 'react';
 import type { ReactNode } from 'react';
 import { FittedNumericInput } from '../sober/FittedNumericInput.js';
+import { PLAYFIELD_V4 } from '../playfield/flag.js';
 import { approxMinutes, exerciseLabel, intensityLabel, setKindLabel } from '@hybridsport/app-core';
 import type { ProgrammeSessionView, SessionItem, SetLog, SetPrescription } from '@hybridsport/app-core';
 import { BLOCK_LABELS } from '../screens/Session.js';
@@ -56,6 +57,16 @@ export function SetLine({ set, label, saved, editable, phaseShown = false, onRec
   const done = saved?.done === true;
   const repsN = reps === '' ? undefined : Number(reps);
   const kgN = kg === '' ? undefined : Number(kg);
+  const moveLoad = (delta: number) => {
+    const base = kgN !== undefined && Number.isFinite(kgN) ? kgN : prescribedKg ?? 0;
+    setKg(String(Math.max(0, Math.round((base + delta) * 100) / 100)));
+    onSelect?.();
+  };
+  const moveReps = (delta: number) => {
+    const base = repsN !== undefined && Number.isInteger(repsN) ? repsN : 0;
+    setReps(String(Math.max(0, base + delta)));
+    onSelect?.();
+  };
   const invalidKg = kg !== '' && (kgN === undefined || !Number.isFinite(kgN) || kgN < 0);
   const valid = repsN !== undefined && Number.isInteger(repsN) && repsN >= 0 && (kgN === undefined || (Number.isFinite(kgN) && kgN >= 0));
   const toggle = () => onRecord(done
@@ -77,24 +88,36 @@ export function SetLine({ set, label, saved, editable, phaseShown = false, onRec
           aria-label={`Sélectionner ${label}`} aria-pressed={selected} title={description}>
           <span>{warm ? `Éch. ${position}` : `S${label.replace(/[^0-9]/g, '')}`}</span>
         </button>
-        <label className="v31-field v31-field-kg">
-          <span className="sr-only">Charge de {label} en kilogrammes</span>
-          <FittedNumericInput aria-label={`Charge (kg) ${label}`}
-            aria-invalid={invalidKg || undefined}
-            aria-describedby={invalidKg ? `${prescriptionId} ${chargeErrorId}` : prescriptionId}
-            inputMode="decimal" value={kg} placeholder="—" disabled={!editable || done}
-            onFocus={onSelect} onChange={e => setKg(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}/>
-          <small aria-hidden="true">kg</small>
-        </label>
+        <div className={PLAYFIELD_V4 ? 'pf-stepper pf-stepper-load' : 'pf-stepper-off'}>
+          {PLAYFIELD_V4 && <button type="button" className="pf-step" aria-label={`Diminuer charge de ${label}`}
+            disabled={!editable || done} onClick={()=>moveLoad(-2.5)}>−</button>}
+          <label className="v31-field v31-field-kg">
+            <span className="sr-only">Charge de {label} en kilogrammes</span>
+            <FittedNumericInput aria-label={`Charge (kg) ${label}`}
+              aria-invalid={invalidKg || undefined}
+              aria-describedby={invalidKg ? `${prescriptionId} ${chargeErrorId}` : prescriptionId}
+              inputMode="decimal" value={kg} placeholder="—" disabled={!editable || done}
+              onFocus={onSelect} onChange={e => setKg(e.target.value.replace(',', '.').replace(/[^0-9.]/g, ''))}/>
+            <small aria-hidden="true">kg</small>
+          </label>
+          {PLAYFIELD_V4 && <button type="button" className="pf-step" aria-label={`Augmenter charge de ${label}`}
+            disabled={!editable || done} onClick={()=>moveLoad(2.5)}>+</button>}
+        </div>
         <span className="v31-times" aria-hidden="true">×</span>
-        <label className="v31-field v31-field-reps">
-          <span className="sr-only">Répétitions de {label}</span>
-          <FittedNumericInput aria-label={`Répétitions réalisées ${label}`}
-            aria-describedby={prescriptionId} inputMode="numeric"
-            value={reps} placeholder={typeof set.reps === 'number' ? '—' : repsTarget(set.reps)}
-            disabled={!editable || done} onFocus={onSelect}
-            onChange={e => setReps(e.target.value.replace(/[^0-9]/g, ''))}/>
-        </label>
+        <div className={PLAYFIELD_V4 ? 'pf-stepper pf-stepper-reps' : 'pf-stepper-off'}>
+          {PLAYFIELD_V4 && <button type="button" className="pf-step" aria-label={`Diminuer répétitions de ${label}`}
+            disabled={!editable || done} onClick={()=>moveReps(-1)}>−</button>}
+          <label className="v31-field v31-field-reps">
+            <span className="sr-only">Répétitions de {label}</span>
+            <FittedNumericInput aria-label={`Répétitions réalisées ${label}`}
+              aria-describedby={prescriptionId} inputMode="numeric"
+              value={reps} placeholder={typeof set.reps === 'number' ? '—' : repsTarget(set.reps)}
+              disabled={!editable || done} onFocus={onSelect}
+              onChange={e => setReps(e.target.value.replace(/[^0-9]/g, ''))}/>
+          </label>
+          {PLAYFIELD_V4 && <button type="button" className="pf-step" aria-label={`Augmenter répétitions de ${label}`}
+            disabled={!editable || done} onClick={()=>moveReps(1)}>+</button>}
+        </div>
         <button className="v3-toggle v31-toggle" aria-label={done ? 'Décocher la série' : 'Cocher la série'}
           aria-pressed={done} disabled={!editable || (!done && !valid)} onClick={toggle}>
           <span aria-hidden="true"><svg className="v31-brush-check" viewBox="0 0 32 32" focusable="false">
