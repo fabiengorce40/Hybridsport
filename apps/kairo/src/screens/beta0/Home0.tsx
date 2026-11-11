@@ -7,6 +7,7 @@ import { formatDate, Notice, weekdayShort } from '../../ui.js';
 import { isDone, sessionName, sportName, STATUS_LABELS } from '../../present.js';
 import { nextOf, placedOf, RunningTestFallbackNotice, SessionCard0, weekOf, WeekPlanningNotice } from './common.js';
 import type { DayItemView } from './common.js';
+import { SportIcon } from '../../design/SportIcon.js';
 
 export function PainPause({ onGo }: { onGo: () => void }) {
   return (
@@ -64,6 +65,13 @@ const stripSummary = (days: readonly DayItemView[]): string => {
   return marked.length > 0 ? marked.join('. ') : 'Aucune séance cette semaine.';
 };
 
+function PlayfieldKpiIcon({ kind }: { kind:'calendar'|'target'|'sports' }) {
+  const common={width:23,height:23,viewBox:'0 0 24 24',fill:'none',stroke:'currentColor',strokeWidth:2.2,strokeLinecap:'round' as const,strokeLinejoin:'round' as const,'aria-hidden':true as const};
+  if(kind==='calendar')return <svg {...common}><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4M17 3v4M3 10h18"/><path d="m8 15 2 2 4-4"/></svg>;
+  if(kind==='target')return <svg {...common}><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.3"/><path d="M12 2v3M22 12h-3"/></svg>;
+  return <svg {...common}><path d="M5 17v4M10 12v9M15 7v14M20 3v18"/><path d="M3 17h4M8 12h4M13 7h4M18 3h4"/></svg>;
+}
+
 export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) => void; onGo: (t: 'plan' | 'settings' | 'programme') => void; onEditProgramme?: () => void }) {
   const { state, clock } = useStore();
   const today = clock().today;
@@ -106,9 +114,9 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
       </div></div>
 
       {PLAYFIELD_V4 && planned.length > 0 && <section className="pf-home-metrics pf-board-metrics" aria-label="Statistiques réelles de la semaine">
-        <div><span className="pf-metric-icon pf-metric-blue" aria-hidden="true">▣</span><strong>{done}<span>/{planned.length}</span></strong><small>séances réalisées</small></div>
-        <div><span className="pf-metric-icon pf-metric-gold" aria-hidden="true">◎</span><strong>{weeklyPercent}<span> %</span></strong><small>objectif hebdo</small></div>
-        <div><span className="pf-metric-icon pf-metric-coral" aria-hidden="true">◈</span><strong>{sportStats.length}</strong><small>discipline{sportStats.length > 1 ? 's' : ''} planifiée{sportStats.length > 1 ? 's' : ''}</small></div>
+        <div><span className="pf-metric-icon pf-metric-blue"><PlayfieldKpiIcon kind="calendar"/></span><strong>{done}<span>/{planned.length}</span></strong><small>séances réalisées</small></div>
+        <div><span className="pf-metric-icon pf-metric-gold"><PlayfieldKpiIcon kind="target"/></span><strong>{weeklyPercent}<span> %</span></strong><small>objectif hebdo</small></div>
+        <div><span className="pf-metric-icon pf-metric-coral"><PlayfieldKpiIcon kind="sports"/></span><strong>{sportStats.length}</strong><small>sports planifiés</small></div>
       </section>}
       {REKKA_V2 && !PLAYFIELD_V4 && <SportLinks onPlanning={() => onGo('plan')} />}
       {/* FIELD TEST — séances composées mais non placées : visibles sans remplacer la séance prévue. */}
@@ -136,7 +144,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
           <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={planned.length} aria-valuenow={done} aria-label="Séances terminées"><div style={{ width: `${String(Math.round((done / planned.length) * 100))}%` }} /></div>
           {PLAYFIELD_V4 && <div className="pf-week-sports" aria-label="Répartition réelle des séances prévues">
              {sportStats.map(({ sport, total, done: doneSport }) => <div className="pf-week-sport" key={sport} data-sport={sport}>
-               <span>{sportName(sport)}</span><strong>{doneSport}/{total}</strong>
+               <span className="pf-week-name"><SportIcon sport={sport} label={false}/>{sportName(sport)}</span><strong>{doneSport}/{total}</strong>
                <div className="pf-week-sport-bar" aria-hidden="true"><span style={{ width: `${total ? Math.round(doneSport / total * 100) : 0}%` }} /></div>
              </div>)}
            </div>}
