@@ -98,8 +98,14 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
           {view === 'list' && week.programme.targetDate && <p className="small muted">Objectif le {formatDate(week.programme.targetDate)}.</p>}
           {view === 'grid'
             ? <WeekAgenda days={week.days} today={today} availability={avail} onOpen={onOpen} />
-            : <PlanningCatalog state={state} weeks={period === 'two_weeks' && next ? [week, next] : [week]} period={period} onPeriod={choosePeriod}
-                nextMissing={period === 'two_weeks' && !next ? addDays(week.weekStart, DAYS_PER_WEEK) : null} onOpen={onOpen} />}
+            : PLAYFIELD_V4
+              ? <details className="pf-planning-advanced">
+                  <summary>Organisation et séances détaillées</summary>
+                  <PlanningCatalog state={state} weeks={period === 'two_weeks' && next ? [week, next] : [week]} period={period} onPeriod={choosePeriod}
+                    nextMissing={period === 'two_weeks' && !next ? addDays(week.weekStart, DAYS_PER_WEEK) : null} onOpen={onOpen} />
+                </details>
+              : <PlanningCatalog state={state} weeks={period === 'two_weeks' && next ? [week, next] : [week]} period={period} onPeriod={choosePeriod}
+                  nextMissing={period === 'two_weeks' && !next ? addDays(week.weekStart, DAYS_PER_WEEK) : null} onOpen={onOpen} />}
           {unplanned.length > 0 && (
             <>
               <div className="section-title">Non planifiées</div>
