@@ -956,3 +956,18 @@ html[data-rekka-theme="playfield-pro"] .v31-toggle{
     align-self:center;
   }
 }
+
+
+/* Keep the actual input field at least 44 px as well as the adjacent stepper taps.
+ * The 6 px ornamental overlap is only at visual pill edges, not the input center. */
+@media(min-width:376px){
+ html[data-rekka-theme="playfield-pro"] .pf-stepper .v31-field{
+   width:44px!important;min-width:44px!important;flex:0 0 44px!important;
+   margin-inline:-6px!important;
+ }
+}
+@media(max-width:375px){
+ html[data-rekka-theme="playfield-pro"] .pf-stepper .v31-field{
+   width:auto!important;min-width:44px!important;flex:1!important;margin-inline:0!important;
+ }
+}
