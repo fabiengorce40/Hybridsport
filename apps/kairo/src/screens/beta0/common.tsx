@@ -122,7 +122,7 @@ export function SessionCard0({ v, onOpen, highlight = false, dateLabel, hero = f
       {heroProgress && heroProgress.total > 0 && <div className="pf-hero-series">
         <strong>{heroProgress.done}/{heroProgress.total} séries</strong>
         <div className="pf-hero-series-dots" aria-label={`${heroProgress.done} séries validées sur ${heroProgress.total}`} role="img">
-          {Array.from({length:Math.min(8,heroProgress.total)},(_,i)=><span key={i} className={i/Math.min(8,heroProgress.total)<heroProgress.done/heroProgress.total?'on':''}/>)}
+          {Array.from({length:8},(_,i)=><span key={i} className={i/8<heroProgress.done/heroProgress.total?'on':''}/>)}
         </div>
       </div>}
       {v.pain && <p className="pf-hero-alert" role="alert">Douleur signalée : vérifiez les consignes avant la séance.</p>}

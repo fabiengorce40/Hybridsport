@@ -103,7 +103,9 @@ try {
       if (width <= 390) {
         const gap = geometry.nav.y - geometry.week.y - geometry.week.h;
         assert.ok(gap >= 0, `${W} : navigation sur le bloc semaine (${gap}px)`);
-        await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+        await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight, behavior: 'instant' }));
+        const scroll = await page.evaluate(() => ({ y: window.scrollY, available: document.documentElement.scrollHeight - window.innerHeight }));
+        assert.ok(scroll.available <= 1 || scroll.y >= scroll.available - 1, `${W} : défilement vertical`);
         assert.ok(await nav.getByRole('button', { name: 'Planning', exact: true }).isVisible());
       }
       await nav.getByRole('button', { name: 'Planning', exact: true }).click();

@@ -117,8 +117,8 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
       </div></div>
 
       {PLAYFIELD_V4 && planned.length > 0 && <section className="pf-home-metrics pf-board-metrics" aria-label="Statistiques réelles de la semaine">
-        <div><span className="pf-metric-icon pf-metric-blue"><PlayfieldKpiIcon kind="calendar"/></span><strong>{done}<span>/{weeklyTotal}</span></strong><small>séances réalisées</small></div>
-        <div><span className="pf-metric-icon pf-metric-gold"><PlayfieldKpiIcon kind="target"/></span><strong>{weeklyPercent}<span> %</span></strong><small>objectif hebdo</small></div>
+        <div><span className="pf-metric-icon pf-metric-blue"><PlayfieldKpiIcon kind="calendar"/></span><strong>{done}<span>/{weeklyTotal}</span></strong><small>séances</small></div>
+        <div><span className="pf-metric-icon pf-metric-gold"><PlayfieldKpiIcon kind="target"/></span><strong>{weeklyPercent}<span> %</span></strong><small>objectif</small></div>
         <div><span className="pf-metric-icon pf-metric-coral"><PlayfieldKpiIcon kind="sports"/></span><strong>{sportStats.length}</strong><small>sports planifiés</small></div>
       </section>}
       {REKKA_V2 && !PLAYFIELD_V4 && <SportLinks onPlanning={() => onGo('plan')} />}
