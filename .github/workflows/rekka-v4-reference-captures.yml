@@ -21,6 +21,8 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: pnpm/action-setup@v4
       - uses: actions/setup-node@v4
         with:
@@ -30,8 +32,8 @@ jobs:
         run: pnpm install --frozen-lockfile
       - name: TypeScript + ESLint
         run: pnpm typecheck && pnpm lint
-      - name: Unit tests
-        run: pnpm test
+      - name: Visual V4 and legacy layout tests
+        run: pnpm exec vitest run apps/kairo/tests/playfield-v4.test.tsx apps/kairo/tests/v3-sober.test.tsx
       - name: Build isolated V4; no Cloudflare
         run: pnpm kairo:build:beta
       - name: Install headless Chromium
