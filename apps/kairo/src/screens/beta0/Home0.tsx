@@ -132,7 +132,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
 
       {week && planned.length > 0 && (
         <div className="card" aria-label="Progression de la semaine">
-          <div className="row between"><strong>Cette semaine</strong><button type="button" className="pf-week-detail" onClick={() => onGo('plan')}>Voir le détail ›</button><span className="num">{done} / {planned.length} séances</span></div>
+          <div className="row between"><strong>Cette semaine</strong><button type="button" className="pf-week-detail" onClick={() => onGo(PLAYFIELD_V4?'programme':'plan')}>Voir le détail ›</button><span className="num">{done} / {planned.length} séances</span></div>
           <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={planned.length} aria-valuenow={done} aria-label="Séances terminées"><div style={{ width: `${String(Math.round((done / planned.length) * 100))}%` }} /></div>
           {PLAYFIELD_V4 && <div className="pf-week-sports" aria-label="Répartition réelle des séances prévues">
              {sportStats.map(({ sport, total, done: doneSport }) => <div className="pf-week-sport" key={sport} data-sport={sport}>
@@ -153,7 +153,6 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
           </button>
         </div>
       )}
-      {PLAYFIELD_V4 && <div className="pf-session-shortcut"><button type="button" onClick={()=>onGo('programme')}>Voir toutes mes séances <span aria-hidden="true">›</span></button></div>}
       {!next && week && planned.length > 0 && <div className="card"><h3>Semaine bouclée</h3><p className="small muted" style={{ margin: 0 }}>Plus aucune séance prévue cette semaine. La suivante sera préparée lundi.</p></div>}
       {(!week || planned.length === 0) && <NoWeek today={today} />}
     </div>
