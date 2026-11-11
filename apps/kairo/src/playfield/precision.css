@@ -509,3 +509,51 @@ html[data-rekka-theme="playfield-pro"] .v3-profile-link{
    animation:none!important;transition:none!important;
  }
 }
+
+
+/* Final completion is one designed success card. The full session log remains
+   accessible, but never crowds the first screen with developer/fixture notices. */
+html[data-rekka-theme="playfield-pro"] .pf-finished-archive{
+  margin:13px 0 24px!important;
+  padding:0 12px!important;
+  border:1px solid #ECEAF0!important;
+  border-radius:15px!important;
+  box-shadow:var(--pf-shadow)!important;
+  background:#FFF!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-finished-archive>summary{
+  min-height:49px!important;
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  color:#1647C8;font-size:13px;font-weight:850!important;
+  cursor:pointer;list-style:none;
+}
+html[data-rekka-theme="playfield-pro"] .pf-finished-archive[open]{
+  padding-bottom:12px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-finished-archive>summary::-webkit-details-marker{display:none}
+html[data-rekka-theme="playfield-pro"] .pf-finished-archive .pf-completed-details{
+  padding-top:10px!important;
+  border-top:1px solid #EDF0F4;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-open{
+  border:0!important;
+  width:100%;
+  cursor:pointer;
+  background:#FDCB32!important;
+  color:#0E1B35!important;
+  text-align:center;
+  font-family:inherit;
+  box-shadow:0 5px 10px #E7B40026!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-stats dt{
+  color:#52627C!important;font-size:10px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-stats dd{
+  color:#0E1B35!important;font-size:19px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-celebration{
+  padding:2px 0 8px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-celebration h2{
+  font-size:23px!important;
+}
