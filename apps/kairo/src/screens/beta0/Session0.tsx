@@ -251,18 +251,33 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
         <div id="pf-session-top" className={`k-workout ${editable && log.rest ? 'with-timer' : ''} ${!started && !finished ? 'with-dock' : ''}`}>
           {clockElapsed !== null && <button type="button" className="btn secondary" onClick={() => store.apply((s, c) => (clockPaused ? resumeProgrammeSession : pauseProgrammeSession)(s, c, requestId))}>{clockPaused ? 'Reprendre le chronomètre global' : 'Mettre en pause le chronomètre global'}</button>}
           {PLAYFIELD_V4 && finished && <SessionSummary v={v} statusLabel={STATUS_LABELS[result.completion]} />}
-          <AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state, requestId)} />
-          <StrengthInsightPanel requestId={requestId} />
-          <section id={PLAYFIELD_V4 && finished ? 'pf-completed-exercises' : undefined} className="pf-completed-details">
-          <StrengthWorkout
-            v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}${clockElapsed !== null ? ` · ${formatChrono(clockElapsed)} ${clockState}` : ''}`} editable={editable}
-            onRecord={(item, index, x) => record(item, undefined, index, x)}
-            onTogglePain={(itemId) => store.apply((s) => toggleProgrammePainItem(s, requestId, itemId))}
-            onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, requestId, itemId, setIndex, rir))}
-            onUnavailable={(itemId) => store.apply((s, c) => reportEquipmentUnavailable(s, c, requestId, itemId))}
-          />
-          </section>
-          {finished && <div className="k-light"><span className="k-pill done">✓ {STATUS_LABELS[result.completion]}</span><span className="k-light-name">Séance terminée</span>{log?.timing && <span className="k-light-dose" data-finished-duration>{`${durationLabel(log.timing.activeS)}${log.timing.pausedS > 0 ? ` · pauses ${durationLabel(log.timing.pausedS)}` : ''}`}</span>}</div>}
+          {PLAYFIELD_V4 && finished ? <details className="pf-finished-archive" id="pf-finished-details">
+            <summary>Bilan détaillé, exercices et informations de planification <span aria-hidden="true">▾</span></summary>
+            <AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state, requestId)} />
+            <StrengthInsightPanel requestId={requestId} />
+            <section id="pf-completed-exercises" className="pf-completed-details">
+              <StrengthWorkout
+                v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}${clockElapsed !== null ? ` · ${formatChrono(clockElapsed)} ${clockState}` : ''}`} editable={editable}
+                onRecord={(item, index, x) => record(item, undefined, index, x)}
+                onTogglePain={(itemId) => store.apply((s) => toggleProgrammePainItem(s, requestId, itemId))}
+                onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, requestId, itemId, setIndex, rir))}
+                onUnavailable={(itemId) => store.apply((s, c) => reportEquipmentUnavailable(s, c, requestId, itemId))}
+              />
+            </section>
+          </details> : <>
+            <AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state, requestId)} />
+            <StrengthInsightPanel requestId={requestId} />
+            <section className="pf-completed-details">
+              <StrengthWorkout
+                v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}${clockElapsed !== null ? ` · ${formatChrono(clockElapsed)} ${clockState}` : ''}`} editable={editable}
+                onRecord={(item, index, x) => record(item, undefined, index, x)}
+                onTogglePain={(itemId) => store.apply((s) => toggleProgrammePainItem(s, requestId, itemId))}
+                onEffort={(itemId, setIndex, rir) => store.apply((s) => recordProgrammeSetEffort(s, requestId, itemId, setIndex, rir))}
+                onUnavailable={(itemId) => store.apply((s, c) => reportEquipmentUnavailable(s, c, requestId, itemId))}
+              />
+            </section>
+          </>}
+          {finished && !PLAYFIELD_V4 && <div className="k-light"><span className="k-pill done">✓ {STATUS_LABELS[result.completion]}</span><span className="k-light-name">Séance terminée</span>{log?.timing && <span className="k-light-dose" data-finished-duration>{`${durationLabel(log.timing.activeS)}${log.timing.pausedS > 0 ? ` · pauses ${durationLabel(log.timing.pausedS)}` : ''}`}</span>}</div>}
           {!started && !finished && <div className="k-dock"><button className="k-cta" onClick={() => flow.start(requestId)}>{startLabel(v)}</button></div>}
           {editable && <button className="k-cta ghost" onClick={() => setFinishing(true)}>Terminer la séance</button>}
         </div>
