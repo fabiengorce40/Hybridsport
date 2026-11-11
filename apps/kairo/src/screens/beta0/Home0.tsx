@@ -64,7 +64,7 @@ const stripSummary = (days: readonly DayItemView[]): string => {
   return marked.length > 0 ? marked.join('. ') : 'Aucune séance cette semaine.';
 };
 
-export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) => void; onGo: (t: 'plan' | 'settings') => void; onEditProgramme?: () => void }) {
+export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) => void; onGo: (t: 'plan' | 'settings' | 'programme') => void; onEditProgramme?: () => void }) {
   const { state, clock } = useStore();
   const today = clock().today;
   const week = weekOf(state, today);
@@ -96,12 +96,12 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
         )}
       </div></div>
 
-      {PLAYFIELD_V4 && planned.length > 0 && <section className="pf-home-metrics" aria-label="Statistiques réelles de la semaine">
-        <div><strong>{done}<span>/{planned.length}</span></strong><small>séances réalisées</small></div>
-        <div><strong>{weeklyPercent}<span> %</span></strong><small>de la semaine</small></div>
-        <div><strong>{sportStats.length}</strong><small>discipline{sportStats.length > 1 ? 's' : ''} planifiée{sportStats.length > 1 ? 's' : ''}</small></div>
+      {PLAYFIELD_V4 && planned.length > 0 && <section className="pf-home-metrics pf-board-metrics" aria-label="Statistiques réelles de la semaine">
+        <div><span className="pf-metric-icon pf-metric-blue" aria-hidden="true">▣</span><strong>{done}<span>/{planned.length}</span></strong><small>séances réalisées</small></div>
+        <div><span className="pf-metric-icon pf-metric-gold" aria-hidden="true">◎</span><strong>{weeklyPercent}<span> %</span></strong><small>objectif hebdo</small></div>
+        <div><span className="pf-metric-icon pf-metric-coral" aria-hidden="true">◈</span><strong>{sportStats.length}</strong><small>discipline{sportStats.length > 1 ? 's' : ''} planifiée{sportStats.length > 1 ? 's' : ''}</small></div>
       </section>}
-      {REKKA_V2 && <SportLinks onPlanning={() => onGo('plan')} />}
+      {REKKA_V2 && !PLAYFIELD_V4 && <SportLinks onPlanning={() => onGo('plan')} />}
       {/* FIELD TEST — séances composées mais non placées : visibles sans remplacer la séance prévue. */}
       {extra.length > 0 && (
         <div className="card" aria-label="Séances supplémentaires disponibles" data-extra={extra.length}>
@@ -123,7 +123,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
 
       {week && planned.length > 0 && (
         <div className="card" aria-label="Progression de la semaine">
-          <div className="row between"><strong>Cette semaine</strong><span className="num">{done} / {planned.length} séances</span></div>
+          <div className="row between"><strong>Cette semaine</strong><button type="button" className="pf-week-detail" onClick={() => onGo('plan')}>Voir le détail ›</button><span className="num">{done} / {planned.length} séances</span></div>
           <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={planned.length} aria-valuenow={done} aria-label="Séances terminées"><div style={{ width: `${String(Math.round((done / planned.length) * 100))}%` }} /></div>
           {PLAYFIELD_V4 && <div className="pf-week-sports" aria-label="Répartition réelle des séances prévues">
              {sportStats.map(({ sport, total, done: doneSport }) => <div className="pf-week-sport" key={sport} data-sport={sport}>
@@ -144,6 +144,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
           </button>
         </div>
       )}
+      {PLAYFIELD_V4 && <div className="pf-session-shortcut"><button type="button" onClick={()=>onGo('programme')}>Voir toutes mes séances <span aria-hidden="true">›</span></button></div>}
       {!next && week && planned.length > 0 && <div className="card"><h3>Semaine bouclée</h3><p className="small muted" style={{ margin: 0 }}>Plus aucune séance prévue cette semaine. La suivante sera préparée lundi.</p></div>}
       {(!week || planned.length === 0) && <NoWeek today={today} />}
     </div>
