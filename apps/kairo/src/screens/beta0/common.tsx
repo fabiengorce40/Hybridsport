@@ -111,7 +111,7 @@ export function SessionCard0({ v, onOpen, highlight = false, dateLabel, hero = f
       isFullC4(v.composition) && v.composition ? fullSessionCardText(v.composition) : null,
     ].filter((s): s is string => Boolean(s));
     return <div className="pf-hero-session" data-pf-hero data-status={v.display}>
-      <div className="pf-hero-top"><span className="pf-hero-tag">Prochaine séance</span>{isTest(v.archetypeId) && <span className="badge test">TEST</span>}<StatusPill status={v.display}/></div>
+      <div className="pf-hero-top"><span className="pf-hero-tag">▣ Prochaine séance</span><span className="pf-hero-flags">{isTest(v.archetypeId) && <span className="badge test">TEST</span>}<StatusPill status={v.display}/>}</span></div>
       <span className="pf-hero-sport">{sportName(v.sport)}</span>
       <button type="button" className="pf-hero-open" data-request={v.requestId} onClick={() => onOpen(v.requestId)}
         aria-label={`${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`}>
@@ -125,8 +125,8 @@ export function SessionCard0({ v, onOpen, highlight = false, dateLabel, hero = f
         </div>
       </div>}
       {v.pain && <p className="pf-hero-alert" role="alert">Douleur signalée : vérifiez les consignes avant la séance.</p>}
-      {notes.length > 0 && <details className="pf-hero-context">
-        <summary>Pourquoi cette séance ?</summary>
+      {notes.length > 0 && <details className="pf-hero-context pf-hero-details">
+        <summary aria-label="Voir les explications de la séance" title="Explications de planification">ⓘ</summary>
         <div>{notes.map((note, i) => <p key={i}>{note}</p>)}</div>
       </details>}
     </div>;
