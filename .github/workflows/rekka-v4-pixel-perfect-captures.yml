@@ -37,7 +37,7 @@ jobs:
       - name: Build isolated V4; no Cloudflare
         run: pnpm kairo:build:beta
       - name: Install headless Chromium
-        run: pnpm --filter @hybridsport/kairo exec playwright install --with-deps chromium
+        run: pnpm --filter @hybridsport/kairo exec playwright install chromium
       - name: Capture compiled Home at 360 390 412 and 1024 px
         shell: bash
         run: |
