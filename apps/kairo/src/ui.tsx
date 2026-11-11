@@ -1,4 +1,5 @@
 import { REKKA_V2 } from './rekka/flag.js';
+import { PLAYFIELD_V4 } from './playfield/flag.js';
 /** Composants communs (présentation uniquement). */
 import type { ReactNode } from 'react';
 import { sessionName } from './present.js';
@@ -8,6 +9,8 @@ import type { Authority, GeneratedSession, Sport } from '@hybridsport/app-core';
 export type Tab = 'home' | 'plan' | 'run' | 'history' | 'profile' | 'programme' | 'settings';
 export const V0_TABS: readonly Tab[] = ['home', 'plan', 'run', 'history', 'profile'];
 export const BETA0_TABS: readonly Tab[] = REKKA_V2 ? ['home', 'plan', 'programme', 'history', 'settings'] : ['home', 'plan', 'history', 'programme', 'settings'];
+/** The validated Playfield Pro board uses four primary entries. Sessions remain accessible through Planning and the Home shortcut. */
+export const PLAYFIELD_TABS: readonly Tab[] = ['home','plan','history','settings'];
 
 const ICONS: Record<Tab, ReactNode> = {
   home: <path d="M3 11.5 12 4l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z" />,
@@ -30,8 +33,8 @@ export function TabBar({ tabs = V0_TABS, tab, onChange }: { tabs?: readonly Tab[
     <nav className="tabbar" aria-label="Navigation principale">
       {tabs.map((t) => (
         <button key={t} className={t === tab ? 'on' : ''} onClick={() => onChange(t)} aria-current={t === tab ? 'page' : undefined}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{REKKA_V2 && tabs === BETA0_TABS ? V2_ICONS[t] ?? ICONS[t] : ICONS[t]}</svg>
-          {REKKA_V2 && tabs === BETA0_TABS ? ({ history: 'Progression', settings: 'Profil', programme: 'Séances' } as Partial<Record<Tab, string>>)[t] ?? TAB_LABELS[t] : TAB_LABELS[t]}
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{REKKA_V2 && (tabs === BETA0_TABS || tabs === PLAYFIELD_TABS) ? V2_ICONS[t] ?? ICONS[t] : ICONS[t]}</svg>
+          {REKKA_V2 && (tabs === BETA0_TABS || tabs === PLAYFIELD_TABS) ? ({ history: 'Progression', settings: 'Profil', programme: 'Séances' } as Partial<Record<Tab, string>>)[t] ?? TAB_LABELS[t] : TAB_LABELS[t]}
         </button>
       ))}
     </nav>
