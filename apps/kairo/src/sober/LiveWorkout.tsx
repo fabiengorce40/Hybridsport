@@ -130,7 +130,7 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
                         const bottomLimit=(dock?.top ?? window.innerHeight)-12;
                         const delta=rect.top<topLimit ? rect.top-topLimit : rect.bottom>bottomLimit ? rect.bottom-bottomLimit : 0;
                         // Smooth only when the *next* field is actually occluded; never jump past the exercise heading.
-                        if(Math.abs(delta)>4) window.scrollBy({ top: delta, behavior:'smooth' });
+                        if(Math.abs(delta)>4) { const scroller=row.closest<HTMLElement>('.overlay'); (scroller ?? window).scrollBy({ top:delta, behavior:'smooth' }); }
                       };
                       if (typeof requestAnimationFrame === 'function') requestAnimationFrame(reveal); else reveal();
                     }
