@@ -9,7 +9,7 @@ export function PlayfieldAnatomy({ target = 'chest' }: { target?: 'chest' | 'sho
   const deltoid = target==='shoulders' ? primary : '#B2C0CF';
   const biceps = target==='arms' ? primary : '#B5C5D5';
   const muscleFibers = target==='chest' ? '#B84039' : '#8292A5';
-  return <svg className="pf-anatomy" viewBox="0 0 300 232" role="img" aria-label="Schéma anatomique illustratif du haut du corps avec groupes musculaires mis en évidence">
+  return <svg className="pf-anatomy" viewBox="0 0 300 232" role="img" aria-label="Illustration indicative du haut du corps et des muscles sollicités">
     <defs>
       <linearGradient id="pa-bg" x1="0" y1="0" x2=".92" y2="1">
         <stop stopColor="#FBFCFE"/><stop offset=".6" stopColor="#F0F4F8"/><stop offset="1" stopColor="#E6ECF3"/>
