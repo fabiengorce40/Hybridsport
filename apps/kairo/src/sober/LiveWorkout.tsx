@@ -84,7 +84,7 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
         const completed = sets.filter((_, i) => saved(item.id, i)?.done).length;
         let number = 0, warm = 0;
 
-        return <section className="v3-exercise v31-exercise" key={item.id}
+        return <Fragment key={item.id}><section className="v3-exercise v31-exercise"
           id={`v31-exercise-${cardIndex}`} data-expanded={expanded} data-complete={complete(item)}
           aria-label={`Exercice ${cardIndex + 1} : ${name}`}>
           <button className="v31-exercise-summary" aria-expanded={expanded}
@@ -144,14 +144,14 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
             </Fragment>)}
 
           </div>
-        </section>;
+        </section>
+        {PLAYFIELD_V4 && expanded && main.length > 1 && <button type="button" className="pf-next-exercise pf-next-inline"
+          onClick={()=>expandExercise((cardIndex+1)%main.length)} aria-label={`Ouvrir exercice suivant : ${exerciseLabel(main[(cardIndex+1)%main.length]?.item.exerciseId ?? '')}`}>
+          <span aria-hidden="true">‹</span><span><small>Exercice suivant</small><strong>{exerciseLabel(main[(cardIndex+1)%main.length]?.item.exerciseId ?? '')}</strong></span><span aria-hidden="true">›</span>
+        </button>}
+        </Fragment>;
       })}
     </div>
-
-    {PLAYFIELD_V4 && main.length > 1 && <button type="button" className="pf-next-exercise"
-      onClick={()=>expandExercise((optionsIndex+1)%main.length)} aria-label={`Ouvrir exercice suivant : ${exerciseLabel(main[(optionsIndex+1)%main.length]?.item.exerciseId ?? '')}`}>
-      <span aria-hidden="true">‹</span><span><small>Exercice suivant</small><strong>{exerciseLabel(main[(optionsIndex+1)%main.length]?.item.exerciseId ?? '')}</strong></span><span aria-hidden="true">›</span>
-    </button>}
     <button className="v3-primary v31-finish" onClick={onFinish}>Terminer la séance</button>
     <div className="v3-rest-host v31-rest-host">{restTimer}</div>
 
