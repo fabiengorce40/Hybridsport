@@ -39,6 +39,29 @@ export function Sparkline({ values, label, sport }: { values: readonly number[];
   const x = (i: number) => (values.length === 1 ? SPARK_W / 2 : SPARK_PAD + (i * (SPARK_W - 2 * SPARK_PAD)) / (values.length - 1));
   const y = (v: number) => (max === min ? SPARK_H / 2 : SPARK_H - SPARK_PAD - ((v - min) * (SPARK_H - 2 * SPARK_PAD)) / span);
   const points = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  if (PLAYFIELD_V4) {
+    // No invented training points: labels, line and gradient use only real recorded values.
+    const chartTop = 14, chartBottom = 98, chartW = 300;
+    const xAt = (i:number) => values.length === 1 ? chartW/2 : 18 + i * (chartW - 36)/(values.length-1);
+    const yAt = (v:number) => max===min ? (chartTop+chartBottom)/2 : chartBottom-((v-min)/(max-min))*(chartBottom-chartTop);
+    const chartPts = values.map((v,i)=>`${xAt(i).toFixed(2)},${yAt(v).toFixed(2)}`).join(' ');
+    const areaPts = values.length>1 ? `${xAt(0)},${chartBottom} ${chartPts} ${xAt(values.length-1)},${chartBottom}` : '';
+    return <svg className="pv-spark pf-spark-chart" data-sport={sport} viewBox="0 0 300 126" role="img" aria-label={label}>
+      <title>{label}</title>
+      <defs><linearGradient id={`pf-progress-shade-${sport}`} x1="0" y1="0" x2="0" y2="1">
+        <stop stopColor="#1647C8" stopOpacity=".24"/><stop offset="1" stopColor="#1647C8" stopOpacity="0"/>
+      </linearGradient></defs>
+      {Array.from({length:5},(_,i)=><line key={i} x1="8" x2="292" y1={chartTop+i*(chartBottom-chartTop)/4} y2={chartTop+i*(chartBottom-chartTop)/4} stroke="#E5EAF2" strokeWidth="1"/>)}
+      {values.length>1 && <>
+        <polygon points={areaPts} fill={`url(#pf-progress-shade-${sport})`}/>
+        <polyline points={chartPts} fill="none" stroke="#1647C8" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"/>
+      </>}
+      {values.map((v,i)=><g key={i}>
+        <circle cx={xAt(i)} cy={yAt(v)} r="4" fill="#fff" stroke="#1647C8" strokeWidth="2.4"/>
+        <text x={xAt(i)} y="119" fill="#31415E" fontSize="10" fontWeight="750" textAnchor="middle">S{i+1}</text>
+      </g>)}
+    </svg>;
+  }
   return (
     <svg className="pv-spark" data-sport={sport} viewBox={`0 0 ${String(SPARK_W)} ${String(SPARK_H)}`} role="img" aria-label={label}>
       <title>{label}</title>
@@ -77,6 +100,10 @@ function StrengthPanel({ view }: { view: ProgressView['strength'] }) {
         ))}
       </div>}
       <div className="pv-card" data-progress-exercise={ex.exerciseId}>
+        {PLAYFIELD_V4 && <div className="pf-progress-chart-title">
+          <h3>{metric==='load'?'Évolution des charges':metric==='reps'?'Évolution des répétitions':'Évolution du volume'}</h3>
+          <p>{name} · {ex.sessions.length} séance{ex.sessions.length>1?'s':''} enregistrée{ex.sessions.length>1?'s':''}</p>
+        </div>}
         {!SOBER_V3 && <h3 className="pv-sub">{name}</h3>}
         {SOBER_V3 && <div className="v3-metric-tabs" role="group" aria-label="Indicateur">{([['load','Charge'],['reps','Répétitions'],['volume','Volume']] as const).map(([id,label])=><button key={id} aria-pressed={metric===id} onClick={()=>setMetric(id)}>{label}</button>)}</div>}
         {SOBER_V3 && metric!=='load' && <Sparkline sport="strength" values={ex.sessions.map(s=>metric==='reps'?s.bestReps:s.volumeKg)} label={`${name} : ${metric==='reps'?'répétitions maximales':'volume en kg'} par séance : ${ex.sessions.map(s=>`${formatDateShort(s.date)} ${metric==='reps'?s.bestReps:s.volumeKg}`).join(', ')}`}/>}
@@ -222,9 +249,9 @@ export function Progress0() {
            </div>
          </div>
          <div className="pf-progress-facts">
-           <div><strong>{strengthDone}</strong><small>séances de musculation</small></div>
-           <div><strong>{view.running.sessions.length}</strong><small>courses enregistrées</small></div>
-           <div><strong>{view.hyrox.sessionsDone + view.crosstraining.sessionsDone}</strong><small>séances HYROX / CT</small></div>
+           <div><span className="pf-progress-fact-icon" aria-hidden="true">☷</span><strong>{strengthDone}</strong><small>séances de musculation</small></div>
+           <div><span className="pf-progress-fact-icon pf-progress-fact-icon--coral" aria-hidden="true">◷</span><strong>{view.running.sessions.length}</strong><small>courses enregistrées</small></div>
+           <div><span className="pf-progress-fact-icon pf-progress-fact-icon--yellow" aria-hidden="true">★</span><strong>{view.hyrox.sessionsDone + view.crosstraining.sessionsDone}</strong><small>séances HYROX / CT</small></div>
          </div>
          <div className="pf-progress-distribution">
            <strong>Répartition des séances enregistrées</strong>
