@@ -755,3 +755,44 @@ html[data-rekka-theme="playfield-pro"] .v3-profile-link small{
 @media(prefers-reduced-motion:reduce){
   html[data-rekka-theme="playfield-pro"] *{scroll-behavior:auto!important}
 }
+
+
+/* Real prescribed-series marks reproduce the reference hero's segmented rail. */
+html[data-rekka-theme="playfield-pro"] .pf-hero-series {
+  display:flex;align-items:center;gap:10px;
+  margin:9px 0 13px;min-height:26px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-series>strong{
+  white-space:nowrap;color:#fff;font-size:13px;font-weight:950;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-series-dots{
+  display:grid;grid-auto-columns:minmax(0,1fr);grid-auto-flow:column;
+  gap:4px;flex:1;min-width:0;align-items:center;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-series-dots>span{
+  display:block;height:7px;border-radius:999px;background:#FFFFFF72;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-series-dots>span.on{
+  background:#FDCB32;
+}
+/* The board presents the seven-day overview first; all advanced tools survive in a disclosure. */
+html[data-rekka-theme="playfield-pro"] .pf-planning-advanced{
+  margin:10px 0 15px;padding:0 10px;
+  border:1px solid #E9E8E6;background:#fff;
+  border-radius:15px;box-shadow:0 4px 11px #12234E0F;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-advanced>summary{
+  min-height:52px;display:flex;align-items:center;
+  color:#1647C8;font-size:13px;font-weight:900;
+  cursor:pointer;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-advanced[open]{
+  padding-bottom:12px;
+}
+/* Keep date headings and the hero from growing taller than the reference screen. */
+html[data-rekka-theme="playfield-pro"] .v3-today:has(.pf-hero-series){
+  min-height:231px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-hero-context{
+  margin-bottom:8px!important;
+}
