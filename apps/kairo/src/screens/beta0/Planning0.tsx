@@ -81,16 +81,15 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
       )}
       {PLAYFIELD_V4 && week && <section className="pf-planning-week" aria-label="Semaine du programme">
          <h2>Ma semaine <small>{week.days.reduce((n,d)=>n+d.sessions.length,0)} séance(s)</small></h2>
-         <div className="pf-planning-days">{week.days.map(({date,sessions})=><div className="pf-planning-day" key={date} data-date={date}>
-           <div className="pf-planning-day-name"><strong>{weekdayShort(weekdayIndex(date))}</strong><small>{Number(date.slice(8))}</small></div>
+         <div className="pf-planning-days">{week.days.map(({date,sessions})=><div className="pf-planning-day" key={date} data-date={date} aria-current={date === today ? 'date' : undefined}>
+           <div className="pf-planning-day-name"><strong>{weekdayShort(weekdayIndex(date))}</strong></div>
            <div className="pf-planning-day-sessions">
-             {sessions.length===0 ? <span className="pf-planning-empty"><span aria-hidden="true" className="pf-rest-icon">⌁</span> Repos · aucune séance prévue</span> :
+             {sessions.length===0 ? <span className="pf-planning-empty"><svg className="pf-rest-icon" aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 6v13m20 0v-7a3 3 0 0 0-3-3H9m-7 6h20"/><circle cx="6" cy="9" r="2"/></svg> Repos</span> :
                sessions.map(s=><button key={s.requestId} type="button" className="pf-planning-session"
                  data-sport={s.sport} onClick={()=>onOpen(s.requestId)}
                  aria-label={`${sessionName(s.sport,s.archetypeId,s.dataError)}, ${STATUS_LABELS[s.display]}`}>
                  <span className="pf-planning-session-title"><SportIcon sport={s.sport} label={false}/>{sessionName(s.sport,s.archetypeId,s.dataError)}</span>
-                 <small>{STATUS_LABELS[s.display]}</small>
-                 <b aria-hidden="true">{isDone(s.display)?'✓':'›'}</b>
+                 <b className="pf-planning-status" data-done={isDone(s.display)} aria-hidden="true">{isDone(s.display) ? '✓' : date === today ? '▶' : ''}</b>
                </button>)}
            </div>
          </div>)}</div>

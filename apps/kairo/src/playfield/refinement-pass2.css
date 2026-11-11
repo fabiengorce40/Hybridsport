@@ -374,3 +374,155 @@ html[data-rekka-theme="playfield-pro"] .pf-profile-athlete {
   border-radius:50%;overflow:hidden;
   background:#B4CBE4;
 }
+
+/* Playfield Pro reference proportions, expressed in CSS pixels at 390 px. */
+html[data-rekka-theme="playfield-pro"] {
+  --pf-ink: #090d30;
+  --pf-electric: #0656eb;
+  --pf-yellow: #ffca0b;
+}
+html[data-rekka-theme="playfield-pro"] .v3-today {
+  background:
+    linear-gradient(100deg, #0755dc 0%, #0843b7 38%, #052d8580 65%, transparent 87%),
+    url("./assets/barbell-hero.svg") right -35px center / auto 122% no-repeat,
+    #05246c !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-home-metrics > div {
+  min-height: 99px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-heading + [data-planning-controls] .view-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+html[data-rekka-theme="playfield-pro"] .view-switch button {
+  font-size: 20px !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-week {
+  padding: 5px 14px !important;
+  border-radius: 24px !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-day {
+  grid-template-columns: 56px minmax(0, 1fr) !important;
+  min-height: 65px !important;
+  gap: 12px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-day[aria-current="date"] {
+  outline: 2px solid #f6c617;
+  outline-offset: -1px;
+  border-radius: 18px;
+  background: #fff9e3;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-day-name strong,
+html[data-rekka-theme="playfield-pro"] .pf-planning-session-title,
+html[data-rekka-theme="playfield-pro"] .pf-planning-empty {
+  font-size: clamp(14px, 4.35vw, 20px) !important;
+  font-weight: 850;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-session {
+  grid-template-columns: minmax(0, 1fr) auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  min-height: 48px !important;
+}
+html[data-rekka-theme="playfield-pro"] :is(.pf-planning-session-title svg, .pf-rest-icon) {
+  width: 28px;
+  height: 28px;
+  flex: none;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-status {
+  display: grid;
+  place-items: center;
+  width: 29px;
+  height: 29px;
+  border-radius: 50%;
+  background: #ffca0b;
+  color: #090d30;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-status:empty {
+  display: none;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-status[data-done="true"] {
+  background: #008d50;
+  color: #fff;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-period {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-week {
+  min-height: 129px !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-ring {
+  width: 118px !important;
+  height: 118px !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-facts > div {
+  min-height: 94px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-detail-art {
+  min-height: clamp(180px, 55vw, 224px);
+}
+html[data-rekka-theme="playfield-pro"] .pf-detail-tabs button {
+  font-size: clamp(13px, 4vw, 17px) !important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest {
+  background: linear-gradient(145deg, #0758e7, #06236c 76%) !important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-skip,
+html[data-rekka-theme="playfield-pro"] .pf-summary-open {
+  background: linear-gradient(155deg, #ffda38, #ffc500 65%) !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-board {
+  border-radius: 28px !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-seal {
+  width: 100px !important;
+  height: 100px !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-celebration h2 {
+  font-size: clamp(25px, 8vw, 37px) !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-stats > div {
+  min-height: 119px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-stats dd {
+  font-size: 26px !important;
+}
+html[data-rekka-theme="playfield-pro"] :is(.pf-summary-open, .pf-summary-back) {
+  min-height: 56px !important;
+  border-radius: 999px !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-hero {
+  min-height: 171px !important;
+  gap: 14px !important;
+  padding: 15px !important;
+  border-radius: 22px !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-avatar {
+  width: clamp(98px, 32vw, 128px) !important;
+  height: auto !important;
+  min-width: 0 !important;
+  aspect-ratio: 1;
+  flex: none;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-hero strong {
+  font-size: clamp(19px, 6vw, 31px) !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-sport-progress {
+  height: 13px;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-menu {
+  margin-top: 17px;
+  gap: 10px !important;
+  border: 0;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-menu > .v3-profile-link {
+  border: 0 !important;
+  background: #fffdf9 !important;
+  border-radius: 19px !important;
+  min-height: 72px !important;
+  padding-inline: 16px !important;
+  box-shadow: 0 5px 12px #241c2412 !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-link strong {
+  font-size: clamp(15px, 4.6vw, 22px) !important;
+}
