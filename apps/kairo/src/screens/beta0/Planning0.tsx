@@ -16,6 +16,7 @@ import { WeekAgenda } from './WeekAgenda.js';
 import { PlanningCatalog } from './PlanningCatalog.js';
 import type { CatalogPeriod } from './PlanningCatalog.js';
 import { STORAGE_NAMESPACE } from '../../channel.js';
+import { SportIcon } from '../../design/SportIcon.js';
 
 /** R5.1 — mode d'affichage du Planning, mémorisé par lecteur (préférence d'interface, jamais une donnée sportive). */
 export type PlanningView = 'list' | 'grid';
@@ -83,11 +84,11 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
          <div className="pf-planning-days">{week.days.map(({date,sessions})=><div className="pf-planning-day" key={date} data-date={date}>
            <div className="pf-planning-day-name"><strong>{weekdayShort(weekdayIndex(date))}</strong><small>{Number(date.slice(8))}</small></div>
            <div className="pf-planning-day-sessions">
-             {sessions.length===0 ? <span className="pf-planning-empty">Aucune séance planifiée</span> :
+             {sessions.length===0 ? <span className="pf-planning-empty"><span aria-hidden="true" className="pf-rest-icon">⌁</span> Repos · aucune séance prévue</span> :
                sessions.map(s=><button key={s.requestId} type="button" className="pf-planning-session"
                  data-sport={s.sport} onClick={()=>onOpen(s.requestId)}
                  aria-label={`${sessionName(s.sport,s.archetypeId,s.dataError)}, ${STATUS_LABELS[s.display]}`}>
-                 <span>{sessionName(s.sport,s.archetypeId,s.dataError)}</span>
+                 <span className="pf-planning-session-title"><SportIcon sport={s.sport} label={false}/>{sessionName(s.sport,s.archetypeId,s.dataError)}</span>
                  <small>{STATUS_LABELS[s.display]}</small>
                  <b aria-hidden="true">{isDone(s.display)?'✓':'›'}</b>
                </button>)}
