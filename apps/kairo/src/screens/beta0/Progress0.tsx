@@ -163,6 +163,7 @@ const SECTIONS: readonly { readonly sport: Sport; readonly title: string }[] = [
 export function Progress0() {
   const { state, clock } = useStore();
   const [selectedSport,setSelectedSport] = useState<Sport>('strength');
+  const [period,setPeriod] = useState<'week'|'month'|'year'>('week');
   const today = clock().today;
   const view = useMemo(() => progressView(state, { today }), [state, today]);
   const p = state.profile;
@@ -171,6 +172,18 @@ export function Progress0() {
   const placed = placedOf(week?.days ?? []);
   const doneWeek = placed.filter(s => isDone(s.display)).length;
   const percentWeek = placed.length ? Math.round(doneWeek / placed.length * 100) : 0;
+  const recordedDates = new Map<string,string>();
+  view.strength.exercises.forEach(e=>e.sessions.forEach(s=>recordedDates.set(s.requestId,s.date)));
+  const historyDates = [
+    ...recordedDates.values(),
+    ...view.running.sessions.map(s=>s.date),
+    ...view.hyrox.sessions.map(s=>s.date),
+    ...view.crosstraining.sessions.map(s=>s.date),
+  ];
+  const scopedCount = period === 'week' ? doneWeek
+    : historyDates.filter(date=>period==='month' ? date.slice(0,7)===today.slice(0,7) : date.slice(0,4)===today.slice(0,4)).length;
+  const periodTitle = period==='week' ? 'cette semaine' : period==='month' ? 'ce mois-ci' : 'cette année';
+  const scopeValue = period==='week' ? `${percentWeek}%` : String(scopedCount);
   const strengthDone = new Set(view.strength.exercises.flatMap(e => e.sessions.map(s => s.requestId))).size;
   const actualSports = [
     { id:'strength', name:'Musculation', count:strengthDone, color:'#1647C8' },
@@ -194,13 +207,18 @@ export function Progress0() {
   return (
     <div className="pv" data-progress-view>
       {PLAYFIELD_V4 && <section className="pf-progress-dashboard" aria-label="Bilan réel de progression">
+         <div className="pf-progress-period" role="group" aria-label="Période de progression">
+           {([['week','Semaine'],['month','Mois'],['year','Année']] as const).map(([id,label])=>
+             <button type="button" key={id} aria-pressed={period===id} onClick={()=>setPeriod(id)}>{label}</button>)}
+         </div>
          <div className="pf-progress-week">
-           <div className="pf-progress-ring" role="img" aria-label={`${percentWeek} % des séances planifiées réalisées cette semaine`}
-             style={{background:`conic-gradient(#FDCB32 0% ${percentWeek}%, #E4E8F0 ${percentWeek}% 100%)`}}>
-             <span>{percentWeek}%</span>
+           <div className="pf-progress-ring" role="img"
+             aria-label={period==='week' ? `${percentWeek} % des séances planifiées réalisées cette semaine` : `${scopedCount} séance(s) réalisées ${periodTitle}`}
+             style={{background:period==='week' ? `conic-gradient(#FDCB32 0% ${percentWeek}%, #E4E8F0 ${percentWeek}% 100%)` : 'conic-gradient(#1647C8 0% 75%, #FDCB32 75% 100%)'}}>
+             <span>{scopeValue}</span>
            </div>
-           <div><strong>{doneWeek} / {placed.length} séances</strong><span>cette semaine</span>
-             <small>Séances réellement planifiées et validées.</small>
+           <div><strong>{period==='week' ? `${doneWeek} / ${placed.length} séances` : `${scopedCount} séance(s)`}</strong><span>{periodTitle}</span>
+             <small>{period==='week' ? 'Séances planifiées et validées.' : 'Séances enregistrées, sans objectif supposé.'}</small>
            </div>
          </div>
          <div className="pf-progress-facts">
