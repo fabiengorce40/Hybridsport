@@ -37,8 +37,11 @@ export function SessionSummary({ v, statusLabel }: { v: ProgrammeSessionView; st
       <div><dt>Séries de travail</dt><dd>{workDone}/{work}</dd></div>
       <div><dt>Exercices terminés</dt><dd>{exDone}/{items.length}</dd></div>
     </dl>
-    <a className="pf-summary-open" href="#pf-completed-exercises">Voir le détail des exercices <span aria-hidden="true">›</span></a>
-    <a className="pf-summary-back" href="#pf-session-top">Revenir en haut</a>
+    <button type="button" className="pf-summary-open" onClick={() => {
+      const details = document.getElementById('pf-finished-details') as HTMLDetailsElement | null;
+      if (details) { details.open = true; details.scrollIntoView({ behavior:'smooth', block:'start' }); }
+    }}>Voir le bilan détaillé <span aria-hidden="true">›</span></button>
+    <a className="pf-summary-back" href="#pf-session-top">Retour en haut</a>
         {ramp > 0 && <p>Montées en charge : {rampDone}/{ramp} · hors volume et progression.</p>}
     <p className={result.pain || painItems > 0 ? 'pf-summary-warn' : undefined}>
       {result.pain ? 'Douleur signalée en fin de séance.' : 'Aucune douleur signalée en fin de séance.'}
