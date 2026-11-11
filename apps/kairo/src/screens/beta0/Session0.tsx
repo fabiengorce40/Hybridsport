@@ -220,7 +220,21 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
       if (store.apply((s, c) => finishProgrammeSession(s, c, { requestId, ...f }))) setFinishing(false);
     }} />
   );
-  const timer = editable && <RestTimer0 layout="compact" rest={log.rest} now={now} onAction={(a) => store.apply((s, c) => controlRest(s, c, requestId, a))} />;
+  // Pure projection for the Playfield rest dock. No future weight/repetition is guessed.
+  const pendingRestItem = log?.rest && v.sport === 'strength'
+    ? session.blocks.flatMap(b=>b.items).find(item => item.exerciseId === log.rest?.exerciseId && item.prescription.type === 'sets')
+    : null;
+  const pendingRestSets = pendingRestItem?.prescription.type === 'sets' ? pendingRestItem.prescription.sets : [];
+  const pendingRestIdx = pendingRestItem ? pendingRestSets.findIndex((_,i)=>!log?.sets.some(s=>s.itemId===pendingRestItem.id && s.setIndex===i && s.done)) : -1;
+  const pendingRestSet = pendingRestIdx >= 0 ? pendingRestSets[pendingRestIdx] : undefined;
+  const nextLoad = pendingRestSet?.intensity?.mode === 'load' ? pendingRestSet.intensity.kg
+    : pendingRestSet?.intensity?.mode === 'percent_of_reference' ? pendingRestSet.intensity.kgRounded : undefined;
+  const nextReps = pendingRestSet ? typeof pendingRestSet.reps === 'number' ? String(pendingRestSet.reps)
+    : `${pendingRestSet.reps.min}–${pendingRestSet.reps.max}` : null;
+  const nextSeriesText = pendingRestSet
+    ? `${pendingRestSet.kind === 'rampup' ? 'Éch.' : 'S'}${pendingRestIdx+1} · ${nextLoad !== undefined ? `${nextLoad} kg × ` : ''}${nextReps} rép.` : null;
+  const timer = editable && <RestTimer0 layout="compact" rest={log.rest} now={now} nextSeriesText={PLAYFIELD_V4 ? nextSeriesText : null}
+    onAction={(a) => store.apply((s, c) => controlRest(s, c, requestId, a))} />;
 
   if (v.sport === 'strength') {
     if(SOBER_V3&&!started&&!finished)return <><StrengthPreview v={v} title={name} goalLabel={store.state.profile?.strength.goal==='hypertrophy'?'Volume & hypertrophie':store.state.profile?.strength.goal==='strength'?'Développer ma force':'Forme générale'} onBack={onBack} onStart={()=>flow.start(requestId)} context={<AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state,requestId)}/>} preparation={<StrengthInsightPanel requestId={requestId}/>}/>{flow.sheet}</>;
