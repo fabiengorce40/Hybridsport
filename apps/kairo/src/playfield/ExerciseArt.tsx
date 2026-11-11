@@ -4,7 +4,7 @@
  */
 export function PlayfieldBenchArt({ dumbbells }: { dumbbells:boolean }) {
   const midY=66;
-  return <svg className="pf-bench-art" viewBox="0 0 620 255" role="img"
+  return <svg className="pf-bench-art" viewBox="0 0 620 255" role="img" data-equipment={dumbbells ? "dumbbells" : "barbell"}
     aria-label={dumbbells?'Développé couché : deux haltères indépendants, bras tendus':'Développé couché : barre olympique et disques alignés'}>
     <defs>
       <linearGradient id="pf-sky" x1="0" y1="0" x2="1" y2="1">
