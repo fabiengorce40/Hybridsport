@@ -320,3 +320,27 @@ html[data-rekka-theme="playfield-pro"] .v3-home + .tabbar > button::after {
   top: 43%;
   --home-icon-size: 25px;
 }
+
+/* Match the weekly panel's painted box rather than inheriting the generic card padding. */
+html[data-rekka-theme="playfield-pro"] .v3-home .card.pf-home-week {
+  padding: 6px 16px 9px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .card.pf-home-week .pf-week-sports {
+  gap: 8px !important;
+  margin-bottom: 1px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-greeting h1 > span {
+  height: 1em;
+}
+@media (max-width: 375px) {
+  html[data-rekka-theme="playfield-pro"] .v3-home + .tabbar {
+    bottom: 9px !important;
+    padding-block: 6px 7px !important;
+  }
+  html[data-rekka-theme="playfield-pro"] .v3-home + .tabbar > button {
+    min-height: 50px !important;
+  }
+  html[data-rekka-theme="playfield-pro"] .v3-home .card.pf-home-week {
+    padding-bottom: 7px !important;
+  }
+}
