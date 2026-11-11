@@ -53,22 +53,27 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
   const unplanned = week?.items.filter((x) => !onDays.has(x.requestId)) ?? [];
   return (
     <div className="screen">
-      {REKKA_V2 ? <VisualHeader title="Planning" /> : <div className="row between"><h1 className="screen-title">Planning</h1>{week?.experimental && <ExperimentalBadge />}</div>}
+      {REKKA_V2 ? <div className="pf-planning-heading"><VisualHeader title="Planning" />{PLAYFIELD_V4 && <a href="#pf-week-chooser" className="pf-week-picker" aria-label="Choisir une autre semaine">▣</a>}</div> : <div className="row between"><h1 className="screen-title">Planning</h1>{week?.experimental && <ExperimentalBadge />}</div>}
       {state.safety.activePain && <PainPause onGo={() => onGo('settings')} />}
       <IntegrityNotice issues={beta0Integrity(state)} />
       {current && (
         <div className="stack-3" data-planning-controls>
           <div className="view-switch" role="group" aria-label="Affichage du planning">
-            <button type="button" aria-pressed={view === 'list'} onClick={() => choose('list')}>Liste</button>
-            <button type="button" aria-pressed={view === 'grid'} onClick={() => choose('grid')}>Grille</button>
+            <button type="button" aria-pressed={view === 'list'} onClick={() => choose('list')}>{PLAYFIELD_V4 ? "Semaine" : "Liste"}</button>
+            <button type="button" aria-pressed={view === 'grid'} onClick={() => choose('grid')}>{PLAYFIELD_V4 ? "Agenda" : "Grille"}</button>
           </div>
-          {week && (
+          {week && (PLAYFIELD_V4 ? <details id="pf-week-chooser" className="pf-week-chooser">
+            <summary>Changer de semaine <span aria-hidden="true">▾</span></summary>
             <nav className="week-nav" aria-label="Semaines du programme">
               <button type="button" className="nav" aria-label="Semaine précédente" disabled={pos <= 0} onClick={() => setShown(weeks[pos - 1] ?? null)}>‹</button>
               <div className="label" aria-live="polite" data-week-shown={week.weekStart}>Semaine {week.weekIndex + 1}{week === current ? ' · en cours' : ''}<span className="tiny">du {formatDateShort(week.weekStart)} au {formatDateShort(addDays(week.weekStart, LAST_DAY))}</span></div>
               <button type="button" className="nav" aria-label="Semaine suivante" disabled={pos < 0 || pos >= weeks.length - 1} onClick={() => setShown(weeks[pos + 1] ?? null)}>›</button>
             </nav>
-          )}
+          </details> : <nav className="week-nav" aria-label="Semaines du programme">
+               <button type="button" className="nav" aria-label="Semaine précédente" disabled={pos <= 0} onClick={() => setShown(weeks[pos - 1] ?? null)}>‹</button>
+               <div className="label" aria-live="polite" data-week-shown={week.weekStart}>Semaine {week.weekIndex + 1}{week === current ? ' · en cours' : ''}<span className="tiny">du {formatDateShort(week.weekStart)} au {formatDateShort(addDays(week.weekStart, LAST_DAY))}</span></div>
+               <button type="button" className="nav" aria-label="Semaine suivante" disabled={pos < 0 || pos >= weeks.length - 1} onClick={() => setShown(weeks[pos + 1] ?? null)}>›</button>
+             </nav>)}
           {week !== current && <button type="button" className="btn ghost" onClick={() => setShown(null)}>Revenir à la semaine en cours</button>}
         </div>
       )}
