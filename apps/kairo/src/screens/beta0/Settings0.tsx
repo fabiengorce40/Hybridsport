@@ -171,31 +171,40 @@ export function Settings0({ onEditProfile }: { onEditProfile?: () => void }) {
   if (journal) return <JournalBeta onBack={() => setJournal(false)} />;
   if (SOBER_V3) {
     const p = store.state.profile;
-    const cards = [
+    const sportsDetail = Object.entries(SPORT_LABELS).filter(([key])=>p?.[key as keyof typeof SPORT_LABELS].enabled).map(([,label])=>label).join(' · ');
+    const cards = PLAYFIELD_V4 ? [
+      ['objectives','◎','Mes objectifs','Objectifs et personnalisation sportive'],
+      ['sports','↗','Mon profil sportif',sportsDetail],
+      ['equipment','⚊','Mon matériel',`${p?.equipment?.items.length ?? 0} équipements déclarés`],
+      ['health','♡','Santé & récupération','Douleurs déclarées et adaptation de l’entraînement'],
+      ['data','▤','Données & sauvegardes','Export, import, restauration'],
+    ] : [
       ['objectives','◎','Mes objectifs','Objectifs et personnalisation sportive'],
       ['availability','▦','Mes disponibilités',`${p?.availability.length ?? 0} créneaux déclarés`],
       ['equipment','⚊','Mon matériel',`${p?.equipment?.items.length ?? 0} équipements déclarés`],
-      ['sports','↗','Mes sports',Object.entries(SPORT_LABELS).filter(([key])=>p?.[key as keyof typeof SPORT_LABELS].enabled).map(([,label])=>label).join(' · ')],
+      ['sports','↗','Mes sports',sportsDetail],
       ['data','▤','Données & sauvegardes','Export, import, restauration'],
       ['settings','⚙','Paramètres','Application et outils de test'],
     ];
     const title = cards.find(c=>c[0]===panel)?.[2];
     return <div className="screen v3-profile">
-      {panel ? <><button className="btn ghost" onClick={()=>setPanel(null)}>← Retour au profil</button><h1 className="screen-title">{title}</h1></> : <VisualHeader title="Profil" profile/>}
+      {panel ? <><button className="btn ghost" onClick={()=>setPanel(null)}>← Retour au profil</button><h1 className="screen-title">{title ?? (panel==='settings' ? 'Paramètres':'Profil sportif')}</h1></> :
+        <div className="pf-profile-heading"><VisualHeader title="Profil" profile/>{PLAYFIELD_V4 && <button type="button" className="pf-profile-settings" onClick={()=>setPanel('settings')} aria-label="Paramètres">⚙</button>}</div>}
       {PLAYFIELD_V4 && !panel && <section className="pf-profile-hero" aria-label="Résumé du profil">
         <div className="pf-profile-avatar" aria-hidden="true">{(p?.displayName?.trim() || 'R').slice(0,1).toLocaleUpperCase('fr-FR')}</div>
         <div><strong>{p?.displayName?.trim() || 'Mon profil'}</strong>
           <span>{Object.entries(SPORT_LABELS).filter(([key])=>p?.[key as keyof typeof SPORT_LABELS].enabled).length} disciplines activées · Programme personnel</span>
         </div>
       </section>}
-      <PainCard/>
+      {(!PLAYFIELD_V4 || store.state.safety.activePain || panel==='health') && <PainCard/>}
       {!panel && <div className="v3-profile-menu">{cards.map(([id,,label,sub])=><button key={id} className="card button-card v3-profile-link" onClick={()=>setPanel(id??null)}><span aria-hidden="true"><ProfileIcon kind={id??'settings'}/></span><span><strong>{label}</strong><small>{sub}</small></span><span aria-hidden="true">›</span></button>)}</div>}
       {panel==='objectives' && <>
         {p?.strength.enabled && <button className="card button-card" onClick={()=>setStrengthProfile(true)}><h3>Ma musculation</h3><p>Objectif, priorités musculaires et récupération</p></button>}
         {p?.running.enabled && <button className="card button-card" onClick={()=>setRunningProfile(true)}><h3>Profil Course</h3><p>Performances et références</p></button>}
         <button className="btn secondary" onClick={onEditProfile}>Modifier mon programme</button>
       </>}
-      {['availability','equipment','sports'].includes(panel??'') && <div className="card"><p>{panel==='equipment' ? (p?.equipment?.items.map(id=>equipmentLabel(id)).join(' · ') || 'Aucun matériel déclaré') : panel==='availability' ? (p?.availability.map((minutes,i)=>`${['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][i]} : ${minutes} min`).join(' · ') || 'Aucun créneau déclaré') : cards[3]?.[3]}</p><button className="btn primary" onClick={onEditProfile}>Modifier mon programme</button></div>}
+      {['availability','equipment','sports'].includes(panel??'') && <div className="card"><p>{panel==='equipment' ? (p?.equipment?.items.map(id=>equipmentLabel(id)).join(' · ') || 'Aucun matériel déclaré') : panel==='availability' ? (p?.availability.map((minutes,i)=>`${['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'][i]} : ${minutes} min`).join(' · ') || 'Aucun créneau déclaré') : sportsDetail}</p>{PLAYFIELD_V4 && panel==='sports' && <p className="small muted">Disponibilités : {p?.availability.length ?? 0} créneaux déclarés</p>}<button className="btn primary" onClick={onEditProfile}>Modifier mon programme</button></div>}
+      {PLAYFIELD_V4 && panel==='health' && <div className="card"><strong>Santé & récupération</strong><p className="small muted">Les alertes de douleur et les règles de récupération sont celles du programme actuel. Aucune évaluation médicale n'est calculée ici.</p><button className="btn secondary" onClick={onEditProfile}>Modifier mon programme</button></div>}
       {panel==='data' && <DataSection/>}
       {panel==='settings' && <><FieldTestCard/>{isBeta0(store.state)&&<button className="card button-card" onClick={()=>setJournal(true)}>Journal Beta</button>}<BetaResetSection/><div className="card small muted"><p>Beta expérimentale : HYROX et Cross-training restent expérimentaux. REKKA ne remplace pas un avis médical. Une séance par jour au plus ; aucune règle de récupération universelle n’est appliquée.</p><span aria-label="Version de l’application">Version : {BUILD_ID}</span></div></>}
     </div>;
