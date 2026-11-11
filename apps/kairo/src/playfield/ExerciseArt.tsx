@@ -61,12 +61,16 @@ export function PlayfieldBenchArt({ dumbbells }: { dumbbells:boolean }) {
     <path d="M306 85l14 0M396 84l14 0" stroke="#E9A780" strokeWidth="13" strokeLinecap="round"/>
     {dumbbells ? <g>
       {[307,402].map(x=><g key={x} transform={`translate(${x} ${midY})`}>
-        <rect x="-49" y="-6" width="98" height="12" rx="5" fill="url(#pf-metal)"/>
-        <rect x="-33" y="-24" width="13" height="48" rx="4" fill="#102D67" stroke="#4D7AB9" strokeWidth="2"/>
-        <rect x="-46" y="-29" width="10" height="58" rx="3" fill="url(#pf-plate)"/>
-        <rect x="20" y="-24" width="13" height="48" rx="4" fill="#102D67" stroke="#4D7AB9" strokeWidth="2"/>
-        <rect x="36" y="-29" width="10" height="58" rx="3" fill="url(#pf-plate)"/>
-        <path d="M-20 -20V20M26 -20V20" stroke="#FDCB32" strokeWidth="3" opacity=".65"/>
+        {/* The two 76 px handles remain separated by 19 px, never one continuous bar. */}
+        <rect x="-38" y="-6" width="76" height="12" rx="5" fill="url(#pf-metal)"/>
+        <rect x="-30" y="-25" width="11" height="50" rx="4" fill="#102D67" stroke="#4D7AB9" strokeWidth="2"/>
+        <rect x="-37" y="-29" width="9" height="58" rx="3" fill="url(#pf-plate)"/>
+        <rect x="19" y="-25" width="11" height="50" rx="4" fill="#102D67" stroke="#4D7AB9" strokeWidth="2"/>
+        <rect x="28" y="-29" width="9" height="58" rx="3" fill="url(#pf-plate)"/>
+        <path d="M-34 -25V25M34 -25V25" stroke="#FDCB32" strokeWidth="2.5" opacity=".72"/>
+        <path d="M-12 -3h24" stroke="#D1DEEE" strokeWidth="2" strokeLinecap="round" opacity=".8"/>
+        <ellipse cx="-32" cy="0" rx="3" ry="5" fill="#98AED0"/>
+        <ellipse cx="32" cy="0" rx="3" ry="5" fill="#98AED0"/>
       </g>)}
     </g> : <g>
       <rect x="58" y={midY-6} width="499" height="13" rx="5" fill="url(#pf-metal)"/>
