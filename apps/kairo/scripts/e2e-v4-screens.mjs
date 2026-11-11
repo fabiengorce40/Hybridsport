@@ -82,8 +82,13 @@ try {
     await screen('7-profil');
     await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Planning', exact: true }).click();
     await page.locator(`button[data-request="${ID}"]`).click();
-    await page.locator('details.v3-preview-exercise').first().locator('summary').click();
+    assert.equal(await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button').count(), 4, 'V4 : 4 onglets comme la planche');
+    await page.locator('.pf-preview-open').first().click();
+    await page.locator('[data-exercise-detail]').waitFor();
     await screen('5-detail-exercice');
+    await page.getByRole('button', { name: 'Historique', exact: true }).click();
+    assert.equal(await page.getByRole('heading', {name: 'Séries enregistrées dans cette séance'}).count(), 1);
+    await page.getByRole('button', { name: 'Retour à la liste d\'exercices' }).click();
     await page.getByRole('button', { name: 'Commencer la séance', exact: true }).click();
     await page.locator('[data-checkin-form]').getByRole('button', { name: 'Passer', exact: true }).click();
     await page.locator('.v31-workout').waitFor();
