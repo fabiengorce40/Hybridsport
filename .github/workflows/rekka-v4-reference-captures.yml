@@ -1,0 +1,49 @@
+# Isolated preview-only capture. NO deployment, secrets or privileged permissions.
+name: REKKA V4 - captures Playfield Pro (isolated)
+on:
+  push:
+    branches:
+      - codex/rekka-v4-playfield-reference-exact
+    paths:
+      - 'apps/kairo/**'
+      - 'packages/**'
+      - '.github/workflows/rekka-v4-reference-captures.yml'
+      - 'pnpm-lock.yaml'
+permissions:
+  contents: read
+concurrency:
+  group: rekka-v4-captures-reference
+  cancel-in-progress: true
+jobs:
+  captures:
+    if: github.ref == 'refs/heads/codex/rekka-v4-playfield-reference-exact'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: TypeScript + ESLint
+        run: pnpm typecheck && pnpm lint
+      - name: Unit tests
+        run: pnpm test
+      - name: Build isolated V4; no Cloudflare
+        run: pnpm kairo:build:beta
+      - name: Install headless Chromium
+        run: pnpm --filter @hybridsport/kairo exec playwright install --with-deps chromium
+      - name: Capture seven real compiled screens at 360 390 412 and 1024 px
+        run: node apps/kairo/scripts/e2e-v4-screens.mjs /tmp/rekka-v4-captures
+      - name: Upload local visual QA files only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rekka-v4-reference-compiled-captures
+          path: |
+            /tmp/rekka-v4-captures
+          retention-days: 14
+          if-no-files-found: warn
