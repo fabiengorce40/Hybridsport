@@ -1,7 +1,7 @@
 import { SOBER_V3 } from '../../sober/flag.js';
 import { PLAYFIELD_V4 } from '../../playfield/flag.js';
 import { REKKA_V2, RekkaBrand, SportLinks } from '../../rekka/visual.js';
-import { confirmEquipment, equipmentLabel, equipmentNeedsConfirmation, EQUIPMENT_PRESETS, programmeStatusAt, weekdayIndex } from '@hybridsport/app-core';
+import { confirmEquipment, equipmentLabel, equipmentNeedsConfirmation, EQUIPMENT_PRESETS, programmeStatusAt, selectProgrammeSession, weekdayIndex } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
 import { formatDate, Notice, weekdayShort } from '../../ui.js';
 import { isDone, sessionName, sportName, STATUS_LABELS } from '../../present.js';
@@ -70,6 +70,15 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
   const week = weekOf(state, today);
   const planned = placedOf(week?.days ?? []);
   const next = nextOf(planned, today);
+  const detail = next && PLAYFIELD_V4 ? selectProgrammeSession(state, next.requestId) : null;
+  const plannedSets = detail?.sport === 'strength'
+    ? detail.session.blocks.filter(b=>!['warmup','cooldown'].includes(b.kind))
+        .flatMap(b=>b.items.flatMap(item=>item.prescription.type==='sets'
+          ? item.prescription.sets.map((_,setIndex)=>({itemId:item.id,setIndex})) : []))
+    : [];
+  const heroProgress = plannedSets.length
+    ? {total:plannedSets.length,done:plannedSets.filter(s=>detail?.log?.sets.some(log=>log.itemId===s.itemId&&log.setIndex===s.setIndex&&log.done)).length}
+    : null;
   const done = planned.filter((x) => isDone(x.display)).length;
   const name = state.profile?.displayName;
   const sportStats = (['strength', 'running', 'hyrox', 'crosstraining'] as const).map(sport => {
@@ -88,7 +97,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
         {SOBER_V3 && <button className="v3-home-settings" aria-label="Paramètres" onClick={()=>onGo('settings')}>⚙</button>}
         <p className="small">{formatDate(today)}</p>
         {!SOBER_V3 && <h1>{name ? `${name}, ` : ''}{next ? (next.date === today ? 'c’est le moment.' : 'prochaine séance.') : 'rien de prévu.'}</h1>}
-        <div className={SOBER_V3 ? "v3-today" : undefined}>{next && <SessionCard0 v={next} onOpen={onOpen} highlight hero={PLAYFIELD_V4} />}
+        <div className={SOBER_V3 ? "v3-today" : undefined}>{next && <SessionCard0 v={next} onOpen={onOpen} highlight hero={PLAYFIELD_V4} heroProgress={heroProgress} />}
         {next && (
           <button className="btn primary block" onClick={() => onOpen(next.requestId)}>
             {next.display === 'in_progress' ? 'Reprendre la séance' : next.date === today && !paused ? 'Commencer la séance' : `Voir la séance${next.date === today ? '' : ` de ${formatDate(next.date ?? today).split(' ')[0] ?? ''}`}`}
