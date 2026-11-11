@@ -33,9 +33,9 @@ export function SessionSummary({ v, statusLabel }: { v: ProgrammeSessionView; st
     </div>
     <header><h3>Bilan de séance</h3></header>
     <dl className="pf-summary-stats">
-      <div><span className="pf-summary-stat-icon" aria-hidden="true">◴</span><dd>{log.timing ? minutes(log.timing.activeS) : '—'}</dd><dt>durée active</dt>{log.timing && log.timing.pausedS > 0 && <small>pauses {minutes(log.timing.pausedS)}</small>}</div>
-      <div><span className="pf-summary-stat-icon pf-summary-stat-icon--blue" aria-hidden="true">☑</span><dd>{workDone}/{work}</dd><dt>séries réalisées</dt></div>
-      <div><span className="pf-summary-stat-icon pf-summary-stat-icon--orange" aria-hidden="true">◉</span><dd>{exDone}/{items.length}</dd><dt>exercices terminés</dt></div>
+      <div><span className="pf-summary-stat-icon" aria-hidden="true">◴</span><dt>Durée active</dt><dd>{log.timing ? minutes(log.timing.activeS) : '—'}</dd>{log.timing && log.timing.pausedS > 0 && <small>pauses {minutes(log.timing.pausedS)}</small>}</div>
+      <div><span className="pf-summary-stat-icon pf-summary-stat-icon--blue" aria-hidden="true">☑</span><dt>Séries de travail</dt><dd>{workDone}/{work}</dd></div>
+      <div><span className="pf-summary-stat-icon pf-summary-stat-icon--orange" aria-hidden="true">◉</span><dt>Exercices terminés</dt><dd>{exDone}/{items.length}</dd></div>
     </dl>
     <div className="pf-summary-insight" role="note">
       <span aria-hidden="true">◎</span>
