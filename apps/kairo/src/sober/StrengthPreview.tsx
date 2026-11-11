@@ -27,6 +27,8 @@ export function StrengthPreview({v,title,onBack,onStart,preparation,context,goal
    const muscles=muscleText(selected.exerciseId);
    const setLogs=v.log?.sets.filter(s=>s.itemId===selected.id&&s.done)??[];
    const kind=/chest|bench|fly|pec|press/i.test(selected.exerciseId)?'chest':/shoulder|lateral|overhead/i.test(selected.exerciseId)?'shoulders':/curl|triceps/i.test(selected.exerciseId)?'arms':'back';
+   const workingSets=selected.prescription.sets.filter(s=>s.kind!=='rampup');
+   const firstWork=workingSets[0];
    return <main className="v3-workout pf-exercise-detail" data-exercise-detail={selected.exerciseId}>
      <header className="pf-detail-toolbar">
        <button onClick={()=>setSelectedId(null)} aria-label="Retour à la liste d'exercices">←</button>
@@ -42,6 +44,11 @@ export function StrengthPreview({v,title,onBack,onStart,preparation,context,goal
         <button key={id} type="button" aria-pressed={detailTab===id} onClick={()=>setDetailTab(id)}>{text}</button>)}
      </div>
      {detailTab==='infos'&&<section className="pf-detail-content">
+       {firstWork && <div className="pf-detail-quickfacts" aria-label="Repères prescrits pour cet exercice">
+         <div><strong>{workingSets.length}</strong><span>série{workingSets.length>1?'s':''} de travail</span></div>
+         <div><strong>{repText(firstWork.reps)}</strong><span>répétitions visées</span></div>
+         <div><strong>{firstWork.restAfterS} s</strong><span>repos prévu</span></div>
+       </div>}
        <h2>Prescription réelle</h2>
        <ul>{selected.prescription.sets.map((set,i)=><li key={i}>
          <strong>{set.kind==='rampup'?'Montée en charge':`Série ${i+1}`}</strong>
