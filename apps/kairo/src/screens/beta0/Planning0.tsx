@@ -36,6 +36,7 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
   const { state, clock } = useStore();
   const today = clock().today;
   const [view, setView] = useState<PlanningView>(readView);
+  const [chooserOpen, setChooserOpen] = useState(false);
   const [shown, setShown] = useState<number | null>(null);
   const current = weekOf(state, today);
   const weeks = existingWeeks(state);
@@ -53,7 +54,7 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
   const unplanned = week?.items.filter((x) => !onDays.has(x.requestId)) ?? [];
   return (
     <div className="screen">
-      {REKKA_V2 ? <div className="pf-planning-heading"><VisualHeader title="Planning" />{PLAYFIELD_V4 && <a href="#pf-week-chooser" className="pf-week-picker" aria-label="Choisir une autre semaine">▣</a>}</div> : <div className="row between"><h1 className="screen-title">Planning</h1>{week?.experimental && <ExperimentalBadge />}</div>}
+      {REKKA_V2 ? <div className="pf-planning-heading"><VisualHeader title="Planning" />{PLAYFIELD_V4 && <button type="button" className="pf-week-picker" aria-label="Choisir une autre semaine" aria-expanded={chooserOpen} onClick={()=>setChooserOpen(v=>!v)}>▣</button>}</div> : <div className="row between"><h1 className="screen-title">Planning</h1>{week?.experimental && <ExperimentalBadge />}</div>}
       {state.safety.activePain && <PainPause onGo={() => onGo('settings')} />}
       <IntegrityNotice issues={beta0Integrity(state)} />
       {current && (
@@ -62,7 +63,7 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
             <button type="button" aria-pressed={view === 'list'} onClick={() => choose('list')}>{PLAYFIELD_V4 ? "Semaine" : "Liste"}</button>
             <button type="button" aria-pressed={view === 'grid'} onClick={() => choose('grid')}>{PLAYFIELD_V4 ? "Agenda" : "Grille"}</button>
           </div>
-          {week && (PLAYFIELD_V4 ? <details id="pf-week-chooser" className="pf-week-chooser">
+          {week && (PLAYFIELD_V4 ? <details id="pf-week-chooser" className="pf-week-chooser" open={chooserOpen} onToggle={e=>setChooserOpen(e.currentTarget.open)}>
             <summary>Changer de semaine <span aria-hidden="true">▾</span></summary>
             <nav className="week-nav" aria-label="Semaines du programme">
               <button type="button" className="nav" aria-label="Semaine précédente" disabled={pos <= 0} onClick={() => setShown(weeks[pos - 1] ?? null)}>‹</button>
