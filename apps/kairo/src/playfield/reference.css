@@ -892,3 +892,67 @@ html[data-rekka-theme="playfield-pro"] .pf-detail-content p{
 html[data-rekka-theme="playfield-pro"] .pf-detail-content>small{
   color:#596A81;font-size:11px;
 }
+
+
+/* Touch accuracy wins where the board's very small +/- controls would be unsafe:
+ * same visual pills, actual 44 px tap surfaces and two lines on 360 px phones. */
+html[data-rekka-theme="playfield-pro"] .v31-series-row{
+  grid-template-columns:44px minmax(0,1fr) 7px minmax(0,1fr) 44px!important;
+  gap:2px!important;min-height:50px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-series-label,
+html[data-rekka-theme="playfield-pro"] .v31-toggle{
+  min-width:44px!important;width:44px!important;min-height:44px!important;height:44px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-series-label span{
+  width:44px!important;min-height:44px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-stepper{
+  height:44px!important;gap:0!important;
+  justify-content:space-between;min-width:0!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-step{
+  min-width:44px!important;width:44px!important;
+  min-height:44px!important;height:44px!important;
+  background:transparent!important;border:0!important;box-shadow:none!important;
+  position:relative;font-size:16px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-step::before{
+  content:"";position:absolute;inset:9px;border-radius:50%;
+  background:#fff;border:1px solid #E5E7ED;box-shadow:0 2px 5px #0E1B350E;
+  z-index:-1;
+}
+html[data-rekka-theme="playfield-pro"] .pf-stepper .v31-field{
+  height:44px!important;flex:1!important;min-width:0!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-stepper .v31-field input{
+  min-width:0!important;width:100%!important;max-width:100%;
+  height:44px!important;min-height:44px!important;
+  font-size:13px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-toggle{
+  display:grid;place-items:center;
+}
+@media(max-width:375px){
+  html[data-rekka-theme="playfield-pro"] .v31-series-row{
+    grid-template-columns:44px minmax(0,1fr) 44px!important;
+    grid-template-rows:44px 44px!important;
+    gap:3px!important;min-height:96px!important;
+  }
+  html[data-rekka-theme="playfield-pro"] .v31-series-row>.v31-series-label{
+    grid-column:1;grid-row:1!important;
+  }
+  html[data-rekka-theme="playfield-pro"] .v31-series-row>.pf-stepper-load{
+    grid-column:2;grid-row:1!important;
+  }
+  html[data-rekka-theme="playfield-pro"] .v31-series-row>.pf-stepper-reps{
+    grid-column:2;grid-row:2!important;
+  }
+  html[data-rekka-theme="playfield-pro"] .v31-series-row>.v31-times{
+    display:none!important;
+  }
+  html[data-rekka-theme="playfield-pro"] .v31-series-row>.v31-toggle{
+    grid-column:3;grid-row:1/3!important;
+    align-self:center;
+  }
+}
