@@ -1,0 +1,148 @@
+/* Accueil uniquement. Les proportions suivent la planche à 390 px. */
+html[data-rekka-theme="playfield-pro"] .screen.v3-home {
+  --home-scale: min(1vw, 3.9px);
+  position: relative;
+  padding: 4px 12px 94px !important;
+  background: #fcf6ed;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .hero {
+  position: relative;
+  padding: 0 !important;
+  background: transparent !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .hero::before {
+  content: "";
+  position: absolute;
+  width: calc(29 * var(--home-scale));
+  height: calc(23 * var(--home-scale));
+  right: -12px;
+  top: calc(13 * var(--home-scale));
+  background: linear-gradient(165deg, #ffcd13 62%, #0860ed 79%, #85b8fb);
+  clip-path: path("M 114 0 C 86 39 45 64 0 89 L 114 89 Z");
+  pointer-events: none;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-brand {
+  height: 45px !important;
+  margin: 0 0 13px 11px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-greeting {
+  margin: 4px 0 15px 13px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-greeting h1 {
+  font-size: calc(8.5 * var(--home-scale)) !important;
+  color: #090f31;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .v3-home-settings {
+  right: 9px !important;
+  top: 3px !important;
+  box-shadow: 0 4px 9px #34251b15 !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .v3-today {
+  position: relative;
+  overflow: visible !important;
+  border-radius: 27px !important;
+  padding: 13px 15px 14px !important;
+  margin-bottom: 0 !important;
+  background-position: right calc(12.7 * var(--home-scale)), center !important;
+  background-size: auto calc(36 * var(--home-scale)), auto !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-session {
+  padding-inline: 9px;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 31px !important;
+  text-transform: none !important;
+  letter-spacing: normal !important;
+  font-size: 15px !important;
+  border-radius: 999px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-tag svg {
+  width: 19px;
+  height: 19px;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-flags .k-pill,
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-open > span {
+  display: none !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-open strong {
+  font-size: calc(8.1 * var(--home-scale)) !important;
+  max-width: 100%;
+  text-align: left;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-meta {
+  gap: 12px;
+  margin-bottom: 22px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-series > strong {
+  font-size: 20px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-series-dots:not(:has(.on)) > span:first-child {
+  background: #ffce19;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-details:not([open]) {
+  top: -134px !important;
+  right: 51px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-details > summary {
+  border-radius: 16px !important;
+  background: #fff9f2 !important;
+  color: #090f31 !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .v3-today > .btn.primary {
+  min-height: 50px !important;
+  background: linear-gradient(160deg, #ffdb3c, #ffc500 72%) !important;
+  font-size: clamp(15px, 5.1vw, 21px) !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-home-metrics {
+  margin: 11px 0 9px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-home-metrics > div {
+  min-height: 107px !important;
+  border-radius: 20px !important;
+  background: #fffbf5 !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-metric-icon svg {
+  width: 32px !important;
+  height: 32px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-home-metrics small {
+  font-size: 13px !important;
+  font-weight: 500 !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-home-week {
+  padding: 12px 16px 17px !important;
+  border-radius: 20px !important;
+  background: #fffbf5 !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-home-week > .bar,
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-home-week > .row > .num {
+  display: none;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-week-detail {
+  margin-left: auto;
+  font-size: 14px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-week-sport-icon {
+  border: 0 !important;
+  background: none !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home + .tabbar {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: min(calc(100% - 16px), 510px) !important;
+  bottom: 10px !important;
+  border-radius: 20px !important;
+  box-shadow: 0 6px 14px #34251b22 !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home + .tabbar > button {
+  min-height: 52px !important;
+  font-size: 12px !important;
+  font-weight: 600 !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home + .tabbar > button svg {
+  width: 24px !important;
+  height: 24px !important;
+}

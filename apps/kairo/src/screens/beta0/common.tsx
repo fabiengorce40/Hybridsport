@@ -111,13 +111,13 @@ export function SessionCard0({ v, onOpen, highlight = false, dateLabel, hero = f
       isFullC4(v.composition) && v.composition ? fullSessionCardText(v.composition) : null,
     ].filter((s): s is string => Boolean(s));
     return <div className="pf-hero-session" data-pf-hero data-status={v.display}>
-      <div className="pf-hero-top"><span className="pf-hero-tag">▣ Prochaine séance</span><span className="pf-hero-flags">{isTest(v.archetypeId) && <span className="badge test">TEST</span>}<StatusPill status={v.display}/></span></div>
+      <div className="pf-hero-top"><span className="pf-hero-tag"><HomeCalendar/> Prochaine séance</span><span className="pf-hero-flags">{isTest(v.archetypeId) && <span className="badge test">TEST</span>}<StatusPill status={v.display}/></span></div>
       <span className="pf-hero-sport">{sportName(v.sport)}</span>
       <button type="button" className="pf-hero-open" data-request={v.requestId} onClick={() => onOpen(v.requestId)}
         aria-label={`${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`}>
         <strong>{name}</strong><span aria-hidden="true">›</span>
       </button>
-      <p className="pf-hero-meta">{[v.date ? formatDate(v.date) : null, durationText(v)].filter(Boolean).join(' · ')}</p>
+      <p className="pf-hero-meta"><HomeCalendar/>{[v.date ? formatDate(v.date) : null, durationText(v)].filter(Boolean).join(' · ')}</p>
       {heroProgress && heroProgress.total > 0 && <div className="pf-hero-series">
         <strong>{heroProgress.done}/{heroProgress.total} séries</strong>
         <div className="pf-hero-series-dots" aria-label={`${heroProgress.done} séries validées sur ${heroProgress.total}`} role="img">
@@ -126,7 +126,7 @@ export function SessionCard0({ v, onOpen, highlight = false, dateLabel, hero = f
       </div>}
       {v.pain && <p className="pf-hero-alert" role="alert">Douleur signalée : vérifiez les consignes avant la séance.</p>}
       {notes.length > 0 && <details className="pf-hero-context pf-hero-details">
-        <summary aria-label="Voir les explications de la séance" title="Explications de planification">ⓘ</summary>
+        <summary aria-label="Voir les explications de la séance" title="Explications de planification"><svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M9 20a3 3 0 0 0 6 0"/><circle cx="20" cy="4" r="3" fill="#f65034" stroke="#fff8ef"/></svg></summary>
         <div>{notes.map((note, i) => <p key={i}>{note}</p>)}</div>
       </details>}
     </div>;
@@ -223,4 +223,8 @@ function UnplacedCard({ v, onOpen }: { v: SessionItemView; onOpen: (id: string) 
       {flow.sheet}
     </div>
   );
+}
+
+function HomeCalendar() {
+  return <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M7 3v4m10-4v4M3 10h18"/></svg>;
 }

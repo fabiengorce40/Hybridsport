@@ -102,7 +102,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
       <div className="hero">
         {REKKA_V2 ? <RekkaBrand /> : <div className="hero-brand">KAI<span>RO</span></div>}
         {PLAYFIELD_V4 && <div className="pf-greeting"><h1>Bonjour, {name?.trim() || 'sportif'} <span aria-hidden="true">👋</span></h1><p>Prêt pour ta séance ?</p></div>}
-        {SOBER_V3 && <button className="v3-home-settings" aria-label="Paramètres" onClick={()=>onGo('settings')}>⚙</button>}
+        {SOBER_V3 && <button className="v3-home-settings" aria-label="Paramètres" onClick={()=>onGo('settings')}>{PLAYFIELD_V4 ? <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2.3"/><circle cx="12" cy="12" r="2.3"/><circle cx="19" cy="12" r="2.3"/></svg> : '⚙'}</button>}
         <p className="small">{formatDate(today)}</p>
         {!SOBER_V3 && <h1>{name ? `${name}, ` : ''}{next ? (next.date === today ? 'c’est le moment.' : 'prochaine séance.') : 'rien de prévu.'}</h1>}
         <div className={SOBER_V3 ? "v3-today" : undefined}>{next && <SessionCard0 v={next} onOpen={onOpen} highlight hero={PLAYFIELD_V4} heroProgress={heroProgress} />}
@@ -139,7 +139,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
       {week && <RunningTestFallbackNotice fallback={week.runningTestFallback} />}
 
       {week && planned.length > 0 && (
-        <div className="card" aria-label="Progression de la semaine">
+        <div className={PLAYFIELD_V4 ? "card pf-home-week" : "card"} aria-label="Progression de la semaine">
           <div className="row between"><strong>Cette semaine</strong><button type="button" className="pf-week-detail" onClick={() => onGo(PLAYFIELD_V4?'programme':'plan')}>Voir le détail ›</button><span className="num">{done} / {planned.length} séances</span></div>
           <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={planned.length} aria-valuenow={done} aria-label="Séances terminées"><div style={{ width: `${String(Math.round((done / planned.length) * 100))}%` }} /></div>
           {PLAYFIELD_V4 && <div className="pf-week-sports" aria-label="Répartition réelle des séances prévues">

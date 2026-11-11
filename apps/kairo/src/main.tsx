@@ -17,6 +17,7 @@ import './playfield/fidelity.css';
 import './playfield/reference.css';
 import './playfield/precision.css';
 import './playfield/refinement-pass2.css';
+import "./playfield/home-reference.css";
 import { PLAYFIELD_V4 } from './playfield/flag.js';
 if(SOBER_V3)document.documentElement.dataset.rekkaVisual='v3';
 // REKKA V4 Playfield Pro : marqueur de présentation, actif seulement avec le drapeau de build explicite.

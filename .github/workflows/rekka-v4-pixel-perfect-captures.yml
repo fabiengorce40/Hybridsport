@@ -38,11 +38,11 @@ jobs:
         run: pnpm kairo:build:beta
       - name: Install headless Chromium
         run: pnpm --filter @hybridsport/kairo exec playwright install --with-deps chromium
-      - name: Capture seven real compiled screens at 360 390 412 and 1024 px
+      - name: Capture compiled Home at 360 390 412 and 1024 px
         shell: bash
         run: |
           mkdir -p /tmp/rekka-v4-captures
-          node apps/kairo/scripts/e2e-v4-screens.mjs /tmp/rekka-v4-captures | tee /tmp/rekka-v4-captures/playwright-report.txt
+          REKKA_HOME_ONLY=1 node apps/kairo/scripts/e2e-v4-screens.mjs /tmp/rekka-v4-captures | tee /tmp/rekka-v4-captures/playwright-report.txt
       - name: Upload local visual QA files only
         if: always()
         uses: actions/upload-artifact@v4

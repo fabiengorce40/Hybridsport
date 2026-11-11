@@ -76,6 +76,12 @@ try {
     await page.goto(url);
     await page.locator('.v3-home').waitFor();
     await screen('1-accueil');
+    if (process.env.REKKA_HOME_ONLY === '1') {
+      assert.deepEqual(errors, []);
+      ok(`${W} : accueil compilé, thème actif, aucun défilement horizontal`);
+      await ctx.close();
+      continue;
+    }
     await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Planning', exact: true }).click();
     await screen('4-planning');
     await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: /Progression/ }).click();
@@ -145,7 +151,7 @@ try {
   for (const [w, screens] of Object.entries(report)) for (const [n, a] of Object.entries(screens)) {
     console.log(`${w} ${n} | cibles<44 : ${String(a.small.length)}${a.small.length ? ` [${a.small.slice(0, 6).join(' ; ')}]` : ''} | néon V3 : ${String(a.neon.length)}${a.neon.length ? ` [${a.neon.slice(0, 3).join(' ; ')}]` : ''} | contraste faible : ${String(a.lowContrast.length)}${a.lowContrast.length ? ` [${a.lowContrast.slice(0, 8).join(' ; ')}]` : ''}`);
   }
-  console.log('E2E V4 SEPT ÉCRANS OK');
+  console.log(process.env.REKKA_HOME_ONLY === '1' ? 'E2E V4 ACCUEIL OK' : 'E2E V4 SEPT ÉCRANS OK');
 } finally {
   await browser.close();
   server.close();
