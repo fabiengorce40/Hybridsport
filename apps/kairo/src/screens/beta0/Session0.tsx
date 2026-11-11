@@ -222,7 +222,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
   );
   // Pure projection for the Playfield rest dock. No future weight/repetition is guessed.
   const pendingRestItem = log?.rest && v.sport === 'strength'
-    ? session.blocks.flatMap(b=>b.items).find(item => item.exerciseId === log.rest?.exerciseId && item.prescription.type === 'sets')
+    ? session.blocks.flatMap(b=>b.items).find(item => item.prescription.type === 'sets' && item.exerciseId === log.rest?.exerciseId)
     : null;
   const pendingRestSets = pendingRestItem?.prescription.type === 'sets' ? pendingRestItem.prescription.sets : [];
   const pendingRestIdx = pendingRestItem ? pendingRestSets.findIndex((_,i)=>!log?.sets.some(s=>s.itemId===pendingRestItem.id && s.setIndex===i && s.done)) : -1;
