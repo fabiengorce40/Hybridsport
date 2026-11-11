@@ -80,10 +80,12 @@ it('V4 fidelity keeps the approved palette isolated and removes the old neon ide
 it('V4 differentiates a straight barbell from two independent dumbbells', () => {
   const r = render(<PlayfieldBenchArt dumbbells />);
   expect(screen.getByRole('img', { name: /deux haltères indépendants/i })).toBeTruthy();
-  expect(r.container.querySelectorAll('g').length).toBe(2);
+  expect(r.container.querySelector('svg[data-equipment="dumbbells"]')).toBeTruthy();
+  expect(r.container.querySelectorAll('g[transform*="translate"]').length).toBe(2);
   r.rerender(<PlayfieldBenchArt dumbbells={false} />);
-  expect(screen.getByRole('img', { name: /barre droite.*disques alignés/i })).toBeTruthy();
-  expect(r.container.querySelectorAll('g').length).toBe(2);
+  expect(screen.getByRole('img', { name: /barre olympique.*disques alignés/i })).toBeTruthy();
+  expect(r.container.querySelector('svg[data-equipment="barbell"]')).toBeTruthy();
+  expect(r.container.querySelectorAll('g[transform*="translate"]').length).toBe(2);
   expect(r.container.querySelector('img')).toBeNull();
 });
 
