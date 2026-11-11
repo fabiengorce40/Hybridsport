@@ -19,7 +19,6 @@ const shots = process.argv[2];
 if (shots) mkdirSync(shots, { recursive: true });
 const fixture = readFileSync(resolve(app, 'tests/fixtures/v3-sober.json'), 'utf8');
 const KEY = 'rekka-beta:kairo.state';
-const ID = '2026-10-05.strength.2';
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webp': 'image/webp', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json' };
 const server = createServer((req, res) => {
   const p = resolve(root, `.${new URL(req.url, 'http://localhost').pathname.replace(/^\/$/, '/index.html')}`);
