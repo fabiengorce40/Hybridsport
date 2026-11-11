@@ -8,7 +8,7 @@
  */
 import { chromium } from 'playwright';
 import assert from 'node:assert/strict';
-import { readFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, mkdirSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { resolve, extname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -77,8 +77,39 @@ try {
     };
     await page.goto(url);
     await page.locator('.v3-home').waitFor();
-    await screen('1-accueil');
+    const homeAudit = await screen('1-accueil');
     if (process.env.REKKA_HOME_ONLY === '1') {
+      const geometry = await page.evaluate(() => {
+        const selectors = {
+          app: '.v3-home', logo: '.pf-logo', greeting: '.pf-greeting h1', subtitle: '.pf-greeting p',
+          hero: '.v3-today', tag: '.pf-hero-tag', title: '.pf-hero-open strong', date: '.pf-hero-meta',
+          series: '.pf-hero-series > strong', segments: '.pf-hero-series-dots', cta: '.v3-today > .btn.primary',
+          kpi: '.pf-home-metrics', week: '.pf-home-week', weekTitle: '.pf-home-week > .row > strong',
+          strength: '.pf-week-sport[data-sport="strength"]', running: '.pf-week-sport[data-sport="running"]',
+          nav: '.tabbar', activeTab: '.tabbar .on',
+        };
+        return Object.fromEntries(Object.entries(selectors).map(([key, selector]) => {
+          const rect = document.querySelector(selector).getBoundingClientRect();
+          return [key, { x: rect.x, y: rect.y, w: rect.width, h: rect.height }];
+        }));
+      });
+      if (shots) writeFileSync(`${shots}/${width}-home-geometry.json`, JSON.stringify(geometry, null, 2));
+      const home = page.locator('.v3-home');
+      for (const label of ['Bonjour, Alex', 'Haut du corps B', '18:30', '0/7 séries', '3/5', '2/3', '1/2']) {
+        assert.ok((await home.innerText()).includes(label), `${W} : fixture ${label}`);
+      }
+      assert.deepEqual(homeAudit.small, [], `${W} : cibles tactiles`);
+      const nav = page.getByRole('navigation', { name: 'Navigation principale' });
+      if (width <= 390) {
+        const gap = geometry.nav.y - geometry.week.y - geometry.week.h;
+        assert.ok(gap >= 0, `${W} : navigation sur le bloc semaine (${gap}px)`);
+        await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+        assert.ok(await nav.getByRole('button', { name: 'Planning', exact: true }).isVisible());
+      }
+      await nav.getByRole('button', { name: 'Planning', exact: true }).click();
+      await home.waitFor({ state: 'hidden' });
+      await nav.getByRole('button', { name: 'Accueil', exact: true }).click();
+      await home.waitFor();
       assert.deepEqual(errors, []);
       ok(`${W} : accueil compilé, thème actif, aucun défilement horizontal`);
       await ctx.close();

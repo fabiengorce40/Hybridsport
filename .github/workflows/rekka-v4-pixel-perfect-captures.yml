@@ -35,7 +35,7 @@ jobs:
       - name: Visual V4 and legacy layout tests
         run: pnpm exec vitest run apps/kairo/tests/playfield-v4.test.tsx apps/kairo/tests/v3-sober.test.tsx
       - name: Build isolated V4; no Cloudflare
-        run: pnpm kairo:build:beta
+        run: VITE_REKKA_HOME_CAPTURE=1 pnpm kairo:build:beta
       - name: Install headless Chromium
         run: pnpm --filter @hybridsport/kairo exec playwright install chromium
       - name: Capture compiled Home at 360 390 412 and 1024 px

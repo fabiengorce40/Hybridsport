@@ -1,3 +1,4 @@
+import { HOME_VISUAL_FIXTURE } from '../../playfield/home-visual-fixture.js';
 import { SOBER_V3 } from '../../sober/flag.js';
 import { PLAYFIELD_V4 } from '../../playfield/flag.js';
 import { REKKA_V2, SportEmblem } from '../../rekka/visual.js';
@@ -115,9 +116,9 @@ export function SessionCard0({ v, onOpen, highlight = false, dateLabel, hero = f
       <span className="pf-hero-sport">{sportName(v.sport)}</span>
       <button type="button" className="pf-hero-open" data-request={v.requestId} onClick={() => onOpen(v.requestId)}
         aria-label={`${sportName(v.sport)} : ${name}, ${STATUS_LABELS[v.display]}`}>
-        <strong>{name}</strong><span aria-hidden="true">›</span>
+        <strong>{HOME_VISUAL_FIXTURE?.title ?? name}</strong><span aria-hidden="true">›</span>
       </button>
-      <p className="pf-hero-meta"><HomeCalendar/>{[dateLabel ?? (v.date ? formatDate(v.date) : null), durationText(v)].filter(Boolean).join(' · ')}</p>
+      <p className="pf-hero-meta"><HomeCalendar/>{[dateLabel ?? (v.date ? formatDate(v.date) : null), HOME_VISUAL_FIXTURE?.time ?? durationText(v)].filter(Boolean).join(' · ')}</p>
       {heroProgress && heroProgress.total > 0 && <div className="pf-hero-series">
         <strong>{heroProgress.done}/{heroProgress.total} séries</strong>
         <div className="pf-hero-series-dots" aria-label={`${heroProgress.done} séries validées sur ${heroProgress.total}`} role="img">

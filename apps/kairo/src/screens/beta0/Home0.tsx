@@ -1,3 +1,4 @@
+import { HOME_VISUAL_FIXTURE } from '../../playfield/home-visual-fixture.js';
 import { SOBER_V3 } from '../../sober/flag.js';
 import { PLAYFIELD_V4 } from '../../playfield/flag.js';
 import { REKKA_V2, RekkaBrand, SportLinks } from '../../rekka/visual.js';
@@ -87,13 +88,15 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
   const heroProgress = plannedSets.length
     ? {total:plannedSets.length,done:plannedSets.filter(s=>detail?.log?.sets.some(log=>log.itemId===s.itemId&&log.setIndex===s.setIndex&&log.done)).length}
     : null;
-  const done = planned.filter((x) => isDone(x.display)).length;
-  const name = state.profile?.displayName;
-  const sportStats = (['strength', 'running', 'hyrox', 'crosstraining'] as const).map(sport => {
+
+  const name = HOME_VISUAL_FIXTURE?.name ?? state.profile?.displayName;
+  const sportStats = HOME_VISUAL_FIXTURE?.sports ?? (['strength', 'running', 'hyrox', 'crosstraining'] as const).map(sport => {
     const sessions = planned.filter(s => s.sport === sport);
     return { sport, total: sessions.length, done: sessions.filter(s => isDone(s.display)).length };
   }).filter(s => s.total > 0);
-  const weeklyPercent = planned.length > 0 ? Math.round((done / planned.length) * 100) : 0;
+  const done = HOME_VISUAL_FIXTURE ? sportStats.reduce((sum, sport) => sum + sport.done, 0) : planned.filter(x => isDone(x.display)).length;
+  const weeklyTotal = HOME_VISUAL_FIXTURE ? sportStats.reduce((sum, sport) => sum + sport.total, 0) : planned.length;
+  const weeklyPercent = weeklyTotal > 0 ? Math.round((done / weeklyTotal) * 100) : 0;
   // Pause douleur : aucune nouvelle séance (politique app-core) ; la reprise d'une séance commencée reste proposée.
   const paused = state.safety.activePain !== null;
   const extra = (week?.items ?? []).filter((x) => x.placement === 'composed_unplaced' && (x.display === 'not_planned' || x.display === 'in_progress'));
@@ -105,7 +108,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
         {SOBER_V3 && <button className="v3-home-settings" aria-label="Paramètres" onClick={()=>onGo('settings')}>{PLAYFIELD_V4 ? <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2.3"/><circle cx="12" cy="12" r="2.3"/><circle cx="19" cy="12" r="2.3"/></svg> : '⚙'}</button>}
         <p className="small">{formatDate(today)}</p>
         {!SOBER_V3 && <h1>{name ? `${name}, ` : ''}{next ? (next.date === today ? 'c’est le moment.' : 'prochaine séance.') : 'rien de prévu.'}</h1>}
-        <div className={SOBER_V3 ? "v3-today" : undefined}>{next && <SessionCard0 v={next} onOpen={onOpen} highlight dateLabel={PLAYFIELD_V4 && next.date === today ? 'Aujourd’hui' : undefined} hero={PLAYFIELD_V4} heroProgress={heroProgress} />}
+        <div className={SOBER_V3 ? "v3-today" : undefined}>{next && <SessionCard0 v={next} onOpen={onOpen} highlight dateLabel={PLAYFIELD_V4 && next.date === today ? 'Aujourd’hui' : undefined} hero={PLAYFIELD_V4} heroProgress={HOME_VISUAL_FIXTURE?.heroProgress ?? heroProgress} />}
         {next && (
           <button className="btn primary block" onClick={() => onOpen(next.requestId)}>
             {next.display === 'in_progress' ? 'Reprendre la séance' : next.date === today && !paused ? 'Commencer la séance' : `Voir la séance${next.date === today ? '' : ` de ${formatDate(next.date ?? today).split(' ')[0] ?? ''}`}`}
@@ -114,7 +117,7 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
       </div></div>
 
       {PLAYFIELD_V4 && planned.length > 0 && <section className="pf-home-metrics pf-board-metrics" aria-label="Statistiques réelles de la semaine">
-        <div><span className="pf-metric-icon pf-metric-blue"><PlayfieldKpiIcon kind="calendar"/></span><strong>{done}<span>/{planned.length}</span></strong><small>séances réalisées</small></div>
+        <div><span className="pf-metric-icon pf-metric-blue"><PlayfieldKpiIcon kind="calendar"/></span><strong>{done}<span>/{weeklyTotal}</span></strong><small>séances réalisées</small></div>
         <div><span className="pf-metric-icon pf-metric-gold"><PlayfieldKpiIcon kind="target"/></span><strong>{weeklyPercent}<span> %</span></strong><small>objectif hebdo</small></div>
         <div><span className="pf-metric-icon pf-metric-coral"><PlayfieldKpiIcon kind="sports"/></span><strong>{sportStats.length}</strong><small>sports planifiés</small></div>
       </section>}
@@ -140,8 +143,8 @@ export function Home0({ onOpen, onGo, onEditProgramme }: { onOpen: (id: string) 
 
       {week && planned.length > 0 && (
         <div className={PLAYFIELD_V4 ? "card pf-home-week" : "card"} aria-label="Progression de la semaine">
-          <div className="row between"><strong>Cette semaine</strong><button type="button" className="pf-week-detail" onClick={() => onGo(PLAYFIELD_V4?'programme':'plan')}>Voir le détail ›</button><span className="num">{done} / {planned.length} séances</span></div>
-          <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={planned.length} aria-valuenow={done} aria-label="Séances terminées"><div style={{ width: `${String(Math.round((done / planned.length) * 100))}%` }} /></div>
+          <div className="row between"><strong>Cette semaine</strong><button type="button" className="pf-week-detail" onClick={() => onGo(PLAYFIELD_V4?'programme':'plan')}>Voir le détail ›</button><span className="num">{done} / {weeklyTotal} séances</span></div>
+          <div className="bar" role="progressbar" aria-valuemin={0} aria-valuemax={weeklyTotal} aria-valuenow={done} aria-label="Séances terminées"><div style={{ width: `${String(weeklyPercent)}%` }} /></div>
           {PLAYFIELD_V4 && <div className="pf-week-sports" aria-label="Répartition réelle des séances prévues">
              {sportStats.map(({ sport, total, done: doneSport }) => <div className="pf-week-sport" key={sport} data-sport={sport}>
                <SportIcon sport={sport} className="pf-week-sport-icon" label={false}/><span className="pf-week-name">{sportName(sport)}</span><strong>{doneSport}/{total}</strong>
