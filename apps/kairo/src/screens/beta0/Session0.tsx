@@ -244,7 +244,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
       onRecord={(item,index,x)=>record(item,undefined,index,x)} onTogglePain={itemId=>store.apply(s=>toggleProgrammePainItem(s,requestId,itemId))} onEffort={(itemId,setIndex,rir)=>store.apply(s=>recordProgrammeSetEffort(s,requestId,itemId,setIndex,rir))} onUnavailable={itemId=>store.apply((s,c)=>reportEquipmentUnavailable(s,c,requestId,itemId))}/>{finishSheet}{flow.sheet}</>;
     return (
       <>
-        <Topbar title="" onBack={onBack} right={<div className="row">
+        <Topbar title={PLAYFIELD_V4 && finished ? "Bilan de séance" : ""} onBack={onBack} right={<div className="row">
           {clockElapsed !== null && <span className="k-elapsed" role="timer" aria-label="Chronomètre global" aria-live="off" data-session-clock data-elapsed-s={clockElapsed} data-paused={clockPaused ? 'true' : 'false'}>{formatChrono(clockElapsed)} <small>{clockState}</small></span>}
           {v.experimental && <span className="k-pill" title="Certaines règles de planification sont encore en cours de validation.">Beta</span>}
         </div>} />

@@ -95,6 +95,12 @@ it('la navigation Playfield officielle offre exactement quatre onglets réels', 
 
 it('le détail de séance a une illustration anatomique accessible et réutilisable', () => {
   const r = render(<PlayfieldAnatomy target="chest"/>);
+  const chest = screen.getByRole('img', {name:/pectoral/i});
+  expect(chest.getAttribute('src')).toMatch(/chest-anatomy/);
+  expect(chest.getAttribute('width')).toBe('662');
+  expect(chest.getAttribute('height')).toBe('411');
+
+  r.rerender(<PlayfieldAnatomy target="shoulders"/>);
   expect(screen.getByRole('img', {name:/illustration indicative du haut du corps/i})).toBeTruthy();
   expect(r.container.querySelectorAll('svg')).toHaveLength(1);
   expect(r.container.querySelector('img')).toBeNull();
