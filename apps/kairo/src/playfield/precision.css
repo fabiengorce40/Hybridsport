@@ -646,3 +646,24 @@ html[data-rekka-theme="playfield-pro"] .pf-profile-hero span{
   margin-top:3px!important;
   font-size:11px!important;
 }
+
+
+/* The reference Planning board shows discipline pictograms beside every event. */
+html[data-rekka-theme="playfield-pro"] .pf-planning-session-title {
+  min-width:0; display:inline-flex; align-items:center; gap:8px;
+  color:#0E1B35; font-weight:850;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-session-title svg {
+  flex:none; width:19px!important; height:19px!important;
+  color:#1647C8;stroke-width:2.1;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-session[data-sport="running"] .pf-planning-session-title svg { color:#FA6A58; }
+html[data-rekka-theme="playfield-pro"] .pf-planning-session[data-sport="hyrox"] .pf-planning-session-title svg { color:#D6A000; }
+html[data-rekka-theme="playfield-pro"] .pf-planning-session[data-sport="crosstraining"] .pf-planning-session-title svg { color:#7860D4; }
+html[data-rekka-theme="playfield-pro"] .pf-rest-icon {
+  display:inline-flex;align-items:center;justify-content:center;
+  width:18px;height:18px;color:#56667D;font-size:19px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-empty {
+  gap:8px;display:flex;align-items:center;
+}
