@@ -65,7 +65,10 @@ try {
       await page.waitForTimeout(250);
       const a = await audit(page);
       report[W][name] = a;
-      if (shots && (width === 390 || width === 360)) await page.screenshot({ path: `${shots}/${String(width)}-${name}.png`, animations: 'disabled' });
+      if (shots && (width === 390 || width === 360)) {
+        await page.screenshot({ path: `${shots}/${String(width)}-${name}.png`, animations: 'disabled' });
+        await page.screenshot({ path: `${shots}/${String(width)}-${name}-full.png`, animations: 'disabled', fullPage: true });
+      }
       assert.equal(a.theme, 'playfield-pro', `${W} ${name} : thème Playfield Pro actif`);
       assert.equal(a.hscroll, false, `${W} ${name} : défilement horizontal`);
       assert.equal(a.magnesia, false, `${W} ${name} : fond de magnésie V3`);
