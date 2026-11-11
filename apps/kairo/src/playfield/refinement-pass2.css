@@ -367,3 +367,10 @@ html[data-rekka-theme="playfield-pro"] .pf-planning-session[data-sport="hyrox"]{
 html[data-rekka-theme="playfield-pro"] .pf-planning-session[data-sport="crosstraining"]{
   border-left-color:#7860D4!important;
 }
+
+/* Athlete profile is a purpose-made outdoor illustration, not the old RPG portrait. */
+html[data-rekka-theme="playfield-pro"] .pf-profile-athlete {
+  width:100%;height:100%;display:block;
+  border-radius:50%;overflow:hidden;
+  background:#B4CBE4;
+}
