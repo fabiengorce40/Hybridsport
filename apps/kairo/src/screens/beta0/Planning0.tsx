@@ -55,7 +55,7 @@ export function Planning0({ onOpen, onGo }: { onOpen: (id: string) => void; onGo
   const unplanned = week?.items.filter((x) => !onDays.has(x.requestId)) ?? [];
   return (
     <div className="screen">
-      {REKKA_V2 ? <div className="pf-planning-heading"><VisualHeader title="Planning" />{PLAYFIELD_V4 && <button type="button" className="pf-week-picker" aria-label="Choisir une autre semaine" aria-expanded={chooserOpen} onClick={()=>setChooserOpen(v=>!v)}>▣</button>}</div> : <div className="row between"><h1 className="screen-title">Planning</h1>{week?.experimental && <ExperimentalBadge />}</div>}
+      {REKKA_V2 ? <div className="pf-planning-heading"><VisualHeader title="Planning" />{PLAYFIELD_V4 && <button type="button" className="pf-week-picker" aria-label="Choisir une autre semaine" aria-expanded={chooserOpen} onClick={()=>setChooserOpen(v=>!v)}><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M7 3v4m10-4v4M3 10h18"/></svg></button>}</div> : <div className="row between"><h1 className="screen-title">Planning</h1>{week?.experimental && <ExperimentalBadge />}</div>}
       {state.safety.activePain && <PainPause onGo={() => onGo('settings')} />}
       <IntegrityNotice issues={beta0Integrity(state)} />
       {current && (

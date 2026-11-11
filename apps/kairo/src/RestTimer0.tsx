@@ -62,7 +62,7 @@ export function RestTimer0({ rest, now, onAction, layout='compact', nextSeriesTe
             <small>{label}</small>
             <div className={`k-rest-time ${over ? 'over' : ''}`}
               aria-label={`${over ? 'Dépassé de' : 'Reste'} ${mm} min ${ss} s`}>
-              {over ? '+' : ''}{Number(mm)}:{ss}
+              {over ? '+' : ''}{PLAYFIELD_V4 ? mm : Number(mm)}:{ss}
             </div>
             <button className="v31-rest-play" aria-label={paused ? 'Reprendre le repos' : 'Mettre le repos en pause'}
               onClick={() => onAction(paused ? 'resume' : 'pause')}>

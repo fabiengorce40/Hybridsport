@@ -26,7 +26,7 @@ export function StrengthPreview({v,title,onBack,onStart,preparation,context,goal
    const label=exerciseLabel(selected.exerciseId);
    const muscles=muscleText(selected.exerciseId);
    const setLogs=v.log?.sets.filter(s=>s.itemId===selected.id&&s.done)??[];
-   const kind=/chest|bench|fly|pec|press/i.test(selected.exerciseId)?'chest':/shoulder|lateral|overhead/i.test(selected.exerciseId)?'shoulders':/curl|triceps/i.test(selected.exerciseId)?'arms':'back';
+   const kind=/shoulder|lateral|overhead/i.test(selected.exerciseId)?'shoulders':/chest|bench|fly|pec/i.test(selected.exerciseId)?'chest':/curl|triceps/i.test(selected.exerciseId)?'arms':'back';
    const workingSets=selected.prescription.sets.filter(s=>s.kind!=='rampup');
    const firstWork=workingSets[0];
    return <main className="v3-workout pf-exercise-detail" data-exercise-detail={selected.exerciseId}>

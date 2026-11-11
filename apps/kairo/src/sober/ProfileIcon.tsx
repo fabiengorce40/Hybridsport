@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 export function ProfileIcon({kind}:{kind:string}) {
 const paths:Record<string,ReactNode>={
  objectives:<><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><path d="m12 12 8-8m-1-2 1 2 2 1"/></>,
+ health:<path d="M12 21 3.8 12.8C-1 8 5 2 9.4 5.8L12 8.2l2.6-2.4c4.4-3.8 10.4 2.2 5.6 7L12 21ZM6 12h3l2-3 2 6 2-3h3"/>,
  availability:<><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4m8-4v4M7 14h2m6 0h2M7 18h2"/></>,
  equipment:<><path d="M2 10v4m3-8v12m3-14v16m0-8h8m0-8v16m3-14v12m3-8v4"/></>,
  sports:<><circle cx="15" cy="4" r="2"/><path d="m9 9 4-2 4 4 4 1M13 7l-3 7-5 2-3 5m8-7 5 2 1 5M9 9l-4 3-3-1"/></>,

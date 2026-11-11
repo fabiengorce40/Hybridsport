@@ -526,3 +526,83 @@ html[data-rekka-theme="playfield-pro"] .v3-profile-menu > .v3-profile-link {
 html[data-rekka-theme="playfield-pro"] .v3-profile-link strong {
   font-size: clamp(15px, 4.6vw, 22px) !important;
 }
+
+html[data-rekka-theme="playfield-pro"] [data-planning-controls] .view-switch {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
+}
+html[data-rekka-theme="playfield-pro"] :is(.pf-planning-heading, .pf-profile-heading) {
+  padding-inline: 45px;
+}
+html[data-rekka-theme="playfield-pro"] :is(.pf-planning-heading, .pf-profile-heading) .v3-page-header h1 {
+  text-align: center;
+  font-size: 26px !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-week-picker {
+  background: transparent !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-athlete {
+  object-fit: cover;
+}
+html[data-rekka-theme="playfield-pro"] .pf-detail-art {
+  height: auto !important;
+  aspect-ratio: 662 / 411;
+  overflow: hidden;
+  border-radius: 22px !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-chest-anatomy {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+html[data-rekka-theme="playfield-pro"] .pf-detail-toolbar > strong {
+  font-size: 24px !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-detail-heading {
+  margin-block: 16px 22px !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-detail-heading h1 {
+  font-size: clamp(19px, 5.7vw, 27px) !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-period button {
+  font-size: clamp(14px, 4.4vw, 20px) !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-week {
+  grid-template-columns: 118px minmax(0, 1fr) !important;
+  gap: 12px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-main {
+  grid-template-columns: clamp(94px, 30vw, 118px) minmax(0, 1fr) !important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-orbit {
+  width: clamp(94px, 30vw, 118px) !important;
+  height: clamp(94px, 30vw, 118px) !important;
+  min-width: 0 !important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest .k-rest-time {
+  font-size: clamp(25px, 7vw, 34px) !important;
+  font-variant-numeric: tabular-nums;
+}
+html[data-rekka-theme="playfield-pro"] .pf-rest-next strong {
+  font-size: clamp(15px, 4.6vw, 20px) !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-home-metrics strong {
+  font-size: clamp(22px, 6vw, 27px) !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-week-name,
+html[data-rekka-theme="playfield-pro"] .pf-week-sport > strong {
+  font-size: 15px !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-week-sport-bar {
+  border-radius: 999px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-board .pf-summary-insight strong {
+  font-size: 18px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-board .pf-summary-insight small {
+  font-size: 12px;
+}

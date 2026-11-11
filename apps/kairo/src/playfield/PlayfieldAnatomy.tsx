@@ -1,14 +1,18 @@
+import chestAnatomy from './assets/chest-anatomy.webp';
+
 /** Playfield Pro anatomical art — new vector study, deliberately more detailed than
  * the original geometric torso. The displayed muscle group follows the exercise;
  * this remains an illustrative guide and not a clinical muscle diagram.
  */
 export function PlayfieldAnatomy({ target = 'chest' }: { target?: 'chest' | 'shoulders' | 'arms' | 'back' }) {
+  if (target === 'chest') {
+    return <img className="pf-chest-anatomy" src={chestAnatomy} width={662} height={411}
+      alt="Illustration du torse mettant en évidence les pectoraux et l’avant des épaules" />;
+  }
   const primary = '#FA6A58';
   const neutral = '#BAC5D2';
-  const pec = target==='chest' ? primary : neutral;
   const deltoid = target==='shoulders' ? primary : '#B2C0CF';
   const biceps = target==='arms' ? primary : '#B5C5D5';
-  const muscleFibers = target==='chest' ? '#B84039' : '#8292A5';
   return <svg className="pf-anatomy" viewBox="0 0 300 232" role="img" aria-label="Illustration indicative du haut du corps et des muscles sollicités">
     <defs>
       <linearGradient id="pa-bg" x1="0" y1="0" x2=".92" y2="1">
@@ -16,9 +20,6 @@ export function PlayfieldAnatomy({ target = 'chest' }: { target?: 'chest' | 'sho
       </linearGradient>
       <linearGradient id="pa-body" x1="0" y1="0" x2="1" y2=".35">
         <stop stopColor="#92A4B9"/><stop offset=".18" stopColor="#D6DFE8"/><stop offset=".48" stopColor="#FAFBFD"/><stop offset=".72" stopColor="#DDE5EC"/><stop offset="1" stopColor="#889BAF"/>
-      </linearGradient>
-      <linearGradient id="pa-musc" x1="0" y1="0" x2=".9" y2="1">
-        <stop stopColor="#FF9D87"/><stop offset=".31" stopColor="#FA6A58"/><stop offset=".76" stopColor="#DB5147"/><stop offset="1" stopColor="#A93839"/>
       </linearGradient>
       <linearGradient id="pa-side" x1="0" y1="0" x2=".9" y2="0">
         <stop stopColor="#8EA4B7"/><stop offset=".47" stopColor="#E2E9F0"/><stop offset="1" stopColor="#B5C4D4"/>
@@ -49,12 +50,12 @@ export function PlayfieldAnatomy({ target = 'chest' }: { target?: 'chest' | 'sho
     <path d="M212 113L203 128L211 144L201 154L212 170L198 182L202 199" fill="none" stroke="#7A8FA5" strokeWidth="1.5"/>
     <path d="M86 126L101 139M88 145L103 157M91 166L105 178M214 126L199 139M212 145L197 157M209 166L195 178" fill="none" stroke="#F4F7F9" strokeWidth="2" opacity=".68"/>
     {/* Pectoralis major: convex, asymmetric anatomical muscle contours, not block shapes. */}
-    <path d="M145 86Q129 76 111 77Q98 78 95 98L94 116Q109 140 144 136L148 101Z" fill={target==='chest'?'url(#pa-musc)':pec} stroke="#9B5F60" strokeWidth="1.8"/>
-    <path d="M155 86Q171 76 189 77Q202 78 205 98L206 116Q191 140 156 136L152 101Z" fill={target==='chest'?'url(#pa-musc)':pec} stroke="#9B5F60" strokeWidth="1.8"/>
+    <path d="M145 86Q129 76 111 77Q98 78 95 98L94 116Q109 140 144 136L148 101Z" fill={neutral} stroke="#9B5F60" strokeWidth="1.8"/>
+    <path d="M155 86Q171 76 189 77Q202 78 205 98L206 116Q191 140 156 136L152 101Z" fill={neutral} stroke="#9B5F60" strokeWidth="1.8"/>
     <path d="M102 91Q123 81 141 92M198 91Q177 81 159 92" fill="none" stroke="#FFF0E8" strokeWidth="2.5" opacity=".7"/>
     <path d="M95 119Q115 141 145 137M205 119Q185 141 155 137" fill="none" stroke="#8E4F52" strokeWidth="2.1" opacity=".8"/>
     {/* Striation cues radiate from the humeral insertions, matching scientific drawings. */}
-    {[0,1,2,3,4,5].map(i=><g key={i} opacity=".45" fill="none" stroke={muscleFibers} strokeWidth=".8">
+    {[0,1,2,3,4,5].map(i=><g key={i} opacity=".45" fill="none" stroke="#8292A5" strokeWidth=".8">
       <path d={`M${99+i*3} ${90+i*3}Q${117+i*2} ${98+i*2} ${143-i} ${112+i*3}`}/>
       <path d={`M${201-i*3} ${90+i*3}Q${183-i*2} ${98+i*2} ${157+i} ${112+i*3}`}/>
     </g>)}
