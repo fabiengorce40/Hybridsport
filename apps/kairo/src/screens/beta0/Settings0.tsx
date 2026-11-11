@@ -173,6 +173,7 @@ export function Settings0({ onEditProfile }: { onEditProfile?: () => void }) {
   if (SOBER_V3) {
     const p = store.state.profile;
     const sportsDetail = Object.entries(SPORT_LABELS).filter(([key])=>p?.[key as keyof typeof SPORT_LABELS].enabled).map(([,label])=>label).join(' · ');
+    const activeSportsCount = Object.entries(SPORT_LABELS).filter(([key])=>p?.[key as keyof typeof SPORT_LABELS].enabled).length;
     const cards = PLAYFIELD_V4 ? [
       ['objectives','◎','Mes objectifs','Objectifs et personnalisation sportive'],
       ['sports','↗','Mon profil sportif',sportsDetail],
@@ -194,7 +195,10 @@ export function Settings0({ onEditProfile }: { onEditProfile?: () => void }) {
       {PLAYFIELD_V4 && !panel && <section className="pf-profile-hero" aria-label="Résumé du profil">
         <div className="pf-profile-avatar"><img src={profileIllustration} alt="Illustration de profil sportif" width={72} height={72}/></div>
         <div><strong>{p?.displayName?.trim() || 'Mon profil'}</strong>
-          <span>{Object.entries(SPORT_LABELS).filter(([key])=>p?.[key as keyof typeof SPORT_LABELS].enabled).length} disciplines activées · Programme personnel</span>
+          <span className="pf-profile-subtitle">Programme personnalisé · {activeSportsCount} sport{activeSportsCount>1?'s':''} actif{activeSportsCount>1?'s':''}</span>
+          <div className="pf-profile-sport-progress" role="progressbar" aria-label="Sports activés sur les quatre disciplines disponibles" aria-valuemin={0} aria-valuemax={4} aria-valuenow={activeSportsCount}>
+            <span style={{width:`${activeSportsCount * 25}%`}}/>
+          </div>
         </div>
       </section>}
       {(!PLAYFIELD_V4 || store.state.safety.activePain || panel==='health') && <PainCard/>}
