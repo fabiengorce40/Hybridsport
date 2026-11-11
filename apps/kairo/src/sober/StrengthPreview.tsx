@@ -93,7 +93,7 @@ export function StrengthPreview({v,title,onBack,onStart,preparation,context,goal
        </div><span className="v3-chevron" aria-hidden="true">›</span></>;
      return PLAYFIELD_V4
        ? <button type="button" className="v3-preview-exercise pf-preview-open" key={item.id}
-           onClick={()=>{setSelectedId(item.id);setDetailTab('infos');window.scrollTo({top:0,behavior:'instant'});}}>
+           onClick={()=>{setSelectedId(item.id);setDetailTab('infos');try { window.scrollTo({top:0,behavior:'auto'}); } catch { /* non-browser test runtime */ }}}>
            <span className="v3-exercise-tile">{tile}</span>
          </button>
        : <details className="v3-preview-exercise" key={item.id}>
