@@ -17,7 +17,10 @@ html[data-rekka-theme="playfield-pro"] .v3-home .hero::before {
   position: absolute;
   width: calc(29 * var(--home-scale));
   height: calc(22.5 * var(--home-scale));
+  left: auto;
   right: -12px;
+  bottom: auto;
+  mask-image: none;
   top: calc(13 * var(--home-scale));
   background: url("./assets/rekka-home-accent.webp") right center / contain no-repeat;
   pointer-events: none;
@@ -193,5 +196,55 @@ html[data-rekka-theme="playfield-pro"] .v3-home .pf-home-week .pf-week-sports {
   }
   html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-details:not([open]) {
     top: -143px !important;
+  }
+}
+
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-tag {
+  padding-inline: 11px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-hero-session {
+  padding-inline: 9px 11px;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .v3-today > .btn.primary::before {
+  content: "";
+  width: 17px;
+  height: 20px;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+  margin-right: 7px;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-home-week > .row {
+  position: relative;
+  min-height: 30px;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-home-week > .row > strong {
+  font-size: clamp(18px, 5.6vw, 23px) !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-week-detail {
+  position: absolute;
+  right: 0;
+  top: -7px;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-week-sport {
+  grid-template-columns: 45px minmax(0, 1fr) auto !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-week-name,
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-week-sport > strong {
+  font-size: clamp(15px, 4.45vw, 18px) !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-week-sport-icon {
+  width: 38px !important;
+  height: 38px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-home .pf-home-metrics strong span {
+  font-size: inherit;
+}
+@media (max-width: 375px) {
+  html[data-rekka-theme="playfield-pro"] .v3-home .v3-today {
+    padding-top: 10px !important;
+    padding-bottom: 11px !important;
+  }
+  html[data-rekka-theme="playfield-pro"] .v3-home .v3-today > .btn.primary {
+    min-height: 47px !important;
   }
 }

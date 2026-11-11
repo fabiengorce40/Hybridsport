@@ -32,7 +32,7 @@ export function TabBar({ tabs = V0_TABS, tab, onChange }: { tabs?: readonly Tab[
     <nav className="tabbar" aria-label="Navigation principale">
       {tabs.map((t) => (
         <button key={t} className={t === tab ? 'on' : ''} onClick={() => onChange(t)} aria-current={t === tab ? 'page' : undefined}>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{REKKA_V2 && (tabs === BETA0_TABS || tabs === PLAYFIELD_TABS) ? V2_ICONS[t] ?? ICONS[t] : ICONS[t]}</svg>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{tabs === PLAYFIELD_TABS && tab === 'home' && t === 'history' ? <><path d="M4 20v-4m5 4v-8m5 8V8"/><rect x="18" y="3" width="3" height="17" rx="1.5"/></> : REKKA_V2 && (tabs === BETA0_TABS || tabs === PLAYFIELD_TABS) ? V2_ICONS[t] ?? ICONS[t] : ICONS[t]}</svg>
           {REKKA_V2 && (tabs === BETA0_TABS || tabs === PLAYFIELD_TABS) ? ({ history: 'Progression', settings: 'Profil', programme: 'Séances' } as Partial<Record<Tab, string>>)[t] ?? TAB_LABELS[t] : TAB_LABELS[t]}
         </button>
       ))}
