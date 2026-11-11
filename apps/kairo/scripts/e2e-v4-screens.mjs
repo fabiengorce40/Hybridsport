@@ -83,7 +83,7 @@ try {
     await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Profil', exact: true }).click();
     await screen('7-profil');
     await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Planning', exact: true }).click();
-    await page.locator('.pf-planning-week .pf-planning-session').filter({hasText:'Haut du corps B'}).first().click();
+    await page.locator('.pf-planning-week .pf-planning-day[data-date="2026-10-07"] .pf-planning-session[data-sport="strength"]').click();
     assert.equal(await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button').count(), 4, 'V4 : 4 onglets comme la planche');
     await page.locator('.pf-preview-open').first().click();
     await page.locator('[data-exercise-detail]').waitFor();
