@@ -121,7 +121,16 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
                       // grâce à sa marge de défilement basse (CSS) ; aucun saut si elle est déjà visible.
                       const reveal = () => {
                         const row = document.querySelectorAll<HTMLElement>(`#v31-sets-${cardIndex} .v31-set`)[next];
-                        if (typeof row?.scrollIntoView === 'function') row.scrollIntoView({ block: 'nearest' });
+                        if (!row) return;
+                        if (!PLAYFIELD_V4) { row.scrollIntoView?.({ block: 'nearest' }); return; }
+                        const rect=row.getBoundingClientRect();
+                        const sticky=document.querySelector<HTMLElement>('.v31-sticky-top')?.getBoundingClientRect();
+                        const dock=document.querySelector<HTMLElement>('.v31-rest')?.getBoundingClientRect();
+                        const topLimit=(sticky?.bottom ?? 0)+12;
+                        const bottomLimit=(dock?.top ?? window.innerHeight)-12;
+                        const delta=rect.top<topLimit ? rect.top-topLimit : rect.bottom>bottomLimit ? rect.bottom-bottomLimit : 0;
+                        // Smooth only when the *next* field is actually occluded; never jump past the exercise heading.
+                        if(Math.abs(delta)>4) window.scrollBy({ top: delta, behavior:'smooth' });
                       };
                       if (typeof requestAnimationFrame === 'function') requestAnimationFrame(reveal); else reveal();
                     }
