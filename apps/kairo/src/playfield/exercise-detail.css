@@ -1,0 +1,146 @@
+/* Detail only. Measurements use the 728 px reference scaled to 390 px, below the status bar. */
+.pf-exercise-page {
+  --detail-ink: #0e1b35;
+  box-sizing: border-box;
+  width: min(100%, 560px);
+  margin-inline: auto;
+  min-height: 100dvh;
+  padding: 14px 8px calc(36px + env(safe-area-inset-bottom, 0px));
+  color: var(--detail-ink);
+  font-family: "REKKA Inter", system-ui, sans-serif;
+  background: radial-gradient(ellipse at 56% 35%, #fffcf7, #faf4eb);
+}
+.pf-exercise-page *, .pf-exercise-page *::before { box-sizing: border-box; }
+.pf-exercise-bar {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 44px;
+  align-items: center;
+  margin-inline: 2px;
+  text-align: center;
+}
+.pf-exercise-bar > strong { font-size: clamp(22px, 6.7vw, 27px); font-weight: 900; letter-spacing: -.045em; }
+.pf-exercise-bar button, .pf-exercise-menu summary {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 0;
+  box-shadow: none;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+}
+.pf-exercise-menu summary::-webkit-details-marker { display: none; }
+.pf-exercise-bar svg { width: 26px; height: 26px; }
+.pf-exercise-bar button path, .pf-exercise-identity > svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.pf-exercise-menu { position: relative; }
+.pf-exercise-menu > div {
+  position: absolute;
+  right: 0;
+  z-index: 2;
+  width: min(320px, 82vw);
+  padding: 16px;
+  text-align: start;
+  border-radius: 16px;
+  background: #fffdfa;
+  box-shadow: 0 6px 22px #0e1b3529;
+}
+.pf-exercise-menu h2 { margin: 0; font-size: 18px; }
+.pf-exercise-identity {
+  display: grid;
+  grid-template-columns: clamp(60px, 17.5vw, 69px) minmax(0, 1fr);
+  align-items: center;
+  margin: 40px 11px 28px;
+  gap: 0;
+}
+.pf-exercise-identity > svg { width: 57px; height: 48px; stroke-width: 4; }
+.pf-exercise-identity > div { border-inline-start: 1px solid #d5d1ca; padding-inline-start: 13px; }
+.pf-exercise-identity h1 {
+  margin: 0;
+  color: inherit;
+  font-size: clamp(26px, 8.3vw, 33px);
+  line-height: 1.03;
+  font-weight: 900;
+  letter-spacing: -.055em;
+  overflow-wrap: anywhere;
+}
+.pf-exercise-identity p { margin: 4px 0 0; font-size: clamp(16px, 4.9vw, 19px); line-height: 1.12; letter-spacing: -.025em; }
+.pf-exercise-panel {
+  padding: 12px 8px 25px;
+  border-radius: 28px;
+  background: linear-gradient(150deg, #fffdfa, #faf7f0);
+  box-shadow: 0 8px 17px #3228141a;
+}
+.pf-exercise-atlas {
+  display: block;
+  width: calc(100% - 4px);
+  height: auto;
+  aspect-ratio: 662 / 411;
+  margin-inline: auto;
+  object-fit: cover;
+  border-radius: 23px;
+}
+.pf-exercise-unavailable {
+  display: grid;
+  place-content: center;
+  gap: 6px;
+  padding: 18px;
+  text-align: center;
+  background: #f2ede5;
+}
+.pf-exercise-switch {
+  display: grid;
+  grid-template-columns: 1.08fr 1.03fr 1fr;
+  gap: 4px;
+  margin-top: 19px;
+}
+.pf-exercise-switch button {
+  min-width: 44px;
+  min-height: 46px;
+  padding: 0 3px;
+  border: 0;
+  border-radius: 999px;
+  background: #f0ece6;
+  color: inherit;
+  box-shadow: none;
+  font: inherit;
+  font-size: clamp(16px, 4.7vw, 19px);
+  font-weight: 850;
+  letter-spacing: -.045em;
+  cursor: pointer;
+}
+.pf-exercise-switch button[aria-pressed="true"] {
+  background: linear-gradient(110deg, #ffd529, #ffca19);
+}
+.pf-exercise-info {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 37%;
+  align-items: end;
+  gap: 8px;
+  margin: 24px 3px 0;
+}
+.pf-exercise-info ul { display: grid; gap: 10px; margin: 0; padding-inline-start: 21px; }
+.pf-exercise-info li { font-size: clamp(15px, 4.7vw, 18px); font-weight: 650; line-height: 1.14; letter-spacing: -.03em; }
+.pf-exercise-demo {
+  display: grid;
+  place-content: center;
+  aspect-ratio: 246 / 220;
+  padding: 10px;
+  border-radius: 18px;
+  background: #142238;
+  color: #fffdfa;
+  text-align: center;
+  font-size: 13px;
+}
+.pf-exercise-copy { padding: 10px 9px 0; }
+.pf-exercise-copy ul { padding-inline-start: 20px; }
+.pf-exercise-copy li + li { margin-top: 8px; }
+.pf-exercise-copy dt { font-weight: 750; }
+.pf-exercise-copy dd { margin: 0 0 8px; }

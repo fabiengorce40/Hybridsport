@@ -12,7 +12,7 @@ import { REKKA_V2, VisualHeader } from '../../rekka/visual.js';
 import { useEffect, useState } from 'react';
 import {
   approxMinutes, controlRest, pauseProgrammeSession, resumeProgrammeSession, sessionElapsedS, maintainedInterference, startAssessment, durationLabel, exerciseLabel, finishProgrammeSession, recordProgrammeSet, recordProgrammeSetEffort, reportEquipmentUnavailable, runPlayerPosition, runPlayerSteps, selectProgrammeSession, strengthInsightOf, toggleProgrammePainItem,
-  adaptationVolumeDeficit,
+  adaptationVolumeDeficit, progressView,
 } from '@hybridsport/app-core';
 import type { FinishInput, ProgrammeSessionView, SessionItem, SetPrescription } from '@hybridsport/app-core';
 import { useStore } from '../../store.js';
@@ -237,7 +237,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
     onAction={(a) => store.apply((s, c) => controlRest(s, c, requestId, a))} />;
 
   if (v.sport === 'strength') {
-    if(SOBER_V3&&!started&&!finished)return <><StrengthPreview v={v} title={name} goalLabel={store.state.profile?.strength.goal==='hypertrophy'?'Volume & hypertrophie':store.state.profile?.strength.goal==='strength'?'Développer ma force':'Forme générale'} onBack={onBack} onStart={()=>flow.start(requestId)} context={<AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state,requestId)}/>} preparation={<StrengthInsightPanel requestId={requestId}/>}/>{flow.sheet}</>;
+    if(SOBER_V3&&!started&&!finished)return <><StrengthPreview v={v} exerciseHistory={id=>progressView(store.state).strength.exercises.find(exercise=>exercise.exerciseId===id)} title={name} goalLabel={store.state.profile?.strength.goal==='hypertrophy'?'Volume & hypertrophie':store.state.profile?.strength.goal==='strength'?'Développer ma force':'Forme générale'} onBack={onBack} onStart={()=>flow.start(requestId)} context={<AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state,requestId)}/>} preparation={<StrengthInsightPanel requestId={requestId}/>}/>{flow.sheet}</>;
     if(SOBER_V3&&editable)return <><LiveWorkout v={v} title={name} eyebrow={`${sportName(v.sport)} · ${sessionDay(v)}`} trainingLabel={role??'Musculation'} editable={editable} elapsedSeconds={clockElapsed} onBack={onBack} onFinish={()=>setFinishing(true)} restTimer={timer}
       sessionClock={clockElapsed!==null&&<SessionClock log={log} now={now} onToggle={()=>store.apply((s,c)=>(clockPaused?resumeProgrammeSession:pauseProgrammeSession)(s,c,requestId))}/>}
       context={<AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state,requestId)}/>} preparation={<StrengthInsightPanel requestId={requestId}/>}

@@ -17,7 +17,14 @@ const app = fileURLToPath(new URL('../', import.meta.url));
 const root = resolve(process.env.REKKA_DIST ?? resolve(app, 'dist-beta'));
 const shots = process.argv[2];
 if (shots) mkdirSync(shots, { recursive: true });
-const fixture = readFileSync(resolve(app, 'tests/fixtures/v3-sober.json'), 'utf8');
+const fixture = JSON.parse(readFileSync(resolve(app, 'tests/fixtures/v3-sober.json'), 'utf8'));
+if (process.env.REKKA_DETAIL_ONLY === '1') {
+  const requests = fixture.planner.weeks['2026-10-05'].requests;
+  const exercise = requests.flatMap(request => request.record?.data?.session?.blocks ?? [])
+    .flatMap(block => block.items).find(item => item.id === 'v3.upper.0');
+  assert.equal(exercise?.exerciseId, 'ex.db_bench_press');
+  exercise.exerciseId = 'ex.bench_press';
+}
 const KEY = 'rekka-beta:kairo.state';
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webp': 'image/webp', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json' };
 const server = createServer((req, res) => {
@@ -46,7 +53,7 @@ const audit = (page) => page.evaluate(() => {
   return { theme: document.documentElement.dataset.rekkaTheme ?? null, hscroll: document.documentElement.scrollWidth > window.innerWidth + 1, small, neon, magnesia, lowContrast };
 });
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 const report = {};
 try {
   for (const width of [390, 360, 412, 1024]) {
@@ -60,7 +67,7 @@ try {
     page.on('pageerror', (e) => errors.push(e.message));
     await page.clock.install({ time: new Date('2026-10-07T08:00:00Z') });
     await page.clock.pauseAt(new Date('2026-10-07T08:01:00Z'));
-    await page.addInitScript(({ k, f }) => { if (localStorage.getItem(k) === null) localStorage.setItem(k, f); }, { k: KEY, f: fixture });
+    await page.addInitScript(({ k, f }) => { if (localStorage.getItem(k) === null) localStorage.setItem(k, f); }, { k: KEY, f: JSON.stringify(fixture) });
     report[W] = {};
     const screen = async (name) => {
       await page.waitForTimeout(250);
@@ -130,8 +137,20 @@ try {
     await page.locator('[data-exercise-detail]').waitFor();
     await screen('5-detail-exercice');
     await page.getByRole('button', { name: 'Historique', exact: true }).click();
-    assert.equal(await page.getByRole('heading', {name: 'Séries enregistrées dans cette séance'}).count(), 1);
-    await page.getByRole('button', { name: 'Retour à la liste d\'exercices' }).click();
+    assert.ok(await page.getByRole('region', { name: 'Historique' }).isVisible());
+    await page.getByRole('button', { name: 'Conseils', exact: true }).click();
+    assert.ok(await page.getByRole('region', { name: 'Conseils' }).isVisible());
+    await page.getByRole('button', { name: /Retour à la liste/ }).click();
+    if (process.env.REKKA_DETAIL_ONLY === '1') {
+      await page.locator('.pf-preview-open').nth(1).click();
+      const detail = page.locator('[data-exercise-detail]');
+      assert.notEqual(await detail.getAttribute('data-exercise-detail'), 'ex.bench_press');
+      assert.equal(await detail.locator('.pf-exercise-atlas img, img.pf-exercise-atlas').count(), 0);
+      await screen('5-detail-variante');
+      assert.deepEqual(errors, []);
+      await ctx.close();
+      continue;
+    }
     await page.getByRole('button', { name: 'Commencer la séance', exact: true }).click();
     await page.locator('[data-checkin-form]').getByRole('button', { name: 'Passer', exact: true }).click();
     await page.locator('.v31-workout').waitFor();
@@ -186,7 +205,7 @@ try {
   for (const [w, screens] of Object.entries(report)) for (const [n, a] of Object.entries(screens)) {
     console.log(`${w} ${n} | cibles<44 : ${String(a.small.length)}${a.small.length ? ` [${a.small.slice(0, 6).join(' ; ')}]` : ''} | néon V3 : ${String(a.neon.length)}${a.neon.length ? ` [${a.neon.slice(0, 3).join(' ; ')}]` : ''} | contraste faible : ${String(a.lowContrast.length)}${a.lowContrast.length ? ` [${a.lowContrast.slice(0, 8).join(' ; ')}]` : ''}`);
   }
-  console.log(process.env.REKKA_HOME_ONLY === '1' ? 'E2E V4 ACCUEIL OK' : 'E2E V4 SEPT ÉCRANS OK');
+  console.log(process.env.REKKA_HOME_ONLY === '1' ? 'E2E V4 ACCUEIL OK' : process.env.REKKA_DETAIL_ONLY === '1' ? 'E2E V4 DÉTAIL OK' : 'E2E V4 SEPT ÉCRANS OK');
 } finally {
   await browser.close();
   server.close();
