@@ -55,7 +55,7 @@ it('le bilan ne compte que les séries réellement validées ; montées à part 
     log: { requestId: base.requestId, sport: 'strength' as const, startedAt: normalizeInstant('2026-10-07T08:00:00Z'), finishedAt: normalizeInstant('2026-10-07T08:40:00Z'), sets: [{ itemId: one.id, setIndex: 0, done: true, reps: 5 }, { itemId: one.id, setIndex: 1, done: true, reps: 10, loadKg: 40 }], painItems: [one.id], rest: null, timing: { activeS: 2280, pausedS: 120 } },
     result: { requestId: base.requestId, weekIndex: 0, sport: 'strength' as const, date: '2026-10-07', completion: 'modified' as const, pain: true, provenance: 'declared' as const, recordedAt: normalizeInstant('2026-10-07T08:40:00Z') },
   } as unknown as Parameters<typeof SessionSummary>[0]['v'];
-  const r = render(<SessionSummary v={v} statusLabel="Adaptée" />);
+  const r = render(<SessionSummary v={v} statusLabel="Adaptée" onReturn={() => {}} />);
   const text = r.container.textContent ?? '';
   expect(text).toContain('Séries de travail1/2');
   expect(text).toContain('Exercices terminés0/1');
