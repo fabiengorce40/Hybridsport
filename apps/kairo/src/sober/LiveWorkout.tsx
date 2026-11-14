@@ -5,6 +5,7 @@ import type { StrengthWorkoutProps, SetsItem } from '../workout/StrengthWorkout.
 import { SetLine, EffortRow, LightBlock, alternativesText, isSets, targetRirOf, phaseOf, PHASE_TITLES } from '../workout/StrengthWorkout.js';
 import { muscleText } from './Artwork.js';
 import { PLAYFIELD_V4 } from '../playfield/flag.js';
+import benchPressReference from '../playfield/assets/bench-press-reference.webp';
 import { PlayfieldBenchArt } from '../playfield/ExerciseArt.js';
 
 interface Props extends StrengthWorkoutProps {
@@ -95,7 +96,9 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
             <span className="v31-chevron" aria-hidden="true">{expanded ? '⌃' : '⌄'}</span>
           </button>
           <div className="v3-sets v31-sets" id={`v31-sets-${cardIndex}`} hidden={!expanded}>
-            {PLAYFIELD_V4 && benchArt && <div className="pf-exercise-illustration"><PlayfieldBenchArt dumbbells={/db_|dumbbell/i.test(item.exerciseId)} /></div>}
+            {PLAYFIELD_V4 && benchArt && <div className="pf-exercise-illustration">{item.exerciseId === 'ex.bench_press'
+              ? <img src={benchPressReference} alt="Développé couché à la barre" width={853} height={272}/>
+              : <PlayfieldBenchArt dumbbells={/db_|dumbbell/i.test(item.exerciseId)} />}</div>}
             {PLAYFIELD_V4 && <div className="pf-set-columns" aria-hidden="true"><span>Série</span><span>Charge</span><span>Répétitions</span><span>Statut</span></div>}
             {sets.map((set, i) => <Fragment key={`${item.id}.${i}`}>
               {(i === 0 || phaseOf(sets[i - 1] ?? set) !== phaseOf(set)) &&

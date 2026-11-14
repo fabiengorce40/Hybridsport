@@ -22,7 +22,7 @@ html[data-rekka-theme="playfield-pro"] .pf-exercise-identity p {
 }
 html[data-rekka-theme="playfield-pro"] .pf-exercise-info {
   grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);
-  gap:10px;align-items:end;min-width:0;
+  gap:10px;align-items:center;min-width:0;
 }
 html[data-rekka-theme="playfield-pro"] .pf-exercise-info>* {min-width:0;max-width:100%;}
 html[data-rekka-theme="playfield-pro"] .pf-exercise-info li {
@@ -48,7 +48,7 @@ html[data-rekka-theme="playfield-pro"] .pf-profile-hero {
   box-shadow:var(--pf4-shadow)!important;
 }
 html[data-rekka-theme="playfield-pro"] .pf-profile-avatar {
-  width:94px!important;height:94px!important;flex-shrink:0;border-radius:50%!important;
+  width:110px!important;height:110px!important;flex-shrink:0;border-radius:50%!important;
 }
 html[data-rekka-theme="playfield-pro"] .pf-profile-hero strong {
   font-size:clamp(23px,6.6vw,32px)!important;
@@ -87,7 +87,7 @@ html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-p
   gap:7px!important;padding:4px 2px!important;
 }
 html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-day-name {
-  min-height:40px!important;width:40px!important;
+  min-height:35px!important;width:46px!important;
 }
 html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-session-title {
   font-size:clamp(13px,4vw,16px)!important;
@@ -117,7 +117,7 @@ html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-
 }
 /* Completion: more spacious single-card celebration; the archive stays accessible. */
 html[data-rekka-theme="playfield-pro"] .pf-summary-board {
-  border-radius:28px!important;padding:22px 15px 25px!important;
+  border-radius:28px!important;padding:17px 13px 20px!important;
   background:var(--pf4-surface)!important;
 }
 html[data-rekka-theme="playfield-pro"] .pf-summary-celebration {padding-top:9px!important;}
@@ -132,10 +132,10 @@ html[data-rekka-theme="playfield-pro"] .pf-summary-celebration h2 {
 html[data-rekka-theme="playfield-pro"] .pf-summary-board>header {display:none!important;}
 html[data-rekka-theme="playfield-pro"] .pf-summary-stats {gap:8px!important;}
 html[data-rekka-theme="playfield-pro"] .pf-summary-stats>div {
-  border-radius:20px!important;min-height:120px!important;
+  border-radius:20px!important;min-height:112px!important;
 }
 html[data-rekka-theme="playfield-pro"] .pf-summary-insight {
-  margin-block:24px!important;background:transparent!important;
+  margin-block:18px!important;background:transparent!important;
 }
 html[data-rekka-theme="playfield-pro"] .pf-summary-open,
 html[data-rekka-theme="playfield-pro"] .pf-summary-back {
@@ -180,3 +180,28 @@ html[data-rekka-theme="playfield-pro"] .pf-summary-seal svg {display:block;width
 html[data-rekka-theme="playfield-pro"] .v3-profile-menu [data-profile-section="objectives"]>span:first-child {color:#d18e00!important;}
 html[data-rekka-theme="playfield-pro"] .v3-profile-menu [data-profile-section="health"]>span:first-child {color:#e34430!important;}
 html[data-rekka-theme="playfield-pro"] .v3-profile-menu [data-profile-section="equipment"]>span:first-child {color:#0e1b35!important;}
+
+/* Playfield: the bench illustration follows the aspect ratio of the official artwork. */
+html[data-rekka-theme="playfield-pro"] .v31-workout .pf-exercise-illustration:has(img) {
+  height:auto!important;aspect-ratio:853/272;border-radius:0!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-exercise-illustration img {
+  display:block;width:100%;height:100%;object-fit:contain;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-inline .v31-rest-main {
+  grid-template-columns: minmax(80px, 30%) minmax(0,1fr)!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-inline .v31-rest-skip {
+  background:linear-gradient(#ffe05b,#ffc400)!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout .pf-next-inline {
+  min-height:54px!important;border-radius:20px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-celebration::before {
+  background:
+    linear-gradient(35deg,transparent 39%,#ffc400 40% 65%,transparent 66%) 14% 30% / 16px 12px,
+    linear-gradient(135deg,transparent 38%,#ef6544 39% 64%,transparent 65%) 85% 22% / 16px 13px,
+    linear-gradient(140deg,transparent 38%,#ffc400 39% 64%,transparent 65%) 25% 65% / 16px 14px,
+    linear-gradient(35deg,transparent 39%,#ffc400 40% 65%,transparent 66%) 76% 62% / 17px 13px;
+  background-repeat:no-repeat;
+}
