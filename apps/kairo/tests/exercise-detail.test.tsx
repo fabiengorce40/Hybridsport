@@ -13,7 +13,7 @@ it('affiche le développé couché, l’atlas officiel et les commandes de la pa
   expect(screen.getByRole('heading', { name: 'Développé couché' })).toBeTruthy();
   expect(screen.getByRole('img', { name: /Pectoraux/ })).toBeTruthy();
   expect(screen.getByText('Banc horizontal')).toBeTruthy();
-  expect(screen.getByText('Démonstration vidéo indisponible')).toBeTruthy();
+  expect(screen.getByText('Démonstration vidéo non disponible')).toBeTruthy();
   expect(screen.queryByRole('button', { name: /vidéo/i })).toBeNull();
   expect(screen.getByText('Repos 90 s').closest('details')?.open).toBe(false);
   fireEvent.click(screen.getByRole('button', { name: /Retour/ }));
