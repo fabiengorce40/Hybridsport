@@ -179,6 +179,21 @@ try {
     await page.locator('[data-checkin-form]').getByRole('button', { name: 'Passer', exact: true }).click();
     await page.locator('.v31-workout').waitFor();
     await screen('2-seance-en-cours');
+    // Geometry evidence for the real strength UI; no mocked screenshot or edited fixture.
+    const workoutGeometry = await page.evaluate(() => {
+      const selectors = { page: '.v31-workout[data-sport="strength"]', header: '.v31-sticky-top', session: '.v31-session-bar', overview: '.v31-overview', exercise: '.v31-exercise[data-expanded="true"]', illustration: '.pf-exercise-illustration', series: '.v31-series-row', next: '.pf-next-inline' };
+      const rounded = value => Math.round(value * 100) / 100;
+      return Object.fromEntries(Object.entries(selectors).map(([key, selector]) => {
+        const el = document.querySelector(selector);
+        if (!el) return [key, null];
+        const rect = el.getBoundingClientRect();
+        return [key, { x:rounded(rect.x), y:rounded(rect.y), width:rounded(rect.width), height:rounded(rect.height) }];
+      }));
+    });
+    if (shots && (width === 360 || width === 390)) writeFileSync(`${shots}/${width}-workout-geometry.json`, JSON.stringify(workoutGeometry, null, 2));
+    assert.ok(workoutGeometry.session?.height >= 44, `${W} : bandeau séance visible`);
+    assert.ok(workoutGeometry.exercise?.width > 0, `${W} : carte exercice visible`);
+
     const row = page.locator('.v3-exercise[data-expanded="true"] .v31-series-row').first();
     const kgInput = row.getByLabel(/^Charge \(kg\)/);
     const repsInput = row.getByLabel(/^Répétitions réalisées/);

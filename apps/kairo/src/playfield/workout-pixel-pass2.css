@@ -1,0 +1,89 @@
+/**
+ * REKKA V4 — Séance en cours / passe 2.
+ * Strictly scoped: approved Home, other sports and functional state are untouched.
+ * The 44px targets and responsive set grid take priority over visual compactness.
+ * Measurements still require compiled Playwright screenshots before pixel-perfect sign-off.
+ */
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] {
+  --workout-primary: #1647cb;
+  --workout-action: #fdcb32;
+  --workout-ink: #0e1b35;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-sticky-top {
+  z-index:55;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise-list {
+  gap: 10px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise-summary:focus-visible,
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row button:focus-visible,
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest button:focus-visible {
+  outline: 3px solid var(--workout-primary) !important;
+  outline-offset: 2px;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise {
+  scroll-margin-top: 145px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-sets {
+  min-width: 0;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row {
+  min-width: 0;
+  padding: 3px 2px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-label,
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-toggle,
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-step,
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-stepper .v31-field input {
+  min-height: 44px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row[data-done="true"] .v31-toggle > span {
+  background: var(--workout-action) !important;
+  border-color: var(--workout-action) !important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row[data-done="true"] .v31-brush-check {
+  stroke: var(--workout-ink) !important;
+  filter:none;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-play {
+  width:44px !important;
+  height:44px !important;
+  min-width:44px !important;
+  min-height:44px !important;
+  margin-top: -4px;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-side button {
+  min-height:44px !important;
+  height:auto !important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest {
+  max-width:calc(100vw - 24px);
+  box-sizing:border-box;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-main,
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-side,
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-rest-next {
+  min-width:0;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-rest-next strong {
+  overflow-wrap:anywhere;
+}
+@media (max-width:375px) {
+  /* The existing two-row grid in reference.css is intentional at 360px.
+     Repeat here only the minimum geometry so subsequent passes cannot collapse it. */
+  html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row {
+    grid-template-columns:44px minmax(0,1fr) 44px !important;
+    grid-template-rows:minmax(44px,auto) minmax(44px,auto) !important;
+    min-height:96px !important;
+  }
+  html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row > .pf-stepper-load { grid-column:2;grid-row:1; }
+  html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row > .pf-stepper-reps { grid-column:2;grid-row:2; }
+  html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row > .v31-series-label { grid-column:1;grid-row:1; }
+  html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row > .v31-toggle { grid-column:3;grid-row:1/3; }
+  html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest { width:calc(100vw - 20px) !important;padding-inline:8px !important; }
+  html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-main { gap:6px !important; }
+  html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-side { padding-left:7px !important;gap:5px !important; }
+}
+@media (prefers-reduced-motion:reduce) {
+  html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-progress > span { transition:none !important; }
+}
