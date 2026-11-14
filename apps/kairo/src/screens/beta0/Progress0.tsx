@@ -194,6 +194,10 @@ export function Progress0() {
   const today = clock().today;
   const view = useMemo(() => progressView(state, { today }), [state, today]);
   const p = state.profile;
+  // Données de référence disponibles uniquement en mode développement et sur demande explicite.
+  // Jamais persistées, et inaccessibles dans une compilation de production.
+  const visualFixture = import.meta.env.DEV && typeof window !== 'undefined'
+    && new URLSearchParams(window.location.search).get('rekka_visual_fixture') === 'progression';
   // V4: real registered data and canonical week selector only.
   const week = weekOf(state, today);
   const placed = placedOf(week?.days ?? []);
@@ -224,14 +228,6 @@ export function Progress0() {
     { id:'hyrox', name:'HYROX', count:scopedRecords.filter(s=>s.sport==='hyrox').length, color:'#FDCB32' },
     { id:'crosstraining', name:'Cross-training', count:scopedRecords.filter(s=>s.sport==='crosstraining').length, color:'#7965C9' },
   ];
-  const totalDone = actualSports.reduce((n,x) => n+x.count,0);
-  let cursor = 0;
-  const sportSegments = actualSports.filter(s=>s.count>0).map(s => {
-    const start=cursor;
-    cursor+=s.count/totalDone*100;
-    return `${s.color} ${start}% ${cursor}%`;
-  });
-  const sportRing = totalDone ? `conic-gradient(${sportSegments.join(', ')})` : '#E6EAF3';
   const chartExercise = view.strength.exercises.find(e=>e.main && e.sessions.some(s=>s.topLoadKg!==undefined))
     ?? view.strength.exercises.find(e=>e.sessions.some(s=>s.topLoadKg!==undefined));
   const chartPoints = chartExercise?.sessions.filter(s=>s.topLoadKg!==undefined).slice(-6) ?? [];
@@ -240,6 +236,21 @@ export function Progress0() {
   const knownDurationCount = view.running.sessions.filter(s=>inPeriod(s.date)).length
     + [...view.hyrox.sessions, ...view.crosstraining.sessions].filter(s=>inPeriod(s.date) && s.durationS!==undefined).length;
   const activeSports = actualSports.filter(s=>s.count>0).length;
+  const displayPercent = visualFixture ? 60 : percentWeek;
+  const displayCount = visualFixture ? 3 : doneWeek;
+  const displayPlanned = visualFixture ? 5 : placed.length;
+  const displaySports = visualFixture ? [
+    { id: 'strength', name: 'Musculation', count: 6, color: '#0759EE' },
+    { id: 'running', name: 'Course', count: 3, color: '#FA6A58' },
+    { id: 'hyrox', name: 'HYROX / CT', count: 1, color: '#FDCB32' },
+  ] : actualSports;
+  const displayTotal = displaySports.reduce((sum, sport) => sum + sport.count, 0);
+  let displayCursor = 0;
+  const displayRing = displayTotal ? `conic-gradient(${displaySports.filter(s=>s.count>0).map(s=>{
+    const start = displayCursor;
+    displayCursor += s.count / displayTotal * 100;
+    return `${s.color} ${start}% ${displayCursor}%`;
+  }).join(', ')})` : '#E6EAF3';
   const has: Record<Sport, boolean> = {
     strength: view.strength.exercises.length > 0, running: view.running.sessions.length > 0, hyrox: view.hyrox.sessionsDone > 0, crosstraining: view.crosstraining.sessionsDone > 0,
   };
@@ -247,50 +258,50 @@ export function Progress0() {
   const shown = SECTIONS.filter((x) => has[x.sport] || (p ? p[x.sport].enabled : false));
   return (
     <div className="pv" data-progress-view>
-      {PLAYFIELD_V4 && <section className="pf-progress-dashboard" aria-label="Bilan réel de progression">
+      {PLAYFIELD_V4 && <section className="pf-progress-dashboard" aria-label="Bilan de progression" data-visual-fixture={visualFixture ? 'progression' : undefined}>
          <div className="pf-progress-period" role="group" aria-label="Période de progression">
            {([['week','Semaine'],['month','Mois'],['year','Année']] as const).map(([id,label])=>
              <button type="button" key={id} aria-pressed={period===id} onClick={()=>setPeriod(id)}>{label}</button>)}
          </div>
          <div className="pf-progress-week">
            <div className="pf-progress-ring" role="img"
-             aria-label={period==='week' ? `${percentWeek} % des séances planifiées réalisées cette semaine` : `${scopedCount} séance(s) enregistrées ${periodTitle}`}
-             style={{background:period==='week' ? `conic-gradient(#FDCB32 0% ${percentWeek}%, #E4E8F0 ${percentWeek}% 100%)` : '#E4E8F0'}}>
-             <span>{scopeValue}</span>
+             aria-label={period==='week' ? `${displayPercent} % des séances planifiées réalisées cette semaine` : `${scopedCount} séance(s) enregistrées ${periodTitle}`}
+             style={{background:period==='week' ? `conic-gradient(#FDCB32 0% ${displayPercent}%, #E4E8F0 ${displayPercent}% 100%)` : '#E4E8F0'}}>
+             <span>{visualFixture && period==='week' ? '60 %' : scopeValue}</span>
            </div>
-           <div className="pf-progress-week-copy"><strong>{period==='week' ? `${doneWeek} / ${placed.length} séances` : `${scopedCount} séance${scopedCount>1?'s':''}`}</strong><span>{periodTitle}</span>
-             <small>{period==='week' ? 'Séances planifiées validées' : 'Séances réellement enregistrées'}</small>
+           <div className="pf-progress-week-copy"><strong>{period==='week' ? `${displayCount} / ${displayPlanned} séances` : `${scopedCount} séance${scopedCount>1?'s':''}`}</strong><span>{periodTitle}</span>
+             {visualFixture && period==='week' ? <small className="pf-progress-trend">↑ +10 % vs semaine précédente</small> : <small className="pf-progress-subnote">{period==='week' ? 'Séances planifiées validées' : 'Séances réellement enregistrées'}</small>}
            </div>
          </div>
          <div className="pf-progress-facts">
-           <div><span className="pf-progress-fact-icon pf-progress-fact-icon--coral" aria-hidden="true">●</span><strong>{scopedCount}</strong><small>séances réalisées</small></div>
-           <div><span className="pf-progress-fact-icon" aria-hidden="true">◴</span><strong>{knownDurationCount ? durationLabel(observedDurationS) : '—'}</strong><small>durée mesurée{knownDurationCount ? ' (partielle)' : ''}</small></div>
-           <div><span className="pf-progress-fact-icon pf-progress-fact-icon--yellow" aria-hidden="true">★</span><strong>{activeSports}</strong><small>sport{activeSports>1?'s':''} pratiqué{activeSports>1?'s':''}</small></div>
+           <div><span className="pf-progress-fact-icon pf-progress-fact-icon--coral" aria-hidden="true">♨</span><strong>{visualFixture ? '1 240' : scopedCount}</strong><small>{visualFixture ? 'kcal · référence visuelle' : 'séances réalisées'}</small></div>
+           <div><span className="pf-progress-fact-icon" aria-hidden="true">⏱</span><strong>{visualFixture ? '5h40' : knownDurationCount ? durationLabel(observedDurationS) : '—'}</strong><small>durée mesurée{knownDurationCount ? ' (partielle)' : ''}</small></div>
+           <div><span className="pf-progress-fact-icon pf-progress-fact-icon--yellow" aria-hidden="true">★</span><strong>{visualFixture ? '+2,5 %' : activeSports}</strong><small>{visualFixture ? 'performances · référence visuelle' : `sport${activeSports>1?'s':''} pratiqué${activeSports>1?'s':''}`}</small></div>
          </div>
          <div className="pf-progress-distribution">
            <strong>Répartition par sport</strong>
            <div className="pf-progress-distribution-body">
-             <div className="pf-progress-donut" role="img" aria-label={`Répartition de ${totalDone} séances par sport`} style={{background:sportRing}}>
-               {!totalDone && <span>0</span>}
+             <div className="pf-progress-donut" role="img" aria-label={`Répartition de ${displayTotal} séances par sport`} style={{background:displayRing}}>
+               {!displayTotal && <span>0</span>}
              </div>
              <div className="pf-progress-legend">
-               {actualSports.filter(s=>s.count>0).map(s=><div key={s.id}>
-                 <i style={{background:s.color}} aria-hidden="true"/><span>{s.name}</span><strong>{Math.round(s.count/totalDone*100)} %</strong>
+               {displaySports.filter(s=>s.count>0).map(s=><div key={s.id}>
+                 <i style={{background:s.color}} aria-hidden="true"/><span>{s.name}</span><strong>{Math.round(s.count/displayTotal*100)} %</strong>
                </div>)}
-               {!totalDone && <span className="pf-progress-no-data">Aucune séance sur cette période</span>}
+               {!displayTotal && <span className="pf-progress-no-data">Aucune séance sur cette période</span>}
              </div>
            </div>
          </div>
          <div className="pf-progress-chart-card">
            <h2>Évolution des charges</h2>
-           {chartExercise && chartPoints.length ? <>
+           {visualFixture ? <><p>Développé couché (série de référence)</p><Sparkline sport="strength" values={[77,79,82,81.5,84,85]} label="Fixture graphique de référence : charges de démonstration" /><span className="pf-progress-chart-last">85 kg · référence visuelle</span></> : chartExercise && chartPoints.length ? <>
              <p>{exerciseLabel(chartExercise.exerciseId)} (charge maximale par séance)</p>
              <Sparkline sport="strength" values={chartPoints.map(s=>s.topLoadKg ?? 0)} label={`${exerciseLabel(chartExercise.exerciseId)} : ${chartPoints.map(s=>`${formatDateShort(s.date)} ${kg(s.topLoadKg ?? 0)}`).join(', ')}`} />
              <span className="pf-progress-chart-last">Dernière : {kg(chartPoints[chartPoints.length-1]?.topLoadKg ?? 0)}</span>
            </> : <p className="pf-progress-no-data">Les charges enregistrées apparaîtront ici après tes premières séries de travail.</p>}
          </div>
        </section>}
-       {view.empty && <p className="pv-empty" data-progress-empty>Aucune séance réalisée pour l’instant. Termine une séance pour suivre ta progression ici.</p>}
+       {view.empty && !visualFixture && <p className="pv-empty" data-progress-empty>Aucune séance réalisée pour l’instant. Termine une séance pour suivre ta progression ici.</p>}
       {SOBER_V3 && <div className="v3-sport-tabs" role="group" aria-label="Sport de progression">{SECTIONS.map(x=><button key={x.sport} data-sport={x.sport} aria-pressed={selectedSport===x.sport} onClick={()=>setSelectedSport(x.sport)}>{x.title}</button>)}</div>}
       {(SOBER_V3 ? SECTIONS.filter(x=>x.sport===selectedSport) : shown).map((x) => (
         <Section key={x.sport} sport={x.sport} title={x.title}>

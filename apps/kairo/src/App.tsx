@@ -79,7 +79,7 @@ export function App() {
       <div aria-hidden={open ? true : undefined} inert={open ? true : undefined}>
         {tab === 'home' && <Home0 onOpen={setOpen} onGo={setTab} onEditProgramme={() => setEditing(true)} />}
         {tab === 'plan' && <Planning0 onOpen={setOpen} onGo={setTab} />}
-        {tab === 'history' && <History0 onOpen={setOpen} />}
+        {tab === 'history' && <History0 onOpen={setOpen} onBack={() => setTab('home')} />}
         {tab === 'programme' && <>{REKKA_V2 && <LiveSessions onOpen={setOpen} />}<Programme0 onEdit={() => setEditing(true)} /></>}
         {(tab === 'settings' || tab === 'profile' || tab === 'run') && <Settings0 onEditProfile={() => setEditing(true)} />}
         <TabBar tabs={PLAYFIELD_V4 ? PLAYFIELD_TABS : BETA0_TABS} tab={tab} onChange={(t) => { setOpen(null); setTab(t); }} />

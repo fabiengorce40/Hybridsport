@@ -9,6 +9,7 @@ import { ctFormatName, isTest, maintainedText, sessionName, sportName } from '..
 import { ctResultText } from '../../workout/CrossTrainingWorkout.js';
 import { hrResultText } from '../../workout/HyroxWorkout.js';
 import { StatusPill } from './common.js';
+import { PLAYFIELD_V4 } from '../../playfield/flag.js';
 
 /** Séries réellement saisies, regroupées par exercice (libellés du catalogue). */
 function StrengthLines({ e }: { e: HistoryEntry }) {
@@ -27,7 +28,7 @@ function StrengthLines({ e }: { e: HistoryEntry }) {
   );
 }
 
-export function History0({ onOpen }: { onOpen: (id: string) => void }) {
+export function History0({ onOpen, onBack }: { onOpen: (id: string) => void; onBack?: () => void }) {
   const { state } = useStore();
   const entries = selectFieldHistory(state);
   // RC3.3 — courses libres (contrat Running), intercalées par date avec les séances du programme ; jamais dupliquées.
@@ -36,7 +37,7 @@ export function History0({ onOpen }: { onOpen: (id: string) => void }) {
     .sort((a, b) => (a.day < b.day ? 1 : a.day > b.day ? -1 : 0));
   return (
     <div className="screen">
-      {REKKA_V2 ? <><VisualHeader title="Progression" /><Progress0 /><h2 className="pv-history-title">Historique</h2></> : <h1 className="screen-title">Historique</h1>}
+      {REKKA_V2 ? <>{PLAYFIELD_V4 ? <header className="pf-progression-header"><button type="button" onClick={onBack} aria-label="Retour à l’accueil"><svg width="27" height="27" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M19 12H5m7-7-7 7 7 7"/></svg></button><h1>Progression</h1><span aria-hidden="true" /></header> : <VisualHeader title="Progression" />}<Progress0 /><h2 className="pv-history-title">Historique</h2></> : <h1 className="screen-title">Historique</h1>}
       {/* RC3.4 — aussi pour un profil HYROX sans Course : historique de course seulement, sans effet sur HYROX. */}
       {/* RC4.3 (R3) : une course libre compte dans la récupération, même sans sport Course déclaré. */}
       {state.profile && <FreeRunEntry />}
