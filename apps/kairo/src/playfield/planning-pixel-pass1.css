@@ -1,0 +1,145 @@
+/**
+ * REKKA V4 — Planning visual pass 1.
+ * Pure presentation. The approved Home, schedule state and planning algorithms are untouched.
+ * Applies exclusively to the real V4 Planning0 screen.
+ */
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) {
+  --planning-ink: #0e1b35;
+  --planning-blue: #1647cb;
+  --planning-yellow: #fdcb32;
+  --planning-coral: #fa6a58;
+  min-width: 0;
+  padding-inline: 12px !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen > .pf-planning-heading {
+  min-height: 52px !important;
+  padding-inline: 45px !important;
+  margin-bottom: 8px !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-heading .v3-page-header h1 {
+  color: var(--planning-ink) !important;
+  font-weight: 950 !important;
+  font-size: clamp(21px, 5.6vw, 26px) !important;
+  letter-spacing: -.045em !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-planning-heading .pf-week-picker {
+  min-height: 44px !important;
+  min-width: 44px !important;
+  color: var(--planning-ink) !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) [data-planning-controls] .view-switch {
+  display: grid !important;
+  grid-template-columns: repeat(2,minmax(0,1fr)) !important;
+  margin: 0 0 8px !important;
+  padding: 3px !important;
+  gap: 3px !important;
+  border-radius: 999px !important;
+  background: #f0edeb !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .view-switch > button {
+  min-height: 44px !important;
+  font-size: 13px !important;
+  border-radius: 999px !important;
+  color: var(--planning-ink) !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .view-switch > button[aria-pressed="true"] {
+  background: linear-gradient(135deg,#ffda35,#ffca08) !important;
+  box-shadow: 0 2px 5px #b48d2922 !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-week {
+  margin: 2px 0 15px !important;
+  padding: 7px 10px !important;
+  border: 1px solid #eee8e1 !important;
+  border-radius: 20px !important;
+  background: #fffbf6 !important;
+  box-shadow: 0 5px 15px #18203d12 !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-days {gap: 0 !important;}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-day {
+  grid-template-columns: 43px minmax(0,1fr) !important;
+  gap: 8px !important;
+  min-height: 57px !important;
+  padding: 5px 2px !important;
+  border-color: #eeeae5 !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-day[aria-current="date"] {
+  background: #fff8dd !important;
+  outline: 1.5px solid var(--planning-yellow) !important;
+  outline-offset: -2px !important;
+  border-radius: 13px !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-day-name {
+  min-height: 43px !important;
+  border-radius: 10px !important;
+  background: #f3f1f0 !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-day-name strong {
+  font-size: 13px !important;
+  font-weight: 900 !important;
+  color: var(--planning-ink) !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-day-sessions {min-width:0 !important;}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-session {
+  min-width: 0 !important;
+  min-height: 44px !important;
+  display: grid !important;
+  grid-template-columns: minmax(0,1fr) 31px !important;
+  align-items: center !important;
+  gap: 5px !important;
+  padding: 4px 2px 4px 4px !important;
+  border: 1px solid transparent !important;
+  border-radius: 12px !important;
+  background: transparent !important;
+  text-align: left !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-session-title {
+  display: flex !important;
+  align-items: center !important;
+  gap: 9px !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+  font-size: clamp(12px,3.6vw,15px) !important;
+  font-weight: 850 !important;
+  color: var(--planning-ink) !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-session-title svg,
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-empty svg {
+  width: 25px !important;
+  height: 25px !important;
+  flex-shrink: 0 !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-session[data-sport="running"] .pf-planning-session-title svg {color:var(--planning-coral)!important;}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-session[data-sport="strength"] .pf-planning-session-title svg {color:var(--planning-blue)!important;}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-session[data-sport="hyrox"] .pf-planning-session-title svg {color:#d3a000!important;}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-empty {
+  min-height: 44px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  color: var(--planning-ink) !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-status {
+  width: 29px !important;
+  height: 29px !important;
+  border-radius: 50% !important;
+  background: #ffcd13 !important;
+  color: #091534 !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-status[data-done="true"] {background:#078e53!important;color:#fff!important;}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-session:focus-visible,
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-week-picker:focus-visible,
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .view-switch button:focus-visible {
+  outline: 3px solid var(--planning-blue) !important;
+  outline-offset: 2px !important;
+}
+@media(max-width: 370px) {
+  html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-week {padding-inline: 7px !important;}
+  html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-day {grid-template-columns: 38px minmax(0,1fr) !important; gap: 6px !important;}
+  html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-session-title {gap: 6px !important; font-size: 12px !important;}
+}

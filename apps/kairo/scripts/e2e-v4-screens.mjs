@@ -126,6 +126,21 @@ try {
     }
     await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Planning', exact: true }).click();
     await screen('4-planning');
+    if (shots && (width === 390 || width === 360)) {
+      const planningGeometry = await page.evaluate(() => {
+        const selectors = { heading: '.pf-planning-heading', tabs: '[data-planning-controls] .view-switch', board: '.pf-planning-week', firstDay: '.pf-planning-day', firstSession: '.pf-planning-session', weekPicker: '.pf-week-picker' };
+        return Object.fromEntries(Object.entries(selectors).map(([name, selector]) => {
+          const element = document.querySelector(selector);
+          if (!element) return [name, null];
+          const r = element.getBoundingClientRect();
+          return [name, { x: +r.x.toFixed(2), y: +r.y.toFixed(2), width: +r.width.toFixed(2), height: +r.height.toFixed(2) }];
+        }));
+      });
+      writeFileSync(`${shots}/${String(width)}-planning-geometry.json`, JSON.stringify(planningGeometry, null, 2));
+      assert.ok(planningGeometry.board?.width > 0, `${W} : Planning visible`);
+      assert.ok(planningGeometry.tabs?.width > 0, `${W} : onglets du Planning visibles`);
+    }
+
     await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: /Progression/ }).click();
     await screen('3-progression');
     await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Profil', exact: true }).click();
