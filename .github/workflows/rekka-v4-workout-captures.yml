@@ -1,0 +1,38 @@
+# Manual QA only: no push trigger, deployment action, token, secret or Cloudflare command.
+name: REKKA V4 - strength workout pixel QA
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  strength-workout:
+    if: github.ref == 'refs/heads/codex/rekka-v4-playfield-exercise-detail'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Static validation and strength unit tests
+        run: pnpm typecheck && pnpm lint
+      - name: Compile isolated beta-shaped build without deployment
+        run: pnpm kairo:build:beta
+      - name: Install Chromium
+        run: pnpm --filter @hybridsport/kairo exec playwright install --with-deps chromium
+      - name: Capture 360/390 workout with geometry and interactions
+        run: |
+          mkdir -p /tmp/rekka-workout
+          REKKA_WORKOUT_ONLY=1 node apps/kairo/scripts/e2e-v4-screens.mjs /tmp/rekka-workout | tee /tmp/rekka-workout/report.txt
+          cp apps/kairo/tests/visual-reference/playfield-workout-board.png /tmp/rekka-workout/REFERENCE-maquette-not-app.png
+      - name: Upload evidence only
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rekka-v4-strength-workout-visual-qa
+          path: /tmp/rekka-workout
+          if-no-files-found: warn
+          retention-days: 14

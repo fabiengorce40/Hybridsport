@@ -181,7 +181,7 @@ try {
     await screen('2-seance-en-cours');
     // Geometry evidence for the real strength UI; no mocked screenshot or edited fixture.
     const workoutGeometry = await page.evaluate(() => {
-      const selectors = { page: '.v31-workout[data-sport="strength"]', header: '.v31-sticky-top', session: '.v31-session-bar', overview: '.v31-overview', exercise: '.v31-exercise[data-expanded="true"]', illustration: '.pf-exercise-illustration', series: '.v31-series-row', next: '.pf-next-inline' };
+      const selectors = { page: '.v31-workout[data-sport="strength"]', header: '.v31-sticky-top', session: '.v31-session-bar', overview: '.v31-overview', exercise: '.v3-exercise.v31-exercise[data-expanded="true"]', illustration: '.pf-exercise-illustration', series: '.v31-series-row', next: '.pf-next-inline' };
       const rounded = value => Math.round(value * 100) / 100;
       return Object.fromEntries(Object.entries(selectors).map(([key, selector]) => {
         const el = document.querySelector(selector);
@@ -193,6 +193,36 @@ try {
     if (shots && (width === 360 || width === 390)) writeFileSync(`${shots}/${width}-workout-geometry.json`, JSON.stringify(workoutGeometry, null, 2));
     assert.ok(workoutGeometry.session?.height >= 44, `${W} : bandeau séance visible`);
     assert.ok(workoutGeometry.exercise?.width > 0, `${W} : carte exercice visible`);
+    // The active exercise must be measurable. Fail explicitly instead of generating
+    // a misleading screenshot when a selector no longer matches the real DOM.
+    assert.ok(workoutGeometry.illustration?.width > 0, `${W} : illustration du développé couché présente`);
+    assert.ok(workoutGeometry.series?.width > 0, `${W} : première ligne de série présente`);
+    assert.ok(workoutGeometry.series.width <= workoutGeometry.exercise.width + 1, `${W} : série contenue dans la carte`);
+    if (process.env.REKKA_WORKOUT_ONLY === '1') {
+      const layout = await page.evaluate(() => {
+        const selectors = {
+          toolbar: '.v31-toolbar', title: '.v31-toolbar h1', session: '.v31-session-bar',
+          overview: '.v31-overview', progress: '.v31-progress',
+          exercise: '.v31-exercise[data-expanded="true"]',
+          illustration: '.pf-exercise-illustration', columnLabels: '.pf-set-columns',
+          firstSet: '.v31-series-row', nextExercise: '.pf-next-inline',
+        };
+        const rect = (selector) => {
+          const el = document.querySelector(selector);
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          const round = v => Math.round(v * 100) / 100;
+          return { x:round(r.x), y:round(r.y), width:round(r.width), height:round(r.height) };
+        };
+        return Object.fromEntries(Object.entries(selectors).map(([name, selector]) => [name,rect(selector)]));
+      });
+      if (shots) writeFileSync(`${shots}/${width}-workout-layout.json`, JSON.stringify(layout, null, 2));
+      for (const key of ['toolbar', 'session', 'overview', 'exercise', 'illustration', 'firstSet']) {
+        assert.ok(layout[key]?.width > 0, `${W} : bloc obligatoire non mesurable : ${key}`);
+      }
+      const auditWorkout = await audit(page);
+      assert.equal(auditWorkout.hscroll, false, `${W} : débordement horizontal de la séance`);
+    }
 
     const row = page.locator('.v3-exercise[data-expanded="true"] .v31-series-row').first();
     const kgInput = row.getByLabel(/^Charge \(kg\)/);
@@ -223,6 +253,12 @@ try {
     await page.waitForTimeout(200);
     assert.ok(await page.getByRole('timer', { name: 'Chronomètre global' }).isVisible() && await page.getByRole('timer', { name: 'Chrono de repos' }).isVisible(), `${W} : chronomètres visibles après défilement`);
     await screen('2e-defilement');
+    if (process.env.REKKA_WORKOUT_ONLY === '1') {
+      assert.deepEqual(errors, [], `${W} : erreurs JavaScript pendant la séance`);
+      ok(`${W} : séance en cours mesurée et contrôles de séries/repos validés`);
+      await ctx.close();
+      continue;
+    }
     await page.locator('.v31-finish').click();
     const fin = page.getByRole('dialog', { name: 'Fin de séance' });
     await fin.waitFor();
