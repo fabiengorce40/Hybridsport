@@ -1,0 +1,179 @@
+/** REKKA V4 — Rest of screens, visual pass 1. Presentation only.
+ * Scope: Progression, completed Session Summary, Profile. No Home, Planner or Workout rules.
+ * The approved Home's cream/blue/yellow palette is the sole visual token source.
+ */
+html[data-rekka-theme="playfield-pro"] .pf-progress-dashboard {
+  --pf-rest-ink:#0e1b35;
+  --pf-rest-blue:#1647cb;
+  --pf-rest-yellow:#fdcb32;
+  gap:12px !important;
+  margin-inline:0 !important;
+  min-width:0;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-period {
+  display:grid !important;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  border-radius:999px !important;
+  padding:3px !important;
+  gap:3px !important;
+  background:#f0edeb !important;
+  min-width:0;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-period button {
+  min-width:0 !important;
+  min-height:44px !important;
+  border:0 !important;
+  border-radius:999px !important;
+  font-size:13px !important;
+  font-weight:850 !important;
+  color:var(--pf-rest-ink) !important;
+  background:transparent !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-period button[aria-pressed="true"] {
+  background:linear-gradient(135deg,#ffdc39,#ffcb08) !important;
+  box-shadow:0 3px 7px #e2b20b33 !important;
+}
+html[data-rekka-theme="playfield-pro"] :is(.pf-progress-week,.pf-progress-distribution) {
+  background:#fffbf6 !important;
+  border:1px solid #efe9e2 !important;
+  border-radius:21px !important;
+  box-shadow:0 5px 14px #17244714 !important;
+  padding:14px !important;
+  min-width:0;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-week {gap:13px !important;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-ring {
+  width:108px !important;
+  height:108px !important;
+  flex-shrink:0;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-ring::before {inset:12px !important;background:#fffbf6 !important;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-ring>span {font-size:26px !important;letter-spacing:-.05em;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-week strong {font-size:clamp(16px,4.8vw,21px) !important;letter-spacing:-.05em;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-facts {gap:8px !important;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-facts>div {
+  background:#fffbf6 !important;
+  border:1px solid #efe9e2 !important;
+  border-radius:18px !important;
+  min-width:0;
+  min-height:107px;
+  padding:11px 5px !important;
+  box-shadow:0 4px 11px #17244712 !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-fact-icon {
+  display:block !important;
+  font-size:24px !important;
+  line-height:1.15;
+  margin-bottom:5px;
+  color:var(--pf-rest-blue);
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-facts strong {
+  color:var(--pf-rest-ink) !important;
+  font-size:clamp(18px,5vw,23px) !important;
+  line-height:1.05 !important;
+  font-variant-numeric:tabular-nums;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-facts small {overflow-wrap:anywhere;font-size:10px !important;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-distribution>strong {font-size:17px !important;letter-spacing:-.035em;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-distribution-body {gap:14px !important;min-width:0;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-donut {width:105px !important;height:105px !important;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-donut::before {background:#fffbf6 !important;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-legend {min-width:0;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-legend>div {min-width:0;gap:6px !important;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-legend>div>span {min-width:0;overflow-wrap:anywhere;}
+
+/* Completed session: celebrate recorded results, not illustrative example values. */
+html[data-rekka-theme="playfield-pro"] .pf-summary-board {
+  background:#fffbf6 !important;
+  border-color:#efe9e2 !important;
+  padding:16px 13px !important;
+  border-radius:22px !important;
+  box-shadow:0 6px 18px #17244713 !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-seal {
+  width:75px !important;height:75px !important;
+  background:linear-gradient(145deg,#ffe34d,#fdc600) !important;
+  box-shadow:0 6px 16px #fdcb3260 !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-stats>div {
+  min-width:0;min-height:103px;
+  background:#fff !important;
+  box-shadow:0 3px 9px #1724470d;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-stat-icon {
+  display:block;font-size:24px;line-height:1.1;margin-bottom:6px;
+  color:#1647cb;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-stats dd {font-variant-numeric:tabular-nums;overflow-wrap:anywhere;}
+html[data-rekka-theme="playfield-pro"] .pf-summary-insight {
+  display:flex;align-items:center;gap:10px;
+  padding:11px;border-radius:15px;
+  background:#fff9e6;color:#0e1b35;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-open {
+  background:linear-gradient(135deg,#ffdf35,#fdc600) !important;
+  box-shadow:0 4px 8px #e4b5252a;
+  min-height:48px !important;
+}
+
+/* Profile: the real user name and data replace the visual reference's fictional XP. */
+html[data-rekka-theme="playfield-pro"] .v3-profile:not(:has(.screen-title)) .pf-profile-heading {min-height:52px;}
+html[data-rekka-theme="playfield-pro"] .pf-profile-hero {
+  min-height:94px;
+  padding:12px !important;
+  gap:13px !important;
+  background:#fffbf6 !important;
+  border:1px solid #efe9e2 !important;
+  border-radius:20px !important;
+  box-shadow:0 5px 13px #17244712 !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-avatar {
+  width:72px !important;height:72px !important;
+  overflow:hidden;
+  background:#d9e7fc !important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-athlete {
+  display:block;width:100%;height:100%;object-fit:cover;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-hero>div:last-child {flex:1;min-width:0;}
+html[data-rekka-theme="playfield-pro"] .pf-profile-hero strong {
+  font-size:20px !important;line-height:1.1 !important;
+  color:#0e1b35 !important;overflow-wrap:anywhere;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-sport-progress {
+  overflow:hidden;height:8px !important;
+  border-radius:999px;background:#e8e6e3 !important;
+  margin-top:8px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-sport-progress>span {
+  display:block;height:100%;background:#1647cb !important;
+  border-radius:inherit;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-menu {gap:0 !important;margin-top:8px !important;}
+html[data-rekka-theme="playfield-pro"] .v3-profile-link {
+  background:#fffbf6 !important;
+  border-color:#efe9e2 !important;
+  border-radius:0 !important;
+  min-height:68px !important;
+  box-shadow:none !important;
+  margin:0 !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-link:first-child {border-radius:18px 18px 0 0 !important;}
+html[data-rekka-theme="playfield-pro"] .v3-profile-link:last-child {border-radius:0 0 18px 18px !important;}
+html[data-rekka-theme="playfield-pro"] .v3-profile-link:only-child {border-radius:18px !important;}
+html[data-rekka-theme="playfield-pro"] .v3-profile-link>span:first-child {
+  background:transparent !important;color:#1647cb !important;
+  width:42px !important;height:44px !important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-link:focus-visible,
+html[data-rekka-theme="playfield-pro"] .pf-progress-period button:focus-visible,
+html[data-rekka-theme="playfield-pro"] .pf-summary-open:focus-visible {
+  outline:3px solid #1647cb !important;outline-offset:2px !important;
+}
+@media (max-width:365px) {
+  html[data-rekka-theme="playfield-pro"] .pf-progress-week {gap:10px !important;}
+  html[data-rekka-theme="playfield-pro"] .pf-progress-ring {width:90px !important;height:90px !important;}
+  html[data-rekka-theme="playfield-pro"] .pf-progress-donut {width:88px !important;height:88px !important;}
+  html[data-rekka-theme="playfield-pro"] .pf-progress-distribution-body {gap:8px !important;}
+  html[data-rekka-theme="playfield-pro"] .pf-profile-avatar {width:62px !important;height:62px !important;}
+}
