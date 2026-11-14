@@ -268,17 +268,17 @@ try {
     await row.getByRole('button', { name: 'Cocher la série', exact: true }).click();
     await page.waitForTimeout(400);
     if (process.env.REKKA_EXERCISE_ART_ONLY === '1') {
-      const firstArt = page.locator('[data-exercise-art]');
-      assert.equal(await firstArt.getAttribute('data-exercise-art'), 'ex.db_bench_press');
+      const firstArt = page.locator('[data-workout-art]');
+      const category = await firstArt.getAttribute('data-workout-art');
+      assert.equal(category, 'upper');
       const logsBefore = await page.evaluate(k => JSON.parse(localStorage.getItem(k)).programmeLogs, KEY);
       const navigationBefore = await page.evaluate(() => performance.timeOrigin);
       await page.locator('.pf-next-inline').click();
-      assert.equal(await firstArt.getAttribute('data-exercise-art'), 'ex.machine_row');
-      assert.equal(await firstArt.getAttribute('data-art-available'), 'false');
+      assert.equal(await firstArt.getAttribute('data-workout-art'), category);
       assert.deepEqual(await page.evaluate(k => JSON.parse(localStorage.getItem(k)).programmeLogs, KEY), logsBefore);
       assert.equal(await page.evaluate(() => performance.timeOrigin), navigationBefore);
       assert.deepEqual(errors, []);
-      console.log('OK: haltères → rowing machine, navigation et données de séance intactes');
+      console.log('OK: illustration de séance stable, navigation et données intactes');
       await ctx.close();
       continue;
     }

@@ -5,7 +5,7 @@ import type { StrengthWorkoutProps, SetsItem } from '../workout/StrengthWorkout.
 import { SetLine, EffortRow, LightBlock, alternativesText, isSets, targetRirOf, phaseOf, PHASE_TITLES } from '../workout/StrengthWorkout.js';
 import { muscleText } from './Artwork.js';
 import { PLAYFIELD_V4 } from '../playfield/flag.js';
-import { ExerciseIllustration } from '../playfield/ExerciseIllustration.js';
+import { WorkoutIllustration } from '../playfield/WorkoutIllustration.js';
 
 interface Props extends StrengthWorkoutProps {
   onBack: () => void;
@@ -94,7 +94,7 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
             <span className="v31-chevron" aria-hidden="true">{expanded ? '⌃' : '⌄'}</span>
           </button>
           <div className="v3-sets v31-sets" id={`v31-sets-${cardIndex}`} hidden={!expanded}>
-            {PLAYFIELD_V4 && expanded && <ExerciseIllustration exerciseId={item.exerciseId}/>}
+            {PLAYFIELD_V4 && expanded && <WorkoutIllustration archetypeId={v.archetypeId}/>}
             {PLAYFIELD_V4 && <div className="pf-set-columns" aria-hidden="true"><span>Série</span><span>Charge</span><span>Répétitions</span><span>Statut</span></div>}
             {sets.map((set, i) => <Fragment key={`${item.id}.${i}`}>
               {(i === 0 || phaseOf(sets[i - 1] ?? set) !== phaseOf(set)) &&
