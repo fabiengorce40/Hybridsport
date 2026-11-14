@@ -1,0 +1,37 @@
+# Manual, isolated screenshot QA; no deployment, credentials or privileged permissions.
+name: REKKA V4 - exercise detail pixel QA
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  exercise-detail:
+    if: github.ref == 'refs/heads/codex/rekka-v4-playfield-exercise-detail'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Check TypeScript, lint and detail tests
+        run: pnpm typecheck && pnpm lint && pnpm exec vitest run apps/kairo/tests/exercise-detail.test.tsx
+      - name: Compile isolated app (no publishing)
+        run: pnpm kairo:build:beta
+      - name: Install Chromium
+        run: pnpm --filter @hybridsport/kairo exec playwright install --with-deps chromium
+      - name: Capture detail at 360 and 390 px with measured geometry
+        run: |
+          mkdir -p /tmp/rekka-exercise-detail
+          REKKA_DETAIL_ONLY=1 node apps/kairo/scripts/e2e-v4-screens.mjs /tmp/rekka-exercise-detail | tee /tmp/rekka-exercise-detail/report.txt
+      - name: Preserve screenshots and geometry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rekka-v4-exercise-detail-pixel-qa
+          path: /tmp/rekka-exercise-detail
+          retention-days: 14
+          if-no-files-found: warn

@@ -82,7 +82,9 @@
   display: block;
   width: calc(100% - 4px);
   height: auto;
-  aspect-ratio: 662 / 411;
+  /* Reference atlas viewport: 835 × 478 px on the official 941 px design.
+     Crop only within this viewport; preserve the source atlas and its alt text. */
+  aspect-ratio: 835 / 478;
   margin-inline: auto;
   object-fit: cover;
   border-radius: 23px;
@@ -103,7 +105,7 @@
 }
 .pf-exercise-switch button {
   min-width: 44px;
-  min-height: 46px;
+  min-height: 44px;
   padding: 0 3px;
   border: 0;
   border-radius: 999px;

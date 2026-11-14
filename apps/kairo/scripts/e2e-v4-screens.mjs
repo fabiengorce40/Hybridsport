@@ -136,6 +136,30 @@ try {
     await page.locator('.pf-preview-open').first().click();
     await page.locator('[data-exercise-detail]').waitFor();
     await screen('5-detail-exercice');
+    if (process.env.REKKA_DETAIL_ONLY === '1') {
+      const geometry = await page.evaluate(() => {
+        const selectors = {
+          page: '.pf-exercise-page', header: '.pf-exercise-bar',
+          title: '.pf-exercise-identity', exerciseName: '.pf-exercise-identity h1',
+          panel: '.pf-exercise-panel', atlas: '.pf-exercise-atlas',
+          tabs: '.pf-exercise-switch', info: '.pf-exercise-info',
+          demo: '.pf-exercise-demo',
+        };
+        return Object.fromEntries(Object.entries(selectors).map(([name, selector]) => {
+          const element = document.querySelector(selector);
+          if (!element) return [name, null];
+          const r = element.getBoundingClientRect();
+          const round = (n) => Math.round(n * 100) / 100;
+          return [name, { x: round(r.x), y: round(r.y), width: round(r.width), height: round(r.height) }];
+        }));
+      });
+      if (shots && (width === 390 || width === 360)) {
+        writeFileSync(`${shots}/${String(width)}-detail-geometry.json`, JSON.stringify(geometry, null, 2));
+      }
+      assert.ok(geometry.atlas?.width > 0 && geometry.atlas?.height > 0, `${W} : atlas visible`);
+      assert.ok(Math.abs(geometry.atlas.width / geometry.atlas.height - 835 / 478) < 0.02,
+        `${W} : proportions du cadre atlas conformes à la référence`);
+    }
     await page.getByRole('button', { name: 'Historique', exact: true }).click();
     assert.ok(await page.getByRole('region', { name: 'Historique' }).isVisible());
     await page.getByRole('button', { name: 'Conseils', exact: true }).click();
