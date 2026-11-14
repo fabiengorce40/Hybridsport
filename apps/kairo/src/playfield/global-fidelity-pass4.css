@@ -95,26 +95,6 @@ html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-p
 html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .v3-planning-options {
   margin-top:14px!important;
 }
-/* Live strength: ensure header doesn't cover the first exercise while scrolling.
-   Keep rest dock available, 44px controls and all existing workout interactions. */
-html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-sticky-top {
-  position:relative!important;top:auto!important;z-index:1!important;
-}
-html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise-list {
-  margin-top:14px!important;
-}
-html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise {
-  overflow:visible;scroll-margin-top:20px!important;
-}
-html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise-summary {
-  min-height:74px!important;
-}
-html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise-name {
-  min-width:0!important;
-}
-html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise-name strong {
-  overflow-wrap:normal;word-break:normal;font-size:clamp(17px,4.8vw,21px)!important;
-}
 /* Completion: more spacious single-card celebration; the archive stays accessible. */
 html[data-rekka-theme="playfield-pro"] .pf-summary-board {
   border-radius:28px!important;padding:17px 13px 20px!important;
@@ -155,20 +135,6 @@ html[data-rekka-theme="playfield-pro"] .pf-summary-back {
  html[data-rekka-theme="playfield-pro"] .pf-profile-hero{min-height:115px!important;}
 }
 
-/* In Playfield the recovery controls occupy space inside the open exercise. */
-html[data-rekka-theme="playfield-pro"] .v31-rest-inline:empty {display:none;}
-html[data-rekka-theme="playfield-pro"] .v31-rest-inline {margin:8px;}
-html[data-rekka-theme="playfield-pro"] .v31-rest-inline .v31-rest {
-  position:relative!important;inset:auto!important;transform:none!important;
-  width:100%!important;box-shadow:none!important;
-  background:linear-gradient(130deg,#075bf4,#041b65)!important;
-}
-html[data-rekka-theme="playfield-pro"] .v31-workout:has(.v31-rest-inline .v31-rest) {
-  padding-bottom:24px!important;
-}
-html[data-rekka-theme="playfield-pro"] .v31-rest-inline .v31-rest-add {
-  border:2px solid white!important;border-radius:999px!important;
-}
 html[data-rekka-theme="playfield-pro"] .pf-exercise-demo {
   background:linear-gradient(142deg,#0b2033,#14244b);
 }
@@ -181,22 +147,6 @@ html[data-rekka-theme="playfield-pro"] .v3-profile-menu [data-profile-section="o
 html[data-rekka-theme="playfield-pro"] .v3-profile-menu [data-profile-section="health"]>span:first-child {color:#e34430!important;}
 html[data-rekka-theme="playfield-pro"] .v3-profile-menu [data-profile-section="equipment"]>span:first-child {color:#0e1b35!important;}
 
-/* Playfield: the bench illustration follows the aspect ratio of the official artwork. */
-html[data-rekka-theme="playfield-pro"] .v31-workout .pf-exercise-illustration:has(img) {
-  height:auto!important;width:100%!important;max-width:100%;min-width:0;aspect-ratio:853/272;border-radius:0!important;
-}
-html[data-rekka-theme="playfield-pro"] .pf-exercise-illustration img {
-  display:block;width:100%;height:100%;object-fit:contain;
-}
-html[data-rekka-theme="playfield-pro"] .v31-rest-inline .v31-rest-main {
-  grid-template-columns: minmax(80px, 30%) minmax(0,1fr)!important;
-}
-html[data-rekka-theme="playfield-pro"] .v31-rest-inline .v31-rest-skip {
-  background:linear-gradient(#ffe05b,#ffc400)!important;
-}
-html[data-rekka-theme="playfield-pro"] .v31-workout .pf-next-inline {
-  min-height:54px!important;border-radius:20px!important;
-}
 html[data-rekka-theme="playfield-pro"] .pf-summary-celebration::before {
   background:
     linear-gradient(35deg,transparent 39%,#ffc400 40% 65%,transparent 66%) 14% 30% / 16px 12px,
@@ -204,18 +154,4 @@ html[data-rekka-theme="playfield-pro"] .pf-summary-celebration::before {
     linear-gradient(140deg,transparent 38%,#ffc400 39% 64%,transparent 65%) 25% 65% / 16px 14px,
     linear-gradient(35deg,transparent 39%,#ffc400 40% 65%,transparent 66%) 76% 62% / 17px 13px;
   background-repeat:no-repeat;
-}
-
-html[data-rekka-theme="playfield-pro"] .v31-workout .pf-library-illustration {
-  width:100%!important;min-width:0;height:auto!important;aspect-ratio:853/272;
-  display:grid;place-items:center;overflow:hidden;
-  background:linear-gradient(145deg,#eef4ff,#fff7f2 70%,#ffe8e0);
-}
-html[data-rekka-theme="playfield-pro"] .pf-library-illustration > svg,
-html[data-rekka-theme="playfield-pro"] .pf-library-illustration > img {
-  display:block;width:100%;height:100%;object-fit:contain;
-}
-html[data-rekka-theme="playfield-pro"] .pf-exercise-art-placeholder {
-  display:grid;justify-items:center;gap:6px;
-  color:#355580;font-size:12px;font-weight:700;
 }

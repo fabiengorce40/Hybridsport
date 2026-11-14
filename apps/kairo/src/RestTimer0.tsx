@@ -56,7 +56,7 @@ export function RestTimer0({ rest, now, onAction, layout='compact', nextSeriesTe
         <div className="v3-rest-orbit v31-rest-orbit">
           <svg className="v31-rest-track" viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43"/></svg>
           <div className="v31-rest-progress" style={{ WebkitMaskImage: mask, maskImage: mask }}>
-            <RecoveryBrush/>
+            {PLAYFIELD_V4 ? <svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="43" fill="none" stroke="#ffcc00" strokeWidth="8"/></svg> : <RecoveryBrush/>}
           </div>
           <div className="v31-rest-readout">
             <small>{label}</small>

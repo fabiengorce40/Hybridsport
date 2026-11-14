@@ -5,7 +5,7 @@ import type { StrengthWorkoutProps, SetsItem } from '../workout/StrengthWorkout.
 import { SetLine, EffortRow, LightBlock, alternativesText, isSets, targetRirOf, phaseOf, PHASE_TITLES } from '../workout/StrengthWorkout.js';
 import { muscleText } from './Artwork.js';
 import { PLAYFIELD_V4 } from '../playfield/flag.js';
-import { WorkoutIllustration } from '../playfield/WorkoutIllustration.js';
+import { ExerciseIllustration } from '../playfield/ExerciseIllustration.js';
 
 interface Props extends StrengthWorkoutProps {
   onBack: () => void;
@@ -94,7 +94,7 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
             <span className="v31-chevron" aria-hidden="true">{expanded ? '⌃' : '⌄'}</span>
           </button>
           <div className="v3-sets v31-sets" id={`v31-sets-${cardIndex}`} hidden={!expanded}>
-            {PLAYFIELD_V4 && expanded && <WorkoutIllustration archetypeId={v.archetypeId}/>}
+            {PLAYFIELD_V4 && expanded && <ExerciseIllustration exerciseId={item.exerciseId}/>}
             {PLAYFIELD_V4 && <div className="pf-set-columns" aria-hidden="true"><span>Série</span><span>Charge</span><span>Répétitions</span><span>Statut</span></div>}
             {sets.map((set, i) => <Fragment key={`${item.id}.${i}`}>
               {(i === 0 || phaseOf(sets[i - 1] ?? set) !== phaseOf(set)) &&
@@ -147,7 +147,7 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
         </section>
         {PLAYFIELD_V4 && expanded && main.length > 1 && <button type="button" className="pf-next-exercise pf-next-inline"
           onClick={()=>expandExercise((cardIndex+1)%main.length)} aria-label={`Ouvrir exercice suivant : ${exerciseLabel(main[(cardIndex+1)%main.length]?.item.exerciseId ?? '')}`}>
-          <span aria-hidden="true">‹</span><span><small>Exercice suivant</small><strong>{exerciseLabel(main[(cardIndex+1)%main.length]?.item.exerciseId ?? '')}</strong></span><span aria-hidden="true">›</span>
+          <span aria-hidden="true" className="pf-next-leading"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 10v4m3-7v10m8-10v10m3-7v4M8 12h8"/></svg></span><span><small>Exercice suivant</small><strong>{exerciseLabel(main[(cardIndex+1)%main.length]?.item.exerciseId ?? '')}</strong></span><span aria-hidden="true">›</span>
         </button>}
         </Fragment>;
       })}

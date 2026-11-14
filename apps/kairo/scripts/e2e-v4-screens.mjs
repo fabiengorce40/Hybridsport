@@ -25,6 +25,27 @@ if (process.env.REKKA_DETAIL_ONLY === '1') {
   assert.equal(exercise?.exerciseId, 'ex.db_bench_press');
   exercise.exerciseId = 'ex.bench_press';
 }
+const workoutReference = process.env.REKKA_WORKOUT_REFERENCE === '1';
+if (workoutReference) {
+  // The reference state exists only in the browser context created by this script.
+  const request = fixture.planner.weeks['2026-10-05'].requests.find(r => r.requestId === '2026-10-05.strength.2');
+  const block = request.record.data.session.blocks.find(b => b.kind === 'strength');
+  block.items = block.items.slice(0, 5);
+  const [bench, pull, ...others] = block.items;
+  bench.exerciseId = 'ex.bench_press';
+  pull.exerciseId = 'ex.pull_up';
+  const series = { kind: 'working', reps: 8, restAfterS: 120, intensity: { mode: 'load', kg: 80, certainty: 'prescribed' } };
+  bench.prescription.sets = Array.from({length: 4}, () => ({...series}));
+  for (const [index, item] of [pull, ...others].entries()) {
+    item.prescription.sets = Array.from({length: index === 3 ? 3 : 4}, () => ({...series, intensity: { mode: 'bodyweight' }}));
+  }
+  const record = (itemId, setIndex, done, loadKg) => ({itemId, setIndex, done, reps: 8, ...(loadKg === undefined ? {} : {loadKg})});
+  fixture.programmeLogs[request.requestId] = {
+    requestId: request.requestId, sport: 'strength', startedAt: '2026-10-07T07:50:15.000Z',
+    sets: [0,1,2,3].map(i => record(bench.id, i, i === 0, 80)).concat([0,1,2].map(i => record(pull.id, i, true))),
+    painItems: [], rest: {endsAt: '2026-10-07T08:02:32.000Z', totalS: 120, exerciseId: bench.exerciseId},
+  };
+}
 const KEY = 'rekka-beta:kairo.state';
 const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.json': 'application/json', '.webp': 'image/webp', '.png': 'image/png', '.svg': 'image/svg+xml', '.woff2': 'font/woff2', '.webmanifest': 'application/manifest+json' };
 const server = createServer((req, res) => {
@@ -56,12 +77,12 @@ const audit = (page) => page.evaluate(() => {
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
 const report = {};
 try {
-  for (const width of [390, 360, 412, 1024]) {
+  for (const width of (workoutReference ? [390,360,412] : [390, 360, 412, 1024])) {
     const W = `${String(width)} px`;
-    const height = process.env.REKKA_HOME_ONLY === '1' && (width === 390 || width === 360)
+    const height = workoutReference ? ({360:800,390:844,412:915})[width] : process.env.REKKA_HOME_ONLY === '1' && (width === 390 || width === 360)
       ? Math.round(width * 1536 / 728)
       : width === 360 ? 740 : width === 1024 ? 900 : 844;
-    const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: width === 390 ? 2 : 1, locale: 'fr-FR', timezoneId: 'Europe/Paris', isMobile: width < 1000, hasTouch: width < 1000 });
+    const ctx = await browser.newContext({ viewport: { width, height }, deviceScaleFactor: !workoutReference && width === 390 ? 2 : 1, locale: 'fr-FR', timezoneId: 'Europe/Paris', isMobile: width < 1000, hasTouch: width < 1000 });
     const page = await ctx.newPage();
     const errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
@@ -73,7 +94,7 @@ try {
       await page.waitForTimeout(250);
       const a = await audit(page);
       report[W][name] = a;
-      if (shots && (width === 390 || width === 360)) {
+      if (shots && (workoutReference || width === 390 || width === 360)) {
         await page.screenshot({ path: `${shots}/${String(width)}-${name}.png`, animations: 'disabled' });
         await page.screenshot({ path: `${shots}/${String(width)}-${name}-full.png`, animations: 'disabled', fullPage: true });
       }
@@ -148,6 +169,43 @@ try {
     assert.equal(await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button').count(), 4, 'V4 : 4 onglets comme la planche');
     await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Planning', exact: true }).click();
     await page.locator('.pf-planning-week .pf-planning-day[data-date="2026-10-07"] .pf-planning-session[data-sport="strength"]').click();
+    if (workoutReference) {
+      await page.locator('.v31-workout').waitFor({timeout:10000});
+      await page.evaluate(async () => { await document.fonts.ready; });
+      assert.match(await page.locator('.v31-overview').innerText(), /5 exercices · 4\/19 séries/);
+      assert.match(await page.locator('.v31-session-bar').innerText(), /10:45/);
+      assert.match(await page.getByRole('timer', {name:'Chrono de repos'}).innerText(), /01:32/);
+      assert.match(await page.locator('.pf-next-inline').innerText(), /Tractions/);
+      await screen('seance-reference');
+      const geometry = await page.evaluate(() => Object.fromEntries(
+        ['.v31-toolbar','.v31-session-bar','.v31-overview','.v31-exercise[data-expanded="true"]','.pf-exercise-illustration','.pf-set-columns','.v31-series-row','.v31-rest','.pf-next-inline'].map(selector => {
+          const {x,y,width,height} = document.querySelector(selector).getBoundingClientRect();
+          return [selector, {x,y,width,height}];
+        })));
+      if (shots) writeFileSync(`${shots}/${width}-mesures.json`, JSON.stringify(geometry,null,2));
+      const activeRow = page.locator('.v31-series-row[data-current="true"]').first();
+      const load = activeRow.getByRole('textbox', {name:/Charge/});
+      const reps = activeRow.getByRole('textbox', {name:/Répétitions/});
+      assert.equal(await load.inputValue(), '80');
+      assert.equal(await reps.inputValue(), '8');
+      await activeRow.getByRole('button', {name:/Augmenter charge/}).click();
+      assert.equal(await load.inputValue(), '82.5');
+      await activeRow.getByRole('button', {name:/Diminuer charge/}).click();
+      await activeRow.getByRole('button', {name:/Augmenter répétitions/}).click();
+      assert.equal(await reps.inputValue(), '9');
+      await activeRow.getByRole('button', {name:/Diminuer répétitions/}).click();
+      const rest = page.getByRole('timer', {name:'Chrono de repos'});
+      await rest.getByRole('button', {name:'Mettre le repos en pause'}).click();
+      await rest.getByRole('button', {name:'Ajouter 15 secondes'}).click();
+      assert.match(await rest.innerText(), /01:47/);
+      await rest.getByRole('button', {name:'Reprendre le repos'}).click();
+      await activeRow.getByRole('button', {name:'Cocher la série'}).click();
+      assert.match(await page.locator('.v31-overview').innerText(), /5\/19/);
+      assert.deepEqual(errors, []);
+      console.log(`OK ${width}px : charges, répétitions, pause, extension, reprise, validation`);
+      await ctx.close();
+      continue;
+    }
     await page.locator('.pf-preview-open').first().click();
     await page.locator('[data-exercise-detail]').waitFor();
     await screen('5-detail-exercice');
@@ -201,7 +259,7 @@ try {
     }
     await page.getByRole('button', { name: 'Commencer la séance', exact: true }).click();
     await page.locator('[data-checkin-form]').getByRole('button', { name: 'Passer', exact: true }).click();
-    await page.locator('.v31-workout').waitFor();
+    await page.locator('.v31-workout').waitFor({timeout:10000});
     await screen('2-seance-en-cours');
     // Geometry evidence for the real strength UI; no mocked screenshot or edited fixture.
     const workoutGeometry = await page.evaluate(() => {
@@ -268,17 +326,17 @@ try {
     await row.getByRole('button', { name: 'Cocher la série', exact: true }).click();
     await page.waitForTimeout(400);
     if (process.env.REKKA_EXERCISE_ART_ONLY === '1') {
-      const firstArt = page.locator('[data-workout-art]');
-      const category = await firstArt.getAttribute('data-workout-art');
-      assert.equal(category, 'upper');
+      const firstArt = page.locator('[data-exercise-art]');
+      assert.equal(await firstArt.getAttribute('data-exercise-art'), 'ex.db_bench_press');
       const logsBefore = await page.evaluate(k => JSON.parse(localStorage.getItem(k)).programmeLogs, KEY);
       const navigationBefore = await page.evaluate(() => performance.timeOrigin);
       await page.locator('.pf-next-inline').click();
-      assert.equal(await firstArt.getAttribute('data-workout-art'), category);
+      assert.equal(await firstArt.getAttribute('data-exercise-art'), 'ex.machine_row');
+      assert.equal(await firstArt.getAttribute('data-art-available'), 'false');
       assert.deepEqual(await page.evaluate(k => JSON.parse(localStorage.getItem(k)).programmeLogs, KEY), logsBefore);
       assert.equal(await page.evaluate(() => performance.timeOrigin), navigationBefore);
       assert.deepEqual(errors, []);
-      console.log('OK: illustration de séance stable, navigation et données intactes');
+      console.log('OK: illustration adaptée à l’exercice, navigation et données intactes');
       await ctx.close();
       continue;
     }
@@ -319,7 +377,7 @@ try {
   for (const [w, screens] of Object.entries(report)) for (const [n, a] of Object.entries(screens)) {
     console.log(`${w} ${n} | cibles<44 : ${String(a.small.length)}${a.small.length ? ` [${a.small.slice(0, 6).join(' ; ')}]` : ''} | néon V3 : ${String(a.neon.length)}${a.neon.length ? ` [${a.neon.slice(0, 3).join(' ; ')}]` : ''} | contraste faible : ${String(a.lowContrast.length)}${a.lowContrast.length ? ` [${a.lowContrast.slice(0, 8).join(' ; ')}]` : ''}`);
   }
-  if (process.env.REKKA_EXERCISE_ART_ONLY !== '1') console.log(process.env.REKKA_HOME_ONLY === '1' ? 'E2E V4 ACCUEIL OK' : process.env.REKKA_DETAIL_ONLY === '1' ? 'E2E V4 DÉTAIL OK' : 'E2E V4 SEPT ÉCRANS OK');
+  if (process.env.REKKA_EXERCISE_ART_ONLY !== '1') console.log(workoutReference ? 'E2E référence séance OK' : process.env.REKKA_HOME_ONLY === '1' ? 'E2E V4 ACCUEIL OK' : process.env.REKKA_DETAIL_ONLY === '1' ? 'E2E V4 DÉTAIL OK' : 'E2E V4 SEPT ÉCRANS OK');
 } finally {
   await browser.close();
   server.close();
