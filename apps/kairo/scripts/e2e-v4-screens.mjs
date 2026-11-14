@@ -267,6 +267,21 @@ try {
     await screen('2b-saisie');
     await row.getByRole('button', { name: 'Cocher la série', exact: true }).click();
     await page.waitForTimeout(400);
+    if (process.env.REKKA_EXERCISE_ART_ONLY === '1') {
+      const firstArt = page.locator('[data-exercise-art]');
+      assert.equal(await firstArt.getAttribute('data-exercise-art'), 'ex.db_bench_press');
+      const logsBefore = await page.evaluate(k => JSON.parse(localStorage.getItem(k)).programmeLogs, KEY);
+      const navigationBefore = await page.evaluate(() => performance.timeOrigin);
+      await page.locator('.pf-next-inline').click();
+      assert.equal(await firstArt.getAttribute('data-exercise-art'), 'ex.machine_row');
+      assert.equal(await firstArt.getAttribute('data-art-available'), 'false');
+      assert.deepEqual(await page.evaluate(k => JSON.parse(localStorage.getItem(k)).programmeLogs, KEY), logsBefore);
+      assert.equal(await page.evaluate(() => performance.timeOrigin), navigationBefore);
+      assert.deepEqual(errors, []);
+      console.log('OK: haltères → rowing machine, navigation et données de séance intactes');
+      await ctx.close();
+      continue;
+    }
     await screen('2c-serie-validee-repos');
     const total = await page.evaluate((k) => Object.values(JSON.parse(localStorage.getItem(k)).programmeLogs).find((l) => l.rest)?.rest.totalS, KEY);
     await page.clock.runFor(Math.round(total / 2) * 1000 + 50);
@@ -304,7 +319,7 @@ try {
   for (const [w, screens] of Object.entries(report)) for (const [n, a] of Object.entries(screens)) {
     console.log(`${w} ${n} | cibles<44 : ${String(a.small.length)}${a.small.length ? ` [${a.small.slice(0, 6).join(' ; ')}]` : ''} | néon V3 : ${String(a.neon.length)}${a.neon.length ? ` [${a.neon.slice(0, 3).join(' ; ')}]` : ''} | contraste faible : ${String(a.lowContrast.length)}${a.lowContrast.length ? ` [${a.lowContrast.slice(0, 8).join(' ; ')}]` : ''}`);
   }
-  console.log(process.env.REKKA_HOME_ONLY === '1' ? 'E2E V4 ACCUEIL OK' : process.env.REKKA_DETAIL_ONLY === '1' ? 'E2E V4 DÉTAIL OK' : 'E2E V4 SEPT ÉCRANS OK');
+  if (process.env.REKKA_EXERCISE_ART_ONLY !== '1') console.log(process.env.REKKA_HOME_ONLY === '1' ? 'E2E V4 ACCUEIL OK' : process.env.REKKA_DETAIL_ONLY === '1' ? 'E2E V4 DÉTAIL OK' : 'E2E V4 SEPT ÉCRANS OK');
 } finally {
   await browser.close();
   server.close();

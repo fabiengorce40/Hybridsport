@@ -205,3 +205,17 @@ html[data-rekka-theme="playfield-pro"] .pf-summary-celebration::before {
     linear-gradient(35deg,transparent 39%,#ffc400 40% 65%,transparent 66%) 76% 62% / 17px 13px;
   background-repeat:no-repeat;
 }
+
+html[data-rekka-theme="playfield-pro"] .v31-workout .pf-library-illustration {
+  width:100%!important;min-width:0;height:auto!important;aspect-ratio:853/272;
+  display:grid;place-items:center;overflow:hidden;
+  background:linear-gradient(145deg,#eef4ff,#fff7f2 70%,#ffe8e0);
+}
+html[data-rekka-theme="playfield-pro"] .pf-library-illustration > svg,
+html[data-rekka-theme="playfield-pro"] .pf-library-illustration > img {
+  display:block;width:100%;height:100%;object-fit:contain;
+}
+html[data-rekka-theme="playfield-pro"] .pf-exercise-art-placeholder {
+  display:grid;justify-items:center;gap:6px;
+  color:#355580;font-size:12px;font-weight:700;
+}
