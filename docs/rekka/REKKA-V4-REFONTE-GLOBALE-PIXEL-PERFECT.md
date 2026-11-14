@@ -20,7 +20,7 @@ Architecture : `VITE_REKKA_SKIN=playfield-pro`, `html[data-rekka-theme="playfiel
 
 ## 3. Contrat de design partagé (à extraire de l'Accueil SANS le modifier)
 
-- Palette officielle : primaire `#1647C8`, CTA `#FDCB32`, accent corail `#FA6A58`, fond crème `#FFF7EA`, texte `#0E1B35`. L'Accueil utilise quelques teintes dérivées propres au rendu approuvé : mesurer les valeurs effectives et réutiliser celles-ci pour les composants partagés.
+- Palette de la planche : primaire `#1647CB` (attention : les CSS existants de l’Accueil validé utilisent aussi `#1647C8`, ne pas modifier l’Accueil ; mesurer et choisir les valeurs finales hors Accueil), CTA `#FDCB32`, accent corail `#FA6A58`, fond crème `#FFF7EA`, texte `#0E1B35`. L'Accueil utilise quelques teintes dérivées propres au rendu approuvé : mesurer les valeurs effectives et réutiliser celles-ci pour les composants partagés.
 - Composants communs : `PageHeader` (retour/titre/menu), `SurfaceCard`, `SportGlyph`, `SegmentedTabs`, `MetricTile`, `ActionButton`, `MiniProgress`, `CircularProgress`, `BottomTabs` (4 destinations), `EmptyState`, `Sheet/Dialog` et `TimerRing` visuels seulement.
 - Mesures : capturer à 360, 390, 412 px mobiles ; 1024 px tablette. Standardiser rayon, ombre, épaisseur de trait, marges latérales, écart vertical, tailles et alignements mesurés sur **la build Accueil approuvée**, pas sur une nouvelle interprétation.
 - Les interactions doivent rester utilisables : cibles tactiles >=44×44 px, contraste, affichage sans scroll horizontal, focus visible, clavier ouvert, safe areas, zoom texte et états chargement/erreur.
