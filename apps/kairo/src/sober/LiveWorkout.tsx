@@ -147,7 +147,7 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
         </section>
         {PLAYFIELD_V4 && expanded && main.length > 1 && <button type="button" className="pf-next-exercise pf-next-inline"
           onClick={()=>expandExercise((cardIndex+1)%main.length)} aria-label={`Ouvrir exercice suivant : ${exerciseLabel(main[(cardIndex+1)%main.length]?.item.exerciseId ?? '')}`}>
-          <span aria-hidden="true" className="pf-next-leading"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 10v4m3-7v10m8-10v10m3-7v4M8 12h8"/></svg></span><span><small>Exercice suivant</small><strong>{exerciseLabel(main[(cardIndex+1)%main.length]?.item.exerciseId ?? '')}</strong></span><span aria-hidden="true">›</span>
+          <span aria-hidden="true" className="pf-next-leading"><span>‹</span><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M5 10v4m3-7v10m8-10v10m3-7v4M8 12h8"/></svg></span><span><small>Exercice suivant</small><strong>{exerciseLabel(main[(cardIndex+1)%main.length]?.item.exerciseId ?? '')}</strong></span><span aria-hidden="true">›</span>
         </button>}
         </Fragment>;
       })}

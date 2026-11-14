@@ -176,6 +176,22 @@ try {
       assert.match(await page.locator('.v31-session-bar').innerText(), /10:45/);
       assert.match(await page.getByRole('timer', {name:'Chrono de repos'}).innerText(), /01:32/);
       assert.match(await page.locator('.pf-next-inline').innerText(), /Tractions/);
+      const rows = page.locator('.v31-exercise[data-expanded="true"] .v31-series-row');
+      assert.equal(await rows.count(), 4);
+      assert.equal(await rows.first().getAttribute('data-done'), 'true');
+      assert.equal(await rows.nth(1).getAttribute('data-current'), 'true');
+      assert.equal(await rows.nth(2).getAttribute('data-done'), 'false');
+      assert.equal(await rows.nth(3).getAttribute('data-done'), 'false');
+      const restOverlap = await page.locator('.v31-rest').evaluate(panel => {
+        const bounds = selector => panel.querySelector(selector).getBoundingClientRect();
+        const label = bounds('.v31-rest-readout small');
+        const time = bounds('.v31-rest-readout .k-rest-time');
+        const pause = bounds('.v31-rest-play');
+        const orbit = bounds('.v31-rest-orbit');
+        const side = bounds('.v31-rest-side');
+        return label.bottom > time.top + 1 || time.bottom > pause.top + 1 || orbit.right > side.left + 1;
+      });
+      assert.equal(restOverlap, false, `${W} : libellé, temps, pause et commandes de repos séparés`);
       await screen('seance-reference');
       const geometry = await page.evaluate(() => Object.fromEntries(
         ['.v31-toolbar','.v31-session-bar','.v31-overview','.v31-exercise[data-expanded="true"]','.pf-exercise-illustration','.pf-set-columns','.v31-series-row','.v31-rest','.pf-next-inline'].map(selector => {
@@ -200,6 +216,16 @@ try {
       assert.match(await rest.innerText(), /01:47/);
       await rest.getByRole('button', {name:'Reprendre le repos'}).click();
       await activeRow.getByRole('button', {name:'Cocher la série'}).click();
+      assert.match(await page.locator('.v31-overview').innerText(), /5\/19/);
+      await rest.getByRole('button', {name:'Passer', exact:true}).click();
+      assert.equal(await rest.count(), 0);
+      assert.match(await page.locator('.v31-overview').innerText(), /5\/19/);
+      const origin = await page.evaluate(() => performance.timeOrigin);
+      await page.locator('.pf-next-inline').click();
+      const art = page.locator('[data-exercise-art]');
+      assert.equal(await art.getAttribute('data-exercise-art'), 'ex.pull_up');
+      assert.equal(await art.getAttribute('data-art-available'), 'false');
+      assert.equal(await page.evaluate(() => performance.timeOrigin), origin);
       assert.match(await page.locator('.v31-overview').innerText(), /5\/19/);
       assert.deepEqual(errors, []);
       console.log(`OK ${width}px : charges, répétitions, pause, extension, reprise, validation`);

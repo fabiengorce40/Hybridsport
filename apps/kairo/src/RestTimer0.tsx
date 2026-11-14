@@ -75,7 +75,7 @@ export function RestTimer0({ rest, now, onAction, layout='compact', nextSeriesTe
           <button className="v31-rest-add" aria-label={`Ajouter ${REST_EXTENSION_S} secondes`}
             onClick={() => onAction('extend')}>+{REST_EXTENSION_S} s</button>
           <button className="v31-rest-skip" aria-label={over ? 'OK' : 'Passer'} onClick={() => onAction('skip')}>
-            {over ? 'OK' : 'Passer'}
+            {over ? 'OK' : PLAYFIELD_V4 ? 'Passer le repos' : 'Passer'}
           </button>
         </div>
       </div>

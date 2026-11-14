@@ -43,6 +43,7 @@ html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row[data-done="true"] .v31-brush-check {
   stroke: var(--workout-ink) !important;
+  width:20px;height:20px;
   filter:none;
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-play {
@@ -122,31 +123,17 @@ html[data-rekka-theme="playfield-pro"] .v31-workout:has(.v31-rest-inline .v31-re
 html[data-rekka-theme="playfield-pro"] .v31-rest-inline .v31-rest-add {
   border:2px solid white!important;border-radius:999px!important;
 }
-/* Playfield: the bench illustration follows the aspect ratio of the official artwork. */
-html[data-rekka-theme="playfield-pro"] .v31-workout .pf-exercise-illustration:has(img) {
-  height:auto!important;width:100%!important;max-width:100%;min-width:0;aspect-ratio:853/272;border-radius:0!important;
-}
-html[data-rekka-theme="playfield-pro"] .pf-exercise-illustration img {
-  display:block;width:100%;height:100%;object-fit:contain;
-}
-html[data-rekka-theme="playfield-pro"] .v31-rest-inline .v31-rest-main {
-  grid-template-columns: minmax(80px, 30%) minmax(0,1fr)!important;
-}
-html[data-rekka-theme="playfield-pro"] .v31-rest-inline .v31-rest-skip {
-  background:linear-gradient(#ffe05b,#ffc400)!important;
-}
-html[data-rekka-theme="playfield-pro"] .v31-workout .pf-next-inline {
-  min-height:54px!important;border-radius:20px!important;
-}
-html[data-rekka-theme="playfield-pro"] .v31-workout .pf-library-illustration {
-  width:100%!important;min-width:0;height:clamp(108px,31vw,128px)!important;
+/* Reserved picture slot; keep the complete official bench crop in view. */
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-library-illustration {
+  width:100%!important;min-width:0;height:auto!important;aspect-ratio:853/272;
   display:grid;place-items:center;overflow:hidden;
-  background:linear-gradient(145deg,#eef4ff,#fff7f2 70%,#ffe8e0);
+  border-radius:0!important;
+  background:#faf1e9!important;
 }
-html[data-rekka-theme="playfield-pro"] .pf-library-illustration > svg,
-html[data-rekka-theme="playfield-pro"] .pf-library-illustration > img {
-  display:block;width:100%;height:100%;object-fit:contain;
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-library-illustration > :is(svg,img) {
+  display:block;width:100%!important;height:100%!important;object-fit:contain;
 }
+
 html[data-rekka-theme="playfield-pro"] .pf-exercise-art-placeholder {
   display:grid;justify-items:center;gap:6px;
   color:#355580;font-size:12px;font-weight:700;
@@ -173,16 +160,59 @@ html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-inline .v31-rest {
   width:100%!important;max-width:100%!important;box-shadow:none!important;
+  border-radius:19px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-inline .v31-rest-main {
+  grid-template-columns:112px minmax(0,1fr)!important;gap:9px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest .v31-rest-orbit {
+  width:112px!important;height:112px!important;min-width:112px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-track circle {
+  stroke:#5894f7!important;stroke-width:8;opacity:1;
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-progress > svg {
   display:block;width:100%;height:100%;
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-readout {
-  line-height:1;
-  gap:1px;
+  inset:0!important;display:grid;grid-template-rows:13px 25px 44px;
+  align-content:center;justify-content:center;justify-items:center;gap:0;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-readout > small {
+  max-width:none;align-self:center;margin:0!important;transform:none!important;
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest .k-rest-time {
-  font-style:normal!important;line-height:1!important;font-variant-numeric:tabular-nums;
+  font-size:25px!important;font-style:normal!important;line-height:25px!important;
+  font-variant-numeric:tabular-nums;margin:0!important;transform:none!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-play {
+  margin:0;transform:none!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-side {
+  grid-template-columns:minmax(60px,.8fr) minmax(0,1fr)!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-side button {
+  min-width:0!important;padding-inline:4px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-skip {
+  background:linear-gradient(#ffe05b,#ffc400)!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-set-columns {
+  background:#e5e5e9!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-label > span {
+  border-radius:999px!important;background:#eeeae7!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-next-inline {
+  min-height:56px!important;display:grid!important;
+  grid-template-columns:auto minmax(0,1fr) auto!important;
+  gap:12px!important;text-align:left!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-next-leading {
+  display:flex;align-items:center;gap:8px;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-next-inline > span:nth-child(2) {
+  text-align:left!important;
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-step {
   isolation:isolate;
