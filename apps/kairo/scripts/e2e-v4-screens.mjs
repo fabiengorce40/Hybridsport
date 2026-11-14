@@ -174,6 +174,15 @@ try {
       assert.ok(geometry.atlas?.width > 0 && geometry.atlas?.height > 0, `${W} : atlas visible`);
       assert.ok(Math.abs(geometry.atlas.width / geometry.atlas.height - 835 / 478) < 0.02,
         `${W} : proportions du cadre atlas conformes à la référence`);
+      assert.ok(geometry.tabs?.width > 0 && geometry.info?.width > 0, `${W} : onglets et consignes visibles`);
+      const detailOverflow = await page.evaluate(() =>
+        document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      assert.ok(detailOverflow <= 1, `${W} : aucun débordement horizontal sur Détail exercice (${detailOverflow}px)`);
+      const tabButtons = page.locator('.pf-exercise-switch button');
+      for (const button of await tabButtons.all()) {
+        const rect = await button.boundingBox();
+        assert.ok(rect && rect.height >= 44, `${W} : onglet accessible à au moins 44 px`);
+      }
     }
     await page.getByRole('button', { name: 'Historique', exact: true }).click();
     assert.ok(await page.getByRole('region', { name: 'Historique' }).isVisible());
