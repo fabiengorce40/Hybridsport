@@ -9,7 +9,7 @@ const minutes = (s: number) => (s < 60 ? `${String(Math.round(s))} s` : `${Strin
  * (résultat), durée active figée (`log.timing`), séries réellement validées (journal). Les montées en charge sont
  * comptées à part (hors volume et progression). Aucun record, calorie, score ni objectif n'est calculé ou inventé.
  */
-export function SessionSummary({ v, statusLabel }: { v: ProgrammeSessionView; statusLabel: string }) {
+export function SessionSummary({ v, statusLabel, onReturn }: { v: ProgrammeSessionView; statusLabel: string; onReturn: () => void }) {
   const { log, result } = v;
   if (!log || !result) return null;
   const items = v.session.blocks.filter((b) => !['warmup', 'cooldown'].includes(b.kind)).flatMap((b) => b.items.filter(isSets)) as SetsItem[];
@@ -47,7 +47,7 @@ export function SessionSummary({ v, statusLabel }: { v: ProgrammeSessionView; st
       const details = document.getElementById('pf-finished-details') as HTMLDetailsElement | null;
       if (details) { details.open = true; details.scrollIntoView({ behavior:'smooth', block:'start' }); }
     }}>Voir le bilan détaillé <span aria-hidden="true">›</span></button>
-    <a className="pf-summary-back" href="#pf-session-top">Retour en haut</a>
+    <button type="button" className="pf-summary-back" onClick={onReturn}>Retour à l’accueil</button>
         {ramp > 0 && <p>Montées en charge : {rampDone}/{ramp} · hors volume et progression.</p>}
     <p className={result.pain || painItems > 0 ? 'pf-summary-warn' : undefined}>
       {result.pain ? 'Douleur signalée en fin de séance.' : 'Aucune douleur signalée en fin de séance.'}

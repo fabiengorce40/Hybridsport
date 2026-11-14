@@ -1,0 +1,156 @@
+/* REKKA V4 / fidelity pass 4: isolated screen geometry. Approved Home is excluded.
+   Reference screenshots are compositions, not a source of fake workout metrics. */
+:root[data-rekka-theme="playfield-pro"] {
+  --pf4-ink:#0e1b35;
+  --pf4-yellow:#fdcb32;
+  --pf4-blue:#1647cb;
+  --pf4-surface:#fffdfa;
+  --pf4-shadow:0 6px 16px #1c23401c;
+}
+/* Detail: don't let an intrinsic video placeholder push beyond the viewport. */
+html[data-rekka-theme="playfield-pro"] .pf-exercise-page {
+  width:100%;max-width:560px;overflow-x:clip;padding-inline:8px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-exercise-identity {
+  grid-template-columns:70px minmax(0,1fr);margin:32px 8px 22px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-exercise-identity h1 {
+  font-size:clamp(24px,7.2vw,32px);overflow-wrap:normal;word-break:normal;
+}
+html[data-rekka-theme="playfield-pro"] .pf-exercise-identity p {
+  font-size:clamp(13px,3.7vw,17px);line-height:1.25;
+}
+html[data-rekka-theme="playfield-pro"] .pf-exercise-info {
+  grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);
+  gap:10px;align-items:end;min-width:0;
+}
+html[data-rekka-theme="playfield-pro"] .pf-exercise-info>* {min-width:0;max-width:100%;}
+html[data-rekka-theme="playfield-pro"] .pf-exercise-info li {
+  font-size:clamp(12px,3.65vw,17px);overflow-wrap:normal;line-height:1.3;
+}
+html[data-rekka-theme="playfield-pro"] .pf-exercise-demo {
+  width:100%;min-width:0;max-width:100%;min-height:0;aspect-ratio:1.14;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:9px;
+  padding:8px;overflow:hidden;position:relative;border-radius:16px;
+}
+html[data-rekka-theme="playfield-pro"] .pf-exercise-demo svg {width:40px;height:40px;flex:none;}
+html[data-rekka-theme="playfield-pro"] .pf-exercise-demo span {
+  max-width:100%;font-size:clamp(9px,2.45vw,12px);line-height:1.25;overflow-wrap:break-word;
+}
+/* Profile: five physically separate cards as in the reference, without fictional XP. */
+html[data-rekka-theme="playfield-pro"] .v3-profile:has(.pf-profile-hero) {
+  padding-inline:12px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-hero {
+  display:flex;align-items:center;gap:14px!important;
+  padding:17px 14px!important;min-height:142px!important;
+  background:var(--pf4-surface)!important;border-radius:24px!important;
+  box-shadow:var(--pf4-shadow)!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-avatar {
+  width:94px!important;height:94px!important;flex-shrink:0;border-radius:50%!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-hero strong {
+  font-size:clamp(23px,6.6vw,32px)!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-profile-subtitle {
+  font-size:clamp(12px,3.2vw,15px)!important;line-height:1.32;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-menu {
+  display:grid!important;gap:12px!important;margin-top:18px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-menu>.v3-profile-link,
+html[data-rekka-theme="playfield-pro"] .v3-profile-menu>.v3-profile-link:first-child,
+html[data-rekka-theme="playfield-pro"] .v3-profile-menu>.v3-profile-link:last-child {
+  min-height:74px!important;margin:0!important;padding:10px 12px!important;
+  border:1px solid #f0ebe4!important;border-radius:19px!important;
+  box-shadow:var(--pf4-shadow)!important;background:var(--pf4-surface)!important;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-link strong {
+  font-size:clamp(16px,4.5vw,22px)!important;letter-spacing:-.025em;
+}
+html[data-rekka-theme="playfield-pro"] .v3-profile-link>span:first-child {
+  background:transparent!important;width:46px!important;height:46px!important;
+}
+/* Planning: one rhythmically spaced list, not seven oversized tiles. */
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) {
+  padding-inline:10px!important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-week {
+  padding:5px 10px!important;margin-top:7px!important;border-radius:22px!important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-week>h2 {
+  display:none!important; /* week remains available in the week chooser */
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-day {
+  min-height:56px!important;grid-template-columns:40px minmax(0,1fr)!important;
+  gap:7px!important;padding:4px 2px!important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-day-name {
+  min-height:40px!important;width:40px!important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-session-title {
+  font-size:clamp(12px,3.75vw,15px)!important;
+}
+html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .v3-planning-options {
+  margin-top:14px!important;
+}
+/* Live strength: ensure header doesn't cover the first exercise while scrolling.
+   Keep rest dock available, 44px controls and all existing workout interactions. */
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-sticky-top {
+  position:relative!important;top:auto!important;z-index:1!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise-list {
+  margin-top:14px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise {
+  overflow:visible;scroll-margin-top:20px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise-summary {
+  min-height:74px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise-name {
+  min-width:0!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise-name strong {
+  overflow-wrap:normal;word-break:normal;font-size:clamp(17px,4.8vw,21px)!important;
+}
+/* Completion: more spacious single-card celebration; the archive stays accessible. */
+html[data-rekka-theme="playfield-pro"] .pf-summary-board {
+  border-radius:28px!important;padding:22px 15px 25px!important;
+  background:var(--pf4-surface)!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-celebration {padding-top:9px!important;}
+html[data-rekka-theme="playfield-pro"] .pf-summary-seal {
+  width:112px!important;height:112px!important;border-radius:35%!important;
+  font-size:64px!important;line-height:112px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-celebration h2 {
+  margin:14px 0 17px!important;line-height:1.12!important;
+  font-size:clamp(27px,7.8vw,40px)!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-board>header {display:none!important;}
+html[data-rekka-theme="playfield-pro"] .pf-summary-stats {gap:8px!important;}
+html[data-rekka-theme="playfield-pro"] .pf-summary-stats>div {
+  border-radius:20px!important;min-height:120px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-insight {
+  margin-block:24px!important;background:transparent!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-open,
+html[data-rekka-theme="playfield-pro"] .pf-summary-back {
+  display:grid!important;place-items:center!important;width:100%!important;
+  min-height:56px!important;border-radius:999px!important;
+  border:0!important;cursor:pointer;font:inherit;font-weight:900!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-back {
+  background:#f1ede8!important;color:var(--pf4-ink)!important;
+  margin-top:10px!important;text-decoration:none!important;
+}
+@media(max-width:375px) {
+ html[data-rekka-theme="playfield-pro"] .pf-exercise-identity{grid-template-columns:61px minmax(0,1fr);margin-inline:3px;}
+ html[data-rekka-theme="playfield-pro"] .pf-exercise-identity h1{font-size:23px!important;}
+ html[data-rekka-theme="playfield-pro"] .pf-exercise-demo{padding:5px;}
+ html[data-rekka-theme="playfield-pro"] .pf-profile-avatar{width:75px!important;height:75px!important;}
+ html[data-rekka-theme="playfield-pro"] .pf-profile-hero{min-height:115px!important;}
+}

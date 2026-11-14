@@ -141,7 +141,7 @@ function FinishSheet({ v, player, onCancel, onSubmit }: { v: ProgrammeSessionVie
  * Séance du programme (les quatre sports) + FIELD TEST : ligne de qualité expérimentale (Q1, sans code) et, une fois la
  * séance terminée, retour terrain de l'utilisateur (observation seulement, aucune influence sur les moteurs).
  */
-export function Session0({ requestId, onBack }: { requestId: string; onBack: () => void }) {
+export function Session0({ requestId, onBack, onHome }: { requestId: string; onBack: () => void; onHome?: () => void }) {
   const store = useStore();
   const v = selectProgrammeSession(store.state, requestId);
   const quality = qualityVerdictText(v?.quality ?? null);
@@ -155,7 +155,7 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
   return (
     <>
       {REKKA_V2 && v && (!SOBER_V3 || v.sport !== 'strength') && <VisualHeader title={sportName(v.sport)} sport={v.sport} />}
-      <SessionBody requestId={requestId} onBack={onBack} />
+      <SessionBody requestId={requestId} onBack={onBack} onHome={onHome} />
       {v && v.placement === 'planned' && !v.log && !v.result && <MissedSessionCard requestId={requestId} />}
       {v && (quality || done || refused || warning || maintained) && (
         <div className="field-after">
@@ -173,7 +173,7 @@ export function Session0({ requestId, onBack }: { requestId: string; onBack: () 
 // V3.1.1: the strength session container no longer redraws every second.
 const SLOW_REFRESH_MS = 30_000;
 
-function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => void }) {
+function SessionBody({ requestId, onBack, onHome }: { requestId: string; onBack: () => void; onHome?: () => void }) {
   const store = useStore();
   // P0 — tout NOUVEAU démarrage passe par le contrôle pré-séance (reprise d'une séance commencée : directe).
   const flow = useStartFlow();
@@ -250,7 +250,7 @@ function SessionBody({ requestId, onBack }: { requestId: string; onBack: () => v
         </div>} />
         <div id="pf-session-top" className={`k-workout ${editable && log.rest ? 'with-timer' : ''} ${!started && !finished ? 'with-dock' : ''}`}>
           {clockElapsed !== null && <button type="button" className="btn secondary" onClick={() => store.apply((s, c) => (clockPaused ? resumeProgrammeSession : pauseProgrammeSession)(s, c, requestId))}>{clockPaused ? 'Reprendre le chronomètre global' : 'Mettre en pause le chronomètre global'}</button>}
-          {PLAYFIELD_V4 && finished && <SessionSummary v={v} statusLabel={STATUS_LABELS[result.completion]} />}
+          {PLAYFIELD_V4 && finished && <SessionSummary v={v} statusLabel={STATUS_LABELS[result.completion]} onReturn={onHome ?? onBack} />}
           {PLAYFIELD_V4 && finished ? <details className="pf-finished-archive" id="pf-finished-details">
             <summary>Bilan détaillé, exercices et informations de planification <span aria-hidden="true">▾</span></summary>
             <AdaptationNotice v={v} deficit={adaptationVolumeDeficit(store.state, requestId)} />

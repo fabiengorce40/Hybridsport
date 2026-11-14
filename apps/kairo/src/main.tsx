@@ -24,6 +24,7 @@ import "./playfield/planning-pixel-pass1.css";
 import "./playfield/remaining-screens-pass1.css";
 import "./playfield/progression-pixel-pass2.css";
 import "./playfield/progression-fidelity-pass3.css";
+import "./playfield/global-fidelity-pass4.css";
 import { PLAYFIELD_V4 } from './playfield/flag.js';
 if(SOBER_V3)document.documentElement.dataset.rekkaVisual='v3';
 // REKKA V4 Playfield Pro : marqueur de présentation, actif seulement avec le drapeau de build explicite.

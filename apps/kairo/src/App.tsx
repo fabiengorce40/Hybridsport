@@ -87,7 +87,7 @@ export function App() {
       {open && (
         <div className="overlay">
           <div className="overlay-inner">
-            <Session0 requestId={open} onBack={() => setOpen(null)} />
+            <Session0 requestId={open} onBack={() => setOpen(null)} onHome={() => { setOpen(null); setTab('home'); }} />
           </div>
         </div>
       )}
