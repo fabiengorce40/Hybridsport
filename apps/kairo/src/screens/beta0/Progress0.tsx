@@ -41,25 +41,37 @@ export function Sparkline({ values, label, sport }: { values: readonly number[];
   const points = values.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
   if (PLAYFIELD_V4) {
     // No invented training points: labels, line and gradient use only real recorded values.
-    const chartTop = 14, chartBottom = 98, chartW = 300;
-    const xAt = (i:number) => values.length === 1 ? chartW/2 : 18 + i * (chartW - 36)/(values.length-1);
-    const yAt = (v:number) => max===min ? (chartTop+chartBottom)/2 : chartBottom-((v-min)/(max-min))*(chartBottom-chartTop);
+    const chartTop = 20, chartBottom = 105, chartW = 300;
+    const axisMin = Math.floor(min / 5) * 5;
+    const axisMax = Math.max(axisMin + 5, Math.ceil(max / 5) * 5);
+    const xAt = (i:number) => values.length === 1 ? 165 : 52 + i * (chartW - 74)/(values.length-1);
+    const yAt = (v:number) => chartBottom - ((v-axisMin)/(axisMax-axisMin))*(chartBottom-chartTop);
     const chartPts = values.map((v,i)=>`${xAt(i).toFixed(2)},${yAt(v).toFixed(2)}`).join(' ');
     const areaPts = values.length>1 ? `${xAt(0)},${chartBottom} ${chartPts} ${xAt(values.length-1)},${chartBottom}` : '';
-    return <svg className="pv-spark pf-spark-chart" data-sport={sport} viewBox="0 0 300 126" role="img" aria-label={label}>
+    const ticks = Array.from({length:4},(_,i) => axisMin + (axisMax-axisMin)*i/3);
+    const lastIndex = values.length-1;
+    const lastValue = values[lastIndex] ?? 0;
+    return <svg className="pv-spark pf-spark-chart" data-sport={sport} viewBox="0 0 300 148" role="img" aria-label={label}>
       <title>{label}</title>
       <defs><linearGradient id={`pf-progress-shade-${sport}`} x1="0" y1="0" x2="0" y2="1">
-        <stop stopColor="#1647C8" stopOpacity=".24"/><stop offset="1" stopColor="#1647C8" stopOpacity="0"/>
+        <stop stopColor="#1647C8" stopOpacity=".24"/><stop offset="1" stopColor="#1647C8" stopOpacity=".04"/>
       </linearGradient></defs>
-      {Array.from({length:5},(_,i)=><line key={i} x1="8" x2="292" y1={chartTop+i*(chartBottom-chartTop)/4} y2={chartTop+i*(chartBottom-chartTop)/4} stroke="#E5EAF2" strokeWidth="1"/>)}
+      {ticks.map((tick,i)=><g key={i}>
+        <line x1="45" x2="290" y1={yAt(tick)} y2={yAt(tick)} stroke="#E5EAF2" strokeWidth="1"/>
+        <text x="38" y={yAt(tick)+3} fontSize="10" fill="#0e1b35" textAnchor="end">{kgFmt.format(tick)} kg</text>
+      </g>)}
       {values.length>1 && <>
         <polygon points={areaPts} fill={`url(#pf-progress-shade-${sport})`}/>
-        <polyline points={chartPts} fill="none" stroke="#1647C8" strokeWidth="3" strokeLinejoin="round" strokeLinecap="round"/>
+        <polyline points={chartPts} fill="none" stroke="#1647C8" strokeWidth="3.3" strokeLinejoin="round" strokeLinecap="round"/>
       </>}
       {values.map((v,i)=><g key={i}>
-        <circle cx={xAt(i)} cy={yAt(v)} r="4" fill="#fff" stroke="#1647C8" strokeWidth="2.4"/>
-        <text x={xAt(i)} y="119" fill="#31415E" fontSize="10" fontWeight="750" textAnchor="middle">S{i+1}</text>
+        <circle cx={xAt(i)} cy={yAt(v)} r="4.4" fill="#fff" stroke="#1647C8" strokeWidth="2.8"/>
+        <text x={xAt(i)} y="126" fill="#0e1b35" fontSize="11" fontWeight="750" textAnchor="middle">S{i+1}</text>
       </g>)}
+      <g transform={`translate(${Math.min(244,Math.max(38,xAt(lastIndex)-44))},${Math.max(0,yAt(lastValue)-28)})`}>
+        <rect x="0" y="0" width="58" height="23" rx="12" fill="#0b2f83"/>
+        <text x="29" y="15" textAnchor="middle" fill="white" fontSize="11" fontWeight="800">{kgFmt.format(lastValue)} kg</text>
+      </g>
     </svg>;
   }
   return (
