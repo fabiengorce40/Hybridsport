@@ -1,0 +1,42 @@
+/* REKKA V4 — Progression dashboard composition. Scoped to Progression, never Home. */
+html[data-rekka-theme="playfield-pro"] .pf-progress-dashboard{gap:12px!important;margin-bottom:16px!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-period{margin-bottom:6px!important;background:#eeeae7!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-period button{font-size:clamp(12px,3.6vw,16px)!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-week{
+  border:0!important;box-shadow:none!important;background:transparent!important;
+  padding:5px 6px!important;min-height:132px!important;gap:17px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-progress-ring{width:116px!important;height:116px!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-ring::before{inset:14px!important;background:#fffaf5!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-ring>span{font-size:29px!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-week-copy{display:grid;gap:4px;min-width:0}
+html[data-rekka-theme="playfield-pro"] .pf-progress-week-copy strong{font-size:clamp(17px,5.4vw,25px)!important;line-height:1.12!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-week-copy>span{font-size:clamp(14px,3.9vw,19px)!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-week-copy small{font-size:11px!important;color:#51617b!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-facts{gap:8px!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-facts>div{min-height:122px!important;padding:15px 5px!important;border-radius:20px!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-facts strong{font-size:clamp(18px,5.3vw,26px)!important;color:#0e1b35!important;overflow-wrap:anywhere}
+html[data-rekka-theme="playfield-pro"] .pf-progress-fact-icon{font-size:29px!important;line-height:1!important;color:#0759ee!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-fact-icon--coral{color:#fa6a58!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-fact-icon--yellow{color:#fdc000!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-distribution{padding:17px 14px!important;border-radius:22px!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-distribution>strong{font-size:19px!important;margin-bottom:14px!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-donut{width:118px!important;height:118px!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-donut::before{inset:25px!important;background:#fffbf6!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-legend{gap:11px!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-legend>div{font-size:12px!important;grid-template-columns:11px minmax(0,1fr) auto!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-legend strong{font-size:13px!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-legend i{width:11px!important;height:11px!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-chart-card{position:relative;background:#fffbf6;border:1px solid #efe9e2;border-radius:22px;padding:17px 14px 12px;box-shadow:0 5px 14px #17244714;min-width:0}
+html[data-rekka-theme="playfield-pro"] .pf-progress-chart-card h2{margin:0;color:#0e1b35;font-size:19px;line-height:1.15;font-weight:900}
+html[data-rekka-theme="playfield-pro"] .pf-progress-chart-card p{margin:4px 0 10px;font-size:12px;color:#0e1b35}
+html[data-rekka-theme="playfield-pro"] .pf-progress-chart-card .pf-spark-chart{display:block;width:100%;height:auto;min-height:0!important;max-height:180px;background:none!important}
+html[data-rekka-theme="playfield-pro"] .pf-progress-chart-last{display:block;font-size:12px;color:#1647cb;font-weight:850;text-align:right;padding:0 8px 3px}
+html[data-rekka-theme="playfield-pro"] .pf-progress-no-data{color:#657089;font-size:12px;line-height:1.45}
+@media(max-width:365px){
+ html[data-rekka-theme="playfield-pro"] .pf-progress-ring{width:96px!important;height:96px!important}
+ html[data-rekka-theme="playfield-pro"] .pf-progress-week{gap:10px!important;min-height:112px!important}
+ html[data-rekka-theme="playfield-pro"] .pf-progress-donut{width:96px!important;height:96px!important}
+ html[data-rekka-theme="playfield-pro"] .pf-progress-donut::before{inset:21px!important}
+ html[data-rekka-theme="playfield-pro"] .pf-progress-distribution-body{gap:10px!important}
+}

@@ -199,33 +199,47 @@ export function Progress0() {
   const placed = placedOf(week?.days ?? []);
   const doneWeek = placed.filter(s => isDone(s.display)).length;
   const percentWeek = placed.length ? Math.round(doneWeek / placed.length * 100) : 0;
-  const recordedDates = new Map<string,string>();
-  view.strength.exercises.forEach(e=>e.sessions.forEach(s=>recordedDates.set(s.requestId,s.date)));
-  const historyDates = [
-    ...recordedDates.values(),
-    ...view.running.sessions.map(s=>s.date),
-    ...view.hyrox.sessions.map(s=>s.date),
-    ...view.crosstraining.sessions.map(s=>s.date),
+  // A session may contain several exercises: count its requestId only once.
+  const strengthRecords = new Map<string, string>();
+  view.strength.exercises.forEach(ex => ex.sessions.forEach(s => strengthRecords.set(s.requestId, s.date)));
+  const allRecords = [
+    ...[...strengthRecords].map(([id,date]) => ({ id:`strength:${id}`, date, sport:'strength' as const })),
+    ...view.running.sessions.map(s => ({ id:`running:${s.sessionId}`, date:s.date, sport:'running' as const })),
+    ...view.hyrox.sessions.map(s => ({ id:`hyrox:${s.id}`, date:s.date, sport:'hyrox' as const })),
+    ...view.crosstraining.sessions.map(s => ({ id:`crosstraining:${s.id}`, date:s.date, sport:'crosstraining' as const })),
   ];
-  const scopedCount = period === 'week' ? doneWeek
-    : historyDates.filter(date=>period==='month' ? date.slice(0,7)===today.slice(0,7) : date.slice(0,4)===today.slice(0,4)).length;
+  const monday = new Date(`${today}T00:00:00Z`);
+  monday.setUTCDate(monday.getUTCDate() - ((monday.getUTCDay()+6)%7));
+  const weekStart = monday.toISOString().slice(0,10);
+  const inPeriod = (date: string) => period==='week' ? date >= weekStart && date <= today
+    : period==='month' ? date.slice(0,7)===today.slice(0,7) && date <= today
+    : date.slice(0,4)===today.slice(0,4) && date <= today;
+  const scopedRecords = allRecords.filter(s=>inPeriod(s.date));
+  const scopedCount = scopedRecords.length;
   const periodTitle = period==='week' ? 'cette semaine' : period==='month' ? 'ce mois-ci' : 'cette année';
   const scopeValue = period==='week' ? `${percentWeek}%` : String(scopedCount);
-  const strengthDone = new Set(view.strength.exercises.flatMap(e => e.sessions.map(s => s.requestId))).size;
   const actualSports = [
-    { id:'strength', name:'Musculation', count:strengthDone, color:'#1647C8' },
-    { id:'running', name:'Course', count:view.running.sessions.length, color:'#FA6A58' },
-    { id:'hyrox', name:'HYROX', count:view.hyrox.sessionsDone, color:'#FDCB32' },
-    { id:'crosstraining', name:'Cross-training', count:view.crosstraining.sessionsDone, color:'#7860D4' },
+    { id:'strength', name:'Musculation', count:scopedRecords.filter(s=>s.sport==='strength').length, color:'#0759EE' },
+    { id:'running', name:'Course', count:scopedRecords.filter(s=>s.sport==='running').length, color:'#FA6A58' },
+    { id:'hyrox', name:'HYROX', count:scopedRecords.filter(s=>s.sport==='hyrox').length, color:'#FDCB32' },
+    { id:'crosstraining', name:'Cross-training', count:scopedRecords.filter(s=>s.sport==='crosstraining').length, color:'#7965C9' },
   ];
   const totalDone = actualSports.reduce((n,x) => n+x.count,0);
   let cursor = 0;
-  const sportSegments = actualSports.map(s => {
+  const sportSegments = actualSports.filter(s=>s.count>0).map(s => {
     const start=cursor;
-    cursor+= totalDone ? s.count/totalDone*100 : 0;
+    cursor+=s.count/totalDone*100;
     return `${s.color} ${start}% ${cursor}%`;
   });
   const sportRing = totalDone ? `conic-gradient(${sportSegments.join(', ')})` : '#E6EAF3';
+  const chartExercise = view.strength.exercises.find(e=>e.main && e.sessions.some(s=>s.topLoadKg!==undefined))
+    ?? view.strength.exercises.find(e=>e.sessions.some(s=>s.topLoadKg!==undefined));
+  const chartPoints = chartExercise?.sessions.filter(s=>s.topLoadKg!==undefined).slice(-6) ?? [];
+  const observedDurationS = view.running.sessions.filter(s=>inPeriod(s.date)).reduce((n,s)=>n+s.durationS,0)
+    + [...view.hyrox.sessions, ...view.crosstraining.sessions].filter(s=>inPeriod(s.date)).reduce((n,s)=>n+(s.durationS??0),0);
+  const knownDurationCount = view.running.sessions.filter(s=>inPeriod(s.date)).length
+    + [...view.hyrox.sessions, ...view.crosstraining.sessions].filter(s=>inPeriod(s.date) && s.durationS!==undefined).length;
+  const activeSports = actualSports.filter(s=>s.count>0).length;
   const has: Record<Sport, boolean> = {
     strength: view.strength.exercises.length > 0, running: view.running.sessions.length > 0, hyrox: view.hyrox.sessionsDone > 0, crosstraining: view.crosstraining.sessionsDone > 0,
   };
@@ -240,31 +254,40 @@ export function Progress0() {
          </div>
          <div className="pf-progress-week">
            <div className="pf-progress-ring" role="img"
-             aria-label={period==='week' ? `${percentWeek} % des séances planifiées réalisées cette semaine` : `${scopedCount} séance(s) réalisées ${periodTitle}`}
-             style={{background:period==='week' ? `conic-gradient(#FDCB32 0% ${percentWeek}%, #E4E8F0 ${percentWeek}% 100%)` : 'conic-gradient(#E4E8F0 0% 100%)'}}>
+             aria-label={period==='week' ? `${percentWeek} % des séances planifiées réalisées cette semaine` : `${scopedCount} séance(s) enregistrées ${periodTitle}`}
+             style={{background:period==='week' ? `conic-gradient(#FDCB32 0% ${percentWeek}%, #E4E8F0 ${percentWeek}% 100%)` : '#E4E8F0'}}>
              <span>{scopeValue}</span>
            </div>
-           <div><strong>{period==='week' ? `${doneWeek} / ${placed.length} séances` : `${scopedCount} séance(s)`}</strong><span>{periodTitle}</span>
-             <small>{period==='week' ? 'Séances planifiées et validées.' : 'Séances enregistrées, sans objectif supposé.'}</small>
+           <div className="pf-progress-week-copy"><strong>{period==='week' ? `${doneWeek} / ${placed.length} séances` : `${scopedCount} séance${scopedCount>1?'s':''}`}</strong><span>{periodTitle}</span>
+             <small>{period==='week' ? 'Séances planifiées validées' : 'Séances réellement enregistrées'}</small>
            </div>
          </div>
          <div className="pf-progress-facts">
-           <div><span className="pf-progress-fact-icon" aria-hidden="true">☷</span><strong>{strengthDone}</strong><small>séances de musculation</small></div>
-           <div><span className="pf-progress-fact-icon pf-progress-fact-icon--coral" aria-hidden="true">◷</span><strong>{view.running.sessions.length}</strong><small>courses enregistrées</small></div>
-           <div><span className="pf-progress-fact-icon pf-progress-fact-icon--yellow" aria-hidden="true">★</span><strong>{view.hyrox.sessionsDone + view.crosstraining.sessionsDone}</strong><small>séances HYROX / CT</small></div>
+           <div><span className="pf-progress-fact-icon pf-progress-fact-icon--coral" aria-hidden="true">●</span><strong>{scopedCount}</strong><small>séances réalisées</small></div>
+           <div><span className="pf-progress-fact-icon" aria-hidden="true">◴</span><strong>{knownDurationCount ? durationLabel(observedDurationS) : '—'}</strong><small>durée mesurée{knownDurationCount ? ' (partielle)' : ''}</small></div>
+           <div><span className="pf-progress-fact-icon pf-progress-fact-icon--yellow" aria-hidden="true">★</span><strong>{activeSports}</strong><small>sport{activeSports>1?'s':''} pratiqué{activeSports>1?'s':''}</small></div>
          </div>
          <div className="pf-progress-distribution">
-           <strong>Répartition des séances enregistrées</strong>
+           <strong>Répartition par sport</strong>
            <div className="pf-progress-distribution-body">
-             <div className="pf-progress-donut" role="img" aria-label={`Répartition sur ${totalDone} séances enregistrées`} style={{background:sportRing}}>
-               <span>{totalDone}</span>
+             <div className="pf-progress-donut" role="img" aria-label={`Répartition de ${totalDone} séances par sport`} style={{background:sportRing}}>
+               {!totalDone && <span>0</span>}
              </div>
              <div className="pf-progress-legend">
-               {actualSports.map(s=><div key={s.id}>
-                 <i style={{background:s.color}} aria-hidden="true"/><span>{s.name}</span><strong>{s.count}</strong>
+               {actualSports.filter(s=>s.count>0).map(s=><div key={s.id}>
+                 <i style={{background:s.color}} aria-hidden="true"/><span>{s.name}</span><strong>{Math.round(s.count/totalDone*100)} %</strong>
                </div>)}
+               {!totalDone && <span className="pf-progress-no-data">Aucune séance sur cette période</span>}
              </div>
            </div>
+         </div>
+         <div className="pf-progress-chart-card">
+           <h2>Évolution des charges</h2>
+           {chartExercise && chartPoints.length ? <>
+             <p>{exerciseLabel(chartExercise.exerciseId)} (charge maximale par séance)</p>
+             <Sparkline sport="strength" values={chartPoints.map(s=>s.topLoadKg ?? 0)} label={`${exerciseLabel(chartExercise.exerciseId)} : ${chartPoints.map(s=>`${formatDateShort(s.date)} ${kg(s.topLoadKg ?? 0)}`).join(', ')}`} />
+             <span className="pf-progress-chart-last">Dernière : {kg(chartPoints[chartPoints.length-1]?.topLoadKg ?? 0)}</span>
+           </> : <p className="pf-progress-no-data">Les charges enregistrées apparaîtront ici après tes premières séries de travail.</p>}
          </div>
        </section>}
        {view.empty && <p className="pv-empty" data-progress-empty>Aucune séance réalisée pour l’instant. Termine une séance pour suivre ta progression ici.</p>}
