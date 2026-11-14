@@ -57,12 +57,12 @@ html[data-rekka-theme="playfield-pro"] .pf-profile-subtitle {
   font-size:clamp(12px,3.2vw,15px)!important;line-height:1.32;
 }
 html[data-rekka-theme="playfield-pro"] .v3-profile-menu {
-  display:grid!important;gap:12px!important;margin-top:18px!important;
+  display:grid!important;gap:9px!important;margin-top:15px!important;
 }
 html[data-rekka-theme="playfield-pro"] .v3-profile-menu>.v3-profile-link,
 html[data-rekka-theme="playfield-pro"] .v3-profile-menu>.v3-profile-link:first-child,
 html[data-rekka-theme="playfield-pro"] .v3-profile-menu>.v3-profile-link:last-child {
-  min-height:74px!important;margin:0!important;padding:10px 12px!important;
+  min-height:58px!important;margin:0!important;padding:8px 12px!important;
   border:1px solid #f0ebe4!important;border-radius:19px!important;
   box-shadow:var(--pf4-shadow)!important;background:var(--pf4-surface)!important;
 }
@@ -83,14 +83,14 @@ html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-p
   display:none!important; /* week remains available in the week chooser */
 }
 html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-day {
-  min-height:56px!important;grid-template-columns:40px minmax(0,1fr)!important;
+  min-height:53px!important;grid-template-columns:46px minmax(0,1fr)!important;
   gap:7px!important;padding:4px 2px!important;
 }
 html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-day-name {
   min-height:40px!important;width:40px!important;
 }
 html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .pf-planning-session-title {
-  font-size:clamp(12px,3.75vw,15px)!important;
+  font-size:clamp(13px,4vw,16px)!important;
 }
 html[data-rekka-theme="playfield-pro"] .screen:has(> .pf-planning-heading) .v3-planning-options {
   margin-top:14px!important;
@@ -154,3 +154,29 @@ html[data-rekka-theme="playfield-pro"] .pf-summary-back {
  html[data-rekka-theme="playfield-pro"] .pf-profile-avatar{width:75px!important;height:75px!important;}
  html[data-rekka-theme="playfield-pro"] .pf-profile-hero{min-height:115px!important;}
 }
+
+/* In Playfield the recovery controls occupy space inside the open exercise. */
+html[data-rekka-theme="playfield-pro"] .v31-rest-inline:empty {display:none;}
+html[data-rekka-theme="playfield-pro"] .v31-rest-inline {margin:8px;}
+html[data-rekka-theme="playfield-pro"] .v31-rest-inline .v31-rest {
+  position:relative!important;inset:auto!important;transform:none!important;
+  width:100%!important;box-shadow:none!important;
+  background:linear-gradient(130deg,#075bf4,#041b65)!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout:has(.v31-rest-inline .v31-rest) {
+  padding-bottom:24px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-rest-inline .v31-rest-add {
+  border:2px solid white!important;border-radius:999px!important;
+}
+html[data-rekka-theme="playfield-pro"] .pf-exercise-demo {
+  background:linear-gradient(142deg,#0b2033,#14244b);
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-seal {
+  background:none!important;box-shadow:none!important;
+  filter:drop-shadow(0 7px 12px #ffc60040);
+}
+html[data-rekka-theme="playfield-pro"] .pf-summary-seal svg {display:block;width:100%;height:100%;}
+html[data-rekka-theme="playfield-pro"] .v3-profile-menu [data-profile-section="objectives"]>span:first-child {color:#d18e00!important;}
+html[data-rekka-theme="playfield-pro"] .v3-profile-menu [data-profile-section="health"]>span:first-child {color:#e34430!important;}
+html[data-rekka-theme="playfield-pro"] .v3-profile-menu [data-profile-section="equipment"]>span:first-child {color:#0e1b35!important;}

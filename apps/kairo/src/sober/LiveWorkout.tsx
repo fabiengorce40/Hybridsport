@@ -127,7 +127,7 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
                         const sticky=document.querySelector<HTMLElement>('.v31-sticky-top')?.getBoundingClientRect();
                         const dock=document.querySelector<HTMLElement>('.v31-rest')?.getBoundingClientRect();
                         const topLimit=(sticky?.bottom ?? 0)+12;
-                        const bottomLimit=(dock?.top ?? window.innerHeight)-12;
+                        const bottomLimit=Math.min(dock?.top ?? window.innerHeight, window.innerHeight)-12;
                         const delta=rect.top<topLimit ? rect.top-topLimit : rect.bottom>bottomLimit ? rect.bottom-bottomLimit : 0;
                         // Smooth only when the *next* field is actually occluded; never jump past the exercise heading.
                         if(Math.abs(delta)>4) { const scroller=row.closest<HTMLElement>('.overlay'); (scroller ?? window).scrollBy({ top:delta, behavior:'smooth' }); }
@@ -144,6 +144,7 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
             </Fragment>)}
 
           </div>
+          {PLAYFIELD_V4 && expanded && <div className="v31-rest-inline">{restTimer}</div>}
         </section>
         {PLAYFIELD_V4 && expanded && main.length > 1 && <button type="button" className="pf-next-exercise pf-next-inline"
           onClick={()=>expandExercise((cardIndex+1)%main.length)} aria-label={`Ouvrir exercice suivant : ${exerciseLabel(main[(cardIndex+1)%main.length]?.item.exerciseId ?? '')}`}>
@@ -153,7 +154,7 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
       })}
     </div>
     <button className="v3-primary v31-finish" onClick={onFinish}>Terminer la séance</button>
-    <div className="v3-rest-host v31-rest-host">{restTimer}</div>
+    {(!PLAYFIELD_V4 || selected === null) && <div className="v3-rest-host v31-rest-host">{restTimer}</div>}
 
     {menu && <div ref={commands} className="v3-commands" role="dialog" aria-modal="true"
       aria-label="Commandes de séance"

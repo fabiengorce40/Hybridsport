@@ -51,7 +51,7 @@ export function ExerciseDetail({ id, onBack, prescription, history }: {
       </div>
       {tab === 'infos' && <section aria-label="Infos" className="pf-exercise-info">
         {content ? <ul>{content.cues.map(cue => <li key={cue}>{cue}</li>)}</ul> : <p>Consignes techniques à documenter pour cet exercice.</p>}
-        <div className="pf-exercise-demo" role="note"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none"><circle cx="24" cy="24" r="21" fill="#fffdf8"/><path d="M20 14l15 10-15 10z" fill="#0e1b35"/></svg><span>Démonstration vidéo non disponible</span></div>
+        <div className="pf-exercise-demo" role="note"><svg viewBox="0 0 48 48" aria-hidden="true" fill="none"><rect x="5" y="10" width="38" height="28" rx="7" stroke="#fffdf8" strokeWidth="3"/><path d="M9 6l30 36" stroke="#fffdf8" strokeWidth="4" strokeLinecap="round"/></svg><span>Démonstration vidéo non disponible</span></div>
       </section>}
       {tab === 'historique' && <section aria-label="Historique" className="pf-exercise-copy">
         {history?.sessions.length ? <>

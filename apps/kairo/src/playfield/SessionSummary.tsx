@@ -27,7 +27,10 @@ export function SessionSummary({ v, statusLabel, onReturn }: { v: ProgrammeSessi
   const painItems = log.painItems.length;
   return <section className="pf-summary pf-summary-board" data-pf-summary aria-label="Bilan de séance">
     <div className="pf-summary-celebration" role="status">
-      <div className="pf-summary-seal" aria-hidden="true">✓</div>
+      <div className="pf-summary-seal" aria-hidden="true"><svg viewBox="0 0 112 112">
+        <path fill="#ffcb08" d="M56 1C67 1 70 15 81 15c13 0 16 7 16 19 0 10 14 13 14 22S99 69 99 80c0 13-7 17-20 17-10 0-13 14-23 14S43 98 32 98c-13 0-18-7-18-20C14 68 1 65 1 56s13-14 13-24c0-13 7-17 19-17C43 15 46 1 56 1Z"/>
+        <path d="m36 58 13 13 27-30" fill="none" stroke="#0e1b35" strokeWidth="9" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg></div>
       <h2>Séance terminée !</h2>
       <span className="pf-summary-status" data-completion={result.completion}>{statusLabel}</span>
     </div>

@@ -205,7 +205,7 @@ export function Settings0({ onEditProfile }: { onEditProfile?: () => void }) {
         </div>
       </section>}
       {(!PLAYFIELD_V4 || store.state.safety.activePain || panel==='health') && <PainCard/>}
-      {!panel && <div className="v3-profile-menu">{cards.map(([id,,label,sub])=><button key={id} className="card button-card v3-profile-link" onClick={()=>setPanel(id??null)}><span aria-hidden="true"><ProfileIcon kind={id??'settings'}/></span><span><strong>{label}</strong><small>{sub}</small></span><span aria-hidden="true">›</span></button>)}</div>}
+      {!panel && <div className="v3-profile-menu">{cards.map(([id,,label,sub])=><button key={id} className="card button-card v3-profile-link" data-profile-section={id} onClick={()=>setPanel(id??null)}><span aria-hidden="true"><ProfileIcon kind={id??'settings'}/></span><span><strong>{label}</strong><small>{sub}</small></span><span aria-hidden="true">›</span></button>)}</div>}
       {panel==='objectives' && <>
         {p?.strength.enabled && <button className="card button-card" onClick={()=>setStrengthProfile(true)}><h3>Ma musculation</h3><p>Objectif, priorités musculaires et récupération</p></button>}
         {p?.running.enabled && <button className="card button-card" onClick={()=>setRunningProfile(true)}><h3>Profil Course</h3><p>Performances et références</p></button>}
