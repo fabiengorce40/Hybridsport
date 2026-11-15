@@ -11,6 +11,7 @@ export function FittedNumericInput(props: ComponentProps<'input'>) {
     const fit = () => {
       if (!active || !input.clientWidth) return;
       input.style.removeProperty('font-size');
+      input.style.removeProperty('--fitted-font-size');
       const css = getComputedStyle(input);
       const context = document.createElement('canvas').getContext('2d');
       if (!context) return;
@@ -19,7 +20,11 @@ export function FittedNumericInput(props: ComponentProps<'input'>) {
       const spacing = Number.parseFloat(css.letterSpacing) || 0;
       const width = context.measureText(text).width + Math.max(0, text.length - 1) * spacing;
       const available = input.clientWidth - 1;
-      if (width > available) input.style.fontSize = `${Math.floor(Number.parseFloat(css.fontSize) * available / width * 100) / 100}px`;
+      if (width > available) {
+        const fontSize = `${Math.floor(Number.parseFloat(css.fontSize) * available / width * 100) / 100}px`;
+        input.style.fontSize = fontSize;
+        input.style.setProperty('--fitted-font-size', fontSize);
+      }
     };
     fit();
     const observer = typeof ResizeObserver === 'undefined' ? undefined : new ResizeObserver(fit);

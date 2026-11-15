@@ -1,33 +1,38 @@
-const categories = {
-  str_upper: 'upper',
-  str_lower: 'lower',
-  str_upper_a: 'upper',
-  str_upper_b: 'upper',
-  str_lower_a: 'lower',
-  str_lower_b: 'lower',
-  str_full_body: 'full',
-} as const;
+import upper from './assets/workout-upper.webp';
+import lower from './assets/workout-lower.webp';
+import full from './assets/workout-full.webp';
 
-const labels = { upper: 'Haut du corps', lower: 'Bas du corps', full: 'Full body' };
+const categories = new Map<string, keyof typeof illustrations>([
+  ['str_upper', 'upper'],
+  ['str_upper_a', 'upper'],
+  ['str_upper_b', 'upper'],
+  ['str_lower', 'lower'],
+  ['str_lower_a', 'lower'],
+  ['str_lower_b', 'lower'],
+  ['str_full_body', 'full'],
+] as const);
+
+const illustrations = {
+  upper: { src: upper, label: 'Haut du corps' },
+  lower: { src: lower, label: 'Bas du corps' },
+  full: { src: full, label: 'Full Body' },
+};
 
 export function WorkoutIllustration({ archetypeId }: { archetypeId: string | null }) {
-  const category = categories[archetypeId as keyof typeof categories];
-  if (!category) return null;
+  const category = archetypeId === null ? undefined : categories.get(archetypeId);
+  const illustration = category ? illustrations[category] : undefined;
 
-  const upper = category === 'lower' ? '#bccce3' : '#1647cb';
-  const lower = category === 'upper' ? '#bccce3' : '#e35e4d';
-
-  return <div className="pf-exercise-illustration pf-library-illustration" data-workout-art={category}>
-    <svg viewBox="0 0 360 115" role="img" aria-label={labels[category]}>
-      <path fill="#fa6a58" opacity=".18" d="M242 115 360 28v87Z"/>
-      <path fill="#1647cb" opacity=".08" d="M0 115V82l114 33Z"/>
-      <ellipse cx="180" cy="108" rx="36" ry="4" fill="#0e1b35" opacity=".12"/>
-      <g stroke="#0e1b35" strokeWidth="2" strokeLinejoin="round">
-        <circle cx="180" cy="15" r="9" fill="#e8eff8"/>
-        <path fill={upper} d="M173 26h14l13 6 12 29-8 4-11-23-2 19h-22l-2-19-11 23-8-4 12-29Z"/>
-        <path fill={lower} d="M169 61h22l5 43h-10l-6-29-6 29h-10Z"/>
-        <path fill="#0e1b35" d="M164 104h10v4h-15zm22 0h10l5 4h-15z"/>
-      </g>
-    </svg>
+  return <div className="pf-exercise-illustration pf-library-illustration" data-workout-art={category ?? 'neutral'}>
+    {illustration ? <img src={illustration.src} alt={illustration.label}
+      width={1080} height={360} loading="lazy" decoding="async"/> :
+      <span className="pf-exercise-art-placeholder">
+        <svg aria-hidden="true" viewBox="0 0 32 32" width="32" height="32" fill="none"
+          stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+          <rect x="6" y="8" width="5" height="16" rx="2"/>
+          <rect x="21" y="8" width="5" height="16" rx="2"/>
+          <path d="M11 16h10M3 13v6m26-6v6"/>
+        </svg>
+        Musculation
+      </span>}
   </div>;
 }

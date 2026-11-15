@@ -95,7 +95,7 @@ html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-
   position:relative!important;top:auto!important;z-index:1!important;
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise-list {
-  margin-top:14px!important;
+  margin-top:6px!important;
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise {
   overflow:visible;scroll-margin-top:20px!important;
@@ -123,9 +123,9 @@ html[data-rekka-theme="playfield-pro"] .v31-workout:has(.v31-rest-inline .v31-re
 html[data-rekka-theme="playfield-pro"] .v31-rest-inline .v31-rest-add {
   border:2px solid white!important;border-radius:999px!important;
 }
-/* Reserved picture slot; keep the complete official bench crop in view. */
+/* Reserve the 3:1 banner space and display every panel without cropping. */
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-library-illustration {
-  width:100%!important;min-width:0;height:auto!important;aspect-ratio:853/272;
+  width:100%!important;min-width:0;height:auto!important;aspect-ratio:3/1;
   display:grid;place-items:center;overflow:hidden;
   border-radius:0!important;
   background:#faf1e9!important;
@@ -144,13 +144,13 @@ html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-
   height:50px!important;min-height:50px!important;background:linear-gradient(120deg,#075bf4,#031b69)!important;
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-overview {
-  margin:5px 6px 10px!important;
+  margin:3px 6px 6px!important;
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-exercise-summary {
-  min-height:55px!important;
+  min-height:49px!important;
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-set {
-  margin-block:1px!important;
+  margin-block:0!important;
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row {
   padding-block:0!important;
@@ -219,6 +219,8 @@ html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-s
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-stepper input {
   font-variant-numeric:tabular-nums;
+  font-size:var(--fitted-font-size, clamp(15px, 4.3vw, 18px))!important;
+  font-weight:850;
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-toggle .v31-check-main {
   d:path("M7 17l6 6L25 10");

@@ -1,4 +1,4 @@
-/* global document, window, getComputedStyle, localStorage */
+/* global document, window, getComputedStyle, localStorage, performance */
 /**
  * REKKA V4 Playfield Pro — captures et contrôles des SEPT écrans sur la build BÊTA réellement compilée (`dist-beta`),
  * avec la fixture FICTIVE du dépôt (`tests/fixtures/v3-sober.json`, profil de démonstration).
@@ -26,9 +26,14 @@ if (process.env.REKKA_DETAIL_ONLY === '1') {
   exercise.exerciseId = 'ex.bench_press';
 }
 const workoutReference = process.env.REKKA_WORKOUT_REFERENCE === '1';
+const workoutZone = process.env.REKKA_WORKOUT_ZONE ?? 'upper';
+const workoutArchetype = {upper:'str_upper', lower:'str_lower', full:'str_full_body'}[workoutZone];
+assert.ok(workoutArchetype, 'Zone de séance inconnue');
 if (workoutReference) {
   // The reference state exists only in the browser context created by this script.
   const request = fixture.planner.weeks['2026-10-05'].requests.find(r => r.requestId === '2026-10-05.strength.2');
+  request.intent.archetypeId = workoutArchetype;
+  request.record.data.fingerprint.value.archetypeId = workoutArchetype;
   const block = request.record.data.session.blocks.find(b => b.kind === 'strength');
   block.items = block.items.slice(0, 5);
   const [bench, pull, ...others] = block.items;
@@ -192,6 +197,10 @@ try {
         return label.bottom > time.top + 1 || time.bottom > pause.top + 1 || orbit.right > side.left + 1;
       });
       assert.equal(restOverlap, false, `${W} : libellé, temps, pause et commandes de repos séparés`);
+      const illustration = page.locator('[data-workout-art]');
+      assert.equal(await illustration.getAttribute('data-workout-art'), workoutZone);
+      await illustration.getByRole('img').evaluate(img => img.decode());
+      const artSource = await illustration.getByRole('img').getAttribute('src');
       await screen('seance-reference');
       const geometry = await page.evaluate(() => Object.fromEntries(
         ['.v31-toolbar','.v31-session-bar','.v31-overview','.v31-exercise[data-expanded="true"]','.pf-exercise-illustration','.pf-set-columns','.v31-series-row','.v31-rest','.pf-next-inline'].map(selector => {
@@ -222,9 +231,8 @@ try {
       assert.match(await page.locator('.v31-overview').innerText(), /5\/19/);
       const origin = await page.evaluate(() => performance.timeOrigin);
       await page.locator('.pf-next-inline').click();
-      const art = page.locator('[data-exercise-art]');
-      assert.equal(await art.getAttribute('data-exercise-art'), 'ex.pull_up');
-      assert.equal(await art.getAttribute('data-art-available'), 'false');
+      assert.match(await page.locator('.v31-exercise[data-expanded="true"]').getAttribute('aria-label'), /Tractions/);
+      assert.equal(await illustration.getByRole('img').getAttribute('src'), artSource);
       assert.equal(await page.evaluate(() => performance.timeOrigin), origin);
       assert.match(await page.locator('.v31-overview').innerText(), /5\/19/);
       assert.deepEqual(errors, []);
@@ -352,17 +360,17 @@ try {
     await row.getByRole('button', { name: 'Cocher la série', exact: true }).click();
     await page.waitForTimeout(400);
     if (process.env.REKKA_EXERCISE_ART_ONLY === '1') {
-      const firstArt = page.locator('[data-exercise-art]');
-      assert.equal(await firstArt.getAttribute('data-exercise-art'), 'ex.db_bench_press');
+      const firstArt = page.locator('[data-workout-art]');
+      assert.equal(await firstArt.getAttribute('data-workout-art'), 'upper');
+      const firstSrc = await firstArt.getByRole('img').getAttribute('src');
       const logsBefore = await page.evaluate(k => JSON.parse(localStorage.getItem(k)).programmeLogs, KEY);
       const navigationBefore = await page.evaluate(() => performance.timeOrigin);
       await page.locator('.pf-next-inline').click();
-      assert.equal(await firstArt.getAttribute('data-exercise-art'), 'ex.machine_row');
-      assert.equal(await firstArt.getAttribute('data-art-available'), 'false');
+      assert.equal(await firstArt.getByRole('img').getAttribute('src'), firstSrc);
       assert.deepEqual(await page.evaluate(k => JSON.parse(localStorage.getItem(k)).programmeLogs, KEY), logsBefore);
       assert.equal(await page.evaluate(() => performance.timeOrigin), navigationBefore);
       assert.deepEqual(errors, []);
-      console.log('OK: illustration adaptée à l’exercice, navigation et données intactes');
+      console.log('OK: illustration cohérente avec la zone de séance, navigation et données intactes');
       await ctx.close();
       continue;
     }
