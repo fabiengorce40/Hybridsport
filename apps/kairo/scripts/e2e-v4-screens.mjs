@@ -232,6 +232,21 @@ try {
       const activeRow = page.locator('.v31-series-row[data-current="true"]').first();
       const load = activeRow.getByRole('textbox', {name:/Charge/});
       const reps = activeRow.getByRole('textbox', {name:/Répétitions/});
+      if (width === 360) {
+        await load.focus();
+        await screen('seance-commandes-charge');
+        for (const control of await activeRow.locator('.pf-stepper-load button').all()) {
+          const box = await control.boundingBox();
+          assert.ok(box.width >= 44 && box.height >= 44, 'Commande tactile 44px');
+        }
+      }
+      await load.fill('12345.67');
+      await reps.fill('100');
+      assert.equal(await load.inputValue(), '12345.67');
+      assert.equal(await reps.inputValue(), '100');
+      await screen('seance-saisie-longue');
+      await load.fill('80');
+      await reps.fill('8');
       assert.equal(await load.inputValue(), '80');
       assert.equal(await reps.inputValue(), '8');
       await load.focus();
@@ -249,6 +264,13 @@ try {
       await rest.getByRole('button', {name:'Reprendre le repos'}).click();
       await activeRow.getByRole('button', {name:'Cocher la série'}).click();
       assert.match(await page.locator('.v31-overview').innerText(), /5\/19/);
+      const savedSet = await page.evaluate(k => {
+        const state = JSON.parse(localStorage.getItem(k));
+        return state.programmeLogs['2026-10-05.strength.2'].sets.find(s => s.itemId === 'v3.upper.0' && s.setIndex === 1);
+      }, KEY);
+      assert.equal(savedSet.loadKg, 80);
+      assert.equal(savedSet.reps, 8);
+      assert.equal(savedSet.done, true);
       await rest.getByRole('button', {name:'Passer', exact:true}).click();
       assert.equal(await rest.count(), 0);
       assert.match(await page.locator('.v31-overview').innerText(), /5\/19/);

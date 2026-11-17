@@ -2,6 +2,9 @@ name: REKKA V4 - passe 8 mobile captures
 on:
   push:
     branches: [codex/rekka-v4-seance-passe8-mobile]
+    paths:
+      - 'apps/kairo/**'
+      - '.github/workflows/rekka-v4-passe8-captures.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -19,7 +22,12 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm typecheck && pnpm lint
-      - run: pnpm exec vitest run apps/kairo/tests --maxWorkers=2
+      - name: Kairo regression tests
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p passe8-qa
+          pnpm exec vitest run apps/kairo/tests --maxWorkers=2 | tee passe8-qa/tests.log
       - run: pnpm kairo:build:beta
         env:
           GITHUB_SHA: ${{ github.sha }}
@@ -31,6 +39,16 @@ jobs:
           for zone in upper lower full; do
             REKKA_WORKOUT_REFERENCE=1 REKKA_WORKOUT_ZONE="$zone" node apps/kairo/scripts/e2e-v4-screens.mjs "passe8-qa/$zone"
           done
+      - name: Compile and capture baseline for Home comparison
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin fc92d32a9d27edc0acac53820d5a9de6ad9d350e
+          git checkout fc92d32a9d27edc0acac53820d5a9de6ad9d350e -- apps/kairo/src
+          git show fc92d32a9d27edc0acac53820d5a9de6ad9d350e:apps/kairo/scripts/e2e-v4-screens.mjs > apps/kairo/scripts/passe8-baseline.mjs
+          pnpm kairo:build:beta
+          REKKA_WORKOUT_REFERENCE=1 node apps/kairo/scripts/passe8-baseline.mjs passe8-qa/before
+          git checkout HEAD -- apps/kairo/src
       - uses: actions/upload-artifact@v4
         if: always()
         with:
