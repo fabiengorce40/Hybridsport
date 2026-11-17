@@ -272,3 +272,20 @@ html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-
     gap:3px;
   }
 }
+
+/* Zone banner belongs to the session header, once per session. */
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-workout-header-art {
+  position:relative;isolation:isolate;aspect-ratio:3/1;
+  overflow:hidden;border-radius:20px;margin-bottom:10px;
+  background:#fff7ea;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-workout-header-art .pf-library-illustration {
+  position:absolute;inset:0;margin:0!important;width:100%!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-workout-header-art::after {
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(180deg,rgba(255,247,234,.96),rgba(255,247,234,.78) 45%,rgba(255,247,234,.08));
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-workout-header-art .v31-toolbar {
+  position:relative;z-index:1;background:transparent!important;
+}

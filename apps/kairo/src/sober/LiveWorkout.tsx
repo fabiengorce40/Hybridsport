@@ -54,11 +54,14 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
 
   return <main className="v3-workout v3-active v31-workout" data-live-workout="v3" data-sport="strength" aria-label="Séance en cours">
     <div className="v31-sticky-top">
+      <div className={PLAYFIELD_V4 ? "pf-workout-header-art" : undefined}>
+        {PLAYFIELD_V4 && <WorkoutIllustration archetypeId={v.archetypeId}/>}
       <header className="v3-toolbar v31-toolbar">
         <button onClick={onBack} aria-label="Retour">←</button>
         <h1>Séance en cours</h1>
         <button aria-label="Commandes de séance" aria-expanded={menu} onClick={() => setMenu(!menu)}>⋮</button>
       </header>
+      </div>
       <div className="v31-session-bar">
         <span className="v31-session-title">{title}</span>
         <div className="v31-session-clock" aria-label="Durée totale de la séance">{sessionClock ?? <span>00:00</span>}</div>
@@ -94,7 +97,6 @@ export function LiveWorkout({ v, title, editable, onRecord, onTogglePain, onEffo
             <span className="v31-chevron" aria-hidden="true">{expanded ? '⌃' : '⌄'}</span>
           </button>
           <div className="v3-sets v31-sets" id={`v31-sets-${cardIndex}`} hidden={!expanded}>
-            {PLAYFIELD_V4 && expanded && <WorkoutIllustration archetypeId={v.archetypeId}/>}
             {PLAYFIELD_V4 && <div className="pf-set-columns" aria-hidden="true"><span>Série</span><span>Charge</span><span>Répétitions</span><span>Statut</span></div>}
             {sets.map((set, i) => <Fragment key={`${item.id}.${i}`}>
               {(i === 0 || phaseOf(sets[i - 1] ?? set) !== phaseOf(set)) &&
