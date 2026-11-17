@@ -38,7 +38,9 @@ if (workoutReference) {
   block.items = block.items.slice(0, 5);
   const [bench, pull, ...others] = block.items;
   bench.exerciseId = 'ex.bench_press';
-  pull.exerciseId = 'ex.pull_up';
+  pull.exerciseId = workoutZone === 'lower' ? 'ex.leg_curl' : 'ex.pull_up';
+  if (workoutZone === 'lower') bench.exerciseId = 'ex.back_squat';
+  if (workoutZone === 'full') bench.exerciseId = 'ex.romanian_deadlift';
   const series = { kind: 'working', reps: 8, restAfterS: 120, intensity: { mode: 'load', kg: 80, certainty: 'prescribed' } };
   bench.prescription.sets = Array.from({length: 4}, () => ({...series}));
   for (const [index, item] of [pull, ...others].entries()) {
@@ -180,9 +182,11 @@ try {
       assert.match(await page.locator('.v31-overview').innerText(), /5 exercices · 4\/19 séries/);
       assert.match(await page.locator('.v31-session-bar').innerText(), /10:45/);
       assert.match(await page.getByRole('timer', {name:'Chrono de repos'}).innerText(), /01:32/);
-      assert.match(await page.locator('.pf-next-inline').innerText(), /Tractions/);
+      assert.match(await page.locator('.pf-next-inline').innerText(), /Tractions|Leg curl|Curl/);
       const rows = page.locator('.v31-exercise[data-expanded="true"] .v31-series-row');
       assert.equal(await rows.count(), 4);
+      assert.ok((await rows.nth(1).boundingBox()).height <= 56, 'Série compacte');
+
       assert.equal(await rows.first().getAttribute('data-done'), 'true');
       assert.equal(await rows.nth(1).getAttribute('data-current'), 'true');
       assert.equal(await rows.nth(2).getAttribute('data-done'), 'false');
@@ -202,6 +206,23 @@ try {
       await illustration.getByRole('img').evaluate(img => img.decode());
       const artSource = await illustration.getByRole('img').getAttribute('src');
       await screen('seance-reference');
+      if (shots) {
+        const workout = page.locator('.v31-workout');
+        const previousStyle = await workout.evaluate(el => {
+          const overlay = el.closest('.overlay');
+          const style = overlay?.getAttribute('style') ?? null;
+          if (overlay) { overlay.style.position='relative'; overlay.style.height='auto'; overlay.style.maxHeight='none'; overlay.style.overflow='visible'; }
+          return style;
+        });
+        await workout.screenshot({path: `${shots}/${width}-seance-integrale.png`});
+        await workout.evaluate((el, style) => {
+          const overlay = el.closest('.overlay');
+          if (overlay) {
+            if (style === null) overlay.removeAttribute('style');
+            else overlay.setAttribute('style', style);
+          }
+        }, previousStyle);
+      }
       const geometry = await page.evaluate(() => Object.fromEntries(
         ['.v31-toolbar','.v31-session-bar','.v31-overview','.v31-exercise[data-expanded="true"]','.pf-exercise-illustration','.pf-set-columns','.v31-series-row','.v31-rest','.pf-next-inline'].map(selector => {
           const {x,y,width,height} = document.querySelector(selector).getBoundingClientRect();
@@ -213,9 +234,11 @@ try {
       const reps = activeRow.getByRole('textbox', {name:/Répétitions/});
       assert.equal(await load.inputValue(), '80');
       assert.equal(await reps.inputValue(), '8');
+      await load.focus();
       await activeRow.getByRole('button', {name:/Augmenter charge/}).click();
       assert.equal(await load.inputValue(), '82.5');
       await activeRow.getByRole('button', {name:/Diminuer charge/}).click();
+      await reps.focus();
       await activeRow.getByRole('button', {name:/Augmenter répétitions/}).click();
       assert.equal(await reps.inputValue(), '9');
       await activeRow.getByRole('button', {name:/Diminuer répétitions/}).click();
@@ -231,7 +254,7 @@ try {
       assert.match(await page.locator('.v31-overview').innerText(), /5\/19/);
       const origin = await page.evaluate(() => performance.timeOrigin);
       await page.locator('.pf-next-inline').click();
-      assert.match(await page.locator('.v31-exercise[data-expanded="true"]').getAttribute('aria-label'), /Tractions/);
+      assert.match(await page.locator('.v31-exercise[data-expanded="true"]').getAttribute('aria-label'), /Tractions|Leg curl|Curl/);
       assert.equal(await illustration.getByRole('img').getAttribute('src'), artSource);
       assert.equal(await page.evaluate(() => performance.timeOrigin), origin);
       assert.match(await page.locator('.v31-overview').innerText(), /5\/19/);

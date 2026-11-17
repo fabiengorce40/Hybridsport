@@ -1,0 +1,40 @@
+name: REKKA V4 - passe 8 mobile captures
+on:
+  push:
+    branches: [codex/rekka-v4-seance-passe8-mobile]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  captures:
+    if: github.ref == 'refs/heads/codex/rekka-v4-seance-passe8-mobile'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck && pnpm lint
+      - run: pnpm exec vitest run apps/kairo/tests --maxWorkers=2
+      - run: pnpm kairo:build:beta
+        env:
+          GITHUB_SHA: ${{ github.sha }}
+      - run: pnpm --filter @hybridsport/kairo exec playwright install --with-deps chromium
+      - name: Capture all three zones and mobile sizes
+        shell: bash
+        run: |
+          set -euo pipefail
+          for zone in upper lower full; do
+            REKKA_WORKOUT_REFERENCE=1 REKKA_WORKOUT_ZONE="$zone" node apps/kairo/scripts/e2e-v4-screens.mjs "passe8-qa/$zone"
+          done
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: rekka-v4-passe8-captures
+          path: passe8-qa/
+          retention-days: 30
+          if-no-files-found: warn
