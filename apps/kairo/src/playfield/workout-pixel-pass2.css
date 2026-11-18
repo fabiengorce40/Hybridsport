@@ -70,7 +70,7 @@ html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-r
   overflow-wrap:anywhere;
 }
 @media (max-width:375px) {
-  /* At 360px the selected numeric field reveals 44px steppers above it. */
+  /* Compact rows retain direct numeric entry at 360px. */
   html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row {
     grid-template-columns:44px minmax(0,1fr) minmax(0,1fr) 44px!important;
     grid-template-rows:minmax(48px,auto)!important;
@@ -86,13 +86,6 @@ html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-r
   html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-stepper .v31-field {
     width:68px!important;max-width:100%;min-width:44px!important;flex:0 1 68px!important;
   }
-  html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-step {
-    position:absolute;bottom:100%;display:none;z-index:60;
-    background:#fff7ea!important;border:1px solid #1647c8!important;border-radius:14px;
-  }
-  html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-stepper:focus-within .pf-step {display:block;}
-  html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-step:first-child {left:0;}
-  html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-step:last-child {right:0;}
   html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest { width:calc(100vw - 20px) !important;padding-inline:8px !important; }
   html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-main { gap:6px !important; }
   html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-rest-side { padding-left:7px !important;gap:5px !important; }
@@ -289,3 +282,19 @@ html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-w
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-workout-header-art .v31-toolbar {
   position:relative;z-index:1;background:transparent!important;
 }
+
+/* Direct entry: visible fields replace +/- controls at every width. */
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-stepper {
+  justify-content:center!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-stepper .v31-field {
+  width:80px!important;max-width:100%;flex:0 1 80px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-stepper input {
+  box-sizing:border-box;background:#fff!important;border:1px solid #d8deea!important;
+  border-radius:10px!important;padding-inline:4px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-stepper input:focus-visible {
+  outline:2px solid #1647c8;outline-offset:1px;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-times {display:none!important;}

@@ -232,14 +232,9 @@ try {
       const activeRow = page.locator('.v31-series-row[data-current="true"]').first();
       const load = activeRow.getByRole('textbox', {name:/Charge/});
       const reps = activeRow.getByRole('textbox', {name:/Répétitions/});
-      if (width === 360) {
-        await load.focus();
-        await screen('seance-commandes-charge');
-        for (const control of await activeRow.locator('.pf-stepper-load button').all()) {
-          const box = await control.boundingBox();
-          assert.ok(box.width >= 44 && box.height >= 44, 'Commande tactile 44px');
-        }
-      }
+      assert.equal(await activeRow.locator('.pf-step').count(), 0, 'Saisie directe sans boutons +/-');
+      assert.equal(await load.getAttribute('inputmode'), 'decimal');
+      assert.equal(await reps.getAttribute('inputmode'), 'numeric');
       await load.fill('12345.67');
       await reps.fill('100');
       assert.equal(await load.inputValue(), '12345.67');
@@ -249,14 +244,12 @@ try {
       await reps.fill('8');
       assert.equal(await load.inputValue(), '80');
       assert.equal(await reps.inputValue(), '8');
-      await load.focus();
-      await activeRow.getByRole('button', {name:/Augmenter charge/}).click();
+      await load.fill('82,5');
       assert.equal(await load.inputValue(), '82.5');
-      await activeRow.getByRole('button', {name:/Diminuer charge/}).click();
-      await reps.focus();
-      await activeRow.getByRole('button', {name:/Augmenter répétitions/}).click();
+      await load.fill('80');
+      await reps.fill('9');
       assert.equal(await reps.inputValue(), '9');
-      await activeRow.getByRole('button', {name:/Diminuer répétitions/}).click();
+      await reps.fill('8');
       const rest = page.getByRole('timer', {name:'Chrono de repos'});
       await rest.getByRole('button', {name:'Mettre le repos en pause'}).click();
       await rest.getByRole('button', {name:'Ajouter 15 secondes'}).click();
@@ -388,16 +381,11 @@ try {
     const row = page.locator('.v3-exercise[data-expanded="true"] .v31-series-row').first();
     const kgInput = row.getByLabel(/^Charge \(kg\)/);
     const repsInput = row.getByLabel(/^Répétitions réalisées/);
-    const kgBefore = await kgInput.inputValue();
-    await row.getByRole('button', { name: /Augmenter charge/ }).click();
-    assert.equal(Number(await kgInput.inputValue()), (Number(kgBefore || 0) + 2.5), `${W} : +2,5 kg dans le brouillon`);
-    await row.getByRole('button', { name: /Diminuer charge/ }).click();
-    assert.equal(Number(await kgInput.inputValue()), Number(kgBefore || 0), `${W} : retour à la charge initiale`);
-    const repsBefore = await repsInput.inputValue();
-    await row.getByRole('button', { name: /Augmenter répétitions/ }).click();
-    assert.equal(Number(await repsInput.inputValue()), Number(repsBefore || 0) + 1, `${W} : +1 répétition dans le brouillon`);
-    await row.getByRole('button', { name: /Diminuer répétitions/ }).click();
-    assert.equal(Number(await repsInput.inputValue()), Number(repsBefore || 0), `${W} : retour aux répétitions initiales`);
+    assert.equal(await row.locator('.pf-step').count(), 0);
+    await kgInput.fill('26.5');
+    assert.equal(await kgInput.inputValue(), '26.5');
+    await repsInput.fill('11');
+    assert.equal(await repsInput.inputValue(), '11');
     await kgInput.click();
     await row.getByLabel(/^Charge \(kg\)/).fill('24');
     await row.getByLabel(/^Répétitions réalisées/).fill('10');
