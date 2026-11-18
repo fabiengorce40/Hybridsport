@@ -171,6 +171,24 @@ try {
 
     await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: /Progression/ }).click();
     await screen('3-progression');
+    const progressionGeometry = await page.locator('.pf-progress-dashboard').evaluate(el => Object.fromEntries(
+      ['.pf-progress-period','.pf-progress-ring','.pf-progress-facts','.pf-progress-distribution','.pf-progress-chart-card'].map(selector => {
+        const {x,y,width,height}=el.querySelector(selector).getBoundingClientRect();return [selector,{x,y,width,height}];
+      })));
+    if(shots) writeFileSync(`${shots}/${width}-progression-mesures.json`,JSON.stringify(progressionGeometry,null,2));
+    for(const label of ['Mois','Année','Semaine']) await page.getByRole('group',{name:'Période de progression'}).getByRole('button',{name:label,exact:true}).click();
+    if(process.env.REKKA_PROGRESS_REFERENCE==='1') {
+      await page.goto(`${url}?rekka_visual_fixture=progression`);
+      await page.getByRole('navigation',{name:'Navigation principale'}).getByRole('button',{name:/Progression/}).click();
+      await page.locator('[data-visual-fixture="progression"]').waitFor();
+      await page.evaluate(()=>document.fonts.ready);
+      await screen('3-progression-reference');
+      assert.match(await page.locator('.pf-progress-ring').innerText(),/60/);
+      await page.getByRole('group',{name:'Période de progression'}).getByRole('button',{name:'Mois',exact:true}).click();
+      assert.equal(await page.getByRole('button',{name:'Mois',exact:true}).getAttribute('aria-pressed'),'true');
+      await page.goto(url);
+    }
+
     await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button', { name: 'Profil', exact: true }).click();
     await screen('7-profil');
     assert.equal(await page.getByRole('navigation', { name: 'Navigation principale' }).getByRole('button').count(), 4, 'V4 : 4 onglets comme la planche');

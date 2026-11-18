@@ -30,6 +30,13 @@ const kg = (x: number): string => `${kgFmt.format(x)} kg`;
 const km = (m: number): string => `${kgFmt.format(m / M_PER_KM)} km`;
 const signedKg = (x: number): string => `${x > 0 ? '+' : x < 0 ? '−' : '±'}${kgFmt.format(Math.abs(x))} kg`;
 
+/** Presentation icons: no change to the statistics they illustrate. */
+function ProgressFactIcon({kind}:{kind:'sessions'|'time'|'sports'}) {
+ return <svg viewBox="0 0 32 32" width="32" height="32" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" focusable="false">
+ {kind==='sessions' ? <path fill="currentColor" stroke="none" d="M17 2c2 8 8 9 8 17a9 9 0 0 1-18 0c0-5 3-8 5-11 0 5 2 5 3 7 2-4 3-7 2-13zm-1 16c-1 3-4 4-4 7a4 4 0 0 0 8 0c0-2-2-4-2-6 0 3-2 3-2-1z"/> : kind==='time' ? <><circle cx="16" cy="19" r="10"/><path d="M16 2v7m-4-7h8m4 7 2-2M16 13v7l4 2"/></> : <><path d="M10 3h12v9c0 6-12 6-12 0V3zm0 3H5v4c0 4 5 5 5 5m12-9h5v4c0 4-5 5-5 5M16 18v8m-5 3h10m-9-3h8"/></>}
+ </svg>;
+}
+
 /** Mini-graphique en ligne (SVG, sans bibliothèque) ; alternative textuelle complète dans `label`. */
 export function Sparkline({ values, label, sport }: { values: readonly number[]; label: string; sport: Sport }) {
   if (values.length === 0) return null;
@@ -206,9 +213,9 @@ export function Progress0() {
   const today = clock().today;
   const view = useMemo(() => progressView(state, { today }), [state, today]);
   const p = state.profile;
-  // Données de référence disponibles uniquement en mode développement et sur demande explicite.
-  // Jamais persistées, et inaccessibles dans une compilation de production.
-  const visualFixture = import.meta.env.DEV && typeof window !== 'undefined'
+  // Données de référence uniquement dans un build de validation explicitement activé.
+  // Jamais persistées ; absentes des builds habituels.
+  const visualFixture = (import.meta.env.DEV || import.meta.env.VITE_REKKA_VISUAL_FIXTURES === '1') && typeof window !== 'undefined'
     && new URLSearchParams(window.location.search).get('rekka_visual_fixture') === 'progression';
   // V4: real registered data and canonical week selector only.
   const week = weekOf(state, today);
@@ -286,9 +293,9 @@ export function Progress0() {
            </div>
          </div>
          <div className="pf-progress-facts">
-           <div><span className="pf-progress-fact-icon pf-progress-fact-icon--coral" aria-hidden="true">♨</span><strong>{visualFixture ? '1 240' : scopedCount}</strong><small>{visualFixture ? 'kcal · référence visuelle' : 'séances réalisées'}</small></div>
-           <div><span className="pf-progress-fact-icon" aria-hidden="true">⏱</span><strong>{visualFixture ? '5h40' : knownDurationCount ? durationLabel(observedDurationS) : '—'}</strong><small>durée mesurée{knownDurationCount ? ' (partielle)' : ''}</small></div>
-           <div><span className="pf-progress-fact-icon pf-progress-fact-icon--yellow" aria-hidden="true">★</span><strong>{visualFixture ? '+2,5 %' : activeSports}</strong><small>{visualFixture ? 'performances · référence visuelle' : `sport${activeSports>1?'s':''} pratiqué${activeSports>1?'s':''}`}</small></div>
+           <div><span className="pf-progress-fact-icon pf-progress-fact-icon--coral" aria-hidden="true"><ProgressFactIcon kind="sessions"/></span><strong>{visualFixture ? '1 240' : scopedCount}</strong><small>{visualFixture ? 'kcal' : 'séances réalisées'}</small></div>
+           <div><span className="pf-progress-fact-icon" aria-hidden="true"><ProgressFactIcon kind="time"/></span><strong>{visualFixture ? '5h40' : knownDurationCount ? durationLabel(observedDurationS) : '—'}</strong><small>{visualFixture ? 'd’entraînement' : <>durée mesurée{knownDurationCount ? ' (partielle)' : ''}</>}</small></div>
+           <div><span className="pf-progress-fact-icon pf-progress-fact-icon--yellow" aria-hidden="true"><ProgressFactIcon kind="sports"/></span><strong>{visualFixture ? '+2,5 %' : activeSports}</strong><small>{visualFixture ? 'performances' : `sport${activeSports>1?'s':''} pratiqué${activeSports>1?'s':''}`}</small></div>
          </div>
          <div className="pf-progress-distribution">
            <strong>Répartition par sport</strong>
@@ -306,7 +313,7 @@ export function Progress0() {
          </div>
          <div className="pf-progress-chart-card">
            <h2>Évolution des charges</h2>
-           {visualFixture ? <><p>Développé couché (série de référence)</p><Sparkline sport="strength" values={[77,79,82,81.5,84,85]} label="Fixture graphique de référence : charges de démonstration" /><span className="pf-progress-chart-last">85 kg · référence visuelle</span></> : chartExercise && chartPoints.length ? <>
+           {visualFixture ? <><p>Développé couché (série de référence)</p><Sparkline sport="strength" values={[77,79,82,81.5,84,85]} label="Fixture graphique de référence : charges de démonstration" /><span className="pf-progress-chart-last">85 kg</span></> : chartExercise && chartPoints.length ? <>
              <p>{exerciseLabel(chartExercise.exerciseId)} (charge maximale par séance)</p>
              <Sparkline sport="strength" values={chartPoints.map(s=>s.topLoadKg ?? 0)} label={`${exerciseLabel(chartExercise.exerciseId)} : ${chartPoints.map(s=>`${formatDateShort(s.date)} ${kg(s.topLoadKg ?? 0)}`).join(', ')}`} />
              <span className="pf-progress-chart-last">Dernière : {kg(chartPoints[chartPoints.length-1]?.topLoadKg ?? 0)}</span>

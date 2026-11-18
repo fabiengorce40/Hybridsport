@@ -1,7 +1,7 @@
-name: REKKA V4 - passe 8 mobile captures
+name: REKKA V4 - Progression visual validation
 on:
   push:
-    branches: [codex/rekka-v4-seance-passe8-mobile]
+    branches: [codex/rekka-v4-progression-finition]
     paths:
       - 'apps/kairo/**'
       - '.github/workflows/rekka-v4-passe8-captures.yml'
@@ -10,11 +10,12 @@ permissions:
   contents: read
 jobs:
   captures:
-    if: github.ref == 'refs/heads/codex/rekka-v4-seance-passe8-mobile'
+    if: github.ref == 'refs/heads/codex/rekka-v4-progression-finition'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
       CHROMIUM_PATH: /usr/bin/google-chrome
+      VITE_REKKA_VISUAL_FIXTURES: '1'
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -39,7 +40,7 @@ jobs:
         run: |
           set -euo pipefail
           for zone in upper lower full; do
-            REKKA_WORKOUT_REFERENCE=1 REKKA_WORKOUT_ZONE="$zone" node apps/kairo/scripts/e2e-v4-screens.mjs "passe8-qa/$zone"
+            REKKA_PROGRESS_REFERENCE=1 REKKA_WORKOUT_REFERENCE=1 REKKA_WORKOUT_ZONE="$zone" node apps/kairo/scripts/e2e-v4-screens.mjs "passe8-qa/$zone"
           done
       - name: Compile and capture baseline for Home comparison
         shell: bash

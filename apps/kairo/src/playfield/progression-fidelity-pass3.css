@@ -1,6 +1,6 @@
 /* Progression V4: screen-only visual contract; never affects approved Home. */
 html[data-rekka-theme="playfield-pro"] .pf-progression-header {
-  height:72px; margin:0 0 8px; display:grid; grid-template-columns:48px minmax(0,1fr) 48px;
+  height:50px; margin:0 0 8px; display:grid; grid-template-columns:48px minmax(0,1fr) 48px;
   align-items:center; color:#0e1b35;
 }
 html[data-rekka-theme="playfield-pro"] .pf-progression-header h1 {
@@ -12,17 +12,17 @@ html[data-rekka-theme="playfield-pro"] .pf-progression-header button {
   cursor:pointer;border-radius:14px;
 }
 html[data-rekka-theme="playfield-pro"] .pf-progression-header button:focus-visible {outline:3px solid #1647cb;outline-offset:2px}
-html[data-rekka-theme="playfield-pro"] .pf-progress-dashboard {gap:14px!important;margin:0 0 22px!important;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-dashboard {gap:10px!important;margin:0 0 18px!important;}
 html[data-rekka-theme="playfield-pro"] .pf-progress-period {
-  margin:0!important;min-height:50px!important;padding:3px!important;border-radius:999px!important;
+  margin:0!important;min-height:44px!important;padding:3px!important;border-radius:999px!important;
 }
-html[data-rekka-theme="playfield-pro"] .pf-progress-period button {min-height:46px!important;font-size:clamp(13px,4vw,17px)!important;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-period button {min-height:44px!important;font-size:clamp(13px,4vw,17px)!important;}
 html[data-rekka-theme="playfield-pro"] .pf-progress-week {
   display:grid!important;grid-template-columns:minmax(0,38%) minmax(0,1fr)!important;gap:12px!important;
-  padding:9px 0!important;min-height:140px!important;box-shadow:none!important;border:0!important;background:transparent!important;
+  padding:3px 0!important;min-height:118px!important;box-shadow:none!important;border:0!important;background:transparent!important;
 }
 html[data-rekka-theme="playfield-pro"] .pf-progress-ring {
-  width:min(34vw,138px)!important;height:min(34vw,138px)!important;
+  width:min(29vw,118px)!important;height:min(29vw,118px)!important;
   margin:auto!important;position:relative;
 }
 html[data-rekka-theme="playfield-pro"] .pf-progress-ring::before {inset:14px!important;background:#fffbf6!important;}
@@ -33,15 +33,15 @@ html[data-rekka-theme="playfield-pro"] .pf-progress-week-copy>span {font-size:cl
 html[data-rekka-theme="playfield-pro"] .pf-progress-trend {font-size:clamp(10px,2.8vw,13px)!important;font-weight:800!important;color:#176a39!important;background:#cef8d6!important;border-radius:99px;padding:7px 10px;line-height:1.2!important;margin-top:6px;}
 html[data-rekka-theme="playfield-pro"] .pf-progress-subnote {font-size:11px!important;line-height:1.3!important;}
 html[data-rekka-theme="playfield-pro"] .pf-progress-facts {gap:9px!important;}
-html[data-rekka-theme="playfield-pro"] .pf-progress-facts>div {min-height:132px!important;padding:14px 5px 12px!important;background:#fffdf9!important;border-radius:21px!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
-html[data-rekka-theme="playfield-pro"] .pf-progress-facts .pf-progress-fact-icon {font-size:34px!important;line-height:1.13!important;height:40px;display:grid;place-items:center;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-facts>div {min-height:82px!important;padding:8px 5px 7px!important;background:#fffdf9!important;border-radius:21px!important;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-facts .pf-progress-fact-icon {font-size:28px!important;line-height:1!important;height:30px;display:grid;place-items:center;}
 html[data-rekka-theme="playfield-pro"] .pf-progress-facts strong {font-size:clamp(20px,6vw,31px)!important;line-height:1!important;letter-spacing:-.055em!important;}
 html[data-rekka-theme="playfield-pro"] .pf-progress-facts small {font-size:clamp(10px,2.65vw,13px)!important;line-height:1.15!important;margin-top:0!important;color:#0e1b35!important;}
-html[data-rekka-theme="playfield-pro"] :is(.pf-progress-distribution,.pf-progress-chart-card) {background:#fffdf9!important;border:1px solid #f1e9e0!important;border-radius:22px!important;padding:18px 15px!important;box-shadow:0 5px 15px #16224216!important;}
-html[data-rekka-theme="playfield-pro"] .pf-progress-distribution>strong,html[data-rekka-theme="playfield-pro"] .pf-progress-chart-card h2 {font-size:clamp(19px,5.5vw,25px)!important;line-height:1.1!important;letter-spacing:-.045em!important;margin:0 0 14px!important;}
+html[data-rekka-theme="playfield-pro"] :is(.pf-progress-distribution,.pf-progress-chart-card) {background:#fffdf9!important;border:1px solid #f1e9e0!important;border-radius:22px!important;padding:12px 13px!important;box-shadow:0 5px 15px #16224216!important;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-distribution>strong,html[data-rekka-theme="playfield-pro"] .pf-progress-chart-card h2 {font-size:clamp(19px,5.5vw,25px)!important;line-height:1.1!important;letter-spacing:-.045em!important;margin:0 0 8px!important;}
 html[data-rekka-theme="playfield-pro"] .pf-progress-distribution-body {display:grid!important;grid-template-columns:minmax(0,43%) minmax(0,1fr)!important;align-items:center;gap:12px!important;}
-html[data-rekka-theme="playfield-pro"] .pf-progress-donut {width:min(35vw,142px)!important;height:min(35vw,142px)!important;margin:auto;}
-html[data-rekka-theme="playfield-pro"] .pf-progress-donut::before {inset:25px!important;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-donut {width:min(26vw,108px)!important;height:min(26vw,108px)!important;margin:auto;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-donut::before {inset:18px!important;}
 html[data-rekka-theme="playfield-pro"] .pf-progress-legend {gap:12px!important;}
 html[data-rekka-theme="playfield-pro"] .pf-progress-legend>div {grid-template-columns:12px minmax(0,1fr) auto!important;gap:7px!important;font-size:clamp(11px,3vw,15px)!important;line-height:1.25;font-weight:750;}
 html[data-rekka-theme="playfield-pro"] .pf-progress-legend strong {font-size:clamp(12px,3.4vw,17px)!important;}
@@ -50,8 +50,13 @@ html[data-rekka-theme="playfield-pro"] .pf-progress-chart-card p {font-size:12px
 html[data-rekka-theme="playfield-pro"] .pf-progress-chart-card .pf-spark-chart {max-height:none!important;min-height:110px!important;}
 html[data-rekka-theme="playfield-pro"] .pf-progress-chart-last {margin-top:3px;}
 @media(max-width:375px){
- html[data-rekka-theme="playfield-pro"] .pf-progress-ring{width:116px!important;height:116px!important;}
- html[data-rekka-theme="playfield-pro"] .pf-progress-donut{width:113px!important;height:113px!important;}
- html[data-rekka-theme="playfield-pro"] .pf-progress-facts>div{min-height:120px!important;}
- html[data-rekka-theme="playfield-pro"] .pf-progress-week{min-height:128px!important;}
+ html[data-rekka-theme="playfield-pro"] .pf-progress-ring{width:104px!important;height:104px!important;}
+ html[data-rekka-theme="playfield-pro"] .pf-progress-donut{width:96px!important;height:96px!important;}
+ html[data-rekka-theme="playfield-pro"] .pf-progress-facts>div{min-height:80px!important;}
+ html[data-rekka-theme="playfield-pro"] .pf-progress-week{min-height:110px!important;}
 }
+
+html[data-rekka-theme="playfield-pro"] .screen:has(.pf-progression-header) {padding-inline:14px!important;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-fact-icon svg {display:block;width:29px;height:29px;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-facts small {text-align:center;}
+html[data-rekka-theme="playfield-pro"] .pf-progress-chart-card .pf-spark-chart {min-height:0!important;max-height:155px!important;}
