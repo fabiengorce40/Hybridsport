@@ -298,3 +298,15 @@ html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-s
   outline:2px solid #1647c8;outline-offset:1px;
 }
 html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-times {display:none!important;}
+
+/* Four explicit columns after removing the former multiplication cell. */
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row {
+ grid-template-columns:44px minmax(0,1fr) minmax(0,1fr) 44px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .pf-set-columns {
+ grid-template-columns:44px minmax(0,1fr) minmax(0,1fr) 44px!important;
+}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row>.v31-series-label {grid-column:1;grid-row:1!important;}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row>.pf-stepper-load {grid-column:2;grid-row:1!important;}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row>.pf-stepper-reps {grid-column:3;grid-row:1!important;}
+html[data-rekka-theme="playfield-pro"] .v31-workout[data-sport="strength"] .v31-series-row>.v31-toggle {grid-column:4;grid-row:1!important;}

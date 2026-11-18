@@ -313,7 +313,7 @@ export function Progress0() {
          </div>
          <div className="pf-progress-chart-card">
            <h2>Évolution des charges</h2>
-           {visualFixture ? <><p>Développé couché (série de référence)</p><Sparkline sport="strength" values={[77,79,82,81.5,84,85]} label="Fixture graphique de référence : charges de démonstration" /><span className="pf-progress-chart-last">85 kg</span></> : chartExercise && chartPoints.length ? <>
+           {visualFixture ? <><p>Développé couché (série de référence)</p><Sparkline sport="strength" values={[77,79,82,81.5,84,85]} label="Fixture graphique de référence : charges de démonstration" /></> : chartExercise && chartPoints.length ? <>
              <p>{exerciseLabel(chartExercise.exerciseId)} (charge maximale par séance)</p>
              <Sparkline sport="strength" values={chartPoints.map(s=>s.topLoadKg ?? 0)} label={`${exerciseLabel(chartExercise.exerciseId)} : ${chartPoints.map(s=>`${formatDateShort(s.date)} ${kg(s.topLoadKg ?? 0)}`).join(', ')}`} />
              <span className="pf-progress-chart-last">Dernière : {kg(chartPoints[chartPoints.length-1]?.topLoadKg ?? 0)}</span>
